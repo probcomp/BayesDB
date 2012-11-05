@@ -5,6 +5,7 @@
 
 
 #include <iostream>     // cout, endl
+#include <iomanip>
 #include <fstream>      // fstream
 #include <vector>
 #include <string>
@@ -22,6 +23,7 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
+#include <boost/program_options.hpp>
 
 #include "DateTime.h"
 
@@ -98,7 +100,8 @@ double NG_cat(const MatrixD& data, double newData, double mu0, double k0, double
 class RandomNumberGen
 {
 public:
-  RandomNumberGen() : _engine(std::time(0)), _dist(_engine)
+  RandomNumberGen() : _engine(0), _dist(_engine)
+  //RandomNumberGen() : _engine(std::time_t(0)), _dist(_engine)
   {
   }
 
@@ -120,7 +123,9 @@ public:
     return (int)std::floor((next() * D));
   }
 
-
+  void set_seed(std::time_t seed) {
+    _engine.seed(seed);
+  }
 protected:
    // Mersenne Twister
   boost::mt19937  _engine;
@@ -165,9 +170,8 @@ public:
   GlobalParameters() : PI(boost::math::constants::pi<double>())
   {
   }
- 
   const double PI;
- // set some initial vars
+  // set some initial vars
   int nChains;
   int nSamples;
   int burnIn;
@@ -177,12 +181,34 @@ public:
   RandomNumberGen Rand;
 };
 
-
 GlobalParameters GP;
-
 
 int main(int argc, char** argv)
 {
+
+  string default_dataFile = "SynData2";
+  std::time_t default_seed = 0;
+  string dataFile;
+  std::time_t seed;
+  //parse some arguments
+  namespace po = boost::program_options;
+  po::options_description desc("Options");
+  desc.add_options()
+    ("help,h", "produce help message")
+    ("seed", po::value<std::time_t>(&seed)->default_value(default_seed), "set inference seed")
+    ("dataFile", po::value<string>(&dataFile)->default_value(default_dataFile), "set data to run inference on")
+    ;
+  po::variables_map vm;
+  try {
+    po::store(po::parse_command_line( argc, argv, desc ), vm);
+    po::notify( vm );
+    if ( vm.count("help") ) {
+      std::cout << desc << "\n";
+      exit(0);
+    }
+  } catch ( const boost::program_options::error& e ) {
+    std::cerr << e.what() << std::endl;
+  }
 
   using namespace boost::assign;
 
@@ -192,7 +218,12 @@ int main(int argc, char** argv)
   GP.burnIn = 10;
   GP.lag = 10;
   GP.bins = 31;
-  GP.dataFile = "SynData2";
+  //
+  GP.dataFile = dataFile;
+  GP.Rand.set_seed(seed);
+
+  cout << "dataFile = " << dataFile << endl;
+  cout << "seed = " << seed << endl;
 
   State state;
 
@@ -293,8 +324,8 @@ void MainLoop(State& state)
 
       // runModel
       Timer T(true);
-      // burn-in
 
+      // burn-in
       samples.push_back(drawSample(state, GP.burnIn));
 
       //      samples{length(samples)+1} = drawSample(state, burnIn); 
@@ -1752,6 +1783,7 @@ MatrixD cumsum2(const std::vector<double>& V)
   
   int i = 0;
   result(0,0) += V[0];
+  //result(0,0) = V[0];
   for(i = 1; i < V.size(); i ++)
     {
       result(0,i) = result(0, i-1) + V[i];
@@ -1760,8 +1792,15 @@ MatrixD cumsum2(const std::vector<double>& V)
   return result;
 }
 
-
-
+void printMatrixD(MatrixD mat, int rows, int cols, int dec) {
+    std::cout << std::fixed << std::setprecision(dec);
+    for(int r = 0; r < rows; r++) {
+      for(int c = 0; c < cols; c++) {
+	std::cout << mat(r, c) << '\t';
+      }
+      std::cout << '\n';
+    }
+}
 
 // returns the sum of all the elements
 double sum(const MatrixD& M)
