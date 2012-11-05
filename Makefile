@@ -4,7 +4,7 @@ OPTIMIZED = opt
 CC = gcc
 CXX = g++
 
-CXXOPTS :=  -lm
+CXXOPTS :=  -lm -lboost_program_options
 
 ifdef OPTIMIZED
 CXXOPTS := -O2 -g $(CXXOPTS)
