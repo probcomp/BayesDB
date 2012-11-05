@@ -1,5 +1,5 @@
 
-OPTIMIZED = opt
+OPTIMIZED = 
 
 CC = gcc
 CXX = g++
