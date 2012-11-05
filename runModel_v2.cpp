@@ -1757,7 +1757,7 @@ MatrixD cumsum(const MatrixD& M, int dim )
   if(M.size1() == 1)
     {
       int i = 0;
-      result(0,0) += M(0,0);
+      result(0,0) = M(0,0);
       for(i = 1; i < M.size2(); i ++)
 	{
 	    result(0,i) = result(0, i-1) + M(0,i);
@@ -1782,8 +1782,7 @@ MatrixD cumsum2(const std::vector<double>& V)
   MatrixD result(1, V.size());
   
   int i = 0;
-  result(0,0) += V[0];
-  //result(0,0) = V[0];
+  result(0,0) = V[0];
   for(i = 1; i < V.size(); i ++)
     {
       result(0,i) = result(0, i-1) + V[i];
