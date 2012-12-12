@@ -188,15 +188,26 @@ int main(int argc, char** argv)
 
   string default_dataFile = "SynData2";
   std::time_t default_seed = 0;
-  string dataFile;
+  int default_nChains = 1;
+  int default_nSamples = 40;
+  int default_burnIn = 500;
+  int default_lag = 10;
+  int default_bins = 31;
+  //
   std::time_t seed;
+
   //parse some arguments
   namespace po = boost::program_options;
   po::options_description desc("Options");
   desc.add_options()
     ("help,h", "produce help message")
     ("seed", po::value<std::time_t>(&seed)->default_value(default_seed), "set inference seed")
-    ("dataFile", po::value<string>(&dataFile)->default_value(default_dataFile), "set data to run inference on")
+    ("dataFile", po::value<string>(&GP.dataFile)->default_value(default_dataFile), "set data to run inference on")
+    ("nChains", po::value<int>(&GP.nChains)->default_value(default_nChains), "set number of inference chains to run")
+    ("nSamples", po::value<int>(&GP.nSamples)->default_value(default_nSamples), "set number of samples to draw (@lag)")
+    ("burnIn", po::value<int>(&GP.burnIn)->default_value(default_burnIn), "set number of burn in iterations")
+    ("lag", po::value<int>(&GP.lag)->default_value(default_lag), "set number of iterations per sample")
+    ("bins", po::value<int>(&GP.bins)->default_value(default_bins), "set number of bins in hyper inference")
     ;
   po::variables_map vm;
   try {
@@ -212,17 +223,10 @@ int main(int argc, char** argv)
 
   using namespace boost::assign;
 
-  // set some initial vars
-  GP.nChains =  10;
-  GP.nSamples = 100;
-  GP.burnIn = 10;
-  GP.lag = 10;
-  GP.bins = 31;
-  //
-  GP.dataFile = dataFile;
+  // set GP seed from command line argument
   GP.Rand.set_seed(seed);
 
-  cout << "dataFile = " << dataFile << endl;
+  cout << "dataFile = " << GP.dataFile << endl;
   cout << "seed = " << seed << endl;
 
   State state;
