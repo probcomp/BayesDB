@@ -10,7 +10,11 @@
 #include <stdio.h>
 #include "assert.h"
 //
+#include "utils.h"
 #include "suffstats.h"
+
+template <class T> class cluster;
+template <typename T> std::ostream& operator<<(std::ostream& os, const cluster<T>& cT);
 
 template <class T>
 class cluster {
@@ -23,7 +27,7 @@ class cluster {
   std::map<int, suffstats<T> >& get_suffstats_m();
   std::set<int>& get_global_row_indices();
   std::set<int>& get_global_col_indices();
-  void print();
+  friend std::ostream& operator<< <>(std::ostream& os, const cluster<T>& cT);
  private:
   int num_cols;
   void init_suffstats();
@@ -34,8 +38,12 @@ class cluster {
 
 template <class T>
 std::map<int, double> cluster<T>::calc_logps() {
-  // FIXME: UNIMPLEMENTED
   std::map<int, double> ret_map;
+  typename std::map<int, suffstats<T> >::iterator it = suffstats_m.begin();
+  for(; it!=suffstats_m.end(); it++) {
+    double logp = it->second.calc_logp();
+    ret_map[it->first] = logp;
+  }
   return ret_map;
 }
 
@@ -54,37 +62,13 @@ std::set<int>& cluster<T>::get_global_col_indices() {
   return global_col_indices;
 }
 
-std::string int_to_str(int i) {  
-  std::stringstream out;
-  out << i;
-  std::string s = out.str();
-  return s;
-}
-
-template <class T>
-std::string stringify_set(std::set<T> st) {
-  typename std::set<T>::iterator it = st.begin();
-  if(it==st.end()) return "{}";
-  //
-  std::string ret_string = "{";
-  ret_string += int_to_str(*it);
-  it++;
-  for(; it!=st.end(); it++) {
-    ret_string += ", " + int_to_str(*it);
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const cluster<T>& cT) {
+  typename std::map<int, suffstats<T> >::const_iterator it = cT.suffstats_m.begin();
+  for(; it!= cT.suffstats_m.end(); it++) {
+    os << it->first << " :: " <<  cT.global_row_indices << " :: " << it->second;
   }
-  ret_string += "}";
-  return ret_string;
-}
-
-template <class T>
-void cluster<T>::print() {
-  typename std::map<int, suffstats<T> >::iterator it = \
-    suffstats_m.begin();
-  for(; it!= suffstats_m.end(); it++) {
-    std::string indices_string = stringify_set(global_row_indices);
-    std::cout << it->first << " :: " <<  indices_string << " :: ";
-    it->second.print();
-  }
+  return os;
 }
 
 #endif // GUARD_cluster_h

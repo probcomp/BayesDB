@@ -2,7 +2,7 @@
 
 double log_Z_0 = static_calc_log_Z(r0, nu0, s0);
 
-double static_calc_log_Z(double r, double nu, double s) {
+double static_calc_log_Z(const double r, const double nu, const double s) {
   double nu_over_2 = .5 * nu;
   return nu_over_2 * (LOG_2 - log(s))			\
     + HALF_LOG_2PI					\
@@ -10,13 +10,22 @@ double static_calc_log_Z(double r, double nu, double s) {
     + lgamma(nu_over_2);
 }
 
-template<>
-double suffstats<double>::calc_log_Z() {
-  return static_calc_log_Z(suff_hash["r"], suff_hash["nu"], suff_hash["s"]);
+double get(const std::map<std::string, double> m, std::string key) {
+  std::map<std::string, double>::const_iterator it = m.find(key);
+  if(it == m.end()) return -1;
+  return it->second;
 }
 
 template<>
-double suffstats<double>::calc_logp() {
+double suffstats<double>::calc_log_Z() const {
+  const double r = get(suff_hash, "r");
+  const double nu = get(suff_hash, "nu");
+  const double s = get(suff_hash, "s");
+  return static_calc_log_Z(r, nu, s);
+}
+
+template<>
+double suffstats<double>::calc_logp() const {
   return -count * HALF_LOG_2PI + calc_log_Z() - log_Z_0;
 }
 

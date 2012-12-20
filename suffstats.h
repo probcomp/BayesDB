@@ -19,46 +19,41 @@ const static double r0 = 1.0;
 const static double mu0 = 0.0;
 extern double log_Z_0;
 
+template <class T> class suffstats;
+template <typename T> std::ostream& operator<<(std::ostream& os, const suffstats<T>& sT);
+
 // the sufficient statistics of a single cluster for a single feature
 template <class T>
 class suffstats {
  public:
-  void init_suff_hash();
   suffstats<T>() { init_suff_hash();};
   void insert_el(T el);
   void remove_el(T el);
-  double calc_logp();
-  double calc_log_Z();
-  void print();
-  // _suffstats<T> get_suffstats();
+  double calc_logp() const;
+  friend std::ostream& operator<< <>(std::ostream& os, const suffstats<T>& sT);
  private:
   int count;
   std::map<std::string, double> suff_hash;
+  //
+  void init_suff_hash();
+  double calc_log_Z() const;
 };
 
 double static_calc_log_Z(double r, double nu, double s);
 void print_defaults();
 
-template <class T>
-void suffstats<T>::print() {
-  std::cout << "count: " << count << std::endl;
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const suffstats<T>& sT) {
+  os << "count: " << sT.count << std::endl;
   //
-  std::map<std::string, double>::iterator it = suff_hash.begin();
-  std::cout << it->first << ":" << it->second;
+  std::map<std::string, double>::const_iterator it = sT.suff_hash.begin();
+  os << it->first << ":" << it->second;
   it++;
-  for(; it != suff_hash.end(); it++) {
-    std::cout << ";\t" << it->first << ":" << it->second;
+  for(; it != sT.suff_hash.end(); it++) {
+    os << ";\t" << it->first << ":" << it->second;
   }
-  std::cout << std::endl;
-  std::cout << "logp: " << calc_logp() << std::endl;
+  os << std::endl;
+  os << "logp: " << sT.calc_logp() << std::endl;
 }
 
 #endif // GUARD_suffstats_h
-
-/*
-//http://www.gotw.ca/gotw/079.htm
-struct _suffstats {
-  typedef std::map<std::string, double> suff_hash;
-};
-//  typename _suffstats<T>::suff_hash suff_hash;
-*/
