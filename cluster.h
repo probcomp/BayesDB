@@ -21,7 +21,7 @@ class cluster {
  public:
   cluster<T>(int NUM_COLS): num_cols(NUM_COLS) { init_suffstats(); };
   void insert_row(std::vector<T> vT, int row_idx);
-  void remove_row(std::vector<T> vT, int col_idx);
+  void remove_row(std::vector<T> vT, int row_idx);
   std::map<int, double> calc_logps();
   // for copying info out
   std::map<int, suffstats<T> >& get_suffstats_m();
