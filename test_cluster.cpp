@@ -1,33 +1,40 @@
 #include <iostream>
 #include "cluster.h"
+#include "utils.h"
+
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/io.hpp>
 
 int main(int argc, char** argv) {
   std::cout << std::endl << "Hello World!" << std::endl;
   int i = 123;
 
-  cluster<double> cd(2);
+  boost::numeric::ublas::matrix<double> Data;
+  LoadData("SynData2.csv", Data);
+  std::cout << Data << std::endl;
+
+  cluster<double> cd(5); //hard code # columns
   std::cout << std::endl << "Init cluster" << std::endl;
   std::cout << cd << std::endl;
 
-  std::vector<double> vd0;
-  vd0.push_back(1.0);
-  vd0.push_back(10.0);
-  cd.insert_row(vd0, 0);
-  std::vector<double> vd1;
-  vd1.push_back(2.0);
-  vd1.push_back(20.0);
-  cd.insert_row(vd1, 1);
-  std::vector<double> vd2;
-  vd2.push_back(3.0);
-  vd2.push_back(30.0);
-  cd.insert_row(vd2, 2);
+
+  for(i=0; i < 4; i++) {
+    std::vector<double> V;
+    for(int j=0;j < Data.size2(); j++) {
+      V.push_back(Data(i,j));
+    }
+    cd.insert_row(V, i);
+  }
   std::cout << std::endl << "modified cluster" << std::endl;
   std::cout << cd << std::endl;
   //
-  std::vector<double> vd3;
-  vd3.push_back(3.0);
-  vd3.push_back(30.0);
-  cd.remove_row(vd3, 2);
+  for(i=4; i < 8; i++) {
+    std::vector<double> V;
+    for(int j=0;j < Data.size2(); j++) {
+      V.push_back(Data(i,j));
+    }
+    cd.insert_row(V, i);
+  }
   std::cout << std::endl << "modified cluster" << std::endl;
   std::cout << cd << std::endl;
   //
