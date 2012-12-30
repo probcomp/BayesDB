@@ -3,9 +3,11 @@
 
 #include <iostream>
 #include <string>
+#include <boost/numeric/ublas/matrix.hpp>
 #include "cluster.h"
 #include "suffstats.h"
 
+void LoadData(std::string file, boost::numeric::ublas::matrix<double>& M);
 
 std::ostream& operator<<(std::ostream& os, const std::map<int, double>& int_double_map);
 
