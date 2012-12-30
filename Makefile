@@ -14,5 +14,5 @@ endif
 
 all:   convert
 
-convert : runModel_v2.cpp DateTime.cpp DateTime.h
-	$(CXX) -o runModel  runModel_v2.cpp DateTime.cpp  $(CXXOPTS)
+convert : cluster.cpp cluster.h suffstats.cpp suffstats.h utils.h
+	$(CXX) -o runModel cluster.cpp suffstats.cpp utils.h  $(CXXOPTS)
