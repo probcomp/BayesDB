@@ -23,6 +23,8 @@ class cluster {
   void insert_row(std::vector<T> vT, int row_idx);
   void remove_row(std::vector<T> vT, int row_idx);
   std::map<int, double> calc_logps();
+  double calc_sum_logp();
+  double get_vector_logp(std::vector<T> vT);
   // for copying info out
   std::map<int, suffstats<T> >& get_suffstats_m();
   std::set<int>& get_global_row_indices();
@@ -45,6 +47,18 @@ std::map<int, double> cluster<T>::calc_logps() {
     ret_map[it->first] = logp;
   }
   return ret_map;
+}
+
+
+template <class T>
+double cluster<T>::calc_sum_logp() {
+  double sum_logp = 0;
+  std::map<int, double> logp_map = calc_logps();
+  typename std::map<int, double>::iterator it = logp_map.begin();
+  for(; it!=logp_map.end(); it++) {
+    sum_logp += it->second;
+  }
+  return sum_logp;
 }
 
 template <class T>

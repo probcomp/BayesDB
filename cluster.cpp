@@ -27,3 +27,14 @@ void cluster<double>::remove_row(std::vector<double> vd, int row_idx) {
     suffstats_m[col_idx].remove_el(vd[col_idx]);
   }
 }
+
+template <>
+double cluster<double>::get_vector_logp(std::vector<double> vd) {
+  double start_logp = calc_sum_logp();
+  insert_row(vd, -1);
+  double middle_logp = calc_sum_logp();
+  remove_row(vd, -1);
+  // double end_logp = calc_sum_logp();
+  // assert(start_logp==end_logp);
+  return middle_logp - start_logp;
+}
