@@ -1,6 +1,7 @@
 #include <iostream>
 #include "cluster.h"
 #include "utils.h"
+#include "numerics.h"
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
@@ -65,5 +66,8 @@ int main(int argc, char** argv) {
   std::map<int, double> logps = cd.calc_logps();
   std::cout << "logps: " << logps << std::endl;
 
+  std::cout << "crp_log_probability(10, 100, 10)" << std::endl;
+  std::cout << crp_log_probability(10, 100, 10) << std::endl;
+  
   std::cout << std::endl << "Goodbye World!" << std::endl;
 }
