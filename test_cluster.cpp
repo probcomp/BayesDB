@@ -69,8 +69,8 @@ int main(int argc, char** argv) {
   std::cout << "calc_continuous_logp(0, 1, 2, 2, 0)" << std::endl;
   std::cout << calc_continuous_logp(0, 1, 2, 2, 0) << std::endl;
 
-  std::cout << "crp_log_probability(10, 100, 10)" << std::endl;
-  std::cout << crp_log_probability(10, 100, 10) << std::endl;
+  std::cout << "calc_cluster_crp_logp(10, 100, 10)" << std::endl;
+  std::cout << calc_cluster_crp_logp(10, 100, 10) << std::endl;
   
   std::cout << std::endl << "Goodbye World!" << std::endl;
 }

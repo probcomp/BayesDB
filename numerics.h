@@ -16,7 +16,7 @@ int draw_sample_with_partition(std::vector<double> unorm_logps,
 int crp_draw_sample(std::vector<int> counts, int sum_counts, double alpha,
 		    double rand_u);
 
-double crp_log_probability(double cluster_weight, double sum_weights,
+double calc_cluster_crp_logp(double cluster_weight, double sum_weights,
 			   double alpha, double data_weight=1);
 
 /* double data_log_probability(std::vector<double> data_values, */
@@ -36,8 +36,8 @@ std::vector<double> calc_crp_alpha_conditionals(std::vector<double> grid,
 					    bool absolute=false);
 double calc_beta_conditional();
 
-//maybe replace _log_Z call with call to _logp with count=0 and log_Z_0=0?
-//double calc_continuous_log_Z(const double r, const double nu, const double s);
-double calc_continuous_logp(const double count, const double r, const double nu, const double s, const double log_Z_0);
+double calc_continuous_logp(const double count,
+			    const double r, const double nu, const double s,
+			    const double log_Z_0);
 
 #endif //GUARD_numerics_h

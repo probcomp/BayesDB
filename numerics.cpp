@@ -39,6 +39,8 @@ int draw_sample_with_partition(vector<double> unorm_logps,
   return draw;
 }
 
+// draw_sample_with_partition w/o exp() of ratio and no test for p(last)
+// only useful for crp_init or supercluster swapping since no data component
 int crp_draw_sample(vector<int> counts, int sum_counts, double alpha,
 		    double rand_u) {
   int draw = 0;
@@ -56,6 +58,7 @@ int crp_draw_sample(vector<int> counts, int sum_counts, double alpha,
   return draw;
 }
 
+// p(alpha | clusters)
 double calc_crp_alpha_conditional(std::vector<int> counts, double alpha, int sum_counts, bool absolute) {
   int num_clusters = counts.size();
   if(sum_counts==-1) {
@@ -76,6 +79,7 @@ double calc_crp_alpha_conditional(std::vector<int> counts, double alpha, int sum
   return logp;
 }
 
+// helper for may calls to calc_crp_alpha_conditional
 std::vector<double> calc_crp_alpha_conditionals(std::vector<double> grid,
 					    std::vector<int> counts,
 					    bool absolute) {
@@ -97,8 +101,10 @@ double calc_beta_conditional() {
   return -1;
 }
 
-double crp_log_probability(double cluster_weight,
-			  double sum_weights, double alpha, double data_weight) {
+
+// p(z=cluster | alpha, clusters)
+double calc_cluster_crp_logp(double cluster_weight, double sum_weights,
+			     double alpha, double data_weight) {
   if(cluster_weight == 0) {
     cluster_weight = alpha;
   }
