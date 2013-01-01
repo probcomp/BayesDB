@@ -25,11 +25,13 @@ template <class T>
 class suffstats {
  public:
   suffstats<T>() { init_suff_hash();};
-  void insert_el(T el);
-  void remove_el(T el);
+  double insert_el(T el);
+  double remove_el(T el);
   double calc_logp() const;
+  double get_score() const;
   friend std::ostream& operator<< <>(std::ostream& os, const suffstats<T>& sT);
  private:
+  double score;
   int count;
   std::map<std::string, double> suff_hash;
   //
@@ -48,8 +50,15 @@ std::ostream& operator<<(std::ostream& os, const suffstats<T>& sT) {
   for(; it != sT.suff_hash.end(); it++) {
     os << ";\t" << it->first << ":" << it->second;
   }
+  os << ";\tscore:" << sT.get_score();
   os << std::endl;
   os << "logp: " << sT.calc_logp() << std::endl;
 }
+
+template <class T>
+double suffstats<T>::get_score() const {
+  return score;
+}
+
 
 #endif // GUARD_suffstats_h

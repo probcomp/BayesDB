@@ -26,7 +26,8 @@ double suffstats<double>::calc_logp() const {
   s' = s + C + rm**2 - r'm'**2
 */
 template <>
-void suffstats<double>::insert_el(double el) {
+double suffstats<double>::insert_el(double el) {
+  double score_0 = score;
   count += 1;
   //
   double nu_prime = suff_hash["nu"] + 1;
@@ -40,10 +41,15 @@ void suffstats<double>::insert_el(double el) {
   suff_hash["r"] = r_prime;
   suff_hash["mu"] = mu_prime;
   suff_hash["s"] = s_prime;
+  //
+  score = calc_logp();
+  double delta_score = score - score_0;
+  return delta_score;
 }
 
 template<>
-void suffstats<double>::remove_el(double el) {
+double suffstats<double>::remove_el(double el) {
+  double score_0 = score;
   count -= 1;
   //
   double nu_prime = suff_hash["nu"] - 1;
@@ -57,6 +63,10 @@ void suffstats<double>::remove_el(double el) {
   suff_hash["r"] = r_prime;
   suff_hash["mu"] = mu_prime;
   suff_hash["s"] = s_prime;
+  //
+  score = calc_logp();
+  double delta_score = score - score_0;
+  return delta_score;
 }
 
 template <>
@@ -66,6 +76,7 @@ void suffstats<double>::init_suff_hash() {
   suff_hash["s"] = s0;
   suff_hash["r"] = r0;
   suff_hash["mu"] = mu0;
+  score = -log_Z_0;
 }
 
 void print_defaults() {
