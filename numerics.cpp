@@ -114,7 +114,7 @@ double calc_cluster_crp_logp(double cluster_weight, double sum_weights,
   return log_probability;
 }
 
-// double data_log_probability(std::vector<double> data_values,
+// double calc_cluster_data_logp(std::vector<double> data_values,
 // 			    std::vector<suffstats<double> > suffstats_v,
 // 			    std::map<std::string, double> hypers, double alpha) {
 //   return -1.0;
