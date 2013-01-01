@@ -66,6 +66,9 @@ int main(int argc, char** argv) {
   std::map<int, double> logps = cd.calc_logps();
   std::cout << "logps: " << logps << std::endl;
 
+  std::cout << "calc_continuous_logp(0, 1, 2, 2, 0)" << std::endl;
+  std::cout << calc_continuous_logp(0, 1, 2, 2, 0) << std::endl;
+
   std::cout << "crp_log_probability(10, 100, 10)" << std::endl;
   std::cout << crp_log_probability(10, 100, 10) << std::endl;
   

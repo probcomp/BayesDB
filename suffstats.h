@@ -9,10 +9,8 @@
 #include <vector>
 #include <map>
 
+#include "numerics.h"
 
-const static double LOG_2PI = log(2.0 * M_PI);
-const static double HALF_LOG_2PI = .5 * LOG_2PI;
-const static double LOG_2 = log(2.0);
 const static double nu0 = 2.0;
 const static double s0 = 2.0;
 const static double r0 = 1.0;
@@ -36,10 +34,8 @@ class suffstats {
   std::map<std::string, double> suff_hash;
   //
   void init_suff_hash();
-  double calc_log_Z() const;
 };
 
-double static_calc_log_Z(double r, double nu, double s);
 void print_defaults();
 
 template <typename T>

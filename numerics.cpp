@@ -108,8 +108,22 @@ double crp_log_probability(double cluster_weight,
   return log_probability;
 }
 
-double data_log_probability(std::vector<double> data_values,
-			    std::vector<suffstats<double> > suffstats_v,
-			    std::map<std::string, double> hypers, double alpha) {
-  return -1.0;
+// double data_log_probability(std::vector<double> data_values,
+// 			    std::vector<suffstats<double> > suffstats_v,
+// 			    std::map<std::string, double> hypers, double alpha) {
+//   return -1.0;
+// }
+
+double calc_continuous_log_Z(const double r, const double nu, const double s) {
+  double nu_over_2 = .5 * nu;
+  return nu_over_2 * (LOG_2 - log(s))			\
+    + HALF_LOG_2PI					\
+    - .5 * log(r)					\
+    + lgamma(nu_over_2);
+}
+
+double calc_continuous_logp(const double count,
+			    const double r, const double nu, const double s,
+			    const double log_Z_0) {
+  return -count * HALF_LOG_2PI + calc_continuous_log_Z(r, nu, s) - log_Z_0;
 }

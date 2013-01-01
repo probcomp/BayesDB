@@ -1,14 +1,8 @@
 #include "suffstats.h"
 
-double log_Z_0 = static_calc_log_Z(r0, nu0, s0);
-
-double static_calc_log_Z(const double r, const double nu, const double s) {
-  double nu_over_2 = .5 * nu;
-  return nu_over_2 * (LOG_2 - log(s))			\
-    + HALF_LOG_2PI					\
-    - .5 * log(r)					\
-    + lgamma(nu_over_2);
-}
+// is this confusing to require knowledge that
+// log_Z_0 is logp(suffstats_0, count=0)
+double log_Z_0 = calc_continuous_logp(0, r0, nu0, s0, 0);
 
 double get(const std::map<std::string, double> m, std::string key) {
   std::map<std::string, double>::const_iterator it = m.find(key);
@@ -17,18 +11,14 @@ double get(const std::map<std::string, double> m, std::string key) {
 }
 
 template<>
-double suffstats<double>::calc_log_Z() const {
+double suffstats<double>::calc_logp() const {
   const double r = get(suff_hash, "r");
   const double nu = get(suff_hash, "nu");
   const double s = get(suff_hash, "s");
-  return static_calc_log_Z(r, nu, s);
+  return calc_continuous_logp(count, r, nu, s, log_Z_0);
 }
 
-template<>
-double suffstats<double>::calc_logp() const {
-  return -count * HALF_LOG_2PI + calc_log_Z() - log_Z_0;
-}
-
+// FIXME: should move suffstats updates from here to numerics?
 /*
   r' = r + n
   nu' = nu + n
