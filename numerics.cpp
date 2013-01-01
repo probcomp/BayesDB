@@ -7,6 +7,7 @@
 using namespace std;
 
 
+
 // subtract minimum value, logaddexp residuals, pass residuals and partition to
 // draw_sample_with_partition
 int draw_sample_unnormalized(vector<double> unorm_logps, double rand_u) {
@@ -83,7 +84,7 @@ std::vector<double> calc_crp_alpha_conditionals(std::vector<double> grid,
   std::vector<double>::iterator it = grid.begin();
   for(; it!=grid.end(); it++) {
     double alpha = *it;
-    double logp = calc_alpha_conditional(counts, alpha, sum_counts, absolute);
+    double logp = calc_crp_alpha_conditional(counts, alpha, sum_counts, absolute);
     logps.push_back(logp);
   }
   // note: prior distribution must still be added
@@ -96,7 +97,7 @@ double calc_beta_conditional() {
   return -1;
 }
 
-double crp_log_probablity(double cluster_weight,
+double crp_log_probability(double cluster_weight,
 			  double sum_weights, double alpha, double data_weight) {
   if(cluster_weight == 0) {
     cluster_weight = alpha;
