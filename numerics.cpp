@@ -55,7 +55,7 @@ int crp_draw_sample(vector<int> counts, int sum_counts, double alpha,
   return draw;
 }
 
-double calc_alpha_conditional(std::vector<int> counts, double alpha, int sum_counts, bool absolute) {
+double calc_crp_alpha_conditional(std::vector<int> counts, double alpha, int sum_counts, bool absolute) {
   int num_clusters = counts.size();
   if(sum_counts==-1) {
     sum_counts = std::accumulate(counts.begin(), counts.end(), 0);
@@ -75,7 +75,7 @@ double calc_alpha_conditional(std::vector<int> counts, double alpha, int sum_cou
   return logp;
 }
 
-std::vector<double> calc_alpha_conditionals(std::vector<double> grid,
+std::vector<double> calc_crp_alpha_conditionals(std::vector<double> grid,
 					    std::vector<int> counts,
 					    bool absolute) {
   int sum_counts = std::accumulate(counts.begin(), counts.end(), 0);
@@ -94,4 +94,21 @@ double calc_beta_conditional() {
   // FIXME: implement
   assert(1==0);
   return -1;
+}
+
+double crp_log_probablity(double cluster_weight,
+			  double sum_weights, double alpha, double data_weight) {
+  if(cluster_weight == 0) {
+    cluster_weight = alpha;
+  }
+  double log_numerator = log(cluster_weight);
+  double log_denominator = log(sum_weights - data_weight + alpha);
+  double log_probability = log_numerator - log_denominator;
+  return log_probability;
+}
+
+double data_log_probability(std::vector<double> data_values,
+			    std::vector<suffstats<double> > suffstats_v,
+			    std::map<std::string, double> hypers, double alpha) {
+  return -1.0;
 }
