@@ -8,6 +8,9 @@ const static double LOG_2PI = log(2.0 * M_PI);
 const static double HALF_LOG_2PI = .5 * LOG_2PI;
 const static double LOG_2 = log(2.0);
 
+// use a namespce to hold all the functions?
+// http://stackoverflow.com/questions/6108704/renaming-namespaces
+
 int draw_sample_unnormalized(std::vector<double> unorm_logps, double rand_u);
 
 int draw_sample_with_partition(std::vector<double> unorm_logps,
