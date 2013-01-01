@@ -7,10 +7,9 @@
 using namespace std;
 
 
-
 // subtract minimum value, logaddexp residuals, pass residuals and partition to
 // draw_sample_with_partition
-int draw_sample_unnormalized(vector<double> unorm_logps, double rand_u) {
+int numerics::draw_sample_unnormalized(vector<double> unorm_logps, double rand_u) {
   double max_el = *std::max_element(unorm_logps.begin(), unorm_logps.end());
   double partition = 0;
   vector<double>::iterator it = unorm_logps.begin();
@@ -19,11 +18,11 @@ int draw_sample_unnormalized(vector<double> unorm_logps, double rand_u) {
     partition += exp(*it);
   }
   double log_partition = log(partition);
-  int draw = draw_sample_with_partition(unorm_logps, log_partition, rand_u);
+  int draw = numerics::draw_sample_with_partition(unorm_logps, log_partition, rand_u);
   return draw;
 }
 
-int draw_sample_with_partition(vector<double> unorm_logps,
+int numerics::draw_sample_with_partition(vector<double> unorm_logps,
 			       double log_partition, double rand_u) {
   int draw = 0;
   vector<double>::iterator it = unorm_logps.begin();
@@ -41,7 +40,7 @@ int draw_sample_with_partition(vector<double> unorm_logps,
 
 // draw_sample_with_partition w/o exp() of ratio and no test for p(last)
 // only useful for crp_init or supercluster swapping since no data component
-int crp_draw_sample(vector<int> counts, int sum_counts, double alpha,
+int numerics::crp_draw_sample(vector<int> counts, int sum_counts, double alpha,
 		    double rand_u) {
   int draw = 0;
   double partition = sum_counts + alpha;
@@ -59,7 +58,7 @@ int crp_draw_sample(vector<int> counts, int sum_counts, double alpha,
 }
 
 // p(alpha | clusters)
-double calc_crp_alpha_conditional(std::vector<int> counts, double alpha, int sum_counts, bool absolute) {
+double numerics::calc_crp_alpha_conditional(std::vector<int> counts, double alpha, int sum_counts, bool absolute) {
   int num_clusters = counts.size();
   if(sum_counts==-1) {
     sum_counts = std::accumulate(counts.begin(), counts.end(), 0);
@@ -80,7 +79,7 @@ double calc_crp_alpha_conditional(std::vector<int> counts, double alpha, int sum
 }
 
 // helper for may calls to calc_crp_alpha_conditional
-std::vector<double> calc_crp_alpha_conditionals(std::vector<double> grid,
+std::vector<double> numerics::calc_crp_alpha_conditionals(std::vector<double> grid,
 					    std::vector<int> counts,
 					    bool absolute) {
   int sum_counts = std::accumulate(counts.begin(), counts.end(), 0);
@@ -88,14 +87,14 @@ std::vector<double> calc_crp_alpha_conditionals(std::vector<double> grid,
   std::vector<double>::iterator it = grid.begin();
   for(; it!=grid.end(); it++) {
     double alpha = *it;
-    double logp = calc_crp_alpha_conditional(counts, alpha, sum_counts, absolute);
+    double logp = numerics::calc_crp_alpha_conditional(counts, alpha, sum_counts, absolute);
     logps.push_back(logp);
   }
   // note: prior distribution must still be added
   return logps;
 }
 
-double calc_beta_conditional() {
+double numerics::calc_beta_conditional() {
   // FIXME: implement
   assert(1==0);
   return -1;
@@ -103,7 +102,7 @@ double calc_beta_conditional() {
 
 
 // p(z=cluster | alpha, clusters)
-double calc_cluster_crp_logp(double cluster_weight, double sum_weights,
+double numerics::calc_cluster_crp_logp(double cluster_weight, double sum_weights,
 			     double alpha, double data_weight) {
   if(cluster_weight == 0) {
     cluster_weight = alpha;
@@ -120,16 +119,16 @@ double calc_cluster_crp_logp(double cluster_weight, double sum_weights,
 //   return -1.0;
 // }
 
+double numerics::calc_continuous_logp(const double count,
+			    const double r, const double nu, const double s,
+			    const double log_Z_0) {
+  return -count * HALF_LOG_2PI + calc_continuous_log_Z(r, nu, s) - log_Z_0;
+}
+
 double calc_continuous_log_Z(const double r, const double nu, const double s) {
   double nu_over_2 = .5 * nu;
   return nu_over_2 * (LOG_2 - log(s))			\
     + HALF_LOG_2PI					\
     - .5 * log(r)					\
     + lgamma(nu_over_2);
-}
-
-double calc_continuous_logp(const double count,
-			    const double r, const double nu, const double s,
-			    const double log_Z_0) {
-  return -count * HALF_LOG_2PI + calc_continuous_log_Z(r, nu, s) - log_Z_0;
 }

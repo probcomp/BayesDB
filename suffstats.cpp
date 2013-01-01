@@ -2,7 +2,7 @@
 
 // is this confusing to require knowledge that
 // log_Z_0 is logp(suffstats_0, count=0)
-double log_Z_0 = calc_continuous_logp(0, r0, nu0, s0, 0);
+double log_Z_0 = numerics::calc_continuous_logp(0, r0, nu0, s0, 0);
 
 double get(const std::map<std::string, double> m, std::string key) {
   std::map<std::string, double>::const_iterator it = m.find(key);
@@ -15,7 +15,7 @@ double suffstats<double>::calc_logp() const {
   const double r = get(suff_hash, "r");
   const double nu = get(suff_hash, "nu");
   const double s = get(suff_hash, "s");
-  return calc_continuous_logp(count, r, nu, s, log_Z_0);
+  return numerics::calc_continuous_logp(count, r, nu, s, log_Z_0);
 }
 
 // FIXME: should move suffstats updates from here to numerics?

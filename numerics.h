@@ -11,6 +11,7 @@ const static double LOG_2 = log(2.0);
 // use a namespce to hold all the functions?
 // http://stackoverflow.com/questions/6108704/renaming-namespaces
 
+namespace numerics {
 int draw_sample_unnormalized(std::vector<double> unorm_logps, double rand_u);
 
 int draw_sample_with_partition(std::vector<double> unorm_logps,
@@ -42,5 +43,6 @@ double calc_beta_conditional();
 double calc_continuous_logp(const double count,
 			    const double r, const double nu, const double s,
 			    const double log_Z_0);
+}
 
 #endif //GUARD_numerics_h
