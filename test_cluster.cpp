@@ -9,6 +9,7 @@
 int main(int argc, char** argv) {
   std::cout << std::endl << "Hello World!" << std::endl;
   int i = 123;
+  double sum_sum_score_deltas;
 
   boost::numeric::ublas::matrix<double> Data;
   LoadData("SynData2.csv", Data);
@@ -18,26 +19,29 @@ int main(int argc, char** argv) {
   std::cout << std::endl << "Init cluster" << std::endl;
   std::cout << cd << std::endl;
 
-
+  sum_sum_score_deltas = 0;
   for(i=0; i < 4; i++) {
     std::vector<double> V;
     for(int j=0;j < Data.size2(); j++) {
       V.push_back(Data(i,j));
     }
-    cd.insert_row(V, i);
+    sum_sum_score_deltas += cd.insert_row(V, i);
   }
   std::cout << std::endl << "modified cluster" << std::endl;
   std::cout << cd << std::endl;
+  std::cout << "sum_sum_score_deltas: " << sum_sum_score_deltas << std::endl;
   //
+  sum_sum_score_deltas = 0;
   for(i=4; i < 8; i++) {
     std::vector<double> V;
     for(int j=0;j < Data.size2(); j++) {
       V.push_back(Data(i,j));
     }
-    cd.insert_row(V, i);
+    sum_sum_score_deltas += cd.insert_row(V, i);
   }
   std::cout << std::endl << "modified cluster" << std::endl;
   std::cout << cd << std::endl;
+  std::cout << "sum_sum_score_deltas: " << sum_sum_score_deltas << std::endl;
   //
   std::cout << std::endl << "logps" << std::endl;
   std::cout << cd.calc_logps() << std::endl;;
