@@ -20,17 +20,19 @@ template <class T>
 class cluster {
  public:
   cluster<T>(int NUM_COLS): num_cols(NUM_COLS) { init_suffstats(); };
-  void insert_row(std::vector<T> vT, int row_idx);
-  void remove_row(std::vector<T> vT, int row_idx);
+  double insert_row(std::vector<T> vT, int row_idx);
+  double remove_row(std::vector<T> vT, int row_idx);
   std::map<int, double> calc_logps();
   double calc_sum_logp();
   double get_vector_logp(std::vector<T> vT);
+  double get_score() const;
   // for copying info out
   std::map<int, suffstats<T> >& get_suffstats_m();
   std::set<int>& get_global_row_indices();
   std::set<int>& get_global_col_indices();
   friend std::ostream& operator<< <>(std::ostream& os, const cluster<T>& cT);
  private:
+  double score;
   int num_cols;
   void init_suffstats();
   std::map<int, suffstats<T> > suffstats_m;
@@ -76,12 +78,18 @@ std::set<int>& cluster<T>::get_global_col_indices() {
   return global_col_indices;
 }
 
+template <class T>
+double cluster<T>::get_score() const {
+  return score;
+}
+
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const cluster<T>& cT) {
   typename std::map<int, suffstats<T> >::const_iterator it = cT.suffstats_m.begin();
   for(; it!= cT.suffstats_m.end(); it++) {
     os << it->first << " :: " <<  cT.global_row_indices << " :: " << it->second;
   }
+  os << "cluster score: " << cT.get_score() << std::endl;
   return os;
 }
 

@@ -2,30 +2,38 @@
 
 template <>
 void cluster<double>::init_suffstats() {
+  score = 0;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
     suffstats_m[col_idx] = suffstats<double>();
+    score += suffstats_m[col_idx].get_score();
   }
 }
 
 template <>
-void cluster<double>::insert_row(std::vector<double> vd, int row_idx) {
+double cluster<double>::insert_row(std::vector<double> vd, int row_idx) {
+  double sum_score_deltas = 0;
   std::pair<std::set<int>::iterator, bool> set_pair = \
     global_row_indices.insert(row_idx);
   assert(set_pair.second);
   for(int col_idx=0; col_idx<vd.size(); col_idx++) {
     assert(suffstats_m.count(col_idx)==1);
-    suffstats_m[col_idx].insert_el(vd[col_idx]);
+    sum_score_deltas += suffstats_m[col_idx].insert_el(vd[col_idx]);
   }
+  score += sum_score_deltas;
+  return sum_score_deltas;
 }
 
 template <>
-void cluster<double>::remove_row(std::vector<double> vd, int row_idx) {
+double cluster<double>::remove_row(std::vector<double> vd, int row_idx) {
+  double sum_score_deltas = 0;
   int num_removed = global_row_indices.erase(row_idx);
   assert(num_removed!=0);
   for(int col_idx=0; col_idx<vd.size(); col_idx++) {
     assert(suffstats_m.count(col_idx)==1);
-    suffstats_m[col_idx].remove_el(vd[col_idx]);
+    sum_score_deltas += suffstats_m[col_idx].remove_el(vd[col_idx]);
   }
+  score += sum_score_deltas;
+  return sum_score_deltas;
 }
 
 template <>
