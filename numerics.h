@@ -2,6 +2,7 @@
 #define GUARD_numerics_h
 
 #include <vector>
+#include "suffstats.h"
 
 int draw_sample_unnormalized(std::vector<double> unorm_logps, double rand_u);
 
