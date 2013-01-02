@@ -15,10 +15,11 @@ const static double nu0 = 2.0;
 const static double s0 = 2.0;
 const static double r0 = 1.0;
 const static double mu0 = 0.0;
-extern double log_Z_0;
+extern double continuous_log_Z_0;
 
 template <class T> class suffstats;
-template <typename T> std::ostream& operator<<(std::ostream& os, const suffstats<T>& sT);
+template <typename T> std::ostream& operator<<(std::ostream& os,
+					       const suffstats<T>& sT);
 
 // the sufficient statistics of a single cluster for a single feature
 template <class T>
@@ -27,8 +28,12 @@ class suffstats {
   suffstats<T>() { init_suff_hash();};
   double insert_el(T el);
   double remove_el(T el);
+  // calc_logp() should be a recalculation of what's cached in get_score
   double calc_logp() const;
   double get_score() const;
+  double calc_data_logp(T el) const;
+  void get_suffstats(double &r, double &nu, double &s, double &mu,
+		     double &count) const;
   friend std::ostream& operator<< <>(std::ostream& os, const suffstats<T>& sT);
  private:
   double score;
