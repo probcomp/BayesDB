@@ -109,15 +109,15 @@ double numerics::calc_beta_conditional() {
   return -1;
 }
 
-
 // p(z=cluster | alpha, clusters)
 double numerics::calc_cluster_crp_logp(double cluster_weight, double sum_weights,
-			     double alpha, double data_weight) {
+				       double alpha) {
   if(cluster_weight == 0) {
     cluster_weight = alpha;
   }
   double log_numerator = log(cluster_weight);
-  double log_denominator = log(sum_weights - data_weight + alpha);
+  // presumes data has already been removed from the model
+  double log_denominator = log(sum_weights + alpha);
   double log_probability = log_numerator - log_denominator;
   return log_probability;
 }

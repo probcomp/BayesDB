@@ -28,7 +28,7 @@ namespace numerics {
 
   // crp probability functions
   double calc_cluster_crp_logp(double cluster_weight, double sum_weights,
-			       double alpha, double data_weight=1);
+			       double alpha);
   double calc_crp_alpha_conditional(std::vector<int> counts, double alpha,
 				    int sum_counts=-1, bool absolute=false);
   std::vector<double> calc_crp_alpha_conditionals(std::vector<double> grid,
