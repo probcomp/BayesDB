@@ -45,4 +45,21 @@ std::ostream& operator<<(std::ostream& os, const std::set<T> sT) {
   return os;
 }
 
+template <class T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T> vT) {
+  typename std::vector<T>::const_iterator it = vT.begin();
+  os << "{";
+  if(it==vT.end()) {
+    os << "}";
+    return os;
+  }
+  os << *it;
+  it++;
+  for(; it!=vT.end(); it++) {
+    os << ", " << *it;
+  }
+  os << "}";
+  return os;
+}
+
 #endif // GUARD_utils_H
