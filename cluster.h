@@ -26,6 +26,7 @@ class cluster {
   double remove_row(std::vector<T> vT, int row_idx);
   double calc_data_logp(std::vector<T> vT) const;
   double get_score() const;
+  int get_count() const;
   std::set<int> get_global_row_indices();
   std::set<int> get_global_col_indices();
   friend std::ostream& operator<< <>(std::ostream& os, const cluster<T>& cT);
@@ -37,6 +38,7 @@ class cluster {
  private:
   double score;
   int num_cols;
+  int count;
   void init_suffstats();
   std::map<int, suffstats<T> > suffstats_m;
   std::set<int> global_row_indices;
@@ -91,6 +93,11 @@ std::set<int> cluster<T>::get_global_col_indices() {
 template <class T>
 double cluster<T>::get_score() const {
   return score;
+}
+
+template <class T>
+int cluster<T>::get_count() const {
+  return count;
 }
 
 template <typename T>

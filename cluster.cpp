@@ -2,6 +2,7 @@
 
 template <>
 void cluster<double>::init_suffstats() {
+  count = 0;
   score = 0;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
     suffstats_m[col_idx] = suffstats<double>();
@@ -12,6 +13,7 @@ void cluster<double>::init_suffstats() {
 template <>
 double cluster<double>::insert_row(std::vector<double> vd, int row_idx) {
   double sum_score_deltas = 0;
+  count += 1;
   // track row indices
   std::pair<std::set<int>::iterator, bool> set_pair = \
     global_row_indices.insert(row_idx);
@@ -28,6 +30,7 @@ double cluster<double>::insert_row(std::vector<double> vd, int row_idx) {
 template <>
 double cluster<double>::remove_row(std::vector<double> vd, int row_idx) {
   double sum_score_deltas = 0;
+  count -= 1;
   // track row indices
   int num_removed = global_row_indices.erase(row_idx);
   assert(num_removed!=0);
