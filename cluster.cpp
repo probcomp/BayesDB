@@ -49,6 +49,7 @@ double cluster<double>::calc_data_logp(std::vector<double> vd) const {
 
 template <>
 double cluster<double>::get_vector_logp(std::vector<double> vd) {
+  // to be removed when test ensures calc_data_logps correctness
   double start_logp = calc_sum_logp();
   insert_row(vd, -1);
   double middle_logp = calc_sum_logp();

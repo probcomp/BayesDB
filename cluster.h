@@ -23,16 +23,16 @@ class cluster {
   cluster<T>(int NUM_COLS): num_cols(NUM_COLS) { init_suffstats(); };
   double insert_row(std::vector<T> vT, int row_idx);
   double remove_row(std::vector<T> vT, int row_idx);
-  std::map<int, double> calc_logps();
-  double calc_sum_logp();
   double calc_data_logp(std::vector<T> vT) const;
-  double get_vector_logp(std::vector<T> vT);
   double get_score() const;
-  // for copying info out
-  suffstats<T> get_suffstats_i(int idx) const;
   std::set<int>& get_global_row_indices();
   std::set<int>& get_global_col_indices();
   friend std::ostream& operator<< <>(std::ostream& os, const cluster<T>& cT);
+  suffstats<T> get_suffstats_i(int idx) const;
+  //
+  std::map<int, double> calc_logps();
+  double calc_sum_logp();
+  double get_vector_logp(std::vector<T> vT); // to be removed when test ensures calc_data_logps correctness
  private:
   double score;
   int num_cols;
