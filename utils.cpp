@@ -24,6 +24,22 @@ std::ostream& operator<<(std::ostream& os, const std::map<int, double>& int_doub
   return  os;
 }
 
+std::ostream& operator<<(std::ostream& os, const std::map<int, int>& int_int_map) {
+  std::map<int, int>::const_iterator it = int_int_map.begin();
+  os << "{";
+  if(it==int_int_map.end()) {
+    os << "}";
+    return os;
+  }
+  os << it->first << ":" << it->second;
+  it++;
+  for(; it!=int_int_map.end(); it++) {
+    os << ", " << it->first << ":" << it->second;
+  }
+  os << "}";
+  return  os;
+}
+
 std::string int_to_str(int i) {  
   std::stringstream out;
   out << i;
