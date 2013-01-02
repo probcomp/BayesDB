@@ -28,13 +28,13 @@ class suffstats {
   suffstats<T>() { init_suff_hash();};
   double insert_el(T el);
   double remove_el(T el);
-  // calc_logp() should be a recalculation of what's cached in get_score
-  double calc_logp() const;
   double get_score() const;
   double calc_data_logp(T el) const;
-  void get_suffstats(double &r, double &nu, double &s, double &mu,
-		     double &count) const;
+  void get_suffstats(int &count, double &r, double &nu, double &s, double &mu
+		     ) const;
   friend std::ostream& operator<< <>(std::ostream& os, const suffstats<T>& sT);
+  // calc_logp() should be a recalculation of what's cached in get_score
+  double calc_logp() const;
  private:
   double score;
   int count;
@@ -63,6 +63,5 @@ template <class T>
 double suffstats<T>::get_score() const {
   return score;
 }
-
 
 #endif // GUARD_suffstats_h
