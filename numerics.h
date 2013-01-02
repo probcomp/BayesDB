@@ -3,6 +3,10 @@
 
 #include <vector>
 #include "suffstats.h"
+#include "cluster.h"
+
+template <class T> class cluster;
+template <class T> class suffstats;
 
 const static double LOG_2PI = log(2.0 * M_PI);
 const static double HALF_LOG_2PI = .5 * LOG_2PI;
@@ -12,6 +16,8 @@ const static double LOG_2 = log(2.0);
 // http://stackoverflow.com/questions/6108704/renaming-namespaces
 
 namespace numerics {
+
+  double calc_cluster_vector_joint_logp(cluster<double>, std::vector<double>);
 
   // sampling given vector of logps or related
   int draw_sample_unnormalized(std::vector<double> unorm_logps, double rand_u);
