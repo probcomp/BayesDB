@@ -7,11 +7,6 @@
 using namespace std;
 
 
-double numerics::calc_cluster_vector_joint_logp(cluster<double> cd,
-						std::vector<double> vd) {
-  return -1; // cd.calc_data_logp(vd) + cd.calc_crp_logp();
-}
-
 // subtract minimum value, logaddexp residuals, pass residuals and partition to
 // draw_sample_with_partition
 int numerics::draw_sample_unnormalized(vector<double> unorm_logps, double rand_u) {
