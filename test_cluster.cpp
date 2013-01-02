@@ -30,6 +30,10 @@ int main(int argc, char** argv) {
   std::cout << std::endl << "modified cluster" << std::endl;
   std::cout << cd << std::endl;
   std::cout << "sum_sum_score_deltas: " << sum_sum_score_deltas << std::endl;
+  std::cout << std::endl << "logps" << std::endl;
+  std::cout << cd.calc_logps() << std::endl;;
+  std::cout << std::endl << "sum logp" << std::endl;
+  std::cout << cd.calc_sum_logp() << std::endl;;
   //
   sum_sum_score_deltas = 0;
   for(i=4; i < 8; i++) {
@@ -42,7 +46,6 @@ int main(int argc, char** argv) {
   std::cout << std::endl << "modified cluster" << std::endl;
   std::cout << cd << std::endl;
   std::cout << "sum_sum_score_deltas: " << sum_sum_score_deltas << std::endl;
-  //
   std::cout << std::endl << "logps" << std::endl;
   std::cout << cd.calc_logps() << std::endl;;
   std::cout << std::endl << "sum logp" << std::endl;
