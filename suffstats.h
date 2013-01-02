@@ -52,7 +52,6 @@ std::ostream& operator<<(std::ostream& os, const suffstats<T>& sT) {
   }
   os << ";\tscore:" << sT.get_score();
   os << std::endl;
-  os << "logp: " << sT.calc_logp() << std::endl;
 }
 
 template <class T>

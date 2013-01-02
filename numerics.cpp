@@ -119,16 +119,16 @@ double numerics::calc_cluster_crp_logp(double cluster_weight, double sum_weights
 //   return -1.0;
 // }
 
-double numerics::calc_continuous_logp(const double count,
-			    const double r, const double nu, const double s,
-			    const double log_Z_0) {
-  return -count * HALF_LOG_2PI + calc_continuous_log_Z(r, nu, s) - log_Z_0;
-}
-
 double calc_continuous_log_Z(const double r, const double nu, const double s) {
   double nu_over_2 = .5 * nu;
   return nu_over_2 * (LOG_2 - log(s))			\
     + HALF_LOG_2PI					\
     - .5 * log(r)					\
     + lgamma(nu_over_2);
+}
+
+double numerics::calc_continuous_logp(const double count,
+			    const double r, const double nu, const double s,
+			    const double log_Z_0) {
+  return -count * HALF_LOG_2PI + calc_continuous_log_Z(r, nu, s) - log_Z_0;
 }

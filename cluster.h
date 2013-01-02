@@ -87,9 +87,11 @@ template <typename T>
 std::ostream& operator<<(std::ostream& os, const cluster<T>& cT) {
   typename std::map<int, suffstats<T> >::const_iterator it = cT.suffstats_m.begin();
   for(; it!= cT.suffstats_m.end(); it++) {
-    os << it->first << " :: " <<  cT.global_row_indices << " :: " << it->second;
+    os << "suffstats idx: " << it->first << " :: ";
+    os <<  cT.global_row_indices << " :: " << it->second;
   }
-  os << "cluster score: " << cT.get_score() << std::endl;
+  os << "========" << std::endl;
+  os <<"cluster score: " << cT.get_score() << std::endl;
   return os;
 }
 

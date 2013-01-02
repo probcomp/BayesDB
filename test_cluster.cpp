@@ -60,6 +60,7 @@ int main(int argc, char** argv) {
   std::cout << std::endl << "modified cluster" << std::endl;
   std::cout << cd << std::endl;
   //
+  std::cout << "calculate logps from scratch" << std::endl;
   std::cout << std::endl << "logps" << std::endl;
   std::cout << cd.calc_logps() << std::endl;;
   std::cout << std::endl << "sum logp" << std::endl;
@@ -67,9 +68,7 @@ int main(int argc, char** argv) {
   
   print_defaults();
 
-  std::map<int, double> logps = cd.calc_logps();
-  std::cout << "logps: " << logps << std::endl;
-
+  std::cout << "show use of underlying numerics functions" << std::endl;
   std::cout << "calc_continuous_logp(0, 1, 2, 2, 0)" << std::endl;
   std::cout << numerics::calc_continuous_logp(0, 1, 2, 2, 0) << std::endl;
 
