@@ -14,7 +14,8 @@
 #include "suffstats.h"
 
 template <class T> class cluster;
-template <typename T> std::ostream& operator<<(std::ostream& os, const cluster<T>& cT);
+template <typename T> std::ostream& operator<<(std::ostream& os,
+					       const cluster<T>& cT);
 
 template <class T>
 class cluster {
@@ -51,7 +52,6 @@ std::map<int, double> cluster<T>::calc_logps() {
   }
   return ret_map;
 }
-
 
 template <class T>
 double cluster<T>::calc_sum_logp() {
