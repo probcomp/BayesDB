@@ -7,15 +7,15 @@
 #include <vector>
 //
 #include "utils.h"
-#include "cluster.h"
+#include "Cluster.h"
 #include "numerics.h"
 
 //must forward declare
-template <class T> class cluster;
+template <class T> class Cluster;
 
-class view {
+class View {
  public:
- view(int NUM_COLS, double CRP_ALPHA): num_cols(NUM_COLS), crp_alpha(CRP_ALPHA) {};
+ View(int NUM_COLS, double CRP_ALPHA): num_cols(NUM_COLS), crp_alpha(CRP_ALPHA) {};
   double get_num_vectors() const;
   double get_num_cols() const;
   double get_score() const;
@@ -24,7 +24,7 @@ class view {
   double remove_row(std::vector<double> vd, int cluster_idx, int row_idx); 
   double calc_cluster_vector_logp(std::vector<double> vd, int cluster_idx) const;
   std::vector<double> calc_cluster_vector_logps(std::vector<double> vd) const;
-  cluster<double> copy_cluster(int cluster_idx) const;
+  Cluster<double> copy_cluster(int cluster_idx) const;
   // double score_test_set(std::vector<std::vector<double> > test_set) const;
   /* void transition_z(); */
   /* void transition_crp_alpha(); */
@@ -36,9 +36,9 @@ class view {
   int num_vectors;
   int num_cols;
   /* std::map<std::string, double> data_hypers; */
-  std::vector<cluster<double> > clusters;
-  cluster<double>& get_new_cluster();
-  cluster<double>& get_cluster(int cluster_idx);
+  std::vector<Cluster<double> > clusters;
+  Cluster<double>& get_new_cluster();
+  Cluster<double>& get_cluster(int cluster_idx);
   std::vector<int> get_cluster_counts();
   /* void transition_vector(); */
   double get_data_score();

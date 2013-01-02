@@ -14,5 +14,5 @@ endif
 
 all:   convert
 
-convert : cluster.cpp cluster.h suffstats.cpp suffstats.h utils.h utils.cpp numerics.h numerics.cpp view.h view.cpp test_view.cpp
-	$(CXX) -o runModel cluster.cpp suffstats.cpp utils.cpp test_view.cpp numerics.cpp view.cpp $(CXXOPTS)
+convert : Cluster.cpp Cluster.h Suffstats.cpp Suffstats.h utils.h utils.cpp numerics.h numerics.cpp View.h View.cpp test_view.cpp
+	$(CXX) -o runModel Cluster.cpp Suffstats.cpp utils.cpp test_view.cpp numerics.cpp View.cpp $(CXXOPTS)

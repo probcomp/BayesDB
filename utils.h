@@ -4,8 +4,8 @@
 #include <iostream>
 #include <string>
 #include <boost/numeric/ublas/matrix.hpp>
-#include "cluster.h"
-#include "suffstats.h"
+#include "Cluster.h"
+#include "Suffstats.h"
 
 void LoadData(std::string file, boost::numeric::ublas::matrix<double>& M);
 

@@ -1,8 +1,8 @@
 #include <iostream>
-#include "cluster.h"
+#include "Cluster.h"
 #include "utils.h"
 #include "numerics.h"
-#include "view.h"
+#include "View.h"
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
   matrixD data;
   LoadData("SynData2.csv", data);
 
-  view v = view(data.size2(), 10);
+  View v = View(data.size2(), 10);
 
   for(int row_idx=0; row_idx<4; row_idx++) {
     std::vector<double> row = extract_row(data, row_idx);
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
   std::vector<double> row = extract_row(data, row_idx);
   v.remove_row(row, 0, row_idx);
 
-  cluster<double> cd = v.copy_cluster(0);
+  Cluster<double> cd = v.copy_cluster(0);
 
   std::cout << std::endl << "modified cluster" << std::endl;
   std::cout << cd << std::endl;

@@ -17,22 +17,22 @@ const static double r0 = 1.0;
 const static double mu0 = 0.0;
 extern double continuous_log_Z_0;
 
-template <class T> class suffstats;
+template <class T> class Suffstats;
 template <typename T> std::ostream& operator<<(std::ostream& os,
-					       const suffstats<T>& sT);
+					       const Suffstats<T>& sT);
 
 // the sufficient statistics of a single cluster for a single feature
 template <class T>
-class suffstats {
+class Suffstats {
  public:
-  suffstats<T>() { init_suff_hash();};
+  Suffstats<T>() { init_suff_hash();};
   double insert_el(T el);
   double remove_el(T el);
   double get_score() const;
   double calc_data_logp(T el) const;
   void get_suffstats(int &count, double &r, double &nu, double &s, double &mu
 		     ) const;
-  friend std::ostream& operator<< <>(std::ostream& os, const suffstats<T>& sT);
+  friend std::ostream& operator<< <>(std::ostream& os, const Suffstats<T>& sT);
   // calc_logp() should be a recalculation of what's cached in get_score
   double calc_logp() const;
  private:
@@ -46,7 +46,7 @@ class suffstats {
 void print_defaults();
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const suffstats<T>& sT) {
+std::ostream& operator<<(std::ostream& os, const Suffstats<T>& sT) {
   os << "count: " << sT.count << std::endl;
   //
   std::map<std::string, double>::const_iterator it = sT.suff_hash.begin();
@@ -60,7 +60,7 @@ std::ostream& operator<<(std::ostream& os, const suffstats<T>& sT) {
 }
 
 template <class T>
-double suffstats<T>::get_score() const {
+double Suffstats<T>::get_score() const {
   return score;
 }
 

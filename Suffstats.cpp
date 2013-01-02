@@ -1,4 +1,4 @@
-#include "suffstats.h"
+#include "Suffstats.h"
 
 // is this confusing to require knowledge that
 // log_Z_0 is logp(suffstats_0, count=0)
@@ -11,7 +11,7 @@ double get(const std::map<std::string, double> m, std::string key) {
 }
 
 template <class T>
-void suffstats<T>::get_suffstats(int &count_out, double &r, double &nu,
+void Suffstats<T>::get_suffstats(int &count_out, double &r, double &nu,
 				 double &s, double &mu) const {
   count_out = count;
   r = get(suff_hash, "r");
@@ -21,7 +21,7 @@ void suffstats<T>::get_suffstats(int &count_out, double &r, double &nu,
 }
 
 template<>
-double suffstats<double>::calc_logp() const {
+double Suffstats<double>::calc_logp() const {
   int count;
   double r, nu, s, mu;
   get_suffstats(count, r, nu, s, mu);
@@ -29,7 +29,7 @@ double suffstats<double>::calc_logp() const {
 }
   
 template<>
-double suffstats<double>::calc_data_logp(double el) const {
+double Suffstats<double>::calc_data_logp(double el) const {
   int count;
   double r, nu, s, mu;
   get_suffstats(count, r, nu, s, mu);
@@ -38,7 +38,7 @@ double suffstats<double>::calc_data_logp(double el) const {
 }
 
 template <>
-double suffstats<double>::insert_el(double el) {
+double Suffstats<double>::insert_el(double el) {
   double score_0 = score;
   numerics::insert_to_continuous_suffstats(count,
 					   suff_hash["r"], suff_hash["nu"],
@@ -50,7 +50,7 @@ double suffstats<double>::insert_el(double el) {
 }
 
 template<>
-double suffstats<double>::remove_el(double el) {
+double Suffstats<double>::remove_el(double el) {
   double score_0 = score;
   numerics::remove_from_continuous_suffstats(count,
 					     suff_hash["r"], suff_hash["nu"],
@@ -62,7 +62,7 @@ double suffstats<double>::remove_el(double el) {
 }
 
 template <>
-void suffstats<double>::init_suff_hash() {
+void Suffstats<double>::init_suff_hash() {
   count = 0;
   suff_hash["nu"] = nu0;
   suff_hash["s"] = s0;
