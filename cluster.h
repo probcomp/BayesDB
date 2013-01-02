@@ -13,6 +13,7 @@
 #include "utils.h"
 #include "suffstats.h"
 
+
 template <class T> class cluster;
 template <typename T> std::ostream& operator<<(std::ostream& os,
 					       const cluster<T>& cT);
@@ -25,8 +26,8 @@ class cluster {
   double remove_row(std::vector<T> vT, int row_idx);
   double calc_data_logp(std::vector<T> vT) const;
   double get_score() const;
-  std::set<int>& get_global_row_indices();
-  std::set<int>& get_global_col_indices();
+  std::set<int> get_global_row_indices();
+  std::set<int> get_global_col_indices();
   friend std::ostream& operator<< <>(std::ostream& os, const cluster<T>& cT);
   suffstats<T> get_suffstats_i(int idx) const;
   //
@@ -66,8 +67,11 @@ double cluster<T>::calc_sum_logp() {
 
 template <class T>
 suffstats<T> cluster<T>::get_suffstats_i(int idx) const {
-  typename std::map<int, suffstats<T> >::const_iterator it = suffstats_m.find(idx);
+  typename std::map<int, suffstats<T> >::const_iterator it = \
+    suffstats_m.find(idx);
   if(it == suffstats_m.end()) {
+    // FIXME : how to fail properly?
+    assert(1==0);
     suffstats<T> st;
     return st;
   }
@@ -75,12 +79,12 @@ suffstats<T> cluster<T>::get_suffstats_i(int idx) const {
 }
 
 template <class T>
-std::set<int>& cluster<T>::get_global_row_indices() {
+std::set<int> cluster<T>::get_global_row_indices() {
   return global_row_indices;
 }
 
 template <class T>
-std::set<int>& cluster<T>::get_global_col_indices() {
+std::set<int> cluster<T>::get_global_col_indices() {
   return global_col_indices;
 }
 
