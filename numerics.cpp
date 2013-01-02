@@ -18,7 +18,8 @@ int numerics::draw_sample_unnormalized(vector<double> unorm_logps, double rand_u
     partition += exp(*it);
   }
   double log_partition = log(partition);
-  int draw = numerics::draw_sample_with_partition(unorm_logps, log_partition, rand_u);
+  int draw = numerics::draw_sample_with_partition(unorm_logps, log_partition,
+						  rand_u);
   return draw;
 }
 
@@ -58,7 +59,9 @@ int numerics::crp_draw_sample(vector<int> counts, int sum_counts, double alpha,
 }
 
 // p(alpha | clusters)
-double numerics::calc_crp_alpha_conditional(std::vector<int> counts, double alpha, int sum_counts, bool absolute) {
+double numerics::calc_crp_alpha_conditional(std::vector<int> counts,
+					    double alpha, int sum_counts,
+					    bool absolute) {
   int num_clusters = counts.size();
   if(sum_counts==-1) {
     sum_counts = std::accumulate(counts.begin(), counts.end(), 0);
@@ -66,7 +69,7 @@ double numerics::calc_crp_alpha_conditional(std::vector<int> counts, double alph
   double logp = lgamma(alpha)			\
     + num_clusters * log(alpha)			\
     - lgamma(alpha + sum_counts);
-  // absolute necessary for determining true distribution
+  // absolute necessary for determining true distribution rather than relative
   if(absolute) {
     double sum_log_gammas = 0;
     std::vector<int>::iterator it = counts.begin();
@@ -80,14 +83,15 @@ double numerics::calc_crp_alpha_conditional(std::vector<int> counts, double alph
 
 // helper for may calls to calc_crp_alpha_conditional
 std::vector<double> numerics::calc_crp_alpha_conditionals(std::vector<double> grid,
-					    std::vector<int> counts,
-					    bool absolute) {
+							  std::vector<int> counts,
+							  bool absolute) {
   int sum_counts = std::accumulate(counts.begin(), counts.end(), 0);
   std::vector<double> logps;
   std::vector<double>::iterator it = grid.begin();
   for(; it!=grid.end(); it++) {
     double alpha = *it;
-    double logp = numerics::calc_crp_alpha_conditional(counts, alpha, sum_counts, absolute);
+    double logp = numerics::calc_crp_alpha_conditional(counts, alpha,
+						       sum_counts, absolute);
     logps.push_back(logp);
   }
   // note: prior distribution must still be added
@@ -113,12 +117,12 @@ double numerics::calc_cluster_crp_logp(double cluster_weight, double sum_weights
   return log_probability;
 }
 
-// double calc_cluster_data_logp(std::vector<double> data_values,
-// 			    std::vector<suffstats<double> > suffstats_v,
-// 			    std::map<std::string, double> hypers, double alpha) {
-//   return -1.0;
-// }
-
+/*
+  r' = r + n
+  nu' = nu + n
+  m' = m + (X-nm)/(r+n)
+  s' = s + C + rm**2 - r'm'**2
+*/
 double numerics::insert_to_continuous_suffstats(double &r, double &nu,
 					     double &s, double &mu,
 					     double el) {
@@ -160,7 +164,18 @@ double calc_continuous_log_Z(const double r, const double nu, const double s)  {
 }
 
 double numerics::calc_continuous_logp(const double count,
-			    const double r, const double nu, const double s,
-			    const double log_Z_0) {
+				      const double r, const double nu,
+				      const double s,
+				      const double log_Z_0) {
   return -count * HALF_LOG_2PI + calc_continuous_log_Z(r, nu, s) - log_Z_0;
+}
+
+// this is a misnomer, its for a single suffstats
+double numerics::calc_continuous_suffstats_data_logp(double r, double nu,
+						     double s, double mu,
+						     double el, double count,
+						     double log_Z) {
+  numerics::insert_to_continuous_suffstats(r, nu, s, mu, el);
+  double logp = numerics::calc_continuous_logp(count+1, r, nu, s, log_Z);
+  return logp;
 }
