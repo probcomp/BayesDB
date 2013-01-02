@@ -2,6 +2,10 @@
 
 static View NullView = View(0,0);
 
+void View::print() {
+  std::cout << clusters << std::endl;
+}
+
 double View::get_score() const {
   return score;
 }
@@ -14,6 +18,12 @@ double View::get_num_cols() const {
   return num_cols;
 }
 
+int View::get_cluster_location(int row_idx) const {
+  std::map<int, int>::const_iterator it = cluster_lookup.find(row_idx);
+  bool in_map = it!=cluster_lookup.end();
+  return in_map ? it->second : -1;
+}
+
 Cluster<double>& View::get_new_cluster() {
   Cluster<double> new_cluster = Cluster<double>(num_cols);
   clusters.push_back(new_cluster);
@@ -23,21 +33,13 @@ Cluster<double>& View::get_new_cluster() {
 Cluster<double>& View::get_cluster(int cluster_idx) {
   assert(cluster_idx <= clusters.size());
   bool not_new = cluster_idx < clusters.size();
-  if(not_new) {
-    return clusters[cluster_idx];
-  } else {
-    return get_new_cluster();
-  }
+  return not_new ? clusters[cluster_idx] : get_new_cluster();
 }
 
 Cluster<double> View::copy_cluster(int cluster_idx) const {
   assert(cluster_idx <= clusters.size());
   bool not_new = cluster_idx < clusters.size();
-  if(not_new) {
-    return clusters[cluster_idx];
-  } else {
-    return Cluster<double>(num_cols);
-  }
+  return not_new ? clusters[cluster_idx] : Cluster<double>(num_cols);
 }
 
 double View::calc_cluster_vector_logp(std::vector<double> vd, int cluster_idx) const {
@@ -57,7 +59,6 @@ double View::calc_cluster_vector_logp(std::vector<double> vd, int cluster_idx) c
 
 std::vector<double> View::calc_cluster_vector_logps(std::vector<double> vd) const {
   std::vector<double> logps;
-  std::cout << "clusters.size(): " << clusters.size() << std::endl;
   for(int cluster_idx=0; cluster_idx<clusters.size(); cluster_idx++) {
     logps.push_back(calc_cluster_vector_logp(vd, cluster_idx));
   }
@@ -69,12 +70,14 @@ double View::insert_row(std::vector<double> vd, int cluster_idx, int row_idx) {
   Cluster<double>& which_cluster = get_cluster(cluster_idx);
   double score_delta = calc_cluster_vector_logp(vd, cluster_idx);
   which_cluster.insert_row(vd, row_idx);
+  cluster_lookup[row_idx] = cluster_idx;
   score += score_delta;
   return score_delta;
 }
 
 double View::remove_row(std::vector<double> vd, int cluster_idx, int row_idx) {
   Cluster<double>& which_cluster = get_cluster(cluster_idx);
+  cluster_lookup.erase(cluster_lookup.find(row_idx));
   which_cluster.remove_row(vd, row_idx);
   double score_delta = calc_cluster_vector_logp(vd, cluster_idx);
   score -= score_delta;
