@@ -38,21 +38,24 @@ namespace numerics {
 						  bool absolute=false);
   double calc_beta_conditional();
 
-  double calc_continuous_logp(const double count,
+  double calc_continuous_logp(const int count,
 			      const double r, const double nu, const double s,
 			      const double log_Z_0);
 
-  double insert_to_continuous_suffstats(double &r, double &nu,
+  double insert_to_continuous_suffstats(int &count,
+					double &r, double &nu,
 					double &s, double &mu,
 					double new_val);
 
-  double remove_from_continuous_suffstats(double &r, double &nu,
+  double remove_from_continuous_suffstats(int &count,
+					  double &r, double &nu,
 					  double &s, double &mu,
 					  double new_val);
 
-  double calc_continuous_suffstats_data_logp(double r, double nu,
+  double calc_continuous_suffstats_data_logp(int count,
+					     double r, double nu,
 					     double s, double mu,
-					     double el, double count,
+					     double el, 
 					     double log_Z_0);
 
 }
