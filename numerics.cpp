@@ -119,7 +119,39 @@ double numerics::calc_cluster_crp_logp(double cluster_weight, double sum_weights
 //   return -1.0;
 // }
 
-double calc_continuous_log_Z(const double r, const double nu, const double s) {
+double numerics::insert_to_continuous_suffstats(double &r, double &nu,
+					     double &s, double &mu,
+					     double el) {
+  double nu_prime = nu + 1;
+  double r_prime = r + 1;
+  double mu_prime = mu + (el - mu) / r_prime;
+  double s_prime = s + pow(el, 2)		\
+    + (r * pow(mu, 2))				\
+    - r_prime * pow(mu_prime, 2);
+  //
+  nu = nu_prime;
+  r = r_prime;
+  mu = mu_prime;
+  s = s_prime;
+}
+
+double numerics::remove_from_continuous_suffstats(double &r, double &nu,
+					     double &s, double &mu,
+					     double el) {
+  double nu_prime = nu - 1;
+  double r_prime = r - 1;
+  double mu_prime = (r * mu - el) / r_prime;
+  double s_prime = s - pow(el, 2)		\
+    + (r * pow(mu, 2))				\
+    - r_prime * pow(mu_prime, 2);
+  //
+  nu = nu_prime;
+  r = r_prime;
+  mu = mu_prime;
+  s = s_prime;
+}
+
+double calc_continuous_log_Z(const double r, const double nu, const double s)  {
   double nu_over_2 = .5 * nu;
   return nu_over_2 * (LOG_2 - log(s))			\
     + HALF_LOG_2PI					\

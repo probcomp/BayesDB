@@ -54,9 +54,13 @@ int main(int argc, char** argv) {
     V.push_back(Data(i,j));
   }
   double vector_logp = cd.get_vector_logp(V);
-  std::cout << "vector logp" << std::endl;
+  std::cout << "add vector with vector logp" << std::endl;
   std::cout << vector_logp << std::endl;
   cd.insert_row(V, i);
+  std::cout << std::endl << "modified cluster" << std::endl;
+  std::cout << cd << std::endl;
+  std::cout << "remove vector" << std::endl;
+  cd.remove_row(V, i);
   std::cout << std::endl << "modified cluster" << std::endl;
   std::cout << cd << std::endl;
   //

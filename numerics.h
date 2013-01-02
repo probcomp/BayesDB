@@ -43,6 +43,14 @@ double calc_beta_conditional();
 double calc_continuous_logp(const double count,
 			    const double r, const double nu, const double s,
 			    const double log_Z_0);
+
+double insert_to_continuous_suffstats(double &r, double &nu,
+					     double &s, double &mu,
+					     double new_val);
+
+double remove_from_continuous_suffstats(double &r, double &nu,
+					double &s, double &mu,
+					double new_val);
 }
 
 #endif //GUARD_numerics_h

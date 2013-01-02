@@ -30,17 +30,9 @@ double suffstats<double>::insert_el(double el) {
   double score_0 = score;
   count += 1;
   //
-  double nu_prime = suff_hash["nu"] + 1;
-  double r_prime = suff_hash["r"] + 1;
-  double mu_prime = suff_hash["mu"] + (el - suff_hash["mu"]) / r_prime;
-  double s_prime = suff_hash["s"] + pow(el, 2)		\
-    + (suff_hash["r"] * pow(suff_hash["mu"], 2))	\
-    - r_prime * pow(mu_prime, 2);
-  //
-  suff_hash["nu"] = nu_prime;
-  suff_hash["r"] = r_prime;
-  suff_hash["mu"] = mu_prime;
-  suff_hash["s"] = s_prime;
+  numerics::insert_to_continuous_suffstats(suff_hash["r"], suff_hash["nu"],
+					   suff_hash["s"], suff_hash["mu"],
+					   el);
   //
   score = calc_logp();
   double delta_score = score - score_0;
@@ -52,17 +44,9 @@ double suffstats<double>::remove_el(double el) {
   double score_0 = score;
   count -= 1;
   //
-  double nu_prime = suff_hash["nu"] - 1;
-  double r_prime = suff_hash["r"] - 1;
-  double mu_prime = (suff_hash["r"] * suff_hash["mu"] - el) / r_prime;
-  double s_prime = suff_hash["s"] - pow(el, 2)		\
-    + (suff_hash["r"] * pow(suff_hash["mu"], 2))	\
-    - r_prime * pow(mu_prime, 2);
-  //
-  suff_hash["nu"] = nu_prime;
-  suff_hash["r"] = r_prime;
-  suff_hash["mu"] = mu_prime;
-  suff_hash["s"] = s_prime;
+  numerics::remove_from_continuous_suffstats(suff_hash["r"], suff_hash["nu"],
+					     suff_hash["s"], suff_hash["mu"],
+					     el);
   //
   score = calc_logp();
   double delta_score = score - score_0;
