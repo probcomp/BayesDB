@@ -15,16 +15,17 @@ template <class T> class cluster;
 
 class view {
  public:
- view(int NUM_COLS, double CRP_ALPHA):  num_cols(NUM_COLS), crp_alpha(CRP_ALPHA) {};
+ view(int NUM_COLS, double CRP_ALPHA): num_cols(NUM_COLS), crp_alpha(CRP_ALPHA) {};
+  double get_num_vectors() const;
   double get_num_cols() const;
   double get_score() const;
+  //
   double insert_row(std::vector<double> vd, int cluster_idx, int row_idx); 
   double remove_row(std::vector<double> vd, int cluster_idx, int row_idx); 
   double calc_cluster_vector_logp(std::vector<double> vd, int cluster_idx) const;
   std::vector<double> calc_cluster_vector_logps(std::vector<double> vd) const;
   cluster<double> copy_cluster(int cluster_idx) const;
-  /* double score_test_set(std::vector<std::vector<double> >); */
-  /* void add_vector(std::vector<double>); */
+  // double score_test_set(std::vector<std::vector<double> > test_set) const;
   /* void transition_z(); */
   /* void transition_crp_alpha(); */
   /* void transition_data_hypers(); */
@@ -38,12 +39,8 @@ class view {
   std::vector<cluster<double> > clusters;
   cluster<double>& get_new_cluster();
   cluster<double>& get_cluster(int cluster_idx);
-  /* // */
   std::vector<int> get_cluster_counts();
-  /* void remove_vector(int vector_idx); */
-  /* void add_vector(int vector_idx, cluster<double>); */
   /* void transition_vector(); */
-  /* double get_cluster_vector_joint_logp(); */
   double get_data_score();
   double get_crp_score();
   /* double get_data_hyper_score(); */

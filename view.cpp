@@ -6,6 +6,10 @@ double view::get_score() const {
   return score;
 }
 
+double view::get_num_vectors() const {
+  return num_vectors;
+}
+
 double view::get_num_cols() const {
   return num_cols;
 }
@@ -40,7 +44,11 @@ double view::calc_cluster_vector_logp(std::vector<double> vd, int cluster_idx) c
   cluster<double> which_cluster = copy_cluster(cluster_idx);
   int cluster_count = which_cluster.get_count();
   double crp_logp_delta, data_logp_delta, score_delta;
-  crp_logp_delta = numerics::calc_cluster_crp_logp(cluster_count, num_vectors,
+  // NOTE: non-mutating, so presume vector is not in state
+  // so use num_vectors, not num_vectors - 1
+  // should try to cache counts in some way
+  crp_logp_delta = numerics::calc_cluster_crp_logp(cluster_count,
+						   num_vectors,
 						   crp_alpha);
   data_logp_delta = which_cluster.calc_data_logp(vd);
   score_delta = crp_logp_delta + data_logp_delta;
