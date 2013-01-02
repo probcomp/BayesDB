@@ -37,6 +37,17 @@ double cluster<double>::remove_row(std::vector<double> vd, int row_idx) {
 }
 
 template <>
+double cluster<double>::calc_data_logp(std::vector<double> vd) const {
+  double sum_logps = 0;
+  for(int col_idx=0; col_idx<vd.size(); col_idx++) {
+    double el = vd[col_idx];
+    const suffstats<double> sd = get_suffstats_i(col_idx);
+    sum_logps += sd.calc_data_logp(el);
+  }
+  return sum_logps;
+}
+
+template <>
 double cluster<double>::get_vector_logp(std::vector<double> vd) {
   double start_logp = calc_sum_logp();
   insert_row(vd, -1);

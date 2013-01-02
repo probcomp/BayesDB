@@ -24,10 +24,11 @@ class cluster {
   double remove_row(std::vector<T> vT, int row_idx);
   std::map<int, double> calc_logps();
   double calc_sum_logp();
+  double calc_data_logp(std::vector<T> vT) const;
   double get_vector_logp(std::vector<T> vT);
   double get_score() const;
   // for copying info out
-  std::map<int, suffstats<T> >& get_suffstats_m();
+  suffstats<T> get_suffstats_i(int idx) const;
   std::set<int>& get_global_row_indices();
   std::set<int>& get_global_col_indices();
   friend std::ostream& operator<< <>(std::ostream& os, const cluster<T>& cT);
@@ -64,8 +65,13 @@ double cluster<T>::calc_sum_logp() {
 }
 
 template <class T>
-std::map<int, suffstats<T> >& cluster<T>::get_suffstats_m() {
-  return suffstats_m;
+suffstats<T> cluster<T>::get_suffstats_i(int idx) const {
+  typename std::map<int, suffstats<T> >::const_iterator it = suffstats_m.find(idx);
+  if(it == suffstats_m.end()) {
+    suffstats<T> st;
+    return st;
+  }
+  return it->second;
 }
 
 template <class T>
