@@ -14,6 +14,7 @@
 #include "suffstats.h"
 
 
+template <class T> class suffstats;
 template <class T> class cluster;
 template <typename T> std::ostream& operator<<(std::ostream& os,
 					       const cluster<T>& cT);
