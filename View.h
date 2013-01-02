@@ -26,6 +26,8 @@ class View {
   std::vector<double> calc_cluster_vector_logps(std::vector<double> vd) const;
   Cluster<double> copy_cluster(int cluster_idx) const;
   int get_cluster_location(int row_idx) const;
+  std::vector<int> get_cluster_counts() const;
+  double get_crp_score() const;
   // double score_test_set(std::vector<std::vector<double> > test_set) const;
   /* void transition_z(); */
   /* void transition_crp_alpha(); */
@@ -42,10 +44,8 @@ class View {
   std::vector<Cluster<double> > clusters;
   Cluster<double>& get_new_cluster();
   Cluster<double>& get_cluster(int cluster_idx);
-  std::vector<int> get_cluster_counts();
   /* void transition_vector(); */
   double get_data_score();
-  double get_crp_score();
   /* double get_data_hyper_score(); */
   /* std::vector<double> get_vector_data_logps(std::vector<double>); */
   /* std::vector<double> get_vector_crp_logps(std::vector<double>); */

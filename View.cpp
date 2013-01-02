@@ -72,6 +72,7 @@ double View::insert_row(std::vector<double> vd, int cluster_idx, int row_idx) {
   which_cluster.insert_row(vd, row_idx);
   cluster_lookup[row_idx] = cluster_idx;
   score += score_delta;
+  num_vectors += 1;
   return score_delta;
 }
 
@@ -79,23 +80,25 @@ double View::remove_row(std::vector<double> vd, int cluster_idx, int row_idx) {
   Cluster<double>& which_cluster = get_cluster(cluster_idx);
   cluster_lookup.erase(cluster_lookup.find(row_idx));
   which_cluster.remove_row(vd, row_idx);
+  num_vectors -= 1;
   double score_delta = calc_cluster_vector_logp(vd, cluster_idx);
   score -= score_delta;
   return score_delta;
 }
 
-std::vector<int> View::get_cluster_counts() {
+std::vector<int> View::get_cluster_counts() const {
   std::vector<int> counts;
-  std::vector<Cluster<double> >::iterator it;
+  std::vector<Cluster<double> >::const_iterator it = clusters.begin();
   for(; it!=clusters.end(); it++) {
-    int count = (*it).get_global_row_indices().size();
+    int count = (*it).get_count();
     counts.push_back(count);
   }
   return counts;
 }
 
-double View::get_crp_score() {
+double View::get_crp_score() const {
   std::vector<int> cluster_counts = get_cluster_counts();
+  std::cout << "cluster_counts: " << cluster_counts << std::endl;
   return numerics::calc_crp_alpha_conditional(cluster_counts, crp_alpha, -1, true);
 }
 
