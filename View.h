@@ -25,7 +25,7 @@ class View {
   double get_score() const;
   //
   double insert_row(std::vector<double> vd, Cluster<double> &cd, int row_idx); 
-  double remove_row(std::vector<double> vd, Cluster<double> &cd, int row_idx); 
+  double remove_row(std::vector<double> vd, int row_idx); 
   double calc_cluster_vector_logp(std::vector<double> vd, Cluster<double> cd) const;
   std::vector<double> calc_cluster_vector_logps(std::vector<double> vd) const;
   Cluster<double>& get_cluster(int cluster_idx);

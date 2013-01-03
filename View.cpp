@@ -101,7 +101,8 @@ void View::remove_if_empty(Cluster<double>& which_cluster) {
   }
 }
 
-double View::remove_row(std::vector<double> vd, Cluster<double>& which_cluster, int row_idx) {
+double View::remove_row(std::vector<double> vd, int row_idx) {
+  Cluster<double> &which_cluster = *(cluster_lookup[row_idx]);
   cluster_lookup.erase(cluster_lookup.find(row_idx));
   which_cluster.remove_row(vd, row_idx);
   num_vectors -= 1;
