@@ -82,6 +82,7 @@ int View::draw_rand_i(int max) {
 }
 
 void View::transition_z(std::vector<double> vd, int row_idx) {
+  remove_row(vd, row_idx);
   std::vector<double> unorm_logps = calc_cluster_vector_logps(vd);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
@@ -113,7 +114,6 @@ void View::transition_zs(map<int, vector<double> > row_data_map) {
     int row_idx = *it;
     vector<double> vd = row_data_map[row_idx];
     cout << "shuffling row: " << row_idx << " :: " << vd << endl;
-    remove_row(vd, row_idx);
     transition_z(vd, row_idx);
   }
 }
