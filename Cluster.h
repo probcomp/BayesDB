@@ -22,6 +22,7 @@ template <typename T> std::ostream& operator<<(std::ostream& os,
 template <class T>
 class Cluster {
  public:
+  Cluster<T>(): num_cols(5) { init_suffstats(); };
   Cluster<T>(int NUM_COLS): num_cols(NUM_COLS) { init_suffstats(); };
   double insert_row(std::vector<T> vT, int row_idx);
   double remove_row(std::vector<T> vT, int row_idx);
