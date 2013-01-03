@@ -3,8 +3,17 @@
 static View NullView = View(0,0);
 static Cluster<double> NullCluster = Cluster<double>(0);
 
+View::View(int NUM_COLS, double CRP_ALPHA) {
+  num_cols = NUM_COLS;
+  crp_alpha = CRP_ALPHA;
+  num_vectors = 0;
+}
+
 void View::print() {
-  std::cout << clusters << std::endl;
+  std::set<Cluster<double>*>::iterator it = clusters.begin();
+  for(; it!=clusters.end(); it++) {
+    std::cout << **it << std::endl;
+  }
 }
 
 double View::get_score() const {
@@ -18,24 +27,6 @@ double View::get_num_vectors() const {
 double View::get_num_cols() const {
   return num_cols;
 }
-
-// Cluster<double>& View::get_cluster_location(int row_idx) {
-//   std::map<int, Cluster<double>*>::iterator it = \
-//     cluster_lookup.find(row_idx);
-//   bool in_map = it!=cluster_lookup.end();
-//   if(in_map) return *(it->second);
-//   return NullCluster;
-// }
-
-// int View::get_cluster_location_idx(int row_idx) {
-//   Cluster<double>& cd = get_cluster_location(row_idx);
-//   std::cout << cd << std::endl;
-//   int i;
-//   for(i=0; i<clusters.size(); i++) {
-//     if(clusters[i]==&cd) break;
-//   }
-//   return i;
-// }
 
 Cluster<double>& View::get_new_cluster() {
   Cluster<double> *p_new_cluster = new Cluster<double>(num_cols);
@@ -55,12 +46,6 @@ Cluster<double>& View::get_cluster(int cluster_idx) {
   }
 }
 
-// Cluster<double> View::copy_cluster(int cluster_idx) const {
-//   assert(cluster_idx <= clusters.size());
-//   bool not_new = cluster_idx < clusters.size();
-//   return not_new ? clusters[cluster_idx] : Cluster<double>(num_cols);
-// }
-
 double View::calc_cluster_vector_logp(std::vector<double> vd, Cluster<double> which_cluster) const {
   int cluster_count = which_cluster.get_count();
   double crp_logp_delta, data_logp_delta, score_delta;
@@ -77,10 +62,12 @@ double View::calc_cluster_vector_logp(std::vector<double> vd, Cluster<double> wh
 
 std::vector<double> View::calc_cluster_vector_logps(std::vector<double> vd) const {
   std::vector<double> logps;
-  for(int cluster_idx=0; cluster_idx<clusters.size(); cluster_idx++) {
-    logps.push_back(calc_cluster_vector_logp(vd, cluster_idx));
+  std::set<Cluster<double>*>::iterator it = clusters.begin();
+  for(; it!=clusters.end(); it++) {
+    logps.push_back(calc_cluster_vector_logp(vd, **it));
   }
-  logps.push_back(calc_cluster_vector_logp(vd, clusters.size()));
+  Cluster<double> empty_cluster(num_cols);
+  logps.push_back(calc_cluster_vector_logp(vd, empty_cluster));
   return logps;
 }
 
@@ -122,16 +109,5 @@ std::vector<int> View::get_cluster_counts() const {
 
 double View::get_crp_score() const {
   std::vector<int> cluster_counts = get_cluster_counts();
-  std::cout << "cluster_counts: " << cluster_counts << std::endl;
   return numerics::calc_crp_alpha_conditional(cluster_counts, crp_alpha, -1, true);
 }
-
-// double View::get_data_score() {
-//   double data_score = 0;
-//   std::set<Cluster<double>*>::iterator it = clusters.begin()
-//   for(; it!=clusters.end(); it++) {
-//     double cluster_score = (**it).calc_sum_logp();
-//     data_score += cluster_score;
-//   }
-//   return data_score;
-// }

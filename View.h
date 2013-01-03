@@ -15,7 +15,7 @@ template <class T> class Cluster;
 
 class View {
  public:
- View(int NUM_COLS, double CRP_ALPHA): num_cols(NUM_COLS), crp_alpha(CRP_ALPHA) {};
+  View(int NUM_COLS, double CRP_ALPHA);
   // FIXME: will need to add a deallocator for clusters
   // for when View is garbage collected 
   double get_num_vectors() const;
