@@ -37,14 +37,17 @@ class View {
   void remove_if_empty(Cluster<double>& which_cluster);
   std::set<Cluster<double>* > clusters;
   std::map<int, Cluster<double>* > cluster_lookup;
+  std::vector<int> shuffle_row_indices();
   double get_crp_score() const;
   // double score_test_set(std::vector<std::vector<double> > test_set) const;
   void transition_z(std::vector<double> vd, int row_idx);
+  void transition_zs(std::map<int, std::vector<double> > row_data_map);
   /* void transition_crp_alpha(); */
   /* void transition_data_hypers(); */
   void print();
  private:
   double draw_rand_u();
+  int draw_rand_i(int max);
   RandomNumberGenerator rng;
   double crp_alpha;
   double score;

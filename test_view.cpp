@@ -94,18 +94,16 @@ int main(int argc, char** argv) {
   int num_vectors = v.get_num_vectors();
   std::cout << "num_vectors: " << v.get_num_vectors() << std::endl;
 
+  std::map<int, std::vector<double> > data_map;
+  for(int idx=0; idx<6; idx++) {
+    std::vector<double> row = extract_row(data, idx);
+    data_map[idx] = row;
+  }
+
   RandomNumberGenerator rng = RandomNumberGenerator();
   for(int iter=0; iter<200; iter++) {
-    row_idx = rng.nexti(num_vectors);
     print_cluster_memberships(v);
-    std::vector<double> row = extract_row(data, row_idx);
-    std::cout << "sampling row_idx: " << row_idx << " :: ";
-    std::cout << row << std::endl << std::flush;
-    v.remove_row(row, row_idx);
-    // FIXME : make sure calc_cluster_vector_logps gets same order as dict iter
-
-    v.transition_z(row, row_idx);
-
+    v.transition_zs(data_map);
     std::cout << "Done iter: " << iter << std::endl;
     std::cout << std::endl;
   }

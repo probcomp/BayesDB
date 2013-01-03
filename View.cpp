@@ -77,12 +77,45 @@ double View::draw_rand_u() {
   rng.next();
 }
 
+int View::draw_rand_i(int max) {
+  return rng.nexti(max);
+}
+
 void View::transition_z(std::vector<double> vd, int row_idx) {
   std::vector<double> unorm_logps = calc_cluster_vector_logps(vd);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   Cluster<double> &which_cluster = get_cluster(draw);
   insert_row(vd, which_cluster, row_idx);
+}
+
+std::vector<int> View::shuffle_row_indices() {
+  std::vector<int> original_order;
+  map<int, Cluster<double>*>::iterator it = cluster_lookup.begin();
+  for(; it!=cluster_lookup.end(); it++) {
+    original_order.push_back(it->first);
+  }
+  std::vector<int> shuffled_order;
+  while(original_order.size()!=0) {
+    int draw = draw_rand_i(original_order.size());
+    int row_idx = original_order[draw];
+    shuffled_order.push_back(row_idx);
+    original_order.erase(original_order.begin() + draw);
+  }
+  return shuffled_order;
+}
+
+void View::transition_zs(map<int, vector<double> > row_data_map) {
+  vector<int> shuffled_row_indices = shuffle_row_indices();
+  std::cout << "shuffled_row_indices: " << shuffled_row_indices << endl;
+  vector<int>::iterator it = shuffled_row_indices.begin();
+  for(; it!=shuffled_row_indices.end(); it++) {
+    int row_idx = *it;
+    vector<double> vd = row_data_map[row_idx];
+    cout << "shuffling row: " << row_idx << " :: " << vd << endl;
+    remove_row(vd, row_idx);
+    transition_z(vd, row_idx);
+  }
 }
 
 double View::insert_row(std::vector<double> vd, Cluster<double>& which_cluster, int row_idx) {
