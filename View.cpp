@@ -1,5 +1,7 @@
 #include "View.h"
 
+using namespace std;
+
 static View NullView = View(0,0);
 static Cluster<double> NullCluster = Cluster<double>(0);
 
@@ -69,6 +71,18 @@ std::vector<double> View::calc_cluster_vector_logps(std::vector<double> vd) cons
   Cluster<double> empty_cluster(num_cols);
   logps.push_back(calc_cluster_vector_logp(vd, empty_cluster));
   return logps;
+}
+
+double View::draw_rand_u() {
+  rng.next();
+}
+
+void View::transition_z(std::vector<double> vd, int row_idx) {
+  std::vector<double> unorm_logps = calc_cluster_vector_logps(vd);
+  double rand_u = draw_rand_u();
+  int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
+  Cluster<double> &which_cluster = get_cluster(draw);
+  insert_row(vd, which_cluster, row_idx);
 }
 
 double View::insert_row(std::vector<double> vd, Cluster<double>& which_cluster, int row_idx) {

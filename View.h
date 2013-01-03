@@ -6,6 +6,8 @@
 #include <map>
 #include <vector>
 //
+#include "RandomNumberGenerator.h"
+
 #include "utils.h"
 #include "Cluster.h"
 #include "numerics.h"
@@ -37,11 +39,13 @@ class View {
   std::map<int, Cluster<double>* > cluster_lookup;
   double get_crp_score() const;
   // double score_test_set(std::vector<std::vector<double> > test_set) const;
-  /* void transition_z(); */
+  void transition_z(std::vector<double> vd, int row_idx);
   /* void transition_crp_alpha(); */
   /* void transition_data_hypers(); */
   void print();
  private:
+  double draw_rand_u();
+  RandomNumberGenerator rng;
   double crp_alpha;
   double score;
   int num_clusters;
