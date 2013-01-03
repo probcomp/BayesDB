@@ -6,9 +6,10 @@ CXX = g++
 CXXOPTS :=  -lm -lboost_program_options
 
 MAIN = test_view.cpp
-SRC = Cluster.cpp Suffstats.cpp utils.cpp numerics.cpp View.cpp $(MAIN)
+H = Cluster.h Suffstats.h utils.h numerics.h View.h
+SRC = Cluster.cpp Suffstats.cpp utils.cpp numerics.cpp View.cpp \
+	 RandomNumberGenerator.h $(MAIN)
 OBJ = $(SRC:.cpp=.o)
-H = $(SRC:.cpp=.h)
 BIN = runModel
 
 ifdef OPTIMIZED
