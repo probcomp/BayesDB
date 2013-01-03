@@ -3,8 +3,13 @@ OPTIMIZED =
 
 CC = gcc
 CXX = g++
-
 CXXOPTS :=  -lm -lboost_program_options
+
+MAIN = test_view.cpp
+SRC = Cluster.cpp Suffstats.cpp utils.cpp numerics.cpp View.cpp $(MAIN)
+OBJ = $(SRC:.cpp=.o)
+H = $(SRC:.cpp=.h)
+BIN = runModel
 
 ifdef OPTIMIZED
 CXXOPTS := -O2 -g $(CXXOPTS)
@@ -12,7 +17,7 @@ else
 CXXOPTS := -g $(CXXOPTS)	
 endif
 
-all:   convert
+all: $(BIN)
 
-convert : Cluster.cpp Cluster.h Suffstats.cpp Suffstats.h utils.h utils.cpp numerics.h numerics.cpp View.h View.cpp test_view.cpp
-	$(CXX) -o runModel Cluster.cpp Suffstats.cpp utils.cpp test_view.cpp numerics.cpp View.cpp $(CXXOPTS)
+$(BIN): $(OBJ)
+	$(CXX) -o $(BIN) $(OBJ) $(CXXOPTS)
