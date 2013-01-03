@@ -21,3 +21,6 @@ all: $(BIN)
 
 $(BIN): $(OBJ)
 	$(CXX) -o $(BIN) $(OBJ) $(CXXOPTS)
+
+clean:
+	rm -f $(BIN) *.o core *.stackdump *.bak
