@@ -1,3 +1,6 @@
+#ifndef GUARD_randomnumbergenerator_h
+#define GUARD_randomnumbergenerator_h
+
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
@@ -41,3 +44,4 @@ protected:
   boost::uniform_01<boost::mt19937> _dist;
 };
 
+#endif // GUARD_randomnumbergenerator_h
