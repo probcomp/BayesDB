@@ -46,7 +46,7 @@ void remove_all_data(View &v, matrixD data) {
     for(; it2!=int_set.end(); it2++) {
       int idx_to_remove = *it2;
       std::vector<double> row = extract_row(data, idx_to_remove);
-      v.remove_row(row, cd, idx_to_remove);
+      v.remove_row(row, idx_to_remove);
     }
   }
   std::cout << "removed all data" << std::endl;
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
   matrixD data;
   LoadData("test_data.csv", data);
 
-  View v = View(data.size2(), 10);
+  View v = View(data.size2(), 3);
 
   int row_idx, cluster_idx;
   row_idx = 0; cluster_idx = 0;
@@ -95,23 +95,17 @@ int main(int argc, char** argv) {
   std::cout << "num_vectors: " << v.get_num_vectors() << std::endl;
 
   RandomNumberGenerator rng = RandomNumberGenerator();
-  for(int iter=0; iter<10; iter++) {
+  for(int iter=0; iter<200; iter++) {
     row_idx = rng.nexti(num_vectors);
     print_cluster_memberships(v);
     std::vector<double> row = extract_row(data, row_idx);
     std::cout << "sampling row_idx: " << row_idx << " :: ";
     std::cout << row << std::endl << std::flush;
-    Cluster<double> &cd = *(v.cluster_lookup[row_idx]);
-    v.remove_row(row, cd, row_idx);
+    v.remove_row(row, row_idx);
     // FIXME : make sure calc_cluster_vector_logps gets same order as dict iter
-    std::vector<double> cluster_logps = v.calc_cluster_vector_logps(row);
-    double rand_u = rng.next();
-    std::cout << "cluster_logps: " << cluster_logps << std::endl << std::flush;
-    int draw = numerics::draw_sample_unnormalized(cluster_logps, rand_u);
-    std::cout << "rand_u: " << rand_u << std::endl;
-    std::cout << "draw: " << draw << std::endl;
-    Cluster<double>& to_cluster = v.get_cluster(draw);
-    v.insert_row(row, to_cluster, row_idx);
+
+    v.transition_z(row, row_idx);
+
     std::cout << "Done iter: " << iter << std::endl;
     std::cout << std::endl;
   }
