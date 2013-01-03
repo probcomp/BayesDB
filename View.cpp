@@ -41,7 +41,7 @@ Cluster<double>& View::get_cluster(int cluster_idx) {
   bool not_new = cluster_idx < clusters.size();
   if(not_new) {
     std::set<Cluster<double>*>::iterator it = clusters.begin();
-    for(int i=0; i<cluster_idx; i++) {it++;}
+    std::advance(it, cluster_idx);
     return **it;
   } else {
     return get_new_cluster();
