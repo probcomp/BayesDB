@@ -10,8 +10,8 @@ Suffstats<double>::Suffstats() {
 }
 
 template <>
-Suffstats<double>::Suffstats(double nu, double s, double r, double mu) {
-  init_suff_hash(nu, s, r, mu);
+Suffstats<double>::Suffstats(double r, double nu, double s, double mu) {
+  init_suff_hash(r, nu, s, mu);
 }
 
 double get(const std::map<std::string, double> m, std::string key) {
@@ -72,11 +72,11 @@ double Suffstats<double>::remove_el(double el) {
 }
 
 template <>
-void Suffstats<double>::init_suff_hash(double nu, double s, double r, double mu) {
+void Suffstats<double>::init_suff_hash(double r, double nu, double s, double mu) {
   count = 0;
+  suff_hash["r"] = r;
   suff_hash["nu"] = nu;
   suff_hash["s"] = s;
-  suff_hash["r"] = r;
   suff_hash["mu"] = mu;
   score = 0;
 }

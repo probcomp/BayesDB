@@ -12,9 +12,9 @@
 
 #include "numerics.h"
 
+const static double r0 = 1.0;
 const static double nu0 = 2.0;
 const static double s0 = 2.0;
-const static double r0 = 1.0;
 const static double mu0 = 0.0;
 extern double continuous_log_Z_0;
 
@@ -27,7 +27,7 @@ template <class T>
 class Suffstats {
  public:
   Suffstats<T>();
-  Suffstats<T>(double nu, double s, double r, double mu);
+  Suffstats<T>(double r, double nu, double s, double mu);
   double insert_el(T el);
   double remove_el(T el);
   double get_score() const;
@@ -42,11 +42,11 @@ class Suffstats {
   int count;
   std::map<std::string, double> suff_hash;
   //
-  void init_suff_hash(double nu=nu0, double s=s0, double r=r0, double mu=mu0);
+  void init_suff_hash(double r=r0, double nu=nu0, double s=s0, double mu=mu0);
 };
 
 template <>
-void Suffstats<double>::init_suff_hash(double nu, double s, double r, double mu);
+void Suffstats<double>::init_suff_hash(double r, double nu, double s, double mu);
 
 void print_defaults();
 
