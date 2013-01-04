@@ -10,6 +10,12 @@
 
 typedef boost::numeric::ublas::matrix<double> matrixD;
 using namespace std;
+typedef set<Cluster<double>*> setCp;
+typedef map<int, Cluster<double>*> mapICp;
+typedef setCp::iterator setCp_it;
+typedef mapICp::iterator mapICp_it;
+typedef vector<int>::iterator vectorI_it;
+
 
 vector<double> extract_row(matrixD data, int row_idx) {
   vector<double> row;
@@ -21,7 +27,7 @@ vector<double> extract_row(matrixD data, int row_idx) {
 
 void print_cluster_memberships(View& v) {
   cout << "Cluster memberships" << endl;
-  set<Cluster<double>*>::iterator it = v.clusters.begin();
+  setCp_it it = v.clusters.begin();
   for(; it!=v.clusters.end(); it++) {
     Cluster<double> &cd = **it;
     cout << cd.get_global_row_indices() << endl;
@@ -41,23 +47,19 @@ void insert_and_print(View& v, matrixD data,
 }
 
 void remove_all_data(View &v, matrixD data) {
-  set<Cluster<double>*>::iterator it = v.clusters.begin();
-  for(; it!=v.clusters.end(); it++) {
-    Cluster<double> &cd = **it;
-    set<int> int_set = cd.get_global_row_indices();
-    set<int>::iterator it2 = int_set.begin();
-    for(; it2!=int_set.end(); it2++) {
-      int idx_to_remove = *it2;
-      vector<double> row = extract_row(data, idx_to_remove);
-      v.remove_row(row, idx_to_remove);
-    }
+  vector<int> rows_in_view;
+  for(mapICp_it it=v.cluster_lookup.begin(); it!=v.cluster_lookup.end(); it++) {
+    rows_in_view.push_back(it->first);
+  }
+  for(vectorI_it it=rows_in_view.begin(); it!=rows_in_view.end(); it++) {
+    int idx_to_remove = *it;
+    vector<double> row = extract_row(data, idx_to_remove);
+    v.remove_row(row, idx_to_remove);
   }
   cout << "removed all data" << endl;
   v.print();
   //
-  it = v.clusters.begin();
-  it = v.clusters.begin();
-  for(; it!=v.clusters.end(); it++) {
+  for(setCp_it it=v.clusters.begin(); it!=v.clusters.end(); it++) {
     v.remove_if_empty(**it);
   }
   cout << "removed empty clusters" << endl; 
@@ -92,7 +94,7 @@ int main(int argc, char** argv) {
   print_cluster_memberships(v);
 
   cout << "====================" << endl;
-  cout << "Manually sampling" << endl;
+  cout << "Sampling" << endl;
 
   int num_vectors = v.get_num_vectors();
   cout << "num_vectors: " << v.get_num_vectors() << endl;
@@ -104,7 +106,7 @@ int main(int argc, char** argv) {
   }
 
   RandomNumberGenerator rng = RandomNumberGenerator();
-  for(int iter=0; iter<200; iter++) {
+  for(int iter=0; iter<20; iter++) {
     print_cluster_memberships(v);
     v.transition_zs(data_map);
     cout << "Done iter: " << iter << endl;
