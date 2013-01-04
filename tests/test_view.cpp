@@ -62,6 +62,8 @@ void remove_all_data(View &v, matrixD data) {
   for(setCp_it it=v.clusters.begin(); it!=v.clusters.end(); it++) {
     v.remove_if_empty(**it);
   }
+  assert(v.get_num_vectors()==0);
+  assert(v.get_num_clusters()==0);
   cout << "removed empty clusters" << endl; 
   v.print();
 }
