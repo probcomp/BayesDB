@@ -42,8 +42,8 @@ int main(int argc, char** argv) {
   vector<double> values_to_test_shuffled = values_to_test;
   std::random_shuffle(values_to_test_shuffled.begin(), values_to_test_shuffled.end());
 
+  // print generated values
   //
-  // print values
   cout << endl << "initial parameters: " << "\t";
   cout << "r0: " << r0 << "\t";
   cout << "nu0: " << nu0 << "\t";
@@ -53,14 +53,16 @@ int main(int argc, char** argv) {
   cout << "values_to_test_shuffled: " << values_to_test_shuffled << endl;
 
   // create the suffstats object
+  //
   //       r, nu, s, mu
   suffD sd(r0, nu0, s0, mu0);
-  double score_0 = sd.get_score();
   cout << endl << "initial suffstats object" << endl;
   cout << sd << endl;
+  //
   print_defaults();
 
   // verify initial parameters
+  //
   int count;
   double r, nu, s, mu;
   sd.get_suffstats(count, r, nu, s, mu);
@@ -69,7 +71,7 @@ int main(int argc, char** argv) {
   assert(is_almost(nu, nu0, precision));
   assert(is_almost(s, s0, precision));
   assert(is_almost(mu, mu0, precision));
-  assert(is_almost(sd.get_score(), score_0, precision));
+  assert(is_almost(sd.get_score(), 0, precision));
 
   // push data into suffstats
   for(vector<double>::iterator it=values_to_test.begin(); it!=values_to_test.end(); it++) {
@@ -77,17 +79,14 @@ int main(int argc, char** argv) {
   }
   cout << endl << "suffstats after insertion of data" << endl;
   cout << sd << endl;
-
   // ensure count is proper
   assert(sd.get_count()==num_values_to_test);
-
-  // remove data from suffstats
+  // remove data from suffstats in REVERSED order
   for(vector<double>::iterator it=values_to_test_reversed.begin(); it!=values_to_test_reversed.end(); it++) {
     sd.remove_el(*it);
   }
-  cout << endl << "suffstats after removal of data" << endl;
+  cout << endl << "suffstats after removal of data in reversed order" << endl;
   cout << sd << endl;
-
   // ensure initial values are recovered
   sd.get_suffstats(count, r, nu, s, mu);
   assert(count==0);
@@ -95,7 +94,30 @@ int main(int argc, char** argv) {
   assert(is_almost(nu, nu0, precision));
   assert(is_almost(s, s0, precision));
   assert(is_almost(mu, mu0, precision));
-  assert(is_almost(sd.get_score(), score_0, precision));
+  assert(is_almost(sd.get_score(), 0, precision));
+
+  // push data into suffstats
+  for(vector<double>::iterator it=values_to_test.begin(); it!=values_to_test.end(); it++) {
+    sd.insert_el(*it);
+  }
+  cout << endl << "suffstats after insertion of data" << endl;
+  cout << sd << endl;
+  // ensure count is proper
+  assert(sd.get_count()==num_values_to_test);
+  // remove data from suffstats in SHUFFLED order
+  for(vector<double>::iterator it=values_to_test_shuffled.begin(); it!=values_to_test_shuffled.end(); it++) {
+    sd.remove_el(*it);
+  }
+  cout << endl << "suffstats after removal of data in shuffled order" << endl;
+  cout << sd << endl;
+  // ensure initial values are recovered
+  sd.get_suffstats(count, r, nu, s, mu);
+  assert(count==0);
+  assert(is_almost(r, r0, precision));
+  assert(is_almost(nu, nu0, precision));
+  assert(is_almost(s, s0, precision));
+  assert(is_almost(mu, mu0, precision));
+  assert(is_almost(sd.get_score(), 0, precision));
 
   cout << "Stop:: test_suffstats" << endl;
 }
