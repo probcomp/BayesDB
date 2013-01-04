@@ -9,10 +9,6 @@ using namespace std;
 
 typedef Suffstats<double> suffD;
 
-bool is_almost(double val1, double val2, double precision) {
-  return abs(val1-val2) < precision;
-}
-
 int main(int argc, char** argv) {  
   cout << endl << "Begin:: test_suffstats" << endl;
   RandomNumberGenerator rng;

@@ -89,3 +89,7 @@ void LoadData(std::string file, boost::numeric::ublas::matrix<double>& M) {
   }
   M = Data;
 }
+
+bool is_almost(double val1, double val2, double precision) {
+  return abs(val1-val2) < precision;
+}
