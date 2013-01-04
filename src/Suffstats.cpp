@@ -2,10 +2,6 @@
 
 using namespace std;
 
-// is this confusing to require knowledge that
-// log_Z_0 is logp(suffstats_0, count=0)
-double continuous_log_Z_0 = numerics::calc_continuous_logp(0, r0, nu0, s0, 0);
-
 template <>
 Suffstats<double>::Suffstats() {
   init_suff_hash();
@@ -37,7 +33,7 @@ double Suffstats<double>::calc_logp() const {
   int count;
   double r, nu, s, mu;
   get_suffstats(count, r, nu, s, mu);
-  return numerics::calc_continuous_logp(count, r, nu, s, 0);
+  return numerics::calc_continuous_logp(count, r, nu, s, continuous_log_Z_0);
 }
   
 template<>
@@ -75,21 +71,20 @@ double Suffstats<double>::remove_el(double el) {
 
 template <>
 void Suffstats<double>::init_suff_hash(double r, double nu, double s, double mu) {
+  continuous_log_Z_0 = numerics::calc_continuous_logp(0, r, nu, s, 0);
   count = 0;
   suff_hash["r"] = r;
   suff_hash["nu"] = nu;
   suff_hash["s"] = s;
   suff_hash["mu"] = mu;
-  // FIXME: is this the correct behavior or should score_0 be 0.0?
-  score = numerics::calc_continuous_logp(0, r, nu, s, 0);
+  score = 0;
 }
 
 void print_defaults() {
   cout << endl << "Default values" << endl;
-  cout << "continuous_log_Z_0: " << continuous_log_Z_0 << endl;
-  cout << "r0: " << r0 << endl;
-  cout << "nu0: " << nu0 << endl;
-  cout << "s0: " << s0 << endl;
-  cout << "mu0: " << mu0 << endl;
-  cout << endl;
+  cout << "r0_0: " << r0_0 << endl;
+  cout << "nu0_0: " << nu0_0 << endl;
+  cout << "s0_0: " << s0_0 << endl;
+  cout << "mu0_0: " << mu0_0 << endl;
+  cout << "continuous_log_Z_0: " << numerics::calc_continuous_logp(0, r0_0, nu0_0, s0_0, 0) << endl;
 }
