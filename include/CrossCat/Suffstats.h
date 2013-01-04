@@ -62,7 +62,6 @@ std::ostream& operator<<(std::ostream& os, const Suffstats<T>& sT) {
     os << ";\t" << it->first << ":" << std::setprecision(3) << std::fixed << it->second;
   }
   os << ";\tscore:" << sT.get_score();
-  os << std::endl;
 }
 
 template <class T>
