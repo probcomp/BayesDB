@@ -31,6 +31,7 @@ class Suffstats {
   double insert_el(T el);
   double remove_el(T el);
   double get_score() const;
+  int get_count() const;
   double calc_data_logp(T el) const;
   void get_suffstats(int &count, double &r, double &nu, double &s, double &mu
 		     ) const;
@@ -67,6 +68,11 @@ std::ostream& operator<<(std::ostream& os, const Suffstats<T>& sT) {
 template <class T>
 double Suffstats<T>::get_score() const {
   return score;
+}
+
+template <class T>
+int Suffstats<T>::get_count() const {
+  return count;
 }
 
 #endif // GUARD_suffstats_h
