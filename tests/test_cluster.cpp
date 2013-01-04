@@ -17,24 +17,41 @@ int main(int argc, char** argv) {
   cout << "Begin:: test_cluster" << endl;
   RandomNumberGenerator rng;
 
+  // set some test sizing parameters
   int max_value = 20;
   int num_rows = 3;
   int num_cols = 3;
+
+  // creat the objects
   Cluster<double> cd(num_cols);
   vector<Suffstats<double> > sd_v;
   for(int row_idx=0; row_idx<num_rows; row_idx++) {
     Suffstats<double> sd;
     sd_v.push_back(sd);
   }
+
+  // generate random data;
+  vector<vector<double> > rows;
   for(int row_idx=0; row_idx<num_rows; row_idx++) {
     vector<double> row_data;
     for(int col_idx=0; col_idx<num_cols; col_idx++) {
-      double new_value = (rng.nexti(max_value) + 1) * rng.next();
-      sd_v[col_idx].insert_el(new_value);
-      row_data.push_back(new_value);
+      double random_value = (rng.nexti(max_value) + 1) * rng.next();
+      row_data.push_back(random_value);
+    }
+    rows.push_back(row_data);
+  }
+
+  // poplute the objects
+  for(int row_idx=0; row_idx<num_rows; row_idx++) {
+    vector<double> row_data = rows[row_idx];
+    for(int col_idx=0; col_idx<num_cols; col_idx++) {
+      double random_value = rows[row_idx][col_idx];
+      sd_v[col_idx].insert_el(random_value);
     }
     cd.insert_row(row_data, row_idx);
   }
+
+  // test score equivalence
   vector<double> score_v;
   double sum_scores = 0;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
@@ -42,15 +59,40 @@ int main(int argc, char** argv) {
     score_v.push_back(suff_score);
     sum_scores += suff_score;
   }
-  cout << "vector off separate suffstats scores: " << score_v << endl;
+  cout << "vector of separate suffstats scores: " << score_v << endl;
   cout << "sum separate scores: " << sum_scores << endl;
   cout << "Cluster score with same data: " << cd.get_score() << endl;
   cout << endl;
   //
   assert(is_almost(sum_scores, cd.get_score(), 1E-10));
 
-  double sum_sum_score_deltas;
+  // depopulate the objects
+  for(int row_idx=0; row_idx<num_rows; row_idx++) {
+    vector<double> row_data = rows[row_idx];
+    for(int col_idx=0; col_idx<num_cols; col_idx++) {
+      double random_value = rows[row_idx][col_idx];
+      sd_v[col_idx].remove_el(random_value);
+    }
+    cd.remove_row(row_data, row_idx);
+  }
 
+  // test score equivalence
+  score_v.clear();
+  sum_scores = 0;
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    double suff_score = sd_v[col_idx].get_score();
+    score_v.push_back(suff_score);
+    sum_scores += suff_score;
+  }
+  cout << "vector of separate suffstats scores: " << score_v << endl;
+  cout << "sum separate scores: " << sum_scores << endl;
+  cout << "Cluster score with same data: " << cd.get_score() << endl;
+  cout << endl;
+  //
+  assert(is_almost(sum_scores, cd.get_score(), 1E-10));
+
+
+  double sum_sum_score_deltas;
   boost::numeric::ublas::matrix<double> Data;
   LoadData("SynData2.csv", Data);
   // std::cout << Data << std::endl;
@@ -123,10 +165,6 @@ int main(int argc, char** argv) {
   std::cout << numerics::calc_continuous_logp(0, 1, 2, 2, 0) << std::endl;
   std::cout << "calc_cluster_crp_logp(10, 100, 10)" << std::endl;
   std::cout << numerics::calc_cluster_crp_logp(10, 100, 10) << std::endl;
-
-  
-  // std::cout << "numerics::calc_cluster_vector_joint_logp(cd, V)" << std::endl;
-  // std::cout << numerics::calc_cluster_vector_joint_logp(cd, V) << std::endl;
 
   cout << "Stop:: test_cluster" << endl;
 }
