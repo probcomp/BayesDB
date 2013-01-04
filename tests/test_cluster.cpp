@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
   std::cout << cd << std::endl;
 
   sum_sum_score_deltas = 0;
-  for(i=0; i < 4; i++) {
+  for(int i=0; i < 4; i++) {
     std::vector<double> V;
     for(int j=0;j < Data.size2(); j++) {
       V.push_back(Data(i,j));
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
   std::cout << cd.calc_sum_logp() << std::endl;;
   //
   sum_sum_score_deltas = 0;
-  for(i=4; i < 8; i++) {
+  for(int i=4; i < 8; i++) {
     std::vector<double> V;
     for(int j=0;j < Data.size2(); j++) {
       V.push_back(Data(i,j));
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
   std::cout << std::endl << "sum logp" << std::endl;
   std::cout << cd.calc_sum_logp() << std::endl;;
   //
-  i = 8;
+  int i = 8;
   std::vector<double> V;
   for(int j=0;j<Data.size2(); j++) {
     V.push_back(Data(i,j));
