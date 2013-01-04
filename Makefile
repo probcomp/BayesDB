@@ -17,14 +17,14 @@ TEST=tests
 BIN = model
 MAIN = main
 NAMES = Cluster Suffstats utils numerics View RandomNumberGenerator
-TEST_NAMES = unit_test_test other_unit_test_test test_view
+TEST_NAMES = unit_test_test other_unit_test_test test_view test_cluster test_suffstats 
 HEADERS = $(foreach name, $(NAMES), $(INC)/$(name).h)
 SOURCES = $(foreach name, $(NAMES) $(MAIN), $(SRC)/$(name).cpp)
 OBJECTS = $(foreach name, $(NAMES), $(OBJ)/$(name).o)
 TESTS = $(foreach test, $(TEST_NAMES), $(TEST)/$(test))
 
 
-all: $(BIN)
+all: $(BIN) $(TESTS)
 
 # run each test
 tests: $(TESTS)
