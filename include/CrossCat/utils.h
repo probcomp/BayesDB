@@ -63,4 +63,6 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T> vT) {
   return os;
 }
 
+bool is_almost(double val1, double val2, double precision);
+
 #endif // GUARD_utils_H
