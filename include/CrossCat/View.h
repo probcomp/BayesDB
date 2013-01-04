@@ -22,6 +22,7 @@ class View {
   // for when View is garbage collected 
   double get_num_vectors() const;
   double get_num_cols() const;
+  int get_num_clusters() const;
   double get_score() const;
   //
   double insert_row(std::vector<double> vd, Cluster<double> &cd, int row_idx); 
@@ -51,7 +52,6 @@ class View {
   RandomNumberGenerator rng;
   double crp_alpha;
   double score;
-  int num_clusters;
   int num_vectors;
   int num_cols;
   /* std::map<std::string, double> data_hypers; */

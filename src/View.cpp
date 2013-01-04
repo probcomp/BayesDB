@@ -30,6 +30,10 @@ double View::get_num_cols() const {
   return num_cols;
 }
 
+int View::get_num_clusters() const {
+  return clusters.size();
+}
+
 Cluster<double>& View::get_new_cluster() {
   Cluster<double> *p_new_cluster = new Cluster<double>(num_cols);
   clusters.insert(p_new_cluster);
@@ -108,12 +112,10 @@ std::vector<int> View::shuffle_row_indices() {
 
 void View::transition_zs(map<int, vector<double> > row_data_map) {
   vector<int> shuffled_row_indices = shuffle_row_indices();
-  std::cout << "shuffled_row_indices: " << shuffled_row_indices << endl;
   vector<int>::iterator it = shuffled_row_indices.begin();
   for(; it!=shuffled_row_indices.end(); it++) {
     int row_idx = *it;
     vector<double> vd = row_data_map[row_idx];
-    cout << "shuffling row: " << row_idx << " :: " << vd << endl;
     transition_z(vd, row_idx);
   }
 }
