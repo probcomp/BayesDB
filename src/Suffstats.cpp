@@ -78,7 +78,8 @@ void Suffstats<double>::init_suff_hash(double r, double nu, double s, double mu)
   suff_hash["nu"] = nu;
   suff_hash["s"] = s;
   suff_hash["mu"] = mu;
-  score = 0;
+  // FIXME: is this the correct behavior or should score_0 be 0.0?
+  score = numerics::calc_continuous_logp(0, r, nu, s, 0);
 }
 
 void print_defaults() {
