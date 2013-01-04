@@ -17,13 +17,45 @@ int main(int argc, char** argv) {
   cout << "Begin:: test_cluster" << endl;
   RandomNumberGenerator rng;
 
+  int max_value = 20;
+  int num_rows = 3;
+  int num_cols = 3;
+  Cluster<double> cd(num_cols);
+  vector<Suffstats<double> > sd_v;
+  for(int row_idx=0; row_idx<num_rows; row_idx++) {
+    Suffstats<double> sd;
+    sd_v.push_back(sd);
+  }
+  for(int row_idx=0; row_idx<num_rows; row_idx++) {
+    vector<double> row_data;
+    for(int col_idx=0; col_idx<num_cols; col_idx++) {
+      double new_value = (rng.nexti(max_value) + 1) * rng.next();
+      sd_v[col_idx].insert_el(new_value);
+      row_data.push_back(new_value);
+    }
+    cd.insert_row(row_data, row_idx);
+  }
+  vector<double> score_v;
+  double sum_scores = 0;
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    double suff_score = sd_v[col_idx].get_score();
+    score_v.push_back(suff_score);
+    sum_scores += suff_score;
+  }
+  cout << "vector off separate suffstats scores: " << score_v << endl;
+  cout << "sum separate scores: " << sum_scores << endl;
+  cout << "Cluster score with same data: " << cd.get_score() << endl;
+  cout << endl;
+  //
+  assert(is_almost(sum_scores, cd.get_score(), 1E-10));
+
   double sum_sum_score_deltas;
 
   boost::numeric::ublas::matrix<double> Data;
   LoadData("SynData2.csv", Data);
   // std::cout << Data << std::endl;
 
-  Cluster<double> cd(5); //hard code # columns
+  cd = Cluster<double>(5); //hard code # columns
   std::cout << std::endl << "Init cluster" << std::endl;
   std::cout << cd << std::endl;
 
