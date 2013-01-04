@@ -98,12 +98,6 @@ std::vector<double> numerics::calc_crp_alpha_conditionals(std::vector<double> gr
   return logps;
 }
 
-double numerics::calc_beta_conditional() {
-  // FIXME: implement
-  assert(1==0);
-  return -1;
-}
-
 // p(z=cluster | alpha, clusters)
 double numerics::calc_cluster_crp_logp(double cluster_weight, double sum_weights,
 				       double alpha) {
