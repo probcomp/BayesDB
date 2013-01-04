@@ -4,6 +4,16 @@
 // log_Z_0 is logp(suffstats_0, count=0)
 double continuous_log_Z_0 = numerics::calc_continuous_logp(0, r0, nu0, s0, 0);
 
+template <>
+Suffstats<double>::Suffstats() {
+  init_suff_hash();
+}
+
+template <>
+Suffstats<double>::Suffstats(double nu, double s, double r, double mu) {
+  init_suff_hash(nu, s, r, mu);
+}
+
 double get(const std::map<std::string, double> m, std::string key) {
   std::map<std::string, double>::const_iterator it = m.find(key);
   if(it == m.end()) return -1;
@@ -62,12 +72,12 @@ double Suffstats<double>::remove_el(double el) {
 }
 
 template <>
-void Suffstats<double>::init_suff_hash() {
+void Suffstats<double>::init_suff_hash(double nu, double s, double r, double mu) {
   count = 0;
-  suff_hash["nu"] = nu0;
-  suff_hash["s"] = s0;
-  suff_hash["r"] = r0;
-  suff_hash["mu"] = mu0;
+  suff_hash["nu"] = nu;
+  suff_hash["s"] = s;
+  suff_hash["r"] = r;
+  suff_hash["mu"] = mu;
   score = 0;
 }
 

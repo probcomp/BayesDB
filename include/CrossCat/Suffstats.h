@@ -25,7 +25,8 @@ template <typename T> std::ostream& operator<<(std::ostream& os,
 template <class T>
 class Suffstats {
  public:
-  Suffstats<T>() { init_suff_hash();};
+  Suffstats<T>();
+  Suffstats<T>(double nu, double s, double r, double mu);
   double insert_el(T el);
   double remove_el(T el);
   double get_score() const;
@@ -40,8 +41,11 @@ class Suffstats {
   int count;
   std::map<std::string, double> suff_hash;
   //
-  void init_suff_hash();
+  void init_suff_hash(double nu=nu0, double s=s0, double r=r0, double mu=mu0);
 };
+
+template <>
+void Suffstats<double>::init_suff_hash(double nu, double s, double r, double mu);
 
 void print_defaults();
 
