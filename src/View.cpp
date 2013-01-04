@@ -74,7 +74,7 @@ std::vector<double> View::calc_cluster_vector_logps(std::vector<double> vd) cons
 }
 
 double View::draw_rand_u() {
-  rng.next();
+  return rng.next();
 }
 
 int View::draw_rand_i(int max) {
