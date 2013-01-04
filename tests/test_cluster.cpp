@@ -2,13 +2,17 @@
 #include "Cluster.h"
 #include "utils.h"
 #include "numerics.h"
+#include "RandomNumberGenerator.h"
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
+using namespace std;
+
 int main(int argc, char** argv) {
-  std::cout << std::endl << "Hello World!" << std::endl;
-  int i = 123;
+  cout << "Begin:: test_cluster" << endl;
+  RandomNumberGenerator rng;
+
   double sum_sum_score_deltas;
 
   boost::numeric::ublas::matrix<double> Data;
@@ -88,5 +92,5 @@ int main(int argc, char** argv) {
   // std::cout << "numerics::calc_cluster_vector_joint_logp(cd, V)" << std::endl;
   // std::cout << numerics::calc_cluster_vector_joint_logp(cd, V) << std::endl;
 
-  std::cout << std::endl << "Goodbye World!" << std::endl;
+  cout << "Stop:: test_cluster" << endl;
 }
