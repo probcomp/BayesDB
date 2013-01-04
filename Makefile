@@ -28,8 +28,7 @@ all: $(BIN) $(TESTS)
 
 # run each test
 tests: $(TESTS)
-	@echo tests are: $(TESTS)
-	@$(foreach test, $(TESTS), ./$(test);)
+	@echo tests are: $(TESTS) $(foreach test, $(TESTS), && ./$(test))
 
 $(BIN): $(OBJECTS)
 	$(CXX) -o $(BIN) $(OBJECTS) $(CXXOPTS) $(SRC)/$(MAIN).cpp
