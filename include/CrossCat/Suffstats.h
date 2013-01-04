@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <iomanip> // std::setprecision
 
 #include "numerics.h"
 
@@ -57,7 +58,7 @@ std::ostream& operator<<(std::ostream& os, const Suffstats<T>& sT) {
   os << it->first << ":" << it->second;
   it++;
   for(; it != sT.suff_hash.end(); it++) {
-    os << ";\t" << it->first << ":" << it->second;
+    os << ";\t" << it->first << ":" << std::setprecision(3) << std::fixed << it->second;
   }
   os << ";\tscore:" << sT.get_score();
   os << std::endl;
