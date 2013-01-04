@@ -12,11 +12,10 @@
 
 #include "numerics.h"
 
-const static double r0 = 1.0;
-const static double nu0 = 2.0;
-const static double s0 = 2.0;
-const static double mu0 = 0.0;
-extern double continuous_log_Z_0;
+const static double r0_0 = 1.0;
+const static double nu0_0 = 2.0;
+const static double s0_0 = 2.0;
+const static double mu0_0 = 0.0;
 
 template <class T> class Suffstats;
 template <typename T> std::ostream& operator<<(std::ostream& os,
@@ -39,11 +38,12 @@ class Suffstats {
   // calc_logp() should be a recalculation of what's cached in get_score
   double calc_logp() const;
  private:
+  double continuous_log_Z_0;
   double score;
   int count;
   std::map<std::string, double> suff_hash;
   //
-  void init_suff_hash(double r=r0, double nu=nu0, double s=s0, double mu=mu0);
+  void init_suff_hash(double r=r0_0, double nu=nu0_0, double s=s0_0, double mu=mu0_0);
 };
 
 template <>
