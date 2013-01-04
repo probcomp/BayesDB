@@ -14,7 +14,7 @@ bool is_almost(double val1, double val2, double precision) {
 }
 
 int main(int argc, char** argv) {  
-  cout << "Begin:: test_suffstats" << endl;
+  cout << endl << "Begin:: test_suffstats" << endl;
   RandomNumberGenerator rng;
 
   // test settings
@@ -31,35 +31,34 @@ int main(int argc, char** argv) {
   double mu0 = rng.nexti(max_randi) * rng.next();
   //
   // elements to add
-  std::vector<double> values_to_test;
+  vector<double> values_to_test;
   for(int i=0; i<num_values_to_test; i++) {
     double rand_value = rng.nexti(max_randi) * rng.next();
     values_to_test.push_back(rand_value);
   }
-  // remove in a different order
-  std::vector<double> values_to_remove = values_to_test;
-  std::random_shuffle(values_to_remove.begin(), values_to_remove.end());
+  // remove in a reversed order and a different order
+  vector<double> values_to_test_reversed = values_to_test;
+  std::reverse(values_to_test_reversed.begin(), values_to_test_reversed.end());
+  vector<double> values_to_test_shuffled = values_to_test;
+  std::random_shuffle(values_to_test_shuffled.begin(), values_to_test_shuffled.end());
+
   //
   // print values
-  std::cout << "initial parameters: " << "\t";
-  std::cout << "r0: " << r0 << "\t";
-  std::cout << "nu0: " << nu0 << "\t";
-  std::cout << "s0: " << s0 << "\t";
-  std::cout << "mu0: " << mu0 << std::endl;
-  std::cout << "values_to_test: " << values_to_test << std::endl;
-  std::cout << "values_to_remove: " << values_to_remove << std::endl;
+  cout << endl << "initial parameters: " << "\t";
+  cout << "r0: " << r0 << "\t";
+  cout << "nu0: " << nu0 << "\t";
+  cout << "s0: " << s0 << "\t";
+  cout << "mu0: " << mu0 << endl;
+  cout << "values_to_test: " << values_to_test << endl;
+  cout << "values_to_test_shuffled: " << values_to_test_shuffled << endl;
 
   // create the suffstats object
   //       r, nu, s, mu
   suffD sd(r0, nu0, s0, mu0);
   double score_0 = sd.get_score();
-  cout << "initial suffstats object" << endl;
+  cout << endl << "initial suffstats object" << endl;
   cout << sd << endl;
   print_defaults();
-
-
-  double insert_value;
-  insert_value = 0.0;
 
   // verify initial parameters
   int count;
@@ -73,20 +72,20 @@ int main(int argc, char** argv) {
   assert(is_almost(sd.get_score(), score_0, precision));
 
   // push data into suffstats
-  for(std::vector<double>::iterator it=values_to_test.begin(); it!=values_to_test.end(); it++) {
+  for(vector<double>::iterator it=values_to_test.begin(); it!=values_to_test.end(); it++) {
     sd.insert_el(*it);
   }
-  std::cout << "suffstats after insertion of data" << std::endl;
+  cout << endl << "suffstats after insertion of data" << endl;
   cout << sd << endl;
 
   // ensure count is proper
   assert(sd.get_count()==num_values_to_test);
 
   // remove data from suffstats
-  for(std::vector<double>::iterator it=values_to_remove.begin(); it!=values_to_remove.end(); it++) {
+  for(vector<double>::iterator it=values_to_test_reversed.begin(); it!=values_to_test_reversed.end(); it++) {
     sd.remove_el(*it);
   }
-  std::cout << "suffstats after removal of data" << std::endl;
+  cout << endl << "suffstats after removal of data" << endl;
   cout << sd << endl;
 
   // ensure initial values are recovered
