@@ -1,5 +1,7 @@
 #include "Suffstats.h"
 
+using namespace std;
+
 // is this confusing to require knowledge that
 // log_Z_0 is logp(suffstats_0, count=0)
 double continuous_log_Z_0 = numerics::calc_continuous_logp(0, r0, nu0, s0, 0);
@@ -14,8 +16,8 @@ Suffstats<double>::Suffstats(double r, double nu, double s, double mu) {
   init_suff_hash(r, nu, s, mu);
 }
 
-double get(const std::map<std::string, double> m, std::string key) {
-  std::map<std::string, double>::const_iterator it = m.find(key);
+double get(const map<string, double> m, string key) {
+  map<string, double>::const_iterator it = m.find(key);
   if(it == m.end()) return -1;
   return it->second;
 }
@@ -83,11 +85,11 @@ void Suffstats<double>::init_suff_hash(double r, double nu, double s, double mu)
 }
 
 void print_defaults() {
-  std::cout << std::endl << "Default values" << std::endl;
-  std::cout << "continuous_log_Z_0: " << continuous_log_Z_0 << std::endl;
-  std::cout << "r0: " << r0 << std::endl;
-  std::cout << "nu0: " << nu0 << std::endl;
-  std::cout << "s0: " << s0 << std::endl;
-  std::cout << "mu0: " << mu0 << std::endl;
-  std::cout << std::endl;
+  cout << endl << "Default values" << endl;
+  cout << "continuous_log_Z_0: " << continuous_log_Z_0 << endl;
+  cout << "r0: " << r0 << endl;
+  cout << "nu0: " << nu0 << endl;
+  cout << "s0: " << s0 << endl;
+  cout << "mu0: " << mu0 << endl;
+  cout << endl;
 }
