@@ -22,6 +22,10 @@ double View::get_score() const {
   return score;
 }
 
+double View::get_crp_alpha() const {
+  return crp_alpha;
+}
+
 double View::get_num_vectors() const {
   return num_vectors;
 }

@@ -24,6 +24,7 @@ class View {
   double get_num_cols() const;
   int get_num_clusters() const;
   double get_score() const;
+  double get_crp_alpha() const;
   //
   double insert_row(std::vector<double> vd, Cluster<double> &cd, int row_idx); 
   double remove_row(std::vector<double> vd, int row_idx); 
