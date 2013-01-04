@@ -1,5 +1,5 @@
 #include <iostream>
-#include "cluster.h"
+#include "Cluster.h"
 #include "utils.h"
 #include "numerics.h"
 
@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
   LoadData("SynData2.csv", Data);
   // std::cout << Data << std::endl;
 
-  cluster<double> cd(5); //hard code # columns
+  Cluster<double> cd(5); //hard code # columns
   std::cout << std::endl << "Init cluster" << std::endl;
   std::cout << cd << std::endl;
 
