@@ -125,6 +125,7 @@ void View::transition_zs(map<int, vector<double> > row_data_map) {
 }
 
 double View::insert_row(std::vector<double> vd, Cluster<double>& which_cluster, int row_idx) {
+  // NOTE: MUST use calc_cluster_vector_logp,  gets crp_score_delta as well
   double score_delta = calc_cluster_vector_logp(vd, which_cluster);
   which_cluster.insert_row(vd, row_idx);
   cluster_lookup[row_idx] = &which_cluster;
