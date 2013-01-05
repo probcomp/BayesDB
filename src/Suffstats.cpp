@@ -2,6 +2,7 @@
 
 using namespace std;
 
+// forward declare
 double get(const map<string, double> m, string key);
 template<>
 double Suffstats<double>::calc_logp() const;
