@@ -100,6 +100,7 @@ int main(int argc, char** argv) {
 
   // create the objects to test
   View v = View(num_cols, init_crp_alpha);
+  v.assert_state_consistency();
   //
   vectorCp cd_v;
   for(set<int>::iterator it=cluster_idx_set.begin(); it!=cluster_idx_set.end(); it++) {
@@ -118,6 +119,7 @@ int main(int argc, char** argv) {
   cout << endl << "populating objects" << endl;
   cout << "=================================" << endl;
   for(map<int,int>::iterator it=where_to_push.begin(); it!=where_to_push.end(); it++) {
+    v.assert_state_consistency();
     int row_idx = it->first;
     int cluster_idx = it->second;
     cout << "INSERTING ROW: " << row_idx << endl;
@@ -169,6 +171,7 @@ int main(int argc, char** argv) {
   for(vector<double>::iterator it=test_alphas.begin(); it!=test_alphas.end(); it++) {
     double test_alpha_score = numerics::calc_crp_alpha_conditional(cluster_counts, *it, -1, true);
     test_alpha_scores.push_back(test_alpha_score);
+    v.assert_state_consistency();
   }
   cout << "test_alphas: " << test_alphas << endl;
   cout << "test_alpha_scores: " << test_alpha_scores << endl;
@@ -190,7 +193,9 @@ int main(int argc, char** argv) {
   // test transition_zs
   RandomNumberGenerator rng = RandomNumberGenerator();
   for(int iter=0; iter<100; iter++) {
+    v.assert_state_consistency();
     v.transition_zs(data_map);
+    v.transition_crp_alpha();
     //if(iter % 10 == 0) {
 
     if(iter % 1 == 0) {
