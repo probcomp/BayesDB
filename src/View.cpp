@@ -94,6 +94,18 @@ double View::score_crp() const {
   return numerics::calc_crp_alpha_conditional(cluster_counts, crp_alpha, -1, true);
 }
 
+vector<double> View::score_crp(vector<double> alphas_to_score) const {
+  vector<int> cluster_counts = get_cluster_counts();
+  vector<double> crp_scores;
+  vector<double>::iterator it = alphas_to_score.begin();
+  for(; it!=alphas_to_score.end(); it++) {
+    double alpha_to_score = *it;
+    double this_crp_score = numerics::calc_crp_alpha_conditional(cluster_counts, alpha_to_score, -1, true);
+    crp_scores.push_back(this_crp_score);
+  }
+  return crp_scores;
+}
+
 double View::set_alpha(double new_alpha) {
   double crp_score_0 = crp_score;
   crp_alpha = new_alpha;

@@ -38,6 +38,7 @@ class View {
   double calc_cluster_vector_logp(std::vector<double> vd, Cluster<double> cd, double &crp_logp_delta, double &data_logp_delta) const;
   std::vector<double> calc_cluster_vector_logps(std::vector<double> vd) const;
   double score_crp() const;
+  std::vector<double> score_crp(std::vector<double> alphas) const;
   //
   // mutators
   double set_alpha(double new_alpha);
