@@ -10,6 +10,7 @@
 
 typedef boost::numeric::ublas::matrix<double> matrixD;
 using namespace std;
+typedef vector<Cluster<double>*> vectorCp;
 typedef set<Cluster<double>*> setCp;
 typedef map<int, Cluster<double>*> mapICp;
 typedef setCp::iterator setCp_it;
@@ -36,9 +37,9 @@ void print_cluster_memberships(View& v) {
 
 }
 
-void insert_and_print(View& v, matrixD data,
+void insert_and_print(View& v, map<int, vector<double> > data_map,
 		      int cluster_idx, int row_idx) {
-  vector<double> row = extract_row(data, row_idx);
+  vector<double> row = data_map[row_idx];
   Cluster<double>& cluster = v.get_cluster(cluster_idx);
   v.insert_row(row, cluster, row_idx);
   cout << "v.insert_row(" << row << ", " << cluster_idx << ", " \
@@ -46,14 +47,14 @@ void insert_and_print(View& v, matrixD data,
   cout << "v.get_score(): " << v.get_score() << endl;
 }
 
-void remove_all_data(View &v, matrixD data) {
+void remove_all_data(View &v, map<int, vector<double> > data_map) {
   vector<int> rows_in_view;
   for(mapICp_it it=v.cluster_lookup.begin(); it!=v.cluster_lookup.end(); it++) {
     rows_in_view.push_back(it->first);
   }
   for(vectorI_it it=rows_in_view.begin(); it!=rows_in_view.end(); it++) {
     int idx_to_remove = *it;
-    vector<double> row = extract_row(data, idx_to_remove);
+    vector<double> row = data_map[idx_to_remove];
     v.remove_row(row, idx_to_remove);
   }
   cout << "removed all data" << endl;
@@ -73,50 +74,122 @@ int main(int argc, char** argv) {
 
   // load some data
   matrixD data;
-  LoadData("synthetic_data.csv", data);
-
-  View v = View(data.size2(), 3);
-
-  int row_idx, cluster_idx;
-  row_idx = 0; cluster_idx = 0;
-  insert_and_print(v, data, cluster_idx, row_idx);
-  row_idx = 1; cluster_idx = 1;
-  insert_and_print(v, data, cluster_idx, row_idx);
-  row_idx = 2; cluster_idx = 0;
-  insert_and_print(v, data, cluster_idx, row_idx);
+  LoadData("Synthetic_data.csv", data);
+  int num_cols = data.size2();
+  double init_crp_alpha = 3;
   //
-  row_idx = 3; cluster_idx = 1;
-  insert_and_print(v, data, cluster_idx, row_idx);
-  row_idx = 4; cluster_idx = 0;
-  insert_and_print(v, data, cluster_idx, row_idx);
-  row_idx = 5; cluster_idx = 1;
-  insert_and_print(v, data, cluster_idx, row_idx);
-  v.print();
-
-  print_cluster_memberships(v);
-
-  cout << "====================" << endl;
-  cout << "Sampling" << endl;
-
-  int num_vectors = v.get_num_vectors();
-  cout << "num_vectors: " << v.get_num_vectors() << endl;
-
   map<int, vector<double> > data_map;
   for(int idx=0; idx<6; idx++) {
     vector<double> row = extract_row(data, idx);
     data_map[idx] = row;
   }
-
-  RandomNumberGenerator rng = RandomNumberGenerator();
-  for(int iter=0; iter<20; iter++) {
-    print_cluster_memberships(v);
-    v.transition_zs(data_map);
-    cout << "Done iter: " << iter << endl;
-    cout << endl;
+  //
+  map<int, int> where_to_push;
+  where_to_push[0] = 0;
+  where_to_push[1] = 1;
+  where_to_push[2] = 0;
+  where_to_push[3] = 1;
+  where_to_push[4] = 0;
+  where_to_push[5] = 1;
+  //
+  set<int> cluster_idx_set;
+  for(map<int,int>::iterator it=where_to_push.begin(); it!=where_to_push.end(); it++) {
+    int cluster_idx = it->second;
+    cluster_idx_set.insert(cluster_idx);
   }
-  
-  remove_all_data(v, data);
+
+  // create the objects to test
+  View v = View(num_cols, init_crp_alpha);
+  //
+  vectorCp cd_v;
+  for(set<int>::iterator it=cluster_idx_set.begin(); it!=cluster_idx_set.end(); it++) {
+    int cluster_idx = *it;
+    cout << "inserting cluster idx: " << cluster_idx << endl;
+    Cluster<double> *p_cd = new Cluster<double>(num_cols);
+    cd_v.push_back(p_cd);
+  }
+
+  cout << "empty view print" << endl;
   v.print();
+  cout << "empty view print" << endl;
+  cout << endl;
+  
+  // populate the objects to test
+  cout << endl << "populating objects" << endl;
+  cout << "=================================" << endl;
+  for(map<int,int>::iterator it=where_to_push.begin(); it!=where_to_push.end(); it++) {
+    int row_idx = it->first;
+    int cluster_idx = it->second;
+    cout << "INSERTING ROW: " << row_idx << endl;
+    insert_and_print(v, data_map, cluster_idx, row_idx);
+    Cluster<double> *p_cd = cd_v[cluster_idx];
+    double cluster_score_delta = (*p_cd).insert_row(data_map[row_idx], row_idx);
+    cout << "cluster_score_delta: " << cluster_score_delta << endl;
+    cout << "DONE INSERTING ROW: " << row_idx << endl;
+  }
+  cout << endl << "view after population" << endl;
+  v.print();
+  cout << "view after population" << endl;
+  cout << "=================================" << endl;
+  cout << endl;
+
+  cout << endl << "separately created clusters after population" << endl;
+  for(vectorCp::iterator it=cd_v.begin(); it!=cd_v.end(); it++) {
+    cout << **it << endl;
+  }
+  cout << endl;
+
+  // test
+  vector<double> cluster_scores;
+  setCp_it it = v.clusters.begin();
+  double sum_scores;
+  for(; it!=v.clusters.end(); it++) {
+    double cluster_score = (*it)->get_score();
+    cluster_scores.push_back(cluster_score);
+    sum_scores += cluster_score;
+  }
+  vector<int> cluster_counts = v.get_cluster_counts();
+  double crp_score = numerics::calc_crp_alpha_conditional(cluster_counts,
+							  v.get_crp_alpha(),
+							  -1, true);
+  double crp_plus_data_score = crp_score + sum_scores;
+  cout << "vector of cluster scores: " << cluster_scores << endl;
+  cout << "sum cluster scores: " << sum_scores << endl;
+  cout << "crp score: " << crp_score << endl;
+  cout << "sum cluster scores and crp score: " << crp_plus_data_score << endl;
+  cout << "view score: " << v.get_score() << endl;
+  assert(is_almost(v.get_score(), crp_plus_data_score, 1E-10));
+
+  print_cluster_memberships(v);
+  int num_vectors = v.get_num_vectors();
+  cout << "num_vectors: " << v.get_num_vectors() << endl;
+  //
+  cout << "====================" << endl;
+  cout << "Sampling" << endl;
+
+  // test transition_zs
+  RandomNumberGenerator rng = RandomNumberGenerator();
+  for(int iter=0; iter<100; iter++) {
+    v.transition_zs(data_map);
+    //if(iter % 10 == 0) {
+
+    if(iter % 1 == 0) {
+      print_cluster_memberships(v);
+      cout << "Done iter: " << iter << endl;
+      cout << endl;
+    }
+  }
+  print_cluster_memberships(v);
+  cout << "Done transition_zs" << endl;
+  cout << endl;
+
+  // empty object and verify empty
+  remove_all_data(v, data_map);
+  v.print();
+
+  for(vectorCp::iterator it = cd_v.begin(); it!=cd_v.end(); it++) {
+    delete (*it);
+  }
 
   cout << endl << "Goodbye World!" << endl;
 }
