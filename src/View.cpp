@@ -6,9 +6,9 @@ static View NullView = View(0,0);
 static Cluster<double> NullCluster = Cluster<double>(0);
 
 View::View(int NUM_COLS, double CRP_ALPHA) {
+  num_vectors = 0;
   num_cols = NUM_COLS;
   crp_alpha = CRP_ALPHA;
-  num_vectors = 0;
   crp_score = 0;
   data_score = 0;
 }
@@ -25,6 +25,10 @@ int View::get_num_clusters() const {
   return clusters.size();
 }
 
+double View::get_crp_alpha() const {
+  return crp_alpha;
+}
+
 double View::get_crp_score() const {
   return crp_score;
 }
@@ -35,10 +39,6 @@ double View::get_data_score() const {
 
 double View::get_score() const {
   return crp_score + data_score;
-}
-
-double View::get_crp_alpha() const {
-  return crp_alpha;
 }
 
 Cluster<double>& View::get_cluster(int cluster_idx) {
@@ -202,4 +202,3 @@ double View::draw_rand_u() {
 int View::draw_rand_i(int max) {
   return rng.nexti(max);
 }
-

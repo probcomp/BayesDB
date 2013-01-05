@@ -61,11 +61,11 @@ class View {
   // double score_test_set(std::vector<std::vector<double> > test_set) const;
  private:
   // parameters
+  int num_vectors;
+  int num_cols;
   double crp_alpha;
   double crp_score;
   double data_score;
-  int num_vectors;
-  int num_cols;
   // data structures/sub-objects
   RandomNumberGenerator rng;
   // resources
