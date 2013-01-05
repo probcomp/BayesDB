@@ -8,8 +8,8 @@ using namespace std;
 using namespace boost;
 using namespace boost::numeric::ublas;
 
-std::ostream& operator<<(std::ostream& os, const std::map<int, double>& int_double_map) {
-  std::map<int, double>::const_iterator it = int_double_map.begin();
+std::ostream& operator<<(std::ostream& os, const map<int, double>& int_double_map) {
+  map<int, double>::const_iterator it = int_double_map.begin();
   os << "{";
   if(it==int_double_map.end()) {
     os << "}";
@@ -24,8 +24,8 @@ std::ostream& operator<<(std::ostream& os, const std::map<int, double>& int_doub
   return  os;
 }
 
-std::ostream& operator<<(std::ostream& os, const std::map<int, int>& int_int_map) {
-  std::map<int, int>::const_iterator it = int_int_map.begin();
+std::ostream& operator<<(std::ostream& os, const map<int, int>& int_int_map) {
+  map<int, int>::const_iterator it = int_int_map.begin();
   os << "{";
   if(it==int_int_map.end()) {
     os << "}";
@@ -40,10 +40,10 @@ std::ostream& operator<<(std::ostream& os, const std::map<int, int>& int_int_map
   return  os;
 }
 
-std::string int_to_str(int i) {  
+string int_to_str(int i) {  
   std::stringstream out;
   out << i;
-  std::string s = out.str();
+  string s = out.str();
   return s;
 }
 
@@ -51,7 +51,7 @@ std::string int_to_str(int i) {
 // FROM runModel_v2.cpp
 /////////////////////////////////////////////////////////////////////
 // expect a csv file of data
-void LoadData(std::string file, boost::numeric::ublas::matrix<double>& M) {
+void LoadData(string file, boost::numeric::ublas::matrix<double>& M) {
   ifstream in(file.c_str());
   if (!in.is_open()) return;
   typedef tokenizer< char_separator<char> > Tokenizer;
