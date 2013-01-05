@@ -11,6 +11,7 @@ View::View(int NUM_COLS, double CRP_ALPHA) {
   crp_alpha = CRP_ALPHA;
   crp_score = 0;
   data_score = 0;
+  crp_alpha_grid = log_linspace(1, 100, 20);
 }
 
 double View::get_num_vectors() const {
@@ -168,6 +169,16 @@ void View::transition_zs(map<int, vector<double> > row_data_map) {
     vector<double> vd = row_data_map[row_idx];
     transition_z(vd, row_idx);
   }
+}
+
+void View::transition_crp_alpha() {
+  // to make score_crp not calculate absolute, need to track score deltas
+  // and apply delta to crp_score
+  vector<double> unorm_logps = score_crp(crp_alpha_grid);
+  double rand_u = draw_rand_u();
+  int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
+  crp_alpha = crp_alpha_grid[draw];
+  crp_score = unorm_logps[draw];
 }
 
 vector<int> View::shuffle_row_indices() {

@@ -50,7 +50,7 @@ class View {
   void remove_if_empty(Cluster<double>& which_cluster);
   void transition_z(std::vector<double> vd, int row_idx);
   void transition_zs(std::map<int, std::vector<double> > row_data_map);
-  /* void transition_crp_alpha(); */
+  void transition_crp_alpha();
   /* void transition_data_hypers(); */
   //
   // data structures
@@ -69,13 +69,13 @@ class View {
   double crp_alpha;
   double crp_score;
   double data_score;
-  // data structures/sub-objects
+  std::vector<double> crp_alpha_grid;
+  // sub-objects
   RandomNumberGenerator rng;
   // resources
   double draw_rand_u();
   int draw_rand_i(int max);
   /* std::map<std::string, double> data_hypers; */
 };
-
 
 #endif //GUARD_view_h
