@@ -24,11 +24,13 @@ class View {
   double get_num_cols() const;
   int get_num_clusters() const;
   double get_score() const;
+  double get_data_score() const;
+  double get_crp_score() const;
   double get_crp_alpha() const;
   //
   double insert_row(std::vector<double> vd, Cluster<double> &cd, int row_idx); 
   double remove_row(std::vector<double> vd, int row_idx); 
-  double calc_cluster_vector_logp(std::vector<double> vd, Cluster<double> cd) const;
+  double calc_cluster_vector_logp(std::vector<double> vd, Cluster<double> cd, double &crp_logp_delta, double &data_logp_delta) const;
   std::vector<double> calc_cluster_vector_logps(std::vector<double> vd) const;
   Cluster<double>& get_cluster(int cluster_idx);
   /* Cluster<double> copy_cluster(int cluster_idx) const; */
@@ -40,7 +42,7 @@ class View {
   std::set<Cluster<double>* > clusters;
   std::map<int, Cluster<double>* > cluster_lookup;
   std::vector<int> shuffle_row_indices();
-  double get_crp_score() const;
+  double set_alpha(double new_alpha);
   // double score_test_set(std::vector<std::vector<double> > test_set) const;
   void transition_z(std::vector<double> vd, int row_idx);
   void transition_zs(std::map<int, std::vector<double> > row_data_map);
@@ -51,8 +53,10 @@ class View {
   double draw_rand_u();
   int draw_rand_i(int max);
   RandomNumberGenerator rng;
+  double score_crp() const;
   double crp_alpha;
-  double score;
+  double crp_score;
+  double data_score;
   int num_vectors;
   int num_cols;
   /* std::map<std::string, double> data_hypers; */
