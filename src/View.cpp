@@ -91,7 +91,7 @@ vector<double> View::calc_cluster_vector_logps(vector<double> vd) const {
 
 double View::score_crp() const {
   vector<int> cluster_counts = get_cluster_counts();
-  return numerics::calc_crp_alpha_conditional(cluster_counts, crp_alpha, -1, true);
+  return numerics::calc_crp_alpha_conditional(cluster_counts, crp_alpha, num_vectors, true);
 }
 
 vector<double> View::score_crp(vector<double> alphas_to_score) const {
@@ -100,7 +100,7 @@ vector<double> View::score_crp(vector<double> alphas_to_score) const {
   vector<double>::iterator it = alphas_to_score.begin();
   for(; it!=alphas_to_score.end(); it++) {
     double alpha_to_score = *it;
-    double this_crp_score = numerics::calc_crp_alpha_conditional(cluster_counts, alpha_to_score, -1, true);
+    double this_crp_score = numerics::calc_crp_alpha_conditional(cluster_counts, alpha_to_score, num_vectors, true);
     crp_scores.push_back(this_crp_score);
   }
   return crp_scores;
