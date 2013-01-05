@@ -1,5 +1,7 @@
 #include "Cluster.h"
 
+using namespace std;
+
 template <>
 void Cluster<double>::init_suffstats() {
   count = 0;
@@ -11,11 +13,11 @@ void Cluster<double>::init_suffstats() {
 }
 
 template <>
-double Cluster<double>::insert_row(std::vector<double> vd, int row_idx) {
+double Cluster<double>::insert_row(vector<double> vd, int row_idx) {
   double sum_score_deltas = 0;
   count += 1;
   // track row indices
-  std::pair<std::set<int>::iterator, bool> set_pair = \
+  pair<set<int>::iterator, bool> set_pair = \
     global_row_indices.insert(row_idx);
   assert(set_pair.second);
   // track score
@@ -28,7 +30,7 @@ double Cluster<double>::insert_row(std::vector<double> vd, int row_idx) {
 }
 
 template <>
-double Cluster<double>::remove_row(std::vector<double> vd, int row_idx) {
+double Cluster<double>::remove_row(vector<double> vd, int row_idx) {
   double sum_score_deltas = 0;
   count -= 1;
   // track row indices
@@ -44,7 +46,7 @@ double Cluster<double>::remove_row(std::vector<double> vd, int row_idx) {
 }
 
 template <>
-double Cluster<double>::calc_data_logp(std::vector<double> vd) const {
+double Cluster<double>::calc_data_logp(vector<double> vd) const {
   double sum_logps = 0;
   for(int col_idx=0; col_idx<vd.size(); col_idx++) {
     double el = vd[col_idx];
@@ -55,7 +57,7 @@ double Cluster<double>::calc_data_logp(std::vector<double> vd) const {
 }
 
 template <>
-double Cluster<double>::get_vector_logp(std::vector<double> vd) {
+double Cluster<double>::get_vector_logp(vector<double> vd) {
   // to be removed when test ensures calc_data_logps correctness
   double start_logp = calc_sum_logp();
   insert_row(vd, -1);
