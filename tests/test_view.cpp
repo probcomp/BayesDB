@@ -160,6 +160,26 @@ int main(int argc, char** argv) {
   cout << "view score: " << v.get_score() << endl;
   assert(is_almost(v.get_score(), crp_plus_data_score, 1E-10));
 
+  vector<double> test_alphas;
+  test_alphas.push_back(.3);
+  test_alphas.push_back(3.);
+  test_alphas.push_back(30.);
+  cluster_counts = v.get_cluster_counts();  
+  vector<double> test_alpha_scores;
+  for(vector<double>::iterator it=test_alphas.begin(); it!=test_alphas.end(); it++) {
+    double test_alpha_score = numerics::calc_crp_alpha_conditional(cluster_counts, *it, -1, true);
+    test_alpha_scores.push_back(test_alpha_score);
+  }
+  cout << "test_alphas: " << test_alphas << endl;
+  cout << "test_alpha_scores: " << test_alpha_scores << endl;
+  double new_alpha = test_alphas[0];
+  double crp_score_delta = v.set_alpha(new_alpha);
+  cout << "new_alpha: " << new_alpha << ", new_alpha score: " << v.get_crp_score() << ", crp_score_delta: " << crp_score_delta << endl;
+  new_alpha = test_alphas[1];
+  crp_score_delta = v.set_alpha(new_alpha);
+  cout << "new_alpha: " << new_alpha << ", new_alpha score: " << v.get_crp_score() << ", crp_score_delta: " << crp_score_delta << endl;
+
+
   print_cluster_memberships(v);
   int num_vectors = v.get_num_vectors();
   cout << "num_vectors: " << v.get_num_vectors() << endl;
