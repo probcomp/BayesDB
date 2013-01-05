@@ -2,6 +2,10 @@
 
 using namespace std;
 
+double get(const map<string, double> m, string key);
+template<>
+double Suffstats<double>::calc_logp() const;
+
 template <>
 Suffstats<double>::Suffstats() {
   init_suff_hash();
@@ -12,12 +16,6 @@ Suffstats<double>::Suffstats(double r, double nu, double s, double mu) {
   init_suff_hash(r, nu, s, mu);
 }
 
-double get(const map<string, double> m, string key) {
-  map<string, double>::const_iterator it = m.find(key);
-  if(it == m.end()) return -1;
-  return it->second;
-}
-
 template <class T>
 void Suffstats<T>::get_suffstats(int &count_out, double &r, double &nu,
 				 double &s, double &mu) const {
@@ -26,25 +24,6 @@ void Suffstats<T>::get_suffstats(int &count_out, double &r, double &nu,
   nu = get(suff_hash, "nu");
   s = get(suff_hash, "s");
   mu = get(suff_hash, "mu");
-}
-
-template<>
-double Suffstats<double>::calc_logp() const {
-  int count;
-  double r, nu, s, mu;
-  get_suffstats(count, r, nu, s, mu);
-  return numerics::calc_continuous_logp(count, r, nu, s, continuous_log_Z_0);
-}
-  
-template<>
-double Suffstats<double>::calc_data_logp(double el) const {
-  int count;
-  double r, nu, s, mu;
-  get_suffstats(count, r, nu, s, mu);
-  double log_Z = score + continuous_log_Z_0;
-  return numerics::calc_continuous_suffstats_data_logp(count, r, nu, s, mu, el,
-						       log_Z);
-						       
 }
 
 template <>
@@ -71,6 +50,24 @@ double Suffstats<double>::remove_el(double el) {
   return delta_score;
 }
 
+template<>
+double Suffstats<double>::calc_logp() const {
+  int count;
+  double r, nu, s, mu;
+  get_suffstats(count, r, nu, s, mu);
+  return numerics::calc_continuous_logp(count, r, nu, s, continuous_log_Z_0);
+}
+  
+template<>
+double Suffstats<double>::calc_data_logp(double el) const {
+  int count;
+  double r, nu, s, mu;
+  get_suffstats(count, r, nu, s, mu);
+  double log_Z = score + continuous_log_Z_0;
+  return numerics::calc_continuous_suffstats_data_logp(count, r, nu, s, mu, el,
+						       log_Z);
+}
+
 template <>
 void Suffstats<double>::init_suff_hash(double r, double nu, double s, double mu) {
   continuous_log_Z_0 = numerics::calc_continuous_logp(0, r, nu, s, 0);
@@ -90,3 +87,10 @@ void print_defaults() {
   cout << "mu0_0: " << mu0_0 << endl;
   cout << "continuous_log_Z_0: " << numerics::calc_continuous_logp(0, r0_0, nu0_0, s0_0, 0) << endl;
 }
+
+double get(const map<string, double> m, string key) {
+  map<string, double>::const_iterator it = m.find(key);
+  if(it == m.end()) return -1;
+  return it->second;
+}
+

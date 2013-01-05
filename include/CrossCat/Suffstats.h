@@ -27,29 +27,43 @@ class Suffstats {
  public:
   Suffstats<T>();
   Suffstats<T>(double r, double nu, double s, double mu);
-  double insert_el(T el);
-  double remove_el(T el);
-  double get_score() const;
+  //
+  // getters
   int get_count() const;
-  double calc_data_logp(T el) const;
   void get_suffstats(int &count, double &r, double &nu, double &s, double &mu
 		     ) const;
-  friend std::ostream& operator<< <>(std::ostream& os, const Suffstats<T>& sT);
-  // calc_logp() should be a recalculation of what's cached in get_score
+  double get_score() const;
+  //
+  // mutators
+  double insert_el(T el);
+  double remove_el(T el);
+  //
+  // helpers
   double calc_logp() const;
+  double calc_data_logp(T el) const;
+  friend std::ostream& operator<< <>(std::ostream& os, const Suffstats<T>& sT);
  private:
-  double continuous_log_Z_0;
-  double score;
   int count;
   std::map<std::string, double> suff_hash;
+  double continuous_log_Z_0;
+  double score;
   //
   void init_suff_hash(double r=r0_0, double nu=nu0_0, double s=s0_0, double mu=mu0_0);
 };
 
+// forward declare
 template <>
 void Suffstats<double>::init_suff_hash(double r, double nu, double s, double mu);
 
-void print_defaults();
+template <class T>
+int Suffstats<T>::get_count() const {
+  return count;
+}
+
+template <class T>
+double Suffstats<T>::get_score() const {
+  return score;
+}
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const Suffstats<T>& sT) {
@@ -64,14 +78,6 @@ std::ostream& operator<<(std::ostream& os, const Suffstats<T>& sT) {
   os << ";\tscore:" << sT.get_score();
 }
 
-template <class T>
-double Suffstats<T>::get_score() const {
-  return score;
-}
-
-template <class T>
-int Suffstats<T>::get_count() const {
-  return count;
-}
+void print_defaults();
 
 #endif // GUARD_suffstats_h
