@@ -41,8 +41,10 @@ double Suffstats<double>::calc_data_logp(double el) const {
   int count;
   double r, nu, s, mu;
   get_suffstats(count, r, nu, s, mu);
+  double log_Z = score + continuous_log_Z_0;
   return numerics::calc_continuous_suffstats_data_logp(count, r, nu, s, mu, el,
-						       score);
+						       log_Z);
+						       
 }
 
 template <>
