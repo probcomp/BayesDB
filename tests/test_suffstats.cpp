@@ -48,6 +48,12 @@ int main(int argc, char** argv) {
   cout << "values_to_test: " << values_to_test << endl;
   cout << "values_to_test_shuffled: " << values_to_test_shuffled << endl;
 
+  // FIXME: should compare with a fixed dataset with known 
+  // post-update hyper values and score
+
+  // FIXME: should be manually calling numerics:: functions
+  // to compare suffstats results with
+ 
   // create the suffstats object
   //
   //       r, nu, s, mu
