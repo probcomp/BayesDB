@@ -93,3 +93,20 @@ void LoadData(string file, boost::numeric::ublas::matrix<double>& M) {
 bool is_almost(double val1, double val2, double precision) {
   return abs(val1-val2) < precision;
 }
+
+// http://stackoverflow.com/a/11747023/1769715
+std::vector<double> linspace(double a, double b, int n) {
+  std::vector<double> array;
+  double step = (b-a) / (n-1);
+  while(a <= b) {
+    array.push_back(a);
+    a += step;
+  }
+  return array;
+}
+
+std::vector<double> log_linspace(double a, double b, int n) {
+  std::vector<double> values = linspace(log(a), log(b), n);
+  std::transform(values.begin(), values.end(), values.begin(), (double (*)(double))exp);
+  return values;
+}

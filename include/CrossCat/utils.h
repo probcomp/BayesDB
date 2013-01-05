@@ -65,4 +65,7 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T> vT) {
 
 bool is_almost(double val1, double val2, double precision);
 
+std::vector<double> linspace(double a, double b, int n);
+std::vector<double> log_linspace(double a, double b, int n);
+
 #endif // GUARD_utils_H
