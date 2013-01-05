@@ -195,6 +195,13 @@ void View::print() {
   cout << "crp_score: " << crp_score << ", " << "data_score: " << data_score << ", " << "score: " << get_score() << endl;
 }
 
+void View::assert_state_consistency() {
+  double tolerance = 1E-10;
+  vector<int> cluster_counts = get_cluster_counts();
+  assert(is_almost(get_num_vectors(), std::accumulate(cluster_counts.begin(),cluster_counts.end(),0),tolerance));
+  assert(is_almost(get_crp_score(),score_crp(),tolerance));
+}
+
 double View::draw_rand_u() {
   return rng.next();
 }

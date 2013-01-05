@@ -5,6 +5,8 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <assert.h>
+#include <numeric> // std::accumulate
 //
 #include "RandomNumberGenerator.h"
 #include "utils.h"
@@ -58,6 +60,7 @@ class View {
   // helper functions
   std::vector<int> shuffle_row_indices();
   void print();
+  void assert_state_consistency();
   // double score_test_set(std::vector<std::vector<double> > test_set) const;
  private:
   // parameters
