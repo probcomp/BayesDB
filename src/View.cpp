@@ -13,30 +13,6 @@ View::View(int NUM_COLS, double CRP_ALPHA) {
   data_score = 0;
 }
 
-void View::print() {
-  std::set<Cluster<double>*>::iterator it = clusters.begin();
-  for(; it!=clusters.end(); it++) {
-    std::cout << **it << std::endl;
-  }
-  cout << "crp_score: " << crp_score << ", " << "data_score: " << data_score << ", " << "score: " << get_score() << endl;
-}
-
-double View::get_score() const {
-  return crp_score + data_score;
-}
-
-double View::get_crp_score() const {
-  return crp_score;
-}
-
-double View::get_data_score() const {
-  return data_score;
-}
-
-double View::get_crp_alpha() const {
-  return crp_alpha;
-}
-
 double View::get_num_vectors() const {
   return num_vectors;
 }
@@ -49,10 +25,20 @@ int View::get_num_clusters() const {
   return clusters.size();
 }
 
-Cluster<double>& View::get_new_cluster() {
-  Cluster<double> *p_new_cluster = new Cluster<double>(num_cols);
-  clusters.insert(p_new_cluster);
-  return *p_new_cluster;
+double View::get_crp_score() const {
+  return crp_score;
+}
+
+double View::get_data_score() const {
+  return data_score;
+}
+
+double View::get_score() const {
+  return crp_score + data_score;
+}
+
+double View::get_crp_alpha() const {
+  return crp_alpha;
 }
 
 Cluster<double>& View::get_cluster(int cluster_idx) {
@@ -65,6 +51,16 @@ Cluster<double>& View::get_cluster(int cluster_idx) {
   } else {
     return get_new_cluster();
   }
+}
+
+std::vector<int> View::get_cluster_counts() const {
+  std::vector<int> counts;
+  std::set<Cluster<double>*>::const_iterator it = clusters.begin();
+  for(; it!=clusters.end(); it++) {
+    int count = (**it).get_count();
+    counts.push_back(count);
+  }
+  return counts;
 }
 
 double View::calc_cluster_vector_logp(std::vector<double> vd, Cluster<double> which_cluster, double &crp_logp_delta, double &data_logp_delta) const {
@@ -93,12 +89,54 @@ std::vector<double> View::calc_cluster_vector_logps(std::vector<double> vd) cons
   return logps;
 }
 
-double View::draw_rand_u() {
-  return rng.next();
+double View::score_crp() const {
+  std::vector<int> cluster_counts = get_cluster_counts();
+  return numerics::calc_crp_alpha_conditional(cluster_counts, crp_alpha, -1, true);
 }
 
-int View::draw_rand_i(int max) {
-  return rng.nexti(max);
+double View::set_alpha(double new_alpha) {
+  double crp_score_0 = crp_score;
+  crp_alpha = new_alpha;
+  crp_score = score_crp();
+  return crp_score - crp_score_0;
+}
+
+Cluster<double>& View::get_new_cluster() {
+  Cluster<double> *p_new_cluster = new Cluster<double>(num_cols);
+  clusters.insert(p_new_cluster);
+  return *p_new_cluster;
+}
+
+double View::insert_row(std::vector<double> vd, Cluster<double>& which_cluster, int row_idx) {
+  // NOTE: MUST use calc_cluster_vector_logp,  gets crp_score_delta as well
+  double crp_logp_delta, data_logp_delta;
+  double score_delta = calc_cluster_vector_logp(vd, which_cluster, crp_logp_delta, data_logp_delta);
+  which_cluster.insert_row(vd, row_idx);
+  cluster_lookup[row_idx] = &which_cluster;
+  crp_score += crp_logp_delta;
+  data_score += data_logp_delta;
+  num_vectors += 1;
+  return score_delta;
+}
+
+double View::remove_row(std::vector<double> vd, int row_idx) {
+  Cluster<double> &which_cluster = *(cluster_lookup[row_idx]);
+  cluster_lookup.erase(cluster_lookup.find(row_idx));
+  which_cluster.remove_row(vd, row_idx);
+  num_vectors -= 1;
+  double crp_logp_delta, data_logp_delta;
+  double score_delta = calc_cluster_vector_logp(vd, which_cluster, crp_logp_delta, data_logp_delta);
+  remove_if_empty(which_cluster);
+  crp_score -= crp_logp_delta;
+  data_score -= data_logp_delta;
+  return score_delta;
+}
+
+void View::remove_if_empty(Cluster<double>& which_cluster) {
+  if(which_cluster.get_count()==0) {
+    clusters.erase(clusters.find(&which_cluster));
+    delete &which_cluster;
+  }
 }
 
 void View::transition_z(std::vector<double> vd, int row_idx) {
@@ -108,6 +146,16 @@ void View::transition_z(std::vector<double> vd, int row_idx) {
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   Cluster<double> &which_cluster = get_cluster(draw);
   insert_row(vd, which_cluster, row_idx);
+}
+
+void View::transition_zs(map<int, vector<double> > row_data_map) {
+  vector<int> shuffled_row_indices = shuffle_row_indices();
+  vector<int>::iterator it = shuffled_row_indices.begin();
+  for(; it!=shuffled_row_indices.end(); it++) {
+    int row_idx = *it;
+    vector<double> vd = row_data_map[row_idx];
+    transition_z(vd, row_idx);
+  }
 }
 
 std::vector<int> View::shuffle_row_indices() {
@@ -127,66 +175,19 @@ std::vector<int> View::shuffle_row_indices() {
   return shuffled_order;
 }
 
-void View::transition_zs(map<int, vector<double> > row_data_map) {
-  vector<int> shuffled_row_indices = shuffle_row_indices();
-  vector<int>::iterator it = shuffled_row_indices.begin();
-  for(; it!=shuffled_row_indices.end(); it++) {
-    int row_idx = *it;
-    vector<double> vd = row_data_map[row_idx];
-    transition_z(vd, row_idx);
-  }
-}
-
-double View::insert_row(std::vector<double> vd, Cluster<double>& which_cluster, int row_idx) {
-  // NOTE: MUST use calc_cluster_vector_logp,  gets crp_score_delta as well
-  double crp_logp_delta, data_logp_delta;
-  double score_delta = calc_cluster_vector_logp(vd, which_cluster, crp_logp_delta, data_logp_delta);
-  which_cluster.insert_row(vd, row_idx);
-  cluster_lookup[row_idx] = &which_cluster;
-  crp_score += crp_logp_delta;
-  data_score += data_logp_delta;
-  num_vectors += 1;
-  return score_delta;
-}
-
-void View::remove_if_empty(Cluster<double>& which_cluster) {
-  if(which_cluster.get_count()==0) {
-    clusters.erase(clusters.find(&which_cluster));
-    delete &which_cluster;
-  }
-}
-
-double View::remove_row(std::vector<double> vd, int row_idx) {
-  Cluster<double> &which_cluster = *(cluster_lookup[row_idx]);
-  cluster_lookup.erase(cluster_lookup.find(row_idx));
-  which_cluster.remove_row(vd, row_idx);
-  num_vectors -= 1;
-  double crp_logp_delta, data_logp_delta;
-  double score_delta = calc_cluster_vector_logp(vd, which_cluster, crp_logp_delta, data_logp_delta);
-  remove_if_empty(which_cluster);
-  crp_score -= crp_logp_delta;
-  data_score -= data_logp_delta;
-  return score_delta;
-}
-
-std::vector<int> View::get_cluster_counts() const {
-  std::vector<int> counts;
-  std::set<Cluster<double>*>::const_iterator it = clusters.begin();
+void View::print() {
+  std::set<Cluster<double>*>::iterator it = clusters.begin();
   for(; it!=clusters.end(); it++) {
-    int count = (**it).get_count();
-    counts.push_back(count);
+    std::cout << **it << std::endl;
   }
-  return counts;
+  cout << "crp_score: " << crp_score << ", " << "data_score: " << data_score << ", " << "score: " << get_score() << endl;
 }
 
-double View::score_crp() const {
-  std::vector<int> cluster_counts = get_cluster_counts();
-  return numerics::calc_crp_alpha_conditional(cluster_counts, crp_alpha, -1, true);
+double View::draw_rand_u() {
+  return rng.next();
 }
 
-double View::set_alpha(double new_alpha) {
-  double crp_score_0 = crp_score;
-  crp_alpha = new_alpha;
-  crp_score = score_crp();
-  return crp_score - crp_score_0;
+int View::draw_rand_i(int max) {
+  return rng.nexti(max);
 }
+
