@@ -96,13 +96,13 @@ bool is_almost(double val1, double val2, double precision) {
 
 // http://stackoverflow.com/a/11747023/1769715
 std::vector<double> linspace(double a, double b, int n) {
-  std::vector<double> array;
+  std::vector<double> values;
   double step = (b-a) / (n-1);
   while(a <= b) {
-    array.push_back(a);
+    values.push_back(a);
     a += step;
   }
-  return array;
+  return values;
 }
 
 std::vector<double> log_linspace(double a, double b, int n) {
