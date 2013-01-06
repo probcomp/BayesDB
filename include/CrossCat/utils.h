@@ -10,6 +10,7 @@
 void LoadData(std::string file, boost::numeric::ublas::matrix<double>& M);
 
 std::ostream& operator<<(std::ostream& os, const std::map<int, double>& int_double_map);
+std::ostream& operator<<(std::ostream& os, const std::map<std::string, double>& string_double_map);
 std::ostream& operator<<(std::ostream& os, const std::map<int, int>& int_int_map);
 
 std::string int_to_str(int i);

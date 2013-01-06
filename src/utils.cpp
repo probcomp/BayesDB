@@ -8,6 +8,22 @@ using namespace std;
 using namespace boost;
 using namespace boost::numeric::ublas;
 
+std::ostream& operator<<(std::ostream& os, const std::map<std::string, double>& string_double_map) {
+  map<string, double>::const_iterator it = string_double_map.begin();
+  os << "{";
+  if(it==string_double_map.end()) {
+    os << "}";
+    return os;
+  }
+  os << it->first << ":" << it->second;
+  it++;
+  for(; it!=string_double_map.end(); it++) {
+    os << ", " << it->first << ":" << it->second;
+  }
+  os << "}";
+  return  os;
+}
+
 std::ostream& operator<<(std::ostream& os, const map<int, double>& int_double_map) {
   map<int, double>::const_iterator it = int_double_map.begin();
   os << "{";
