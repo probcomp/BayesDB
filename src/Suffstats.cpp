@@ -85,8 +85,7 @@ double Suffstats<double>::calc_data_logp(double el) const {
 }
 
 template<>
-vector<double> Suffstats<double>::calc_hyper_conditional(string which_hyper)  const {
-  vector<double> grid = hyper_grid;
+vector<double> Suffstats<double>::calc_hyper_conditional(string which_hyper, vector<double> grid) const {
   int count;
   double sum_x, sum_x_sq;
   double r, nu, s, mu;
@@ -108,6 +107,11 @@ vector<double> Suffstats<double>::calc_hyper_conditional(string which_hyper)  co
   } else {
     // error condition
   }
+}
+
+template<>
+vector<double> Suffstats<double>::calc_hyper_conditional(string which_hyper) const {
+  return calc_hyper_conditional(which_hyper, hyper_grid);
 }
 
 template <>

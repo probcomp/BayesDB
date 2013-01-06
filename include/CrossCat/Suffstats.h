@@ -42,6 +42,7 @@ class Suffstats {
   double calc_logp() const;
   double calc_data_logp(T el) const;
   std::vector<double> calc_hyper_conditional(std::string which_hyper) const;
+  std::vector<double> calc_hyper_conditional(std::string which_hyper, std::vector<double> hyper_grid) const;
   friend std::ostream& operator<< <>(std::ostream& os, const Suffstats<T>& sT);
  private:
   int count;
