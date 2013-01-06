@@ -32,7 +32,6 @@ class Suffstats {
   void get_suffstats(int &count, double &sum_x, double &sum_x_sq) const;
   void get_hypers(double &r, double &nu, double &s, double &mu) const;
   double get_score() const;
-  std::vector<double> get_hyper_grid(std::string which_hyper);
   //
   // mutators
   double insert_el(T el);
@@ -41,15 +40,12 @@ class Suffstats {
   // helpers
   double calc_logp() const;
   double calc_data_logp(T el) const;
-  std::vector<double> calc_hyper_conditional(std::string which_hyper) const;
   std::vector<double> calc_hyper_conditional(std::string which_hyper, std::vector<double> hyper_grid) const;
   friend std::ostream& operator<< <>(std::ostream& os, const Suffstats<T>& sT);
  private:
   int count;
   std::map<std::string, double> suff_hash;
   std::map<std::string, double> hyper_hash;
-  // FIXME: give each hyper its own grid in a hash
-  std::vector<double> hyper_grid;
   double continuous_log_Z_0;
   double score;
   //

@@ -12,8 +12,6 @@ Suffstats<double>::Suffstats(double r, double nu, double s, double mu) {
   continuous_log_Z_0 = numerics::calc_continuous_logp(0, r, nu, s, 0);
   count = 0;
   score = 0;
-  // FIXME: give each hyper its own grid in a hash
-  hyper_grid = log_linspace(.1, 1000, 100);
   init_suff_hash();
   init_hyper_hash(r, nu, s, mu);
 }
@@ -31,12 +29,6 @@ void Suffstats<double>::get_hypers(double &r, double &nu, double &s, double &mu)
   nu = get(hyper_hash, "nu");
   s = get(hyper_hash, "s");
   mu = get(hyper_hash, "mu");
-}
-
-template <>
-vector<double> Suffstats<double>::get_hyper_grid(string which_hyper) {
-  //FIXME: actually switch on which_hyper
-  return hyper_grid;
 }
 
 template <>
@@ -107,11 +99,6 @@ vector<double> Suffstats<double>::calc_hyper_conditional(string which_hyper, vec
   } else {
     // error condition
   }
-}
-
-template<>
-vector<double> Suffstats<double>::calc_hyper_conditional(string which_hyper) const {
-  return calc_hyper_conditional(which_hyper, hyper_grid);
 }
 
 template <>
