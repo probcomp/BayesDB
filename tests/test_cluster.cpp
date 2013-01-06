@@ -64,6 +64,68 @@ int main(int argc, char** argv) {
   //
   assert(is_almost(sum_scores, cd.get_score(), 1E-10));
 
+
+
+  // test hypers
+  for(int which_col=0; which_col<num_cols; which_col++) {
+    int N_grid = 11;
+    double test_scale = 10;
+    Suffstats<double> sd_i = cd.get_suffstats_i(which_col);
+    double r, nu, s, mu;
+    double precision = 1E-10;
+    sd_i.get_hypers(r, nu, s, mu);
+    double score_0 = sd_i.get_score();
+    vector<double> hyper_grid;
+    vector<double> hyper_conditionals;
+    double curr_hyper_conditional_in_grid;
+    //
+    //    test 'r' hyper
+    cout << "testing r conditionals" << endl;
+    hyper_grid = log_linspace(r / test_scale, r * test_scale, N_grid);
+    hyper_conditionals = cd.calc_hyper_conditional(which_col, "r", hyper_grid);
+    cout << "r_grid from function: " << hyper_grid << endl;
+    cout << "r_conditioanls from function: " << hyper_conditionals << endl;
+    curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
+    cout << "curr r conditional in grid: " << curr_hyper_conditional_in_grid << endl;
+    assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
+    //
+    //    test 'nu' hyper
+    cout << "testing nu conditionals" << endl;
+    hyper_grid = log_linspace(nu / test_scale, nu * test_scale, N_grid);
+    hyper_conditionals = cd.calc_hyper_conditional(which_col, "nu", hyper_grid);
+    cout << "nu_grid: " << hyper_grid << endl;
+    cout << "nu_conditionals: " << hyper_conditionals << endl;
+    curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
+    cout << "curr nu conditional in grid: " << curr_hyper_conditional_in_grid << endl;
+    assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
+    //
+    //    test 's' hyper
+    cout << "testing s conditionals" << endl;
+    hyper_grid = log_linspace(s / test_scale, s * test_scale, N_grid);
+    hyper_conditionals = cd.calc_hyper_conditional(which_col, "s", hyper_grid);
+    cout << "s_grid: " << hyper_grid << endl;
+    cout << "s_conditionals: " << hyper_conditionals << endl;
+    curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
+    cout << "curr s conditional in grid: " << curr_hyper_conditional_in_grid << endl;
+    assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
+    //
+    //    test 'mu' hyper
+    cout << "testing mu conditionals" << endl;
+    hyper_grid = log_linspace(mu / test_scale, mu * test_scale, N_grid);
+    hyper_conditionals = cd.calc_hyper_conditional(which_col, "mu", hyper_grid);
+    cout << "mu_grid: " << hyper_grid << endl;
+    cout << "mu_conditionals: " << hyper_conditionals << endl;
+    curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
+    cout << "curr  mu conditional in grid: " << curr_hyper_conditional_in_grid << endl;
+    assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
+  }
+
+
+
+
+
+
+
   // depopulate the objects
   cout << "De-populating objects" << endl;
   for(int row_idx=0; row_idx<num_rows; row_idx++) {
@@ -90,6 +152,7 @@ int main(int argc, char** argv) {
   cout << endl;
   //
   assert(is_almost(sum_scores, cd.get_score(), 1E-10));
+
 
 
   // double sum_sum_score_deltas;
