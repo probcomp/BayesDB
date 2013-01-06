@@ -111,48 +111,43 @@ double numerics::calc_cluster_crp_logp(double cluster_weight, double sum_weights
   return log_probability;
 }
 
+void numerics::insert_to_continuous_suffstats(int &count,
+					      double &sum_x, double &sum_x_sq,
+					      double el) {
+  count += 1;
+  sum_x += el;
+  sum_x_sq += el * el;
+}
+
+void numerics::remove_from_continuous_suffstats(int &count,
+						double &sum_x, double &sum_x_sq,
+						double el) {
+  count -= 1;
+  sum_x -= el;
+  sum_x_sq -= el * el;
+}
+
 /*
   r' = r + n
   nu' = nu + n
   m' = m + (X-nm)/(r+n)
   s' = s + C + rm**2 - r'm'**2
 */
-double numerics::insert_to_continuous_suffstats(int &count,
-						double &r, double &nu,
-						double &s, double &mu,
-						double el) {
-  count += 1;
+void numerics::update_continuous_hypers(int count,
+					double sum_x, double sum_x_sq,
+					double &r, double &nu,
+					double &s, double &mu) {
+  double r_prime = r + count;
+  double nu_prime = nu + count;
+  double mu_prime =  ((r * mu) + sum_x) / r_prime;
+  double s_prime = s + sum_x_sq \
+    + (r * mu * mu) \
+    - (r_prime * mu_prime * mu_prime);
   //
-  double r_prime = r + 1;
-  double nu_prime = nu + 1;
-  double mu_prime = mu + (el - mu) / r_prime;
-  double s_prime = s + pow(el, 2)		\
-    + (r * pow(mu, 2))				\
-    - r_prime * pow(mu_prime, 2);
-  //
-  nu = nu_prime;
   r = r_prime;
-  mu = mu_prime;
-  s = s_prime;
-}
-
-double numerics::remove_from_continuous_suffstats(int &count,
-						  double &r, double &nu,
-						  double &s, double &mu,
-						  double el) {
-  count -= 1;
-  //
-  double r_prime = r - 1;
-  double nu_prime = nu - 1;
-  double mu_prime = (r * mu - el) / r_prime;
-  double s_prime = s - pow(el, 2)		\
-    + (r * pow(mu, 2))				\
-    - r_prime * pow(mu_prime, 2);
-  //
   nu = nu_prime;
-  r = r_prime;
-  mu = mu_prime;
   s = s_prime;
+  mu = mu_prime;
 }
 
 double calc_continuous_log_Z(const double r, const double nu, const double s)  {
@@ -170,12 +165,14 @@ double numerics::calc_continuous_logp(const int count,
   return -count * HALF_LOG_2PI + calc_continuous_log_Z(r, nu, s) - log_Z_0;
 }
 
-double numerics::calc_continuous_suffstats_data_logp(int count,
-						     double r, double nu,
-						     double s, double mu,
-						     double el,
-						     double log_Z) {
-  numerics::insert_to_continuous_suffstats(count, r, nu, s, mu, el);
-  double logp = numerics::calc_continuous_logp(count, r, nu, s, log_Z);
+double numerics::calc_continuous_data_logp(int count,
+					   double sum_x, double sum_x_sq,
+					   double r, double nu,
+					   double s, double mu,
+					   double el,
+					   double score_0) {
+  numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq, el);
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+  double logp = numerics::calc_continuous_logp(count, r, nu, s, score_0);
   return logp;
 }

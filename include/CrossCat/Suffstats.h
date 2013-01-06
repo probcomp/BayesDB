@@ -25,13 +25,12 @@ template <typename T> std::ostream& operator<<(std::ostream& os,
 template <class T>
 class Suffstats {
  public:
-  Suffstats<T>();
-  Suffstats<T>(double r, double nu, double s, double mu);
+  Suffstats<T>(double r=r0_0, double nu=nu0_0, double s=s0_0, double mu=mu0_0);
   //
   // getters
   int get_count() const;
-  void get_suffstats(int &count, double &r, double &nu, double &s, double &mu
-		     ) const;
+  void get_suffstats(int &count, double &sum_x, double &sum_x_sq) const;
+  void get_hypers(double &r, double &nu, double &s, double &mu) const;
   double get_score() const;
   //
   // mutators
@@ -45,15 +44,19 @@ class Suffstats {
  private:
   int count;
   std::map<std::string, double> suff_hash;
+  std::map<std::string, double> hyper_hash;
   double continuous_log_Z_0;
   double score;
   //
-  void init_suff_hash(double r=r0_0, double nu=nu0_0, double s=s0_0, double mu=mu0_0);
+  void init_suff_hash();
+  void init_hyper_hash(double r=r0_0, double nu=nu0_0, double s=s0_0, double mu=mu0_0);
 };
 
 // forward declare
 template <>
-void Suffstats<double>::init_suff_hash(double r, double nu, double s, double mu);
+void Suffstats<double>::init_suff_hash();
+template <>
+void Suffstats<double>::init_hyper_hash(double r, double nu, double s, double mu);
 
 template <class T>
 int Suffstats<T>::get_count() const {
@@ -69,13 +72,11 @@ template <typename T>
 std::ostream& operator<<(std::ostream& os, const Suffstats<T>& sT) {
   os << "count: " << sT.count << std::endl;
   //
-  std::map<std::string, double>::const_iterator it = sT.suff_hash.begin();
-  os << it->first << ":" << it->second;
-  it++;
-  for(; it != sT.suff_hash.end(); it++) {
-    os << ";\t" << it->first << ":" << std::setprecision(3) << std::fixed << it->second;
-  }
-  os << ";\tscore:" << sT.get_score();
+  os << "suffstats" << std::endl;
+  os << sT.suff_hash << std::endl;
+  os << "hypers" << std::endl;
+  os << sT.hyper_hash << std::endl;
+  os << "score:" << sT.get_score();
 }
 
 void print_defaults();

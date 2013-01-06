@@ -8,32 +8,34 @@ template<>
 double Suffstats<double>::calc_logp() const;
 
 template <>
-Suffstats<double>::Suffstats() {
+Suffstats<double>::Suffstats(double r, double nu, double s, double mu) {
+  continuous_log_Z_0 = numerics::calc_continuous_logp(0, r, nu, s, 0);
+  count = 0;
+  score = 0;
   init_suff_hash();
+  init_hyper_hash(r, nu, s, mu);
 }
 
 template <>
-Suffstats<double>::Suffstats(double r, double nu, double s, double mu) {
-  init_suff_hash(r, nu, s, mu);
+void Suffstats<double>::get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const {
+  count_out = count;
+  sum_x = get(suff_hash, "sum_x");
+  sum_x_sq = get(suff_hash, "sum_x_sq");
 }
 
-template <class T>
-void Suffstats<T>::get_suffstats(int &count_out, double &r, double &nu,
-				 double &s, double &mu) const {
-  count_out = count;
-  r = get(suff_hash, "r");
-  nu = get(suff_hash, "nu");
-  s = get(suff_hash, "s");
-  mu = get(suff_hash, "mu");
+template <>
+void Suffstats<double>::get_hypers(double &r, double &nu, double &s, double &mu)  const {
+  r = get(hyper_hash, "r");
+  nu = get(hyper_hash, "nu");
+  s = get(hyper_hash, "s");
+  mu = get(hyper_hash, "mu");
 }
 
 template <>
 double Suffstats<double>::insert_el(double el) {
   double score_0 = score;
-  numerics::insert_to_continuous_suffstats(count,
-					   suff_hash["r"], suff_hash["nu"],
-					   suff_hash["s"], suff_hash["mu"],
-					   el);
+  numerics::insert_to_continuous_suffstats(count, suff_hash["sum_x"],
+					   suff_hash["sum_x_sq"], el);
   score = calc_logp();
   double delta_score = score - score_0;
   return delta_score;
@@ -42,10 +44,8 @@ double Suffstats<double>::insert_el(double el) {
 template<>
 double Suffstats<double>::remove_el(double el) {
   double score_0 = score;
-  numerics::remove_from_continuous_suffstats(count,
-					     suff_hash["r"], suff_hash["nu"],
-					     suff_hash["s"], suff_hash["mu"],
-					     el);
+  numerics::remove_from_continuous_suffstats(count, suff_hash["sum_x"],
+					   suff_hash["sum_x_sq"], el);
   score = calc_logp();
   double delta_score = score - score_0;
   return delta_score;
@@ -54,30 +54,41 @@ double Suffstats<double>::remove_el(double el) {
 template<>
 double Suffstats<double>::calc_logp() const {
   int count;
+  double sum_x, sum_x_sq;
   double r, nu, s, mu;
-  get_suffstats(count, r, nu, s, mu);
+  get_suffstats(count, sum_x, sum_x_sq);
+  get_hypers(r, nu, s, mu);
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
   return numerics::calc_continuous_logp(count, r, nu, s, continuous_log_Z_0);
 }
   
 template<>
 double Suffstats<double>::calc_data_logp(double el) const {
   int count;
+  double sum_x, sum_x_sq;
   double r, nu, s, mu;
-  get_suffstats(count, r, nu, s, mu);
-  double log_Z = score + continuous_log_Z_0;
-  return numerics::calc_continuous_suffstats_data_logp(count, r, nu, s, mu, el,
-						       log_Z);
+  get_suffstats(count, sum_x, sum_x_sq);
+  get_hypers(r, nu, s, mu);
+  //
+  numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq, el);
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+  double logp_prime = numerics::calc_continuous_logp(count, r, nu, s, continuous_log_Z_0);
+  return logp_prime - score;
 }
 
 template <>
-void Suffstats<double>::init_suff_hash(double r, double nu, double s, double mu) {
-  continuous_log_Z_0 = numerics::calc_continuous_logp(0, r, nu, s, 0);
-  count = 0;
-  suff_hash["r"] = r;
-  suff_hash["nu"] = nu;
-  suff_hash["s"] = s;
-  suff_hash["mu"] = mu;
-  score = 0;
+void Suffstats<double>::init_suff_hash() {
+  suff_hash["count"] = 0;
+  suff_hash["sum_x"] = 0;
+  suff_hash["sum_x_sq"] = 0;
+}
+
+template <>
+void Suffstats<double>::init_hyper_hash(double r, double nu, double s, double mu) {
+  hyper_hash["r"] = r;
+  hyper_hash["nu"] = nu;
+  hyper_hash["s"] = s;
+  hyper_hash["mu"] = mu;
 }
 
 void print_defaults() {
@@ -94,4 +105,3 @@ double get(const map<string, double> m, string key) {
   if(it == m.end()) return -1;
   return it->second;
 }
-

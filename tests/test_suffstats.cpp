@@ -66,9 +66,13 @@ int main(int argc, char** argv) {
   // verify initial parameters
   //
   int count;
+  double sum_x, sum_x_sq;
   double r, nu, s, mu;
-  sd.get_suffstats(count, r, nu, s, mu);
+  sd.get_suffstats(count, sum_x, sum_x_sq);
+  sd.get_hypers(r, nu, s, mu);
   assert(count==0);
+  assert(is_almost(sum_x, 0, precision));
+  assert(is_almost(sum_x_sq, 0, precision));
   assert(is_almost(r, r0, precision));
   assert(is_almost(nu, nu0, precision));
   assert(is_almost(s, s0, precision));
@@ -90,8 +94,11 @@ int main(int argc, char** argv) {
   cout << endl << "suffstats after removal of data in reversed order" << endl;
   cout << sd << endl;
   // ensure initial values are recovered
-  sd.get_suffstats(count, r, nu, s, mu);
+  sd.get_suffstats(count, sum_x, sum_x_sq);
+  sd.get_hypers(r, nu, s, mu);
   assert(count==0);
+  assert(is_almost(sum_x, 0, precision));
+  assert(is_almost(sum_x_sq, 0, precision));
   assert(is_almost(r, r0, precision));
   assert(is_almost(nu, nu0, precision));
   assert(is_almost(s, s0, precision));
@@ -113,8 +120,11 @@ int main(int argc, char** argv) {
   cout << endl << "suffstats after removal of data in shuffled order" << endl;
   cout << sd << endl;
   // ensure initial values are recovered
-  sd.get_suffstats(count, r, nu, s, mu);
+  sd.get_suffstats(count, sum_x, sum_x_sq);
+  sd.get_hypers(r, nu, s, mu);
   assert(count==0);
+  assert(is_almost(sum_x, 0, precision));
+  assert(is_almost(sum_x_sq, 0, precision));
   assert(is_almost(r, r0, precision));
   assert(is_almost(nu, nu0, precision));
   assert(is_almost(s, s0, precision));

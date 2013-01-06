@@ -33,25 +33,28 @@ namespace numerics {
 						  std::vector<int> counts,
 						  bool absolute=false);
 
-  double calc_beta_conditional();
+  void insert_to_continuous_suffstats(int &count,
+				      double &sum_x, double &sum_x_sq,
+				      double el);
 
-  double insert_to_continuous_suffstats(int &count,
-					double &r, double &nu,
-					double &s, double &mu,
-					double new_val);
-  double remove_from_continuous_suffstats(int &count,
-					  double &r, double &nu,
-					  double &s, double &mu,
-					  double new_val);
+  void remove_from_continuous_suffstats(int &count,
+					double &sum_x, double &sum_x_sq,
+					double el);
+
+  void update_continuous_hypers(int count,
+				double sum_x, double sum_x_sq,
+				double &r, double &nu,
+				double &s, double &mu);
 
   double calc_continuous_logp(const int count,
 			      const double r, const double nu, const double s,
 			      const double log_Z_0);
-  double calc_continuous_suffstats_data_logp(int count,
-					     double r, double nu,
-					     double s, double mu,
-					     double el, 
-					     double log_Z_0);
+  double calc_continuous_data_logp(int count,
+				   double sum_x, double sum_x_sq,
+				   double r, double nu,
+				   double s, double mu,
+				   double el, 
+				   double score_0);
 
 }
 
