@@ -72,10 +72,8 @@ template <typename T>
 std::ostream& operator<<(std::ostream& os, const Suffstats<T>& sT) {
   os << "count: " << sT.count << std::endl;
   //
-  os << "suffstats" << std::endl;
-  os << sT.suff_hash << std::endl;
-  os << "hypers" << std::endl;
-  os << sT.hyper_hash << std::endl;
+  os << "suffstats: " << sT.suff_hash << std::endl;
+  os << "hypers: " << sT.hyper_hash << std::endl;
   os << "score:" << sT.get_score();
 }
 
