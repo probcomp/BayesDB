@@ -195,6 +195,11 @@ int main(int argc, char** argv) {
   cout << "curr hyper conditional in grid: " << curr_hyper_conditional_in_grid << endl;
   assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
 
+  vector<double> r_conditionals = sd.calc_hyper_conditional("r");
+  vector<double> r_grid = sd.get_hyper_grid("r");
+  cout << "r_grid from function: " << r_grid << endl;
+  cout << "r_conditioanls from function: " << r_conditionals << endl;
+  
   // remove data from suffstats in SHUFFLED order
   remove_els(sd, values_to_test_shuffled);
   cout << endl << "suffstats after removal of data in shuffled order" << endl;
