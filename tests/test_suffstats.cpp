@@ -133,5 +133,31 @@ int main(int argc, char** argv) {
   assert(is_almost(mu, mu0, precision));
   assert(is_almost(sd.get_score(), 0, precision));
 
+  // push data into suffstats
+  insert_els(sd, values_to_test);
+  cout << endl << "suffstats after insertion of data" << endl;
+  cout << sd << endl;
+  // test range of r hypers
+  int N_grid = 11;
+  double test_scale = 10;
+  sd.get_suffstats(count, sum_x, sum_x_sq);
+  sd.get_hypers(r, nu, s, mu);
+  double score_0 = sd.get_score();
+  vector<double> r_grid = log_linspace(r / test_scale, r * test_scale, N_grid);
+  vector<double> r_conditionals = \
+    numerics::calc_continuous_r_conditionals(r_grid, count, sum_x, sum_x_sq,
+					     nu, s, mu);
+  cout << "r_grid: " << r_grid << endl;
+  cout << "r_conditionals: " << r_conditionals << endl;
+  double curr_r_conditional_in_grid = r_conditionals[(int)(N_grid-1)/2];
+  cout << "curr r conditional in grid: " << curr_r_conditional_in_grid << endl;
+  assert(is_almost(score_0, curr_r_conditional_in_grid, precision));
+
+  // remove data from suffstats in SHUFFLED order
+  remove_els(sd, values_to_test_shuffled);
+  cout << endl << "suffstats after removal of data in shuffled order" << endl;
+  cout << sd << endl;
+
+  
   cout << "Stop:: test_suffstats" << endl;
 }
