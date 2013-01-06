@@ -137,21 +137,63 @@ int main(int argc, char** argv) {
   insert_els(sd, values_to_test);
   cout << endl << "suffstats after insertion of data" << endl;
   cout << sd << endl;
-  // test range of r hypers
+  // test hypers
   int N_grid = 11;
   double test_scale = 10;
   sd.get_suffstats(count, sum_x, sum_x_sq);
   sd.get_hypers(r, nu, s, mu);
   double score_0 = sd.get_score();
-  vector<double> r_grid = log_linspace(r / test_scale, r * test_scale, N_grid);
-  vector<double> r_conditionals = \
-    numerics::calc_continuous_r_conditionals(r_grid, count, sum_x, sum_x_sq,
+  vector<double> hyper_grid;
+  vector<double> hyper_conditionals;
+  double curr_hyper_conditional_in_grid;
+  //
+  //    test 'r' hyper
+  cout << "testing r conditionals" << endl;
+  hyper_grid = log_linspace(r / test_scale, r * test_scale, N_grid);
+  hyper_conditionals = \
+    numerics::calc_continuous_r_conditionals(hyper_grid, count, sum_x, sum_x_sq,
 					     nu, s, mu);
-  cout << "r_grid: " << r_grid << endl;
-  cout << "r_conditionals: " << r_conditionals << endl;
-  double curr_r_conditional_in_grid = r_conditionals[(int)(N_grid-1)/2];
-  cout << "curr r conditional in grid: " << curr_r_conditional_in_grid << endl;
-  assert(is_almost(score_0, curr_r_conditional_in_grid, precision));
+  cout << "hyper_grid: " << hyper_grid << endl;
+  cout << "hyper_conditionals: " << hyper_conditionals << endl;
+  curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
+  cout << "curr hyper conditional in grid: " << curr_hyper_conditional_in_grid << endl;
+  assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
+  //
+  //    test 'nu' hyper
+  cout << "testing nu conditionals" << endl;
+  hyper_grid = log_linspace(nu / test_scale, nu * test_scale, N_grid);
+  hyper_conditionals = \
+    numerics::calc_continuous_nu_conditionals(hyper_grid, count, sum_x, sum_x_sq,
+					      r, s, mu);
+  cout << "hyper_grid: " << hyper_grid << endl;
+  cout << "hyper_conditionals: " << hyper_conditionals << endl;
+  curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
+  cout << "curr hyper conditional in grid: " << curr_hyper_conditional_in_grid << endl;
+  assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
+  //
+  //    test 's' hyper
+  cout << "testing s conditionals" << endl;
+  hyper_grid = log_linspace(s / test_scale, s * test_scale, N_grid);
+  hyper_conditionals = \
+    numerics::calc_continuous_s_conditionals(hyper_grid, count, sum_x, sum_x_sq,
+					     r, nu, mu);
+  cout << "hyper_grid: " << hyper_grid << endl;
+  cout << "hyper_conditionals: " << hyper_conditionals << endl;
+  curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
+  cout << "curr hyper conditional in grid: " << curr_hyper_conditional_in_grid << endl;
+  assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
+  //
+  //    test 'mu' hyper
+  cout << "testing mu conditionals" << endl;
+  hyper_grid = log_linspace(mu / test_scale, mu * test_scale, N_grid);
+  hyper_conditionals = \
+    numerics::calc_continuous_mu_conditionals(hyper_grid, count, sum_x, sum_x_sq,
+					      r, nu, s);
+  cout << "hyper_grid: " << hyper_grid << endl;
+  cout << "hyper_conditionals: " << hyper_conditionals << endl;
+  curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
+  cout << "curr hyper conditional in grid: " << curr_hyper_conditional_in_grid << endl;
+  assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
 
   // remove data from suffstats in SHUFFLED order
   remove_els(sd, values_to_test_shuffled);
