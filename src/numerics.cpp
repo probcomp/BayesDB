@@ -150,7 +150,7 @@ void numerics::update_continuous_hypers(int count,
   mu = mu_prime;
 }
 
-double calc_continuous_log_Z(const double r, const double nu, const double s)  {
+double calc_continuous_log_Z(double r, double nu, double s)  {
   double nu_over_2 = .5 * nu;
   return nu_over_2 * (LOG_2 - log(s))			\
     + HALF_LOG_2PI					\
@@ -158,10 +158,10 @@ double calc_continuous_log_Z(const double r, const double nu, const double s)  {
     + lgamma(nu_over_2);
 }
 
-double numerics::calc_continuous_logp(const int count,
-				      const double r, const double nu,
-				      const double s,
-				      const double log_Z_0) {
+double numerics::calc_continuous_logp(int count,
+				      double r, double nu,
+				      double s,
+				      double log_Z_0) {
   return -count * HALF_LOG_2PI + calc_continuous_log_Z(r, nu, s) - log_Z_0;
 }
 
@@ -175,4 +175,29 @@ double numerics::calc_continuous_data_logp(int count,
   numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
   double logp = numerics::calc_continuous_logp(count, r, nu, s, score_0);
   return logp;
+}
+
+vector<double> numerics::calc_continuous_r_conditionals(std::vector<double> r_grid,
+							int count,
+							double sum_x,
+							double sum_x_sq,
+							double nu,
+							double s,
+							double mu) {
+  std::vector<double> logps;
+  std::vector<double>::iterator it;
+  for(it=r_grid.begin(); it!=r_grid.end(); it++) {
+    double r_prime = *it;
+    double nu_prime = nu;
+    double s_prime = s;
+    double mu_prime = mu;
+    double log_Z_0 = calc_continuous_log_Z(r_prime, nu_prime, s_prime);
+    update_continuous_hypers(count, sum_x, sum_x_sq,
+			     r_prime, nu_prime, s_prime, mu_prime);
+    double logp = numerics::calc_continuous_logp(count,
+						 r_prime, nu_prime, s_prime,
+						 log_Z_0);
+    logps.push_back(logp);
+  }
+  return logps;
 }
