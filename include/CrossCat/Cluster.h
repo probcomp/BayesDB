@@ -37,6 +37,7 @@ class Cluster {
   std::map<int, double> calc_logps();
   double calc_sum_logp();
   double get_vector_logp(std::vector<T> vT); // to be removed when test ensures calc_data_logps correctness
+  std::vector<double> calc_hyper_conditional(int which_col, std::string which_hyper, std::vector<double> hyper_grid) const;
  private:
   double score;
   int num_cols;

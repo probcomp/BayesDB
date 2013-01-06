@@ -67,3 +67,10 @@ double Cluster<double>::get_vector_logp(vector<double> vd) {
   // assert(start_logp==end_logp);
   return middle_logp - start_logp;
 }
+
+template <>
+vector<double> Cluster<double>::calc_hyper_conditional(int which_col, string which_hyper, vector<double> hyper_grid) const {
+  map<int, Suffstats<double> >::const_iterator it = suffstats_m.find(which_col);
+  Suffstats<double> sd = it->second;
+  return sd.calc_hyper_conditional(which_hyper, hyper_grid);
+}
