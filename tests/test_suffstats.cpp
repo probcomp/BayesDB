@@ -9,6 +9,16 @@ using namespace std;
 
 typedef Suffstats<double> suffD;
 
+void insert_els(Suffstats<double> &sd, vector<double> els) {
+  for(vector<double>::iterator it=els.begin(); it!=els.end(); it++)
+    sd.insert_el(*it);
+}
+
+void remove_els(Suffstats<double> &sd, vector<double> els) {
+  for(vector<double>::iterator it=els.begin(); it!=els.end(); it++)
+    sd.remove_el(*it);
+}
+
 int main(int argc, char** argv) {  
   cout << endl << "Begin:: test_suffstats" << endl;
   RandomNumberGenerator rng;
@@ -80,17 +90,13 @@ int main(int argc, char** argv) {
   assert(is_almost(sd.get_score(), 0, precision));
 
   // push data into suffstats
-  for(vector<double>::iterator it=values_to_test.begin(); it!=values_to_test.end(); it++) {
-    sd.insert_el(*it);
-  }
+  insert_els(sd, values_to_test);
   cout << endl << "suffstats after insertion of data" << endl;
   cout << sd << endl;
   // ensure count is proper
   assert(sd.get_count()==num_values_to_test);
   // remove data from suffstats in REVERSED order
-  for(vector<double>::iterator it=values_to_test_reversed.begin(); it!=values_to_test_reversed.end(); it++) {
-    sd.remove_el(*it);
-  }
+  remove_els(sd, values_to_test_reversed);
   cout << endl << "suffstats after removal of data in reversed order" << endl;
   cout << sd << endl;
   // ensure initial values are recovered
@@ -106,17 +112,13 @@ int main(int argc, char** argv) {
   assert(is_almost(sd.get_score(), 0, precision));
 
   // push data into suffstats
-  for(vector<double>::iterator it=values_to_test.begin(); it!=values_to_test.end(); it++) {
-    sd.insert_el(*it);
-  }
+  insert_els(sd, values_to_test);
   cout << endl << "suffstats after insertion of data" << endl;
   cout << sd << endl;
   // ensure count is proper
   assert(sd.get_count()==num_values_to_test);
   // remove data from suffstats in SHUFFLED order
-  for(vector<double>::iterator it=values_to_test_shuffled.begin(); it!=values_to_test_shuffled.end(); it++) {
-    sd.remove_el(*it);
-  }
+  remove_els(sd, values_to_test_shuffled);
   cout << endl << "suffstats after removal of data in shuffled order" << endl;
   cout << sd << endl;
   // ensure initial values are recovered
