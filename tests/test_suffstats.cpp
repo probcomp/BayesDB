@@ -199,7 +199,13 @@ int main(int argc, char** argv) {
   vector<double> r_grid = sd.get_hyper_grid("r");
   cout << "r_grid from function: " << r_grid << endl;
   cout << "r_conditioanls from function: " << r_conditionals << endl;
-  
+
+  cout << "NEW GRID" << endl;
+  r_grid = log_linspace(r/10, r*10, 11);
+  r_conditionals = sd.calc_hyper_conditional("r", r_grid);
+  cout << "r_grid from function: " << r_grid << endl;
+  cout << "r_conditioanls from function: " << r_conditionals << endl;
+
   // remove data from suffstats in SHUFFLED order
   remove_els(sd, values_to_test_shuffled);
   cout << endl << "suffstats after removal of data in shuffled order" << endl;
