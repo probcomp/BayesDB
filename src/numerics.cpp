@@ -201,3 +201,79 @@ vector<double> numerics::calc_continuous_r_conditionals(std::vector<double> r_gr
   }
   return logps;
 }
+
+vector<double> numerics::calc_continuous_nu_conditionals(std::vector<double> nu_grid,
+							int count,
+							double sum_x,
+							double sum_x_sq,
+							double r,
+							double s,
+							double mu) {
+  std::vector<double> logps;
+  std::vector<double>::iterator it;
+  for(it=nu_grid.begin(); it!=nu_grid.end(); it++) {
+    double r_prime = r;
+    double nu_prime = *it;
+    double s_prime = s;
+    double mu_prime = mu;
+    double log_Z_0 = calc_continuous_log_Z(r_prime, nu_prime, s_prime);
+    update_continuous_hypers(count, sum_x, sum_x_sq,
+			     r_prime, nu_prime, s_prime, mu_prime);
+    double logp = numerics::calc_continuous_logp(count,
+						 r_prime, nu_prime, s_prime,
+						 log_Z_0);
+    logps.push_back(logp);
+  }
+  return logps;
+}
+
+vector<double> numerics::calc_continuous_s_conditionals(std::vector<double> s_grid,
+							int count,
+							double sum_x,
+							double sum_x_sq,
+							double r,
+							double nu,
+							double mu) {
+  std::vector<double> logps;
+  std::vector<double>::iterator it;
+  for(it=s_grid.begin(); it!=s_grid.end(); it++) {
+    double r_prime = r;
+    double nu_prime = nu;
+    double s_prime = *it;
+    double mu_prime = mu;
+    double log_Z_0 = calc_continuous_log_Z(r_prime, nu_prime, s_prime);
+    update_continuous_hypers(count, sum_x, sum_x_sq,
+			     r_prime, nu_prime, s_prime, mu_prime);
+    double logp = numerics::calc_continuous_logp(count,
+						 r_prime, nu_prime, s_prime,
+						 log_Z_0);
+    logps.push_back(logp);
+  }
+  return logps;
+}
+
+vector<double> numerics::calc_continuous_mu_conditionals(std::vector<double> mu_grid,
+							int count,
+							double sum_x,
+							double sum_x_sq,
+							double r,
+							double nu,
+							double s) {
+  std::vector<double> logps;
+  std::vector<double>::iterator it;
+  for(it=mu_grid.begin(); it!=mu_grid.end(); it++) {
+    double r_prime = r;
+    double nu_prime = nu;
+    double s_prime = s;
+    double mu_prime = *it;
+    double log_Z_0 = calc_continuous_log_Z(r_prime, nu_prime, s_prime);
+    update_continuous_hypers(count, sum_x, sum_x_sq,
+			     r_prime, nu_prime, s_prime, mu_prime);
+    double logp = numerics::calc_continuous_logp(count,
+						 r_prime, nu_prime, s_prime,
+						 log_Z_0);
+    logps.push_back(logp);
+  }
+  return logps;
+}
+

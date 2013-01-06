@@ -63,6 +63,27 @@ namespace numerics {
 						     double nu,
 						     double s,
 						     double mu);
+  std::vector<double> calc_continuous_nu_conditionals(std::vector<double> nu_grid,
+						     int count,
+						     double sum_x,
+						     double sum_x_sq,
+						     double r,
+						     double s,
+						     double mu);
+  std::vector<double> calc_continuous_s_conditionals(std::vector<double> s_grid,
+						     int count,
+						     double sum_x,
+						     double sum_x_sq,
+						     double r,
+						     double nu,
+						     double mu);
+  std::vector<double> calc_continuous_mu_conditionals(std::vector<double> mu_grid,
+						     int count,
+						     double sum_x,
+						     double sum_x_sq,
+						     double r,
+						     double nu,
+						     double s);
 
 }
 
