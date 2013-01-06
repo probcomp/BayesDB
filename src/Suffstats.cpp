@@ -12,6 +12,8 @@ Suffstats<double>::Suffstats(double r, double nu, double s, double mu) {
   continuous_log_Z_0 = numerics::calc_continuous_logp(0, r, nu, s, 0);
   count = 0;
   score = 0;
+  // FIXME: give each hyper its own grid in a hash
+  hyper_grid = log_linspace(.1, 1000, 100);
   init_suff_hash();
   init_hyper_hash(r, nu, s, mu);
 }
@@ -29,6 +31,12 @@ void Suffstats<double>::get_hypers(double &r, double &nu, double &s, double &mu)
   nu = get(hyper_hash, "nu");
   s = get(hyper_hash, "s");
   mu = get(hyper_hash, "mu");
+}
+
+template <>
+vector<double> Suffstats<double>::get_hyper_grid(string which_hyper) {
+  //FIXME: actually switch on which_hyper
+  return hyper_grid;
 }
 
 template <>
@@ -74,6 +82,32 @@ double Suffstats<double>::calc_data_logp(double el) const {
   numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
   double logp_prime = numerics::calc_continuous_logp(count, r, nu, s, continuous_log_Z_0);
   return logp_prime - score;
+}
+
+template<>
+vector<double> Suffstats<double>::calc_hyper_conditional(string which_hyper)  const {
+  vector<double> grid = hyper_grid;
+  int count;
+  double sum_x, sum_x_sq;
+  double r, nu, s, mu;
+  get_suffstats(count, sum_x, sum_x_sq);
+  get_hypers(r, nu, s, mu);
+  
+  if(which_hyper=="r") {
+    return numerics::calc_continuous_r_conditionals(grid, count, sum_x,
+						    sum_x_sq, nu, s, mu);
+  } else if(which_hyper=="nu"){
+    return numerics::calc_continuous_nu_conditionals(grid, count, sum_x,
+  						     sum_x_sq, r, s, mu);
+  } else if(which_hyper=="s"){
+    return numerics::calc_continuous_s_conditionals(grid, count, sum_x,
+						    sum_x_sq, r, nu, mu);
+  } else if(which_hyper=="mu"){
+    return numerics::calc_continuous_mu_conditionals(grid, count, sum_x,
+  						     sum_x_sq, r, nu, s);
+  } else {
+    // error condition
+  }
 }
 
 template <>
