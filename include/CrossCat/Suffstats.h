@@ -31,6 +31,7 @@ class Suffstats {
   int get_count() const;
   void get_suffstats(int &count, double &sum_x, double &sum_x_sq) const;
   void get_hypers(double &r, double &nu, double &s, double &mu) const;
+  std::map<std::string, double> get_hyper_hash() const;
   double get_score() const;
   //
   // mutators

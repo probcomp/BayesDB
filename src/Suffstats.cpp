@@ -41,6 +41,11 @@ void Suffstats<double>::get_hypers(double &r, double &nu, double &s, double &mu)
 }
 
 template <>
+std::map<std::string, double> Suffstats<double>::get_hyper_hash() const {
+  return hyper_hash;
+}
+
+template <>
 double Suffstats<double>::insert_el(double el) {
   double score_0 = score;
   numerics::insert_to_continuous_suffstats(count, suff_hash["sum_x"],
