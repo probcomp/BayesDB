@@ -56,6 +56,7 @@ class View {
   void transition_crp_alpha();
   double set_hyper(int which_col, std::string which_hyper, double new_value);
   void transition_hyper(int which_col, std::string which_hyper, std::vector<double> hyper_grid);
+  void transition_hyper(int which_col, std::string which_hyper);
   void transition_hypers(int which_col, std::vector<double> hyper_grid);
   /* void transition_data_hypers(); */
   //

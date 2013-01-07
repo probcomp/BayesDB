@@ -186,6 +186,20 @@ void View::transition_hyper(int which_col, std::string which_hyper, vector<doubl
   data_score += delta_data_score;
 }
 
+void View::transition_hyper(int which_col, std::string which_hyper) {
+  vector<double> hyper_grid;
+  if(which_hyper=="r") {
+    hyper_grid = r_grid;
+  } else if (which_hyper=="nu") {
+    hyper_grid = nu_grid;
+  } else if (which_hyper=="s") {
+    hyper_grid = s_grids[which_col];
+  } else if (which_hyper=="mu") {
+    hyper_grid = mu_grids[which_col];
+  }
+  transition_hyper(which_col, which_hyper, hyper_grid);
+}
+
 void View::transition_hypers(int which_col, std::vector<double> hyper_grid) {
   
 }
