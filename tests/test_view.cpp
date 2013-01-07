@@ -71,8 +71,10 @@ int main(int argc, char** argv) {
   double init_crp_alpha = 3;
   //
   map<int, vector<double> > data_map;
+  cout << "populating data_map" << endl;
   for(int idx=0; idx<6; idx++) {
     vector<double> row = extract_row(data, idx);
+    cout << "row_idx: " << idx << "; data: " << row << endl;
     data_map[idx] = row;
   }
   //
@@ -92,7 +94,7 @@ int main(int argc, char** argv) {
 
   // create the objects to test
   // View v = View(num_cols, init_crp_alpha);
-  View v = View(data);
+  View v = View(data, 11);
   v.print();
   v.assert_state_consistency();
   //
@@ -103,6 +105,15 @@ int main(int argc, char** argv) {
     Cluster<double> *p_cd = new Cluster<double>(num_cols);
     cd_v.push_back(p_cd);
   }
+  map<string, vector<double> > hyper_grid_lookup;
+  hyper_grid_lookup["r"] = v.r_grid;
+  cout << "v.r_grid: " << v.r_grid << endl;
+  hyper_grid_lookup["nu"] = v.nu_grid;
+  cout << "v.nu_grid: " << v.nu_grid << endl;
+  hyper_grid_lookup["s"] = v.s_grids[0];
+  cout << "v.s_grids[0]: " << v.s_grids[0] << endl;
+  hyper_grid_lookup["mu"] = v.mu_grids[0];
+  cout << "v.mu_grids[0]: " << v.mu_grids[0] << endl;
 
   // print the initial view
   cout << "empty view print" << endl;
@@ -191,12 +202,12 @@ int main(int argc, char** argv) {
     vector<double> curr_r_conditionals;
     string hyper_string = *it;
     double default_value = default_hyper_values[hyper_string];
-    hyper_grid = linspace(default_value-10., default_value+10., N_GRID);
     cout << endl;
     cout << hyper_string << " hyper conditionals" << endl;
-    cout << hyper_string << " grid: " << hyper_grid << endl;
     cout << "num_cols: " << num_cols << endl;
     for(int col_idx=0; col_idx<num_cols; col_idx++) {
+      hyper_grid = hyper_grid_lookup[hyper_string];
+      cout << hyper_string << " grid: " << hyper_grid << endl;
       hyper_logps = v.calc_hyper_conditional(col_idx, hyper_string, hyper_grid);
       cout << "conditionals: " << hyper_logps << endl;
       double curr_r_conditional = hyper_logps[(int)(N_GRID-1)/2];
@@ -213,11 +224,6 @@ int main(int argc, char** argv) {
   cout << endl;
   string hyper_string = "r";
   double default_value = default_hyper_values[hyper_string];
-  map<string, vector<double> > hyper_grid_lookup;
-  hyper_grid_lookup["r"] = log_linspace(1., 10., N_GRID);
-  hyper_grid_lookup["nu"] = log_linspace(1., 10., N_GRID);
-  hyper_grid_lookup["s"] = log_linspace(1., 10., N_GRID);
-  hyper_grid_lookup["mu"] = linspace(-10., 10., N_GRID);
   //
   hyper_grid = hyper_grid_lookup["r"];
   int col_idx = 0;
@@ -227,10 +233,11 @@ int main(int argc, char** argv) {
   //
   cout << "hyper_grid: " << hyper_grid << endl;
   cout << "unorm_logps: " << unorm_logps << endl;
-  for(vector<double>::iterator it=unorm_logps.begin(); it!=unorm_logps.end(); it++) {
+  vector<double> score_deltas = unorm_logps;
+  for(vector<double>::iterator it=score_deltas.begin(); it!=score_deltas.end(); it++) {
     *it -= curr_conditional;
   }
-  cout << "score_deltas: " << unorm_logps << endl;
+  cout << "score_deltas: " << score_deltas << endl;
   double data_score_0 = v.get_data_score();
   for(int grid_idx=0; grid_idx<hyper_grid.size(); grid_idx++) {
     double new_hyper_value = hyper_grid[grid_idx];
