@@ -18,7 +18,8 @@ template <class T> class Cluster;
 
 class View {
  public:
-  View(int NUM_COLS, double CRP_ALPHA);
+  //FIXME: add constructor with ranges as arguments, rather than recalculate
+  View(boost::numeric::ublas::matrix<double> data, int N_GRID=31);
   // FIXME: will need to add a deallocator for clusters
   // for when View is garbage collected 
   //
@@ -74,7 +75,12 @@ class View {
   double crp_alpha;
   double crp_score;
   double data_score;
+  // hyper inference grids
   std::vector<double> crp_alpha_grid;
+  std::vector<double> r_grid;
+  std::vector<double> nu_grid;
+  std::vector<std::vector<double> > s_grids;
+  std::vector<std::vector<double> > mu_grids;
   // sub-objects
   RandomNumberGenerator rng;
   // resources

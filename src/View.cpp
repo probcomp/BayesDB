@@ -1,19 +1,52 @@
 #include "View.h"
 
-using namespace std;
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/io.hpp>
+typedef boost::numeric::ublas::matrix<double> MatrixD;
 
-static View NullView = View(0,0);
-static Cluster<double> NullCluster = Cluster<double>(0);
+using namespace std;
 
 typedef set<Cluster<double>*> setCp;
 
-View::View(int NUM_COLS, double CRP_ALPHA) {
-  num_vectors = 0;
-  num_cols = NUM_COLS;
-  crp_alpha = CRP_ALPHA;
+//FIXME: add constructor with ranges as arguments, rather than recalculate
+View::View(MatrixD data, int N_GRID) {
+  int data_num_vectors = data.size1();
+  num_cols = data.size2();
+  vector<double> paramRange = linspace(0.03, .97, N_GRID/2);
+  int APPEND_N = (N_GRID + 1) / 2;
+  //
+  vector<double> crp_alpha_grid_append = log_linspace(1., data_num_vectors, APPEND_N);
+  vector<double> crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
+  //
+  vector<double> r_grid = crp_alpha_grid;
+  //
+  vector<double> nu_grid_append = log_linspace(1., data_num_vectors/2., APPEND_N);
+  vector<double> nu_grid = append(paramRange, nu_grid_append);
+  //
+  vector<vector<double> > s_grids;
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    vector<double> col_data = extract_col(data, col_idx);
+    double sum_sq_deviation = calc_sum_sq_deviation(col_data);
+    vector<double> s_grid_append = log_linspace(1., sum_sq_deviation, APPEND_N);
+    vector<double> s_grid = append(paramRange, s_grid_append);
+    s_grids.push_back(s_grid);
+  }
+  //
+  vector<vector<double> > mu_grids;
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    vector<double> col_data = extract_col(data, col_idx);
+    double min = *std::min_element(col_data.begin(), col_data.end());
+    double max = *std::max_element(col_data.begin(), col_data.end());
+    vector<double> mu_grid_append = linspace(min, max, APPEND_N);
+    vector<double> mu_grid = append(paramRange, mu_grid_append);
+    mu_grids.push_back(mu_grid);
+  }
+  //
+  crp_alpha = 10;
+  //
   crp_score = 0;
   data_score = 0;
-  crp_alpha_grid = log_linspace(1, 100, 20);
 }
 
 double View::get_num_vectors() const {
