@@ -50,6 +50,7 @@ class Suffstats {
   double continuous_log_Z_0;
   double score;
   //
+  void set_log_Z_0();
   void init_suff_hash();
   void init_hyper_hash(double r=r0_0, double nu=nu0_0, double s=s0_0, double mu=mu0_0);
 };
@@ -59,6 +60,8 @@ template <>
 void Suffstats<double>::init_suff_hash();
 template <>
 void Suffstats<double>::init_hyper_hash(double r, double nu, double s, double mu);
+template <>
+void Suffstats<double>::set_log_Z_0();
 
 template <class T>
 int Suffstats<T>::get_count() const {

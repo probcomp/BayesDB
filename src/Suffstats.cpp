@@ -6,14 +6,23 @@ using namespace std;
 double get(const map<string, double> m, string key);
 template<>
 double Suffstats<double>::calc_logp() const;
+template <>
+void Suffstats<double>::get_hypers(double &r, double &nu, double &s, double &mu)  const;
+
+template <>
+void Suffstats<double>::set_log_Z_0() {
+  double r, nu, s, mu;
+  get_hypers(r, nu, s, mu);
+  continuous_log_Z_0 = numerics::calc_continuous_logp(0, r, nu, s, 0);
+}
 
 template <>
 Suffstats<double>::Suffstats(double r, double nu, double s, double mu) {
-  continuous_log_Z_0 = numerics::calc_continuous_logp(0, r, nu, s, 0);
   count = 0;
   score = 0;
   init_suff_hash();
   init_hyper_hash(r, nu, s, mu);
+  set_log_Z_0();
 }
 
 template <>
@@ -55,6 +64,7 @@ template<>
 double Suffstats<double>::set_hyper(string which_hyper, double value) {
   double score_0 = score;
   hyper_hash[which_hyper] = value;
+  set_log_Z_0();
   score = calc_logp();
   double score_delta = score - score_0;
   return score_delta;
