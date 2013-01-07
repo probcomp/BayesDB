@@ -35,6 +35,7 @@ class Cluster {
   // mutators
   double insert_row(std::vector<T> vT, int row_idx);
   double remove_row(std::vector<T> vT, int row_idx);
+  double set_hyper(int which_col, std::string which_hyper, double value);
   //
   // calculators
   double calc_data_logp(std::vector<T> vT) const;

@@ -46,6 +46,13 @@ double Cluster<double>::remove_row(vector<double> vd, int row_idx) {
 }
 
 template <>
+double Cluster<double>::set_hyper(int which_col, std::string which_hyper, double value) {
+  double score_delta = suffstats_m[which_col].set_hyper(which_hyper, value);
+  score += score_delta;
+  return score_delta;
+}
+
+template <>
 double Cluster<double>::calc_data_logp(vector<double> vd) const {
   double sum_logps = 0;
   for(int col_idx=0; col_idx<vd.size(); col_idx++) {
