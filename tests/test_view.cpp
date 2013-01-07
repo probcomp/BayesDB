@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
   // test
   vector<double> cluster_scores;
   setCp_it it = v.clusters.begin();
-  double sum_scores;
+  double sum_scores = 0;
   for(; it!=v.clusters.end(); it++) {
     double cluster_score = (*it)->get_score();
     cluster_scores.push_back(cluster_score);
@@ -162,6 +162,7 @@ int main(int argc, char** argv) {
   cout << "view score: " << v.get_score() << endl;
   assert(is_almost(v.get_score(), crp_plus_data_score, 1E-10));
 
+  // test crp alpha hyper inference
   vector<double> test_alphas;
   test_alphas.push_back(.3);
   test_alphas.push_back(3.);
@@ -182,6 +183,33 @@ int main(int argc, char** argv) {
   crp_score_delta = v.set_alpha(new_alpha);
   cout << "new_alpha: " << new_alpha << ", new_alpha score: " << v.get_crp_score() << ", crp_score_delta: " << crp_score_delta << endl;
 
+  // test continuous data hyper inference
+  vector<double> hyper_grid;
+  vector<double> hyper_logps;
+  int N_GRID = 11;
+  vector<string> hyper_strings;
+  hyper_strings.push_back("r");  hyper_strings.push_back("nu");  hyper_strings.push_back("s");  hyper_strings.push_back("mu");
+  map<string, double> default_hyper_values;
+  default_hyper_values["r"] = 1.0; default_hyper_values["nu"] = 2.0; default_hyper_values["s"] = 2.0; default_hyper_values["mu"] = 0.0;
+  for(vector<string>::iterator it = hyper_strings.begin(); it!=hyper_strings.end(); it++) {
+    vector<double> curr_r_conditionals;
+    string hyper_string = *it;
+    double default_value = default_hyper_values[hyper_string];
+    hyper_grid = linspace(default_value-10., default_value+10., N_GRID);
+    cout << endl;
+    cout << hyper_string << " hyper inference" << endl;
+    cout << hyper_string << " grid: " << hyper_grid << endl;
+    cout << "num_cols: " << num_cols << endl;
+    for(int col_idx=0; col_idx<num_cols; col_idx++) {
+      hyper_logps = v.calc_hyper_conditional(col_idx, hyper_string, hyper_grid);
+      cout << "conditionals: " << hyper_logps << endl;
+      double curr_r_conditional = hyper_logps[(int)(N_GRID-1)/2];
+      curr_r_conditionals.push_back(curr_r_conditional);
+      cout << "curr conditional: " << curr_r_conditional << endl;
+    }
+    double sum_curr_conditionals = std::accumulate(curr_r_conditionals.begin(),curr_r_conditionals.end(),0.);
+    cout << "sum curr conditionals: " << sum_curr_conditionals << endl;
+  }
 
   print_cluster_memberships(v);
   int num_vectors = v.get_num_vectors();
@@ -196,9 +224,7 @@ int main(int argc, char** argv) {
     v.assert_state_consistency();
     v.transition_zs(data_map);
     v.transition_crp_alpha();
-    //if(iter % 10 == 0) {
-
-    if(iter % 1 == 0) {
+    if(iter % 10 == 0) {
       print_cluster_memberships(v);
       cout << "Done iter: " << iter << endl;
       cout << endl;
