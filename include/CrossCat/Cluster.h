@@ -24,20 +24,26 @@ class Cluster {
  public:
   Cluster<T>(): num_cols(5) { init_suffstats(); };
   Cluster<T>(int NUM_COLS): num_cols(NUM_COLS) { init_suffstats(); };
-  double insert_row(std::vector<T> vT, int row_idx);
-  double remove_row(std::vector<T> vT, int row_idx);
-  double calc_data_logp(std::vector<T> vT) const;
-  double get_score() const;
+  //
+  // getters
   int get_count() const;
+  double get_score() const;
+  Suffstats<T> get_suffstats_i(int idx) const;
   std::set<int> get_global_row_indices();
   std::set<int> get_global_col_indices();
-  friend std::ostream& operator<< <>(std::ostream& os, const Cluster<T>& cT);
-  Suffstats<T> get_suffstats_i(int idx) const;
   //
+  // mutators
+  double insert_row(std::vector<T> vT, int row_idx);
+  double remove_row(std::vector<T> vT, int row_idx);
+  //
+  // calculators
+  double calc_data_logp(std::vector<T> vT) const;
   std::map<int, double> calc_logps();
   double calc_sum_logp();
-  double get_vector_logp(std::vector<T> vT); // to be removed when test ensures calc_data_logps correctness
   std::vector<double> calc_hyper_conditional(int which_col, std::string which_hyper, std::vector<double> hyper_grid) const;
+  //
+  // helpers
+  friend std::ostream& operator<< <>(std::ostream& os, const Cluster<T>& cT);
  private:
   double score;
   int num_cols;
@@ -49,25 +55,13 @@ class Cluster {
 };
 
 template <class T>
-std::map<int, double> Cluster<T>::calc_logps() {
-  std::map<int, double> ret_map;
-  typename std::map<int, Suffstats<T> >::iterator it = suffstats_m.begin();
-  for(; it!=suffstats_m.end(); it++) {
-    double logp = it->second.calc_logp();
-    ret_map[it->first] = logp;
-  }
-  return ret_map;
+int Cluster<T>::get_count() const {
+  return count;
 }
 
 template <class T>
-double Cluster<T>::calc_sum_logp() {
-  double sum_logp = 0;
-  std::map<int, double> logp_map = calc_logps();
-  typename std::map<int, double>::iterator it = logp_map.begin();
-  for(; it!=logp_map.end(); it++) {
-    sum_logp += it->second;
-  }
-  return sum_logp;
+double Cluster<T>::get_score() const {
+  return score;
 }
 
 template <class T>
@@ -94,13 +88,25 @@ std::set<int> Cluster<T>::get_global_col_indices() {
 }
 
 template <class T>
-double Cluster<T>::get_score() const {
-  return score;
+std::map<int, double> Cluster<T>::calc_logps() {
+  std::map<int, double> ret_map;
+  typename std::map<int, Suffstats<T> >::iterator it = suffstats_m.begin();
+  for(; it!=suffstats_m.end(); it++) {
+    double logp = it->second.calc_logp();
+    ret_map[it->first] = logp;
+  }
+  return ret_map;
 }
 
 template <class T>
-int Cluster<T>::get_count() const {
-  return count;
+double Cluster<T>::calc_sum_logp() {
+  double sum_logp = 0;
+  std::map<int, double> logp_map = calc_logps();
+  typename std::map<int, double>::iterator it = logp_map.begin();
+  for(; it!=logp_map.end(); it++) {
+    sum_logp += it->second;
+  }
+  return sum_logp;
 }
 
 template <typename T>
