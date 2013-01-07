@@ -17,14 +17,13 @@ View::View(MatrixD data, int N_GRID) {
   int APPEND_N = (N_GRID + 1) / 2;
   //
   vector<double> crp_alpha_grid_append = log_linspace(1., data_num_vectors, APPEND_N);
-  vector<double> crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
+  crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
   //
-  vector<double> r_grid = crp_alpha_grid;
+  r_grid = crp_alpha_grid;
   //
   vector<double> nu_grid_append = log_linspace(1., data_num_vectors/2., APPEND_N);
-  vector<double> nu_grid = append(paramRange, nu_grid_append);
+  nu_grid = append(paramRange, nu_grid_append);
   //
-  vector<vector<double> > s_grids;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
     vector<double> col_data = extract_col(data, col_idx);
     double sum_sq_deviation = calc_sum_sq_deviation(col_data);
@@ -33,7 +32,6 @@ View::View(MatrixD data, int N_GRID) {
     s_grids.push_back(s_grid);
   }
   //
-  vector<vector<double> > mu_grids;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
     vector<double> col_data = extract_col(data, col_idx);
     double min = *std::min_element(col_data.begin(), col_data.end());
@@ -43,7 +41,7 @@ View::View(MatrixD data, int N_GRID) {
     mu_grids.push_back(mu_grid);
   }
   //
-  crp_alpha = 10;
+  crp_alpha = 3;
   //
   crp_score = 0;
   data_score = 0;

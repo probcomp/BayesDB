@@ -68,6 +68,13 @@ class View {
   void print();
   void assert_state_consistency();
   // double score_test_set(std::vector<std::vector<double> > test_set) const;
+  //
+  // hyper inference grids FIXME: MOVE TO PRIVATE WHEN DONE TESTING
+  std::vector<double> crp_alpha_grid;
+  std::vector<double> r_grid;
+  std::vector<double> nu_grid;
+  std::vector<std::vector<double> > s_grids;
+  std::vector<std::vector<double> > mu_grids;
  private:
   // parameters
   int num_vectors;
@@ -75,12 +82,6 @@ class View {
   double crp_alpha;
   double crp_score;
   double data_score;
-  // hyper inference grids
-  std::vector<double> crp_alpha_grid;
-  std::vector<double> r_grid;
-  std::vector<double> nu_grid;
-  std::vector<std::vector<double> > s_grids;
-  std::vector<std::vector<double> > mu_grids;
   // sub-objects
   RandomNumberGenerator rng;
   // resources
