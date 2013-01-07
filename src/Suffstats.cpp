@@ -52,6 +52,15 @@ double Suffstats<double>::remove_el(double el) {
 }
 
 template<>
+double Suffstats<double>::set_hyper(string which_hyper, double value) {
+  double score_0 = score;
+  hyper_hash[which_hyper] = value;
+  score = calc_logp();
+  double score_delta = score - score_0;
+  return score_delta;
+}
+
+template<>
 double Suffstats<double>::calc_logp() const {
   int count;
   double sum_x, sum_x_sq;

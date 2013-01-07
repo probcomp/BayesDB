@@ -36,6 +36,7 @@ class Suffstats {
   // mutators
   double insert_el(T el);
   double remove_el(T el);
+  double set_hyper(std::string which_hyper, double value);
   //
   // helpers
   double calc_logp() const;
