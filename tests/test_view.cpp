@@ -18,15 +18,6 @@ typedef setCp::iterator setCp_it;
 typedef mapICp::iterator mapICp_it;
 typedef vector<int>::iterator vectorI_it;
 
-
-vector<double> extract_row(matrixD data, int row_idx) {
-  vector<double> row;
-  for(int j=0;j < data.size2(); j++) {
-    row.push_back(data(row_idx, j));
-  }
-  return row;
-}
-
 void print_cluster_memberships(View& v) {
   cout << "Cluster memberships" << endl;
   setCp_it it = v.clusters.begin();
@@ -100,7 +91,9 @@ int main(int argc, char** argv) {
   }
 
   // create the objects to test
-  View v = View(num_cols, init_crp_alpha);
+  // View v = View(num_cols, init_crp_alpha);
+  View v = View(data);
+  v.print();
   v.assert_state_consistency();
   //
   vectorCp cd_v;
