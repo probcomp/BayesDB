@@ -49,7 +49,8 @@ class View {
   // mutators
   double set_alpha(double new_alpha);
   Cluster<double>& get_new_cluster();
-  double insert_row(std::vector<double> vd, Cluster<double> &cd, int row_idx); 
+  double insert_row(std::vector<double> vd, Cluster<double> &cd, int row_idx);
+  double insert_row(std::vector<double> vd, int row_idx);
   double remove_row(std::vector<double> vd, int row_idx); 
   void remove_if_empty(Cluster<double>& which_cluster);
   void transition_z(std::vector<double> vd, int row_idx);

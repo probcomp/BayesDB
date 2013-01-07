@@ -236,6 +236,15 @@ double View::insert_row(vector<double> vd, Cluster<double>& which_cluster, int r
   return score_delta;
 }
 
+double View::insert_row(vector<double> vd, int row_idx) {
+  vector<double> unorm_logps = calc_cluster_vector_logps(vd);
+  double rand_u = draw_rand_u();
+  int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
+  Cluster<double> &which_cluster = get_cluster(draw);
+  double score_delta = insert_row(vd, which_cluster, row_idx);
+  return score_delta;
+}
+
 double View::remove_row(vector<double> vd, int row_idx) {
   Cluster<double> &which_cluster = *(cluster_lookup[row_idx]);
   cluster_lookup.erase(cluster_lookup.find(row_idx));
@@ -258,11 +267,7 @@ void View::remove_if_empty(Cluster<double>& which_cluster) {
 
 void View::transition_z(vector<double> vd, int row_idx) {
   remove_row(vd, row_idx);
-  vector<double> unorm_logps = calc_cluster_vector_logps(vd);
-  double rand_u = draw_rand_u();
-  int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
-  Cluster<double> &which_cluster = get_cluster(draw);
-  insert_row(vd, which_cluster, row_idx);
+  insert_row(vd, row_idx);
 }
 
 void View::transition_zs(map<int, vector<double> > row_data_map) {
