@@ -1,4 +1,5 @@
 #include <iostream>
+
 #include "Cluster.h"
 #include "utils.h"
 #include "numerics.h"
@@ -110,6 +111,7 @@ int main(int argc, char** argv) {
     cd_v.push_back(p_cd);
   }
 
+  // print the initial view
   cout << "empty view print" << endl;
   v.print();
   cout << "empty view print" << endl;
@@ -135,13 +137,14 @@ int main(int argc, char** argv) {
   cout << "=================================" << endl;
   cout << endl;
 
+  // print the clusters post population
   cout << endl << "separately created clusters after population" << endl;
   for(vectorCp::iterator it=cd_v.begin(); it!=cd_v.end(); it++) {
     cout << **it << endl;
   }
   cout << endl;
 
-  // test
+  // independently verify view score as sum of data and crp scores
   vector<double> cluster_scores;
   setCp_it it = v.clusters.begin();
   double sum_scores = 0;
@@ -183,7 +186,7 @@ int main(int argc, char** argv) {
   crp_score_delta = v.set_alpha(new_alpha);
   cout << "new_alpha: " << new_alpha << ", new_alpha score: " << v.get_crp_score() << ", crp_score_delta: " << crp_score_delta << endl;
 
-  // test continuous data hyper inference
+  // test continuous data hyper conditionals
   vector<double> hyper_grid;
   vector<double> hyper_logps;
   int N_GRID = 11;
@@ -197,7 +200,7 @@ int main(int argc, char** argv) {
     double default_value = default_hyper_values[hyper_string];
     hyper_grid = linspace(default_value-10., default_value+10., N_GRID);
     cout << endl;
-    cout << hyper_string << " hyper inference" << endl;
+    cout << hyper_string << " hyper conditionals" << endl;
     cout << hyper_string << " grid: " << hyper_grid << endl;
     cout << "num_cols: " << num_cols << endl;
     for(int col_idx=0; col_idx<num_cols; col_idx++) {
@@ -211,6 +214,41 @@ int main(int argc, char** argv) {
     cout << "sum curr conditionals: " << sum_curr_conditionals << endl;
   }
 
+  // test continuous data hyper inference
+  // verify setting results in predicted delta
+  cout << endl;
+  cout << endl;
+  string hyper_string = "r";
+  double default_value = default_hyper_values[hyper_string];
+  map<string, vector<double> > hyper_grid_lookup;
+  hyper_grid_lookup["r"] = log_linspace(1., 10., N_GRID);
+  hyper_grid_lookup["nu"] = log_linspace(1., 10., N_GRID);
+  hyper_grid_lookup["s"] = log_linspace(1., 10., N_GRID);
+  hyper_grid_lookup["mu"] = linspace(-10., 10., N_GRID);
+  //
+  hyper_grid = hyper_grid_lookup["r"];
+  int col_idx = 0;
+  vector<double> unorm_logps = v.calc_hyper_conditional(col_idx, hyper_string, hyper_grid);
+  double curr_conditional = unorm_logps[(int)(N_GRID-1)/2];
+  double curr_data_score = v.get_data_score();
+  //
+  cout << "hyper_grid: " << hyper_grid << endl;
+  cout << "unorm_logps: " << unorm_logps << endl;
+  for(vector<double>::iterator it=unorm_logps.begin(); it!=unorm_logps.end(); it++) {
+    *it -= curr_conditional;
+  }
+  cout << "score_deltas: " << unorm_logps << endl;
+  double data_score_0 = v.get_data_score();
+  for(int grid_idx=0; grid_idx<hyper_grid.size(); grid_idx++) {
+    double new_hyper_value = hyper_grid[grid_idx];
+    v.set_hyper(col_idx, hyper_string, new_hyper_value);
+    double new_data_score = v.get_data_score();
+    double data_score_delta = new_data_score - data_score_0;
+    cout << "hyper_value: " << new_hyper_value << ", data_score: " << new_data_score << ", data_score_delta: " << data_score_delta << endl;
+  }
+
+  
+  // print state info before transitioning
   print_cluster_memberships(v);
   int num_vectors = v.get_num_vectors();
   cout << "num_vectors: " << v.get_num_vectors() << endl;
@@ -218,14 +256,27 @@ int main(int argc, char** argv) {
   cout << "====================" << endl;
   cout << "Sampling" << endl;
 
-  // test transition_zs
+  // test transition
   RandomNumberGenerator rng = RandomNumberGenerator();
   for(int iter=0; iter<100; iter++) {
     v.assert_state_consistency();
     v.transition_zs(data_map);
     v.transition_crp_alpha();
-    if(iter % 10 == 0) {
+    for(int col_idx=0; col_idx<num_cols; col_idx++) {
+      std::random_shuffle(hyper_strings.begin(), hyper_strings.end());
+      for(vector<string>::iterator it=hyper_strings.begin(); it!=hyper_strings.end(); it++) {
+	string hyper_string = *it;
+	hyper_grid = hyper_grid_lookup[hyper_string];	
+	v.transition_hyper(col_idx,hyper_string,hyper_grid);
+      }
+    }
+    // if(iter % 10 == 0) {
+    if(iter % 1 == 0) {
       print_cluster_memberships(v);
+      for(int col_idx=0; col_idx<num_cols; col_idx++) {
+	cout << "Hypers(col_idx=" << col_idx <<"): " << v.get_hyper_hash(col_idx) << endl;
+      }
+      cout << "score: " << v.get_score() << endl;
       cout << "Done iter: " << iter << endl;
       cout << endl;
     }
