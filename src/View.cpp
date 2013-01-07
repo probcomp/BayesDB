@@ -32,6 +32,12 @@ double View::get_crp_alpha() const {
   return crp_alpha;
 }
 
+std::map<string, double> View::get_hyper_hash(int col_idx) {
+  // assume all suffstats have same hypers set
+  setCp::iterator it = clusters.begin();
+  return (**it).get_suffstats_i(col_idx).get_hyper_hash();
+}
+
 double View::get_crp_score() const {
   return crp_score;
 }
@@ -116,7 +122,41 @@ std::vector<double> View::calc_hyper_conditional(int which_col, std::string whic
     vector<double> logps = (**it).calc_hyper_conditional(which_col, which_hyper, hyper_grid);
     vec_vec.push_back(logps);
   }
+  
   return std_vector_sum(vec_vec);
+}
+
+double View::set_hyper(int which_col, string which_hyper, double new_value) {
+  setCp::iterator it;
+  double data_score_delta = 0;
+  for(it=clusters.begin(); it!=clusters.end(); it++) {
+    data_score_delta += (**it).set_hyper(which_col, which_hyper, new_value);
+  }
+  data_score += data_score_delta;
+  return data_score_delta;
+}
+
+void View::transition_hyper(int which_col, std::string which_hyper, vector<double> hyper_grid) {
+  //
+  // draw new hyper
+  vector<double> unorm_logps = calc_hyper_conditional(which_col, which_hyper, hyper_grid);
+  double rand_u = draw_rand_u();
+  int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
+  double new_hyper_value = hyper_grid[draw];
+  //
+  // update all clusters
+  double delta_data_score = 0;
+  setCp::iterator it;
+  for(it=clusters.begin(); it!=clusters.end(); it++) {
+    delta_data_score += (**it).set_hyper(which_col, which_hyper, new_hyper_value);
+  }
+  //
+  // update score
+  data_score += delta_data_score;
+}
+
+void View::transition_hypers(int which_col, std::vector<double> hyper_grid) {
+  
 }
 
 double View::set_alpha(double new_alpha) {

@@ -30,6 +30,7 @@ class View {
   double get_data_score() const;
   double get_score() const;
   double get_crp_alpha() const;
+  std::map<std::string, double> get_hyper_hash(int col_idx);
   /* double get_data_hyper_score(); */
   //
   // getters (internal use)
@@ -52,6 +53,9 @@ class View {
   void transition_z(std::vector<double> vd, int row_idx);
   void transition_zs(std::map<int, std::vector<double> > row_data_map);
   void transition_crp_alpha();
+  double set_hyper(int which_col, std::string which_hyper, double new_value);
+  void transition_hyper(int which_col, std::string which_hyper, std::vector<double> hyper_grid);
+  void transition_hypers(int which_col, std::vector<double> hyper_grid);
   /* void transition_data_hypers(); */
   //
   // data structures
