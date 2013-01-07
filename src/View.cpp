@@ -16,12 +16,14 @@ View::View(MatrixD data, int N_GRID) {
   vector<double> paramRange = linspace(0.03, .97, N_GRID/2);
   int APPEND_N = (N_GRID + 1) / 2;
   //
-  vector<double> crp_alpha_grid_append = log_linspace(1., data_num_vectors, APPEND_N);
+  vector<double> crp_alpha_grid_append = log_linspace(1., data_num_vectors,
+						      APPEND_N);
   crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
   //
   r_grid = crp_alpha_grid;
   //
-  vector<double> nu_grid_append = log_linspace(1., data_num_vectors/2., APPEND_N);
+  vector<double> nu_grid_append = log_linspace(1., data_num_vectors/2.,
+					       APPEND_N);
   nu_grid = append(paramRange, nu_grid_append);
   //
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
