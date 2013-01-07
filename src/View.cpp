@@ -59,16 +59,6 @@ int View::get_num_clusters() const {
   return clusters.size();
 }
 
-double View::get_crp_alpha() const {
-  return crp_alpha;
-}
-
-std::map<string, double> View::get_hyper_hash(int col_idx) {
-  // assume all suffstats have same hypers set
-  setCp::iterator it = clusters.begin();
-  return (**it).get_suffstats_i(col_idx).get_hyper_hash();
-}
-
 double View::get_crp_score() const {
   return crp_score;
 }
@@ -79,6 +69,30 @@ double View::get_data_score() const {
 
 double View::get_score() const {
   return crp_score + data_score;
+}
+
+double View::get_crp_alpha() const {
+  return crp_alpha;
+}
+
+std::map<string, double> View::get_hyper_hash(int col_idx) {
+  // assume all suffstats have same hypers set
+  setCp::iterator it = clusters.begin();
+  return (**it).get_suffstats_i(col_idx).get_hyper_hash();
+}
+
+vector<double> View::get_hyper_grid(int which_col, std::string which_hyper) {
+  vector<double> hyper_grid;
+  if(which_hyper=="r") {
+    hyper_grid = r_grid;
+  } else if (which_hyper=="nu") {
+    hyper_grid = nu_grid;
+  } else if (which_hyper=="s") {
+    hyper_grid = s_grids[which_col];
+  } else if (which_hyper=="mu") {
+    hyper_grid = mu_grids[which_col];
+  }
+  return hyper_grid;
 }
 
 Cluster<double>& View::get_cluster(int cluster_idx) {
@@ -187,16 +201,7 @@ void View::transition_hyper(int which_col, std::string which_hyper, vector<doubl
 }
 
 void View::transition_hyper(int which_col, std::string which_hyper) {
-  vector<double> hyper_grid;
-  if(which_hyper=="r") {
-    hyper_grid = r_grid;
-  } else if (which_hyper=="nu") {
-    hyper_grid = nu_grid;
-  } else if (which_hyper=="s") {
-    hyper_grid = s_grids[which_col];
-  } else if (which_hyper=="mu") {
-    hyper_grid = mu_grids[which_col];
-  }
+  vector<double> hyper_grid = get_hyper_grid(which_col, which_hyper);
   transition_hyper(which_col, which_hyper, hyper_grid);
 }
 

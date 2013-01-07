@@ -32,6 +32,7 @@ class View {
   double get_score() const;
   double get_crp_alpha() const;
   std::map<std::string, double> get_hyper_hash(int col_idx);
+  std::vector<double> get_hyper_grid(int which_col, std::string which_hyper);
   /* double get_data_hyper_score(); */
   //
   // getters (internal use)

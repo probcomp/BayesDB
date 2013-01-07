@@ -105,15 +105,6 @@ int main(int argc, char** argv) {
     Cluster<double> *p_cd = new Cluster<double>(num_cols);
     cd_v.push_back(p_cd);
   }
-  map<string, vector<double> > hyper_grid_lookup;
-  hyper_grid_lookup["r"] = v.r_grid;
-  cout << "v.r_grid: " << v.r_grid << endl;
-  hyper_grid_lookup["nu"] = v.nu_grid;
-  cout << "v.nu_grid: " << v.nu_grid << endl;
-  hyper_grid_lookup["s"] = v.s_grids[0];
-  cout << "v.s_grids[0]: " << v.s_grids[0] << endl;
-  hyper_grid_lookup["mu"] = v.mu_grids[0];
-  cout << "v.mu_grids[0]: " << v.mu_grids[0] << endl;
 
   // print the initial view
   cout << "empty view print" << endl;
@@ -206,7 +197,7 @@ int main(int argc, char** argv) {
     cout << hyper_string << " hyper conditionals" << endl;
     cout << "num_cols: " << num_cols << endl;
     for(int col_idx=0; col_idx<num_cols; col_idx++) {
-      hyper_grid = hyper_grid_lookup[hyper_string];
+      hyper_grid = v.get_hyper_grid(col_idx, hyper_string);
       cout << hyper_string << " grid: " << hyper_grid << endl;
       hyper_logps = v.calc_hyper_conditional(col_idx, hyper_string, hyper_grid);
       cout << "conditionals: " << hyper_logps << endl;
@@ -225,7 +216,7 @@ int main(int argc, char** argv) {
   string hyper_string = "r";
   double default_value = default_hyper_values[hyper_string];
   //
-  hyper_grid = hyper_grid_lookup["r"];
+  hyper_grid = v.get_hyper_grid(0, "r");
   int col_idx = 0;
   vector<double> unorm_logps = v.calc_hyper_conditional(col_idx, hyper_string, hyper_grid);
   double curr_conditional = unorm_logps[(int)(N_GRID-1)/2];
@@ -266,8 +257,7 @@ int main(int argc, char** argv) {
       std::random_shuffle(hyper_strings.begin(), hyper_strings.end());
       for(vector<string>::iterator it=hyper_strings.begin(); it!=hyper_strings.end(); it++) {
 	string hyper_string = *it;
-	hyper_grid = hyper_grid_lookup[hyper_string];	
-	v.transition_hyper(col_idx,hyper_string,hyper_grid);
+	v.transition_hyper(col_idx,hyper_string);
       }
     }
     // if(iter % 10 == 0) {
