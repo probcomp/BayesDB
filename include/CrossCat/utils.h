@@ -69,4 +69,6 @@ bool is_almost(double val1, double val2, double precision);
 std::vector<double> linspace(double a, double b, int n);
 std::vector<double> log_linspace(double a, double b, int n);
 
+std::vector<double> std_vector_sum(std::vector<double> vec1, std::vector<double> vec2);
+std::vector<double> std_vector_sum(std::vector<std::vector<double> > vec_vec);
 #endif // GUARD_utils_H
