@@ -71,4 +71,10 @@ std::vector<double> log_linspace(double a, double b, int n);
 
 std::vector<double> std_vector_sum(std::vector<double> vec1, std::vector<double> vec2);
 std::vector<double> std_vector_sum(std::vector<std::vector<double> > vec_vec);
+
+double calc_sum_sq_deviation(std::vector<double> values);
+std::vector<double> extract_row(boost::numeric::ublas::matrix<double> data, int row_idx);
+std::vector<double> extract_col(boost::numeric::ublas::matrix<double> data, int col_idx);
+std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2);
+
 #endif // GUARD_utils_H

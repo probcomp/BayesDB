@@ -3,6 +3,7 @@
 #include <fstream>      // fstream
 #include <boost/tokenizer.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <numeric>
 
 using namespace std;
 using namespace boost;
@@ -145,3 +146,34 @@ std::vector<double> std_vector_sum(std::vector<std::vector<double> > vec_vec) {
   }
   return sum_vec;
 }
+
+double calc_sum_sq_deviation(std::vector<double> values) {
+  double sum = std::accumulate(values.begin(), values.end(), 0.0);
+  double mean = sum / values.size();
+  double sum_sq_deviation = 0;
+  for(std::vector<double>::iterator it = values.begin(); it!=values.end(); it++) {
+    sum_sq_deviation += pow((*it) - mean, 2) ;
+  }
+  return sum_sq_deviation;
+}
+
+std::vector<double> extract_row(boost::numeric::ublas::matrix<double> data, int row_idx) {
+  std::vector<double> row;
+  for(int j=0;j < data.size2(); j++) {
+    row.push_back(data(row_idx, j));
+  }
+  return row;
+}
+
+std::vector<double> extract_col(boost::numeric::ublas::matrix<double> data, int col_idx) {
+  std::vector<double> col;
+  for(int j=0;j < data.size1(); j++) {
+    col.push_back(data(j, col_idx));
+  }
+  return col;
+}
+
+std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2) {
+  vec1.insert(vec1.end(), vec2.begin(), vec2.end());
+  return vec1;
+}  
