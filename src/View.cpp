@@ -5,6 +5,8 @@ using namespace std;
 static View NullView = View(0,0);
 static Cluster<double> NullCluster = Cluster<double>(0);
 
+typedef set<Cluster<double>*> setCp;
+
 View::View(int NUM_COLS, double CRP_ALPHA) {
   num_vectors = 0;
   num_cols = NUM_COLS;
@@ -105,6 +107,16 @@ vector<double> View::score_crp(vector<double> alphas_to_score) const {
     crp_scores.push_back(this_crp_score);
   }
   return crp_scores;
+}
+
+std::vector<double> View::calc_hyper_conditional(int which_col, std::string which_hyper, std::vector<double> hyper_grid) const {
+  setCp::iterator it;
+  vector<vector<double> > vec_vec;
+  for(it=clusters.begin(); it!=clusters.end(); it++) {
+    vector<double> logps = (**it).calc_hyper_conditional(which_col, which_hyper, hyper_grid);
+    vec_vec.push_back(logps);
+  }
+  return std_vector_sum(vec_vec);
 }
 
 double View::set_alpha(double new_alpha) {
