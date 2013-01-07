@@ -77,6 +77,15 @@ double View::get_crp_alpha() const {
   return crp_alpha;
 }
 
+vector<string> View::get_hyper_strings() {
+  vector<string> hyper_strings;
+  hyper_strings.push_back("r");
+  hyper_strings.push_back("nu");
+  hyper_strings.push_back("s");
+  hyper_strings.push_back("mu");
+  return hyper_strings;
+}
+
 std::map<string, double> View::get_hyper_hash(int col_idx) {
   // assume all suffstats have same hypers set
   setCp::iterator it = clusters.begin();
@@ -207,8 +216,14 @@ void View::transition_hyper(int which_col, std::string which_hyper) {
   transition_hyper(which_col, which_hyper, hyper_grid);
 }
 
-void View::transition_hypers(int which_col, std::vector<double> hyper_grid) {
-  
+void View::transition_hypers(int which_col) {
+  vector<string> hyper_strings = get_hyper_strings();
+  // FIXME: use own shuffle so its seed controlled
+  std::random_shuffle(hyper_strings.begin(), hyper_strings.end());
+  for(vector<string>::iterator it=hyper_strings.begin(); it!=hyper_strings.end(); it++) {
+    string which_hyper = *it;
+    transition_hyper(which_col, which_hyper);
+  }
 }
 
 double View::set_alpha(double new_alpha) {
