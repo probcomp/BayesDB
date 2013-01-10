@@ -3,9 +3,8 @@
 
 #include <iostream>
 #include <string>
+#include <set>
 #include <boost/numeric/ublas/matrix.hpp>
-#include "Cluster.h"
-#include "Suffstats.h"
 
 void LoadData(std::string file, boost::numeric::ublas::matrix<double>& M);
 
@@ -76,5 +75,6 @@ double calc_sum_sq_deviation(std::vector<double> values);
 std::vector<double> extract_row(boost::numeric::ublas::matrix<double> data, int row_idx);
 std::vector<double> extract_col(boost::numeric::ublas::matrix<double> data, int col_idx);
 std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2);
+double get(const std::map<std::string, double> m, std::string key);
 
 #endif // GUARD_utils_H
