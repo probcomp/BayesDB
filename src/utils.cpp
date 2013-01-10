@@ -144,8 +144,9 @@ std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2) {
   return vec1;
 }  
 
-double get(const map<string, double> m, string key) {
-  map<string, double>::const_iterator it = m.find(key);
+template <class K, class V>
+V get(const map<K, V> m, K key) {
+  typename map<K, V>::const_iterator it = m.find(key);
   if(it == m.end()) return -1;
   return it->second;
 }
