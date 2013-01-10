@@ -9,52 +9,18 @@ using namespace std;
 using namespace boost;
 using namespace boost::numeric::ublas;
 
-std::ostream& operator<<(std::ostream& os, const std::map<std::string, double>& string_double_map) {
-  map<string, double>::const_iterator it = string_double_map.begin();
+template <class K, class V>
+std::ostream& operator<<(std::ostream& os, const map<K, V> in_map) {
+  typename map<K, V>::iterator it;
   os << "{";
-  if(it==string_double_map.end()) {
-    os << "}";
-    return os;
+  if(in_map.begin()!=in_map.end()) {
+    os << it->first << ":" << it->second;
   }
-  os << it->first << ":" << it->second;
-  it++;
-  for(; it!=string_double_map.end(); it++) {
-    os << ", " << it->first << ":" << it->second;
+  for(it=in_map.begin(); it!=in_map.end(); it++) {
+    os << ", " << it->first << " : " << it->second;
   }
   os << "}";
-  return  os;
-}
-
-std::ostream& operator<<(std::ostream& os, const map<int, double>& int_double_map) {
-  map<int, double>::const_iterator it = int_double_map.begin();
-  os << "{";
-  if(it==int_double_map.end()) {
-    os << "}";
-    return os;
-  }
-  os << it->first << ":" << it->second;
-  it++;
-  for(; it!=int_double_map.end(); it++) {
-    os << ", " << it->first << ":" << it->second;
-  }
-  os << "}";
-  return  os;
-}
-
-std::ostream& operator<<(std::ostream& os, const map<int, int>& int_int_map) {
-  map<int, int>::const_iterator it = int_int_map.begin();
-  os << "{";
-  if(it==int_int_map.end()) {
-    os << "}";
-    return os;
-  }
-  os << it->first << ":" << it->second;
-  it++;
-  for(; it!=int_int_map.end(); it++) {
-    os << ", " << it->first << ":" << it->second;
-  }
-  os << "}";
-  return  os;
+  return os;
 }
 
 string int_to_str(int i) {  
@@ -177,3 +143,9 @@ std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2) {
   vec1.insert(vec1.end(), vec2.begin(), vec2.end());
   return vec1;
 }  
+
+double get(const map<string, double> m, string key) {
+  map<string, double>::const_iterator it = m.find(key);
+  if(it == m.end()) return -1;
+  return it->second;
+}
