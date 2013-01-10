@@ -2,11 +2,6 @@
 #define GUARD_numerics_h
 
 #include <vector>
-#include "Suffstats.h"
-#include "Cluster.h"
-
-template <class T> class Cluster;
-template <class T> class Suffstats;
 
 const static double LOG_2PI = log(2.0 * M_PI);
 const static double HALF_LOG_2PI = .5 * LOG_2PI;
