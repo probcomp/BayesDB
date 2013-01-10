@@ -18,7 +18,7 @@ double ContinuousComponentModel::calc_marginal_logp() const {
   double r, nu, s, mu;
   int count;
   double sum_x, sum_x_sq;
-  get_hypers(r, nu, s, mu);
+  get_hyper_doubles(r, nu, s, mu);
   get_suffstats(count, sum_x, sum_x_sq);
   numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
   return numerics::calc_continuous_logp(count, r, nu, s, log_Z_0);
@@ -28,7 +28,7 @@ double ContinuousComponentModel::calc_predictive_logp(double element) const {
   double r, nu, s, mu;
   int count;
   double sum_x, sum_x_sq;
-  get_hypers(r, nu, s, mu);
+  get_hyper_doubles(r, nu, s, mu);
   get_suffstats(count, sum_x, sum_x_sq);
   //
   numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq, element);
@@ -41,7 +41,7 @@ vector<double> ContinuousComponentModel::calc_hyper_conditionals(string which_hy
   double r, nu, s, mu;
   int count;
   double sum_x, sum_x_sq;
-  get_hypers(r, nu, s, mu);
+  get_hyper_doubles(r, nu, s, mu);
   get_suffstats(count, sum_x, sum_x_sq);
   
   if(which_hyper=="r") {
@@ -94,7 +94,7 @@ double ContinuousComponentModel::set_hyper(string which_hyper, double value) {
 
 void ContinuousComponentModel::set_log_Z_0() {
   double r, nu, s, mu;
-  get_hypers(r, nu, s, mu);
+  get_hyper_doubles(r, nu, s, mu);
   log_Z_0 = numerics::calc_continuous_logp(0, r, nu, s, 0);
 }
 
@@ -120,7 +120,7 @@ void ContinuousComponentModel::get_suffstats(int &count_out, double &sum_x, doub
   sum_x_sq = get(suffstats, "sum_x_sq");
 }
 
-void ContinuousComponentModel::get_hypers(double &r, double &nu, double &s, double &mu)  const {
+void ContinuousComponentModel::get_hyper_doubles(double &r, double &nu, double &s, double &mu)  const {
   r = get(hypers, "r");
   nu = get(hypers, "nu");
   s = get(hypers, "s");

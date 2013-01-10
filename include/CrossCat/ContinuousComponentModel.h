@@ -31,7 +31,7 @@ class ContinuousComponentModel : public ComponentModel {
   void init_suffstats();
  private:
   ContinuousComponentModel(double r, double nu, double s, double mu);
-  void get_hypers(double &r, double &nu, double &s, double &mu) const;
+  void get_hyper_doubles(double &r, double &nu, double &s, double &mu) const;
   void get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const;
   void init_hypers(double r, double nu, double s, double mu);
 };
