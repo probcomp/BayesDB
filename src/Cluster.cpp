@@ -2,18 +2,70 @@
 
 using namespace std;
 
-template <>
-void Cluster<double>::init_suffstats() {
-  count = 0;
-  score = 0;
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    suffstats_m[col_idx] = Suffstats<double>();
-    score += suffstats_m[col_idx].get_score();
-  }
+int Cluster::get_count() const {
+  return count;
 }
 
-template <>
-double Cluster<double>::insert_row(vector<double> vd, int row_idx) {
+double Cluster::get_marginal_logp() const {
+  return score;
+}
+
+ContinuousComponentModel Cluster::get_column_model(int idx) const {
+  typename std::map<int, ContinuousComponentModel>::const_iterator it = \
+    column_m.find(idx);
+  if(it == column_m.end()) {
+    // FIXME : how to fail properly?
+    assert(1==0);
+    ContinuousComponentModel ccm;
+    return ccm;
+  }
+  return it->second;
+}
+
+std::set<int> Cluster::get_global_row_indices() const {
+  return global_row_indices;
+}
+
+std::set<int> Cluster::get_global_col_indices() const {
+  return global_col_indices;
+}
+
+std::map<int, double> Cluster::calc_marginal_logps() const {
+  std::map<int, double> ret_map;
+  typename std::map<int, ContinuousComponentModel>::const_iterator it = column_m.begin();
+  for(; it!=column_m.end(); it++) {
+    double logp = it->second.calc_marginal_logp();
+    ret_map[it->first] = logp;
+  }
+  return ret_map;
+}
+
+double Cluster::calc_sum_marginal_logps() const {
+  double sum_logp = 0;
+  std::map<int, double> logp_map = calc_marginal_logps();
+  typename std::map<int, double>::iterator it = logp_map.begin();
+  for(; it!=logp_map.end(); it++) {
+    sum_logp += it->second;
+  }
+  return sum_logp;
+}
+
+double Cluster::calc_predictive_logp(vector<double> vd) const {
+  double sum_logps = 0;
+  for(int col_idx=0; col_idx<vd.size(); col_idx++) {
+    double el = vd[col_idx];
+    sum_logps += get_column_model(col_idx).calc_predictive_logp(el);
+  }
+  return sum_logps;
+}
+
+vector<double> Cluster::calc_hyper_conditionals(int which_col, string which_hyper, vector<double> hyper_grid) const {
+  map<int, ContinuousComponentModel >::const_iterator it = column_m.find(which_col);
+  ContinuousComponentModel sd = it->second;
+  return sd.calc_hyper_conditionals(which_hyper, hyper_grid);
+}
+
+double Cluster::insert(vector<double> vd, int row_idx) {
   double sum_score_deltas = 0;
   count += 1;
   // track row indices
@@ -22,15 +74,14 @@ double Cluster<double>::insert_row(vector<double> vd, int row_idx) {
   assert(set_pair.second);
   // track score
   for(int col_idx=0; col_idx<vd.size(); col_idx++) {
-    assert(suffstats_m.count(col_idx)==1);
-    sum_score_deltas += suffstats_m[col_idx].insert_el(vd[col_idx]);
+    assert(column_m.count(col_idx)==1);
+    sum_score_deltas += column_m[col_idx].insert(vd[col_idx]);
   }
   score += sum_score_deltas;
   return sum_score_deltas;
 }
 
-template <>
-double Cluster<double>::remove_row(vector<double> vd, int row_idx) {
+double Cluster::remove(vector<double> vd, int row_idx) {
   double sum_score_deltas = 0;
   count -= 1;
   // track row indices
@@ -38,34 +89,36 @@ double Cluster<double>::remove_row(vector<double> vd, int row_idx) {
   assert(num_removed!=0);
   // track score
   for(int col_idx=0; col_idx<vd.size(); col_idx++) {
-    assert(suffstats_m.count(col_idx)==1);
-    sum_score_deltas += suffstats_m[col_idx].remove_el(vd[col_idx]);
+    assert(column_m.count(col_idx)==1);
+    sum_score_deltas += column_m[col_idx].remove(vd[col_idx]);
   }
   score += sum_score_deltas;
   return sum_score_deltas;
 }
 
-template <>
-double Cluster<double>::set_hyper(int which_col, std::string which_hyper, double value) {
-  double score_delta = suffstats_m[which_col].set_hyper(which_hyper, value);
+double Cluster::set_hyper(int which_col, std::string which_hyper,
+			  double hyper_value) {
+  double score_delta = column_m[which_col].set_hyper(which_hyper, hyper_value);
   score += score_delta;
   return score_delta;
 }
 
-template <>
-double Cluster<double>::calc_data_logp(vector<double> vd) const {
-  double sum_logps = 0;
-  for(int col_idx=0; col_idx<vd.size(); col_idx++) {
-    double el = vd[col_idx];
-    const Suffstats<double> sd = get_suffstats_i(col_idx);
-    sum_logps += sd.calc_data_logp(el);
+std::ostream& operator<<(std::ostream& os, const Cluster& c) {
+  typename std::map<int, ContinuousComponentModel>::const_iterator it;
+  for(it = c.column_m.begin(); it!= c.column_m.end(); it++) {
+    os << "column idx: " << it->first << " :: ";
+    os <<  c.global_row_indices << " :: " << it->second << std::endl;
   }
-  return sum_logps;
+  os << "========" << std::endl;
+  os << "cluster marginal logp: " << c.get_marginal_logp() << std::endl;
+  return os;
 }
 
-template <>
-vector<double> Cluster<double>::calc_hyper_conditional(int which_col, string which_hyper, vector<double> hyper_grid) const {
-  map<int, Suffstats<double> >::const_iterator it = suffstats_m.find(which_col);
-  Suffstats<double> sd = it->second;
-  return sd.calc_hyper_conditional(which_hyper, hyper_grid);
+void Cluster::init_columns() {
+  count = 0;
+  score = 0;
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    column_m[col_idx] = ContinuousComponentModel();
+    score += column_m[col_idx].calc_marginal_logp();
+  }
 }

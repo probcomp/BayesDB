@@ -7,7 +7,7 @@ typedef boost::numeric::ublas::matrix<double> MatrixD;
 
 using namespace std;
 
-typedef set<Cluster<double>*> setCp;
+typedef set<Cluster*> setCp;
 
 //FIXME: add constructor with ranges as arguments, rather than recalculate
 View::View(MatrixD data, int N_GRID) {
@@ -86,10 +86,11 @@ vector<string> View::get_hyper_strings() {
   return hyper_strings;
 }
 
-std::map<string, double> View::get_hyper_hash(int col_idx) {
+std::map<string, double> View::get_hypers(int col_idx) {
   // assume all suffstats have same hypers set
   setCp::iterator it = clusters.begin();
-  return (**it).get_suffstats_i(col_idx).get_hyper_hash();
+  map<string, double> ret_map = (**it).get_column_model(col_idx).get_hypers();
+  return ret_map;
 }
 
 vector<double> View::get_hyper_grid(int which_col, std::string which_hyper) {
@@ -106,11 +107,11 @@ vector<double> View::get_hyper_grid(int which_col, std::string which_hyper) {
   return hyper_grid;
 }
 
-Cluster<double>& View::get_cluster(int cluster_idx) {
+Cluster& View::get_cluster(int cluster_idx) {
   assert(cluster_idx <= clusters.size());
   bool not_new = cluster_idx < clusters.size();
   if(not_new) {
-    set<Cluster<double>*>::iterator it = clusters.begin();
+    set<Cluster*>::iterator it = clusters.begin();
     std::advance(it, cluster_idx);
     return **it;
   } else {
@@ -120,7 +121,7 @@ Cluster<double>& View::get_cluster(int cluster_idx) {
 
 vector<int> View::get_cluster_counts() const {
   vector<int> counts;
-  set<Cluster<double>*>::const_iterator it = clusters.begin();
+  set<Cluster*>::const_iterator it = clusters.begin();
   for(; it!=clusters.end(); it++) {
     int count = (**it).get_count();
     counts.push_back(count);
@@ -128,7 +129,7 @@ vector<int> View::get_cluster_counts() const {
   return counts;
 }
 
-double View::calc_cluster_vector_logp(vector<double> vd, Cluster<double> which_cluster, double &crp_logp_delta, double &data_logp_delta) const {
+double View::calc_cluster_vector_logp(vector<double> vd, Cluster which_cluster, double &crp_logp_delta, double &data_logp_delta) const {
   int cluster_count = which_cluster.get_count();
   double score_delta;
   // NOTE: non-mutating, so presume vector is not in state
@@ -137,19 +138,19 @@ double View::calc_cluster_vector_logp(vector<double> vd, Cluster<double> which_c
   crp_logp_delta = numerics::calc_cluster_crp_logp(cluster_count,
 						   num_vectors,
 						   crp_alpha);
-  data_logp_delta = which_cluster.calc_data_logp(vd);
+  data_logp_delta = which_cluster.calc_predictive_logp(vd);
   score_delta = crp_logp_delta + data_logp_delta;
   return score_delta;
 }
 
 vector<double> View::calc_cluster_vector_logps(vector<double> vd) const {
   vector<double> logps;
-  set<Cluster<double>*>::iterator it = clusters.begin();
+  set<Cluster*>::iterator it = clusters.begin();
   double crp_logp_delta, data_logp_delta;
   for(; it!=clusters.end(); it++) {
     logps.push_back(calc_cluster_vector_logp(vd, **it, crp_logp_delta, data_logp_delta));
   }
-  Cluster<double> empty_cluster(num_cols);
+  Cluster empty_cluster(num_cols);
   logps.push_back(calc_cluster_vector_logp(vd, empty_cluster, crp_logp_delta, data_logp_delta));
   return logps;
 }
@@ -171,11 +172,11 @@ vector<double> View::score_crp(vector<double> alphas_to_score) const {
   return crp_scores;
 }
 
-std::vector<double> View::calc_hyper_conditional(int which_col, std::string which_hyper, std::vector<double> hyper_grid) const {
+std::vector<double> View::calc_hyper_conditionals(int which_col, std::string which_hyper, std::vector<double> hyper_grid) const {
   setCp::iterator it;
   vector<vector<double> > vec_vec;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    vector<double> logps = (**it).calc_hyper_conditional(which_col, which_hyper, hyper_grid);
+    vector<double> logps = (**it).calc_hyper_conditionals(which_col, which_hyper, hyper_grid);
     vec_vec.push_back(logps);
   }
   
@@ -195,7 +196,7 @@ double View::set_hyper(int which_col, string which_hyper, double new_value) {
 void View::transition_hyper(int which_col, std::string which_hyper, vector<double> hyper_grid) {
   //
   // draw new hyper
-  vector<double> unorm_logps = calc_hyper_conditional(which_col, which_hyper, hyper_grid);
+  vector<double> unorm_logps = calc_hyper_conditionals(which_col, which_hyper, hyper_grid);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   double new_hyper_value = hyper_grid[draw];
@@ -233,17 +234,17 @@ double View::set_alpha(double new_alpha) {
   return crp_score - crp_score_0;
 }
 
-Cluster<double>& View::get_new_cluster() {
-  Cluster<double> *p_new_cluster = new Cluster<double>(num_cols);
+Cluster& View::get_new_cluster() {
+  Cluster *p_new_cluster = new Cluster(num_cols);
   clusters.insert(p_new_cluster);
   return *p_new_cluster;
 }
 
-double View::insert_row(vector<double> vd, Cluster<double>& which_cluster, int row_idx) {
+double View::insert(vector<double> vd, Cluster& which_cluster, int row_idx) {
   // NOTE: MUST use calc_cluster_vector_logp,  gets crp_score_delta as well
   double crp_logp_delta, data_logp_delta;
   double score_delta = calc_cluster_vector_logp(vd, which_cluster, crp_logp_delta, data_logp_delta);
-  which_cluster.insert_row(vd, row_idx);
+  which_cluster.insert(vd, row_idx);
   cluster_lookup[row_idx] = &which_cluster;
   crp_score += crp_logp_delta;
   data_score += data_logp_delta;
@@ -251,19 +252,19 @@ double View::insert_row(vector<double> vd, Cluster<double>& which_cluster, int r
   return score_delta;
 }
 
-double View::insert_row(vector<double> vd, int row_idx) {
+double View::insert(vector<double> vd, int row_idx) {
   vector<double> unorm_logps = calc_cluster_vector_logps(vd);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
-  Cluster<double> &which_cluster = get_cluster(draw);
-  double score_delta = insert_row(vd, which_cluster, row_idx);
+  Cluster &which_cluster = get_cluster(draw);
+  double score_delta = insert(vd, which_cluster, row_idx);
   return score_delta;
 }
 
-double View::remove_row(vector<double> vd, int row_idx) {
-  Cluster<double> &which_cluster = *(cluster_lookup[row_idx]);
+double View::remove(vector<double> vd, int row_idx) {
+  Cluster &which_cluster = *(cluster_lookup[row_idx]);
   cluster_lookup.erase(cluster_lookup.find(row_idx));
-  which_cluster.remove_row(vd, row_idx);
+  which_cluster.remove(vd, row_idx);
   num_vectors -= 1;
   double crp_logp_delta, data_logp_delta;
   double score_delta = calc_cluster_vector_logp(vd, which_cluster, crp_logp_delta, data_logp_delta);
@@ -273,7 +274,7 @@ double View::remove_row(vector<double> vd, int row_idx) {
   return score_delta;
 }
 
-void View::remove_if_empty(Cluster<double>& which_cluster) {
+void View::remove_if_empty(Cluster& which_cluster) {
   if(which_cluster.get_count()==0) {
     clusters.erase(clusters.find(&which_cluster));
     delete &which_cluster;
@@ -281,8 +282,8 @@ void View::remove_if_empty(Cluster<double>& which_cluster) {
 }
 
 void View::transition_z(vector<double> vd, int row_idx) {
-  remove_row(vd, row_idx);
-  insert_row(vd, row_idx);
+  remove(vd, row_idx);
+  insert(vd, row_idx);
 }
 
 void View::transition_zs(map<int, vector<double> > row_data_map) {
@@ -308,7 +309,7 @@ void View::transition_crp_alpha() {
 vector<int> View::shuffle_row_indices() {
   // can't use std::random_shuffle b/c need to control seed
   vector<int> original_order;
-  map<int, Cluster<double>*>::iterator it = cluster_lookup.begin();
+  map<int, Cluster*>::iterator it = cluster_lookup.begin();
   for(; it!=cluster_lookup.end(); it++) {
     original_order.push_back(it->first);
   }
@@ -323,7 +324,7 @@ vector<int> View::shuffle_row_indices() {
 }
 
 void View::print() {
-  set<Cluster<double>*>::iterator it = clusters.begin();
+  set<Cluster*>::iterator it = clusters.begin();
   for(; it!=clusters.end(); it++) {
     cout << **it << endl;
   }
