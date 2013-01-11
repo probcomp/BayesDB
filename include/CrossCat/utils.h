@@ -67,8 +67,6 @@ std::vector<double> extract_row(boost::numeric::ublas::matrix<double> data, int 
 std::vector<double> extract_col(boost::numeric::ublas::matrix<double> data, int col_idx);
 std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2);
 
-double get(const std::map<std::string, double> m, std::string key);
-
 template <class K, class V>
 V get(const std::map<K, V> m, K key) {
   typename std::map<K, V>::const_iterator it = m.find(key);

@@ -121,9 +121,3 @@ std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2) {
   vec1.insert(vec1.end(), vec2.begin(), vec2.end());
   return vec1;
 }  
-
-double get(const map<string, double> m, string key) {
-  typename map<string, double>::const_iterator it = m.find(key);
-  if(it == m.end()) return -1;
-  return it->second;
-}
