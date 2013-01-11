@@ -18,13 +18,17 @@ int main(int argc, char** argv) {
   int num_rows = 3;
   int num_cols = 3;
 
-  // creat the objects
+  // create the objects
   Cluster cd(num_cols);
   vector<ContinuousComponentModel> ccm_v;
   for(int row_idx=0; row_idx<num_rows; row_idx++) {
     ContinuousComponentModel ccm;
     ccm_v.push_back(ccm);
   }
+
+  // print the empty cluster
+  cout << "empty cluster print" << endl;
+  cout << cd << endl;
 
   // generate random data;
   vector<vector<double> > rows;
