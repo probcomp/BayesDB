@@ -10,23 +10,18 @@
 void LoadData(std::string file, boost::numeric::ublas::matrix<double>& M);
 
 template <class K, class V>
-std::ostream& operator<<(std::ostream& os, const std::map<K, V> in_map);
-
-std::string int_to_str(int i);
-
-template <class T>
-std::string stringify_set(std::set<T> st) {
-  typename std::set<T>::iterator it = st.begin();
-  if(it==st.end()) return "{}";
-  //
-  std::string ret_string = "{";
-  ret_string += int_to_str(*it);
-  it++;
-  for(; it!=st.end(); it++) {
-    ret_string += ", " + int_to_str(*it);
+std::ostream& operator<<(std::ostream& os, const std::map<K, V> in_map) {
+  os << "{";
+  typename std::map<K, V>::const_iterator it = in_map.begin();
+  if(it != in_map.end()) {
+    os << it->first << ":" << it->second;
+    it++;
   }
-  ret_string += "}";
-  return ret_string;
+  for(; it!=in_map.end(); it++) {
+    os << ", " << it->first << " : " << it->second;
+  }
+  os << "}";
+  return os;
 }
 
 template <class T>
@@ -82,20 +77,6 @@ template <class K, class V>
 V get(const std::map<K, V> m, K key);
 
 template <class K, class V>
-std::ostream& operator<<(std::ostream& os, const std::map<K, V> in_map) {
-  typename std::map<K, V>::const_iterator it;
-  os << "{";
-  if(in_map.begin()!=in_map.end()) {
-    os << it->first << ":" << it->second;
-  }
-  for(it=in_map.begin(); it!=in_map.end(); it++) {
-    os << ", " << it->first << " : " << it->second;
-  }
-  os << "}";
-  return os;
-}
-
-template <class K, class V>
 V get(const std::map<K, V> m, K key) {
   typename std::map<K, V>::const_iterator it = m.find(key);
   if(it == m.end()) return -1;
@@ -103,4 +84,3 @@ V get(const std::map<K, V> m, K key) {
 }
 
 #endif // GUARD_utils_H
-

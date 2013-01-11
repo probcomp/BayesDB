@@ -9,14 +9,6 @@ using namespace std;
 using namespace boost;
 using namespace boost::numeric::ublas;
 
-string int_to_str(int i) {  
-  std::stringstream out;
-  out << i;
-  string s = out.str();
-  return s;
-}
-
-
 // FROM runModel_v2.cpp
 /////////////////////////////////////////////////////////////////////
 // expect a csv file of data
