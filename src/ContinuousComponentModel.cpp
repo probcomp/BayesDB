@@ -116,15 +116,15 @@ void ContinuousComponentModel::init_suffstats() {
 
 void ContinuousComponentModel::get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const {
   count_out = count;
-  sum_x = get(suffstats, "sum_x");
-  sum_x_sq = get(suffstats, "sum_x_sq");
+  sum_x = get(suffstats, (string) "sum_x");
+  sum_x_sq = get(suffstats, (string) "sum_x_sq");
 }
 
 void ContinuousComponentModel::get_hyper_doubles(double &r, double &nu, double &s, double &mu)  const {
-  r = get(hypers, "r");
-  nu = get(hypers, "nu");
-  s = get(hypers, "s");
-  mu = get(hypers, "mu");
+  r = get(hypers, (string) "r");
+  nu = get(hypers, (string) "nu");
+  s = get(hypers, (string) "s");
+  mu = get(hypers, (string) "mu");
 }
 
 void print_defaults() {
