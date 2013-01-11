@@ -13,8 +13,7 @@ const static double mu0_0 = 0.0;
 
 class ContinuousComponentModel : public ComponentModel {
  public:
-  ContinuousComponentModel(double r, double nu, double s, double mu);
-  ContinuousComponentModel();
+  ContinuousComponentModel(double r=r0_0, double nu=nu0_0, double s=s0_0, double mu=mu0_0);
   //
   // getters
   void get_hyper_doubles(double &r, double &nu, double &s, double &mu) const;

@@ -5,13 +5,9 @@ using namespace std;
 ContinuousComponentModel::ContinuousComponentModel(double r, double nu, double s, double mu) {
   count = 0;
   score = 0;
-  init_hypers();
+  init_hypers(r, nu, s, mu);
   init_suffstats();
   set_log_Z_0();
-}
-
-ContinuousComponentModel::ContinuousComponentModel() {
-  ContinuousComponentModel(r0_0, nu0_0, s0_0, mu0_0);
 }
 
 double ContinuousComponentModel::calc_marginal_logp() const {
