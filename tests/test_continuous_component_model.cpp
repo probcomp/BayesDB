@@ -89,15 +89,15 @@ int main(int argc, char** argv) {
   assert(is_almost(mu, mu0, precision));
   assert(is_almost(ccm.calc_marginal_logp(), 0, precision));
 
-  // push data into suffstats
+  // push data into component model
   insert_els(ccm, values_to_test);
-  cout << endl << "suffstats after insertion of data" << endl;
+  cout << endl << "component model after insertion of data" << endl;
   cout << ccm << endl;
   // ensure count is proper
   assert(ccm.get_count()==num_values_to_test);
-  // remove data from suffstats in REVERSED order
+  // remove data from component model in REVERSED order
   remove_els(ccm, values_to_test_reversed);
-  cout << endl << "suffstats after removal of data in reversed order" << endl;
+  cout << endl << "component model after removal of data in reversed order" << endl;
   cout << ccm << endl;
   // ensure initial values are recovered
   ccm.get_suffstats(count, sum_x, sum_x_sq);
@@ -111,15 +111,15 @@ int main(int argc, char** argv) {
   assert(is_almost(mu, mu0, precision));
   assert(is_almost(ccm.calc_marginal_logp(), 0, precision));
 
-  // push data into suffstats
+  // push data into component model
   insert_els(ccm, values_to_test);
-  cout << endl << "suffstats after insertion of data" << endl;
+  cout << endl << "component model after insertion of data" << endl;
   cout << ccm << endl;
   // ensure count is proper
   assert(ccm.get_count()==num_values_to_test);
-  // remove data from suffstats in SHUFFLED order
+  // remove data from component model in SHUFFLED order
   remove_els(ccm, values_to_test_shuffled);
-  cout << endl << "suffstats after removal of data in shuffled order" << endl;
+  cout << endl << "component model after removal of data in shuffled order" << endl;
   cout << ccm << endl;
   // ensure initial values are recovered
   ccm.get_suffstats(count, sum_x, sum_x_sq);
@@ -133,9 +133,9 @@ int main(int argc, char** argv) {
   assert(is_almost(mu, mu0, precision));
   assert(is_almost(ccm.calc_marginal_logp(), 0, precision));
 
-  // push data into suffstats
+  // push data into component model
   insert_els(ccm, values_to_test);
-  cout << endl << "suffstats after insertion of data" << endl;
+  cout << endl << "component model after insertion of data" << endl;
   cout << ccm << endl;
   // test hypers
   int N_grid = 11;
@@ -187,11 +187,11 @@ int main(int argc, char** argv) {
   cout << "curr  mu conditional in grid: " << curr_hyper_conditional_in_grid << endl;
   assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
 
-  // remove data from suffstats in SHUFFLED order
+  // remove data from component model in SHUFFLED order
   remove_els(ccm, values_to_test_shuffled);
-  cout << endl << "suffstats after removal of data in shuffled order" << endl;
+  cout << endl << "component model after removal of data in shuffled order" << endl;
   cout << ccm << endl;
 
   
-  cout << "Stop:: test_suffstats" << endl;
+  cout << "Stop:: test_component model" << endl;
 }
