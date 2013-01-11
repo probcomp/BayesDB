@@ -13,9 +13,14 @@ const static double mu0_0 = 0.0;
 
 class ContinuousComponentModel : public ComponentModel {
  public:
+  ContinuousComponentModel(double r, double nu, double s, double mu);
   ContinuousComponentModel();
   //
-  //calculators
+  // getters
+  void get_hyper_doubles(double &r, double &nu, double &s, double &mu) const;
+  void get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const;
+  //
+  // calculators
   double calc_marginal_logp() const;
   double calc_predictive_logp(double element) const;
   std::vector<double> calc_hyper_conditionals(std::string which_hyper,
@@ -30,9 +35,10 @@ class ContinuousComponentModel : public ComponentModel {
   void init_hypers();
   void init_suffstats();
  private:
-  ContinuousComponentModel(double r, double nu, double s, double mu);
-  void get_hyper_doubles(double &r, double &nu, double &s, double &mu) const;
-  void get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const;
   void init_hypers(double r, double nu, double s, double mu);
 };
+
+void print_defaults();
+
 #endif // GUARD_continuouscomponentmodel_h
+
