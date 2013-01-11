@@ -26,14 +26,12 @@ std::ostream& operator<<(std::ostream& os, const std::map<K, V> in_map) {
 
 template <class T>
 std::ostream& operator<<(std::ostream& os, const std::set<T> sT) {
-  typename std::set<T>::const_iterator it = sT.begin();
   os << "{";
-  if(it==sT.end()) {
-    os << "}";
-    return os;
+  typename std::set<T>::const_iterator it = sT.begin();
+  if(it != sT.end()) {
+    os << *it;
+    it++;
   }
-  os << *it;
-  it++;
   for(; it!=sT.end(); it++) {
     os << ", " << *it;
   }
@@ -43,14 +41,12 @@ std::ostream& operator<<(std::ostream& os, const std::set<T> sT) {
 
 template <class T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T> vT) {
-  typename std::vector<T>::const_iterator it = vT.begin();
   os << "{";
-  if(it==vT.end()) {
-    os << "}";
-    return os;
+  typename std::vector<T>::const_iterator it = vT.begin();
+  if(it != vT.end()) {
+    os << *it;
+    it++;
   }
-  os << *it;
-  it++;
   for(; it!=vT.end(); it++) {
     os << ", " << *it;
   }
@@ -72,9 +68,6 @@ std::vector<double> extract_col(boost::numeric::ublas::matrix<double> data, int 
 std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2);
 
 double get(const std::map<std::string, double> m, std::string key);
-
-template <class K, class V>
-V get(const std::map<K, V> m, K key);
 
 template <class K, class V>
 V get(const std::map<K, V> m, K key) {
