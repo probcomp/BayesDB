@@ -4,13 +4,13 @@
 #include <iostream>
 #include <string>
 #include <set>
+#include <map>
 #include <boost/numeric/ublas/matrix.hpp>
 
 void LoadData(std::string file, boost::numeric::ublas::matrix<double>& M);
 
-std::ostream& operator<<(std::ostream& os, const std::map<int, double>& int_double_map);
-std::ostream& operator<<(std::ostream& os, const std::map<std::string, double>& string_double_map);
-std::ostream& operator<<(std::ostream& os, const std::map<int, int>& int_int_map);
+template <class K, class V>
+std::ostream& operator<<(std::ostream& os, const std::map<K, V> in_map);
 
 std::string int_to_str(int i);
 
@@ -75,6 +75,32 @@ double calc_sum_sq_deviation(std::vector<double> values);
 std::vector<double> extract_row(boost::numeric::ublas::matrix<double> data, int row_idx);
 std::vector<double> extract_col(boost::numeric::ublas::matrix<double> data, int col_idx);
 std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2);
+
 double get(const std::map<std::string, double> m, std::string key);
 
+template <class K, class V>
+V get(const std::map<K, V> m, K key);
+
+template <class K, class V>
+std::ostream& operator<<(std::ostream& os, const std::map<K, V> in_map) {
+  typename std::map<K, V>::const_iterator it;
+  os << "{";
+  if(in_map.begin()!=in_map.end()) {
+    os << it->first << ":" << it->second;
+  }
+  for(it=in_map.begin(); it!=in_map.end(); it++) {
+    os << ", " << it->first << " : " << it->second;
+  }
+  os << "}";
+  return os;
+}
+
+template <class K, class V>
+V get(const std::map<K, V> m, K key) {
+  typename std::map<K, V>::const_iterator it = m.find(key);
+  if(it == m.end()) return -1;
+  return it->second;
+}
+
 #endif // GUARD_utils_H
+

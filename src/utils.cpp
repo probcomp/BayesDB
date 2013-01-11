@@ -9,20 +9,6 @@ using namespace std;
 using namespace boost;
 using namespace boost::numeric::ublas;
 
-template <class K, class V>
-std::ostream& operator<<(std::ostream& os, const map<K, V> in_map) {
-  typename map<K, V>::iterator it;
-  os << "{";
-  if(in_map.begin()!=in_map.end()) {
-    os << it->first << ":" << it->second;
-  }
-  for(it=in_map.begin(); it!=in_map.end(); it++) {
-    os << ", " << it->first << " : " << it->second;
-  }
-  os << "}";
-  return os;
-}
-
 string int_to_str(int i) {  
   std::stringstream out;
   out << i;
@@ -144,9 +130,8 @@ std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2) {
   return vec1;
 }  
 
-template <class K, class V>
-V get(const map<K, V> m, K key) {
-  typename map<K, V>::const_iterator it = m.find(key);
+double get(const map<string, double> m, string key) {
+  typename map<string, double>::const_iterator it = m.find(key);
   if(it == m.end()) return -1;
   return it->second;
 }
