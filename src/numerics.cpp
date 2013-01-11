@@ -1,11 +1,6 @@
 #include "numerics.h"
 
-#include <cmath>
-#include <algorithm>
-#include <numeric>
-#include "assert.h"
 using namespace std;
-
 
 // subtract minimum value, logaddexp residuals, pass residuals and partition to
 // draw_sample_with_partition
