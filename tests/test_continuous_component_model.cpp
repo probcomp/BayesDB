@@ -1,26 +1,26 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
-#include "Suffstats.h"
+#include "ContinuousComponentModel.h"
 #include "RandomNumberGenerator.h"
 #include "utils.h"
 
 using namespace std;
 
-typedef Suffstats<double> suffD;
+typedef ContinuousComponentModel CCM;
 
-void insert_els(Suffstats<double> &sd, vector<double> els) {
+void insert_els(CCM &ccm, vector<double> els) {
   for(vector<double>::iterator it=els.begin(); it!=els.end(); it++)
-    sd.insert_el(*it);
+    ccm.insert(*it);
 }
 
-void remove_els(Suffstats<double> &sd, vector<double> els) {
+void remove_els(CCM &ccm, vector<double> els) {
   for(vector<double>::iterator it=els.begin(); it!=els.end(); it++)
-    sd.remove_el(*it);
+    ccm.remove(*it);
 }
 
 int main(int argc, char** argv) {  
-  cout << endl << "Begin:: test_suffstats" << endl;
+  cout << endl << "Begin:: test_continuous_component_model" << endl;
   RandomNumberGenerator rng;
 
   // test settings
@@ -62,14 +62,14 @@ int main(int argc, char** argv) {
   // post-update hyper values and score
 
   // FIXME: should be manually calling numerics:: functions
-  // to compare suffstats results with
+  // to compare component models results with
  
-  // create the suffstats object
+  // create the component model object
   //
   //       r, nu, s, mu
-  suffD sd(r0, nu0, s0, mu0);
-  cout << endl << "initial suffstats object" << endl;
-  cout << sd << endl;
+  CCM ccm(r0, nu0, s0, mu0);
+  cout << endl << "initial component model object" << endl;
+  cout << ccm << endl;
   //
   print_defaults();
 
@@ -78,8 +78,8 @@ int main(int argc, char** argv) {
   int count;
   double sum_x, sum_x_sq;
   double r, nu, s, mu;
-  sd.get_suffstats(count, sum_x, sum_x_sq);
-  sd.get_hypers(r, nu, s, mu);
+  ccm.get_suffstats(count, sum_x, sum_x_sq);
+  ccm.get_hyper_doubles(r, nu, s, mu);
   assert(count==0);
   assert(is_almost(sum_x, 0, precision));
   assert(is_almost(sum_x_sq, 0, precision));
@@ -87,21 +87,21 @@ int main(int argc, char** argv) {
   assert(is_almost(nu, nu0, precision));
   assert(is_almost(s, s0, precision));
   assert(is_almost(mu, mu0, precision));
-  assert(is_almost(sd.get_score(), 0, precision));
+  assert(is_almost(ccm.calc_marginal_logp(), 0, precision));
 
   // push data into suffstats
-  insert_els(sd, values_to_test);
+  insert_els(ccm, values_to_test);
   cout << endl << "suffstats after insertion of data" << endl;
-  cout << sd << endl;
+  cout << ccm << endl;
   // ensure count is proper
-  assert(sd.get_count()==num_values_to_test);
+  assert(ccm.get_count()==num_values_to_test);
   // remove data from suffstats in REVERSED order
-  remove_els(sd, values_to_test_reversed);
+  remove_els(ccm, values_to_test_reversed);
   cout << endl << "suffstats after removal of data in reversed order" << endl;
-  cout << sd << endl;
+  cout << ccm << endl;
   // ensure initial values are recovered
-  sd.get_suffstats(count, sum_x, sum_x_sq);
-  sd.get_hypers(r, nu, s, mu);
+  ccm.get_suffstats(count, sum_x, sum_x_sq);
+  ccm.get_hyper_doubles(r, nu, s, mu);
   assert(count==0);
   assert(is_almost(sum_x, 0, precision));
   assert(is_almost(sum_x_sq, 0, precision));
@@ -109,21 +109,21 @@ int main(int argc, char** argv) {
   assert(is_almost(nu, nu0, precision));
   assert(is_almost(s, s0, precision));
   assert(is_almost(mu, mu0, precision));
-  assert(is_almost(sd.get_score(), 0, precision));
+  assert(is_almost(ccm.calc_marginal_logp(), 0, precision));
 
   // push data into suffstats
-  insert_els(sd, values_to_test);
+  insert_els(ccm, values_to_test);
   cout << endl << "suffstats after insertion of data" << endl;
-  cout << sd << endl;
+  cout << ccm << endl;
   // ensure count is proper
-  assert(sd.get_count()==num_values_to_test);
+  assert(ccm.get_count()==num_values_to_test);
   // remove data from suffstats in SHUFFLED order
-  remove_els(sd, values_to_test_shuffled);
+  remove_els(ccm, values_to_test_shuffled);
   cout << endl << "suffstats after removal of data in shuffled order" << endl;
-  cout << sd << endl;
+  cout << ccm << endl;
   // ensure initial values are recovered
-  sd.get_suffstats(count, sum_x, sum_x_sq);
-  sd.get_hypers(r, nu, s, mu);
+  ccm.get_suffstats(count, sum_x, sum_x_sq);
+  ccm.get_hyper_doubles(r, nu, s, mu);
   assert(count==0);
   assert(is_almost(sum_x, 0, precision));
   assert(is_almost(sum_x_sq, 0, precision));
@@ -131,18 +131,18 @@ int main(int argc, char** argv) {
   assert(is_almost(nu, nu0, precision));
   assert(is_almost(s, s0, precision));
   assert(is_almost(mu, mu0, precision));
-  assert(is_almost(sd.get_score(), 0, precision));
+  assert(is_almost(ccm.calc_marginal_logp(), 0, precision));
 
   // push data into suffstats
-  insert_els(sd, values_to_test);
+  insert_els(ccm, values_to_test);
   cout << endl << "suffstats after insertion of data" << endl;
-  cout << sd << endl;
+  cout << ccm << endl;
   // test hypers
   int N_grid = 11;
   double test_scale = 10;
-  sd.get_suffstats(count, sum_x, sum_x_sq);
-  sd.get_hypers(r, nu, s, mu);
-  double score_0 = sd.get_score();
+  ccm.get_suffstats(count, sum_x, sum_x_sq);
+  ccm.get_hyper_doubles(r, nu, s, mu);
+  double score_0 = ccm.calc_marginal_logp();
   vector<double> hyper_grid;
   vector<double> hyper_conditionals;
   double curr_hyper_conditional_in_grid;
@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
   //    test 'r' hyper
   cout << "testing r conditionals" << endl;
   hyper_grid = log_linspace(r / test_scale, r * test_scale, N_grid);
-  hyper_conditionals = sd.calc_hyper_conditional("r", hyper_grid);
+  hyper_conditionals = ccm.calc_hyper_conditionals("r", hyper_grid);
   cout << "r_grid from function: " << hyper_grid << endl;
   cout << "r_conditioanls from function: " << hyper_conditionals << endl;
   curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
   //    test 'nu' hyper
   cout << "testing nu conditionals" << endl;
   hyper_grid = log_linspace(nu / test_scale, nu * test_scale, N_grid);
-  hyper_conditionals = sd.calc_hyper_conditional("nu", hyper_grid);
+  hyper_conditionals = ccm.calc_hyper_conditionals("nu", hyper_grid);
   cout << "nu_grid: " << hyper_grid << endl;
   cout << "nu_conditionals: " << hyper_conditionals << endl;
   curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
   //    test 's' hyper
   cout << "testing s conditionals" << endl;
   hyper_grid = log_linspace(s / test_scale, s * test_scale, N_grid);
-  hyper_conditionals = sd.calc_hyper_conditional("s", hyper_grid);
+  hyper_conditionals = ccm.calc_hyper_conditionals("s", hyper_grid);
   cout << "s_grid: " << hyper_grid << endl;
   cout << "s_conditionals: " << hyper_conditionals << endl;
   curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
   //    test 'mu' hyper
   cout << "testing mu conditionals" << endl;
   hyper_grid = log_linspace(mu / test_scale, mu * test_scale, N_grid);
-  hyper_conditionals = sd.calc_hyper_conditional("mu", hyper_grid);
+  hyper_conditionals = ccm.calc_hyper_conditionals("mu", hyper_grid);
   cout << "mu_grid: " << hyper_grid << endl;
   cout << "mu_conditionals: " << hyper_conditionals << endl;
   curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
@@ -188,9 +188,9 @@ int main(int argc, char** argv) {
   assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
 
   // remove data from suffstats in SHUFFLED order
-  remove_els(sd, values_to_test_shuffled);
+  remove_els(ccm, values_to_test_shuffled);
   cout << endl << "suffstats after removal of data in shuffled order" << endl;
-  cout << sd << endl;
+  cout << ccm << endl;
 
   
   cout << "Stop:: test_suffstats" << endl;
