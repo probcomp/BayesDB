@@ -9,9 +9,6 @@
 #include <vector>
 #include "utils.h"
 
-class ComponentModel;
-std::ostream& operator<<(std::ostream& os, const ComponentModel &cm);
-
 class ComponentModel {
  public:
   //

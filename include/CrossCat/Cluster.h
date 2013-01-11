@@ -13,8 +13,6 @@
 #include "utils.h"
 #include "ContinuousComponentModel.h"
 
-class Cluster;
-std::ostream& operator<<(std::ostream& os, const Cluster& c);
 
 class Cluster {
  public:
