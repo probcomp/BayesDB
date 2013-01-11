@@ -19,11 +19,11 @@ int main(int argc, char** argv) {
   int num_cols = 3;
 
   // creat the objects
-  Cluster<double> cd(num_cols);
-  vector<Suffstats<double> > sd_v;
+  Cluster cd(num_cols);
+  vector<ContinuousComponentModel> ccm_v;
   for(int row_idx=0; row_idx<num_rows; row_idx++) {
-    Suffstats<double> sd;
-    sd_v.push_back(sd);
+    ContinuousComponentModel ccm;
+    ccm_v.push_back(ccm);
   }
 
   // generate random data;
@@ -43,26 +43,26 @@ int main(int argc, char** argv) {
     vector<double> row_data = rows[row_idx];
     for(int col_idx=0; col_idx<num_cols; col_idx++) {
       double random_value = rows[row_idx][col_idx];
-      sd_v[col_idx].insert_el(random_value);
+      ccm_v[col_idx].insert(random_value);
     }
-    cd.insert_row(row_data, row_idx);
+    cd.insert(row_data, row_idx);
   }
 
   // test score equivalence
   vector<double> score_v;
   double sum_scores = 0;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    double suff_score = sd_v[col_idx].get_score();
+    double suff_score = ccm_v[col_idx].calc_marginal_logp();
     score_v.push_back(suff_score);
     sum_scores += suff_score;
   }
   cout << "vector of separate suffstats scores after population: ";
   cout << score_v << endl;
   cout << "sum separate scores: " << sum_scores << endl;
-  cout << "Cluster score with same data: " << cd.get_score() << endl;
+  cout << "Cluster score with same data: " << cd.calc_sum_marginal_logps() << endl;
   cout << endl;
   //
-  assert(is_almost(sum_scores, cd.get_score(), 1E-10));
+  assert(is_almost(sum_scores, cd.calc_sum_marginal_logps(), 1E-10));
 
 
 
@@ -70,11 +70,11 @@ int main(int argc, char** argv) {
   for(int which_col=0; which_col<num_cols; which_col++) {
     int N_grid = 11;
     double test_scale = 10;
-    Suffstats<double> sd_i = cd.get_suffstats_i(which_col);
+    ContinuousComponentModel ccm_i = cd.get_column_model(which_col);
     double r, nu, s, mu;
     double precision = 1E-10;
-    sd_i.get_hypers(r, nu, s, mu);
-    double score_0 = sd_i.get_score();
+    ccm_i.get_hyper_doubles(r, nu, s, mu);
+    double score_0 = ccm_i.calc_marginal_logp();
     vector<double> hyper_grid;
     vector<double> hyper_conditionals;
     double curr_hyper_conditional_in_grid;
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
     //    test 'r' hyper
     cout << "testing r conditionals" << endl;
     hyper_grid = log_linspace(r / test_scale, r * test_scale, N_grid);
-    hyper_conditionals = cd.calc_hyper_conditional(which_col, "r", hyper_grid);
+    hyper_conditionals = cd.calc_hyper_conditionals(which_col, "r", hyper_grid);
     cout << "r_grid from function: " << hyper_grid << endl;
     cout << "r_conditioanls from function: " << hyper_conditionals << endl;
     curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     //    test 'nu' hyper
     cout << "testing nu conditionals" << endl;
     hyper_grid = log_linspace(nu / test_scale, nu * test_scale, N_grid);
-    hyper_conditionals = cd.calc_hyper_conditional(which_col, "nu", hyper_grid);
+    hyper_conditionals = cd.calc_hyper_conditionals(which_col, "nu", hyper_grid);
     cout << "nu_grid: " << hyper_grid << endl;
     cout << "nu_conditionals: " << hyper_conditionals << endl;
     curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
     //    test 's' hyper
     cout << "testing s conditionals" << endl;
     hyper_grid = log_linspace(s / test_scale, s * test_scale, N_grid);
-    hyper_conditionals = cd.calc_hyper_conditional(which_col, "s", hyper_grid);
+    hyper_conditionals = cd.calc_hyper_conditionals(which_col, "s", hyper_grid);
     cout << "s_grid: " << hyper_grid << endl;
     cout << "s_conditionals: " << hyper_conditionals << endl;
     curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
     //    test 'mu' hyper
     cout << "testing mu conditionals" << endl;
     hyper_grid = log_linspace(mu / test_scale, mu * test_scale, N_grid);
-    hyper_conditionals = cd.calc_hyper_conditional(which_col, "mu", hyper_grid);
+    hyper_conditionals = cd.calc_hyper_conditionals(which_col, "mu", hyper_grid);
     cout << "mu_grid: " << hyper_grid << endl;
     cout << "mu_conditionals: " << hyper_conditionals << endl;
     curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
@@ -132,26 +132,26 @@ int main(int argc, char** argv) {
     vector<double> row_data = rows[row_idx];
     for(int col_idx=0; col_idx<num_cols; col_idx++) {
       double random_value = rows[row_idx][col_idx];
-      sd_v[col_idx].remove_el(random_value);
+      ccm_v[col_idx].remove(random_value);
     }
-    cd.remove_row(row_data, row_idx);
+    cd.remove(row_data, row_idx);
   }
 
   // test score equivalence
   score_v.clear();
   sum_scores = 0;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    double suff_score = sd_v[col_idx].get_score();
+    double suff_score = ccm_v[col_idx].calc_marginal_logp();
     score_v.push_back(suff_score);
     sum_scores += suff_score;
   }
   cout << "vector of separate suffstats scores after depopulation: ";
   cout << score_v << endl;
   cout << "sum separate scores: " << sum_scores << endl;
-  cout << "Cluster score with same data: " << cd.get_score() << endl;
+  cout << "Cluster score with same data: " << cd.calc_sum_marginal_logps() << endl;
   cout << endl;
   //
-  assert(is_almost(sum_scores, cd.get_score(), 1E-10));
+  assert(is_almost(sum_scores, cd.calc_sum_marginal_logps(), 1E-10));
 
 
 
@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
   //   for(int j=0;j < Data.size2(); j++) {
   //     V.push_back(Data(i,j));
   //   }
-  //   sum_sum_score_deltas += cd.insert_row(V, i);
+  //   sum_sum_score_deltas += cd.insert(V, i);
   // }
   // std::cout << std::endl << "modified cluster" << std::endl;
   // std::cout << cd << std::endl;
@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
   //   for(int j=0;j < Data.size2(); j++) {
   //     V.push_back(Data(i,j));
   //   }
-  //   sum_sum_score_deltas += cd.insert_row(V, i);
+  //   sum_sum_score_deltas += cd.insert(V, i);
   // }
   // std::cout << std::endl << "modified cluster" << std::endl;
   // std::cout << cd << std::endl;
@@ -207,11 +207,11 @@ int main(int argc, char** argv) {
   // std::cout << "calc_data_logp() is result" << std::endl;
   // std::cout << cd.calc_data_logp(V) << std::endl;
 
-  // cd.insert_row(V, i);
+  // cd.insert(V, i);
   // std::cout << std::endl << "modified cluster" << std::endl;
   // std::cout << cd << std::endl;
   // std::cout << "remove vector" << std::endl;
-  // cd.remove_row(V, i);
+  // cd.remove(V, i);
   // std::cout << std::endl << "modified cluster" << std::endl;
   // std::cout << cd << std::endl;
   // //

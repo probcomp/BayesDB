@@ -11,9 +11,9 @@
 
 typedef boost::numeric::ublas::matrix<double> matrixD;
 using namespace std;
-typedef vector<Cluster<double>*> vectorCp;
-typedef set<Cluster<double>*> setCp;
-typedef map<int, Cluster<double>*> mapICp;
+typedef vector<Cluster*> vectorCp;
+typedef set<Cluster*> setCp;
+typedef map<int, Cluster*> mapICp;
 typedef setCp::iterator setCp_it;
 typedef mapICp::iterator mapICp_it;
 typedef vector<int>::iterator vectorI_it;
@@ -22,7 +22,7 @@ void print_cluster_memberships(View& v) {
   cout << "Cluster memberships" << endl;
   setCp_it it = v.clusters.begin();
   for(; it!=v.clusters.end(); it++) {
-    Cluster<double> &cd = **it;
+    Cluster &cd = **it;
     cout << cd.get_global_row_indices() << endl;
   }
   cout << "num clusters: " << v.get_num_clusters() << endl;
@@ -32,9 +32,9 @@ void print_cluster_memberships(View& v) {
 void insert_and_print(View& v, map<int, vector<double> > data_map,
 		      int cluster_idx, int row_idx) {
   vector<double> row = data_map[row_idx];
-  Cluster<double>& cluster = v.get_cluster(cluster_idx);
-  v.insert_row(row, cluster, row_idx);
-  cout << "v.insert_row(" << row << ", " << cluster_idx << ", " \
+  Cluster& cluster = v.get_cluster(cluster_idx);
+  v.insert(row, cluster, row_idx);
+  cout << "v.insert(" << row << ", " << cluster_idx << ", "	\
 	    << row_idx << ")" << endl;
   cout << "v.get_score(): " << v.get_score() << endl;
 }
@@ -47,7 +47,7 @@ void remove_all_data(View &v, map<int, vector<double> > data_map) {
   for(vectorI_it it=rows_in_view.begin(); it!=rows_in_view.end(); it++) {
     int idx_to_remove = *it;
     vector<double> row = data_map[idx_to_remove];
-    v.remove_row(row, idx_to_remove);
+    v.remove(row, idx_to_remove);
   }
   cout << "removed all data" << endl;
   v.print();
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
   for(set<int>::iterator it=cluster_idx_set.begin(); it!=cluster_idx_set.end(); it++) {
     int cluster_idx = *it;
     cout << "inserting cluster idx: " << cluster_idx << endl;
-    Cluster<double> *p_cd = new Cluster<double>(num_cols);
+    Cluster *p_cd = new Cluster(num_cols);
     cd_v.push_back(p_cd);
   }
 
@@ -121,8 +121,8 @@ int main(int argc, char** argv) {
     int cluster_idx = it->second;
     cout << "INSERTING ROW: " << row_idx << endl;
     insert_and_print(v, data_map, cluster_idx, row_idx);
-    Cluster<double> *p_cd = cd_v[cluster_idx];
-    double cluster_score_delta = (*p_cd).insert_row(data_map[row_idx], row_idx);
+    Cluster *p_cd = cd_v[cluster_idx];
+    double cluster_score_delta = (*p_cd).insert(data_map[row_idx], row_idx);
     cout << "cluster_score_delta: " << cluster_score_delta << endl;
     cout << "DONE INSERTING ROW: " << row_idx << endl;
   }
@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
   setCp_it it = v.clusters.begin();
   double sum_scores = 0;
   for(; it!=v.clusters.end(); it++) {
-    double cluster_score = (*it)->get_score();
+    double cluster_score = (*it)->calc_sum_marginal_logps();
     cluster_scores.push_back(cluster_score);
     sum_scores += cluster_score;
   }
@@ -199,7 +199,7 @@ int main(int argc, char** argv) {
     for(int col_idx=0; col_idx<num_cols; col_idx++) {
       hyper_grid = v.get_hyper_grid(col_idx, hyper_string);
       cout << hyper_string << " grid: " << hyper_grid << endl;
-      hyper_logps = v.calc_hyper_conditional(col_idx, hyper_string, hyper_grid);
+      hyper_logps = v.calc_hyper_conditionals(col_idx, hyper_string, hyper_grid);
       cout << "conditionals: " << hyper_logps << endl;
       double curr_r_conditional = hyper_logps[(int)(N_GRID-1)/2];
       curr_r_conditionals.push_back(curr_r_conditional);
@@ -218,7 +218,7 @@ int main(int argc, char** argv) {
   //
   hyper_grid = v.get_hyper_grid(0, "r");
   int col_idx = 0;
-  vector<double> unorm_logps = v.calc_hyper_conditional(col_idx, hyper_string, hyper_grid);
+  vector<double> unorm_logps = v.calc_hyper_conditionals(col_idx, hyper_string, hyper_grid);
   double curr_conditional = unorm_logps[(int)(N_GRID-1)/2];
   double curr_data_score = v.get_data_score();
   //
@@ -264,7 +264,7 @@ int main(int argc, char** argv) {
     if(iter % 1 == 0) {
       print_cluster_memberships(v);
       for(int col_idx=0; col_idx<num_cols; col_idx++) {
-	cout << "Hypers(col_idx=" << col_idx <<"): " << v.get_hyper_hash(col_idx) << endl;
+	cout << "Hypers(col_idx=" << col_idx <<"): " << v.get_hypers(col_idx) << endl;
       }
       cout << "score: " << v.get_score() << endl;
       cout << "Done iter: " << iter << endl;
