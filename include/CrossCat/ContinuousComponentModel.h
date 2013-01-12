@@ -40,4 +40,3 @@ class ContinuousComponentModel : public ComponentModel {
 void print_defaults();
 
 #endif // GUARD_continuouscomponentmodel_h
-
