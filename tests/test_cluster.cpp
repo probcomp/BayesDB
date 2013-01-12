@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
       double random_value = rows[row_idx][col_idx];
       ccm_v[col_idx].insert(random_value);
     }
-    cd.insert(row_data, row_idx);
+    cd.insert_row(row_data, row_idx);
   }
 
   // test score equivalence
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
       double random_value = rows[row_idx][col_idx];
       ccm_v[col_idx].remove(random_value);
     }
-    cd.remove(row_data, row_idx);
+    cd.remove_row(row_data, row_idx);
   }
 
   // test score equivalence

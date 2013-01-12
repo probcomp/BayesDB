@@ -35,8 +35,8 @@ class Cluster {
 					      std::vector<double> hyper_grid) const;
   //
   // mutators
-  double insert(std::vector<double> vd, int row_idx);
-  double remove(std::vector<double> vd, int row_idx);
+  double insert_row(std::vector<double> vd, int row_idx);
+  double remove_row(std::vector<double> vd, int row_idx);
   double set_hyper(int which_col, std::string which_hyper, double hyper_value);
   //
   // helpers

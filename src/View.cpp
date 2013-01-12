@@ -244,7 +244,7 @@ double View::insert(vector<double> vd, Cluster& which_cluster, int row_idx) {
   // NOTE: MUST use calc_cluster_vector_logp,  gets crp_score_delta as well
   double crp_logp_delta, data_logp_delta;
   double score_delta = calc_cluster_vector_logp(vd, which_cluster, crp_logp_delta, data_logp_delta);
-  which_cluster.insert(vd, row_idx);
+  which_cluster.insert_row(vd, row_idx);
   cluster_lookup[row_idx] = &which_cluster;
   crp_score += crp_logp_delta;
   data_score += data_logp_delta;
@@ -264,7 +264,7 @@ double View::insert(vector<double> vd, int row_idx) {
 double View::remove(vector<double> vd, int row_idx) {
   Cluster &which_cluster = *(cluster_lookup[row_idx]);
   cluster_lookup.erase(cluster_lookup.find(row_idx));
-  which_cluster.remove(vd, row_idx);
+  which_cluster.remove_row(vd, row_idx);
   num_vectors -= 1;
   double crp_logp_delta, data_logp_delta;
   double score_delta = calc_cluster_vector_logp(vd, which_cluster, crp_logp_delta, data_logp_delta);

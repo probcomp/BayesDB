@@ -65,7 +65,7 @@ vector<double> Cluster::calc_hyper_conditionals(int which_col, string which_hype
   return sd.calc_hyper_conditionals(which_hyper, hyper_grid);
 }
 
-double Cluster::insert(vector<double> vd, int row_idx) {
+double Cluster::insert_row(vector<double> vd, int row_idx) {
   double sum_score_deltas = 0;
   count += 1;
   // track row indices
@@ -81,7 +81,7 @@ double Cluster::insert(vector<double> vd, int row_idx) {
   return sum_score_deltas;
 }
 
-double Cluster::remove(vector<double> vd, int row_idx) {
+double Cluster::remove_row(vector<double> vd, int row_idx) {
   double sum_score_deltas = 0;
   count -= 1;
   // track row indices

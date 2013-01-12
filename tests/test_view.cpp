@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
     cout << "INSERTING ROW: " << row_idx << endl;
     insert_and_print(v, data_map, cluster_idx, row_idx);
     Cluster *p_cd = cd_v[cluster_idx];
-    double cluster_score_delta = (*p_cd).insert(data_map[row_idx], row_idx);
+    double cluster_score_delta = (*p_cd).insert_row(data_map[row_idx], row_idx);
     cout << "cluster_score_delta: " << cluster_score_delta << endl;
     cout << "DONE INSERTING ROW: " << row_idx << endl;
   }
