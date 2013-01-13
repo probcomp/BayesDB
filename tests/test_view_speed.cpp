@@ -56,7 +56,12 @@ void remove_all_data(View &v, map<int, vector<double> > data_map) {
   for(vectorI_it it=rows_in_view.begin(); it!=rows_in_view.end(); it++) {
     int idx_to_remove = *it;
     vector<double> row = data_map[idx_to_remove];
-    v.remove_row(row, idx_to_remove);
+    vector<int> global_indices(row.size(),1);
+    global_indices[0] = 0;
+    std::partial_sum(global_indices.begin(), global_indices.end(), global_indices.begin());
+    vector<double> aligned_row = v.align_data(row, global_indices);
+    cout << "aligned_row: " << aligned_row << endl;
+    v.remove_row(aligned_row, idx_to_remove);
   }
   cout << "removed all data" << endl;
   v.print();
@@ -94,6 +99,19 @@ int main(int argc, char** argv) {
 
   // print the initial view
   print_with_header(v, "empty view print");
+
+
+  cout << "insert a single row:";
+  int row_idx = 0;
+  vector<double> row = extract_row(data, row_idx);
+  v.insert_row(row, row_idx);
+  print_with_header(v, "view after inserting single row");
+
+  cout << "remove a single row:";
+  row_idx = 0;
+  row = extract_row(data, row_idx);
+  v.remove_row(row, row_idx);
+  print_with_header(v, "view after removeing single row");
   
   // populate the objects to test
   cout << endl << "populating objects" << endl;
@@ -135,6 +153,23 @@ int main(int argc, char** argv) {
   // empty object and verify empty
   remove_all_data(v, data_map);
   v.print();
+
+  cout << "insert a single row: " << flush;
+  row_idx = 0;
+  row = extract_row(data, row_idx);
+
+  vector<int> global_indices(row.size(),1);
+  global_indices[0] = 0;
+  std::partial_sum(global_indices.begin(), global_indices.end(), global_indices.begin());
+  vector<double> aligned_row = v.align_data(row, global_indices);
+
+  cout << aligned_row << endl << flush;
+  v.insert_row(aligned_row, row_idx);
+  print_with_header(v, "view after inserting single row");
+
+  cout << "remove a single row:";
+  v.remove_row(aligned_row, row_idx);
+  print_with_header(v, "view after removeing single row");
 
   cout << endl << "Goodbye World!" << endl;
 }
