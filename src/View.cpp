@@ -138,7 +138,9 @@ vector<int> View::get_cluster_counts() const {
   return counts;
 }
 
-double View::calc_cluster_vector_logp(vector<double> vd, Cluster which_cluster, double &crp_logp_delta, double &data_logp_delta) const {
+double View::calc_cluster_vector_logp(vector<double> vd, Cluster which_cluster,
+				      double &crp_logp_delta,
+				      double &data_logp_delta) const {
   int cluster_count = which_cluster.get_count();
   double score_delta;
   // NOTE: non-mutating, so presume vector is not in state
@@ -157,16 +159,19 @@ vector<double> View::calc_cluster_vector_logps(vector<double> vd) const {
   set<Cluster*>::iterator it = clusters.begin();
   double crp_logp_delta, data_logp_delta;
   for(; it!=clusters.end(); it++) {
-    logps.push_back(calc_cluster_vector_logp(vd, **it, crp_logp_delta, data_logp_delta));
+    logps.push_back(calc_cluster_vector_logp(vd, **it, crp_logp_delta,
+					     data_logp_delta));
   }
   Cluster empty_cluster(get_num_cols());
-  logps.push_back(calc_cluster_vector_logp(vd, empty_cluster, crp_logp_delta, data_logp_delta));
+  logps.push_back(calc_cluster_vector_logp(vd, empty_cluster, crp_logp_delta,
+					   data_logp_delta));
   return logps;
 }
 
 double View::score_crp() const {
   vector<int> cluster_counts = get_cluster_counts();
-  return numerics::calc_crp_alpha_conditional(cluster_counts, crp_alpha, num_vectors, true);
+  return numerics::calc_crp_alpha_conditional(cluster_counts, crp_alpha,
+					      num_vectors, true);
 }
 
 vector<double> View::score_crp(vector<double> alphas_to_score) const {
@@ -175,17 +180,23 @@ vector<double> View::score_crp(vector<double> alphas_to_score) const {
   vector<double>::iterator it = alphas_to_score.begin();
   for(; it!=alphas_to_score.end(); it++) {
     double alpha_to_score = *it;
-    double this_crp_score = numerics::calc_crp_alpha_conditional(cluster_counts, alpha_to_score, num_vectors, true);
+    double this_crp_score = numerics::calc_crp_alpha_conditional(cluster_counts,
+								 alpha_to_score,
+								 num_vectors,
+								 true);
     crp_scores.push_back(this_crp_score);
   }
   return crp_scores;
 }
 
-std::vector<double> View::calc_hyper_conditionals(int which_col, std::string which_hyper, std::vector<double> hyper_grid) const {
+std::vector<double> View::calc_hyper_conditionals(int which_col,
+						  std::string which_hyper,
+						  std::vector<double> hyper_grid) const {
   setCp::iterator it;
   vector<vector<double> > vec_vec;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    vector<double> logps = (**it).calc_hyper_conditionals(which_col, which_hyper, hyper_grid);
+    vector<double> logps = (**it).calc_hyper_conditionals(which_col, which_hyper,
+							  hyper_grid);
     vec_vec.push_back(logps);
   }
   
@@ -202,10 +213,12 @@ double View::set_hyper(int which_col, string which_hyper, double new_value) {
   return data_score_delta;
 }
 
-void View::transition_hyper_i(int which_col, std::string which_hyper, vector<double> hyper_grid) {
+void View::transition_hyper_i(int which_col, std::string which_hyper,
+			      vector<double> hyper_grid) {
   //
   // draw new hyper
-  vector<double> unorm_logps = calc_hyper_conditionals(which_col, which_hyper, hyper_grid);
+  vector<double> unorm_logps = calc_hyper_conditionals(which_col, which_hyper,
+						       hyper_grid);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   double new_hyper_value = hyper_grid[draw];
@@ -214,7 +227,8 @@ void View::transition_hyper_i(int which_col, std::string which_hyper, vector<dou
   double delta_data_score = 0;
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    delta_data_score += (**it).set_hyper(which_col, which_hyper, new_hyper_value);
+    delta_data_score += (**it).set_hyper(which_col, which_hyper,
+					 new_hyper_value);
   }
   //
   // update score
@@ -230,7 +244,8 @@ void View::transition_hypers_i(int which_col) {
   vector<string> hyper_strings = get_hyper_strings();
   // FIXME: use own shuffle so its seed controlled
   std::random_shuffle(hyper_strings.begin(), hyper_strings.end());
-  for(vector<string>::iterator it=hyper_strings.begin(); it!=hyper_strings.end(); it++) {
+  vector<string>::iterator it;
+  for(it=hyper_strings.begin(); it!=hyper_strings.end(); it++) {
     string which_hyper = *it;
     transition_hyper_i(which_col, which_hyper);
   }
@@ -259,7 +274,8 @@ Cluster& View::get_new_cluster() {
 double View::insert_row(vector<double> vd, Cluster& which_cluster, int row_idx) {
   // NOTE: MUST use calc_cluster_vector_logp,  gets crp_score_delta as well
   double crp_logp_delta, data_logp_delta;
-  double score_delta = calc_cluster_vector_logp(vd, which_cluster, crp_logp_delta, data_logp_delta);
+  double score_delta = calc_cluster_vector_logp(vd, which_cluster,
+						crp_logp_delta, data_logp_delta);
   which_cluster.insert_row(vd, row_idx);
   cluster_lookup[row_idx] = &which_cluster;
   crp_score += crp_logp_delta;
@@ -283,7 +299,8 @@ double View::remove_row(vector<double> vd, int row_idx) {
   which_cluster.remove_row(vd, row_idx);
   num_vectors -= 1;
   double crp_logp_delta, data_logp_delta;
-  double score_delta = calc_cluster_vector_logp(vd, which_cluster, crp_logp_delta, data_logp_delta);
+  double score_delta = calc_cluster_vector_logp(vd, which_cluster,
+						crp_logp_delta, data_logp_delta);
   remove_if_empty(which_cluster);
   crp_score -= crp_logp_delta;
   data_score -= data_logp_delta;
@@ -396,13 +413,16 @@ void View::print() {
     cout << "CLUSTER IDX: " << cluster_idx++ << endl;
     cout << **it << endl;
   }
-  cout << "crp_score: " << crp_score << ", " << "data_score: " << data_score << ", " << "score: " << get_score() << endl;
+  cout << "crp_score: " << crp_score << ", " << "data_score: " << data_score;
+  cout << ", " << "score: " << get_score() << endl;
 }
 
 void View::assert_state_consistency() {
   double tolerance = 1E-10;
   vector<int> cluster_counts = get_cluster_counts();
-  assert(is_almost(get_num_vectors(), std::accumulate(cluster_counts.begin(),cluster_counts.end(),0),tolerance));
+  int sum_via_cluster_counts = std::accumulate(cluster_counts.begin(),
+					       cluster_counts.end(), 0);  
+  assert(is_almost(get_num_vectors(), sum_via-cluster_counts, tolerance));
   assert(is_almost(get_crp_score(),score_crp(),tolerance));
 }
 

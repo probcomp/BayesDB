@@ -41,11 +41,15 @@ class View {
   std::vector<int> get_cluster_counts() const;
   //
   // calculators
-  double calc_cluster_vector_logp(std::vector<double> vd, Cluster cd, double &crp_logp_delta, double &data_logp_delta) const;
+  double calc_cluster_vector_logp(std::vector<double> vd, Cluster cd,
+				  double &crp_logp_delta,
+				  double &data_logp_delta) const;
   std::vector<double> calc_cluster_vector_logps(std::vector<double> vd) const;
   double score_crp() const;
   std::vector<double> score_crp(std::vector<double> alphas) const;
-  std::vector<double> calc_hyper_conditionals(int which_col, std::string which_hyper, std::vector<double> hyper_grid) const;
+  std::vector<double> calc_hyper_conditionals(int which_col,
+					      std::string which_hyper,
+					      std::vector<double> hyper_grid) const;
   //
   // mutators
   double set_alpha(double new_alpha);
@@ -62,7 +66,8 @@ class View {
   void transition_zs(std::map<int, std::vector<double> > row_data_map);
   void transition_crp_alpha();
   double set_hyper(int which_col, std::string which_hyper, double new_value);
-  void transition_hyper_i(int which_col, std::string which_hyper, std::vector<double> hyper_grid);
+  void transition_hyper_i(int which_col, std::string which_hyper,
+			  std::vector<double> hyper_grid);
   void transition_hyper_i(int which_col, std::string which_hyper);
   void transition_hypers_i(int which_col);
   void transition_hypers();
