@@ -54,6 +54,9 @@ class View {
   double insert_row(std::vector<double> vd, int row_idx);
   double remove_row(std::vector<double> vd, int row_idx); 
   double remove_col(int col_idx);
+  double insert_col(std::vector<double> data,
+		    std::vector<int> data_global_row_indices,
+		    int global_col_idx);
   void remove_if_empty(Cluster& which_cluster);
   void transition_z(std::vector<double> vd, int row_idx);
   void transition_zs(std::map<int, std::vector<double> > row_data_map);
@@ -73,6 +76,7 @@ class View {
 				 std::vector<int> global_column_indices) const;
   std::vector<int> shuffle_row_indices();
   void print();
+  void print_score_matrix();
   void assert_state_consistency();
   // double score_test_set(std::vector<std::vector<double> > test_set) const;
   //
@@ -82,6 +86,7 @@ class View {
   std::vector<double> nu_grid;
   std::map<int, std::vector<double> > s_grids;
   std::map<int, std::vector<double> > mu_grids;
+  std::map<int, int> global_to_local; // FIXME: specify appicability to columns
  private:
   // parameters
   int num_vectors;
@@ -90,7 +95,6 @@ class View {
   double data_score;
   // sub-objects
   RandomNumberGenerator rng;
-  std::map<int, int> global_to_local;
   // resources
   double draw_rand_u();
   int draw_rand_i(int max);

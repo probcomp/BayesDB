@@ -89,9 +89,29 @@ double Cluster::remove_row(vector<double> values, int row_idx) {
 
 double Cluster::remove_col(int col_idx) {
   double score_delta = model_v[col_idx].calc_marginal_logp();
-  cout << "remove_col:: score_delta: " << score_delta << endl;
   model_v.erase(model_v.begin() + col_idx);
   score -= score_delta;
+  return score_delta;
+}
+
+double Cluster::insert_col(vector<double> data,
+			   vector<int> data_global_row_indices) {
+  map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
+  ContinuousComponentModel ccm;
+  set<int>::iterator it;
+  for(it=row_indices.begin(); it!=row_indices.end(); it++) {
+    int global_row_idx = *it;
+    int data_idx = global_to_data[global_row_idx];
+    double value = data[data_idx];
+    ccm.insert(value);
+  }
+  double score_delta = ccm.calc_marginal_logp();
+  model_v.push_back(ccm);
+  score += score_delta;
+  //
+  cout << "insert_col:: score_delta: " << score_delta << endl;
+  int col_idx = model_v.size() - 1;
+  cout << "insert_col:: score_delta: " << model_v[col_idx].calc_marginal_logp() << endl;
   return score_delta;
 }
 

@@ -37,6 +37,8 @@ class Cluster {
   double insert_row(std::vector<double> values, int row_idx);
   double remove_row(std::vector<double> values, int row_idx);
   double remove_col(int col_idx);
+  double insert_col(std::vector<double> data,
+		    std::vector<int> data_global_row_indices);
   double set_hyper(int which_col, std::string which_hyper, double hyper_value);
   //
   // helpers

@@ -290,18 +290,36 @@ double View::remove_row(vector<double> vd, int row_idx) {
   return score_delta;
 }
 
-double View::remove_col(int col_idx) {
+double View::insert_col(vector<double> data,
+			vector<int> data_global_row_indices,
+			int global_col_idx) {
+  double score_delta = 0;
+  setCp::iterator it;
+  for(it=clusters.begin(); it!=clusters.end(); it++) {
+    score_delta += (**it).insert_col(data, data_global_row_indices);
+  }
+  int num_cols = get_num_cols();
+  global_to_local[global_col_idx] = num_cols;
+  data_score += score_delta;
+  cout << "View::insert_col score_delta: " << score_delta << endl;
+  return score_delta;
+}
+ 
+double View::remove_col(int global_col_idx) {
+  int local_col_idx = global_to_local[global_col_idx];
+  //
   setCp::iterator it;
   double score_delta = 0;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    score_delta += (*it)->remove_col(col_idx);
+    score_delta += (*it)->remove_col(local_col_idx);
   }
   // rearrange global_to_local
   std::vector<int> global_col_indices = extract_global_ordering(global_to_local);
-  global_col_indices.erase(global_col_indices.begin() + col_idx);
+  global_col_indices.erase(global_col_indices.begin() + local_col_idx);
   global_to_local = construct_lookup_map(global_col_indices);
   //
   data_score -= score_delta;
+  cout << "View::remove_col score_delta: " << score_delta << endl;
   return score_delta;
 }
 
@@ -357,6 +375,18 @@ vector<int> View::shuffle_row_indices() {
     original_order.erase(original_order.begin() + draw);
   }
   return shuffled_order;
+}
+
+void View::print_score_matrix() {
+  vector<vector<double> > scores_v;
+  set<Cluster*>::iterator c_it;
+  for(c_it=clusters.begin(); c_it!=clusters.end(); c_it++) {
+    Cluster &c = **c_it;
+    vector<double> scores = c.calc_marginal_logps();
+    scores_v.push_back(scores);
+  }
+  cout << "crp_score: " << crp_score << endl;
+  cout << "scores_v:" << endl << scores_v << endl;
 }
 
 void View::print() {
