@@ -88,10 +88,7 @@ int main(int argc, char** argv) {
   }
 
   // create the view
-  vector<int> global_column_indices;
-  for(int col_idx=0; col_idx<data.size2(); col_idx++) {
-    global_column_indices.push_back(col_idx);
-  }
+  vector<int> global_column_indices = create_sequence(data.size2());
   View v = View(data, global_column_indices, 31);
 
   // print the initial view
