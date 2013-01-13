@@ -117,19 +117,21 @@ int main(int argc, char** argv) {
     v.transition_hypers();
     // if(iter % 10 == 0) {
     if(iter % 1 == 0) {
-      print_cluster_memberships(v);
-      for(int col_idx=0; col_idx<num_cols; col_idx++) {
-	cout << "Hypers(col_idx=" << col_idx <<"): " << v.get_hypers(col_idx) << endl;
-      }
-      cout << "score: " << v.get_score() << endl;
       cout << "Done iter: " << iter << endl;
-      cout << endl;
+      print_with_header(v, "view after iter");
     }
   }
-  print_cluster_memberships(v);
   cout << "Done transition_zs" << endl;
   cout << endl;
 
+  cout << "=====================" << endl;
+  cout << "=====================" << endl;
+  cout << "=====================" << endl;
+  int remove_col_idx = 2;
+  cout << "removing column: " << remove_col_idx;
+  v.remove_col(remove_col_idx);
+  print_with_header(v, "view after column removal");
+  
   // empty object and verify empty
   remove_all_data(v, data_map);
   v.print();
