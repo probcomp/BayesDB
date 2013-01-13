@@ -56,9 +56,7 @@ void remove_all_data(View &v, map<int, vector<double> > data_map) {
   for(vectorI_it it=rows_in_view.begin(); it!=rows_in_view.end(); it++) {
     int idx_to_remove = *it;
     vector<double> row = data_map[idx_to_remove];
-    vector<int> global_indices(row.size(),1);
-    global_indices[0] = 0;
-    std::partial_sum(global_indices.begin(), global_indices.end(), global_indices.begin());
+    vector<int> global_indices = create_sequence(row.size());
     vector<double> aligned_row = v.align_data(row, global_indices);
     cout << "aligned_row: " << aligned_row << endl;
     v.remove_row(aligned_row, idx_to_remove);
@@ -141,14 +139,52 @@ int main(int argc, char** argv) {
   }
   cout << "Done transition_zs" << endl;
   cout << endl;
+  v.print_score_matrix();
+  cout << "v.global_to_local: " << v.global_to_local << endl;
+
+  int remove_col_idx, insert_col_idx;
+  vector<double> col_data = extract_col(data, insert_col_idx);
+  vector<int> data_global_row_indices = create_sequence(col_data.size(), 0);
 
   cout << "=====================" << endl;
   cout << "=====================" << endl;
   cout << "=====================" << endl;
-  int remove_col_idx = 2;
+  remove_col_idx = 2;
   cout << "removing column: " << remove_col_idx;
   v.remove_col(remove_col_idx);
-  print_with_header(v, "view after column removal");
+  cout << "FLAG:: score: " << v.get_score() << endl;
+  v.print_score_matrix();
+  cout << "v.global_to_local: " << v.global_to_local << endl;
+
+  cout << "=====================" << endl;
+  cout << "=====================" << endl;
+  cout << "=====================" << endl;
+  insert_col_idx = remove_col_idx;
+  cout << "inserting column: " << insert_col_idx;
+  v.insert_col(col_data, data_global_row_indices, insert_col_idx);
+  cout << "FLAG:: score: " << v.get_score() << endl;
+  v.print_score_matrix();
+  cout << "v.global_to_local: " << v.global_to_local << endl;
+
+  cout << "=====================" << endl;
+  cout << "=====================" << endl;
+  cout << "=====================" << endl;
+  remove_col_idx = 2;
+  cout << "removing column: " << remove_col_idx;
+  v.remove_col(remove_col_idx);
+  cout << "FLAG:: score: " << v.get_score() << endl;
+  v.print_score_matrix();
+  cout << "v.global_to_local: " << v.global_to_local << endl;
+
+  cout << "=====================" << endl;
+  cout << "=====================" << endl;
+  cout << "=====================" << endl;
+  insert_col_idx = 2;
+  cout << "inserting column: " << insert_col_idx;
+  v.insert_col(col_data, data_global_row_indices, insert_col_idx);
+  cout << "FLAG:: score: " << v.get_score() << endl;
+  v.print_score_matrix();
+  cout << "v.global_to_local: " << v.global_to_local << endl;
   
   // empty object and verify empty
   remove_all_data(v, data_map);
@@ -158,9 +194,7 @@ int main(int argc, char** argv) {
   row_idx = 0;
   row = extract_row(data, row_idx);
 
-  vector<int> global_indices(row.size(),1);
-  global_indices[0] = 0;
-  std::partial_sum(global_indices.begin(), global_indices.end(), global_indices.begin());
+  vector<int> global_indices = create_sequence(row.size());
   vector<double> aligned_row = v.align_data(row, global_indices);
 
   cout << aligned_row << endl << flush;
