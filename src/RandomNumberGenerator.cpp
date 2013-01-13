@@ -20,4 +20,6 @@ int RandomNumberGenerator::nexti(int max) {
 // control the seed
 void RandomNumberGenerator::set_seed(std::time_t seed) {
   _engine.seed(seed);
+  boost::uniform_01<boost::mt19937> new_dist(_engine);
+  _dist = new_dist;
 }
