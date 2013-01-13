@@ -121,3 +121,48 @@ std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2) {
   vec1.insert(vec1.end(), vec2.begin(), vec2.end());
   return vec1;
 }  
+
+std::vector<int> extract_global_ordering(std::map<int, int> global_to_local) {
+  std::vector<int> global_indices(global_to_local.size(), -1);
+  map<int,int>::iterator it;
+  for(it=global_to_local.begin(); it!=global_to_local.end(); it++) {
+    int global_idx = it->first;
+    int local_idx = it->second;
+    global_indices[local_idx] = global_idx;
+  }
+  return global_indices;
+}
+
+map<int, int> construct_lookup_map(std::vector<int> values) {
+  map<int, int> lookup;
+  for(int idx=0; idx<values.size(); idx++) {
+    lookup[values[idx]] = idx;
+  }
+  return lookup;
+}
+
+std::vector<double> reorder_per_map(std::vector<double> raw_values,
+				    std::vector<int> global_column_indices,
+				    std::map<int, int> global_to_local) {
+  std::vector<double> arranged_values(raw_values.size(), -1);
+  std::vector<int>::iterator it;
+  for(int raw_idx=0; raw_idx<raw_values.size(); raw_idx++) {
+    double raw_value = raw_values[raw_idx];
+    int global_column_idx = *it;
+    int local_idx = global_to_local[global_column_idx];
+    arranged_values[local_idx] = raw_value;
+  }
+  return arranged_values;
+}
+
+map<int, int> remove_and_reorder(map<int, int> old_global_to_local,
+				      int global_to_remove) {
+  // extract current ordering
+  std::vector<int> global_indices = extract_global_ordering(old_global_to_local);
+  // remove
+  int local_to_remove = old_global_to_local[global_to_remove];
+  global_indices.erase(global_indices.begin() + local_to_remove);
+  // constrcut and return
+  return construct_lookup_map(global_indices);
+}
+  
