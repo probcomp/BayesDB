@@ -161,7 +161,7 @@ int main(int argc, char** argv) {
   insert_col_idx = remove_col_idx;
   cout << "inserting column: " << insert_col_idx;
   score_0 = v.get_score();
-  score_delta_1 = v.score_col(col_data, data_global_row_indices);
+  score_delta_1 = v.score_col_data(col_data, data_global_row_indices);
   score_delta_2 = v.insert_col(col_data, data_global_row_indices, insert_col_idx);
   score_1 = v.get_score();
   cout << "FLAG:: " << "score_0: " << score_0 << ", score_1: " << score_1;
