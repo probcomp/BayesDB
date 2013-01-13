@@ -18,7 +18,8 @@ class Cluster;
 class View {
  public:
   //FIXME: add constructor with ranges as arguments, rather than recalculate
-  View(boost::numeric::ublas::matrix<double> data, int N_GRID=31);
+  View(boost::numeric::ublas::matrix<double> data, std::vector<int> col_indices,
+       int N_GRID=31);
   // FIXME: will need to add a deallocator for clusters
   // for when View is garbage collected 
   //
@@ -49,9 +50,10 @@ class View {
   // mutators
   double set_alpha(double new_alpha);
   Cluster& get_new_cluster();
-  double insert(std::vector<double> vd, Cluster &cd, int row_idx);
-  double insert(std::vector<double> vd, int row_idx);
-  double remove(std::vector<double> vd, int row_idx); 
+  double insert_row(std::vector<double> vd, Cluster &cd, int row_idx);
+  double insert_row(std::vector<double> vd, int row_idx);
+  double remove_row(std::vector<double> vd, int row_idx); 
+  double remove_col(int col_idx);
   void remove_if_empty(Cluster& which_cluster);
   void transition_z(std::vector<double> vd, int row_idx);
   void transition_zs(std::map<int, std::vector<double> > row_data_map);
@@ -67,6 +69,8 @@ class View {
   std::map<int, Cluster* > cluster_lookup;
   //
   // helper functions
+  std::vector<double> align_data(std::vector<double> values,
+				 std::vector<int> global_column_indices) const;
   std::vector<int> shuffle_row_indices();
   void print();
   void assert_state_consistency();
@@ -76,17 +80,18 @@ class View {
   std::vector<double> crp_alpha_grid;
   std::vector<double> r_grid;
   std::vector<double> nu_grid;
-  std::vector<std::vector<double> > s_grids;
-  std::vector<std::vector<double> > mu_grids;
+  std::map<int, std::vector<double> > s_grids;
+  std::map<int, std::vector<double> > mu_grids;
  private:
   // parameters
   int num_vectors;
-  int num_cols;
   double crp_alpha;
   double crp_score;
   double data_score;
   // sub-objects
   RandomNumberGenerator rng;
+  std::set<int> global_col_indices;
+  std::map<int, int> global_to_local;
   // resources
   double draw_rand_u();
   int draw_rand_i(int max);

@@ -10,9 +10,15 @@ using namespace std;
 typedef set<Cluster*> setCp;
 
 //FIXME: add constructor with ranges as arguments, rather than recalculate
-View::View(MatrixD data, int N_GRID) {
+View::View(MatrixD data, vector<int> in_col_indices, int N_GRID) {
+  assert(in_col_indices.size()==data.size2());
+  for(int local_idx; local_idx<in_col_indices.size(); local_idx++) {
+    int global_idx = in_col_indices[local_idx];
+    global_to_local[global_idx] = local_idx;
+    global_col_indices.insert(global_idx);
+  }
+  //
   int data_num_vectors = data.size1();
-  num_cols = data.size2();
   vector<double> paramRange = linspace(0.03, .97, N_GRID/2);
   int APPEND_N = (N_GRID + 1) / 2;
   //
@@ -26,21 +32,25 @@ View::View(MatrixD data, int N_GRID) {
 					       APPEND_N);
   nu_grid = append(paramRange, nu_grid_append);
   //
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    vector<double> col_data = extract_col(data, col_idx);
+  for(int col_idx_idx=0; col_idx_idx<get_num_cols(); col_idx_idx++) {
+    vector<double> col_data = extract_col(data, col_idx_idx);
     double sum_sq_deviation = calc_sum_sq_deviation(col_data);
     vector<double> s_grid_append = log_linspace(1., sum_sq_deviation, APPEND_N);
     vector<double> s_grid = append(paramRange, s_grid_append);
-    s_grids.push_back(s_grid);
+    //
+    int col_idx = in_col_indices[col_idx_idx];
+    s_grids[col_idx] = s_grid;
   }
   //
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    vector<double> col_data = extract_col(data, col_idx);
+  for(int col_idx_idx=0; col_idx_idx<get_num_cols(); col_idx_idx++) {
+    vector<double> col_data = extract_col(data, col_idx_idx);
     double min = *std::min_element(col_data.begin(), col_data.end());
     double max = *std::max_element(col_data.begin(), col_data.end());
     vector<double> mu_grid_append = linspace(min, max, APPEND_N);
     vector<double> mu_grid = append(paramRange, mu_grid_append);
-    mu_grids.push_back(mu_grid);
+    //
+    int col_idx = in_col_indices[col_idx_idx];
+    mu_grids[col_idx] = mu_grid;
   }
   //
   crp_alpha = 3;
@@ -54,7 +64,7 @@ double View::get_num_vectors() const {
 }
 
 double View::get_num_cols() const {
-  return num_cols;
+  return global_col_indices.size();
 }
 
 int View::get_num_clusters() const {
@@ -89,7 +99,7 @@ vector<string> View::get_hyper_strings() {
 std::map<string, double> View::get_hypers(int col_idx) {
   // assume all suffstats have same hypers set
   setCp::iterator it = clusters.begin();
-  map<string, double> ret_map = (**it).get_column_model(col_idx).get_hypers();
+  map<string, double> ret_map = (**it).get_model(col_idx).get_hypers();
   return ret_map;
 }
 
@@ -150,7 +160,7 @@ vector<double> View::calc_cluster_vector_logps(vector<double> vd) const {
   for(; it!=clusters.end(); it++) {
     logps.push_back(calc_cluster_vector_logp(vd, **it, crp_logp_delta, data_logp_delta));
   }
-  Cluster empty_cluster(num_cols);
+  Cluster empty_cluster(get_num_cols());
   logps.push_back(calc_cluster_vector_logp(vd, empty_cluster, crp_logp_delta, data_logp_delta));
   return logps;
 }
@@ -235,12 +245,12 @@ double View::set_alpha(double new_alpha) {
 }
 
 Cluster& View::get_new_cluster() {
-  Cluster *p_new_cluster = new Cluster(num_cols);
+  Cluster *p_new_cluster = new Cluster(get_num_cols());
   clusters.insert(p_new_cluster);
   return *p_new_cluster;
 }
 
-double View::insert(vector<double> vd, Cluster& which_cluster, int row_idx) {
+double View::insert_row(vector<double> vd, Cluster& which_cluster, int row_idx) {
   // NOTE: MUST use calc_cluster_vector_logp,  gets crp_score_delta as well
   double crp_logp_delta, data_logp_delta;
   double score_delta = calc_cluster_vector_logp(vd, which_cluster, crp_logp_delta, data_logp_delta);
@@ -252,16 +262,16 @@ double View::insert(vector<double> vd, Cluster& which_cluster, int row_idx) {
   return score_delta;
 }
 
-double View::insert(vector<double> vd, int row_idx) {
+double View::insert_row(vector<double> vd, int row_idx) {
   vector<double> unorm_logps = calc_cluster_vector_logps(vd);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   Cluster &which_cluster = get_cluster(draw);
-  double score_delta = insert(vd, which_cluster, row_idx);
+  double score_delta = insert_row(vd, which_cluster, row_idx);
   return score_delta;
 }
 
-double View::remove(vector<double> vd, int row_idx) {
+double View::remove_row(vector<double> vd, int row_idx) {
   Cluster &which_cluster = *(cluster_lookup[row_idx]);
   cluster_lookup.erase(cluster_lookup.find(row_idx));
   which_cluster.remove_row(vd, row_idx);
@@ -274,6 +284,20 @@ double View::remove(vector<double> vd, int row_idx) {
   return score_delta;
 }
 
+double View::remove_col(int col_idx) {
+  setCp::iterator it;
+  double score_delta = 0;
+  for(it=clusters.begin(); it!=clusters.end(); it++) {
+    score_delta += (*it)->remove_col(col_idx);
+  }
+  // rearrange global_to_local
+  std::vector<int> global_col_indices = extract_global_ordering(global_to_local);
+  global_col_indices.erase(global_col_indices.begin() + col_idx);
+  global_to_local = construct_lookup_map(global_col_indices);
+  //
+  return score_delta;
+}
+
 void View::remove_if_empty(Cluster& which_cluster) {
   if(which_cluster.get_count()==0) {
     clusters.erase(clusters.find(&which_cluster));
@@ -282,8 +306,8 @@ void View::remove_if_empty(Cluster& which_cluster) {
 }
 
 void View::transition_z(vector<double> vd, int row_idx) {
-  remove(vd, row_idx);
-  insert(vd, row_idx);
+  remove_row(vd, row_idx);
+  insert_row(vd, row_idx);
 }
 
 void View::transition_zs(map<int, vector<double> > row_data_map) {
@@ -306,6 +330,11 @@ void View::transition_crp_alpha() {
   crp_score = unorm_logps[draw];
 }
 
+std::vector<double> View::align_data(vector<double> raw_values,
+			       vector<int> global_column_indices) const {
+  return reorder_per_map(raw_values, global_column_indices, global_to_local);
+}
+
 vector<int> View::shuffle_row_indices() {
   // can't use std::random_shuffle b/c need to control seed
   vector<int> original_order;
@@ -325,7 +354,9 @@ vector<int> View::shuffle_row_indices() {
 
 void View::print() {
   set<Cluster*>::iterator it = clusters.begin();
+  int cluster_idx = 0;
   for(; it!=clusters.end(); it++) {
+    cout << "CLUSTER IDX: " << cluster_idx++ << endl;
     cout << **it << endl;
   }
   cout << "crp_score: " << crp_score << ", " << "data_score: " << data_score << ", " << "score: " << get_score() << endl;
