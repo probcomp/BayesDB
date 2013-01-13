@@ -199,3 +199,9 @@ std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double
   return arranged_values_v;
 }
   
+std::vector<int> create_sequence(int len, int start) {
+  std::vector<int> sequence(len, 1);
+  sequence[0] = start;
+  std::partial_sum(sequence.begin(), sequence.end(), sequence.begin());
+  return sequence;
+}

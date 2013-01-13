@@ -89,4 +89,6 @@ std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double
 				    std::vector<int> global_column_indices,
 				    std::map<int, int> global_to_local);
 
+std::vector<int> create_sequence(int len, int start=0);
+
 #endif // GUARD_utils_H
