@@ -422,7 +422,7 @@ void View::assert_state_consistency() {
   vector<int> cluster_counts = get_cluster_counts();
   int sum_via_cluster_counts = std::accumulate(cluster_counts.begin(),
 					       cluster_counts.end(), 0);  
-  assert(is_almost(get_num_vectors(), sum_via-cluster_counts, tolerance));
+  assert(is_almost(get_num_vectors(), sum_via_cluster_counts, tolerance));
   assert(is_almost(get_crp_score(),score_crp(),tolerance));
 }
 
