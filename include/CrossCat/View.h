@@ -105,6 +105,9 @@ class View {
   // resources
   double draw_rand_u();
   int draw_rand_i(int max);
+  // helpers
+  void construct_hyper_grids(boost::numeric::ublas::matrix<double> data,
+			     std::vector<int> col_indices, int N_GRID);
   /* std::map<std::string, double> data_hypers; */
 };
 

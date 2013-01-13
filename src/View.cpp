@@ -12,45 +12,8 @@ typedef set<Cluster*> setCp;
 //FIXME: add constructor with ranges as arguments, rather than recalculate
 View::View(MatrixD data, vector<int> in_col_indices, int N_GRID) {
   assert(in_col_indices.size()==data.size2());
-  for(int local_idx; local_idx<in_col_indices.size(); local_idx++) {
-    int global_idx = in_col_indices[local_idx];
-    global_to_local[global_idx] = local_idx;
-  }
-  //
-  int data_num_vectors = data.size1();
-  vector<double> paramRange = linspace(0.03, .97, N_GRID/2);
-  int APPEND_N = (N_GRID + 1) / 2;
-  //
-  vector<double> crp_alpha_grid_append = log_linspace(1., data_num_vectors,
-						      APPEND_N);
-  crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
-  //
-  r_grid = crp_alpha_grid;
-  //
-  vector<double> nu_grid_append = log_linspace(1., data_num_vectors/2.,
-					       APPEND_N);
-  nu_grid = append(paramRange, nu_grid_append);
-  //
-  for(int col_idx_idx=0; col_idx_idx<get_num_cols(); col_idx_idx++) {
-    vector<double> col_data = extract_col(data, col_idx_idx);
-    double sum_sq_deviation = calc_sum_sq_deviation(col_data);
-    vector<double> s_grid_append = log_linspace(1., sum_sq_deviation, APPEND_N);
-    vector<double> s_grid = append(paramRange, s_grid_append);
-    //
-    int col_idx = in_col_indices[col_idx_idx];
-    s_grids[col_idx] = s_grid;
-  }
-  //
-  for(int col_idx_idx=0; col_idx_idx<get_num_cols(); col_idx_idx++) {
-    vector<double> col_data = extract_col(data, col_idx_idx);
-    double min = *std::min_element(col_data.begin(), col_data.end());
-    double max = *std::max_element(col_data.begin(), col_data.end());
-    vector<double> mu_grid_append = linspace(min, max, APPEND_N);
-    vector<double> mu_grid = append(paramRange, mu_grid_append);
-    //
-    int col_idx = in_col_indices[col_idx_idx];
-    mu_grids[col_idx] = mu_grid;
-  }
+  global_to_local = construct_lookup_map(in_col_indices);
+  construct_hyper_grids(data, in_col_indices, N_GRID);
   //
   crp_alpha = 3;
   //
@@ -441,4 +404,43 @@ double View::draw_rand_u() {
 
 int View::draw_rand_i(int max) {
   return rng.nexti(max);
+}
+
+void View::construct_hyper_grids(MatrixD data, vector<int> in_col_indices,
+				 int N_GRID) {
+  // some helper variables for hyper grids
+  vector<double> paramRange = linspace(0.03, .97, N_GRID/2);
+  int APPEND_N = (N_GRID + 1) / 2;
+  int data_num_vectors = data.size1();
+  // constrcut alpha grid
+  vector<double> crp_alpha_grid_append = log_linspace(1., data_num_vectors,
+						      APPEND_N);
+  crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
+  // construct r grid
+  r_grid = crp_alpha_grid;
+  //
+  vector<double> nu_grid_append = log_linspace(1., data_num_vectors/2.,
+					       APPEND_N);
+  nu_grid = append(paramRange, nu_grid_append);
+  // construct s grids
+  for(int col_idx_idx=0; col_idx_idx<get_num_cols(); col_idx_idx++) {
+    vector<double> col_data = extract_col(data, col_idx_idx);
+    double sum_sq_deviation = calc_sum_sq_deviation(col_data);
+    vector<double> s_grid_append = log_linspace(1., sum_sq_deviation, APPEND_N);
+    vector<double> s_grid = append(paramRange, s_grid_append);
+    //
+    int col_idx = in_col_indices[col_idx_idx];
+    s_grids[col_idx] = s_grid;
+  }
+  // construct mu grids
+  for(int col_idx_idx=0; col_idx_idx<get_num_cols(); col_idx_idx++) {
+    vector<double> col_data = extract_col(data, col_idx_idx);
+    double min = *std::min_element(col_data.begin(), col_data.end());
+    double max = *std::max_element(col_data.begin(), col_data.end());
+    vector<double> mu_grid_append = linspace(min, max, APPEND_N);
+    vector<double> mu_grid = append(paramRange, mu_grid_append);
+    //
+    int col_idx = in_col_indices[col_idx_idx];
+    mu_grids[col_idx] = mu_grid;
+  }
 }
