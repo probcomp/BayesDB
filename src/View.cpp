@@ -15,7 +15,6 @@ View::View(MatrixD data, vector<int> in_col_indices, int N_GRID) {
   for(int local_idx; local_idx<in_col_indices.size(); local_idx++) {
     int global_idx = in_col_indices[local_idx];
     global_to_local[global_idx] = local_idx;
-    global_col_indices.insert(global_idx);
   }
   //
   int data_num_vectors = data.size1();
@@ -64,7 +63,7 @@ double View::get_num_vectors() const {
 }
 
 double View::get_num_cols() const {
-  return global_col_indices.size();
+  return global_to_local.size();
 }
 
 int View::get_num_clusters() const {
@@ -302,6 +301,7 @@ double View::remove_col(int col_idx) {
   global_col_indices.erase(global_col_indices.begin() + col_idx);
   global_to_local = construct_lookup_map(global_col_indices);
   //
+  data_score -= score_delta;
   return score_delta;
 }
 

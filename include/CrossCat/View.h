@@ -90,7 +90,6 @@ class View {
   double data_score;
   // sub-objects
   RandomNumberGenerator rng;
-  std::set<int> global_col_indices;
   std::map<int, int> global_to_local;
   // resources
   double draw_rand_u();
