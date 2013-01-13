@@ -2,7 +2,8 @@
 
 using namespace std;
 
-ContinuousComponentModel::ContinuousComponentModel(double r, double nu, double s, double mu) {
+ContinuousComponentModel::ContinuousComponentModel(double r, double nu,
+						   double s, double mu) {
   count = 0;
   score = 0;
   init_hypers(r, nu, s, mu);
@@ -94,7 +95,8 @@ void ContinuousComponentModel::set_log_Z_0() {
   log_Z_0 = numerics::calc_continuous_logp(0, r, nu, s, 0);
 }
 
-void ContinuousComponentModel::init_hypers(double r, double nu, double s, double mu) {
+void ContinuousComponentModel::init_hypers(double r, double nu,
+					   double s, double mu) {
   hypers["r"] = r;
   hypers["nu"] = nu;
   hypers["s"] = s;
@@ -110,13 +112,15 @@ void ContinuousComponentModel::init_suffstats() {
   suffstats["sum_x_sq"] = 0;
 }
 
-void ContinuousComponentModel::get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const {
+void ContinuousComponentModel::get_suffstats(int &count_out, double &sum_x,
+					     double &sum_x_sq) const {
   count_out = count;
   sum_x = get(suffstats, (string) "sum_x");
   sum_x_sq = get(suffstats, (string) "sum_x_sq");
 }
 
-void ContinuousComponentModel::get_hyper_doubles(double &r, double &nu, double &s, double &mu)  const {
+void ContinuousComponentModel::get_hyper_doubles(double &r, double &nu,
+						 double &s, double &mu)  const {
   r = get(hypers, (string) "r");
   nu = get(hypers, (string) "nu");
   s = get(hypers, (string) "s");
@@ -129,5 +133,6 @@ void print_defaults() {
   cout << "nu0_0: " << nu0_0 << endl;
   cout << "s0_0: " << s0_0 << endl;
   cout << "mu0_0: " << mu0_0 << endl;
-  cout << "log_Z_0: " << numerics::calc_continuous_logp(0, r0_0, nu0_0, s0_0, 0) << endl;
+  cout << "log_Z_0: ";
+  cout << numerics::calc_continuous_logp(0, r0_0, nu0_0, s0_0, 0) << endl;
 }
