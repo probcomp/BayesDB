@@ -143,6 +143,7 @@ int main(int argc, char** argv) {
   insert_col_idx = 2;
   vector<double> col_data = extract_col(data, insert_col_idx);
   vector<int> data_global_row_indices = create_sequence(col_data.size(), 0);
+  double score_delta_1, score_delta_2, score_0, score_1;
 
   cout << "=====================" << endl;
   cout << "=====================" << endl;
@@ -159,8 +160,13 @@ int main(int argc, char** argv) {
   cout << "=====================" << endl;
   insert_col_idx = remove_col_idx;
   cout << "inserting column: " << insert_col_idx;
-  v.insert_col(col_data, data_global_row_indices, insert_col_idx);
-  cout << "FLAG:: score: " << v.get_score() << endl;
+  score_0 = v.get_score();
+  score_delta_1 = v.score_col(col_data, data_global_row_indices);
+  score_delta_2 = v.insert_col(col_data, data_global_row_indices, insert_col_idx);
+  score_1 = v.get_score();
+  cout << "FLAG:: " << "score_0: " << score_0 << ", score_1: " << score_1;
+  cout << ", score_delta_1: " << score_delta_1 << ", score_delta_2: " << score_delta_2 << endl;
+
   v.print_score_matrix();
   cout << "v.global_to_local: " << v.global_to_local << endl;
 

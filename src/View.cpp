@@ -258,6 +258,15 @@ void View::transition_hypers() {
   }
 }
 
+double View::score_col_data(vector<double> data, vector<int> data_global_row_indices) {
+  double score_delta = 0;
+  setCp::iterator it;
+  for(it=clusters.begin(); it!=clusters.end(); it++) {
+    score_delta += (**it).score_col(data, data_global_row_indices);
+  }
+  return score_delta;
+}
+
 double View::set_alpha(double new_alpha) {
   double crp_score_0 = crp_score;
   crp_alpha = new_alpha;

@@ -50,6 +50,8 @@ class View {
   std::vector<double> calc_hyper_conditionals(int which_col,
 					      std::string which_hyper,
 					      std::vector<double> hyper_grid) const;
+  double score_col_data(std::vector<double> data,
+		   std::vector<int> data_global_row_indices);
   //
   // mutators
   double set_alpha(double new_alpha);

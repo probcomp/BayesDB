@@ -60,6 +60,21 @@ vector<double> Cluster::calc_hyper_conditionals(int which_col,
   return hyper_conditionals;
 }
 
+double Cluster::score_col(vector<double> data,
+			   vector<int> data_global_row_indices) {
+  map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
+  ContinuousComponentModel ccm;
+  set<int>::iterator it;
+  for(it=row_indices.begin(); it!=row_indices.end(); it++) {
+    int global_row_idx = *it;
+    int data_idx = global_to_data[global_row_idx];
+    double value = data[data_idx];
+    ccm.insert(value);
+  }
+  double score_delta = ccm.calc_marginal_logp();
+  return score_delta;
+}
+
 double Cluster::insert_row(vector<double> values, int row_idx) {
   double sum_score_deltas = 0;
   // track row indices
