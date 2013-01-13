@@ -68,11 +68,13 @@ std::vector<double> linspace(double a, double b, int n) {
 
 std::vector<double> log_linspace(double a, double b, int n) {
   std::vector<double> values = linspace(log(a), log(b), n);
-  std::transform(values.begin(), values.end(), values.begin(), (double (*)(double))exp);
+  std::transform(values.begin(), values.end(), values.begin(),
+		 (double (*)(double))exp);
   return values;
 }
 
-std::vector<double> std_vector_sum(std::vector<double> vec1, std::vector<double> vec2) {
+std::vector<double> std_vector_sum(std::vector<double> vec1,
+				   std::vector<double> vec2) {
   assert(vec1.size()==vec2.size());
   std::vector<double> sum_vec;
   for(int i=0; i<vec1.size(); i++) {
@@ -101,7 +103,8 @@ double calc_sum_sq_deviation(std::vector<double> values) {
   return sum_sq_deviation;
 }
 
-std::vector<double> extract_row(boost::numeric::ublas::matrix<double> data, int row_idx) {
+std::vector<double> extract_row(boost::numeric::ublas::matrix<double> data,
+				int row_idx) {
   std::vector<double> row;
   for(int j=0;j < data.size2(); j++) {
     row.push_back(data(row_idx, j));
@@ -109,7 +112,8 @@ std::vector<double> extract_row(boost::numeric::ublas::matrix<double> data, int 
   return row;
 }
 
-std::vector<double> extract_col(boost::numeric::ublas::matrix<double> data, int col_idx) {
+std::vector<double> extract_col(boost::numeric::ublas::matrix<double> data,
+				int col_idx) {
   std::vector<double> col;
   for(int j=0;j < data.size1(); j++) {
     col.push_back(data(j, col_idx));
@@ -192,8 +196,8 @@ std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double
   std::vector<std::vector<double> > arranged_values_v;
   std::vector<std::vector<double> >::iterator it;
   for(it=raw_values.begin(); it!=raw_values.end(); it++) {
-    std::vector<double> arranged_values = reorder_per_indices(*it, reorder_indices);
-							      
+    std::vector<double> arranged_values = reorder_per_indices(*it,
+							      reorder_indices);
     arranged_values_v.push_back(arranged_values);
   }
   return arranged_values_v;

@@ -58,13 +58,17 @@ bool is_almost(double val1, double val2, double precision);
 
 std::vector<double> linspace(double a, double b, int n);
 std::vector<double> log_linspace(double a, double b, int n);
+std::vector<int> create_sequence(int len, int start=0);
 
-std::vector<double> std_vector_sum(std::vector<double> vec1, std::vector<double> vec2);
+std::vector<double> std_vector_sum(std::vector<double> vec1,
+				   std::vector<double> vec2);
 std::vector<double> std_vector_sum(std::vector<std::vector<double> > vec_vec);
 
 double calc_sum_sq_deviation(std::vector<double> values);
-std::vector<double> extract_row(boost::numeric::ublas::matrix<double> data, int row_idx);
-std::vector<double> extract_col(boost::numeric::ublas::matrix<double> data, int col_idx);
+std::vector<double> extract_row(boost::numeric::ublas::matrix<double> data,
+				int row_idx);
+std::vector<double> extract_col(boost::numeric::ublas::matrix<double> data,
+				int col_idx);
 std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2);
 
 template <class K, class V>
@@ -89,6 +93,5 @@ std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double
 				    std::vector<int> global_column_indices,
 				    std::map<int, int> global_to_local);
 
-std::vector<int> create_sequence(int len, int start=0);
 
 #endif // GUARD_utils_H
