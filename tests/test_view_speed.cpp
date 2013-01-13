@@ -58,7 +58,6 @@ void remove_all_data(View &v, map<int, vector<double> > data_map) {
     vector<double> row = data_map[idx_to_remove];
     vector<int> global_indices = create_sequence(row.size());
     vector<double> aligned_row = v.align_data(row, global_indices);
-    cout << "aligned_row: " << aligned_row << endl;
     v.remove_row(aligned_row, idx_to_remove);
   }
   cout << "removed all data" << endl;
@@ -131,18 +130,20 @@ int main(int argc, char** argv) {
     v.transition_zs(data_map);
     v.transition_crp_alpha();
     v.transition_hypers();
-    // if(iter % 10 == 0) {
-    if(iter % 1 == 0) {
+    if(iter % 10 == 0) {
       cout << "Done iter: " << iter << endl;
       print_with_header(v, "view after iter");
     }
   }
   cout << "Done transition_zs" << endl;
   cout << endl;
+  v.print();
   v.print_score_matrix();
   cout << "v.global_to_local: " << v.global_to_local << endl;
 
   int remove_col_idx, insert_col_idx;
+  remove_col_idx = 2;
+  insert_col_idx = 2;
   vector<double> col_data = extract_col(data, insert_col_idx);
   vector<int> data_global_row_indices = create_sequence(col_data.size(), 0);
 
@@ -185,6 +186,8 @@ int main(int argc, char** argv) {
   cout << "FLAG:: score: " << v.get_score() << endl;
   v.print_score_matrix();
   cout << "v.global_to_local: " << v.global_to_local << endl;
+
+  v.print();
   
   // empty object and verify empty
   remove_all_data(v, data_map);
