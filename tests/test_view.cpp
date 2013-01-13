@@ -23,7 +23,7 @@ void print_cluster_memberships(View& v) {
   setCp_it it = v.clusters.begin();
   for(; it!=v.clusters.end(); it++) {
     Cluster &cd = **it;
-    cout << cd.get_global_row_indices() << endl;
+    cout << cd.get_row_indices() << endl;
   }
   cout << "num clusters: " << v.get_num_clusters() << endl;
 
@@ -33,7 +33,7 @@ void insert_and_print(View& v, map<int, vector<double> > data_map,
 		      int cluster_idx, int row_idx) {
   vector<double> row = data_map[row_idx];
   Cluster& cluster = v.get_cluster(cluster_idx);
-  v.insert(row, cluster, row_idx);
+  v.insert_row(row, cluster, row_idx);
   cout << "v.insert(" << row << ", " << cluster_idx << ", "	\
 	    << row_idx << ")" << endl;
   cout << "v.get_score(): " << v.get_score() << endl;
@@ -47,7 +47,7 @@ void remove_all_data(View &v, map<int, vector<double> > data_map) {
   for(vectorI_it it=rows_in_view.begin(); it!=rows_in_view.end(); it++) {
     int idx_to_remove = *it;
     vector<double> row = data_map[idx_to_remove];
-    v.remove(row, idx_to_remove);
+    v.remove_row(row, idx_to_remove);
   }
   cout << "removed all data" << endl;
   v.print();
@@ -94,7 +94,11 @@ int main(int argc, char** argv) {
 
   // create the objects to test
   // View v = View(num_cols, init_crp_alpha);
-  View v = View(data, 11);
+  vector<int> global_column_indices;
+  for(int col_idx=0; col_idx<data.size2(); col_idx++) {
+    global_column_indices.push_back(col_idx);
+  }
+  View v = View(data, global_column_indices, 11);
   v.print();
   v.assert_state_consistency();
   //
@@ -249,7 +253,7 @@ int main(int argc, char** argv) {
 
   // test transition
   RandomNumberGenerator rng = RandomNumberGenerator();
-  for(int iter=0; iter<100; iter++) {
+  for(int iter=0; iter<21; iter++) {
     v.assert_state_consistency();
     v.transition_zs(data_map);
     v.transition_crp_alpha();

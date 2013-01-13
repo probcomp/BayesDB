@@ -23,7 +23,7 @@ void print_cluster_memberships(View& v) {
   setCp_it it = v.clusters.begin();
   for(; it!=v.clusters.end(); it++) {
     Cluster &cd = **it;
-    cout << cd.get_global_row_indices() << endl;
+    cout << cd.get_row_indices() << endl;
   }
   cout << "num clusters: " << v.get_num_clusters() << endl;
 }
@@ -32,10 +32,20 @@ void insert_and_print(View& v, map<int, vector<double> > data_map,
 		      int cluster_idx, int row_idx) {
   vector<double> row = data_map[row_idx];
   Cluster& cluster = v.get_cluster(cluster_idx);
-  v.insert(row, cluster, row_idx);
-  cout << "v.insert(" << row << ", " << cluster_idx << ", " \
+  v.insert_row(row, cluster, row_idx);
+  cout << "v.insert_row(" << row << ", " << cluster_idx << ", " \
 	    << row_idx << ")" << endl;
   cout << "v.get_score(): " << v.get_score() << endl;
+}
+
+void print_with_header(View &v, string header) {
+  cout << endl;
+  cout << "=================================" << endl;
+  cout << header << endl;
+  v.print();
+  cout << header << endl;
+  cout << "=================================" << endl;
+  cout << endl;
 }
 
 void remove_all_data(View &v, map<int, vector<double> > data_map) {
@@ -46,7 +56,7 @@ void remove_all_data(View &v, map<int, vector<double> > data_map) {
   for(vectorI_it it=rows_in_view.begin(); it!=rows_in_view.end(); it++) {
     int idx_to_remove = *it;
     vector<double> row = data_map[idx_to_remove];
-    v.remove(row, idx_to_remove);
+    v.remove_row(row, idx_to_remove);
   }
   cout << "removed all data" << endl;
   v.print();
@@ -76,12 +86,14 @@ int main(int argc, char** argv) {
   }
 
   // create the view
-  View v = View(data, 31);
+  vector<int> global_column_indices;
+  for(int col_idx=0; col_idx<data.size2(); col_idx++) {
+    global_column_indices.push_back(col_idx);
+  }
+  View v = View(data, global_column_indices, 31);
+
   // print the initial view
-  cout << "=============" << endl << "empty view print" << endl;
-  v.print();
-  cout << "empty view print" << endl << "=============" << endl;
-  cout << endl;
+  print_with_header(v, "empty view print");
   
   // populate the objects to test
   cout << endl << "populating objects" << endl;
@@ -90,34 +102,15 @@ int main(int argc, char** argv) {
   for(int row_idx=0; row_idx<num_rows; row_idx++) {
     cout << " " << row_idx;
     vector<double> row = extract_row(data, row_idx);
-    v.insert(row, row_idx);
+    v.insert_row(row, row_idx);
   }
-  cout << endl;
-  cout << "=================================" << endl;
-  cout << endl << "view after population" << endl;
-  v.print();
-  cout << "view after population" << endl;
-  cout << "=================================" << endl;
-  cout << endl;
+  print_with_header(v, "view after population");
 
-  // print the clusters post population
-  cout << endl << "view created clusters after population" << endl;
-  for(setCp::iterator it=v.clusters.begin(); it!=v.clusters.end(); it++) {
-    cout << **it << endl;
-  }
-  cout << endl;
-
-  // print state info before transitioning
-  print_cluster_memberships(v);
-  int num_vectors = v.get_num_vectors();
-  cout << "num_vectors: " << v.get_num_vectors() << endl;
-  //
   cout << "====================" << endl;
   cout << "Sampling" << endl;
-
   // test transition
   RandomNumberGenerator rng = RandomNumberGenerator();
-  for(int iter=0; iter<100; iter++) {
+  for(int iter=0; iter<21; iter++) {
     v.assert_state_consistency();
     v.transition_zs(data_map);
     v.transition_crp_alpha();
