@@ -114,9 +114,7 @@ int main(int argc, char** argv) {
     v.assert_state_consistency();
     v.transition_zs(data_map);
     v.transition_crp_alpha();
-    for(int col_idx=0; col_idx<num_cols; col_idx++) {
-      v.transition_hypers(col_idx);
-    }
+    v.transition_hypers();
     // if(iter % 10 == 0) {
     if(iter % 1 == 0) {
       print_cluster_memberships(v);

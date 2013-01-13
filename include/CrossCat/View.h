@@ -59,10 +59,10 @@ class View {
   void transition_zs(std::map<int, std::vector<double> > row_data_map);
   void transition_crp_alpha();
   double set_hyper(int which_col, std::string which_hyper, double new_value);
-  void transition_hyper(int which_col, std::string which_hyper, std::vector<double> hyper_grid);
-  void transition_hyper(int which_col, std::string which_hyper);
-  void transition_hypers(int which_col);
-  /* void transition_data_hypers(); */
+  void transition_hyper_i(int which_col, std::string which_hyper, std::vector<double> hyper_grid);
+  void transition_hyper_i(int which_col, std::string which_hyper);
+  void transition_hypers_i(int which_col);
+  void transition_hypers();
   //
   // data structures
   std::set<Cluster* > clusters;

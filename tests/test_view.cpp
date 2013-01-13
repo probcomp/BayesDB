@@ -261,7 +261,7 @@ int main(int argc, char** argv) {
       std::random_shuffle(hyper_strings.begin(), hyper_strings.end());
       for(vector<string>::iterator it=hyper_strings.begin(); it!=hyper_strings.end(); it++) {
 	string hyper_string = *it;
-	v.transition_hyper(col_idx,hyper_string);
+	v.transition_hyper_i(col_idx,hyper_string);
       }
     }
     // if(iter % 10 == 0) {

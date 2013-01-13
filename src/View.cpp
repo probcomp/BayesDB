@@ -203,7 +203,7 @@ double View::set_hyper(int which_col, string which_hyper, double new_value) {
   return data_score_delta;
 }
 
-void View::transition_hyper(int which_col, std::string which_hyper, vector<double> hyper_grid) {
+void View::transition_hyper_i(int which_col, std::string which_hyper, vector<double> hyper_grid) {
   //
   // draw new hyper
   vector<double> unorm_logps = calc_hyper_conditionals(which_col, which_hyper, hyper_grid);
@@ -222,18 +222,25 @@ void View::transition_hyper(int which_col, std::string which_hyper, vector<doubl
   data_score += delta_data_score;
 }
 
-void View::transition_hyper(int which_col, std::string which_hyper) {
+void View::transition_hyper_i(int which_col, std::string which_hyper) {
   vector<double> hyper_grid = get_hyper_grid(which_col, which_hyper);
-  transition_hyper(which_col, which_hyper, hyper_grid);
+  transition_hyper_i(which_col, which_hyper, hyper_grid);
 }
 
-void View::transition_hypers(int which_col) {
+void View::transition_hypers_i(int which_col) {
   vector<string> hyper_strings = get_hyper_strings();
   // FIXME: use own shuffle so its seed controlled
   std::random_shuffle(hyper_strings.begin(), hyper_strings.end());
   for(vector<string>::iterator it=hyper_strings.begin(); it!=hyper_strings.end(); it++) {
     string which_hyper = *it;
-    transition_hyper(which_col, which_hyper);
+    transition_hyper_i(which_col, which_hyper);
+  }
+}
+
+void View::transition_hypers() {
+  int num_cols = get_num_cols();
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    transition_hypers_i(col_idx);
   }
 }
 
