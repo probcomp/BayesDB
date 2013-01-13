@@ -141,20 +141,6 @@ map<int, int> construct_lookup_map(std::vector<int> values) {
   return lookup;
 }
 
-std::vector<double> reorder_per_map(std::vector<double> raw_values,
-				    std::vector<int> global_column_indices,
-				    std::map<int, int> global_to_local) {
-  std::vector<double> arranged_values(raw_values.size(), -1);
-  std::vector<int>::iterator it;
-  for(int raw_idx=0; raw_idx<raw_values.size(); raw_idx++) {
-    double raw_value = raw_values[raw_idx];
-    int global_column_idx = *it;
-    int local_idx = global_to_local[global_column_idx];
-    arranged_values[local_idx] = raw_value;
-  }
-  return arranged_values;
-}
-
 map<int, int> remove_and_reorder(map<int, int> old_global_to_local,
 				      int global_to_remove) {
   // extract current ordering
@@ -164,5 +150,52 @@ map<int, int> remove_and_reorder(map<int, int> old_global_to_local,
   global_indices.erase(global_indices.begin() + local_to_remove);
   // constrcut and return
   return construct_lookup_map(global_indices);
+}
+
+std::vector<int> get_indices_to_reorder(std::vector<int> data_global_column_indices, std::map<int, int> global_to_local) {
+  int num_local_cols = global_to_local.size();
+  int num_data_cols = data_global_column_indices.size();
+  std::vector<int> reorder_indices(num_local_cols, -1);
+  for(int data_column_idx=0; data_column_idx<num_data_cols; data_column_idx++) {
+    int global_column_idx = data_global_column_indices[data_column_idx];
+    if(global_to_local.find(global_column_idx) != global_to_local.end()) {
+      int local_idx = global_to_local[data_column_idx];
+      reorder_indices[local_idx] = data_column_idx;
+    }
+  }
+  return reorder_indices;  
+}		   
+
+std::vector<double> reorder_per_indices(std::vector<double> raw_values,
+					std::vector<int> reorder_indices) {
+  std::vector<double> arranged_values;
+  std::vector<int>::iterator it;
+  for(it=reorder_indices.begin(); it!=reorder_indices.end(); it++) {
+    int raw_value_idx = *it;
+    double raw_value = raw_values[raw_value_idx];
+    arranged_values.push_back(raw_value);
+  }
+  return arranged_values;
+}
+
+std::vector<double> reorder_per_map(std::vector<double> raw_values,
+				    std::vector<int> global_column_indices,
+				    std::map<int, int> global_to_local) {
+  std::vector<int> reorder_indices = get_indices_to_reorder(global_column_indices, global_to_local);
+  return reorder_per_indices(raw_values, reorder_indices);
+}
+
+std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double> > raw_values,
+				    std::vector<int> global_column_indices,
+				    std::map<int, int> global_to_local) {
+  std::vector<int> reorder_indices = get_indices_to_reorder(global_column_indices, global_to_local);
+  std::vector<std::vector<double> > arranged_values_v;
+  std::vector<std::vector<double> >::iterator it;
+  for(it=raw_values.begin(); it!=raw_values.end(); it++) {
+    std::vector<double> arranged_values = reorder_per_indices(*it, reorder_indices);
+							      
+    arranged_values_v.push_back(arranged_values);
+  }
+  return arranged_values_v;
 }
   

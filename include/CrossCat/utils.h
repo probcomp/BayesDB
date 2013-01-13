@@ -76,10 +76,17 @@ V get(const std::map<K, V> m, K key) {
 
 std::vector<int> extract_global_ordering(std::map<int, int> global_to_local);
 std::map<int, int> construct_lookup_map(std::vector<int> values);
+std::map<int, int> remove_and_reorder(std::map<int, int> global_to_local,
+				      int global_to_remove);
+
+std::vector<int> get_indices_to_reorder(std::vector<int> data_global_column_indices, std::map<int, int> global_to_local);
+std::vector<double> reorder_per_indices(std::vector<double> raw_values,
+					std::vector<int> reorder_indices);
 std::vector<double> reorder_per_map(std::vector<double> raw_values,
 				    std::vector<int> global_column_indices,
 				    std::map<int, int> global_to_local);
-std::map<int, int> remove_and_reorder(std::map<int, int> global_to_local,
-				      int global_to_remove);
+std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double> > raw_values,
+				    std::vector<int> global_column_indices,
+				    std::map<int, int> global_to_local);
 
 #endif // GUARD_utils_H
