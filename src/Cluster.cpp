@@ -109,9 +109,6 @@ double Cluster::insert_col(vector<double> data,
   model_v.push_back(ccm);
   score += score_delta;
   //
-  cout << "insert_col:: score_delta: " << score_delta << endl;
-  int col_idx = model_v.size() - 1;
-  cout << "insert_col:: score_delta: " << model_v[col_idx].calc_marginal_logp() << endl;
   return score_delta;
 }
 
