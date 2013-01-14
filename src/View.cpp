@@ -94,16 +94,16 @@ std::map<string, double> View::get_hypers(int col_idx) {
   return ret_map;
 }
 
-vector<double> View::get_hyper_grid(int which_col, std::string which_hyper) {
+vector<double> View::get_hyper_grid(int global_col_idx, std::string which_hyper) {
   vector<double> hyper_grid;
   if(which_hyper=="r") {
     hyper_grid = r_grid;
   } else if (which_hyper=="nu") {
     hyper_grid = nu_grid;
   } else if (which_hyper=="s") {
-    hyper_grid = s_grids[which_col];
+    hyper_grid = s_grids[global_col_idx];
   } else if (which_hyper=="mu") {
-    hyper_grid = mu_grids[which_col];
+    hyper_grid = mu_grids[global_col_idx];
   }
   return hyper_grid;
 }
@@ -228,7 +228,9 @@ double View::transition_hyper_i(int which_col, std::string which_hyper,
 }
 
 double View::transition_hyper_i(int which_col, std::string which_hyper) {
-  vector<double> hyper_grid = get_hyper_grid(which_col, which_hyper);
+  vector<int> global_ordering = extract_global_ordering(global_to_local);
+  int global_col_idx = global_ordering[which_col];
+  vector<double> hyper_grid = get_hyper_grid(global_col_idx, which_hyper);
   double score_delta = transition_hyper_i(which_col, which_hyper, hyper_grid);
   return score_delta;
 }
@@ -249,8 +251,8 @@ double View::transition_hypers_i(int which_col) {
 double View::transition_hypers() {
   int num_cols = get_num_cols();
   double score_delta = 0;
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    score_delta += transition_hypers_i(col_idx);
+  for(int local_col_idx=0; local_col_idx<num_cols; local_col_idx++) {
+    score_delta += transition_hypers_i(local_col_idx);
   }
   return score_delta;
 }
