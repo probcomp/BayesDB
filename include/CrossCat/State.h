@@ -5,9 +5,13 @@
 #include <vector>
 #include "View.h"
 
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+typedef boost::numeric::ublas::matrix<double> MatrixD;
+
 class State {
  public:
-  State(boost::numeric::ublas::matrix<double> data,
+  State(MatrixD &data,
 	std::vector<int> global_row_indices, std::vector<int> global_col_indices,
 	int N_GRID=31);
   //

@@ -2,14 +2,10 @@
 
 using namespace std;
 
-#include <boost/numeric/ublas/io.hpp>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
-typedef boost::numeric::ublas::matrix<double> MatrixD;
-
 // num_cols should be set in constructor
-State::State(MatrixD data, vector<int> global_row_indices,
+State::State(MatrixD &data, vector<int> global_row_indices,
 	     vector<int> global_col_indices, int N_GRID) {
-  crp_alpha = 3.0;
+  crp_alpha = 0.8;
   int num_rows = data.size1();
   vector<vector<int> > column_partition;
   column_partition = determine_crp_init(global_col_indices, crp_alpha, rng);
