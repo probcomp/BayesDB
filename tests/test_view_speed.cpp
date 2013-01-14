@@ -28,16 +28,6 @@ void print_cluster_memberships(View& v) {
   cout << "num clusters: " << v.get_num_clusters() << endl;
 }
 
-void insert_and_print(View& v, map<int, vector<double> > data_map,
-		      int cluster_idx, int row_idx) {
-  vector<double> row = data_map[row_idx];
-  Cluster& cluster = v.get_cluster(cluster_idx);
-  v.insert_row(row, cluster, row_idx);
-  cout << "v.insert_row(" << row << ", " << cluster_idx << ", " \
-	    << row_idx << ")" << endl;
-  cout << "v.get_score(): " << v.get_score() << endl;
-}
-
 void print_with_header(View &v, string header) {
   cout << endl;
   cout << "=================================" << endl;
@@ -88,25 +78,38 @@ int main(int argc, char** argv) {
   }
 
   // create the view
+  vector<int> global_row_indices = create_sequence(data.size1());
   vector<int> global_column_indices = create_sequence(data.size2());
-  View v = View(data, global_column_indices, 31);
+  View v = View(data, global_row_indices, global_column_indices, 31);
+
+  v.print();
+  // empty object and verify empty
+  remove_all_data(v, data_map);
+  v.print();
 
   // print the initial view
   print_with_header(v, "empty view print");
 
 
-  cout << "insert a single row:";
+  cout << "insert a single row (1):";
   int row_idx = 0;
   vector<double> row = extract_row(data, row_idx);
   v.insert_row(row, row_idx);
-  print_with_header(v, "view after inserting single row");
+  print_with_header(v, "view after inserting single row (1)");
 
-  cout << "remove a single row:";
+  cout << "remove a single row (1):";
   row_idx = 0;
   row = extract_row(data, row_idx);
   v.remove_row(row, row_idx);
-  print_with_header(v, "view after removeing single row");
-  
+  print_with_header(v, "view after removeing single row (1)");
+
+  cout << "printing cluster row_indices" << endl;
+  for(int cluster_idx=0; cluster_idx<v.get_num_clusters(); cluster_idx++) {
+    Cluster c = v.get_cluster(cluster_idx);
+    cout << "cluster has row_indices: " << c.get_row_indices() << endl;
+  }
+  cout << "DONE printing cluster row_indices" << endl;
+
   // populate the objects to test
   cout << endl << "populating objects" << endl;
   cout << "=================================" << endl;
@@ -191,12 +194,11 @@ int main(int argc, char** argv) {
   cout << "v.global_to_local: " << v.global_to_local << endl;
 
   v.print();
-  
   // empty object and verify empty
   remove_all_data(v, data_map);
   v.print();
 
-  cout << "insert a single row: " << flush;
+  cout << "insert a single row (2): " << flush;
   row_idx = 0;
   row = extract_row(data, row_idx);
 
@@ -205,11 +207,11 @@ int main(int argc, char** argv) {
 
   cout << aligned_row << endl << flush;
   v.insert_row(aligned_row, row_idx);
-  print_with_header(v, "view after inserting single row");
+  print_with_header(v, "view after inserting single row (2)");
 
-  cout << "remove a single row:";
+  cout << "remove a single row (2):";
   v.remove_row(aligned_row, row_idx);
-  print_with_header(v, "view after removeing single row");
+  print_with_header(v, "view after removeing single row (2)");
 
   cout << endl << "Goodbye World!" << endl;
 }
