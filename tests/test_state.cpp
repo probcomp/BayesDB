@@ -34,7 +34,8 @@ int main(int argc, char** argv) {
 
   for(int i=0;i<100;i++) {
     cout << "transition #: " << i << endl;
-    s.transition_views(data);
+    s.transition(data);
+    cout << "FLAG: s.crp_alpha: " << s.get_crp_alpha() << endl;
   }
 
   for(int view_idx=0; view_idx<num_views; view_idx++) {
