@@ -452,6 +452,7 @@ void View::print() {
     cout << "CLUSTER IDX: " << cluster_idx++ << endl;
     cout << **it << endl;
   }
+  cout << "global_to_local: " << global_to_local << endl;
   cout << "crp_score: " << crp_score << ", " << "data_score: " << data_score;
   cout << ", " << "score: " << get_score() << endl;
 }
