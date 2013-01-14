@@ -1,6 +1,9 @@
 #ifndef GUARD_utils_h
 #define GUARD_utils_h
 
+#include "numerics.h"
+#include "RandomNumberGenerator.h"
+//
 #include <iostream>
 #include <string>
 #include <set>
@@ -93,5 +96,8 @@ std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double
 				    std::vector<int> global_column_indices,
 				    std::map<int, int> global_to_local);
 
+std::vector<std::vector<int> > determine_crp_init(std::vector<int> global_row_indices,
+						  double alpha,
+						  RandomNumberGenerator &rng);
 
 #endif // GUARD_utils_H
