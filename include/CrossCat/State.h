@@ -36,8 +36,11 @@ class State {
   double transition(MatrixD &data);
   //
   // calculators
-  double calc_feature_view_predictive_logp();
-  std::vector<double> calc_feature_view_predictive_logps();
+  double calc_feature_view_predictive_logp(std::vector<double> col_data,
+					   View v,
+					   double &crp_log_delta,
+					   double &data_log_delta) const;
+  std::vector<double> calc_feature_view_predictive_logps(std::vector<double> col_data) const;
   //
   // helpers
   double calc_crp_marginal() const;

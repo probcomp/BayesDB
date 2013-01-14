@@ -110,10 +110,38 @@ double State::transition_views(MatrixD &data) {
   return score_delta;
 }
 
-double State::calc_feature_view_predictive_logp() {
+double State::calc_feature_view_predictive_logp(vector<double> col_data, View v,
+						double &crp_log_delta,
+						double &data_log_delta) const {
+  int view_column_count = v.get_num_cols();
+  int num_columns = get_num_cols();
+  vector<int> data_global_row_indices = create_sequence(col_data.size());
+  //
+  crp_log_delta = numerics::calc_cluster_crp_logp(view_column_count, num_columns,
+						  crp_alpha);
+  data_log_delta = v.calc_column_predictive_logp(col_data,
+						 data_global_row_indices);
+  double score_delta = data_log_delta + crp_log_delta;
+  return score_delta;
 }
 
-std::vector<double> State::calc_feature_view_predictive_logps() {
+vector<double> State::calc_feature_view_predictive_logps(vector<double> col_data) const {
+  vector<double> logps;
+  set<View*>::iterator it;
+  double crp_log_delta, data_log_delta;
+  for(it=views.begin(); it!=views.end(); it++) {
+    View &v = **it;
+    double score_delta = calc_feature_view_predictive_logp(col_data, v,
+							   crp_log_delta,
+							   data_log_delta);
+    logps.push_back(score_delta);
+  }
+  View empty_view = View();
+  double score_delta = calc_feature_view_predictive_logp(col_data, empty_view,
+							 crp_log_delta,
+							 data_log_delta);
+  logps.push_back(score_delta);
+  return logps;
 }
 
 double State::calc_crp_marginal() const {
