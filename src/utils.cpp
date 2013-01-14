@@ -139,12 +139,27 @@ vector<int> extract_global_ordering(map<int, int> global_to_local) {
   return global_indices;
 }
 
-map<int, int> construct_lookup_map(vector<int> values) {
-  map<int, int> lookup;
-  for(int idx=0; idx<values.size(); idx++) {
-    lookup[values[idx]] = idx;
+template <class T>
+map<int, T> construct_lookup_map(vector<int> keys, vector<T> values) {
+  assert(keys.size()==values.size());
+  map<int, T> lookup;
+  for(int idx=0; idx<keys.size(); idx++) {
+    lookup[keys[idx]] = values[idx];
   }
   return lookup;
+}
+
+map<int, int> construct_lookup_map(vector<int> keys) {
+  return construct_lookup_map(keys, create_sequence(keys.size()));
+}
+
+map<int, vector<double> > construct_data_map(MatrixD data) {
+  int num_rows = data.size1();
+  map<int, vector<double> > data_map;
+  for(int row_idx=0; row_idx<num_rows; row_idx++) {
+    data_map[row_idx] = extract_row(data, row_idx);
+  }
+  return data_map;
 }
 
 map<int, int> remove_and_reorder(map<int, int> old_global_to_local,

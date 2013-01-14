@@ -85,6 +85,9 @@ V get(const std::map<K, V> m, K key) {
 }
 
 std::vector<int> extract_global_ordering(std::map<int, int> global_to_local);
+template <class T>
+std::map<int, T> construct_lookup_map(std::vector<int> keys, std::vector<T> values);
+std::map<int, std::vector<double> > construct_data_map(MatrixD data);
 std::map<int, int> construct_lookup_map(std::vector<int> values);
 std::map<int, int> remove_and_reorder(std::map<int, int> global_to_local,
 				      int global_to_remove);
