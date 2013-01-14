@@ -47,7 +47,9 @@ void remove_all_data(View &v, map<int, vector<double> > data_map) {
   for(vectorI_it it=rows_in_view.begin(); it!=rows_in_view.end(); it++) {
     int idx_to_remove = *it;
     vector<double> row = data_map[idx_to_remove];
-    v.remove_row(row, idx_to_remove);
+    vector<int> global_indices = create_sequence(row.size());
+    vector<double> aligned_row = v.align_data(row, global_indices);
+    v.remove_row(aligned_row, idx_to_remove);
   }
   cout << "removed all data" << endl;
   v.print();
@@ -68,14 +70,12 @@ int main(int argc, char** argv) {
   matrixD data;
   LoadData("Synthetic_data.csv", data);
   int num_cols = data.size2();
-  double init_crp_alpha = 3;
+  int num_rows = data.size1();
   //
   map<int, vector<double> > data_map;
   cout << "populating data_map" << endl;
-  for(int idx=0; idx<6; idx++) {
-    vector<double> row = extract_row(data, idx);
-    cout << "row_idx: " << idx << "; data: " << row << endl;
-    data_map[idx] = row;
+  for(int row_idx=0; row_idx<num_rows; row_idx++) {
+    data_map[row_idx] = extract_row(data, row_idx);
   }
   //
   map<int, int> where_to_push;
@@ -93,12 +93,15 @@ int main(int argc, char** argv) {
   }
 
   // create the objects to test
-  // View v = View(num_cols, init_crp_alpha);
-  vector<int> global_column_indices;
-  for(int col_idx=0; col_idx<data.size2(); col_idx++) {
-    global_column_indices.push_back(col_idx);
-  }
-  View v = View(data, global_column_indices, 11);
+  vector<int> global_row_indices = create_sequence(data.size1());
+  vector<int> global_column_indices = create_sequence(data.size2());
+  View v = View(data, global_row_indices, global_column_indices, 11);
+
+  v.print();
+  // empty object and verify empty
+  remove_all_data(v, data_map);
+  v.print();
+
   v.print();
   v.assert_state_consistency();
   //
