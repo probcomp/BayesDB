@@ -32,17 +32,9 @@ int main(int argc, char** argv) {
     v.print();
   }
 
-  for(int view_idx=0; view_idx<num_views; view_idx++) {
-    cout << "transitioning view: " << view_idx << endl;
-    View &v = s.get_view(view_idx);
-    vector<int> view_cols = get_indices_to_reorder(global_column_indices, v.global_to_local);
-    MatrixD data_subset = extract_columns(data, view_cols);
-    cout << "data_subset: " << data_subset << endl;
-    map<int, vector<double> > data_subset_map = construct_data_map(data_subset);
-    for(int i=0;i<4;i++) {
-      cout << "transition #: " << i << endl;
-      v.transition(data_subset_map);
-    }
+  for(int i=0;i<100;i++) {
+    cout << "transition #: " << i << endl;
+    s.transition_views(data);
   }
 
   for(int view_idx=0; view_idx<num_views; view_idx++) {
