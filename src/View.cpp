@@ -10,15 +10,35 @@ using namespace std;
 typedef set<Cluster*> setCp;
 
 //FIXME: add constructor with ranges as arguments, rather than recalculate
-View::View(MatrixD data, vector<int> in_col_indices, int N_GRID) {
-  assert(in_col_indices.size()==data.size2());
-  global_to_local = construct_lookup_map(in_col_indices);
-  construct_hyper_grids(data, in_col_indices, N_GRID);
+View::View(MatrixD data, vector<int> global_row_indices,
+	   vector<int> global_col_indices, int N_GRID) {
+  assert(global_row_indices.size()==data.size1());
+  assert(global_col_indices.size()==data.size2());
+  global_to_local = construct_lookup_map(global_col_indices);
+  construct_hyper_grids(data, global_col_indices, N_GRID);
+  std::vector<std::vector<int> > crp_init_cluster_indices_v;
   //
   crp_alpha = 3;
-  //
   crp_score = 0;
   data_score = 0;
+  //
+  crp_init_cluster_indices_v = determine_crp_init(global_row_indices, crp_alpha,
+						  rng);
+  int num_clusters = crp_init_cluster_indices_v.size();
+  int local_row_idx = 0;
+  for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
+    cout << "View::View: creating cluster_idx: " << cluster_idx << endl << flush;
+    std::vector<int> cluster_indices = crp_init_cluster_indices_v[cluster_idx];
+    int cluster_num_rows = cluster_indices.size();
+    for(int cluster_row_idx=0; cluster_row_idx<cluster_num_rows; cluster_row_idx++) {
+      int global_row_idx = global_row_indices[local_row_idx];
+      std::vector<double> row_data = extract_row(data, local_row_idx);
+      Cluster &which_cluster = get_cluster(cluster_idx);
+      cout << "View::View: inserting global_row_idx: " << global_row_idx << endl << flush;
+      insert_row(row_data, which_cluster, global_row_idx);
+      local_row_idx++;
+    }
+  }
 }
 
 double View::get_num_vectors() const {

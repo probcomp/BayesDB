@@ -18,7 +18,8 @@ class Cluster;
 class View {
  public:
   //FIXME: add constructor with ranges as arguments, rather than recalculate
-  View(boost::numeric::ublas::matrix<double> data, std::vector<int> col_indices,
+  View(boost::numeric::ublas::matrix<double> data,
+       std::vector<int> global_row_indices, std::vector<int> global_col_indices,
        int N_GRID=31);
   // FIXME: will need to add a deallocator for clusters
   // for when View is garbage collected 
