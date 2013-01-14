@@ -188,15 +188,15 @@ std::vector<double> View::calc_hyper_conditionals(int which_col,
 
 double View::set_hyper(int which_col, string which_hyper, double new_value) {
   setCp::iterator it;
-  double data_score_delta = 0;
+  double score_delta = 0;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    data_score_delta += (**it).set_hyper(which_col, which_hyper, new_value);
+    score_delta += (**it).set_hyper(which_col, which_hyper, new_value);
   }
-  data_score += data_score_delta;
-  return data_score_delta;
+  data_score += score_delta;
+  return score_delta;
 }
 
-void View::transition_hyper_i(int which_col, std::string which_hyper,
+double View::transition_hyper_i(int which_col, std::string which_hyper,
 			      vector<double> hyper_grid) {
   //
   // draw new hyper
@@ -207,38 +207,62 @@ void View::transition_hyper_i(int which_col, std::string which_hyper,
   double new_hyper_value = hyper_grid[draw];
   //
   // update all clusters
-  double delta_data_score = 0;
+  double score_delta = 0;
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    delta_data_score += (**it).set_hyper(which_col, which_hyper,
-					 new_hyper_value);
+    score_delta += (**it).set_hyper(which_col, which_hyper, new_hyper_value);
   }
   //
   // update score
-  data_score += delta_data_score;
+  data_score += score_delta;
+  return score_delta;
 }
 
-void View::transition_hyper_i(int which_col, std::string which_hyper) {
+double View::transition_hyper_i(int which_col, std::string which_hyper) {
   vector<double> hyper_grid = get_hyper_grid(which_col, which_hyper);
-  transition_hyper_i(which_col, which_hyper, hyper_grid);
+  double score_delta = transition_hyper_i(which_col, which_hyper, hyper_grid);
+  return score_delta;
 }
 
-void View::transition_hypers_i(int which_col) {
+double View::transition_hypers_i(int which_col) {
   vector<string> hyper_strings = get_hyper_strings();
   // FIXME: use own shuffle so its seed controlled
   std::random_shuffle(hyper_strings.begin(), hyper_strings.end());
+  double score_delta = 0;
   vector<string>::iterator it;
   for(it=hyper_strings.begin(); it!=hyper_strings.end(); it++) {
     string which_hyper = *it;
-    transition_hyper_i(which_col, which_hyper);
+    score_delta += transition_hyper_i(which_col, which_hyper);
   }
+  return score_delta;
 }
 
-void View::transition_hypers() {
+double View::transition_hypers() {
   int num_cols = get_num_cols();
+  double score_delta = 0;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    transition_hypers_i(col_idx);
+    score_delta += transition_hypers_i(col_idx);
   }
+  return score_delta;
+}
+
+double View::transition(std::map<int, std::vector<double> > row_data_map) {
+  vector<int> which_transitions = create_sequence(3);
+  //FIXME: use own shuffle so seed control is in effect
+  std::random_shuffle(which_transitions.begin(), which_transitions.end());
+  double score_delta = 0;
+  vector<int>::iterator it;
+  for(it=which_transitions.begin(); it!=which_transitions.end(); it++) {
+    int which_transition = *it;
+    if(which_transition==0) {
+      score_delta += transition_hypers();
+    } else if(which_transition==1) {
+      score_delta += transition_zs(row_data_map);
+    } else if(which_transition==2) {
+      score_delta += transition_crp_alpha();
+    }
+  }
+  return score_delta;
 }
 
 double View::score_col_data(vector<double> data, vector<int> data_global_row_indices) {
@@ -339,29 +363,36 @@ void View::remove_if_empty(Cluster& which_cluster) {
   }
 }
 
-void View::transition_z(vector<double> vd, int row_idx) {
-  remove_row(vd, row_idx);
-  insert_row(vd, row_idx);
+double View::transition_z(vector<double> vd, int row_idx) {
+  double score_delta = 0;
+  score_delta += remove_row(vd, row_idx);
+  score_delta += insert_row(vd, row_idx);
+  return score_delta;
 }
 
-void View::transition_zs(map<int, vector<double> > row_data_map) {
+double View::transition_zs(map<int, vector<double> > row_data_map) {
+  double score_delta = 0;
   vector<int> shuffled_row_indices = shuffle_row_indices();
   vector<int>::iterator it = shuffled_row_indices.begin();
   for(; it!=shuffled_row_indices.end(); it++) {
     int row_idx = *it;
     vector<double> vd = row_data_map[row_idx];
-    transition_z(vd, row_idx);
+    score_delta += transition_z(vd, row_idx);
   }
+  return score_delta;
 }
 
-void View::transition_crp_alpha() {
+double View::transition_crp_alpha() {
   // to make score_crp not calculate absolute, need to track score deltas
   // and apply delta to crp_score
+  double crp_score_0 = get_crp_score();
   vector<double> unorm_logps = score_crp(crp_alpha_grid);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   crp_alpha = crp_alpha_grid[draw];
   crp_score = unorm_logps[draw];
+  double crp_score_delta = crp_score - crp_score_0;
+  return crp_score_delta;
 }
 
 std::vector<double> View::align_data(vector<double> raw_values,

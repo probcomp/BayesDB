@@ -65,15 +65,16 @@ class View {
 		    std::vector<int> data_global_row_indices,
 		    int global_col_idx);
   void remove_if_empty(Cluster& which_cluster);
-  void transition_z(std::vector<double> vd, int row_idx);
-  void transition_zs(std::map<int, std::vector<double> > row_data_map);
-  void transition_crp_alpha();
+  double transition_z(std::vector<double> vd, int row_idx);
+  double transition_zs(std::map<int, std::vector<double> > row_data_map);
+  double transition_crp_alpha();
   double set_hyper(int which_col, std::string which_hyper, double new_value);
-  void transition_hyper_i(int which_col, std::string which_hyper,
+  double transition_hyper_i(int which_col, std::string which_hyper,
 			  std::vector<double> hyper_grid);
-  void transition_hyper_i(int which_col, std::string which_hyper);
-  void transition_hypers_i(int which_col);
-  void transition_hypers();
+  double transition_hyper_i(int which_col, std::string which_hyper);
+  double transition_hypers_i(int which_col);
+  double transition_hypers();
+  double transition(std::map<int, std::vector<double> > row_data_map);
   //
   // data structures
   std::set<Cluster* > clusters;
