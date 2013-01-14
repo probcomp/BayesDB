@@ -130,9 +130,10 @@ vector<int> View::get_cluster_counts() const {
   return counts;
 }
 
-double View::calc_cluster_vector_logp(vector<double> vd, Cluster which_cluster,
-				      double &crp_logp_delta,
-				      double &data_logp_delta) const {
+double View::calc_cluster_vector_predictive_logp(vector<double> vd,
+						 Cluster which_cluster,
+						 double &crp_logp_delta,
+						 double &data_logp_delta) const {
   int cluster_count = which_cluster.get_count();
   double score_delta;
   int num_vectors = get_num_vectors();
@@ -142,33 +143,34 @@ double View::calc_cluster_vector_logp(vector<double> vd, Cluster which_cluster,
   crp_logp_delta = numerics::calc_cluster_crp_logp(cluster_count,
 						   num_vectors,
 						   crp_alpha);
-  data_logp_delta = which_cluster.calc_predictive_logp(vd);
+  data_logp_delta = which_cluster.calc_row_predictive_logp(vd);
   score_delta = crp_logp_delta + data_logp_delta;
   return score_delta;
 }
 
-vector<double> View::calc_cluster_vector_logps(vector<double> vd) const {
+vector<double> View::calc_cluster_vector_predictive_logps(vector<double> vd) const {
   vector<double> logps;
   set<Cluster*>::iterator it = clusters.begin();
   double crp_logp_delta, data_logp_delta;
   for(; it!=clusters.end(); it++) {
-    logps.push_back(calc_cluster_vector_logp(vd, **it, crp_logp_delta,
-					     data_logp_delta));
+    logps.push_back(calc_cluster_vector_predictive_logp(vd, **it, crp_logp_delta,
+							data_logp_delta));
   }
   Cluster empty_cluster(get_num_cols());
-  logps.push_back(calc_cluster_vector_logp(vd, empty_cluster, crp_logp_delta,
-					   data_logp_delta));
+  logps.push_back(calc_cluster_vector_predictive_logp(vd, empty_cluster,
+						      crp_logp_delta,
+						      data_logp_delta));
   return logps;
 }
 
-double View::score_crp() const {
+double View::calc_crp_marginal() const {
   int num_vectors = get_num_vectors();
   vector<int> cluster_counts = get_cluster_counts();
   return numerics::calc_crp_alpha_conditional(cluster_counts, crp_alpha,
 					      num_vectors, true);
 }
 
-vector<double> View::score_crp(vector<double> alphas_to_score) const {
+vector<double> View::calc_crp_marginals(vector<double> alphas_to_score) const {
   int num_vectors = get_num_vectors();
   vector<int> cluster_counts = get_cluster_counts();
   vector<double> crp_scores;
@@ -279,12 +281,13 @@ double View::transition(std::map<int, std::vector<double> > row_data_map) {
   return score_delta;
 }
 
-double View::calc_predictive_logp(vector<double> column_data,
-				  vector<int> data_global_row_indices) {
+double View::calc_column_predictive_logp(vector<double> column_data,
+					 vector<int> data_global_row_indices) {
   double score_delta = 0;
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    score_delta += (**it).score_col(column_data, data_global_row_indices);
+    score_delta += (**it).calc_column_predictive_logp(column_data,
+						      data_global_row_indices);
   }
   return score_delta;
 }
@@ -292,7 +295,7 @@ double View::calc_predictive_logp(vector<double> column_data,
 double View::set_alpha(double new_alpha) {
   double crp_score_0 = crp_score;
   crp_alpha = new_alpha;
-  crp_score = score_crp();
+  crp_score = calc_crp_marginal();
   return crp_score - crp_score_0;
 }
 
@@ -305,8 +308,9 @@ Cluster& View::get_new_cluster() {
 double View::insert_row(vector<double> vd, Cluster& which_cluster, int row_idx) {
   // NOTE: MUST use calc_cluster_vector_logp,  gets crp_score_delta as well
   double crp_logp_delta, data_logp_delta;
-  double score_delta = calc_cluster_vector_logp(vd, which_cluster,
-						crp_logp_delta, data_logp_delta);
+  double score_delta = calc_cluster_vector_predictive_logp(vd, which_cluster,
+							   crp_logp_delta,
+							   data_logp_delta);
   which_cluster.insert_row(vd, row_idx);
   cluster_lookup[row_idx] = &which_cluster;
   crp_score += crp_logp_delta;
@@ -315,7 +319,7 @@ double View::insert_row(vector<double> vd, Cluster& which_cluster, int row_idx) 
 }
 
 double View::insert_row(vector<double> vd, int row_idx) {
-  vector<double> unorm_logps = calc_cluster_vector_logps(vd);
+  vector<double> unorm_logps = calc_cluster_vector_predictive_logps(vd);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   Cluster &which_cluster = get_cluster(draw);
@@ -328,8 +332,9 @@ double View::remove_row(vector<double> vd, int row_idx) {
   cluster_lookup.erase(cluster_lookup.find(row_idx));
   which_cluster.remove_row(vd, row_idx);
   double crp_logp_delta, data_logp_delta;
-  double score_delta = calc_cluster_vector_logp(vd, which_cluster,
-						crp_logp_delta, data_logp_delta);
+  double score_delta = calc_cluster_vector_predictive_logp(vd, which_cluster,
+							   crp_logp_delta,
+							   data_logp_delta);
   remove_if_empty(which_cluster);
   crp_score -= crp_logp_delta;
   data_score -= data_logp_delta;
@@ -403,7 +408,7 @@ double View::transition_crp_alpha() {
   // to make score_crp not calculate absolute, need to track score deltas
   // and apply delta to crp_score
   double crp_score_0 = get_crp_score();
-  vector<double> unorm_logps = score_crp(crp_alpha_grid);
+  vector<double> unorm_logps = calc_crp_marginals(crp_alpha_grid);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   crp_alpha = crp_alpha_grid[draw];
@@ -464,7 +469,7 @@ void View::assert_state_consistency() {
   int sum_via_cluster_counts = std::accumulate(cluster_counts.begin(),
 					       cluster_counts.end(), 0);  
   assert(is_almost(get_num_vectors(), sum_via_cluster_counts, tolerance));
-  assert(is_almost(get_crp_score(),score_crp(),tolerance));
+  assert(is_almost(get_crp_score(),calc_crp_marginal(),tolerance));
 }
 
 double View::draw_rand_u() {

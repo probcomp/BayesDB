@@ -21,7 +21,7 @@ double ContinuousComponentModel::calc_marginal_logp() const {
   return numerics::calc_continuous_logp(count, r, nu, s, log_Z_0);
 }
 
-double ContinuousComponentModel::calc_predictive_logp(double element) const {
+double ContinuousComponentModel::calc_element_predictive_logp(double element) const {
   double r, nu, s, mu;
   int count;
   double sum_x, sum_x_sq;
@@ -58,7 +58,7 @@ vector<double> ContinuousComponentModel::calc_hyper_conditionals(string which_hy
   }
 }
 
-double ContinuousComponentModel::insert(double element) {
+double ContinuousComponentModel::insert_element(double element) {
   double score_0 = score;
   numerics::insert_to_continuous_suffstats(count,
 					   suffstats["sum_x"],
@@ -69,7 +69,7 @@ double ContinuousComponentModel::insert(double element) {
   return delta_score;
 }
 
-double ContinuousComponentModel::remove(double element) {
+double ContinuousComponentModel::remove_element(double element) {
   double score_0 = score;
   numerics::remove_from_continuous_suffstats(count,
 					     suffstats["sum_x"],

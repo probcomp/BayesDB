@@ -35,9 +35,13 @@ class State {
   double transition_crp_alpha();  
   double transition(MatrixD &data);
   //
+  // calculators
+  double calc_feature_view_predictive_logp();
+  std::vector<double> calc_feature_view_predictive_logps();
+  //
   // helpers
-  double score_crp() const;
-  std::vector<double> score_crp(std::vector<double> alphas_to_score) const;
+  double calc_crp_marginal() const;
+  std::vector<double> calc_crp_marginals(std::vector<double> alphas_to_score) const;
  private:
   // parameters
   double crp_alpha;

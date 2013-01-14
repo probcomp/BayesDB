@@ -19,13 +19,13 @@ class ComponentModel {
   //
   // calculators
   virtual double calc_marginal_logp() const = 0;
-  virtual double calc_predictive_logp(double element) const = 0;
+  virtual double calc_element_predictive_logp(double element) const = 0;
   virtual std::vector<double> calc_hyper_conditionals(std::string which_hyper,
 						      std::vector<double> hyper_grid) const = 0;
   //
   // mutators
-  virtual double insert(double element) = 0;
-  virtual double remove(double element) = 0;
+  virtual double insert_element(double element) = 0;
+  virtual double remove_element(double element) = 0;
   virtual double set_hyper(std::string which_hyper, double hyper_value) = 0;
   //
   // helpers

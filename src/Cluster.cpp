@@ -42,11 +42,11 @@ double Cluster::calc_sum_marginal_logps() const {
   return sum_logps;
 }
 
-double Cluster::calc_predictive_logp(vector<double> values) const {
+double Cluster::calc_row_predictive_logp(vector<double> values) const {
   double sum_logps = 0;
   for(int col_idx=0; col_idx<values.size(); col_idx++) {
     double el = values[col_idx];
-    sum_logps += get_model(col_idx).calc_predictive_logp(el);
+    sum_logps += get_model(col_idx).calc_element_predictive_logp(el);
   }
   return sum_logps;
 }
@@ -60,16 +60,16 @@ vector<double> Cluster::calc_hyper_conditionals(int which_col,
   return hyper_conditionals;
 }
 
-double Cluster::score_col(vector<double> data,
-			   vector<int> data_global_row_indices) {
+double Cluster::calc_column_predictive_logp(vector<double> column_data,
+					    vector<int> data_global_row_indices) {
   map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
   ContinuousComponentModel ccm;
   set<int>::iterator it;
   for(it=row_indices.begin(); it!=row_indices.end(); it++) {
     int global_row_idx = *it;
     int data_idx = global_to_data[global_row_idx];
-    double value = data[data_idx];
-    ccm.insert(value);
+    double value = column_data[data_idx];
+    ccm.insert_element(value);
   }
   double score_delta = ccm.calc_marginal_logp();
   return score_delta;
@@ -83,7 +83,7 @@ double Cluster::insert_row(vector<double> values, int row_idx) {
   assert(set_pair.second);
   // track score
   for(int col_idx=0; col_idx<values.size(); col_idx++) {
-    sum_score_deltas += model_v[col_idx].insert(values[col_idx]);
+    sum_score_deltas += model_v[col_idx].insert_element(values[col_idx]);
   }
   score += sum_score_deltas;
   return sum_score_deltas;
@@ -96,7 +96,7 @@ double Cluster::remove_row(vector<double> values, int row_idx) {
   assert(num_removed!=0);
   // track score
   for(int col_idx=0; col_idx<values.size(); col_idx++) {
-    sum_score_deltas += model_v[col_idx].remove(values[col_idx]);
+    sum_score_deltas += model_v[col_idx].remove_element(values[col_idx]);
   }
   score += sum_score_deltas;
   return sum_score_deltas;
@@ -118,7 +118,7 @@ double Cluster::insert_col(vector<double> data,
     int global_row_idx = *it;
     int data_idx = global_to_data[global_row_idx];
     double value = data[data_idx];
-    ccm.insert(value);
+    ccm.insert_element(value);
   }
   double score_delta = ccm.calc_marginal_logp();
   model_v.push_back(ccm);

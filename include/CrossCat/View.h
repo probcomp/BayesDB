@@ -43,17 +43,17 @@ class View {
   std::vector<int> get_cluster_counts() const;
   //
   // calculators
-  double calc_cluster_vector_logp(std::vector<double> vd, Cluster cd,
-				  double &crp_logp_delta,
-				  double &data_logp_delta) const;
-  std::vector<double> calc_cluster_vector_logps(std::vector<double> vd) const;
-  double score_crp() const;
-  std::vector<double> score_crp(std::vector<double> alphas) const;
+  double calc_cluster_vector_predictive_logp(std::vector<double> vd, Cluster cd,
+					     double &crp_logp_delta,
+					     double &data_logp_delta) const;
+  std::vector<double> calc_cluster_vector_predictive_logps(std::vector<double> vd) const;
+  double calc_crp_marginal() const;
+  std::vector<double> calc_crp_marginals(std::vector<double> alphas) const;
   std::vector<double> calc_hyper_conditionals(int which_col,
 					      std::string which_hyper,
 					      std::vector<double> hyper_grid) const;
-  double calc_predictive_logp(std::vector<double> column_data,
-			      std::vector<int> data_global_row_indices);
+  double calc_column_predictive_logp(std::vector<double> column_data,
+				     std::vector<int> data_global_row_indices);
   //
   // mutators
   double set_alpha(double new_alpha);

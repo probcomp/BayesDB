@@ -110,7 +110,13 @@ double State::transition_views(MatrixD &data) {
   return score_delta;
 }
 
-double State::score_crp() const {
+double State::calc_feature_view_predictive_logp() {
+}
+
+std::vector<double> State::calc_feature_view_predictive_logps() {
+}
+
+double State::calc_crp_marginal() const {
   vector<int> view_counts = get_view_counts();
   int num_cols = get_num_cols();
   return numerics::calc_crp_alpha_conditional(view_counts, crp_alpha, num_cols,
@@ -118,7 +124,7 @@ double State::score_crp() const {
 					      
 }
 
-vector<double> State::score_crp(vector<double> alphas_to_score) const {
+vector<double> State::calc_crp_marginals(vector<double> alphas_to_score) const {
   vector<int> view_counts = get_view_counts();
   vector<double> crp_scores;
   vector<double>::iterator it = alphas_to_score.begin();
@@ -138,7 +144,7 @@ double State::transition_crp_alpha() {
   // to make score_crp not calculate absolute, need to track score deltas
   // and apply delta to crp_score
   double crp_score_0 = get_crp_score();
-  vector<double> unorm_logps = score_crp(crp_alpha_grid);
+  vector<double> unorm_logps = calc_crp_marginals(crp_alpha_grid);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   crp_alpha = crp_alpha_grid[draw];

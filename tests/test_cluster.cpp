@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
     vector<double> row_data = rows[row_idx];
     for(int col_idx=0; col_idx<num_cols; col_idx++) {
       double random_value = rows[row_idx][col_idx];
-      ccm_v[col_idx].insert(random_value);
+      ccm_v[col_idx].insert_element(random_value);
     }
     cd.insert_row(row_data, row_idx);
   }
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
     vector<double> row_data = rows[row_idx];
     for(int col_idx=0; col_idx<num_cols; col_idx++) {
       double random_value = rows[row_idx][col_idx];
-      ccm_v[col_idx].remove(random_value);
+      ccm_v[col_idx].remove_element(random_value);
     }
     cd.remove_row(row_data, row_idx);
   }

@@ -22,13 +22,13 @@ class ContinuousComponentModel : public ComponentModel {
   //
   // calculators
   double calc_marginal_logp() const;
-  double calc_predictive_logp(double element) const;
+  double calc_element_predictive_logp(double element) const;
   std::vector<double> calc_hyper_conditionals(std::string which_hyper,
 					      std::vector<double> hyper_grid) const;
   //
   // mutators
-  double insert(double element);
-  double remove(double element);
+  double insert_element(double element);
+  double remove_element(double element);
   double set_hyper(std::string which_hyper, double hyper_value);
  protected:
   void set_log_Z_0();

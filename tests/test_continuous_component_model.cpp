@@ -9,14 +9,14 @@ using namespace std;
 
 typedef ContinuousComponentModel CCM;
 
-void insert_els(CCM &ccm, vector<double> els) {
+void insert_elements(CCM &ccm, vector<double> els) {
   for(vector<double>::iterator it=els.begin(); it!=els.end(); it++)
-    ccm.insert(*it);
+    ccm.insert_element(*it);
 }
 
-void remove_els(CCM &ccm, vector<double> els) {
+void remove_elements(CCM &ccm, vector<double> els) {
   for(vector<double>::iterator it=els.begin(); it!=els.end(); it++)
-    ccm.remove(*it);
+    ccm.remove_element(*it);
 }
 
 int main(int argc, char** argv) {  
@@ -90,13 +90,13 @@ int main(int argc, char** argv) {
   assert(is_almost(ccm.calc_marginal_logp(), 0, precision));
 
   // push data into component model
-  insert_els(ccm, values_to_test);
+  insert_elements(ccm, values_to_test);
   cout << endl << "component model after insertion of data" << endl;
   cout << ccm << endl;
   // ensure count is proper
   assert(ccm.get_count()==num_values_to_test);
   // remove data from component model in REVERSED order
-  remove_els(ccm, values_to_test_reversed);
+  remove_elements(ccm, values_to_test_reversed);
   cout << endl << "component model after removal of data in reversed order" << endl;
   cout << ccm << endl;
   // ensure initial values are recovered
@@ -112,13 +112,13 @@ int main(int argc, char** argv) {
   assert(is_almost(ccm.calc_marginal_logp(), 0, precision));
 
   // push data into component model
-  insert_els(ccm, values_to_test);
+  insert_elements(ccm, values_to_test);
   cout << endl << "component model after insertion of data" << endl;
   cout << ccm << endl;
   // ensure count is proper
   assert(ccm.get_count()==num_values_to_test);
   // remove data from component model in SHUFFLED order
-  remove_els(ccm, values_to_test_shuffled);
+  remove_elements(ccm, values_to_test_shuffled);
   cout << endl << "component model after removal of data in shuffled order" << endl;
   cout << ccm << endl;
   // ensure initial values are recovered
@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
   assert(is_almost(ccm.calc_marginal_logp(), 0, precision));
 
   // push data into component model
-  insert_els(ccm, values_to_test);
+  insert_elements(ccm, values_to_test);
   cout << endl << "component model after insertion of data" << endl;
   cout << ccm << endl;
   // test hypers
@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
   assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
 
   // remove data from component model in SHUFFLED order
-  remove_els(ccm, values_to_test_shuffled);
+  remove_elements(ccm, values_to_test_shuffled);
   cout << endl << "component model after removal of data in shuffled order" << endl;
   cout << ccm << endl;
 
