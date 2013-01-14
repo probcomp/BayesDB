@@ -9,8 +9,11 @@
 #include <set>
 #include <map>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
 
-void LoadData(std::string file, boost::numeric::ublas::matrix<double>& M);
+typedef boost::numeric::ublas::matrix<double> MatrixD;
+
+void LoadData(std::string file, MatrixD& M);
 
 template <class K, class V>
 std::ostream& operator<<(std::ostream& os, const std::map<K, V> in_map) {
@@ -68,9 +71,9 @@ std::vector<double> std_vector_sum(std::vector<double> vec1,
 std::vector<double> std_vector_sum(std::vector<std::vector<double> > vec_vec);
 
 double calc_sum_sq_deviation(std::vector<double> values);
-std::vector<double> extract_row(boost::numeric::ublas::matrix<double> data,
+std::vector<double> extract_row(MatrixD data,
 				int row_idx);
-std::vector<double> extract_col(boost::numeric::ublas::matrix<double> data,
+std::vector<double> extract_col(MatrixD data,
 				int col_idx);
 std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2);
 
@@ -92,12 +95,13 @@ std::vector<double> reorder_per_indices(std::vector<double> raw_values,
 std::vector<double> reorder_per_map(std::vector<double> raw_values,
 				    std::vector<int> global_column_indices,
 				    std::map<int, int> global_to_local);
-std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double> > raw_values,
-				    std::vector<int> global_column_indices,
-				    std::map<int, int> global_to_local);
+std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double> > raw_values, std::vector<int> global_column_indices, std::map<int, int> global_to_local);
 
 std::vector<std::vector<int> > determine_crp_init(std::vector<int> global_row_indices,
 						  double alpha,
 						  RandomNumberGenerator &rng);
+
+void copy_column(MatrixD fromM, int from_col, MatrixD toM, int to_col);
+MatrixD extract_columns(MatrixD fromM, std::vector<int> from_cols);
 
 #endif // GUARD_utils_H
