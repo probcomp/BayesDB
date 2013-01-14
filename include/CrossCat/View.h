@@ -21,6 +21,7 @@ class View {
   View(boost::numeric::ublas::matrix<double> data,
        std::vector<int> global_row_indices, std::vector<int> global_col_indices,
        int N_GRID=31);
+  View();
   // FIXME: will need to add a deallocator for clusters
   // for when View is garbage collected 
   //

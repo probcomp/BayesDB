@@ -41,6 +41,15 @@ View::View(MatrixD data, vector<int> global_row_indices,
   }
 }
 
+View::View() {
+  // when actually used, hyper grid needs to be set up
+  // construct_hyper_grids(data, global_col_indices, N_GRID);
+  //
+  crp_alpha = 3;
+  crp_score = 0;
+  data_score = 0;
+}
+
 double View::get_num_vectors() const {
   return num_vectors;
 }
