@@ -16,7 +16,7 @@ TEST=tests
 #
 BIN = model
 MAIN = main
-NAMES = ContinuousComponentModel ComponentModel Cluster View \
+NAMES = ContinuousComponentModel ComponentModel Cluster View State \
 	utils numerics RandomNumberGenerator
 TEST_NAMES = test_continuous_component_model test_cluster test_view \
 	 test_view_speed
