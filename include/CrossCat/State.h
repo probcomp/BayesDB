@@ -27,6 +27,7 @@ class State {
   // mutators
   View& get_new_view();
   View& get_view(int view_idx);
+  void remove_if_empty(View& which_view);
   double transition_features();
   double transition_view_i(int which_view,
 			 std::map<int, std::vector<double> > row_data_map);

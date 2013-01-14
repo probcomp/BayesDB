@@ -56,6 +56,13 @@ View& State::get_view(int view_idx) {
   }
 }
 
+void State::remove_if_empty(View& which_view) {
+  if(which_view.get_num_cols()==0) {
+    views.erase(views.find(&which_view));
+    delete &which_view;
+  }
+}
+
 double State::get_crp_alpha() const {
   return crp_alpha;
 }
