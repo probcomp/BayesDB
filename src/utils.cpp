@@ -127,7 +127,7 @@ vector<double> append(vector<double> vec1, vector<double> vec2) {
   return vec1;
 }  
 
-vector<int> extract_global_ordering(std::map<int, int> global_to_local) {
+vector<int> extract_global_ordering(map<int, int> global_to_local) {
   vector<int> global_indices(global_to_local.size(), -1);
   map<int,int>::iterator it;
   for(it=global_to_local.begin(); it!=global_to_local.end(); it++) {
@@ -158,7 +158,7 @@ map<int, int> remove_and_reorder(map<int, int> old_global_to_local,
 }
 
 vector<int> get_indices_to_reorder(vector<int> data_global_column_indices,
-				   std::map<int, int> global_to_local) {
+				   map<int, int> global_to_local) {
   int num_local_cols = global_to_local.size();
   int num_data_cols = data_global_column_indices.size();
   vector<int> reorder_indices(num_local_cols, -1);
@@ -186,15 +186,15 @@ vector<double> reorder_per_indices(vector<double> raw_values,
 
 vector<double> reorder_per_map(vector<double> raw_values,
 			       vector<int> global_column_indices,
-			       std::map<int, int> global_to_local) {
+			       map<int, int> global_to_local) {
   vector<int> reorder_indices = \
     get_indices_to_reorder(global_column_indices, global_to_local);
   return reorder_per_indices(raw_values, reorder_indices);
 }
 
 vector<vector<double> > reorder_per_map(vector<vector<double> > raw_values,
-				    vector<int> global_column_indices,
-				    std::map<int, int> global_to_local) {
+					vector<int> global_column_indices,
+					map<int, int> global_to_local) {
   vector<int> reorder_indices = get_indices_to_reorder(global_column_indices, global_to_local);
   vector<vector<double> > arranged_values_v;
   vector<vector<double> >::iterator it;
@@ -237,8 +237,8 @@ vector<int> determine_crp_init_counts(int num_datum, double alpha,
 }
 
 vector<vector<int> > determine_crp_init(vector<int> global_row_indices,
-						  double alpha,
-						  RandomNumberGenerator &rng) {
+					double alpha,
+					RandomNumberGenerator &rng) {
   int num_datum = global_row_indices.size();
   vector<int> counts = determine_crp_init_counts(num_datum, alpha, rng);
   std::random_shuffle(global_row_indices.begin(), global_row_indices.end());
