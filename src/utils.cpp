@@ -1,9 +1,12 @@
 #include "utils.h"
+#include "numerics.h"
+#include "RandomNumberGenerator.h"
 //
 #include <fstream>      // fstream
 #include <boost/tokenizer.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <numeric>
+#include <algorithm>
 
 using namespace std;
 using namespace boost;
@@ -208,4 +211,46 @@ std::vector<int> create_sequence(int len, int start) {
   sequence[0] = start;
   std::partial_sum(sequence.begin(), sequence.end(), sequence.begin());
   return sequence;
+}
+
+void insert_into_counts(int draw, std::vector<int> &counts) {
+  assert(draw<=counts.size());
+  if(draw==counts.size()) {
+    counts.push_back(1);
+  } else {
+    counts[draw]++;
+  }
+}
+
+std::vector<int> determine_crp_init_counts(int num_datum, double alpha,
+				    RandomNumberGenerator &rng) {
+  std::vector<int> counts;
+  double rand_u;
+  int draw;
+  int sum_counts = 0;
+  for(int draw_idx=0; draw_idx<num_datum; draw_idx++) {
+    rand_u = rng.next();
+    draw = numerics::crp_draw_sample(counts, sum_counts, alpha, rand_u);
+    sum_counts++;
+    insert_into_counts(draw, counts);
+  }
+  return counts;
+}
+
+std::vector<std::vector<int> > determine_crp_init(std::vector<int> global_row_indices,
+						  double alpha,
+						  RandomNumberGenerator &rng) {
+  int num_datum = global_row_indices.size();
+  std::vector<int> counts = determine_crp_init_counts(num_datum, alpha, rng);
+  std::random_shuffle(global_row_indices.begin(), global_row_indices.end());
+  std::vector<int>::iterator it = global_row_indices.begin();
+  std::vector<std::vector<int> > cluster_indices_v;
+  for(int cluster_idx=0; cluster_idx<counts.size(); cluster_idx++) {
+    int count = counts[cluster_idx];
+    std::vector<int> cluster_indices(count, -1);
+    std::copy(it, it+count, cluster_indices.begin());
+    cluster_indices_v.push_back(cluster_indices);
+    it += count;
+  }
+  return cluster_indices_v;
 }
