@@ -1,12 +1,25 @@
 #include "State.h"
 
-typedef boost::numeric::ublas::matrix<double> MatrixD;
 using namespace std;
 
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+typedef boost::numeric::ublas::matrix<double> MatrixD;
+
 // num_cols should be set in constructor
-State::State(boost::numeric::ublas::matrix<double> data,
-      std::vector<int> global_row_indices, std::vector<int> global_col_indices,
-      int N_GRID) {
+State::State(MatrixD data, vector<int> global_row_indices,
+	     vector<int> global_col_indices, int N_GRID) {
+  crp_alpha = 3.0;
+  int num_rows = data.size1();
+  vector<vector<int> > column_partition;
+  column_partition = determine_crp_init(global_col_indices, crp_alpha, rng);
+  vector<vector<int> >::iterator cp_it;
+  for(cp_it=column_partition.begin(); cp_it!=column_partition.end(); cp_it++) {
+    vector<int> column_indices = *cp_it;
+    MatrixD data_subset = extract_columns(data, column_indices);
+    View *p_v = new View(data_subset, global_row_indices, column_indices);
+    views.insert(p_v);
+  }
 }
 
 int State::get_num_cols() const {
@@ -63,7 +76,7 @@ double State::transition_features() {
 }
 
 double State::transition_view_i(int which_view,
-				std::map<int, std::vector<double> > row_data_map) {
+				map<int, vector<double> > row_data_map) {
   // assumes views set ordering stays constant between calls
   set<View*>::iterator it = views.begin();
   std::advance(it, which_view);
@@ -73,7 +86,7 @@ double State::transition_view_i(int which_view,
   return score_delta;
 }
 
-double State::transition_views(std::map<int, std::vector<double> > row_data_map) {
+double State::transition_views(map<int, vector<double> > row_data_map) {
   double score_delta = 0;
   // ordering doesn't matter, don't need to shuffle
   for(int view_idx=0; view_idx<get_num_views(); view_idx++) {
@@ -85,8 +98,9 @@ double State::transition_views(std::map<int, std::vector<double> > row_data_map)
 double State::score_crp() const {
   vector<int> view_counts = get_view_counts();
   int num_cols = get_num_cols();
-  return numerics::calc_crp_alpha_conditional(view_counts, crp_alpha,
-					      num_cols, true);
+  return numerics::calc_crp_alpha_conditional(view_counts, crp_alpha, num_cols,
+					      true);
+					      
 }
 
 vector<double> State::score_crp(vector<double> alphas_to_score) const {
@@ -118,7 +132,7 @@ double State::transition_crp_alpha() {
   return crp_score_delta;
 }
 
-double State::transition(std::map<int, std::vector<double> > row_data_map) {
+double State::transition(map<int, vector<double> > row_data_map) {
   vector<int> which_transitions = create_sequence(3);
   //FIXME: use own shuffle so seed control is in effect
   std::random_shuffle(which_transitions.begin(), which_transitions.end());
