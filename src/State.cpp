@@ -82,11 +82,19 @@ double State::transition_view_i(int which_view,
   return score_delta;
 }
 
-double State::transition_views(map<int, vector<double> > row_data_map) {
+double State::transition_views(MatrixD &data) {
+  vector<int> global_column_indices = create_sequence(data.size2());
+  //
   double score_delta = 0;
   // ordering doesn't matter, don't need to shuffle
   for(int view_idx=0; view_idx<get_num_views(); view_idx++) {
-    score_delta += transition_view_i(view_idx, row_data_map);
+    View &v = get_view(view_idx);
+    vector<int> view_cols = get_indices_to_reorder(global_column_indices,
+						   v.global_to_local);
+    MatrixD data_subset = extract_columns(data, view_cols);
+    cout << "data_subset: " << data_subset << endl;
+    map<int, vector<double> > data_subset_map = construct_data_map(data_subset);
+    score_delta += transition_view_i(view_idx, data_subset_map);
   }
   return score_delta;
 }
@@ -128,7 +136,7 @@ double State::transition_crp_alpha() {
   return crp_score_delta;
 }
 
-double State::transition(map<int, vector<double> > row_data_map) {
+double State::transition(MatrixD &data) {
   vector<int> which_transitions = create_sequence(3);
   //FIXME: use own shuffle so seed control is in effect
   std::random_shuffle(which_transitions.begin(), which_transitions.end());
@@ -137,7 +145,7 @@ double State::transition(map<int, vector<double> > row_data_map) {
   for(it=which_transitions.begin(); it!=which_transitions.end(); it++) {
     int which_transition = *it;
     if(which_transition==0) {
-      score_delta += transition_views(row_data_map);
+      score_delta += transition_views(data);
     } else if(which_transition==1) {
       score_delta += transition_features();
     } else if(which_transition==2) {

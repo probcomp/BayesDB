@@ -29,9 +29,9 @@ class State {
   double transition_features();
   double transition_view_i(int which_view,
 			 std::map<int, std::vector<double> > row_data_map);
-  double transition_views(std::map<int, std::vector<double> > row_data_map);
+  double transition_views(MatrixD &data);
   double transition_crp_alpha();  
-  double transition(std::map<int, std::vector<double> > row_data_map);
+  double transition(MatrixD &data);
   //
   // helpers
   double score_crp() const;
