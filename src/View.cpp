@@ -336,6 +336,10 @@ double View::insert_col(vector<double> data,
 			vector<int> data_global_row_indices,
 			int global_col_idx) {
   double score_delta = 0;
+  if(get_num_clusters()==0) {
+    //FIXME: directly set set<Cluster*> clusters from crp init?
+    // and let cluster::insert_col do the work?
+  }
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
     score_delta += (**it).insert_col(data, data_global_row_indices);
