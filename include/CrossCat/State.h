@@ -19,6 +19,7 @@ class State {
   int get_num_cols() const;
   int get_num_views() const;
   std::vector<int> get_view_counts() const;
+  double get_crp_alpha() const;
   double get_crp_score() const;
   double get_data_score() const;
   double get_marginal_logp() const;

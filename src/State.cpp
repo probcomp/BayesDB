@@ -7,6 +7,7 @@ State::State(MatrixD &data, vector<int> global_row_indices,
 	     vector<int> global_col_indices, int N_GRID) {
   crp_alpha = 0.8;
   int num_rows = data.size1();
+  construct_hyper_grids(data, N_GRID);
   vector<vector<int> > column_partition;
   column_partition = determine_crp_init(global_col_indices, crp_alpha, rng);
   vector<vector<int> >::iterator cp_it;
@@ -55,6 +56,10 @@ View& State::get_view(int view_idx) {
   }
 }
 
+double State::get_crp_alpha() const {
+  return crp_alpha;
+}
+
 double State::get_crp_score() const {
   return crp_score;
 }
@@ -92,7 +97,6 @@ double State::transition_views(MatrixD &data) {
     vector<int> view_cols = get_indices_to_reorder(global_column_indices,
 						   v.global_to_local);
     MatrixD data_subset = extract_columns(data, view_cols);
-    cout << "data_subset: " << data_subset << endl;
     map<int, vector<double> > data_subset_map = construct_data_map(data_subset);
     score_delta += transition_view_i(view_idx, data_subset_map);
   }
@@ -147,7 +151,8 @@ double State::transition(MatrixD &data) {
     if(which_transition==0) {
       score_delta += transition_views(data);
     } else if(which_transition==1) {
-      score_delta += transition_features();
+      cout << "State::transition: skipping transition_features" << endl;
+      //score_delta += transition_features();
     } else if(which_transition==2) {
       score_delta += transition_crp_alpha();
     }
