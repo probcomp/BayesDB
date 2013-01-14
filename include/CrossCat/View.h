@@ -99,7 +99,6 @@ class View {
   std::map<int, int> global_to_local; // FIXME: specify appicability to columns
  private:
   // parameters
-  int num_vectors;
   double crp_alpha;
   double crp_score;
   double data_score;

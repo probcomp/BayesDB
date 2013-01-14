@@ -51,7 +51,7 @@ View::View() {
 }
 
 double View::get_num_vectors() const {
-  return num_vectors;
+  return cluster_lookup.size();
 }
 
 double View::get_num_cols() const {
@@ -135,6 +135,7 @@ double View::calc_cluster_vector_logp(vector<double> vd, Cluster which_cluster,
 				      double &data_logp_delta) const {
   int cluster_count = which_cluster.get_count();
   double score_delta;
+  int num_vectors = get_num_vectors();
   // NOTE: non-mutating, so presume vector is not in state
   // so use num_vectors, not num_vectors - 1
   // should try to cache counts in some way
@@ -161,12 +162,14 @@ vector<double> View::calc_cluster_vector_logps(vector<double> vd) const {
 }
 
 double View::score_crp() const {
+  int num_vectors = get_num_vectors();
   vector<int> cluster_counts = get_cluster_counts();
   return numerics::calc_crp_alpha_conditional(cluster_counts, crp_alpha,
 					      num_vectors, true);
 }
 
 vector<double> View::score_crp(vector<double> alphas_to_score) const {
+  int num_vectors = get_num_vectors();
   vector<int> cluster_counts = get_cluster_counts();
   vector<double> crp_scores;
   vector<double>::iterator it = alphas_to_score.begin();
@@ -307,7 +310,6 @@ double View::insert_row(vector<double> vd, Cluster& which_cluster, int row_idx) 
   cluster_lookup[row_idx] = &which_cluster;
   crp_score += crp_logp_delta;
   data_score += data_logp_delta;
-  num_vectors += 1;
   return score_delta;
 }
 
@@ -324,7 +326,6 @@ double View::remove_row(vector<double> vd, int row_idx) {
   Cluster &which_cluster = *(cluster_lookup[row_idx]);
   cluster_lookup.erase(cluster_lookup.find(row_idx));
   which_cluster.remove_row(vd, row_idx);
-  num_vectors -= 1;
   double crp_logp_delta, data_logp_delta;
   double score_delta = calc_cluster_vector_logp(vd, which_cluster,
 						crp_logp_delta, data_logp_delta);
