@@ -279,11 +279,12 @@ double View::transition(std::map<int, std::vector<double> > row_data_map) {
   return score_delta;
 }
 
-double View::score_col_data(vector<double> data, vector<int> data_global_row_indices) {
+double View::calc_predictive_logp(vector<double> column_data,
+				  vector<int> data_global_row_indices) {
   double score_delta = 0;
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    score_delta += (**it).score_col(data, data_global_row_indices);
+    score_delta += (**it).score_col(column_data, data_global_row_indices);
   }
   return score_delta;
 }
