@@ -3,6 +3,7 @@
 #include <fstream>      // fstream
 #include <boost/tokenizer.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/io.hpp>
 #include <numeric>
 #include <algorithm>
 
@@ -254,11 +255,11 @@ vector<vector<int> > determine_crp_init(vector<int> global_row_indices,
   return cluster_indices_v;
 }
 
-void copy_column(MatrixD fromM, int from_col, MatrixD toM, int to_col) {
+void copy_column(MatrixD fromM, int from_col, MatrixD &toM, int to_col) {
   assert(fromM.size1()==toM.size1());
   int num_rows = fromM.size1();
-  project(toM, range(to_col, to_col+1), range(0, num_rows)) = \
-    project(fromM, range(from_col, from_col+1), range(0, num_rows));
+  project(toM, range(0, num_rows), range(to_col, to_col+1)) = \
+    project(fromM, range(0, num_rows), range(from_col, from_col+1));
 }
 
 MatrixD extract_columns(MatrixD fromM, vector<int> from_cols) {

@@ -101,7 +101,7 @@ std::vector<std::vector<int> > determine_crp_init(std::vector<int> global_row_in
 						  double alpha,
 						  RandomNumberGenerator &rng);
 
-void copy_column(MatrixD fromM, int from_col, MatrixD toM, int to_col);
+void copy_column(MatrixD fromM, int from_col, MatrixD &toM, int to_col);
 MatrixD extract_columns(MatrixD fromM, std::vector<int> from_cols);
 
 #endif // GUARD_utils_H
