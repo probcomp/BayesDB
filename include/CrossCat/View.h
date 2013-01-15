@@ -61,7 +61,7 @@ class View {
   double insert_row(std::vector<double> vd, Cluster &cd, int row_idx);
   double insert_row(std::vector<double> vd, int row_idx);
   double remove_row(std::vector<double> vd, int row_idx); 
-  double remove_col(int col_idx);
+  double remove_col(int global_col_idx);
   double insert_col(std::vector<double> data,
 		    std::vector<int> data_global_row_indices,
 		    int global_col_idx);
