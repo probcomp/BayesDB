@@ -15,31 +15,15 @@ View::View(MatrixD data, vector<int> global_row_indices,
   paramRange = linspace(0.03, .97, n_grid/2);
   assert(global_row_indices.size()==data.size1());
   assert(global_col_indices.size()==data.size2());
-  global_to_local = construct_lookup_map(global_col_indices);
-  vector<double> col_0 = extract_col(data, 0);
-  construct_base_hyper_grids(col_0);
-  std::vector<std::vector<int> > crp_init_cluster_indices_v;
   //
   crp_alpha = 3;
   crp_score = 0;
   data_score = 0;
   //
-  crp_init_cluster_indices_v = determine_crp_init(global_row_indices, crp_alpha,
-						  rng);
-  int num_clusters = crp_init_cluster_indices_v.size();
-  int local_row_idx = 0;
-  for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
-    cout << "View::View: creating cluster_idx: " << cluster_idx << endl << flush;
-    std::vector<int> cluster_indices = crp_init_cluster_indices_v[cluster_idx];
-    int cluster_num_rows = cluster_indices.size();
-    for(int cluster_row_idx=0; cluster_row_idx<cluster_num_rows; cluster_row_idx++) {
-      int global_row_idx = global_row_indices[local_row_idx];
-      std::vector<double> row_data = extract_row(data, local_row_idx);
-      Cluster &which_cluster = get_cluster(cluster_idx);
-      cout << "View::View: inserting global_row_idx: " << global_row_idx << endl << flush;
-      insert_row(row_data, which_cluster, global_row_idx);
-      local_row_idx++;
-    }
+  for(int data_col_idx=0; data_col_idx<data.size2(); data_col_idx++) {
+    vector<double> col_data = extract_col(data, data_col_idx);
+    int global_col_idx = global_col_indices[data_col_idx];
+    insert_col(col_data, global_row_indices, global_col_idx);
   }
 }
 
@@ -237,9 +221,15 @@ double View::transition_hyper_i(int which_col, std::string which_hyper,
 }
 
 double View::transition_hyper_i(int which_col, std::string which_hyper) {
+  cout << "View::transition_hyper_i(" << which_col << ", " << which_hyper << ")" << endl;
   vector<int> global_ordering = extract_global_ordering(global_to_local);
   int global_col_idx = global_ordering[which_col];
   vector<double> hyper_grid = get_hyper_grid(global_col_idx, which_hyper);
+  cout << "global_ordering: " << global_ordering << endl;
+  cout << "hyper_grid: " << hyper_grid << endl;
+  // ISSUE: printing s_grids seems to make it work
+  //        else seg fault due to empty hyper grid
+  // cout << "s_grids" << s_grids << endl;
   double score_delta = transition_hyper_i(which_col, which_hyper, hyper_grid);
   return score_delta;
 }
@@ -356,9 +346,6 @@ double View::insert_col(vector<double> col_data,
 			int global_col_idx) {
   double score_delta = 0;
   if(get_num_clusters()==0) {
-    cout << "create partition, set cluster_lookup acordingly" << endl;
-    cout << "instantiate clusters" << endl;
-    cout << "set up per column hyper grid elements" << endl;
     construct_base_hyper_grids(col_data);
     construct_column_hyper_grid(col_data, global_col_idx);
     //FIXME: directly set set<Cluster*> clusters from crp init?
