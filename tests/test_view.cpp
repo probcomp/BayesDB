@@ -23,7 +23,7 @@ void print_cluster_memberships(View& v) {
   setCp_it it = v.clusters.begin();
   for(; it!=v.clusters.end(); it++) {
     Cluster &cd = **it;
-    cout << cd.get_row_indices() << endl;
+    cout << cd.get_row_indices_set() << endl;
   }
   cout << "num clusters: " << v.get_num_clusters() << endl;
 
