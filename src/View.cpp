@@ -442,6 +442,17 @@ vector<int> View::shuffle_row_indices() {
   return shuffled_order;
 }
 
+vector<vector<int> > View::get_canonical_clustering() const {
+  vector<vector<int> > canonical_clustering;
+  set<Cluster*>::iterator it;
+  for(it=clusters.begin(); it!=clusters.end(); it++) {
+    Cluster &c = **it;
+    vector<int> row_indices = c.get_row_indices_vector();
+    canonical_clustering.push_back(row_indices);
+  }
+  return canonical_clustering;
+}
+
 void View::print_score_matrix() {
   vector<vector<double> > scores_v;
   set<Cluster*>::iterator c_it;
