@@ -38,6 +38,7 @@ int main(int argc, char** argv) {
     cout << "FLAG: s.crp_alpha: " << s.get_crp_alpha() << endl;
   }
 
+  num_views = s.get_num_views();
   for(int view_idx=0; view_idx<num_views; view_idx++) {
     View &v = s.get_view(view_idx);
     cout << "view_idx " << view_idx << ": " << endl;
