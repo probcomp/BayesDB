@@ -346,8 +346,24 @@ double View::insert_col(vector<double> data,
 			int global_col_idx) {
   double score_delta = 0;
   if(get_num_clusters()==0) {
+    cout << "create partition, set cluster_lookup acordingly" << endl;
+    cout << "instantiate clusters" << endl;
+    cout << "set up per column hyper grid elements" << endl;
     //FIXME: directly set set<Cluster*> clusters from crp init?
     // and let cluster::insert_col do the work?
+    // FIXME: set up hyper grid for this column: requires per column hyper grid creation
+    vector<vector<int> > crp_init = determine_crp_init(data_global_row_indices,
+						       crp_alpha, rng);
+    int num_clusters = crp_init.size();
+    vector<double> blank_row;
+    for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
+      vector<int> global_row_indices = crp_init[cluster_idx];
+      vector<int>::iterator it;
+      for(it=global_row_indices.begin(); it!=global_row_indices.end(); it++) {
+	int global_row_index = *it;
+	insert_row(blank_row, global_row_index);
+      }
+    }
   }
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
@@ -356,7 +372,6 @@ double View::insert_col(vector<double> data,
   int num_cols = get_num_cols();
   global_to_local[global_col_idx] = num_cols;
   data_score += score_delta;
-  cout << "View::insert_col score_delta: " << score_delta << endl;
   return score_delta;
 }
  
@@ -374,7 +389,6 @@ double View::remove_col(int global_col_idx) {
   global_to_local = construct_lookup_map(global_col_indices);
   //
   data_score -= score_delta;
-  cout << "View::remove_col score_delta: " << score_delta << endl;
   return score_delta;
 }
 
