@@ -25,10 +25,15 @@ class State {
   double get_marginal_logp() const;
   //
   // mutators
+  double insert_feature(int feature_idx, std::vector<double> feature_data,
+			View &which_view);
+  double insert_feature(int feature_idx, std::vector<double> feature_data);
+  double remove_feature(int feature_idx, std::vector<double> feature_data);
+  double transition_feature(int feature_idx, std::vector<double> feature_data);
+  double transition_features(MatrixD &data);
   View& get_new_view();
   View& get_view(int view_idx);
   void remove_if_empty(View& which_view);
-  double transition_features();
   double transition_view_i(int which_view,
 			 std::map<int, std::vector<double> > row_data_map);
   double transition_views(MatrixD &data);

@@ -16,6 +16,11 @@ State::State(MatrixD &data, vector<int> global_row_indices,
     MatrixD data_subset = extract_columns(data, column_indices);
     View *p_v = new View(data_subset, global_row_indices, column_indices);
     views.insert(p_v);
+    vector<int>::iterator ci_it;
+    for(ci_it=column_indices.begin(); ci_it!=column_indices.end(); ci_it++) {
+      int column_index = *ci_it;
+      view_lookup[column_index] = p_v;
+    }
   }
 }
 
@@ -36,6 +41,76 @@ vector<int> State::get_view_counts() const {
     view_counts.push_back(view_num_cols);
   }
   return view_counts;
+}
+
+double State::insert_feature(int feature_idx, vector<double> feature_data,
+			     View &which_view) {
+  cout << "State::insert_feature(" << feature_idx << ", feature_data, which_view)" << endl;
+  cout << "which_view.get_num_vectors() = " << which_view.get_num_vectors() << endl;
+  double crp_logp_delta, data_logp_delta;
+  double score_delta = calc_feature_view_predictive_logp(feature_data,
+							 which_view,
+							 crp_logp_delta,
+							 data_logp_delta);
+  vector<int> data_global_row_indices = create_sequence(feature_data.size());
+  which_view.insert_col(feature_data, data_global_row_indices, feature_idx);
+  view_lookup[feature_idx] = &which_view;
+  cout << "which_view.get_num_vectors() = " << which_view.get_num_vectors() << endl;
+  crp_score += crp_logp_delta;
+  data_score += data_logp_delta;
+  return score_delta;
+}
+
+double State::insert_feature(int feature_idx, vector<double> feature_data) {
+  cout << "State::insert_feature(" << feature_idx << ", feature_data)" << endl;
+  vector<double> unorm_logps = calc_feature_view_predictive_logps(feature_data);
+  double rand_u = draw_rand_u();
+  int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
+  View &which_view = get_view(draw);
+  double score_delta = insert_feature(feature_idx, feature_data, which_view);
+  return score_delta;
+}
+
+double State::remove_feature(int feature_idx, vector<double> feature_data) {
+  cout << "State::remove_feature(" << feature_idx << ", feature_data)" << endl;
+  map<int,View*>::iterator it = view_lookup.find(feature_idx);
+  assert(it!=view_lookup.end());
+  View &which_view = *(it->second);
+  view_lookup.erase(it);
+  double data_logp_delta_doublecheck = which_view.remove_col(feature_idx);
+  //
+  double crp_logp_delta, data_logp_delta;
+  double score_delta = calc_feature_view_predictive_logp(feature_data,
+							 which_view,
+							 crp_logp_delta,
+							 data_logp_delta);
+  //
+  remove_if_empty(which_view);
+  crp_score -= crp_logp_delta;
+  data_score -= data_logp_delta;
+  //
+  assert(data_logp_delta_doublecheck==data_logp_delta);
+  return score_delta;
+}
+
+double State::transition_feature(int feature_idx, vector<double> feature_data) {
+  cout << "State::transition_feature(" << feature_idx << ", feature_data)" << endl;
+  double score_delta = 0;
+  score_delta += remove_feature(feature_idx, feature_data);
+  score_delta += insert_feature(feature_idx, feature_data);
+  return score_delta;
+}
+
+double State::transition_features(MatrixD &data) {
+  double score_delta = 0;
+  vector<int> feature_indices = create_sequence(data.size2());
+  vector<int>::iterator it;
+  for(it=feature_indices.begin(); it!=feature_indices.end(); it++) {
+    int feature_idx = *it;
+    vector<double> feature_data = extract_col(data, feature_idx);
+    score_delta += transition_feature(feature_idx, feature_data);
+  }
+  return score_delta;
 }
 
 View& State::get_new_view() {
@@ -79,17 +154,16 @@ double State::get_marginal_logp() const {
   return crp_score + data_score;
 }
 
-double State::transition_features() {
-  assert(1==0);
-}
-
 double State::transition_view_i(int which_view,
 				map<int, vector<double> > row_data_map) {
   // assumes views set ordering stays constant between calls
+  cout << "State::transition_view_i(" << which_view << ", row_data_map)" << endl;
   set<View*>::iterator it = views.begin();
   std::advance(it, which_view);
   View &v = **it;
+  cout << "about to actually v.transition" << endl;
   double score_delta = v.transition(row_data_map);
+  cout << score_delta << " = v.transition(row_data_map)" << endl;
   data_score += score_delta;
   return score_delta;
 }
@@ -115,12 +189,13 @@ double State::calc_feature_view_predictive_logp(vector<double> col_data, View v,
 						double &data_log_delta) const {
   int view_column_count = v.get_num_cols();
   int num_columns = get_num_cols();
-  vector<int> data_global_row_indices = create_sequence(col_data.size());
-  //
   crp_log_delta = numerics::calc_cluster_crp_logp(view_column_count, num_columns,
 						  crp_alpha);
+  //
+  vector<int> data_global_row_indices = create_sequence(col_data.size());
   data_log_delta = v.calc_column_predictive_logp(col_data,
 						 data_global_row_indices);
+  //
   double score_delta = data_log_delta + crp_log_delta;
   return score_delta;
 }
@@ -190,12 +265,17 @@ double State::transition(MatrixD &data) {
   for(it=which_transitions.begin(); it!=which_transitions.end(); it++) {
     int which_transition = *it;
     if(which_transition==0) {
+      cout << "State::transition: trying transition_views" << endl << flush;
       score_delta += transition_views(data);
+      cout << "State::transition: done transition_views" << endl << flush;
     } else if(which_transition==1) {
-      cout << "State::transition: skipping transition_features" << endl;
-      //score_delta += transition_features();
+      cout << "State::transition: trying transition_features" << endl << flush;
+      score_delta += transition_features(data);
+      cout << "State::transition: done transition_features" << endl << flush;
     } else if(which_transition==2) {
+      cout << "State::transition: trying transition_crp_alpha" << endl << flush;
       score_delta += transition_crp_alpha();
+      cout << "State::transition: done transition_crp_alpha" << endl << flush;
     }
   }
   return score_delta;
