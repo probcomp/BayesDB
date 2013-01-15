@@ -227,9 +227,15 @@ double View::transition_hyper_i(int which_col, std::string which_hyper) {
   vector<double> hyper_grid = get_hyper_grid(global_col_idx, which_hyper);
   cout << "global_ordering: " << global_ordering << endl;
   cout << "hyper_grid: " << hyper_grid << endl;
+  if(hyper_grid.size()==0) {
+    cout << "which_hyper: " << which_hyper << endl;
+    cout << "zero length hyper_grid: " << hyper_grid << endl;
+    cout << "mu_grids" << mu_grids << endl;
+    cout << "s_grids" << s_grids << endl;
+  }
+  assert(hyper_grid.size()!=0);
   // ISSUE: printing s_grids seems to make it work
   //        else seg fault due to empty hyper grid
-  // cout << "s_grids" << s_grids << endl;
   double score_delta = transition_hyper_i(which_col, which_hyper, hyper_grid);
   return score_delta;
 }
@@ -345,9 +351,9 @@ double View::insert_col(vector<double> col_data,
 			vector<int> data_global_row_indices,
 			int global_col_idx) {
   double score_delta = 0;
+  construct_column_hyper_grid(col_data, global_col_idx);
   if(get_num_clusters()==0) {
     construct_base_hyper_grids(col_data);
-    construct_column_hyper_grid(col_data, global_col_idx);
     //FIXME: directly set set<Cluster*> clusters from crp init?
     // and let cluster::insert_col do the work?
     // FIXME: set up hyper grid for this column: requires per column hyper grid creation

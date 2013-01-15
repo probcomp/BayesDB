@@ -13,6 +13,7 @@ State::State(MatrixD &data, vector<int> global_row_indices,
   vector<vector<int> >::iterator cp_it;
   for(cp_it=column_partition.begin(); cp_it!=column_partition.end(); cp_it++) {
     vector<int> column_indices = *cp_it;
+    cout << "State::State: column_indices: " << column_indices << endl;
     MatrixD data_subset = extract_columns(data, column_indices);
     View *p_v = new View(data_subset, global_row_indices, column_indices);
     views.insert(p_v);
@@ -45,8 +46,6 @@ vector<int> State::get_view_counts() const {
 
 double State::insert_feature(int feature_idx, vector<double> feature_data,
 			     View &which_view) {
-  cout << "State::insert_feature(" << feature_idx << ", feature_data, which_view)" << endl;
-  cout << "which_view.get_num_vectors() = " << which_view.get_num_vectors() << endl;
   double crp_logp_delta, data_logp_delta;
   double score_delta = calc_feature_view_predictive_logp(feature_data,
 							 which_view,
@@ -55,14 +54,12 @@ double State::insert_feature(int feature_idx, vector<double> feature_data,
   vector<int> data_global_row_indices = create_sequence(feature_data.size());
   which_view.insert_col(feature_data, data_global_row_indices, feature_idx);
   view_lookup[feature_idx] = &which_view;
-  cout << "which_view.get_num_vectors() = " << which_view.get_num_vectors() << endl;
   crp_score += crp_logp_delta;
   data_score += data_logp_delta;
   return score_delta;
 }
 
 double State::insert_feature(int feature_idx, vector<double> feature_data) {
-  cout << "State::insert_feature(" << feature_idx << ", feature_data)" << endl;
   vector<double> unorm_logps = calc_feature_view_predictive_logps(feature_data);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
@@ -72,7 +69,6 @@ double State::insert_feature(int feature_idx, vector<double> feature_data) {
 }
 
 double State::remove_feature(int feature_idx, vector<double> feature_data) {
-  cout << "State::remove_feature(" << feature_idx << ", feature_data)" << endl;
   map<int,View*>::iterator it = view_lookup.find(feature_idx);
   assert(it!=view_lookup.end());
   View &which_view = *(it->second);
@@ -80,6 +76,7 @@ double State::remove_feature(int feature_idx, vector<double> feature_data) {
   double data_logp_delta_doublecheck = which_view.remove_col(feature_idx);
   //
   double crp_logp_delta, data_logp_delta;
+  // FIXME: when inserting into a new feature, hypers must be the same as before
   double score_delta = calc_feature_view_predictive_logp(feature_data,
 							 which_view,
 							 crp_logp_delta,
@@ -89,12 +86,15 @@ double State::remove_feature(int feature_idx, vector<double> feature_data) {
   crp_score -= crp_logp_delta;
   data_score -= data_logp_delta;
   //
-  assert(data_logp_delta_doublecheck==data_logp_delta);
+  if(data_logp_delta_doublecheck!=data_logp_delta) {
+    cout << "data_logp_delta_doublecheck: " << data_logp_delta_doublecheck;
+    cout << ", data_logp_delta: " << data_logp_delta << endl;
+  }
+  //assert(data_logp_delta_doublecheck==data_logp_delta);
   return score_delta;
 }
 
 double State::transition_feature(int feature_idx, vector<double> feature_data) {
-  cout << "State::transition_feature(" << feature_idx << ", feature_data)" << endl;
   double score_delta = 0;
   score_delta += remove_feature(feature_idx, feature_data);
   score_delta += insert_feature(feature_idx, feature_data);
@@ -157,13 +157,10 @@ double State::get_marginal_logp() const {
 double State::transition_view_i(int which_view,
 				map<int, vector<double> > row_data_map) {
   // assumes views set ordering stays constant between calls
-  cout << "State::transition_view_i(" << which_view << ", row_data_map)" << endl;
   set<View*>::iterator it = views.begin();
   std::advance(it, which_view);
   View &v = **it;
-  cout << "about to actually v.transition" << endl;
   double score_delta = v.transition(row_data_map);
-  cout << score_delta << " = v.transition(row_data_map)" << endl;
   data_score += score_delta;
   return score_delta;
 }
@@ -175,6 +172,7 @@ double State::transition_views(MatrixD &data) {
   // ordering doesn't matter, don't need to shuffle
   for(int view_idx=0; view_idx<get_num_views(); view_idx++) {
     View &v = get_view(view_idx);
+    cout << "transitioning view: " << &v << " with global_to_local: " << v.global_to_local << endl;
     vector<int> view_cols = get_indices_to_reorder(global_column_indices,
 						   v.global_to_local);
     MatrixD data_subset = extract_columns(data, view_cols);
@@ -262,16 +260,21 @@ double State::transition(MatrixD &data) {
   std::random_shuffle(which_transitions.begin(), which_transitions.end());
   double score_delta = 0;
   vector<int>::iterator it;
+  // FIXME: not printing something on the line below causes seg fault
+  // cout << "view_lookup: " << view_lookup << endl;
+  // cout << "other thing to test segfault: " << views << endl;
   for(it=which_transitions.begin(); it!=which_transitions.end(); it++) {
     int which_transition = *it;
     if(which_transition==0) {
       cout << "State::transition: trying transition_views" << endl << flush;
+      cout << "view_lookup: " << view_lookup << endl;
       score_delta += transition_views(data);
       cout << "State::transition: done transition_views" << endl << flush;
     } else if(which_transition==1) {
       cout << "State::transition: trying transition_features" << endl << flush;
       score_delta += transition_features(data);
       cout << "State::transition: done transition_features" << endl << flush;
+      cout << "view_lookup: " << view_lookup << endl;
     } else if(which_transition==2) {
       cout << "State::transition: trying transition_crp_alpha" << endl << flush;
       score_delta += transition_crp_alpha();
