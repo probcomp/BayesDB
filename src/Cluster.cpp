@@ -22,8 +22,12 @@ ContinuousComponentModel Cluster::get_model(int idx) const {
   return model_v[idx];
 }
 
-set<int> Cluster::get_row_indices() const {
+set<int> Cluster::get_row_indices_set() const {
   return row_indices;
+}
+
+vector<int> Cluster::get_row_indices_vector() const {
+  return set_to_vector(row_indices);
 }
 
 std::vector<double> Cluster::calc_marginal_logps() const {

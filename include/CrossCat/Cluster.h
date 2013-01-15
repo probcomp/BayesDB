@@ -23,7 +23,8 @@ class Cluster {
   int get_count() const;
   double get_marginal_logp() const;
   ContinuousComponentModel get_model(int idx) const;
-  std::set<int> get_row_indices() const;
+  std::set<int> get_row_indices_set() const;
+  std::vector<int> get_row_indices_vector() const;
   //
   // calculators
   std::vector<double> calc_marginal_logps() const;
