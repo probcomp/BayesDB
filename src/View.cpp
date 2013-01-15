@@ -9,14 +9,13 @@ using namespace std;
 
 typedef set<Cluster*> setCp;
 
-//FIXME: add constructor with ranges as arguments, rather than recalculate
 View::View(MatrixD data, vector<int> global_row_indices,
 	   vector<int> global_col_indices, int N_GRID): n_grid(N_GRID) {
   paramRange = linspace(0.03, .97, n_grid/2);
   assert(global_row_indices.size()==data.size1());
   assert(global_col_indices.size()==data.size2());
   //
-  crp_alpha = 3;
+  crp_alpha = 0.8;
   crp_score = 0;
   data_score = 0;
   //
@@ -30,10 +29,7 @@ View::View(MatrixD data, vector<int> global_row_indices,
 View::View() {
   n_grid = 31;
   paramRange = linspace(0.03, .97, n_grid/2);
-  // when actually used, hyper grid needs to be set up
-  // construct_hyper_grids(data, global_col_indices, N_GRID);
-  //
-  crp_alpha = 3;
+  crp_alpha = 0.8;
   crp_score = 0;
   data_score = 0;
 }
@@ -221,18 +217,9 @@ double View::transition_hyper_i(int which_col, std::string which_hyper,
 }
 
 double View::transition_hyper_i(int which_col, std::string which_hyper) {
-  cout << "View::transition_hyper_i(" << which_col << ", " << which_hyper << ")" << endl;
   vector<int> global_ordering = extract_global_ordering(global_to_local);
   int global_col_idx = global_ordering[which_col];
   vector<double> hyper_grid = get_hyper_grid(global_col_idx, which_hyper);
-  cout << "global_ordering: " << global_ordering << endl;
-  cout << "hyper_grid: " << hyper_grid << endl;
-  if(hyper_grid.size()==0) {
-    cout << "which_hyper: " << which_hyper << endl;
-    cout << "zero length hyper_grid: " << hyper_grid << endl;
-    cout << "mu_grids" << mu_grids << endl;
-    cout << "s_grids" << s_grids << endl;
-  }
   assert(hyper_grid.size()!=0);
   // ISSUE: printing s_grids seems to make it work
   //        else seg fault due to empty hyper grid
@@ -271,17 +258,11 @@ double View::transition(std::map<int, std::vector<double> > row_data_map) {
   for(it=which_transitions.begin(); it!=which_transitions.end(); it++) {
     int which_transition = *it;
     if(which_transition==0) {
-      cout << "View::transition_transition: begin transition_hypers" << endl;
       score_delta += transition_hypers();
-      cout << "View::transition_transition: done transition_hypers" << endl;
     } else if(which_transition==1) {
-      cout << "View::transition_transition: begin transition_zs" << endl;
       score_delta += transition_zs(row_data_map);
-      cout << "View::transition_transition: done transition_zs" << endl;
     } else if(which_transition==2) {
-      cout << "View::transition_transition: begin transition_crp_alpha" << endl;
       score_delta += transition_crp_alpha();
-      cout << "View::transition_transition: done transition_crp_alpha" << endl;
     }
   }
   return score_delta;

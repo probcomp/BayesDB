@@ -13,7 +13,6 @@ State::State(MatrixD &data, vector<int> global_row_indices,
   vector<vector<int> >::iterator cp_it;
   for(cp_it=column_partition.begin(); cp_it!=column_partition.end(); cp_it++) {
     vector<int> column_indices = *cp_it;
-    cout << "State::State: column_indices: " << column_indices << endl;
     MatrixD data_subset = extract_columns(data, column_indices);
     View *p_v = new View(data_subset, global_row_indices, column_indices);
     views.insert(p_v);
@@ -86,6 +85,7 @@ double State::remove_feature(int feature_idx, vector<double> feature_data) {
   crp_score -= crp_logp_delta;
   data_score -= data_logp_delta;
   //
+  // FIXME : need to record partitioning and pass that in for scoring of state
   if(data_logp_delta_doublecheck!=data_logp_delta) {
     cout << "data_logp_delta_doublecheck: " << data_logp_delta_doublecheck;
     cout << ", data_logp_delta: " << data_logp_delta << endl;
@@ -172,7 +172,6 @@ double State::transition_views(MatrixD &data) {
   // ordering doesn't matter, don't need to shuffle
   for(int view_idx=0; view_idx<get_num_views(); view_idx++) {
     View &v = get_view(view_idx);
-    cout << "transitioning view: " << &v << " with global_to_local: " << v.global_to_local << endl;
     vector<int> view_cols = get_indices_to_reorder(global_column_indices,
 						   v.global_to_local);
     MatrixD data_subset = extract_columns(data, view_cols);
@@ -260,25 +259,15 @@ double State::transition(MatrixD &data) {
   std::random_shuffle(which_transitions.begin(), which_transitions.end());
   double score_delta = 0;
   vector<int>::iterator it;
-  // FIXME: not printing something on the line below causes seg fault
-  // cout << "view_lookup: " << view_lookup << endl;
-  // cout << "other thing to test segfault: " << views << endl;
+  cout << "view_lookup: " << view_lookup << endl;
   for(it=which_transitions.begin(); it!=which_transitions.end(); it++) {
     int which_transition = *it;
     if(which_transition==0) {
-      cout << "State::transition: trying transition_views" << endl << flush;
-      cout << "view_lookup: " << view_lookup << endl;
       score_delta += transition_views(data);
-      cout << "State::transition: done transition_views" << endl << flush;
     } else if(which_transition==1) {
-      cout << "State::transition: trying transition_features" << endl << flush;
       score_delta += transition_features(data);
-      cout << "State::transition: done transition_features" << endl << flush;
-      cout << "view_lookup: " << view_lookup << endl;
     } else if(which_transition==2) {
-      cout << "State::transition: trying transition_crp_alpha" << endl << flush;
       score_delta += transition_crp_alpha();
-      cout << "State::transition: done transition_crp_alpha" << endl << flush;
     }
   }
   return score_delta;
