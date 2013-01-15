@@ -27,8 +27,10 @@ class State {
   // mutators
   double insert_feature(int feature_idx, std::vector<double> feature_data,
 			View &which_view);
-  double insert_feature(int feature_idx, std::vector<double> feature_data);
-  double remove_feature(int feature_idx, std::vector<double> feature_data);
+  double sample_insert_feature(int feature_idx, std::vector<double> feature_data,
+			       View &singleton_view);
+  double remove_feature(int feature_idx, std::vector<double> feature_data,
+			View** p_p_singleton_view);
   double transition_feature(int feature_idx, std::vector<double> feature_data);
   double transition_features(MatrixD &data);
   View& get_new_view();
@@ -45,6 +47,7 @@ class State {
 					   View v,
 					   double &crp_log_delta,
 					   double &data_log_delta) const;
+					   
   std::vector<double> calc_feature_view_predictive_logps(std::vector<double> col_data) const;
   //
   // helpers

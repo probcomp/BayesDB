@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
 
   // load some data
   matrixD data;
-  LoadData("Synthetic_data.csv", data);
+  LoadData("Synthetic_data_2.csv", data);
   int num_rows = data.size1();
   int num_cols = data.size2();
   //

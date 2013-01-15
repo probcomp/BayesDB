@@ -58,46 +58,62 @@ double State::insert_feature(int feature_idx, vector<double> feature_data,
   return score_delta;
 }
 
-double State::insert_feature(int feature_idx, vector<double> feature_data) {
+double State::sample_insert_feature(int feature_idx, vector<double> feature_data,
+				    View &singleton_view) {
+  cout << "State::sample_insert_feature: view: " << views << endl;
+  cout << "State::sample_insert_feature: view_counts: " << get_view_counts() << endl;
   vector<double> unorm_logps = calc_feature_view_predictive_logps(feature_data);
+  cout << "State::sample_insert_feature: " << unorm_logps << endl;
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   View &which_view = get_view(draw);
+  cout << "State::sample_insert_feature: which_view: " << &which_view << endl;
   double score_delta = insert_feature(feature_idx, feature_data, which_view);
+  cout << score_delta << " = insert_feature(" << feature_idx << ", feature_data, " << &which_view << ")" << endl;
+  remove_if_empty(singleton_view);
   return score_delta;
 }
 
-double State::remove_feature(int feature_idx, vector<double> feature_data) {
+double State::remove_feature(int feature_idx, vector<double> feature_data,
+			     View** p_p_singleton_view) {
   map<int,View*>::iterator it = view_lookup.find(feature_idx);
   assert(it!=view_lookup.end());
   View &which_view = *(it->second);
   view_lookup.erase(it);
-  double data_logp_delta_doublecheck = which_view.remove_col(feature_idx);
-  //
-  double crp_logp_delta, data_logp_delta;
-  // FIXME: when inserting into a new feature, hypers must be the same as before
+  int view_num_cols = which_view.get_num_cols();
+  double data_logp_delta = which_view.remove_col(feature_idx);
+  double crp_logp_delta, other_data_logp_delta;
   double score_delta = calc_feature_view_predictive_logp(feature_data,
 							 which_view,
 							 crp_logp_delta,
-							 data_logp_delta);
+							 other_data_logp_delta);
   //
-  remove_if_empty(which_view);
+  if(view_num_cols==1) {
+    *p_p_singleton_view = &which_view;
+  } else {
+    *p_p_singleton_view = &get_new_view();
+  }
+  //DON"T REMOVE HERE
+  //remove_if_empty(which_view);
   crp_score -= crp_logp_delta;
-  data_score -= data_logp_delta;
+  //data_score -= data_logp_delta;
+  data_score -= other_data_logp_delta;
   //
   // FIXME : need to record partitioning and pass that in for scoring of state
-  if(data_logp_delta_doublecheck!=data_logp_delta) {
-    cout << "data_logp_delta_doublecheck: " << data_logp_delta_doublecheck;
+  if(other_data_logp_delta!=data_logp_delta) {
+    cout << "other_data_logp_delta: " << other_data_logp_delta;
     cout << ", data_logp_delta: " << data_logp_delta << endl;
   }
-  //assert(data_logp_delta_doublecheck==data_logp_delta);
+  cout << "get_marginal_logp(): " << get_marginal_logp() << endl;
   return score_delta;
 }
 
 double State::transition_feature(int feature_idx, vector<double> feature_data) {
   double score_delta = 0;
-  score_delta += remove_feature(feature_idx, feature_data);
-  score_delta += insert_feature(feature_idx, feature_data);
+  View **p_p_singleton_view;
+  *p_p_singleton_view = 0;
+  score_delta += remove_feature(feature_idx, feature_data, p_p_singleton_view);
+  score_delta += sample_insert_feature(feature_idx, feature_data, **p_p_singleton_view);
   return score_delta;
 }
 
@@ -127,6 +143,8 @@ View& State::get_view(int view_idx) {
     std::advance(it, view_idx);
     return **it;
   } else {
+    // This shouldn't happen anymore
+    assert(1==0);
     return get_new_view();
   }
 }
@@ -208,11 +226,6 @@ vector<double> State::calc_feature_view_predictive_logps(vector<double> col_data
 							   data_log_delta);
     logps.push_back(score_delta);
   }
-  View empty_view = View();
-  double score_delta = calc_feature_view_predictive_logp(col_data, empty_view,
-							 crp_log_delta,
-							 data_log_delta);
-  logps.push_back(score_delta);
   return logps;
 }
 
