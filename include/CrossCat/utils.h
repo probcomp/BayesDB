@@ -108,6 +108,14 @@ void copy_column(MatrixD fromM, int from_col, MatrixD &toM, int to_col);
 MatrixD extract_columns(MatrixD fromM, std::vector<int> from_cols);
 
 template <class T>
-std::vector<T> set_to_vector(std::set<T> in_set);
+std::vector<T> set_to_vector(const std::set<T> in_set) {
+  std::vector<T> out_vector;
+  typename std::set<T>::const_iterator it;
+  for(it=in_set.begin(); it!=in_set.end(); it++) {
+    T element = *it;
+    out_vector.push_back(element);
+  }
+  return out_vector;
+}
 
 #endif // GUARD_utils_H
