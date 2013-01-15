@@ -223,6 +223,7 @@ vector<vector<double> > reorder_per_map(vector<vector<double> > raw_values,
   
 vector<int> create_sequence(int len, int start) {
   vector<int> sequence(len, 1);
+  if(len==0) return sequence;
   sequence[0] = start;
   std::partial_sum(sequence.begin(), sequence.end(), sequence.begin());
   return sequence;
