@@ -60,16 +60,11 @@ double State::insert_feature(int feature_idx, vector<double> feature_data,
 
 double State::sample_insert_feature(int feature_idx, vector<double> feature_data,
 				    View &singleton_view) {
-  cout << "State::sample_insert_feature: view: " << views << endl;
-  cout << "State::sample_insert_feature: view_counts: " << get_view_counts() << endl;
   vector<double> unorm_logps = calc_feature_view_predictive_logps(feature_data);
-  cout << "State::sample_insert_feature: " << unorm_logps << endl;
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   View &which_view = get_view(draw);
-  cout << "State::sample_insert_feature: which_view: " << &which_view << endl;
   double score_delta = insert_feature(feature_idx, feature_data, which_view);
-  cout << score_delta << " = insert_feature(" << feature_idx << ", feature_data, " << &which_view << ")" << endl;
   remove_if_empty(singleton_view);
   return score_delta;
 }
@@ -101,10 +96,10 @@ double State::remove_feature(int feature_idx, vector<double> feature_data,
   //
   // FIXME : need to record partitioning and pass that in for scoring of state
   if(other_data_logp_delta!=data_logp_delta) {
-    cout << "other_data_logp_delta: " << other_data_logp_delta;
+    cout << "get_marginal_logp(): " << get_marginal_logp();
+    cout << ", other_data_logp_delta: " << other_data_logp_delta;
     cout << ", data_logp_delta: " << data_logp_delta << endl;
   }
-  cout << "get_marginal_logp(): " << get_marginal_logp() << endl;
   return score_delta;
 }
 
