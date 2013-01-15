@@ -107,4 +107,7 @@ std::vector<std::vector<int> > determine_crp_init(std::vector<int> global_row_in
 void copy_column(MatrixD fromM, int from_col, MatrixD &toM, int to_col);
 MatrixD extract_columns(MatrixD fromM, std::vector<int> from_cols);
 
+template <class T>
+std::vector<T> set_to_vector(std::set<T> in_set);
+
 #endif // GUARD_utils_H

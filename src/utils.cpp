@@ -288,3 +288,14 @@ MatrixD extract_columns(MatrixD fromM, vector<int> from_cols) {
   }
   return toM;
 }
+
+template <class T>
+vector<T> set_to_vector(const set<T> in_set) {
+  out_vector = vector<T>;
+  set<T>::const_iterator it;
+  for(it=in_set.begin(); it!=in_set.end(); it++) {
+    T element = *it;
+    out_vector.push_back(element);
+  }
+  return out_vector;
+}
