@@ -67,11 +67,14 @@ int main(int argc, char** argv) {
   // create the component model object
   //
   //       r, nu, s, mu
-  CCM ccm(r0, nu0, s0, mu0);
+  map<string, double> hypers;
+  hypers["r"] = r0;
+  hypers["nu"] = nu0;
+  hypers["s"] = s0;
+  hypers["mu"] = mu0;
+  CCM ccm(hypers);
   cout << endl << "initial component model object" << endl;
   cout << ccm << endl;
-  //
-  print_defaults();
 
   // verify initial parameters
   //
