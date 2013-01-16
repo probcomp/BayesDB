@@ -9,6 +9,11 @@
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 typedef boost::numeric::ublas::matrix<double> MatrixD;
 
+const static double r0_0 = 1.0;
+const static double nu0_0 = 2.0;
+const static double s0_0 = 2.0;
+const static double mu0_0 = 0.0;
+
 class State {
  public:
   State(MatrixD &data,
@@ -46,15 +51,17 @@ class State {
   double calc_feature_view_predictive_logp(std::vector<double> col_data,
 					   View v,
 					   double &crp_log_delta,
-					   double &data_log_delta) const;
+					   double &data_log_delta,
+					   std::map<std::string, double> hypers) const;
 					   
-  std::vector<double> calc_feature_view_predictive_logps(std::vector<double> col_data) const;
+  std::vector<double> calc_feature_view_predictive_logps(std::vector<double> col_data, int global_col_idx) const;
   //
   // helpers
   double calc_crp_marginal() const;
   std::vector<double> calc_crp_marginals(std::vector<double> alphas_to_score) const;
  private:
   // parameters
+  std::map<int, std::map<std::string, double> > hypers_m;
   double crp_alpha;
   double crp_score;
   double data_score;
@@ -70,6 +77,8 @@ class State {
   // helpers
   void construct_hyper_grids(boost::numeric::ublas::matrix<double> data,
 			     int N_GRID);
+  std::map<std::string, double> get_default_hypers() const;
+
 };
 
 #endif // GUARD_state_h

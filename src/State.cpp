@@ -8,13 +8,21 @@ State::State(MatrixD &data, vector<int> global_row_indices,
   crp_alpha = 0.8;
   int num_rows = data.size1();
   construct_hyper_grids(data, N_GRID);
+  //
+  vector<int>::iterator gci_it;
+  for(gci_it=global_col_indices.begin();gci_it!=global_col_indices.end(); gci_it++) {
+    int global_col_idx = *gci_it;
+    hypers_m[global_col_idx] = get_default_hypers();
+  }
+  //
   vector<vector<int> > column_partition;
   column_partition = determine_crp_init(global_col_indices, crp_alpha, rng);
   vector<vector<int> >::iterator cp_it;
   for(cp_it=column_partition.begin(); cp_it!=column_partition.end(); cp_it++) {
     vector<int> column_indices = *cp_it;
     MatrixD data_subset = extract_columns(data, column_indices);
-    View *p_v = new View(data_subset, global_row_indices, column_indices);
+    View *p_v = new View(data_subset, global_row_indices, column_indices,
+			 hypers_m);
     views.insert(p_v);
     vector<int>::iterator ci_it;
     for(ci_it=column_indices.begin(); ci_it!=column_indices.end(); ci_it++) {
@@ -45,13 +53,16 @@ vector<int> State::get_view_counts() const {
 
 double State::insert_feature(int feature_idx, vector<double> feature_data,
 			     View &which_view) {
+  map<string, double> &hypers = hypers_m[feature_idx];
   double crp_logp_delta, data_logp_delta;
   double score_delta = calc_feature_view_predictive_logp(feature_data,
 							 which_view,
 							 crp_logp_delta,
-							 data_logp_delta);
+							 data_logp_delta,
+							 hypers);
   vector<int> data_global_row_indices = create_sequence(feature_data.size());
-  which_view.insert_col(feature_data, data_global_row_indices, feature_idx);
+  which_view.insert_col(feature_data, data_global_row_indices, feature_idx,
+			hypers);
   view_lookup[feature_idx] = &which_view;
   crp_score += crp_logp_delta;
   data_score += data_logp_delta;
@@ -60,7 +71,10 @@ double State::insert_feature(int feature_idx, vector<double> feature_data,
 
 double State::sample_insert_feature(int feature_idx, vector<double> feature_data,
 				    View &singleton_view) {
-  vector<double> unorm_logps = calc_feature_view_predictive_logps(feature_data);
+  // map<string, double> hypers = singleton_view
+  map<string, double> &hypers = hypers_m[feature_idx];
+  vector<double> unorm_logps = calc_feature_view_predictive_logps(feature_data,
+								  feature_idx);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
   View &which_view = get_view(draw);
@@ -71,6 +85,7 @@ double State::sample_insert_feature(int feature_idx, vector<double> feature_data
 
 double State::remove_feature(int feature_idx, vector<double> feature_data,
 			     View** p_p_singleton_view) {
+  map<string, double> &hypers = hypers_m[feature_idx];
   map<int,View*>::iterator it = view_lookup.find(feature_idx);
   assert(it!=view_lookup.end());
   View &which_view = *(it->second);
@@ -81,11 +96,15 @@ double State::remove_feature(int feature_idx, vector<double> feature_data,
   double score_delta = calc_feature_view_predictive_logp(feature_data,
 							 which_view,
 							 crp_logp_delta,
-							 other_data_logp_delta);
+							 other_data_logp_delta,
+							 hypers);
   //
   if(view_num_cols==1) {
     *p_p_singleton_view = &which_view;
   } else {
+    // is it a mistake to create new view here?
+    // Makes remove_feature only useful for transition_feature where immediately
+    // inserted back in afterwards
     *p_p_singleton_view = &get_new_view();
   }
   //DON"T REMOVE HERE
@@ -196,29 +215,35 @@ double State::transition_views(MatrixD &data) {
 
 double State::calc_feature_view_predictive_logp(vector<double> col_data, View v,
 						double &crp_log_delta,
-						double &data_log_delta) const {
+						double &data_log_delta,
+						map<string, double> hypers) const {
   int view_column_count = v.get_num_cols();
   int num_columns = get_num_cols();
   crp_log_delta = numerics::calc_cluster_crp_logp(view_column_count, num_columns,
 						  crp_alpha);
   //
   vector<int> data_global_row_indices = create_sequence(col_data.size());
+  // pass singleton_view down to here, or at least hypers
   data_log_delta = v.calc_column_predictive_logp(col_data,
-						 data_global_row_indices);
+						 data_global_row_indices,
+						 hypers);
   //
   double score_delta = data_log_delta + crp_log_delta;
   return score_delta;
 }
 
-vector<double> State::calc_feature_view_predictive_logps(vector<double> col_data) const {
+vector<double> State::calc_feature_view_predictive_logps(vector<double> col_data,
+							 int global_col_idx) const {
   vector<double> logps;
+  map<string, double> hypers = get(hypers_m, global_col_idx);
   set<View*>::iterator it;
   double crp_log_delta, data_log_delta;
   for(it=views.begin(); it!=views.end(); it++) {
     View &v = **it;
     double score_delta = calc_feature_view_predictive_logp(col_data, v,
 							   crp_log_delta,
-							   data_log_delta);
+							   data_log_delta,
+							   hypers);
     logps.push_back(score_delta);
   }
   return logps;
@@ -298,4 +323,13 @@ double State::draw_rand_u() {
 
 int State::draw_rand_i(int max) {
   return rng.nexti(max);
+}
+
+map<string, double> State::get_default_hypers() const {
+  map<string, double> hypers;
+  hypers["r"] = r0_0;
+  hypers["nu"] = nu0_0;
+  hypers["s"] = s0_0;
+  hypers["mu"] = mu0_0;
+  return hypers;
 }

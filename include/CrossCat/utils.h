@@ -80,7 +80,7 @@ std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2);
 template <class K, class V>
 V get(const std::map<K, V> m, K key) {
   typename std::map<K, V>::const_iterator it = m.find(key);
-  if(it == m.end()) return -1;
+  if(it == m.end()) assert(1==0);
   return it->second;
 }
 
