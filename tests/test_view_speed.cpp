@@ -18,6 +18,20 @@ typedef setCp::iterator setCp_it;
 typedef mapICp::iterator mapICp_it;
 typedef vector<int>::iterator vectorI_it;
 
+const static double r0_0 = 1.0;
+const static double nu0_0 = 2.0;
+const static double s0_0 = 2.0;
+const static double mu0_0 = 0.0;
+
+map<string, double> create_default_hypers() {
+  map<string, double> hypers;
+  hypers["r"] = r0_0;
+  hypers["nu"] = nu0_0;
+  hypers["s"] = s0_0;
+  hypers["mu"] = mu0_0;
+  return hypers;
+}
+
 void print_cluster_memberships(View& v) {
   cout << "Cluster memberships" << endl;
   setCp_it it = v.clusters.begin();
@@ -76,11 +90,24 @@ int main(int argc, char** argv) {
   for(int row_idx=0; row_idx<num_rows; row_idx++) {
     data_map[row_idx] = extract_row(data, row_idx);
   }
+  map<int, map<string, double> > hypers_m;
+  for(int i=0; i<num_cols; i++) {
+    hypers_m[i] = create_default_hypers();
+  }
+  vector<map<string, double>*> hypers_v;
+  map<int, map<string, double> >::iterator hm_it;
+  for(hm_it=hypers_m.begin(); hm_it!=hypers_m.end(); hm_it++) {
+    int key = hm_it->first;
+    map<string, double> &hypers = hm_it->second;
+    hypers_v.push_back(&hypers);
+    cout << "hypers_" << key << ": " << hypers << endl;
+  }
+  cout << "hypers_v: " << hypers_v << endl;
 
   // create the view
   vector<int> global_row_indices = create_sequence(data.size1());
   vector<int> global_column_indices = create_sequence(data.size2());
-  View v = View(data, global_row_indices, global_column_indices, 31);
+  View v = View(data, global_row_indices, global_column_indices, hypers_m, 31);
 
   v.print();
   // empty object and verify empty
@@ -164,8 +191,8 @@ int main(int argc, char** argv) {
   insert_col_idx = remove_col_idx;
   cout << "inserting column: " << insert_col_idx;
   score_0 = v.get_score();
-  score_delta_1 = v.calc_column_predictive_logp(col_data, data_global_row_indices);
-  score_delta_2 = v.insert_col(col_data, data_global_row_indices, insert_col_idx);
+  score_delta_1 = v.calc_column_predictive_logp(col_data, data_global_row_indices, hypers_m[insert_col_idx]);
+  score_delta_2 = v.insert_col(col_data, data_global_row_indices, insert_col_idx, hypers_m[insert_col_idx]);
   score_1 = v.get_score();
   cout << "FLAG:: " << "score_0: " << score_0 << ", score_1: " << score_1;
   cout << ", score_delta_1: " << score_delta_1 << ", score_delta_2: " << score_delta_2 << endl;
@@ -188,7 +215,7 @@ int main(int argc, char** argv) {
   cout << "=====================" << endl;
   insert_col_idx = 2;
   cout << "inserting column: " << insert_col_idx;
-  v.insert_col(col_data, data_global_row_indices, insert_col_idx);
+  v.insert_col(col_data, data_global_row_indices, insert_col_idx, hypers_m[insert_col_idx]);
   cout << "FLAG:: score: " << v.get_score() << endl;
   v.print_score_matrix();
   cout << "v.global_to_local: " << v.global_to_local << endl;
