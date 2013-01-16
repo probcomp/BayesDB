@@ -22,6 +22,7 @@ class View {
   //FIXME: add constructor with ranges as arguments, rather than recalculate
   View(MatrixD data,
        std::vector<int> global_row_indices, std::vector<int> global_col_indices,
+       std::map<int, std::map<std::string, double> > &hypers_m,
        int N_GRID=31);
   View();
   // FIXME: will need to add a deallocator for clusters
@@ -36,8 +37,8 @@ class View {
   double get_score() const;
   double get_crp_alpha() const;
   std::vector<std::string> get_hyper_strings();
-  std::map<std::string, double> get_hypers(int col_idx);
   std::vector<double> get_hyper_grid(int global_col_idx, std::string which_hyper);
+  std::map<std::string, double> get_hypers(int local_col_idx);
   /* double get_data_hyper_score(); */
   //
   // getters (internal use)
@@ -48,14 +49,15 @@ class View {
   double calc_cluster_vector_predictive_logp(std::vector<double> vd, Cluster cd,
 					     double &crp_logp_delta,
 					     double &data_logp_delta) const;
-  std::vector<double> calc_cluster_vector_predictive_logps(std::vector<double> vd) const;
+  std::vector<double> calc_cluster_vector_predictive_logps(std::vector<double> vd);
   double calc_crp_marginal() const;
   std::vector<double> calc_crp_marginals(std::vector<double> alphas) const;
   std::vector<double> calc_hyper_conditionals(int which_col,
 					      std::string which_hyper,
 					      std::vector<double> hyper_grid) const;
   double calc_column_predictive_logp(std::vector<double> column_data,
-				     std::vector<int> data_global_row_indices);
+				     std::vector<int> data_global_row_indices,
+				     std::map<std::string, double> hypers);
   //
   // mutators
   double set_alpha(double new_alpha);
@@ -66,7 +68,8 @@ class View {
   double remove_col(int global_col_idx);
   double insert_col(std::vector<double> col_data,
 		    std::vector<int> data_global_row_indices,
-		    int global_col_idx);
+		    int global_col_idx,
+		    std::map<std::string, double> &hypers);
   void remove_if_empty(Cluster& which_cluster);
   double transition_z(std::vector<double> vd, int row_idx);
   double transition_zs(std::map<int, std::vector<double> > row_data_map);
@@ -82,6 +85,7 @@ class View {
   // data structures
   std::set<Cluster* > clusters;
   std::map<int, Cluster* > cluster_lookup;
+  std::vector<std::map<std::string, double>*> hypers_v;
   //
   // helper functions
   std::vector<double> align_data(std::vector<double> values,
@@ -116,7 +120,6 @@ class View {
   void construct_base_hyper_grids(std::vector<double> col_data);
   void construct_column_hyper_grid(std::vector<double> col_data,
 				   int gobal_col_idx);
-				  
   /* std::map<std::string, double> data_hypers; */
 };
 

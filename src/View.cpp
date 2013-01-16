@@ -10,7 +10,9 @@ using namespace std;
 typedef set<Cluster*> setCp;
 
 View::View(MatrixD data, vector<int> global_row_indices,
-	   vector<int> global_col_indices, int N_GRID): n_grid(N_GRID) {
+	   vector<int> global_col_indices,
+	   map<int, map<string, double> > &hypers_m,
+	   int N_GRID): n_grid(N_GRID) {
   paramRange = linspace(0.03, .97, n_grid/2);
   assert(global_row_indices.size()==data.size1());
   assert(global_col_indices.size()==data.size2());
@@ -22,7 +24,8 @@ View::View(MatrixD data, vector<int> global_row_indices,
   for(int data_col_idx=0; data_col_idx<data.size2(); data_col_idx++) {
     vector<double> col_data = extract_col(data, data_col_idx);
     int global_col_idx = global_col_indices[data_col_idx];
-    insert_col(col_data, global_row_indices, global_col_idx);
+    map<string, double> &hypers = hypers_m[global_col_idx];
+    insert_col(col_data, global_row_indices, global_col_idx, hypers);
   }
 }
 
@@ -71,13 +74,6 @@ vector<string> View::get_hyper_strings() {
   return hyper_strings;
 }
 
-std::map<string, double> View::get_hypers(int col_idx) {
-  // assume all suffstats have same hypers set
-  setCp::iterator it = clusters.begin();
-  map<string, double> ret_map = (**it).get_model(col_idx).get_hypers();
-  return ret_map;
-}
-
 vector<double> View::get_hyper_grid(int global_col_idx, std::string which_hyper) {
   vector<double> hyper_grid;
   if(which_hyper=="r") {
@@ -90,6 +86,10 @@ vector<double> View::get_hyper_grid(int global_col_idx, std::string which_hyper)
     hyper_grid = mu_grids[global_col_idx];
   }
   return hyper_grid;
+}
+
+map<string, double> View::get_hypers(int local_col_idx) {
+  return *(hypers_v[local_col_idx]);
 }
 
 Cluster& View::get_cluster(int cluster_idx) {
@@ -132,7 +132,7 @@ double View::calc_cluster_vector_predictive_logp(vector<double> vd,
   return score_delta;
 }
 
-vector<double> View::calc_cluster_vector_predictive_logps(vector<double> vd) const {
+vector<double> View::calc_cluster_vector_predictive_logps(vector<double> vd) {
   vector<double> logps;
   set<Cluster*>::iterator it = clusters.begin();
   double crp_logp_delta, data_logp_delta;
@@ -140,7 +140,7 @@ vector<double> View::calc_cluster_vector_predictive_logps(vector<double> vd) con
     logps.push_back(calc_cluster_vector_predictive_logp(vd, **it, crp_logp_delta,
 							data_logp_delta));
   }
-  Cluster empty_cluster(get_num_cols());
+  Cluster empty_cluster(hypers_v);
   logps.push_back(calc_cluster_vector_predictive_logp(vd, empty_cluster,
 						      crp_logp_delta,
 						      data_logp_delta));
@@ -187,8 +187,9 @@ std::vector<double> View::calc_hyper_conditionals(int which_col,
 double View::set_hyper(int which_col, string which_hyper, double new_value) {
   setCp::iterator it;
   double score_delta = 0;
+  (*hypers_v[which_col])[which_hyper] = new_value;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    score_delta += (**it).set_hyper(which_col, which_hyper, new_value);
+    score_delta += (**it).incorporate_hyper_update(which_col);
   }
   data_score += score_delta;
   return score_delta;
@@ -205,11 +206,7 @@ double View::transition_hyper_i(int which_col, std::string which_hyper,
   double new_hyper_value = hyper_grid[draw];
   //
   // update all clusters
-  double score_delta = 0;
-  setCp::iterator it;
-  for(it=clusters.begin(); it!=clusters.end(); it++) {
-    score_delta += (**it).set_hyper(which_col, which_hyper, new_hyper_value);
-  }
+  double score_delta = set_hyper(which_col, which_hyper, new_hyper_value);
   //
   // update score
   data_score += score_delta;
@@ -269,12 +266,14 @@ double View::transition(std::map<int, std::vector<double> > row_data_map) {
 }
 
 double View::calc_column_predictive_logp(vector<double> column_data,
-					 vector<int> data_global_row_indices) {
+					 vector<int> data_global_row_indices,
+					 map<string, double> hypers) {
   double score_delta = 0;
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
     score_delta += (**it).calc_column_predictive_logp(column_data,
-						      data_global_row_indices);
+						      data_global_row_indices,
+						      hypers);
   }
   return score_delta;
 }
@@ -287,7 +286,7 @@ double View::set_alpha(double new_alpha) {
 }
 
 Cluster& View::get_new_cluster() {
-  Cluster *p_new_cluster = new Cluster(get_num_cols());
+  Cluster *p_new_cluster = new Cluster(hypers_v);
   clusters.insert(p_new_cluster);
   return *p_new_cluster;
 }
@@ -330,14 +329,12 @@ double View::remove_row(vector<double> vd, int row_idx) {
 
 double View::insert_col(vector<double> col_data,
 			vector<int> data_global_row_indices,
-			int global_col_idx) {
+			int global_col_idx,
+			map<string, double> &hypers) {
   double score_delta = 0;
   construct_column_hyper_grid(col_data, global_col_idx);
   if(get_num_clusters()==0) {
     construct_base_hyper_grids(col_data);
-    //FIXME: directly set set<Cluster*> clusters from crp init?
-    // and let cluster::insert_col do the work?
-    // FIXME: set up hyper grid for this column: requires per column hyper grid creation
     vector<vector<int> > crp_init = determine_crp_init(data_global_row_indices,
 						       crp_alpha, rng);
     int num_clusters = crp_init.size();
@@ -353,9 +350,10 @@ double View::insert_col(vector<double> col_data,
       }
     }
   }
+  hypers_v.push_back(&hypers);
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    score_delta += (**it).insert_col(col_data, data_global_row_indices);
+    score_delta += (**it).insert_col(col_data, data_global_row_indices, hypers);
   }
   int num_cols = get_num_cols();
   global_to_local[global_col_idx] = num_cols;
@@ -375,6 +373,7 @@ double View::remove_col(int global_col_idx) {
   // rearrange global_to_local
   std::vector<int> global_col_indices = extract_global_ordering(global_to_local);
   global_col_indices.erase(global_col_indices.begin() + local_col_idx);
+  hypers_v.erase(hypers_v.begin() + local_col_idx);
   global_to_local = construct_lookup_map(global_col_indices);
   //
   data_score -= score_delta;

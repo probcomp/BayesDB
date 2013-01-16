@@ -18,6 +18,20 @@ typedef setCp::iterator setCp_it;
 typedef mapICp::iterator mapICp_it;
 typedef vector<int>::iterator vectorI_it;
 
+const static double r0_0 = 1.0;
+const static double nu0_0 = 2.0;
+const static double s0_0 = 2.0;
+const static double mu0_0 = 0.0;
+
+map<string, double> create_default_hypers() {
+  map<string, double> hypers;
+  hypers["r"] = r0_0;
+  hypers["nu"] = nu0_0;
+  hypers["s"] = s0_0;
+  hypers["mu"] = mu0_0;
+  return hypers;
+}
+
 void print_cluster_memberships(View& v) {
   cout << "Cluster memberships" << endl;
   setCp_it it = v.clusters.begin();
@@ -68,7 +82,7 @@ int main(int argc, char** argv) {
 
   // load some data
   matrixD data;
-  LoadData("Synthetic_data.csv", data);
+  LoadData("small_data.csv", data);
   int num_cols = data.size2();
   int num_rows = data.size1();
   //
@@ -86,6 +100,20 @@ int main(int argc, char** argv) {
   where_to_push[4] = 0;
   where_to_push[5] = 1;
   //
+  map<int, map<string, double> > hypers_m;
+  for(int i=0; i<num_cols; i++) {
+    hypers_m[i] = create_default_hypers();
+  }
+  vector<map<string, double>*> hypers_v;
+  map<int, map<string, double> >::iterator hm_it;
+  for(hm_it=hypers_m.begin(); hm_it!=hypers_m.end(); hm_it++) {
+    int key = hm_it->first;
+    map<string, double> &hypers = hm_it->second;
+    hypers_v.push_back(&hypers);
+    cout << "hypers_" << key << ": " << hypers << endl;
+  }
+  cout << "hypers_v: " << hypers_v << endl;
+
   set<int> cluster_idx_set;
   for(map<int,int>::iterator it=where_to_push.begin(); it!=where_to_push.end(); it++) {
     int cluster_idx = it->second;
@@ -95,7 +123,7 @@ int main(int argc, char** argv) {
   // create the objects to test
   vector<int> global_row_indices = create_sequence(data.size1());
   vector<int> global_column_indices = create_sequence(data.size2());
-  View v = View(data, global_row_indices, global_column_indices, 11);
+  View v = View(data, global_row_indices, global_column_indices, hypers_m, 11);
 
   v.print();
   // empty object and verify empty
@@ -109,7 +137,7 @@ int main(int argc, char** argv) {
   for(set<int>::iterator it=cluster_idx_set.begin(); it!=cluster_idx_set.end(); it++) {
     int cluster_idx = *it;
     cout << "inserting cluster idx: " << cluster_idx << endl;
-    Cluster *p_cd = new Cluster(num_cols);
+    Cluster *p_cd = new Cluster(hypers_v);
     cd_v.push_back(p_cd);
   }
 
