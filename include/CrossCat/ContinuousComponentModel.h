@@ -30,6 +30,4 @@ class ContinuousComponentModel : public ComponentModel {
  private:
 };
 
-void print_defaults();
-
 #endif // GUARD_continuouscomponentmodel_h
