@@ -9,6 +9,20 @@
 
 using namespace std;
 
+const static double r0_0 = 1.0;
+const static double nu0_0 = 2.0;
+const static double s0_0 = 2.0;
+const static double mu0_0 = 0.0;
+
+map<string, double> create_default_hypers() {
+  map<string, double> hypers;
+  hypers["r"] = r0_0;
+  hypers["nu"] = nu0_0;
+  hypers["s"] = s0_0;
+  hypers["mu"] = mu0_0;
+  return hypers;
+}
+
 int main(int argc, char** argv) {
   cout << "Begin:: test_cluster" << endl;
   RandomNumberGenerator rng;
@@ -19,16 +33,31 @@ int main(int argc, char** argv) {
   int num_cols = 3;
 
   // create the objects
-  Cluster cd(num_cols);
+  map<int, map<string, double> > hypers_m;
+  for(int i=0; i<num_cols; i++) {
+    hypers_m[i] = create_default_hypers();
+  }
+  vector<map<string, double>*> hypers_v;
+  map<int, map<string, double> >::iterator hm_it;
+  for(hm_it=hypers_m.begin(); hm_it!=hypers_m.end(); hm_it++) {
+    int key = hm_it->first;
+    map<string, double> &hypers = hm_it->second;
+    hypers_v.push_back(&hypers);
+    cout << "hypers_" << key << ": " << hypers << endl;
+  }
+  cout << "hypers_v: " << hypers_v << endl;
+  
+  Cluster cd(hypers_v);
   vector<ContinuousComponentModel> ccm_v;
-  for(int row_idx=0; row_idx<num_rows; row_idx++) {
-    ContinuousComponentModel ccm;
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    ContinuousComponentModel ccm(*hypers_v[col_idx]);
     ccm_v.push_back(ccm);
   }
 
   // print the empty cluster
-  cout << "empty cluster print" << endl;
+  cout << endl << endl <<"begin empty cluster print" << endl;
   cout << cd << endl;
+  cout << "end empty cluster print" << endl << endl << endl;
 
   // generate random data;
   vector<vector<double> > rows;
@@ -92,6 +121,23 @@ int main(int argc, char** argv) {
     curr_hyper_conditional_in_grid = hyper_conditionals[(int)(N_grid-1)/2];
     cout << "curr r conditional in grid: " << curr_hyper_conditional_in_grid << endl;
     assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
+
+    map<string, double> &hypers = *(cd.model_v[which_col].p_hypers);
+    double prior_r = hypers["r"];
+    double new_r = hyper_grid[0]; 
+    //
+    cout << endl << "testing incorporate hyper update" << endl;
+    cout << "new r: " << new_r << endl;
+    hypers["r"] = new_r;
+    cd.incorporate_hyper_update(which_col);
+    cout << "marginal logp with new r: " << cd.get_model(which_col).calc_marginal_logp() << endl;
+    //
+    cout << "changing r back to: " << prior_r << endl;
+    hypers["r"] = prior_r;
+    cd.incorporate_hyper_update(which_col);
+    cout << "marginal logp with prior r: " << cd.get_model(which_col).calc_marginal_logp() << endl;
+    cout << "done testing incorporate hyper update on col" << endl << endl;
+
     //
     //    test 'nu' hyper
     cout << "testing nu conditionals" << endl;
