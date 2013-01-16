@@ -30,9 +30,10 @@ class ComponentModel {
   //
   // helpers
   friend std::ostream& operator<<(std::ostream& os, const ComponentModel &cm);
+  // make protected later
+  std::map<std::string, double> *p_hypers;
  protected:
   int count;
-  std::map<std::string, double> *p_hypers;
   std::map<std::string, double> suffstats;
   double log_Z_0;
   double score;
