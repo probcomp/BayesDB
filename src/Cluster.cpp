@@ -2,8 +2,18 @@
 
 using namespace std;
 
-Cluster::Cluster(int num_cols) {
-  init_columns(num_cols);
+Cluster::Cluster(vector<map<string, double>*> &hypers_v) {
+  init_columns(hypers_v);
+}
+
+// Cluster::Cluster(const vector<map<string, double>*> &hypers_v) {
+//   vector<map<string, double>*> temp_hypers_v = hypers_v;
+//   init_columns(temp_hypers_v);
+// }
+
+Cluster::Cluster() {
+  vector<map<string, double>*> hypers_v;
+  init_columns(hypers_v);
 }
 
 int Cluster::get_num_cols() const {
@@ -65,9 +75,10 @@ vector<double> Cluster::calc_hyper_conditionals(int which_col,
 }
 
 double Cluster::calc_column_predictive_logp(vector<double> column_data,
-					    vector<int> data_global_row_indices) {
+					    vector<int> data_global_row_indices,
+					    map<string, double> hypers) {
   map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
-  ContinuousComponentModel ccm;
+  ContinuousComponentModel ccm(hypers);
   set<int>::iterator it;
   for(it=row_indices.begin(); it!=row_indices.end(); it++) {
     int global_row_idx = *it;
@@ -114,9 +125,10 @@ double Cluster::remove_col(int col_idx) {
 }
 
 double Cluster::insert_col(vector<double> data,
-			   vector<int> data_global_row_indices) {
+			   vector<int> data_global_row_indices,
+			   map<string, double> &hypers) {
   map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
-  ContinuousComponentModel ccm;
+  ContinuousComponentModel ccm(hypers);
   set<int>::iterator it;
   for(it=row_indices.begin(); it!=row_indices.end(); it++) {
     int global_row_idx = *it;
@@ -131,12 +143,12 @@ double Cluster::insert_col(vector<double> data,
   return score_delta;
 }
 
-double Cluster::set_hyper(int which_col, std::string which_hyper,
-			  double hyper_value) {
-  double score_delta = model_v[which_col].set_hyper(which_hyper, hyper_value);
+double Cluster::incorporate_hyper_update(int which_col) {
+  double score_delta = model_v[which_col].incorporate_hyper_update();
   score += score_delta;
   return score_delta;
 }
+
 
 std::ostream& operator<<(std::ostream& os, const Cluster& c) {
   os << "========" << std::endl;
@@ -149,10 +161,13 @@ std::ostream& operator<<(std::ostream& os, const Cluster& c) {
   return os;
 }
 
-void Cluster::init_columns(int num_cols) {
+void Cluster::init_columns(vector<map<string, double>*> &hypers_v) {
   score = 0;
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    model_v.push_back(ContinuousComponentModel());
+  vector<map<string, double>*>::iterator it;
+  for(it=hypers_v.begin(); it!=hypers_v.end(); it++) {
+    map<string, double> &hypers = **it;
+    model_v.push_back(ContinuousComponentModel(hypers));
+    int col_idx = model_v.size() - 1;
     score += model_v[col_idx].calc_marginal_logp();
   }
 }

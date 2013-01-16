@@ -16,7 +16,9 @@
 
 class Cluster {
  public:
-  Cluster(int num_cols=0);
+  //Cluster(const std::vector<std::map<std::string, double>*> hypers_v);
+  Cluster(std::vector<std::map<std::string, double>*> &hypers_v);
+  Cluster();
   //
   // getters
   int get_num_cols() const;
@@ -34,23 +36,27 @@ class Cluster {
 					      std::string which_hyper,
 					      std::vector<double> hyper_grid) const;
   double calc_column_predictive_logp(std::vector<double> column_data,
-				     std::vector<int> data_global_row_indices);
+				     std::vector<int> data_global_row_indices,
+				     std::map<std::string, double> hypers);
   //
   // mutators
   double insert_row(std::vector<double> values, int row_idx);
   double remove_row(std::vector<double> values, int row_idx);
   double remove_col(int col_idx);
   double insert_col(std::vector<double> data,
-		    std::vector<int> data_global_row_indices);
-  double set_hyper(int which_col, std::string which_hyper, double hyper_value);
+		    std::vector<int> data_global_row_indices,
+		    std::map<std::string, double> &hypers);
+  double incorporate_hyper_update(int which_col);
   //
   // helpers
   friend std::ostream& operator<<(std::ostream& os, const Cluster& c);
+  //
+  // make private later
+  std::vector<ContinuousComponentModel> model_v;
  private:
   int count;
   double score;
-  void init_columns(int num_cols);
-  std::vector<ContinuousComponentModel> model_v;
+  void init_columns(std::vector<std::map<std::string, double>*> &hypers_v);
   std::set<int> row_indices;
 };
 
