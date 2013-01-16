@@ -2,11 +2,10 @@
 
 using namespace std;
 
-ContinuousComponentModel::ContinuousComponentModel(double r, double nu,
-						   double s, double mu) {
+ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hypers) {
   count = 0;
   score = 0;
-  init_hypers(r, nu, s, mu);
+  p_hypers = &in_hypers;
   init_suffstats();
   set_log_Z_0();
 }
@@ -80,9 +79,9 @@ double ContinuousComponentModel::remove_element(double element) {
   return delta_score;
 }
 
-double ContinuousComponentModel::set_hyper(string which_hyper, double value) {
+double ContinuousComponentModel::incorporate_hyper_update() {
   double score_0 = score;
-  hypers[which_hyper] = value;
+  // hypers[which_hyper] = value; // set by owner of hypers object
   set_log_Z_0();
   score = calc_marginal_logp();
   double score_delta = score - score_0;
@@ -93,18 +92,6 @@ void ContinuousComponentModel::set_log_Z_0() {
   double r, nu, s, mu;
   get_hyper_doubles(r, nu, s, mu);
   log_Z_0 = numerics::calc_continuous_logp(0, r, nu, s, 0);
-}
-
-void ContinuousComponentModel::init_hypers(double r, double nu,
-					   double s, double mu) {
-  hypers["r"] = r;
-  hypers["nu"] = nu;
-  hypers["s"] = s;
-  hypers["mu"] = mu;
-}
-
-void ContinuousComponentModel::init_hypers() {
-  init_hypers(r0_0, nu0_0, s0_0, mu0_0);
 }
 
 void ContinuousComponentModel::init_suffstats() {
@@ -121,18 +108,8 @@ void ContinuousComponentModel::get_suffstats(int &count_out, double &sum_x,
 
 void ContinuousComponentModel::get_hyper_doubles(double &r, double &nu,
 						 double &s, double &mu)  const {
-  r = get(hypers, (string) "r");
-  nu = get(hypers, (string) "nu");
-  s = get(hypers, (string) "s");
-  mu = get(hypers, (string) "mu");
-}
-
-void print_defaults() {
-  cout << endl << "Default values" << endl;
-  cout << "r0_0: " << r0_0 << endl;
-  cout << "nu0_0: " << nu0_0 << endl;
-  cout << "s0_0: " << s0_0 << endl;
-  cout << "mu0_0: " << mu0_0 << endl;
-  cout << "log_Z_0: ";
-  cout << numerics::calc_continuous_logp(0, r0_0, nu0_0, s0_0, 0) << endl;
+  r = get(*p_hypers, (string) "r");
+  nu = get(*p_hypers, (string) "nu");
+  s = get(*p_hypers, (string) "s");
+  mu = get(*p_hypers, (string) "mu");
 }

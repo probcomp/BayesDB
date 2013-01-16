@@ -26,20 +26,19 @@ class ComponentModel {
   // mutators
   virtual double insert_element(double element) = 0;
   virtual double remove_element(double element) = 0;
-  virtual double set_hyper(std::string which_hyper, double hyper_value) = 0;
+  virtual double incorporate_hyper_update() = 0;
   //
   // helpers
   friend std::ostream& operator<<(std::ostream& os, const ComponentModel &cm);
  protected:
   int count;
-  std::map<std::string, double> hypers;
+  std::map<std::string, double> *p_hypers;
   std::map<std::string, double> suffstats;
   double log_Z_0;
   double score;
   //
   // helpers
   virtual void set_log_Z_0() = 0;
-  virtual void init_hypers() = 0;
   virtual void init_suffstats() = 0;
  private:
 };
