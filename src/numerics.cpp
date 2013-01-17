@@ -308,13 +308,14 @@ namespace numerics {
     return numerator / denominator;
   }
 
-  double calc_multinomial_dirichlet_alpha_conditional(vector<double> dirichlet_alpha_grid,
+  vector<double> calc_multinomial_dirichlet_alpha_conditional(vector<double> dirichlet_alpha_grid,
 						      int count,
 						      map<string, double> counts,
 						      int K) {
     vector<double> logps;
     vector<double>::iterator it;
     for(it=dirichlet_alpha_grid.begin(); it!=dirichlet_alpha_grid.end(); it++) {
+      double dirichlet_alpha = *it;
       double logp = calc_multinomial_marginal_logp(count, counts, K,
 						   dirichlet_alpha);
       logps.push_back(logp);
