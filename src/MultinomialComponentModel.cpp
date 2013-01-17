@@ -30,6 +30,23 @@ double MultinomialComponentModel::calc_element_predictive_logp(string element) c
   return logp;
 }
 
+vector<double> MultinomialComponentModel::calc_hyper_conditionals(string which_hyper, vector<double> hyper_grid) const {
+  int count;
+  map<string, double> counts;
+  int K;
+  double dirichlet_alpha;
+  get_hyper_values(K, dirichlet_alpha);
+  get_suffstats(count, counts);
+  if(which_hyper="dirichlet_alpha") {
+    return numerics::calc_multinomial_dirichlet_alpha_conditional(hyper_grid,
+								  count,
+								  counts,
+								  K);
+  } else {
+    // error condition
+  }
+}
+
 double MultinomialComponentModel::insert_element(string element) {
   map<string, double>::iterator it = suffstats.find(element);
   if(it==suffstats.end()) {
@@ -48,7 +65,12 @@ double MultinomialComponentModel::remove_element(string element) {
   return score_delta;
 }
 
-double incorporate_hyper_update() {
+double MultinomialComponentModel::incorporate_hyper_update() {
+  double score_0 = score;
+  // hypers[which_hyper] = value; // set by owner of hypers object
+  score = calc_marginal_logp();
+  double score_delta = score - score_0;
+  return score_delta;
 }
 
 void MultinomialComponentModel::set_log_Z_0() {
