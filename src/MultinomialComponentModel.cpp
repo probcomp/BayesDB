@@ -37,7 +37,7 @@ vector<double> MultinomialComponentModel::calc_hyper_conditionals(string which_h
   double dirichlet_alpha;
   get_hyper_values(K, dirichlet_alpha);
   get_suffstats(count, counts);
-  if(which_hyper="dirichlet_alpha") {
+  if(which_hyper=="dirichlet_alpha") {
     return numerics::calc_multinomial_dirichlet_alpha_conditional(hyper_grid,
 								  count,
 								  counts,
