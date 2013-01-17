@@ -86,6 +86,11 @@ namespace numerics {
 						      double nu,
 						      double s);
   
+  // multinomial suffstats functions
+  //
+  //   mutators (NONE FOR NOW)
+  //
+  // calculators
   double calc_multinomial_marginal_logp(int count,
 					std::map<std::string, double> counts,
 					int K,
@@ -97,6 +102,7 @@ namespace numerics {
   double calc_multinomial_dirichlet_alpha_conditional(std::vector<double> dirichlet_alphas,
 						      std::map<std::string, double> counts,
 						      int K);
-}
+
+} // namespace numerics
 
 #endif //GUARD_numerics_h
