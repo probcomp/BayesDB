@@ -94,7 +94,9 @@ namespace numerics {
 					  std::map<std::string, double> counts,
 					  int sum_counts,
 					  int K, double dirichlet_alpha);
-  
+  double calc_multinomial_dirichlet_alpha_conditional(std::vector<double> dirichlet_alphas,
+						      std::map<std::string, double> counts,
+						      int K);
 }
 
 #endif //GUARD_numerics_h
