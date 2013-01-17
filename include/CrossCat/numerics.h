@@ -83,7 +83,12 @@ namespace numerics {
 						     double r,
 						     double nu,
 						     double s);
-
+  double calc_multinomial_marginal_logp();
+  double calc_multinomial_predictive_logp(std::string element,
+					  std::map<std::string, double> counts,
+					  int sum_counts,
+					  int K, double dirichlet_alpha);
+  
 }
 
 #endif //GUARD_numerics_h
