@@ -187,6 +187,8 @@ std::vector<double> View::calc_hyper_conditionals(int which_col,
 double View::set_hyper(int which_col, string which_hyper, double new_value) {
   setCp::iterator it;
   double score_delta = 0;
+  // FIXME: this should use a mutator Cluster::set_hyper
+  //        which in turn uses ComponentModel::set_hyper
   (*hypers_v[which_col])[which_hyper] = new_value;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
     score_delta += (**it).incorporate_hyper_update(which_col);
