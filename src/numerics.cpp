@@ -272,15 +272,31 @@ vector<double> numerics::calc_continuous_mu_conditionals(std::vector<double> mu_
   return logps;
 }
 
-double numerics::calc_multinomial_marginal_logp() {
-  // FIXME : need to fill this out with complete recalculation with lgammas
-  assert(1==0);
+double numerics::calc_multinomial_marginal_logp(int count,
+						const map<string, double> counts,
+						int K,
+						double dirichlet_alpha) {
+  double sum_lgammas = 0;
+  map<string, double>::const_iterator it;
+  for(it=counts.begin(); it!=counts.end(); it++) {
+    int label_count = it->second;
+    sum_lgammas += lgamma(label_count + dirichlet_alpha);
+  }
+  int missing_labels = K - counts.size();
+  if(missing_labels != 0) {
+    sum_lgammas += missing_labels * lgamma(dirichlet_alpha);
+  }
+  double marginal_logp = lgamma(K * dirichlet_alpha)	\
+    - K * lgamma(dirichlet_alpha)		\
+    + sum_lgammas				\
+    - lgamma(count + K * dirichlet_alpha);
+  return marginal_logp;
 }
 
 double numerics::calc_multinomial_predictive_logp(string element,
-						  const map<string, double> counts,
+						  map<string, double> counts,
 						  int sum_counts,
-						  int K, double dirichlet_alpha) const {
+						  int K, double dirichlet_alpha) {
   map<string, double>::iterator it = counts.find(element);
   double numerator = dirichlet_alpha;
   if(it!=counts.end()) {

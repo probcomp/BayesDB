@@ -11,17 +11,13 @@ MultinomialComponentModel::MultinomialComponentModel(map<string, double> &in_hyp
 }
 
 double MultinomialComponentModel::calc_marginal_logp() const {
-  return score;
-  // dont' need to actually calculate
-  // score contains marginal logp if accumulated properly
-  //
-  // int count;
-  // map<string, double> counts;
-  // int K;
-  // double dirichlet_alpha;
-  // get_hyper_values(K, dirichelt_alpha);
-  // get_suffstats(count, counts);
-  // return numerics::calc_multinomial_logp(counts, sum_counts, K, dirichlet_alpha);
+  int count;
+  map<string, double> counts;
+  int K;
+  double dirichlet_alpha;
+  get_hyper_values(K, dirichelt_alpha);
+  get_suffstats(count, counts);
+  return numerics::calc_multinomial_logp(count, counts, K, dirichlet_alpha);
 }
 
 double MultinomialComponentModel::calc_element_predictive_logp(string element) const {
