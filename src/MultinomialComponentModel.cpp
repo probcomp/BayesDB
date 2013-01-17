@@ -74,7 +74,7 @@ double MultinomialComponentModel::incorporate_hyper_update() {
 }
 
 void MultinomialComponentModel::set_log_Z_0() {
-  log_Z_0 = 0;
+  log_Z_0 = calc_marginal_logp();
 }
 
 void MultinomialComponentModel::init_suffstats() {
