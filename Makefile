@@ -7,7 +7,7 @@ endif
 
 CC = gcc
 CXX = g++
-CXXOPTS :=  -lm -lboost_program_options
+CXXOPTS :=  $(CXXOPTS) -lm -lboost_program_options
 
 INC=include/CrossCat
 SRC=src
