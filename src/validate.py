@@ -152,3 +152,19 @@ def assert_t_consistency(T, mr, mc):
         assert T["dimensions"][0] == T["data"].shape[1]
         assert T["dimensions"][1] == len(mr["name_to_idx"])
         assert T["dimensions"][0] == len(mc["name_to_idx"])
+
+if __name__ == '__main__':
+    import argparse
+    import json
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', type=str)
+    args = parser.parse_args()
+    filename = args.filename
+    #
+    with open(filename) as fh:
+        one_line = "".join(fh.readlines()).translate(None,"\n\t ")
+        parsed_sample = json.loads(one_line)
+    M_c = parsed_sample["M_c"]
+    M_r = parsed_sample["M_r"]
+    assert_mc_consistency(M_c)
+    assert_mr_consistency(M_r)
