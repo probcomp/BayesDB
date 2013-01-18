@@ -1,0 +1,40 @@
+{"M_c": {
+       "name_to_idx": {"0":"Height", "1":"Gender", "2":"Nationality", "3":"IQ"},
+       "idx_to_name": {"Height":"0", "Gender":"1", "Nationality":"2", "IQ":"3"},
+       "column_metadata": [
+				{
+				"modeltype": "normal_inverse_gamma",
+			  	"value_to_code": {},
+			  	"code_to_value": {}
+			  	},
+       			  	{
+				"modeltype": "asymmetric_beta_bernoulli",
+			  	"value_to_code": {"0":"Male", "1":"Female"},
+			  	"code_to_value": {"Male":"0", "Female":"1"}
+			  	},
+       			  	{
+				"modeltype": "symmetric_dirichlet_discrete",
+			  	"value_to_code": {"1":"Candadian", "0":"US"},
+			  	"code_to_value": {"Candadian":"1", "US":"0"}
+				},
+       			  	{
+				"modeltype": "normal_inverse_gamma",
+			  	"value_to_code": {},
+			  	"code_to_value": {}
+			  	}
+			]
+	},
+"M_r": {
+       "name_to_idx": {"Bob":"0", "Steve":"1", "Jill":"2"},
+       "idx_to_name": {"0":"Bob", "1":"Steve", "2":"Jill"}
+},
+
+"X_L": {
+       "column_partition": {
+       			   "hypers": {"log_alpha": "1.1"},
+       			   "assignments": [0, 0, 1, 2],
+       			   "counts": [2, 1, 1]
+			   }
+}
+}
+
