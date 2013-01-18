@@ -12,19 +12,17 @@ def verify_keys(keys, in_dict):
         assert key in in_dict
 
 def asymmetric_beta_bernoulli_hyper_validator(in_dict):
-    required_keys = ["strength", "balance"]
-    veify_keys(required_keys, in_dict)
-    #
+    required_keys = ["log_strength", "balance"]
+    verify_keys(required_keys, in_dict)
+    # log_strength ranges from negative to positive infinity
     assert 0 <= in_dict["balance"]
     assert in_dict["balance"] <= 1
 
 def normal_inverse_gamma_hyper_validator(in_dict):
-    required_keys = ["mu", "kappa", "alpha", "beta"]
+    required_keys = ["mu", "log_kappa", "log_alpha", "log_beta"]
     verify_keys(required_keys, in_dict)
     #
-    assert 0 < in_dict["kappa"]
-    assert 0 < in_dict["alpha"]
-    assert 0 < in_dict["beta"]
+    # mu, log_kappa, log_alpha, log_beta range from negative infinity to positive infinity
 
 def pitmanyor_atom_hyper_validator(in_dict):
     required_keys = ["gamma", "alpha"]
@@ -37,15 +35,15 @@ def pitmanyor_atom_hyper_validator(in_dict):
 def symmetric_dirichlet_discrete_hyper_validator(in_dict):
     required_keys = ["log_alpha", "K"]
     verify_keys(required_keys, in_dict)
-    # FIXME: > 2? >0?
+    # range of log_alpha is negative infinity to positive infinity
     assert in_dict["K"] > 1
 
 def poisson_gamma_hyper_validator(in_dict):
-    nrequired_keys = ["kappa", "beta"]
+    nrequired_keys = ["log_kappa", "log_beta"]
     verify_keys(required_keys, in_dict)
     #
-    assert 0 < in_dict["kappa"] 
-    assert 0 < in_dict["beta"] 
+    assert 0 < in_dict["log_kappa"] 
+    assert 0 < in_dict["log_beta"] 
     
 modeltype_hyper_validators = {
     "asymmetric_beta_bernoulli": asymmetric_beta_bernoulli_hyper_validator,
@@ -60,12 +58,15 @@ def asymmetric_beta_bernoulli_suffstats_validator(in_dict):
     verify_keys(required_keys, in_dict)
     #
     assert in_dict["0_count"] + in_dict["1_count"] == in_dict["N"]
+    assert 0 <= in_dict["0_count"]
+    assert 0 <= in_dict["1_count"]
 
 def normal_inverse_gamma_suffstats_validator(in_dict):
     required_keys = ["sum_x", "sum_x_squared", "N"]
     verify_keys(required_keys, in_dict)
     #
     assert 0 <= in_dict["sum_x_squared"]
+    assert 0 <= in_dict["N"]
 
 def pitmanyor_atom_suffstats_validator(in_dict):
     required_keys = ["counts", "N"]
@@ -80,9 +81,11 @@ def symmetric_dirichlet_discrete_suffstats_validator(in_dict):
     assert sum(in_dict["counts"]) == in_dict["N"]
 
 def poisson_gamma_suffstats_validator(in_dict):
-    # FIXME: required_keys = ["kappa", "beta", "N"]
-    # FIXME: verify_keys(required_keys, in_dict)
+    required_keys = ["summed_values", "N"]
+    verify_keys(required_keys, in_dict)
     #
+    assert 0 <= in_dict["summed_values"]
+    assert 0 <= in_dict["N"]
 
 modeltype_suffstats_validators = {
     "asymmetric_beta_bernoulli": asymmetric_beta_bernoulli_suffstats_validator,
@@ -93,8 +96,11 @@ modeltype_suffstats_validators = {
 }
 
 def assert_mc_consistency(mc):
+    # check the name to index maps
     assert_map_consistency(mc["name_to_idx"], mc["idx_to_name"])
+    # check that there is metadata for each column
     assert(len(mc["name_to_idx"])==len(mc["column_metadata"]))
+    # check that each metadata includes a model type and code-value map
     for column_metadata_i in mc["column_metadata"]:
         assert(column_metadata_i["modeltype"] in modeltypes)
         assert_map_consistency(column_metadata_i["value_to_code"],
@@ -141,7 +147,7 @@ def assert_t_consistency(T, mr, mc):
         assert T["dimensions"][1] == T["data"].shape[1]
         assert T["dimensions"][0] == len(mr["name_to_idx"])
         assert T["dimensions"][1] == len(mc["name_to_idx"])
-    else:
+    else: # "column_major"
         assert T["dimensions"][1] == T["data"].shape[0]
         assert T["dimensions"][0] == T["data"].shape[1]
         assert T["dimensions"][1] == len(mr["name_to_idx"])
