@@ -15,7 +15,7 @@ OBJ=obj
 TEST=tests
 #
 BIN = model
-MAIN = main
+MAIN = 
 NAMES = ContinuousComponentModel ComponentModel Cluster View State \
 	utils numerics RandomNumberGenerator
 TEST_NAMES = test_continuous_component_model test_cluster test_view \
@@ -26,7 +26,7 @@ OBJECTS = $(foreach name, $(NAMES), $(OBJ)/$(name).o)
 TESTS = $(foreach test, $(TEST_NAMES), $(TEST)/$(test))
 
 
-all: $(BIN) $(TESTS)
+all: $(OBJECTS) $(TESTS)
 
 # run each test
 tests: $(TESTS)
