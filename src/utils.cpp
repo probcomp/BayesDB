@@ -118,6 +118,8 @@ vector<double> extract_row(matrix<double> data, int row_idx) {
 vector<double> extract_col(matrix<double> data, int col_idx) {
   vector<double> col;
   for(int j=0;j < data.size1(); j++) {
+    cout << "utils::extract_col: j=" << j << ", col_idx=" << col_idx;
+    cout << "data(j,col_idx)= " << data(j,col_idx) << endl << flush;
     col.push_back(data(j, col_idx));
   }
   return col;

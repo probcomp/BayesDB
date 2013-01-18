@@ -137,6 +137,9 @@ double State::transition_features(MatrixD &data) {
   vector<int>::iterator it;
   for(it=feature_indices.begin(); it!=feature_indices.end(); it++) {
     int feature_idx = *it;
+    cout << "State::transition_features: data.size1(): " << data.size1() << endl;
+    cout << "State::transition_features: data.size2(): " << data.size2() << endl;
+    cout << "State::transition_features: feature_idx: " << feature_idx << endl;
     vector<double> feature_data = extract_col(data, feature_idx);
     score_delta += transition_feature(feature_idx, feature_data);
   }
