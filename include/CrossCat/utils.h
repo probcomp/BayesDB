@@ -6,6 +6,7 @@
 //
 #include <iostream>
 #include <string>
+#include <sstream> // stringstream in stringify()
 #include <set>
 #include <map>
 #include <boost/numeric/ublas/matrix.hpp>
@@ -117,5 +118,14 @@ std::vector<T> set_to_vector(const std::set<T> in_set) {
   }
   return out_vector;
 }
+
+template <class T>
+std::string stringify(T element) {
+  std::stringstream ss;
+  ss << element;
+  return ss.str();
+}
+
+int intify(std::string str);
 
 #endif // GUARD_utils_H
