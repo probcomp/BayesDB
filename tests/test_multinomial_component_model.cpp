@@ -62,11 +62,28 @@ int main() {
   hypers["dirichlet_alpha"] = dirichlet_alphas_to_test[0];
   hypers["K"] = NUM_BUCKETS;
   MCM mcm(hypers);
+
+  cout << "calc_marginal_logp() on empty MultinomialComponentModel: ";
+  cout << mcm.calc_marginal_logp() << endl;
+  //
+  cout << "test insertion and removal in same order" << endl;
   insert_elements(mcm, values_to_test);
   cout << mcm << endl;
   remove_elements(mcm, values_to_test);
   cout << mcm << endl;
-  
+  //
+  cout << "test insertion and removal in reversed order" << endl;
+  insert_elements(mcm, values_to_test);
+  cout << mcm << endl;
+  remove_elements(mcm, values_to_test_reversed);
+  cout << mcm << endl;
+  //
+  cout << "test insertion and removal in shuffled order" << endl;
+  insert_elements(mcm, values_to_test);
+  cout << mcm << endl;
+  remove_elements(mcm, values_to_test_shuffled);
+  cout << mcm << endl;
+
 
   cout << endl << "End:: test_multinomial_component_model" << endl;
 }
