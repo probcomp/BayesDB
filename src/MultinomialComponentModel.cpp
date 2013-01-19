@@ -50,12 +50,14 @@ vector<double> MultinomialComponentModel::calc_hyper_conditionals(string which_h
 
 double MultinomialComponentModel::insert_element(double element) {
   string element_str = stringify(element);
-  map<string, double>::iterator it = suffstats.find(element_str);
-  if(it==suffstats.end()) {
+  if(!in(suffstats, element_str)) {
+    cout << "MultinomialComponentModel::insert_element(" << element << "): ";
+    cout << "~in(" << suffstats << ", " << element_str << "))" << endl;
     suffstats[element_str] = 0;
   }
   double score_delta = calc_element_predictive_logp(element);
   suffstats[element_str] += 1;
+  count += 1;
   score += score_delta;
   return score_delta;
 }
@@ -64,6 +66,7 @@ double MultinomialComponentModel::remove_element(double element) {
   string element_str = stringify(element);
   suffstats[element_str] -= 1;
   double score_delta = calc_element_predictive_logp(element);
+  count -= 1;
   score -= score_delta;
   return score_delta;
 }
