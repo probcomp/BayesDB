@@ -20,11 +20,12 @@ double MultinomialComponentModel::calc_marginal_logp() const {
   return numerics::calc_multinomial_marginal_logp(count, counts, K, dirichlet_alpha);
 }
 
-double MultinomialComponentModel::calc_element_predictive_logp(string element) const {
+double MultinomialComponentModel::calc_element_predictive_logp(double element) const {
   int K;
   double dirichlet_alpha;
   get_hyper_values(K, dirichlet_alpha);
-  double logp = numerics::calc_multinomial_predictive_logp(element,
+  string element_str = stringify(element);
+  double logp = numerics::calc_multinomial_predictive_logp(element_str,
 							   suffstats, count,
 							   K, dirichlet_alpha);
   return logp;
@@ -47,19 +48,21 @@ vector<double> MultinomialComponentModel::calc_hyper_conditionals(string which_h
   }
 }
 
-double MultinomialComponentModel::insert_element(string element) {
-  map<string, double>::iterator it = suffstats.find(element);
+double MultinomialComponentModel::insert_element(double element) {
+  string element_str = stringify(element);
+  map<string, double>::iterator it = suffstats.find(element_str);
   if(it==suffstats.end()) {
-    suffstats[element] = 0;
+    suffstats[element_str] = 0;
   }
   double score_delta = calc_element_predictive_logp(element);
-  suffstats[element] += 1;
+  suffstats[element_str] += 1;
   score += score_delta;
   return score_delta;
 }
 
-double MultinomialComponentModel::remove_element(string element) {
-  suffstats[element] -= 1;
+double MultinomialComponentModel::remove_element(double element) {
+  string element_str = stringify(element);
+  suffstats[element_str] -= 1;
   double score_delta = calc_element_predictive_logp(element);
   score -= score_delta;
   return score_delta;
@@ -78,6 +81,7 @@ void MultinomialComponentModel::set_log_Z_0() {
 }
 
 void MultinomialComponentModel::init_suffstats() {
+  
 }
 
 void MultinomialComponentModel::get_hyper_values(int &K,
