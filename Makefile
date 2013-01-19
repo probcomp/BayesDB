@@ -16,10 +16,11 @@ TEST=tests
 #
 BIN = model
 MAIN = 
-NAMES = ContinuousComponentModel ComponentModel Cluster View State \
+NAMES = ContinuousComponentModel MultinomialComponentModel ComponentModel \
+	Cluster View State \
 	utils numerics RandomNumberGenerator
-TEST_NAMES = test_continuous_component_model test_cluster test_view \
-	 test_view_speed test_state
+TEST_NAMES = test_continuous_component_model test_multinomial_component_model \
+	test_cluster test_view test_view_speed test_state
 HEADERS = $(foreach name, $(NAMES), $(INC)/$(name).h)
 SOURCES = $(foreach name, $(NAMES) $(MAIN), $(SRC)/$(name).cpp)
 OBJECTS = $(foreach name, $(NAMES), $(OBJ)/$(name).o)
