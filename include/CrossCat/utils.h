@@ -79,6 +79,13 @@ std::vector<double> extract_col(MatrixD data,
 std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2);
 
 template <class K, class V>
+bool in(const std::map<K, V> m, K key) {
+  typename std::map<K, V>::const_iterator it = m.find(key);
+  bool is_in = it != m.end();
+  return is_in;
+}
+
+template <class K, class V>
 V get(const std::map<K, V> m, K key) {
   typename std::map<K, V>::const_iterator it = m.find(key);
   if(it == m.end()) assert(1==0);
