@@ -35,7 +35,7 @@ class State {
   double sample_insert_feature(int feature_idx, std::vector<double> feature_data,
 			       View &singleton_view);
   double remove_feature(int feature_idx, std::vector<double> feature_data,
-			View** p_p_singleton_view);
+			View* &p_singleton_view);
   double transition_feature(int feature_idx, std::vector<double> feature_data);
   double transition_features(MatrixD &data);
   View& get_new_view();

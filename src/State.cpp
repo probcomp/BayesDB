@@ -84,7 +84,7 @@ double State::sample_insert_feature(int feature_idx, vector<double> feature_data
 }
 
 double State::remove_feature(int feature_idx, vector<double> feature_data,
-			     View** p_p_singleton_view) {
+			     View* &p_singleton_view) {
   map<string, double> &hypers = hypers_m[feature_idx];
   map<int,View*>::iterator it = view_lookup.find(feature_idx);
   assert(it!=view_lookup.end());
@@ -99,13 +99,17 @@ double State::remove_feature(int feature_idx, vector<double> feature_data,
 							 other_data_logp_delta,
 							 hypers);
   //
+  cout << "remove_feature: p_singleton_view: " << p_singleton_view << endl;
   if(view_num_cols==1) {
-    *p_p_singleton_view = &which_view;
+    cout << "remove_feature: &which_view: " << &which_view << endl;
+    p_singleton_view = &which_view;
+    cout << "remove_feature: p_singleton_view: " << p_singleton_view << endl;
   } else {
     // is it a mistake to create new view here?
     // Makes remove_feature only useful for transition_feature where immediately
     // inserted back in afterwards
-    *p_p_singleton_view = &get_new_view();
+    p_singleton_view = &get_new_view();
+    cout << "remove_feature: p_singleton_view: " << p_singleton_view << endl;
   }
   //DON"T REMOVE HERE
   //remove_if_empty(which_view);
@@ -124,10 +128,12 @@ double State::remove_feature(int feature_idx, vector<double> feature_data,
 
 double State::transition_feature(int feature_idx, vector<double> feature_data) {
   double score_delta = 0;
-  View **p_p_singleton_view;
-  *p_p_singleton_view = 0;
-  score_delta += remove_feature(feature_idx, feature_data, p_p_singleton_view);
-  score_delta += sample_insert_feature(feature_idx, feature_data, **p_p_singleton_view);
+  View *p_singleton_view;
+  cout << "p_singleton_view: " << p_singleton_view << endl;
+  score_delta += remove_feature(feature_idx, feature_data, p_singleton_view);
+  cout << "about to dereference p_singleton_view: " << p_singleton_view << endl;
+  View &singleton_view = *p_singleton_view;
+  score_delta += sample_insert_feature(feature_idx, feature_data, singleton_view);
   return score_delta;
 }
 
@@ -168,6 +174,7 @@ View& State::get_view(int view_idx) {
 
 void State::remove_if_empty(View& which_view) {
   if(which_view.get_num_cols()==0) {
+    cout << "remove_if_empty: delete " << &which_view << endl << flush;
     views.erase(views.find(&which_view));
     delete &which_view;
   }
