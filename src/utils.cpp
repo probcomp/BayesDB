@@ -290,3 +290,10 @@ MatrixD extract_columns(const MatrixD fromM, vector<int> from_cols) {
   }
   return toM;
 }
+
+int intify(std::string str) {
+  std::istringstream strin(str);
+  int str_int;
+  strin >> str_int;
+  return str_int;
+}
