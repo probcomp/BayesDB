@@ -107,7 +107,7 @@ double calc_sum_sq_deviation(vector<double> values) {
   return sum_sq_deviation;
 }
 
-vector<double> extract_row(matrix<double> data, int row_idx) {
+vector<double> extract_row(const matrix<double> data, int row_idx) {
   vector<double> row;
   for(int j=0;j < data.size2(); j++) {
     row.push_back(data(row_idx, j));
@@ -115,7 +115,7 @@ vector<double> extract_row(matrix<double> data, int row_idx) {
   return row;
 }
 
-vector<double> extract_col(matrix<double> data, int col_idx) {
+vector<double> extract_col(const matrix<double> data, int col_idx) {
   vector<double> col;
   for(int j=0;j < data.size1(); j++) {
     cout << "utils::extract_col: j=" << j << ", col_idx=" << col_idx;
@@ -155,7 +155,7 @@ map<int, int> construct_lookup_map(vector<int> keys) {
   return construct_lookup_map(keys, create_sequence(keys.size()));
 }
 
-map<int, vector<double> > construct_data_map(MatrixD data) {
+map<int, vector<double> > construct_data_map(const MatrixD data) {
   int num_rows = data.size1();
   map<int, vector<double> > data_map;
   for(int row_idx=0; row_idx<num_rows; row_idx++) {
@@ -273,14 +273,14 @@ vector<vector<int> > determine_crp_init(vector<int> global_row_indices,
   return cluster_indices_v;
 }
 
-void copy_column(MatrixD fromM, int from_col, MatrixD &toM, int to_col) {
+void copy_column(const MatrixD fromM, int from_col, MatrixD &toM, int to_col) {
   assert(fromM.size1()==toM.size1());
   int num_rows = fromM.size1();
   project(toM, range(0, num_rows), range(to_col, to_col+1)) = \
     project(fromM, range(0, num_rows), range(from_col, from_col+1));
 }
 
-MatrixD extract_columns(MatrixD fromM, vector<int> from_cols) {
+MatrixD extract_columns(const MatrixD fromM, vector<int> from_cols) {
   int num_rows = fromM.size1();
   int num_cols = from_cols.size();
   MatrixD toM(num_rows, num_cols);

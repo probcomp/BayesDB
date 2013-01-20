@@ -71,10 +71,9 @@ std::vector<double> std_vector_sum(std::vector<double> vec1,
 std::vector<double> std_vector_sum(std::vector<std::vector<double> > vec_vec);
 
 double calc_sum_sq_deviation(std::vector<double> values);
-std::vector<double> extract_row(MatrixD data,
-				int row_idx);
-std::vector<double> extract_col(MatrixD data,
-				int col_idx);
+std::vector<double> extract_row(const MatrixD data, int row_idx);
+std::vector<double> extract_col(const MatrixD data, int col_idx);
+				
 std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2);
 
 template <class K, class V>
@@ -87,7 +86,7 @@ V get(const std::map<K, V> m, K key) {
 std::vector<int> extract_global_ordering(std::map<int, int> global_to_local);
 template <class T>
 std::map<int, T> construct_lookup_map(std::vector<int> keys, std::vector<T> values);
-std::map<int, std::vector<double> > construct_data_map(MatrixD data);
+std::map<int, std::vector<double> > construct_data_map(const MatrixD data);
 std::map<int, int> construct_lookup_map(std::vector<int> values);
 std::map<int, int> remove_and_reorder(std::map<int, int> global_to_local,
 				      int global_to_remove);
@@ -104,8 +103,8 @@ std::vector<std::vector<int> > determine_crp_init(std::vector<int> global_row_in
 						  double alpha,
 						  RandomNumberGenerator &rng);
 
-void copy_column(MatrixD fromM, int from_col, MatrixD &toM, int to_col);
-MatrixD extract_columns(MatrixD fromM, std::vector<int> from_cols);
+void copy_column(const MatrixD fromM, int from_col, MatrixD &toM, int to_col);
+MatrixD extract_columns(const MatrixD fromM, std::vector<int> from_cols);
 
 template <class T>
 std::vector<T> set_to_vector(const std::set<T> in_set) {
