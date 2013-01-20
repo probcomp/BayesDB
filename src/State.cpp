@@ -282,7 +282,7 @@ double State::transition(const MatrixD &data) {
   std::random_shuffle(which_transitions.begin(), which_transitions.end());
   double score_delta = 0;
   vector<int>::iterator it;
-  cout << "view_lookup: " << view_lookup << endl;
+  cout << "group_by_value(view_lookup): " << group_by_value(view_lookup) << endl;
   for(it=which_transitions.begin(); it!=which_transitions.end(); it++) {
     int which_transition = *it;
     if(which_transition==0) {
