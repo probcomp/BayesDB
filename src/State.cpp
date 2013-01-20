@@ -99,39 +99,21 @@ double State::remove_feature(int feature_idx, vector<double> feature_data,
 							 other_data_logp_delta,
 							 hypers);
   //
-  cout << "remove_feature: p_singleton_view: " << p_singleton_view << endl;
   if(view_num_cols==1) {
-    cout << "remove_feature: &which_view: " << &which_view << endl;
     p_singleton_view = &which_view;
-    cout << "remove_feature: p_singleton_view: " << p_singleton_view << endl;
   } else {
-    // is it a mistake to create new view here?
-    // Makes remove_feature only useful for transition_feature where immediately
-    // inserted back in afterwards
     p_singleton_view = &get_new_view();
-    cout << "remove_feature: p_singleton_view: " << p_singleton_view << endl;
   }
-  //DON"T REMOVE HERE
-  //remove_if_empty(which_view);
   crp_score -= crp_logp_delta;
-  //data_score -= data_logp_delta;
-  data_score -= other_data_logp_delta;
-  //
-  // FIXME : need to record partitioning and pass that in for scoring of state
-  if(other_data_logp_delta!=data_logp_delta) {
-    cout << "get_marginal_logp(): " << get_marginal_logp();
-    cout << ", other_data_logp_delta: " << other_data_logp_delta;
-    cout << ", data_logp_delta: " << data_logp_delta << endl;
-  }
+  data_score -= data_logp_delta;
+  assert(abs(other_data_logp_delta-data_logp_delta)<1E-6);
   return score_delta;
 }
 
 double State::transition_feature(int feature_idx, vector<double> feature_data) {
   double score_delta = 0;
   View *p_singleton_view;
-  cout << "p_singleton_view: " << p_singleton_view << endl;
   score_delta += remove_feature(feature_idx, feature_data, p_singleton_view);
-  cout << "about to dereference p_singleton_view: " << p_singleton_view << endl;
   View &singleton_view = *p_singleton_view;
   score_delta += sample_insert_feature(feature_idx, feature_data, singleton_view);
   return score_delta;
@@ -143,9 +125,6 @@ double State::transition_features(const MatrixD &data) {
   vector<int>::iterator it;
   for(it=feature_indices.begin(); it!=feature_indices.end(); it++) {
     int feature_idx = *it;
-    cout << "State::transition_features: data.size1(): " << data.size1() << endl;
-    cout << "State::transition_features: data.size2(): " << data.size2() << endl;
-    cout << "State::transition_features: feature_idx: " << feature_idx << endl;
     vector<double> feature_data = extract_col(data, feature_idx);
     score_delta += transition_feature(feature_idx, feature_data);
   }
@@ -174,7 +153,6 @@ View& State::get_view(int view_idx) {
 
 void State::remove_if_empty(View& which_view) {
   if(which_view.get_num_cols()==0) {
-    cout << "remove_if_empty: delete " << &which_view << endl << flush;
     views.erase(views.find(&which_view));
     delete &which_view;
   }
