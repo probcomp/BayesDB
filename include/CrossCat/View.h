@@ -20,7 +20,7 @@ class Cluster;
 class View {
  public:
   //FIXME: add constructor with ranges as arguments, rather than recalculate
-  View(MatrixD data,
+  View(const MatrixD data,
        std::vector<int> global_row_indices, std::vector<int> global_col_indices,
        std::map<int, std::map<std::string, double> > &hypers_m,
        int N_GRID=31);

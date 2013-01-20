@@ -9,7 +9,7 @@ using namespace std;
 
 typedef set<Cluster*> setCp;
 
-View::View(MatrixD data, vector<int> global_row_indices,
+View::View(const MatrixD data, vector<int> global_row_indices,
 	   vector<int> global_col_indices,
 	   map<int, map<string, double> > &hypers_m,
 	   int N_GRID): n_grid(N_GRID) {

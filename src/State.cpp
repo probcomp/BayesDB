@@ -3,7 +3,7 @@
 using namespace std;
 
 // num_cols should be set in constructor
-State::State(MatrixD &data, vector<int> global_row_indices,
+State::State(const MatrixD &data, vector<int> global_row_indices,
 	     vector<int> global_col_indices, int N_GRID) {
   crp_alpha = 0.8;
   int num_rows = data.size1();
@@ -20,7 +20,7 @@ State::State(MatrixD &data, vector<int> global_row_indices,
   vector<vector<int> >::iterator cp_it;
   for(cp_it=column_partition.begin(); cp_it!=column_partition.end(); cp_it++) {
     vector<int> column_indices = *cp_it;
-    MatrixD data_subset = extract_columns(data, column_indices);
+    const MatrixD data_subset = extract_columns(data, column_indices);
     View *p_v = new View(data_subset, global_row_indices, column_indices,
 			 hypers_m);
     views.insert(p_v);
@@ -137,7 +137,7 @@ double State::transition_feature(int feature_idx, vector<double> feature_data) {
   return score_delta;
 }
 
-double State::transition_features(MatrixD &data) {
+double State::transition_features(const MatrixD &data) {
   double score_delta = 0;
   vector<int> feature_indices = create_sequence(data.size2());
   vector<int>::iterator it;
@@ -207,7 +207,7 @@ double State::transition_view_i(int which_view,
   return score_delta;
 }
 
-double State::transition_views(MatrixD &data) {
+double State::transition_views(const MatrixD &data) {
   vector<int> global_column_indices = create_sequence(data.size2());
   //
   double score_delta = 0;
@@ -216,7 +216,7 @@ double State::transition_views(MatrixD &data) {
     View &v = get_view(view_idx);
     vector<int> view_cols = get_indices_to_reorder(global_column_indices,
 						   v.global_to_local);
-    MatrixD data_subset = extract_columns(data, view_cols);
+    const MatrixD data_subset = extract_columns(data, view_cols);
     map<int, vector<double> > data_subset_map = construct_data_map(data_subset);
     score_delta += transition_view_i(view_idx, data_subset_map);
   }
@@ -296,7 +296,7 @@ double State::transition_crp_alpha() {
   return crp_score_delta;
 }
 
-double State::transition(MatrixD &data) {
+double State::transition(const MatrixD &data) {
   vector<int> which_transitions = create_sequence(3);
   //FIXME: use own shuffle so seed control is in effect
   std::random_shuffle(which_transitions.begin(), which_transitions.end());
@@ -316,7 +316,7 @@ double State::transition(MatrixD &data) {
   return score_delta;
 }
 
-void State::construct_hyper_grids(MatrixD data, int N_GRID) {
+void State::construct_hyper_grids(const MatrixD data, int N_GRID) {
   // some helper variables for hyper grids
   vector<double> paramRange = linspace(0.03, .97, N_GRID/2);
   int APPEND_N = (N_GRID + 1) / 2;
