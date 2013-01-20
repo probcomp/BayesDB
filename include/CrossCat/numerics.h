@@ -5,6 +5,8 @@
 #include <cmath>
 #include <algorithm>
 #include <numeric>
+#include <string>
+#include <map>
 #include "assert.h"
 
 const static double LOG_2PI = log(2.0 * M_PI);
@@ -77,13 +79,31 @@ namespace numerics {
 						     double nu,
 						     double mu);
   std::vector<double> calc_continuous_mu_conditionals(std::vector<double> mu_grid,
-						     int count,
-						     double sum_x,
-						     double sum_x_sq,
-						     double r,
-						     double nu,
-						     double s);
+						      int count,
+						      double sum_x,
+						      double sum_x_sq,
+						      double r,
+						      double nu,
+						      double s);
+  
+  // multinomial suffstats functions
+  //
+  //   mutators (NONE FOR NOW)
+  //
+  // calculators
+  double calc_multinomial_marginal_logp(int count,
+					std::map<std::string, double> counts,
+					int K,
+					double dirichlet_alpha);
+  double calc_multinomial_predictive_logp(std::string element,
+					  std::map<std::string, double> counts,
+					  int sum_counts,
+					  int K, double dirichlet_alpha);
+  std::vector<double> calc_multinomial_dirichlet_alpha_conditional(std::vector<double> dirichlet_alpha_grid,
+								   int count,
+								   std::map<std::string, double> counts,
+								   int K);
 
-}
+} // namespace numerics
 
 #endif //GUARD_numerics_h
