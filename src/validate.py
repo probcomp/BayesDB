@@ -163,9 +163,9 @@ def assert_other(mr, mc, xl, xd, T):
 if __name__ == '__main__':
     import argparse
     import json
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser('A script to validate a json file\'s compliance with the predictive-DB spec')
     parser.add_argument('filename', type=str)
-    args = parser.parse_args(['../tests/validate.json'])
+    args = parser.parse_args()
     filename = args.filename
     #
     with open(filename) as fh:
