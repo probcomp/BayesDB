@@ -59,6 +59,7 @@ class State {
   // helpers
   double calc_crp_marginal() const;
   std::vector<double> calc_crp_marginals(std::vector<double> alphas_to_score) const;
+  void SaveResult();
  private:
   // parameters
   std::map<int, std::map<std::string, double> > hypers_m;

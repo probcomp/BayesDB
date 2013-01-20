@@ -283,6 +283,8 @@ vector<double> State::calc_crp_marginals(vector<double> alphas_to_score) const {
   return crp_scores;
 }
 
+void State::SaveResult() {}
+
 double State::transition_crp_alpha() {
   // to make score_crp not calculate absolute, need to track score deltas
   // and apply delta to crp_score
