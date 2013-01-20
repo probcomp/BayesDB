@@ -16,8 +16,6 @@ int main(int argc, char** argv) {
   LoadData("SynData2.csv", data);
   int num_rows = data.size1();
   int num_cols = data.size2();
-  //
-  map<int, vector<double> > data_map = construct_data_map(data);
 
   // create the objects to test
   vector<int> global_row_indices = create_sequence(data.size1());
