@@ -41,9 +41,7 @@ def symmetric_dirichlet_discrete_hyper_validator(in_dict):
 def poisson_gamma_hyper_validator(in_dict):
     nrequired_keys = ["log_kappa", "log_beta"]
     verify_keys(required_keys, in_dict)
-    #
-    assert 0 < in_dict["log_kappa"] 
-    assert 0 < in_dict["log_beta"] 
+    # log_kappa and log_beta range from negative infinity to positive infinity
     
 modeltype_hyper_validators = {
     "asymmetric_beta_bernoulli": asymmetric_beta_bernoulli_hyper_validator,
