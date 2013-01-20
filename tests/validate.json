@@ -64,5 +64,19 @@
 	"column_component_suffstats": [[{"sum_x": 309.0, "sum_x_sq": 31481.0}]]
 	  }
 	]
-    }
+    },
+  "X_D": [
+  	 [0, 0, 1],
+  	 [0, 1, 0],
+  	 [0, 0, 0]
+	 ],
+  "T": {
+       "dimensions": [3, 4],
+       "orientation": "row_major",
+       "data": [
+       	       [66, "Male", "US", 105],
+       	       [NaN, "Male", "Canadian", 100],
+       	       [60, "Female", "US", 104]
+	       ]
+	}	 
 }

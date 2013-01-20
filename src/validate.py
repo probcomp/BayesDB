@@ -164,5 +164,8 @@ if __name__ == '__main__':
         parsed_sample = json.loads(one_line)
     M_c = parsed_sample["M_c"]
     M_r = parsed_sample["M_r"]
+    X_L = parsed_sample["X_L"]
+    X_D = parsed_sample["X_D"]
+    T = parsed_sample["T"]
     assert_mc_consistency(M_c)
     assert_mr_consistency(M_r)
