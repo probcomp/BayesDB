@@ -76,7 +76,7 @@ def symmetric_dirichlet_discrete_suffstats_validator(in_dict):
     required_keys = ["counts", "N"]
     verify_keys(required_keys, in_dict)
     #
-    assert sum(in_dict["counts"]) == in_dict["N"]
+    assert sum(in_dict["counts"].values()) == in_dict["N"]
 
 def poisson_gamma_suffstats_validator(in_dict):
     required_keys = ["summed_values", "N"]
@@ -108,55 +108,64 @@ def assert_mr_consistency(mr):
     assert_map_consistency(mr["name_to_idx"], mr["idx_to_name"])
 
 def assert_xl_view_state_consistency(view_state_i, mc):
-    column_names = view_state_i["columnNames"]
-    for column_name, column_component_suffstats_i in \
-            zip(column_names, view_state_i["columnComponentSuffstats"]):
-        global_column_idx = mc["name_to_idx"][column_name]
-        modeltype = mc["column_metadata"][global_column_idx]["modeltype"]
+    column_names = view_state_i["column_names"]
+    column_component_suffstats = view_state_i["column_component_suffstats"]
+    for column_name_i, column_component_suffstats_i in \
+            zip(column_names, column_component_suffstats):
+        global_column_idx = mc["name_to_idx"][column_name_i]
+        modeltype = mc["column_metadata"][int(global_column_idx)]["modeltype"]
         suffstats_validator = modeltype_suffstats_validators[modeltype]
         for component_suffstats in column_component_suffstats_i:
             suffstats_validator(component_suffstats)
 
 def assert_xl_consistency(xl, mc):
-    assignment_counts = Counter(xl["assignments"])
+    assignment_counts = Counter(xl["column_partition"]["assignments"])
     # sum(xl["counts"]) == len(assignments) is a byproduct of above
-    for idx, count in enumerate(xl["counts"]):
+    for idx, count in enumerate(xl["column_partition"]["counts"]):
         assert(count==assignment_counts[idx])
-    for column_metadata_i, columnHypers_i in \
-            zip(mc["column_metadata"], xl["columnHypers"]):
+    for column_metadata_i, column_hypers_i in \
+            zip(mc["column_metadata"], xl["column_hypers"]):
         modeltype = column_metadata_i["modeltype"]
         validator = modeltype_hyper_validators[modeltype]
-        validator(columnHypers_i)
+        validator(column_hypers_i)
         if modeltype == "symmetric_dirichlet_discrete":
             # FIXME: can't do this, you may know there are N values but only have
             # M datapoints where M < N
-            # assert columnHypers_i["K"] == len(column_metadata_i["value_to_code"])
+            # assert column_hypers_i["K"] == len(column_metadata_i["value_to_code"])
             pass
-    for view_state_i in xl["viewState"]:
-        assert_xl_view_state_consistency(view_state_i)
+    for view_state_i in xl["view_state"]:
+        assert_xl_view_state_consistency(view_state_i, mc)
+    assert sum(xl["column_partition"]["counts"]) == len(mc["name_to_idx"])
 
+    
 def assert_xd_consistency(xd, mr, mc):
-    assert xd.shape[0] == len(mr["name_to_idx"])
-    assert xd.shape[1] == len(mc["name_to_idx"])
+    assert len(xd) == len(mr["name_to_idx"])
+    # is it rectangular?
+    assert len(set(map(len, xd))) == 1
 
 def assert_t_consistency(T, mr, mc):
+    # is it rectangular?
+    assert len(set(map(len, T["data"]))) == 1
     if T["orientation"] == "row_major":
-        assert T["dimensions"][0] == T["data"].shape[0]
-        assert T["dimensions"][1] == T["data"].shape[1]
+        assert T["dimensions"][0] == len(T["data"])
+        assert T["dimensions"][1] == len(T["data"][0])
         assert T["dimensions"][0] == len(mr["name_to_idx"])
         assert T["dimensions"][1] == len(mc["name_to_idx"])
     else: # "column_major"
-        assert T["dimensions"][1] == T["data"].shape[0]
-        assert T["dimensions"][0] == T["data"].shape[1]
+        assert T["dimensions"][1] == len(T["data"])
+        assert T["dimensions"][0] == len(T["data"][0])
         assert T["dimensions"][1] == len(mr["name_to_idx"])
         assert T["dimensions"][0] == len(mc["name_to_idx"])
+
+def assert_other(mr, mc, xl, xd, T):
+    assert len(xl["column_partition"]["counts"]) == len(xd[0])
 
 if __name__ == '__main__':
     import argparse
     import json
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', type=str)
-    args = parser.parse_args()
+    args = parser.parse_args(['../tests/validate.json'])
     filename = args.filename
     #
     with open(filename) as fh:
@@ -169,3 +178,8 @@ if __name__ == '__main__':
     T = parsed_sample["T"]
     assert_mc_consistency(M_c)
     assert_mr_consistency(M_r)
+#assert_xl_view_state_consistency(view_state_i, mc)
+    assert_xl_consistency(X_L, M_c)
+    assert_xd_consistency(X_D, M_r, M_c)
+    assert_t_consistency(T, M_r, M_c)
+    assert_other(M_r, M_c, X_L, X_D, T)
