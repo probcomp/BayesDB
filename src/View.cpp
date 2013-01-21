@@ -12,7 +12,7 @@ typedef set<Cluster*> setCp;
 View::View(const MatrixD data, vector<int> global_row_indices,
 	   vector<int> global_col_indices,
 	   map<int, map<string, double> > &hypers_m,
-	   int N_GRID): n_grid(N_GRID) {
+	   int N_GRID, int SEED) : n_grid(N_GRID), rng(SEED) {
   paramRange = linspace(0.03, .97, n_grid/2);
   assert(global_row_indices.size()==data.size1());
   assert(global_col_indices.size()==data.size2());
