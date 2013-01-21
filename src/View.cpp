@@ -391,18 +391,13 @@ void View::remove_if_empty(Cluster& which_cluster) {
 
 void View::remove_all() {
   cluster_lookup.empty();
-  cout << "View::remove_all: this=" << this;
-  cout << "; clusters: " << clusters << endl;
-  cout << "View::remove_all: deleting:";
   setCp::iterator it = clusters.begin();
   while(it!=clusters.end()) {
     Cluster &which_cluster = **it;
     clusters.erase(clusters.find(&which_cluster));
-    cout << " " << &which_cluster;
     delete &which_cluster;
     it = clusters.begin();
   }
-  cout << endl;
 }
 
 double View::transition_z(vector<double> vd, int row_idx) {

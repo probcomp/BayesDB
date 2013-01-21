@@ -159,25 +159,20 @@ void State::remove_if_empty(View& which_view) {
   if(which_view.get_num_cols()==0) {
     views.erase(views.find(&which_view));
     which_view.remove_all();
-    cout << "State::remove_if_empty: delete " << &which_view << endl;
     delete &which_view;
   }
 }
 
 void State::remove_all() {
   view_lookup.empty();
-  cout << "State::remove_all: views: " << views << endl;
-  cout << "State::remove_all: deleting:";
   set<View*>::iterator it = views.begin();
   while(it!=views.end()) {
     View &which_view = **it;
     which_view.remove_all();
     views.erase(views.find(&which_view));
-    cout << " " << &which_view;
     delete &which_view;
     it = views.begin();
   }
-  cout << endl;
 }
 
 double State::get_crp_alpha() const {
