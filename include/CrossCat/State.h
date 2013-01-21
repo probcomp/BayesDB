@@ -81,7 +81,9 @@ class State {
   void construct_hyper_grids(boost::numeric::ublas::matrix<double> data,
 			     int N_GRID);
   std::map<std::string, double> get_default_hypers() const;
-
+  void init_hypers(std::vector<int> global_col_indices);
+  void init_views(const MatrixD &data, std::vector<int> global_row_indices,
+		  std::vector<int> global_col_indices);
 };
 
 #endif // GUARD_state_h

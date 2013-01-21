@@ -7,28 +7,8 @@ State::State(const MatrixD &data, vector<int> global_row_indices,
 	     vector<int> global_col_indices, int N_GRID, int SEED) : rng(SEED) {
   crp_alpha = 0.8;
   construct_hyper_grids(data, N_GRID);
-  //
-  vector<int>::iterator gci_it;
-  for(gci_it=global_col_indices.begin();gci_it!=global_col_indices.end(); gci_it++) {
-    int global_col_idx = *gci_it;
-    hypers_m[global_col_idx] = get_default_hypers();
-  }
-  //
-  vector<vector<int> > column_partition;
-  column_partition = determine_crp_init(global_col_indices, crp_alpha, rng);
-  vector<vector<int> >::iterator cp_it;
-  for(cp_it=column_partition.begin(); cp_it!=column_partition.end(); cp_it++) {
-    vector<int> column_indices = *cp_it;
-    const MatrixD data_subset = extract_columns(data, column_indices);
-    View *p_v = new View(data_subset, global_row_indices, column_indices,
-			 hypers_m);
-    views.insert(p_v);
-    vector<int>::iterator ci_it;
-    for(ci_it=column_indices.begin(); ci_it!=column_indices.end(); ci_it++) {
-      int column_index = *ci_it;
-      view_lookup[column_index] = p_v;
-    }
-  }
+  init_hypers(global_col_indices);
+  init_views(data, global_row_indices, global_col_indices);
 }
 
 State::~State() {
@@ -338,4 +318,33 @@ map<string, double> State::get_default_hypers() const {
   hypers["s"] = s0_0;
   hypers["mu"] = mu0_0;
   return hypers;
+}
+
+void State::init_hypers(vector<int> global_col_indices) {
+  vector<int>::iterator gci_it;
+  for(gci_it=global_col_indices.begin();gci_it!=global_col_indices.end(); gci_it++) {
+    int global_col_idx = *gci_it;
+    hypers_m[global_col_idx] = get_default_hypers();
+  }
+}
+
+void State::init_views(const MatrixD &data, vector<int> global_row_indices,
+		       vector<int> global_col_indices) {
+  vector<vector<int> > init_column_partition;
+  init_column_partition = determine_crp_init(global_col_indices, crp_alpha, rng);
+  //
+  vector<vector<int> >::iterator cp_it;
+  for(cp_it=init_column_partition.begin(); cp_it!=init_column_partition.end();
+      cp_it++) {
+    vector<int> column_indices = *cp_it;
+    const MatrixD data_subset = extract_columns(data, column_indices);
+    View *p_v = new View(data_subset, global_row_indices, column_indices,
+			 hypers_m);
+    views.insert(p_v);
+    vector<int>::iterator ci_it;
+    for(ci_it=column_indices.begin(); ci_it!=column_indices.end(); ci_it++) {
+      int column_index = *ci_it;
+      view_lookup[column_index] = p_v;
+    }
+  }
 }
