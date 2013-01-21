@@ -304,3 +304,39 @@ vector<double> create_crp_alpha_grid(int n_values, int N_GRID) {
   vector<double> crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
   return crp_alpha_grid;
 }
+
+void construct_continuous_base_hyper_grids(int n_grid,
+				vector<double> col_data,
+				vector<double> &crp_alpha_grid,
+				vector<double> &r_grid,
+				vector<double> &nu_grid) {
+  int APPEND_N = (n_grid + 1) / 2;
+  int data_num_vectors = col_data.size();
+  //
+  vector<double> paramRange = linspace(0.03, .97, n_grid/2);
+  vector<double> crp_alpha_grid_append = log_linspace(1., data_num_vectors,
+						      APPEND_N);
+  vector<double> nu_grid_append = log_linspace(1., data_num_vectors/2.,
+					       APPEND_N);
+  //
+  crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
+  r_grid = crp_alpha_grid;
+  nu_grid = append(paramRange, nu_grid_append);
+}
+
+void construct_continuous_specific_hyper_grid(int n_grid,
+				 vector<double> col_data,
+				 vector<double> &s_grid,
+				 vector<double> &mu_grid) {
+  int APPEND_N = (n_grid + 1) / 2;
+  vector<double> paramRange = linspace(0.03, .97, n_grid/2);
+  // construct s grid
+  double sum_sq_deviation = calc_sum_sq_deviation(col_data);
+  vector<double> s_grid_append = log_linspace(1., sum_sq_deviation, APPEND_N);
+  s_grid = append(paramRange, s_grid_append);
+  // construct mu grids
+  double min = *std::min_element(col_data.begin(), col_data.end());
+  double max = *std::max_element(col_data.begin(), col_data.end());
+  vector<double> mu_grid_append = linspace(min, max, APPEND_N);
+  mu_grid = append(paramRange, mu_grid_append);
+}
