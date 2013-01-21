@@ -4,6 +4,7 @@
 #include <set>
 #include <vector>
 #include "View.h"
+#include "utils.h"
 
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>

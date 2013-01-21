@@ -4,7 +4,8 @@ using namespace std;
 
 // num_cols should be set in constructor
 State::State(const MatrixD &data, vector<int> global_row_indices,
-	     vector<int> global_col_indices, int N_GRID, int SEED) : rng(SEED) {
+	     vector<int> global_col_indices,
+	     int N_GRID, int SEED) : rng(SEED) {
   crp_alpha = 0.8;
   construct_hyper_grids(data, N_GRID);
   init_hypers(global_col_indices);
@@ -293,14 +294,7 @@ double State::transition(const MatrixD &data) {
 }
 
 void State::construct_hyper_grids(const MatrixD data, int N_GRID) {
-  // some helper variables for hyper grids
-  vector<double> paramRange = linspace(0.03, .97, N_GRID/2);
-  int APPEND_N = (N_GRID + 1) / 2;
-  int data_num_cols = data.size2();
-  // constrcut alpha grid
-  vector<double> crp_alpha_grid_append = log_linspace(1., data_num_cols,
-						      APPEND_N);
-  crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
+  crp_alpha_grid = create_crp_alpha_grid(data.size2(), N_GRID);
 }
  
 double State::draw_rand_u() {

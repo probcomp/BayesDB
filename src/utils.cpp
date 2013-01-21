@@ -295,3 +295,12 @@ int intify(std::string str) {
   strin >> str_int;
   return str_int;
 }
+
+vector<double> create_crp_alpha_grid(int n_values, int N_GRID) {
+  vector<double> paramRange = linspace(0.03, .97, N_GRID/2);
+  int APPEND_N = (N_GRID + 1) / 2;
+  vector<double> crp_alpha_grid_append = log_linspace(1., n_values,
+						      APPEND_N);
+  vector<double> crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
+  return crp_alpha_grid;
+}
