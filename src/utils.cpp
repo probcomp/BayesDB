@@ -306,21 +306,19 @@ vector<double> create_crp_alpha_grid(int n_values, int N_GRID) {
 }
 
 void construct_continuous_base_hyper_grids(int n_grid,
-				vector<double> col_data,
-				vector<double> &crp_alpha_grid,
-				vector<double> &r_grid,
-				vector<double> &nu_grid) {
+					   vector<double> col_data,
+					   vector<double> &r_grid,
+					   vector<double> &nu_grid) {
   int APPEND_N = (n_grid + 1) / 2;
   int data_num_vectors = col_data.size();
   //
   vector<double> paramRange = linspace(0.03, .97, n_grid/2);
-  vector<double> crp_alpha_grid_append = log_linspace(1., data_num_vectors,
-						      APPEND_N);
+  vector<double> r_grid_append = log_linspace(1., data_num_vectors,
+					      APPEND_N);
   vector<double> nu_grid_append = log_linspace(1., data_num_vectors/2.,
 					       APPEND_N);
   //
-  crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
-  r_grid = crp_alpha_grid;
+  r_grid = append(paramRange, r_grid_append);
   nu_grid = append(paramRange, nu_grid_append);
 }
 

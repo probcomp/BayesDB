@@ -150,7 +150,6 @@ std::map<V, std::set<K> > group_by_value(std::map<K, V> in_map) {
 std::vector<double> create_crp_alpha_grid(int n_values, int N_GRID);
 void construct_continuous_base_hyper_grids(int n_grid,
 					   std::vector<double> col_data,
-					   std::vector<double> &crp_alpha_grid,
 					   std::vector<double> &r_grid,
 					   std::vector<double> &nu_grid);
 void construct_continuous_specific_hyper_grid(int n_grid,
