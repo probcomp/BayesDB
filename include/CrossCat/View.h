@@ -21,7 +21,8 @@ class View {
  public:
   //FIXME: add constructor with ranges as arguments, rather than recalculate
   View(const MatrixD data,
-       std::vector<int> global_row_indices, std::vector<int> global_col_indices,
+       std::vector<int> global_row_indices,
+       std::vector<int> global_col_indices,
        std::map<int, std::map<std::string, double> > &hypers_m,
        int N_GRID=31, int SEED=0);
   View();
@@ -111,7 +112,6 @@ class View {
   double crp_alpha;
   double crp_score;
   double data_score;
-  std::vector<double> paramRange;
   // sub-objects
   RandomNumberGenerator rng;
   // resources

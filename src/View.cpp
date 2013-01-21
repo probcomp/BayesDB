@@ -9,14 +9,13 @@ using namespace std;
 
 typedef set<Cluster*> setCp;
 
-View::View(const MatrixD data, vector<int> global_row_indices,
+View::View(const MatrixD data,
+	   vector<int> global_row_indices,
 	   vector<int> global_col_indices,
 	   map<int, map<string, double> > &hypers_m,
 	   int N_GRID, int SEED) : n_grid(N_GRID), rng(SEED) {
   assert(global_row_indices.size()==data.size1());
   assert(global_col_indices.size()==data.size2());
-  //
-  paramRange = linspace(0.03, .97, n_grid/2);
   //
   crp_alpha = 0.8;
   crp_score = 0;
@@ -32,7 +31,6 @@ View::View(const MatrixD data, vector<int> global_row_indices,
 
 View::View() {
   n_grid = 31;
-  paramRange = linspace(0.03, .97, n_grid/2);
   crp_alpha = 0.8;
   crp_score = 0;
   data_score = 0;
@@ -510,6 +508,8 @@ int View::draw_rand_i(int max) {
 void View::construct_base_hyper_grids(vector<double> col_data) {
   int APPEND_N = (n_grid + 1) / 2;
   int data_num_vectors = col_data.size();
+  //
+  vector<double> paramRange = linspace(0.03, .97, n_grid/2);
   vector<double> crp_alpha_grid_append = log_linspace(1., data_num_vectors,
 						      APPEND_N);
   vector<double> nu_grid_append = log_linspace(1., data_num_vectors/2.,
@@ -523,6 +523,7 @@ void View::construct_base_hyper_grids(vector<double> col_data) {
 void View::construct_column_hyper_grid(vector<double> col_data,
 				       int global_col_idx) {
   int APPEND_N = (n_grid + 1) / 2;
+  vector<double> paramRange = linspace(0.03, .97, n_grid/2);
   // construct s grid
   double sum_sq_deviation = calc_sum_sq_deviation(col_data);
   vector<double> s_grid_append = log_linspace(1., sum_sq_deviation, APPEND_N);
