@@ -19,6 +19,7 @@ class State {
   State(const MatrixD &data,
 	std::vector<int> global_row_indices, std::vector<int> global_col_indices,
 	int N_GRID=31);
+  ~State();
   //
   // getters
   int get_num_cols() const;
@@ -41,6 +42,7 @@ class State {
   View& get_new_view();
   View& get_view(int view_idx);
   void remove_if_empty(View& which_view);
+  void remove_all();
   double transition_view_i(int which_view,
 			 std::map<int, std::vector<double> > row_data_map);
   double transition_views(const MatrixD &data);

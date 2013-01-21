@@ -71,6 +71,7 @@ class View {
 		    int global_col_idx,
 		    std::map<std::string, double> &hypers);
   void remove_if_empty(Cluster& which_cluster);
+  void remove_all();
   double transition_z(std::vector<double> vd, int row_idx);
   double transition_zs(std::map<int, std::vector<double> > row_data_map);
   double transition_crp_alpha();
