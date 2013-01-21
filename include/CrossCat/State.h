@@ -18,7 +18,7 @@ class State {
  public:
   State(const MatrixD &data,
 	std::vector<int> global_row_indices, std::vector<int> global_col_indices,
-	int N_GRID=31);
+	int N_GRID=31, int SEED=0);
   ~State();
   //
   // getters
