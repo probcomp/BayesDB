@@ -15,6 +15,7 @@ class RandomNumberGenerator
 {
 public:
  RandomNumberGenerator() : _engine(0), _dist(_engine) {};
+ RandomNumberGenerator(int SEED) : _engine(SEED), _dist(_engine) {};
   double next();
   int nexti(int max=MAX_INT);
   void set_seed(std::time_t seed);
