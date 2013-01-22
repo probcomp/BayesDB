@@ -219,8 +219,6 @@ double View::transition_hyper_i(int which_col, std::string which_hyper) {
   int global_col_idx = global_ordering[which_col];
   vector<double> hyper_grid = get_hyper_grid(global_col_idx, which_hyper);
   assert(hyper_grid.size()!=0);
-  // ISSUE: printing s_grids seems to make it work
-  //        else seg fault due to empty hyper grid
   double score_delta = transition_hyper_i(which_col, which_hyper, hyper_grid);
   return score_delta;
 }
