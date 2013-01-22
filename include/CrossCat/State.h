@@ -18,7 +18,9 @@ const static double mu0_0 = 0.0;
 class State {
  public:
   State(const MatrixD &data,
-	std::vector<int> global_row_indices, std::vector<int> global_col_indices,
+	std::vector<int> global_row_indices,
+	std::vector<int> global_col_indices,
+	//std::vector<std::string> global_col_datatypes,
 	int N_GRID=31, int SEED=0);
   ~State();
   //

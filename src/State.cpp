@@ -3,8 +3,10 @@
 using namespace std;
 
 // num_cols should be set in constructor
-State::State(const MatrixD &data, vector<int> global_row_indices,
+State::State(const MatrixD &data,
+	     vector<int> global_row_indices,
 	     vector<int> global_col_indices,
+	     //vector<string> global_col_datatypes,
 	     int N_GRID, int SEED) : rng(SEED) {
   crp_alpha = 0.8;
   construct_hyper_grids(data, N_GRID);
