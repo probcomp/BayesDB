@@ -6,4 +6,4 @@ clean:
 	rm -rf build continuous_component_model_test.so
 
 run:
-	python component_model_test.py
+	python use_ccm.py
