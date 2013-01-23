@@ -5,5 +5,5 @@ all:
 clean:
 	rm -rf build continuous_component_model_test.so
 
-run:
+run: all
 	python use_ccm.py
