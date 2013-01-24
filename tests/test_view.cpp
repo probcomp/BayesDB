@@ -121,9 +121,11 @@ int main(int argc, char** argv) {
   }
 
   // create the objects to test
+  int N_GRID = 11;
+  int SEED = 0;
   vector<int> global_row_indices = create_sequence(data.size1());
   vector<int> global_column_indices = create_sequence(data.size2());
-  View v = View(data, global_row_indices, global_column_indices, hypers_m, 11);
+  View v = View(data, global_row_indices, global_column_indices, hypers_m, SEED, N_GRID);
 
   v.print();
   // empty object and verify empty
@@ -219,7 +221,6 @@ int main(int argc, char** argv) {
   // test continuous data hyper conditionals
   vector<double> hyper_grid;
   vector<double> hyper_logps;
-  int N_GRID = 11;
   vector<string> hyper_strings;
   hyper_strings.push_back("r");  hyper_strings.push_back("nu");  hyper_strings.push_back("s");  hyper_strings.push_back("mu");
   map<string, double> default_hyper_values;
