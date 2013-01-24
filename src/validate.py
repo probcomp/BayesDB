@@ -139,8 +139,9 @@ def assert_xl_consistency(xl, mc):
 
     
 def assert_xd_consistency(xd, mr, mc):
-    assert len(xd) == len(mr["name_to_idx"])
-    # is it rectangular?
+    # is number of row labels in xd's first view equal to number of row names?
+    assert len(xd[0]) == len(mr["name_to_idx"])
+    # do all views have the same number of row labels?
     assert len(set(map(len, xd))) == 1
 
 def assert_t_consistency(T, mr, mc):
@@ -158,7 +159,8 @@ def assert_t_consistency(T, mr, mc):
         assert T["dimensions"][0] == len(mc["name_to_idx"])
 
 def assert_other(mr, mc, xl, xd, T):
-    assert len(xl["column_partition"]["counts"]) == len(xd[0])
+    # is the number of views in xd equal to their cached counts in xl?
+    assert len(xl["column_partition"]["counts"]) == len(xd)
 
 if __name__ == '__main__':
     import argparse
