@@ -5,6 +5,7 @@
 #include <vector>
 #include "View.h"
 #include "utils.h"
+#include "constants.h"
 
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -79,7 +80,7 @@ class State {
   RandomNumberGenerator rng;
   // resources
   double draw_rand_u();
-  int draw_rand_i(int max);
+  int draw_rand_i(int max=MAX_INT);
   // helpers
   void construct_hyper_grids(boost::numeric::ublas::matrix<double> data,
 			     int N_GRID);
