@@ -13,7 +13,7 @@ View::View(const MatrixD data,
 	   vector<int> global_row_indices,
 	   vector<int> global_col_indices,
 	   map<int, map<string, double> > &hypers_m,
-	   int N_GRID, int SEED) : n_grid(N_GRID), rng(SEED) {
+	   int SEED, int N_GRID) : n_grid(N_GRID), rng(SEED) {
   assert(global_row_indices.size()==data.size1());
   assert(global_col_indices.size()==data.size2());
   //
@@ -29,7 +29,7 @@ View::View(const MatrixD data,
   }
 }
 
-View::View() {
+View::View(int SEED) : rng(SEED) {
   n_grid = 31;
   crp_alpha = 0.8;
   crp_score = 0;

@@ -24,8 +24,8 @@ class View {
        std::vector<int> global_row_indices,
        std::vector<int> global_col_indices,
        std::map<int, std::map<std::string, double> > &hypers_m,
-       int N_GRID=31, int SEED=0);
-  View();
+       int SEED=0, int N_GRID=31);
+  View(int SEED=0);
   // FIXME: will need to add a deallocator for clusters
   // for when View is garbage collected 
   //

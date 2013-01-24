@@ -118,7 +118,7 @@ double State::transition_features(const MatrixD &data) {
 }
 
 View& State::get_new_view() {
-  View *p_new_view = new View();
+  View *p_new_view = new View(draw_rand_i());
   views.insert(p_new_view);
   return *p_new_view;
 }
@@ -335,7 +335,7 @@ void State::init_views(const MatrixD &data, vector<int> global_row_indices,
     vector<int> column_indices = *cp_it;
     const MatrixD data_subset = extract_columns(data, column_indices);
     View *p_v = new View(data_subset, global_row_indices, column_indices,
-			 hypers_m);
+			 hypers_m, draw_rand_i());
     views.insert(p_v);
     vector<int>::iterator ci_it;
     for(ci_it=column_indices.begin(); ci_it!=column_indices.end(); ci_it++) {
