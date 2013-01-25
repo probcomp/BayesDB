@@ -64,7 +64,7 @@ double View::get_crp_alpha() const {
   return crp_alpha;
 }
 
-vector<double> get_crp_alpha_grid() const {
+vector<double> View::get_crp_alpha_grid() const {
   return crp_alpha_grid;
 }
 
