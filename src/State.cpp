@@ -2,6 +2,8 @@
 
 using namespace std;
 using boost::numeric::ublas::matrix;
+using boost::numeric::ublas::project;
+using boost::numeric::ublas::range;
 
 // num_cols should be set in constructor
 State::State(const MatrixD &data,
@@ -268,9 +270,11 @@ void State::SaveResult(string filename) {
     return;
   }
 
-  int num_rows = (*views.begin())->get_num_vectors();
+  View &first_view = **views.begin();
+  int num_rows = first_view.get_num_vectors();
   int num_cols = view_lookup.size();
   map<View*, int> view_to_int = set_to_map(views);
+  int n_grid = crp_alpha_grid.size();
 
   out << "F = " << num_cols << endl;
   out << "O = " << num_rows << endl;
@@ -306,6 +310,53 @@ void State::SaveResult(string filename) {
     }
   }
   out << "o = " << o << endl;
+
+  matrix<double> paramPrior(1, n_grid, 1./n_grid);
+  out << "paramPrior = " << paramPrior << endl;
+
+  matrix<double> cumParamPrior(1, n_grid, 1./n_grid);
+  for(int i=0; i<cumParamPrior.size2(); i++) {
+    cumParamPrior(0,i) *= (i+1); 
+  }
+  out << "cumParamPrior = " << cumParamPrior << endl;
+
+  matrix<double> paramRange(1, n_grid, -1.0);
+  out << "paramRange = " << paramRange << endl;
+
+  
+  matrix<double> crpKRange = vector_to_matrix(crp_alpha_grid);
+  out << "crpKRange = " << crpKRange << endl;
+
+  matrix<double> crpCRange = vector_to_matrix(first_view.get_crp_alpha_grid());
+  out << "crpCRange = " << crpCRange << endl;
+
+  matrix<double> kRange = vector_to_matrix(first_view.get_hyper_grid(0, "r"));
+  out << "kRange = " << kRange << endl;
+
+  matrix<double> aRange = vector_to_matrix(first_view.get_hyper_grid(0, "nu"));
+  out << "aRange = " << aRange << endl;
+
+  matrix<double> muRange(num_cols, num_rows);
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    View &v = *view_lookup[col_idx];
+    project(muRange, range(col_idx, col_idx+1), range(0, num_rows-1)) = \
+      vector_to_matrix(v.get_hyper_grid(col_idx, "mu"));
+  }
+  out << "muRange = " << muRange << endl;
+
+  matrix<double> bRange(num_cols, num_rows);
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    View &v = *view_lookup[col_idx];
+    project(bRange, range(col_idx, col_idx+1), range(0, num_rows-1)) = \
+      vector_to_matrix(v.get_hyper_grid(col_idx, "s"));
+  }
+  out << "bRange = " << bRange << endl;
+
+  out << "crpK = " << crp_alpha << endl;
+  out << "crpC = " << crp_alpha << endl;
+
+  //   crpK, crpC
+  //   NG_a,k,b,mu
 
   out << endl;
 }
