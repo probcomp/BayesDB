@@ -277,9 +277,9 @@ double View::calc_column_predictive_logp(vector<double> column_data,
   return score_delta;
 }
 
-double View::set_alpha(double new_alpha) {
+double View::set_crp_alpha(double new_crp_alpha) {
   double crp_score_0 = crp_score;
-  crp_alpha = new_alpha;
+  crp_alpha = new_crp_alpha;
   crp_score = calc_crp_marginal();
   return crp_score - crp_score_0;
 }
