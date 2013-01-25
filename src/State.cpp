@@ -282,11 +282,9 @@ void State::SaveResult(string filename, int iter_idx) {
   out << "O = " << num_rows << endl;
  
   matrix<int> f(1, num_cols, NaN);
-  for(int i=0; i<num_cols; i++) {
-    set<View*>::iterator it = views.begin();
-    std::advance(it, i);
-    View* p_v = *it;
-    f(0,i) = view_to_int[p_v];
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    View* p_v = view_lookup[col_idx];
+    f(0,col_idx) = view_to_int[p_v];
   }
   out << "f = " << f << endl;
 
