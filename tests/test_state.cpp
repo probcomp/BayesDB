@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
   for(int i=0;i<200;i++) {
     cout << "transition #: " << i << endl;
     s.transition(data);
-    cout << "FLAG: s.crp_alpha: " << s.get_crp_alpha() << endl;
+    cout << "FLAG: s.column_crp_alpha: " << s.get_column_crp_alpha() << endl;
     cout << "FLAG: s.num_views: " << s.get_num_views() << endl;
   }
 

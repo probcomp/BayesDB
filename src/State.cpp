@@ -11,7 +11,7 @@ State::State(const MatrixD &data,
 	     vector<int> global_col_indices,
 	     //vector<string> global_col_datatypes,
 	     int N_GRID, int SEED) : rng(SEED) {
-  crp_alpha = 0.8;
+  column_crp_alpha = 0.8;
   construct_hyper_grids(data, N_GRID);
   init_hypers(global_col_indices);
   init_views(data, global_row_indices, global_col_indices);
@@ -53,7 +53,7 @@ double State::insert_feature(int feature_idx, vector<double> feature_data,
   which_view.insert_col(feature_data, data_global_row_indices, feature_idx,
 			hypers);
   view_lookup[feature_idx] = &which_view;
-  crp_score += crp_logp_delta;
+  column_crp_score += crp_logp_delta;
   data_score += data_logp_delta;
   return score_delta;
 }
@@ -93,7 +93,7 @@ double State::remove_feature(int feature_idx, vector<double> feature_data,
   } else {
     p_singleton_view = &get_new_view();
   }
-  crp_score -= crp_logp_delta;
+  column_crp_score -= crp_logp_delta;
   data_score -= data_logp_delta;
   assert(abs(other_data_logp_delta-data_logp_delta)<1E-6);
   return score_delta;
@@ -160,12 +160,12 @@ void State::remove_all() {
   }
 }
 
-double State::get_crp_alpha() const {
-  return crp_alpha;
+double State::get_column_crp_alpha() const {
+  return column_crp_alpha;
 }
 
-double State::get_crp_score() const {
-  return crp_score;
+double State::get_column_crp_score() const {
+  return column_crp_score;
 }
 
 double State::get_data_score() const {
@@ -173,7 +173,7 @@ double State::get_data_score() const {
 }
 
 double State::get_marginal_logp() const {
-  return crp_score + data_score;
+  return column_crp_score + data_score;
 }
 
 double State::transition_view_i(int which_view,
@@ -210,7 +210,7 @@ double State::calc_feature_view_predictive_logp(vector<double> col_data, View v,
   int view_column_count = v.get_num_cols();
   int num_columns = get_num_cols();
   crp_log_delta = numerics::calc_cluster_crp_logp(view_column_count, num_columns,
-						  crp_alpha);
+						  column_crp_alpha);
   //
   vector<int> data_global_row_indices = create_sequence(col_data.size());
   // pass singleton_view down to here, or at least hypers
@@ -239,15 +239,14 @@ vector<double> State::calc_feature_view_predictive_logps(vector<double> col_data
   return logps;
 }
 
-double State::calc_crp_marginal() const {
+double State::calc_column_crp_marginal() const {
   vector<int> view_counts = get_view_counts();
   int num_cols = get_num_cols();
-  return numerics::calc_crp_alpha_conditional(view_counts, crp_alpha, num_cols,
-					      true);
-					      
+  return numerics::calc_crp_alpha_conditional(view_counts, column_crp_alpha,
+					      num_cols, true);
 }
 
-vector<double> State::calc_crp_marginals(vector<double> alphas_to_score) const {
+vector<double> State::calc_column_crp_marginals(vector<double> alphas_to_score) const {
   vector<int> view_counts = get_view_counts();
   vector<double> crp_scores;
   vector<double>::iterator it = alphas_to_score.begin();
@@ -274,7 +273,7 @@ void State::SaveResult(string filename) {
   int num_rows = first_view.get_num_vectors();
   int num_cols = view_lookup.size();
   map<View*, int> view_to_int = set_to_map(views);
-  int n_grid = crp_alpha_grid.size();
+  int n_grid = column_crp_alpha_grid.size();
 
   out << "F = " << num_cols << endl;
   out << "O = " << num_rows << endl;
@@ -324,11 +323,11 @@ void State::SaveResult(string filename) {
   out << "paramRange = " << paramRange << endl;
 
   
-  matrix<double> crpKRange = vector_to_matrix(crp_alpha_grid);
+  matrix<double> crpKRange = vector_to_matrix(column_crp_alpha_grid);
   out << "crpKRange = " << crpKRange << endl;
 
-  matrix<double> crpCRange = vector_to_matrix(first_view.get_crp_alpha_grid());
-  out << "crpCRange = " << crpCRange << endl;
+  // matrix<double> crpCRange = vector_to_matrix(first_view.get_crp_alpha_grid());
+  // out << "crpCRange = " << crpCRange << endl;
 
   matrix<double> kRange = vector_to_matrix(first_view.get_hyper_grid(0, "r"));
   out << "kRange = " << kRange << endl;
@@ -352,8 +351,8 @@ void State::SaveResult(string filename) {
   }
   out << "bRange = " << bRange << endl;
 
-  out << "crpK = " << crp_alpha << endl;
-  out << "crpC = " << crp_alpha << endl;
+  out << "crpK = " << column_crp_alpha << endl;
+  // out << "crpC = " << row_crp_alpha << endl;
 
   //   crpK, crpC
   //   NG_a,k,b,mu
@@ -361,16 +360,16 @@ void State::SaveResult(string filename) {
   out << endl;
 }
 
-double State::transition_crp_alpha() {
+double State::transition_column_crp_alpha() {
   // to make score_crp not calculate absolute, need to track score deltas
   // and apply delta to crp_score
-  double crp_score_0 = get_crp_score();
-  vector<double> unorm_logps = calc_crp_marginals(crp_alpha_grid);
+  double crp_score_0 = get_column_crp_score();
+  vector<double> unorm_logps = calc_column_crp_marginals(column_crp_alpha_grid);
   double rand_u = draw_rand_u();
   int draw = numerics::draw_sample_unnormalized(unorm_logps, rand_u);
-  crp_alpha = crp_alpha_grid[draw];
-  crp_score = unorm_logps[draw];
-  double crp_score_delta = crp_score - crp_score_0;
+  column_crp_alpha = column_crp_alpha_grid[draw];
+  column_crp_score = unorm_logps[draw];
+  double crp_score_delta = column_crp_score - crp_score_0;
   return crp_score_delta;
 }
 
@@ -388,14 +387,14 @@ double State::transition(const MatrixD &data) {
     } else if(which_transition==1) {
       score_delta += transition_features(data);
     } else if(which_transition==2) {
-      score_delta += transition_crp_alpha();
+      score_delta += transition_column_crp_alpha();
     }
   }
   return score_delta;
 }
 
 void State::construct_hyper_grids(const MatrixD data, int N_GRID) {
-  crp_alpha_grid = create_crp_alpha_grid(data.size2(), N_GRID);
+  column_crp_alpha_grid = create_crp_alpha_grid(data.size2(), N_GRID);
 }
  
 double State::draw_rand_u() {
@@ -426,7 +425,7 @@ void State::init_hypers(vector<int> global_col_indices) {
 void State::init_views(const MatrixD &data, vector<int> global_row_indices,
 		       vector<int> global_col_indices) {
   vector<vector<int> > init_column_partition;
-  init_column_partition = determine_crp_init(global_col_indices, crp_alpha, rng);
+  init_column_partition = determine_crp_init(global_col_indices, column_crp_alpha, rng);
   //
   vector<vector<int> >::iterator cp_it;
   for(cp_it=init_column_partition.begin(); cp_it!=init_column_partition.end();

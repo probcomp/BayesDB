@@ -32,8 +32,8 @@ class State {
   int get_num_cols() const;
   int get_num_views() const;
   std::vector<int> get_view_counts() const;
-  double get_crp_alpha() const;
-  double get_crp_score() const;
+  double get_column_crp_alpha() const;
+  double get_column_crp_score() const;
   double get_data_score() const;
   double get_marginal_logp() const;
   //
@@ -53,7 +53,7 @@ class State {
   double transition_view_i(int which_view,
 			 std::map<int, std::vector<double> > row_data_map);
   double transition_views(const MatrixD &data);
-  double transition_crp_alpha();  
+  double transition_column_crp_alpha();  
   double transition(const MatrixD &data);
   //
   // calculators
@@ -66,16 +66,17 @@ class State {
   std::vector<double> calc_feature_view_predictive_logps(std::vector<double> col_data, int global_col_idx) const;
   //
   // helpers
-  double calc_crp_marginal() const;
-  std::vector<double> calc_crp_marginals(std::vector<double> alphas_to_score) const;
+  double calc_column_crp_marginal() const;
+  std::vector<double> calc_column_crp_marginals(std::vector<double> alphas_to_score) const;
+  std::vector<double> calc_row_crp_marginals(std::vector<double> alphas_to_score) const;
   void SaveResult(std::string filename);
  private:
   // parameters
   std::map<int, std::map<std::string, double> > hypers_m;
-  double crp_alpha;
-  double crp_score;
+  double column_crp_alpha;
+  double column_crp_score;
   double data_score;
-  std::vector<double> crp_alpha_grid;
+  std::vector<double> column_crp_alpha_grid;
   // lookups
   std::set<View*> views;
   std::map<int, View*> view_lookup;  // global_column_index to View mapping
