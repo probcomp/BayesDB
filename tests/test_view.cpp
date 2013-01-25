@@ -212,10 +212,10 @@ int main(int argc, char** argv) {
   cout << "test_alphas: " << test_alphas << endl;
   cout << "test_alpha_scores: " << test_alpha_scores << endl;
   double new_alpha = test_alphas[0];
-  double crp_score_delta = v.set_alpha(new_alpha);
+  double crp_score_delta = v.set_crp_alpha(new_alpha);
   cout << "new_alpha: " << new_alpha << ", new_alpha score: " << v.get_crp_score() << ", crp_score_delta: " << crp_score_delta << endl;
   new_alpha = test_alphas[1];
-  crp_score_delta = v.set_alpha(new_alpha);
+  crp_score_delta = v.set_crp_alpha(new_alpha);
   cout << "new_alpha: " << new_alpha << ", new_alpha score: " << v.get_crp_score() << ", crp_score_delta: " << crp_score_delta << endl;
 
   // test continuous data hyper conditionals
