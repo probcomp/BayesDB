@@ -278,7 +278,7 @@ void State::SaveResult(string filename) {
   out << "F = " << num_cols << endl;
   out << "O = " << num_rows << endl;
  
-  matrix<int> f(1, num_cols);
+  matrix<int> f(1, num_cols, NaN);
   for(int i=0; i<num_cols; i++) {
     set<View*>::iterator it = views.begin();
     std::advance(it, i);
@@ -287,7 +287,7 @@ void State::SaveResult(string filename) {
   }
   out << "f = " << f << endl;
 
-  matrix<int> o(num_cols, num_rows); // transposed!
+  matrix<int> o(num_cols, num_rows, NaN); // transposed!
   set<View*>::iterator views_it = views.begin();
   for(; views_it!=views.end(); views_it++) {
     View* v_p = *views_it;
@@ -319,15 +319,15 @@ void State::SaveResult(string filename) {
   }
   out << "cumParamPrior = " << cumParamPrior << endl;
 
-  matrix<double> paramRange(1, n_grid, -1.0);
+  matrix<double> paramRange(1, n_grid, NaN);
   out << "paramRange = " << paramRange << endl;
 
   
   matrix<double> crpKRange = vector_to_matrix(column_crp_alpha_grid);
   out << "crpKRange = " << crpKRange << endl;
 
-  // matrix<double> crpCRange = vector_to_matrix(first_view.get_crp_alpha_grid());
-  // out << "crpCRange = " << crpCRange << endl;
+  matrix<double> crpCRange = vector_to_matrix(first_view.get_crp_alpha_grid());
+  out << "crpCRange = " << crpCRange << endl;
 
   matrix<double> kRange = vector_to_matrix(first_view.get_hyper_grid(0, "r"));
   out << "kRange = " << kRange << endl;
@@ -335,27 +335,60 @@ void State::SaveResult(string filename) {
   matrix<double> aRange = vector_to_matrix(first_view.get_hyper_grid(0, "nu"));
   out << "aRange = " << aRange << endl;
 
-  matrix<double> muRange(num_cols, num_rows);
+  // FIXME: grids don't seem to be homogenous, so this is broken
+  matrix<double> muRange(num_cols, n_grid, NaN);
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
     View &v = *view_lookup[col_idx];
-    project(muRange, range(col_idx, col_idx+1), range(0, num_rows-1)) = \
-      vector_to_matrix(v.get_hyper_grid(col_idx, "mu"));
+    vector<double> this_hyper_grid_v = v.get_hyper_grid(col_idx, "mu");
+    matrix<double> this_hyper_grid_m = vector_to_matrix(this_hyper_grid_v);
+    project(muRange, range(col_idx, col_idx+1), range(0, n_grid-1)) = \
+      project(this_hyper_grid_m, range(0, 1), range(0, n_grid-1));
   }
   out << "muRange = " << muRange << endl;
 
-  matrix<double> bRange(num_cols, num_rows);
+  matrix<double> bRange(num_cols, n_grid, NaN);
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
     View &v = *view_lookup[col_idx];
-    project(bRange, range(col_idx, col_idx+1), range(0, num_rows-1)) = \
-      vector_to_matrix(v.get_hyper_grid(col_idx, "s"));
+    vector<double> this_hyper_grid_v = v.get_hyper_grid(col_idx, "s");
+    matrix<double> this_hyper_grid_m = vector_to_matrix(this_hyper_grid_v);
+    project(bRange, range(col_idx, col_idx+1), range(0, n_grid-1)) =	\
+      project(this_hyper_grid_m, range(0, 1), range(0, n_grid-1));
   }
   out << "bRange = " << bRange << endl;
 
   out << "crpK = " << column_crp_alpha << endl;
-  // out << "crpC = " << row_crp_alpha << endl;
 
-  //   crpK, crpC
-  //   NG_a,k,b,mu
+  matrix<double> crpC(1, num_cols, NaN);
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    View &v = *view_lookup[col_idx];
+    crpC(0, col_idx) = v.get_crp_alpha();
+  }
+  out << "crpC = " << crpC << endl;
+
+  matrix<double> NG_a(1, num_cols, NaN);
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    NG_a(0, col_idx) = hypers_m[col_idx]["nu"];
+  }
+  out << "NG_a = " << NG_a << endl;
+
+  matrix<double> NG_k(1, num_cols, NaN);
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    NG_k(0, col_idx) = hypers_m[col_idx]["r"];
+  }
+  out << "NG_k = " << NG_k << endl;
+
+  matrix<double> NG_b(1, num_cols, NaN);
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    NG_b(0, col_idx) = hypers_m[col_idx]["s"];
+  }
+  out << "NG_b = " << NG_b << endl;
+
+
+  matrix<double> NG_mu(1, num_cols, NaN);
+  for(int col_idx=0; col_idx<num_cols; col_idx++) {
+    NG_mu(0, col_idx) = hypers_m[col_idx]["mu"];
+  }
+  out << "NG_mu = " << NG_mu << endl;
 
   out << endl;
 }
