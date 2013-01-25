@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
       s.transition(data);
       cout << "Done raw sample idx: " << raw_sample_idx++ << endl;
     }
-    s.SaveResult();
+    s.SaveResult("summaries");
     cout << " t1 = " << T.GetElapsed() << endl;
     //
     for(int ns=0; ns<nSamples; ns++) {
@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
 	s.transition(data);
 	cout << "Done raw sample idx: " << raw_sample_idx++ << endl;
       }
-      s.SaveResult();
+      s.SaveResult("summaries");
       cout << "t2 = " <<  T.GetElapsed() << endl;
     }
   }

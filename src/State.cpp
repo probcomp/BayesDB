@@ -1,6 +1,7 @@
 #include "State.h"
 
 using namespace std;
+using boost::numeric::ublas::matrix;
 
 // num_cols should be set in constructor
 State::State(const MatrixD &data,
@@ -260,7 +261,54 @@ vector<double> State::calc_crp_marginals(vector<double> alphas_to_score) const {
   return crp_scores;
 }
 
-void State::SaveResult() {}
+void State::SaveResult(string filename) {
+  ofstream out(filename.c_str(), ios_base::app);
+  if(!out) {
+    cout << "Cannot open file: " << filename << endl;
+    return;
+  }
+
+  int num_rows = (*views.begin())->get_num_vectors();
+  int num_cols = view_lookup.size();
+  map<View*, int> view_to_int = set_to_map(views);
+
+  out << "F = " << num_cols << endl;
+  out << "O = " << num_rows << endl;
+ 
+  matrix<int> f(1, num_cols);
+  for(int i=0; i<num_cols; i++) {
+    set<View*>::iterator it = views.begin();
+    std::advance(it, i);
+    View* p_v = *it;
+    f(0,i) = view_to_int[p_v];
+  }
+  out << "f = " << f << endl;
+
+  matrix<int> o(num_cols, num_rows); // transposed!
+  set<View*>::iterator views_it = views.begin();
+  for(; views_it!=views.end(); views_it++) {
+    View* v_p = *views_it;
+    int matrix_row_idx = view_to_int[v_p];
+    if(matrix_row_idx>=5) {
+      cout << "WARNING!!!: matrix_row_idx>=5" << endl;
+      continue;
+    }
+    vector<vector<int> > canonical_clustering = v_p->get_canonical_clustering();
+    cout << "canonical_clustering: " << canonical_clustering << endl;
+    int num_clusters = canonical_clustering.size();
+    for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
+      vector<int> cluster_indices = canonical_clustering[cluster_idx];
+      int num_elements = cluster_indices.size();
+      for(int element_idx=0; element_idx<num_elements; element_idx++) {
+	int row_idx = cluster_indices[element_idx];
+	o(matrix_row_idx, row_idx) = cluster_idx;
+      }
+    }
+  }
+  out << "o = " << o << endl;
+
+  out << endl;
+}
 
 double State::transition_crp_alpha() {
   // to make score_crp not calculate absolute, need to track score deltas

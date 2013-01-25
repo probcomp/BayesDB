@@ -6,6 +6,9 @@
 #include "View.h"
 #include "utils.h"
 #include "constants.h"
+#include <fstream>
+#include <iostream>
+#include <algorithm>
 
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -65,7 +68,7 @@ class State {
   // helpers
   double calc_crp_marginal() const;
   std::vector<double> calc_crp_marginals(std::vector<double> alphas_to_score) const;
-  void SaveResult();
+  void SaveResult(std::string filename);
  private:
   // parameters
   std::map<int, std::map<std::string, double> > hypers_m;
