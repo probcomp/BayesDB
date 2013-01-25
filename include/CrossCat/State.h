@@ -69,7 +69,7 @@ class State {
   double calc_column_crp_marginal() const;
   std::vector<double> calc_column_crp_marginals(std::vector<double> alphas_to_score) const;
   std::vector<double> calc_row_crp_marginals(std::vector<double> alphas_to_score) const;
-  void SaveResult(std::string filename);
+  void SaveResult(std::string filename, int iter_idx=-1);
  private:
   // parameters
   std::map<int, std::map<std::string, double> > hypers_m;

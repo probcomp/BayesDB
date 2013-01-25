@@ -262,13 +262,16 @@ vector<double> State::calc_column_crp_marginals(vector<double> alphas_to_score) 
   return crp_scores;
 }
 
-void State::SaveResult(string filename) {
+void State::SaveResult(string filename, int iter_idx) {
   ofstream out(filename.c_str(), ios_base::app);
   if(!out) {
     cout << "Cannot open file: " << filename << endl;
     return;
   }
 
+  if(iter_idx!=-1) {
+    out << "State" << iter_idx << endl;
+  }
   View &first_view = **views.begin();
   int num_rows = first_view.get_num_vectors();
   int num_cols = view_lookup.size();
@@ -292,12 +295,7 @@ void State::SaveResult(string filename) {
   for(; views_it!=views.end(); views_it++) {
     View* v_p = *views_it;
     int matrix_row_idx = view_to_int[v_p];
-    if(matrix_row_idx>=5) {
-      cout << "WARNING!!!: matrix_row_idx>=5" << endl;
-      continue;
-    }
     vector<vector<int> > canonical_clustering = v_p->get_canonical_clustering();
-    cout << "canonical_clustering: " << canonical_clustering << endl;
     int num_clusters = canonical_clustering.size();
     for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
       vector<int> cluster_indices = canonical_clustering[cluster_idx];
@@ -412,7 +410,6 @@ double State::transition(const MatrixD &data) {
   std::random_shuffle(which_transitions.begin(), which_transitions.end());
   double score_delta = 0;
   vector<int>::iterator it;
-  cout << "group_by_value(view_lookup): " << group_by_value(view_lookup) << endl;
   for(it=which_transitions.begin(); it!=which_transitions.end(); it++) {
     int which_transition = *it;
     if(which_transition==0) {
