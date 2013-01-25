@@ -3,6 +3,7 @@
 
 #include <limits> // MAX_INT
 
-const int MAX_INT = std::numeric_limits<int>::max();
+static const int MAX_INT = std::numeric_limits<int>::max();
+static const double NaN = 0./0.;
 
 #endif // GUARD_constants_h
