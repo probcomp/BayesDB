@@ -132,7 +132,8 @@ std::map<T, int> set_to_map(const std::set<T> in_set) {
   typename std::set<T>::const_iterator it;
   for(it=in_set.begin(); it!=in_set.end(); it++) {
     T element = *it;
-    out_map[element] = out_map.size();
+    int out_map_size = out_map.size();
+    out_map[element] = out_map_size;
   }
   return out_map;
 }
