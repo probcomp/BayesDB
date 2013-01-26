@@ -85,7 +85,7 @@ $$
 \begin{itemize}
 
 % ConditionalEntropy
-\item \texttt{conditional\_entropy($M_c, X_L,X_D,d_{given},d_{target}, [n, maxTime]$)} $\rightarrow e$. $d_{given}$ and $d_{target}$ are lists of column indices, $n$ is the number of predictive samples to base the estimate on, subject to $maxTime$ which is the maximum amount of time allowed for computation. The output is an estimate of the conditional entropy of $d_{target}$ given $d_{given}$,
+\item \texttt{conditional\_entropy($M_c, X_L,X_D,d_{given},d_{target}, [n, max\_time]$)} $\rightarrow e$. $d_{given}$ and $d_{target}$ are lists of column indices, $n$ is the number of predictive samples to base the estimate on, subject to $max\_time$ which is the maximum amount of time allowed for computation. The output is an estimate of the conditional entropy of $d_{target}$ given $d_{given}$,
 \footnote{\texttt{conditional\_entropy} is analogous to regression.}
 $$
 e = H(d_{target}|d_{given},X_L).
@@ -94,7 +94,7 @@ Entropy is a special case of \texttt{conditional\_entropy}, where $d_{given}$ is
 
 % PredictivelyRelated
 \item \texttt{predictively\_related($M_c, X_L, X_D, d, %threshold, confidence, \newline
-[n, maxTime]$)} $\rightarrow m$. 
+[n, max\_time]$)} $\rightarrow m$. 
 $d$ is a column index. The output, $m$ is a list containing mutual information between all columns $d_*$ and the target, $d$,
 $$
 m = I(d,d_*|X_L).
@@ -326,7 +326,7 @@ $e \leftarrow \frac{\sum_j x}{n}$
 \SetKwInOut{Output}{output}
 \SetKwInOut{Initialize}{initialize}
 
-\Input{$M_c, X_L,X_D,d_{given},d_{target},n,maxTime$}
+\Input{$M_c, X_L,X_D,d_{given},d_{target},n,max\_time$}
 \Output{An estimate of the conditional entropy $e$.}
 \BlankLine
 
@@ -334,7 +334,7 @@ Query a previously unobserved row for the given and target dimensions: \\
 $q_{given} \leftarrow \{R+1, d_{given}\}$ \\
 $q_{target} \leftarrow \{R+1, d_{target}\}$
 
-\For{min($n, maxTime$)}{
+\For{min($n, max\_time$)}{
 
 Draw a sample from joint distribution: \\
 $\{x_{given_i}, x_{target_i}\} \leftarrow$ \\
