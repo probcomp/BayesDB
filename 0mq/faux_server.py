@@ -65,18 +65,12 @@ class RPCTestServer(jsonrpc2_zeromq.RPCServer):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--is_client', action='store_true')
-    parser.add_argument('--is_server', action='store_true')
     parser.add_argument('--port', type=int, default=5557)
-    parser.add_argument('--lifetime', type=int, default=10)
+    parser.add_argument('--lifetime', type=int, default=-1)
     args = parser.parse_args()
     is_client = args.is_client
-    is_server = args.is_server
     port = args.port
     lifetime = args.lifetime
-
-    if not operator.xor(is_client, is_server):
-        print "must specify ONE of client or server"
-        sys.exit()
 
     endpoint = "tcp://127.0.0.1:%s" % port
     if is_client:
