@@ -105,9 +105,12 @@ int main(int argc, char** argv) {
   cout << "hypers_v: " << hypers_v << endl;
 
   // create the view
+  int N_GRID = 31;
+  int SEED = 0;
   vector<int> global_row_indices = create_sequence(data.size1());
   vector<int> global_column_indices = create_sequence(data.size2());
-  View v = View(data, global_row_indices, global_column_indices, hypers_m, 31);
+  View v = View(data, global_row_indices, global_column_indices, hypers_m, SEED,
+		N_GRID);
 
   v.print();
   // empty object and verify empty

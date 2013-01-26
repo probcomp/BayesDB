@@ -13,7 +13,7 @@ View::View(const MatrixD data,
 	   vector<int> global_row_indices,
 	   vector<int> global_col_indices,
 	   map<int, map<string, double> > &hypers_m,
-	   int N_GRID, int SEED) : n_grid(N_GRID), rng(SEED) {
+	   int SEED, int N_GRID) : n_grid(N_GRID), rng(SEED) {
   assert(global_row_indices.size()==data.size1());
   assert(global_col_indices.size()==data.size2());
   //
@@ -29,7 +29,7 @@ View::View(const MatrixD data,
   }
 }
 
-View::View() {
+View::View(int SEED) : rng(SEED) {
   n_grid = 31;
   crp_alpha = 0.8;
   crp_score = 0;
@@ -62,6 +62,10 @@ double View::get_score() const {
 
 double View::get_crp_alpha() const {
   return crp_alpha;
+}
+
+vector<double> View::get_crp_alpha_grid() const {
+  return crp_alpha_grid;
 }
 
 vector<string> View::get_hyper_strings() {
@@ -277,9 +281,9 @@ double View::calc_column_predictive_logp(vector<double> column_data,
   return score_delta;
 }
 
-double View::set_alpha(double new_alpha) {
+double View::set_crp_alpha(double new_crp_alpha) {
   double crp_score_0 = crp_score;
-  crp_alpha = new_alpha;
+  crp_alpha = new_crp_alpha;
   crp_score = calc_crp_marginal();
   return crp_score - crp_score_0;
 }

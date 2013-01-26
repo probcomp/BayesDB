@@ -24,8 +24,8 @@ class View {
        std::vector<int> global_row_indices,
        std::vector<int> global_col_indices,
        std::map<int, std::map<std::string, double> > &hypers_m,
-       int N_GRID=31, int SEED=0);
-  View();
+       int SEED=0, int N_GRID=31);
+  View(int SEED=0);
   // FIXME: will need to add a deallocator for clusters
   // for when View is garbage collected 
   //
@@ -37,6 +37,7 @@ class View {
   double get_data_score() const;
   double get_score() const;
   double get_crp_alpha() const;
+  std::vector<double> get_crp_alpha_grid() const;
   std::vector<std::string> get_hyper_strings();
   std::vector<double> get_hyper_grid(int global_col_idx, std::string which_hyper);
   std::map<std::string, double> get_hypers(int local_col_idx);
@@ -61,7 +62,7 @@ class View {
 				     std::map<std::string, double> hypers);
   //
   // mutators
-  double set_alpha(double new_alpha);
+  double set_crp_alpha(double new_crp_alpha);
   Cluster& get_new_cluster();
   double insert_row(std::vector<double> vd, Cluster &cd, int row_idx);
   double insert_row(std::vector<double> vd, int row_idx);
