@@ -1,4 +1,6 @@
 import argparse
+import inspect
+import re
 import operator
 import time
 import sys
@@ -79,6 +81,19 @@ if __name__ == '__main__':
         args_joined = ", ".join(args)
         msg = client.simple_predictive_sample(*args)
         print msg, " = client.simple_predictive_sample(" + args_joined + ")"
+        #
+        # method_re = re.compile('handle_(.*)_method')
+        # server_method_names = filter(method_re.match, dir(RPCTestServer))
+        # for server_method_name in server_method_names:
+        #     print "server_method_name: ", server_method_name
+        #     method_name = method_re.match(server_method_name).groups()[0]
+        #     method = RPCTestServer.__dict__[method_name]
+        #     arg_str_list = inspect.getargspec(method).args[1:]
+        #     arg_str_list_joined = ", ".join(arg_str_list)
+        #     print arg_str_list
+        #     msg = client.__getattr__(method_name)(*args)
+        #     print msg, " = client." + method_name + "(" + arg_str_list_joined + ")"
+
     else:
         print "starting server"
         server = RPCTestServer(endpoint)
