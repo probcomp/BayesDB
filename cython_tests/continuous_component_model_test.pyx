@@ -7,6 +7,29 @@ from cython.operator import preincrement
 
 cdef map[cpp_string, double] string_double_map
 
+cdef extern from "<boost/numeric/ublas/matrix.hpp>" namespace "boost::numeric::ublas":
+    cdef cppclass matrix[double]:
+        #matrix(int, int)
+        void clear()
+        int size1()
+        int size2()
+    matrix[double] *new_matrix "new boost::numeric::ublas::matrix<double>" (int i, int j)
+    void del_matrix "delete" (matrix *m)
+
+cdef class p_matrix:
+    cdef matrix[double] *thisptr
+    def __cinit__(self, i, j):
+          self.thisptr = new_matrix(i, j)
+    def __dealloc__(self):
+        del_matrix(self.thisptr)
+    def size1(self):
+        return self.thisptr.size1()
+    def size2(self):
+        return self.thisptr.size2()
+    def __repr__(self):
+        return "matrix[%s, %s]" % (self.thisptr.size1(), self.thisptr.size2())
+
+
 cdef extern from "string" namespace "std":
     cdef cppclass string:
         char* c_str()
