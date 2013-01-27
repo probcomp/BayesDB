@@ -1,4 +1,4 @@
-NAMES = continuous_component_model_test boost_matrix_test
+NAMES = continuous_component_model_test boost_matrix_test State
 SOS = $(foreach name, $(NAMES), $(name).so)
 INTERMEDIATE = $(foreach name, $(NAMES), $(name).cpp)
 RUN = use_ccm.py
