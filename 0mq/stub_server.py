@@ -54,15 +54,15 @@ class RPCTestServer(jsonrpc2_zeromq.RPCServer):
 
     def handle_structural_anomalousness_columns_method(self, X_D):
         a = []
-        return s
+        return a
 
     def handle_structural_anomalousness_rows_method(self, X_D):
         a = []
-        return s
+        return a
 
     def handle_predictive_anomalousness_method(self, M_c, X_L, X_D, T, q, n):
         a = []
-        return s
+        return a
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -73,26 +73,21 @@ if __name__ == '__main__':
     is_client = args.is_client
     port = args.port
     lifetime = args.lifetime
-
+    #
     endpoint = "tcp://127.0.0.1:%s" % port
+    #
     if is_client:
         client = jsonrpc2_zeromq.RPCClient(endpoint=endpoint)
-        args = ("M_c", "X_L", "X_D", "Y", "q")
-        args_joined = ", ".join(args)
-        msg = client.simple_predictive_sample(*args)
-        print msg, " = client.simple_predictive_sample(" + args_joined + ")"
-        #
-        # method_re = re.compile('handle_(.*)_method')
-        # server_method_names = filter(method_re.match, dir(RPCTestServer))
-        # for server_method_name in server_method_names:
-        #     print "server_method_name: ", server_method_name
-        #     method_name = method_re.match(server_method_name).groups()[0]
-        #     method = RPCTestServer.__dict__[method_name]
-        #     arg_str_list = inspect.getargspec(method).args[1:]
-        #     arg_str_list_joined = ", ".join(arg_str_list)
-        #     print arg_str_list
-        #     msg = client.__getattr__(method_name)(*args)
-        #     print msg, " = client." + method_name + "(" + arg_str_list_joined + ")"
+        method_re = re.compile('handle_(.*)_method')
+        server_method_names = filter(method_re.match, dir(RPCTestServer))
+        for server_method_name in server_method_names:
+            server_method = RPCTestServer.__dict__[server_method_name]
+            arg_str_list = inspect.getargspec(server_method).args[1:]
+            arg_str_list_joined = ", ".join(arg_str_list)
+            #
+            method_name = method_re.match(server_method_name).groups()[0]
+            msg = client.__getattr__(method_name)(*arg_str_list)
+            print msg, " = client." + method_name + "(" + arg_str_list_joined + ")"
 
     else:
         print "starting server"
