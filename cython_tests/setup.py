@@ -14,6 +14,11 @@ setup(
                        "../src/ContinuousComponentModel.cpp"],
               include_dirs=["../include/CrossCat/"],
               language="c++"),
+        Extension("boost_matrix_test",
+              sources=["boost_matrix_test.pyx",
+                       ],
+              include_dirs=["../include/CrossCat/"],
+              language="c++"),
     ],
   cmdclass = {'build_ext': build_ext},
 

@@ -1,4 +1,5 @@
 import continuous_component_model_test as ccmt
+import boost_matrix_test as bmt
 
 hyper_map = dict()
 hyper_map["mu"] = 1.0
@@ -14,5 +15,5 @@ print component_model.calc_marginal_logp()
 component_model.remove_element(1.0)
 print component_model.calc_marginal_logp()
 
-p_matrix = ccmt.p_matrix(5,5)
+p_matrix = bmt.p_matrix(5,5)
 print p_matrix
