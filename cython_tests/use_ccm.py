@@ -17,3 +17,7 @@ print component_model.calc_marginal_logp()
 
 p_matrix = bmt.p_matrix(5,5)
 print p_matrix
+print "p_matrix.get(0, 0):", p_matrix.get(0, 0)
+p_matrix.set(0,0, -1.)
+print "p_matrix.get(0, 0):", p_matrix.get(0, 0)
+
