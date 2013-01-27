@@ -13,3 +13,6 @@ component_model.insert_element(1.0)
 print component_model.calc_marginal_logp()
 component_model.remove_element(1.0)
 print component_model.calc_marginal_logp()
+
+p_matrix = ccmt.p_matrix(5,5)
+print p_matrix
