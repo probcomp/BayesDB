@@ -293,10 +293,10 @@ void State::SaveResult(string filename, int iter_idx) {
   for(; views_it!=views.end(); views_it++) {
     View* v_p = *views_it;
     int matrix_row_idx = view_to_int[v_p];
-    vector<vector<int> > canonical_clustering = v_p->get_canonical_clustering();
-    int num_clusters = canonical_clustering.size();
+    vector<vector<int> > cluster_groupings = v_p->get_cluster_groupings();
+    int num_clusters = cluster_groupings.size();
     for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
-      vector<int> cluster_indices = canonical_clustering[cluster_idx];
+      vector<int> cluster_indices = cluster_groupings[cluster_idx];
       int num_elements = cluster_indices.size();
       for(int element_idx=0; element_idx<num_elements; element_idx++) {
 	int row_idx = cluster_indices[element_idx];

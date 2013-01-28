@@ -94,7 +94,7 @@ class View {
   std::vector<double> align_data(std::vector<double> values,
 				 std::vector<int> global_column_indices) const;
   std::vector<int> shuffle_row_indices();
-  std::vector<std::vector<int> > get_canonical_clustering() const;
+  std::vector<std::vector<int> > get_cluster_groupings() const;
   void print();
   void print_score_matrix();
   void assert_state_consistency();
