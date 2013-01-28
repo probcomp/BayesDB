@@ -27,9 +27,10 @@ OBJECTS = $(foreach name, $(NAMES), $(OBJ)/$(name).o)
 TESTS = $(foreach test, $(TEST_NAMES), $(TEST)/$(test))
 
 
-all: $(OBJECTS) $(TESTS)
+all: $(OBJECTS)
 
 bin: $(BIN)
+	./$(BIN)
 
 # run each test
 tests: $(TESTS)
