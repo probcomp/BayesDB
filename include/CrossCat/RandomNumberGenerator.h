@@ -5,9 +5,8 @@
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
 #include <ctime>
-#include <limits>
-
-const int MAX_INT = std::numeric_limits<int>::max();
+//
+#include "constants.h"
 
 /////////////////////////
 // from runModel_v2.cpp
