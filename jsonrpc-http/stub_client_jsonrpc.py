@@ -17,30 +17,28 @@ def create_message(method_str, params):
         }
     return json.dumps(message)
 
-print
-message = create_message('impute', {"M_c":"M_c", "X_L":"X_L", "X_D":"X_D", "Y":"Y", "q":"q", "n":"n"})
+# an explicit example of a method call
+method_name = 'initialize'
+args_dict = {"M_c":"M_c", "M_r":"M_r", "T":"T", "i":"i"}
+message = create_message(method_name, args_dict)
 print 'trying message:', message
 r = requests.put(URI, data=message)
 r.raise_for_status()
 print json.loads(r.content)
 print
-
 time.sleep(1)
 
-print
-message = create_message('initialize', {"M_c":"M_c", "M_r":"M_r", "T":"T", "i":"i"})
-print 'trying message:', message
-r = requests.put(URI, data=message)
-r.raise_for_status()
-print json.loads(r.content)
-print
+import FakeEngine as FE
+from FakeEngine import FakeEngine
 
-time.sleep(1)
-
-print
-message = create_message('analyze', {"S":"S", "T":"T", "X_L":"X_L", "X_D":"X_D", "M_c":"M_c", "M_r":"M_r", "kernel_list":"kernel_list", "n_steps":"n_steps", "c":"c", "r":"r", "max_iterations":"max_iterations", "max_time":"max_time"})
-print 'trying message:', message
-r = requests.put(URI, data=message)
-r.raise_for_status()
-print json.loads(r.content)
-print
+# programmatically call all the other method calls
+method_name_to_args = FE.get_method_name_to_args()
+for method_name, arg_str_list in method_name_to_args.iteritems():
+    args_dict = dict(zip(arg_str_list, arg_str_list))
+    message = create_message(method_name, args_dict)
+    print 'trying message:' , message
+    r = requests.put(URI, data=message)
+    r.raise_for_status()
+    print json.loads(r.content)
+    print
+    time.sleep(1)

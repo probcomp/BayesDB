@@ -38,6 +38,13 @@ import traceback
 
 from jsonrpc.server import ServerEvents, JSON_RPC
 
+import FakeEngine as FE
+from FakeEngine import FakeEngine
+
+from FakeEngine import FakeEngine
+fake_engine = FakeEngine()
+FakeEngine_methods = FE.get_method_names()
+
 class ExampleServer(ServerEvents):
 	# inherited hooks
 	def log(self, responses, txrequest, error):
@@ -52,69 +59,16 @@ class ExampleServer(ServerEvents):
 
 	def findmethod(self, method, args=None, kwargs=None):
 		if method in self.methods:
-			return getattr(self, method)
+			return getattr(fake_engine, method)
 		else:
 			return None
 
 	# helper methods
-	methods = set(['initialize', 'analyze', 'simple_predictive_sample', 'simple_predictive_probability', 'impute', 'conditional_entropy', 'predictively_related', 'contextual_structural_similarity', 'structural_similarity', 'structural_anomalousness_columns', 'structural_anomalousness_rows', 'predictive_anomalousness'])
+	methods = set(FakeEngine_methods)
 	def _get_msg(self, response):
 		print('response', repr(response))
 		return ' '.join(str(x) for x in [response.id, response.result or response.error])
 
-        def initialize(self, M_c, M_r, T, i):
-            X_L = {}
-            X_D = [[]]
-            return M_c, M_r, X_L, X_D
-
-        def analyze(self, S, T, X_L, X_D, M_c, M_r, kernel_list,
-                    n_steps, c, r, max_iterations, max_time):
-            X_L_prime = {}
-            X_D_prime = [[]]
-            return X_L_prime, X_D_prime
-
-        def simple_predictive_sample(self, M_c, X_L, X_D, Y, q):
-            x = []
-            return x
-
-        def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q,
-                                          n):
-            p = None
-            return p
-
-        def impute(self, M_c, X_L, X_D, Y, q, n):
-            e = []
-            return e
-
-        def conditional_entropy(M_c, X_L, X_D, d_given, d_target,
-                                n=None, max_time=None):
-            e = None
-            return e
-        
-        def predictively_related(self, M_c, X_L, X_D, d,
-                                 n=None, max_time=None):
-            m = []
-            return m
-        
-        def contextual_structural_similarity(self, X_D, r, d):
-            s = []
-            return s
-        
-        def structural_similarity(self, X_D, r):
-            s = []
-            return s
-        
-        def structural_anomalousness_columns(self, X_D):
-            a = []
-            return a
-        
-        def structural_anomalousness_rows(self, X_D):
-            a = []
-            return a
-        
-        def predictive_anomalousness(self, M_c, X_L, X_D, T, q, n):
-            a = []
-            return a
 
 root = JSON_RPC().customize(ExampleServer)
 site = server.Site(root)
