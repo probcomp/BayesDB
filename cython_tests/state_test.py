@@ -1,4 +1,5 @@
 import sys
+import argparse
 #
 import numpy
 #
@@ -47,13 +48,24 @@ def gen_factorial_data(gen_seed, num_clusters, num_cols, num_rows, num_splits,
     data = numpy.hstack(data_list)
     return data, inverse_permutation_indices_list
 
-gen_seed = 0
-num_clusters = 2
-num_cols = 6
-num_rows = 1000
-num_splits = 2
-max_mean = 10
-max_std = 0.3
+parser = argparse.ArgumentParser()
+parser.add_argument('--gen_seed', default=0, type=int)
+parser.add_argument('--num_clusters', default=4, type=int)
+parser.add_argument('--num_cols', default=8, type=int)
+parser.add_argument('--num_rows', default=1000, type=int)
+parser.add_argument('--num_splits', default=2, type=int)
+parser.add_argument('--max_mean', default=10, type=float)
+parser.add_argument('--max_std', default=0.3, type=float)
+args = parser.parse_args()
+#
+gen_seed = args.gen_seed
+num_clusters = args.num_clusters
+num_cols = args.num_cols
+num_rows = args.num_rows
+num_splits = args.num_splits
+max_mean = args.max_mean
+max_std = args.max_std
+
 data, inverse_permutation_indices_list = \
     gen_factorial_data(gen_seed, num_clusters, num_cols, num_rows, num_splits,
                        max_mean, max_std)
