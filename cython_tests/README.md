@@ -10,6 +10,6 @@ Instructions for building
 
 Running tests
 ---------------------------
-    > # capture stdout, stderr separately
     > cd /path/to/tabular-predDB/cython_tests
-    > make run >run.out 2>run.err
+    > # capture stdout, stderr separately
+    > python state_test.py >out 2>err &
