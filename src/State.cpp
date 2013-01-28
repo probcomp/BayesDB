@@ -176,6 +176,31 @@ double State::get_marginal_logp() const {
   return column_crp_score + data_score;
 }
 
+vector<vector<int> > State::get_X_D() const {
+  vector<vector<int> > X_D;
+  set<View*>::iterator it;
+  for(it=views.begin(); it!=views.end(); it++) {
+    View &v = **it;
+    vector<int> canonical_clustering = v.get_canonical_clustering();
+    X_D.push_back(canonical_clustering);
+  }
+  return X_D;
+}
+
+map<int, set<int> > State::get_column_groups() const {
+  map<View*, int> view_to_int = set_to_map(views);
+  map<View*, set<int> > view_to_set = group_by_value(view_lookup);
+  map<int, set<int> > view_idx_to_set;
+  set<View*>::iterator it;
+  for(it=views.begin(); it!=views.end(); it++) {
+    View* p_v = *it;
+    int view_idx = view_to_int[p_v];
+    set<int> int_set = view_to_set[p_v];
+    view_idx_to_set[view_idx] = int_set;
+  }
+  return view_idx_to_set;
+}
+
 double State::transition_view_i(int which_view,
 				map<int, vector<double> > row_data_map) {
   // assumes views set ordering stays constant between calls
@@ -293,10 +318,10 @@ void State::SaveResult(string filename, int iter_idx) {
   for(; views_it!=views.end(); views_it++) {
     View* v_p = *views_it;
     int matrix_row_idx = view_to_int[v_p];
-    vector<vector<int> > canonical_clustering = v_p->get_canonical_clustering();
-    int num_clusters = canonical_clustering.size();
+    vector<vector<int> > cluster_groupings = v_p->get_cluster_groupings();
+    int num_clusters = cluster_groupings.size();
     for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
-      vector<int> cluster_indices = canonical_clustering[cluster_idx];
+      vector<int> cluster_indices = cluster_groupings[cluster_idx];
       int num_elements = cluster_indices.size();
       for(int element_idx=0; element_idx<num_elements; element_idx++) {
 	int row_idx = cluster_indices[element_idx];

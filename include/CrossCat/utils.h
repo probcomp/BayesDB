@@ -148,9 +148,9 @@ std::string stringify(T element) {
 int intify(std::string str);
 
 template <class K, class V>
-std::map<V, std::set<K> > group_by_value(std::map<K, V> in_map) {
+std::map<V, std::set<K> > group_by_value(const std::map<K, V> in_map) {
   std::map<V, std::set<K> > out_map;
-  typename std::map<K, V>::iterator it;
+  typename std::map<K, V>::const_iterator it;
   for(it=in_map.begin(); it!=in_map.end(); it++) {
     K k = it->first;
     V v = it->second;

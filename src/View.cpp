@@ -455,13 +455,24 @@ vector<int> View::shuffle_row_indices() {
   return shuffled_order;
 }
 
-vector<vector<int> > View::get_canonical_clustering() const {
-  vector<vector<int> > canonical_clustering;
+vector<vector<int> > View::get_cluster_groupings() const {
+  vector<vector<int> > cluster_groupings;
   set<Cluster*>::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
     Cluster &c = **it;
     vector<int> row_indices = c.get_row_indices_vector();
-    canonical_clustering.push_back(row_indices);
+    cluster_groupings.push_back(row_indices);
+  }
+  return cluster_groupings;
+}
+
+vector<int> View::get_canonical_clustering() const {
+  map<Cluster*, int> view_to_int = set_to_map(clusters);
+  vector<int> canonical_clustering;
+  for(int i=0; i<cluster_lookup.size(); i++) {
+    Cluster *p_c = cluster_lookup.find(i)->second;
+    int canonical_cluster_idx = view_to_int[p_c];
+    canonical_clustering.push_back(canonical_cluster_idx);
   }
   return canonical_clustering;
 }
