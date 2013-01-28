@@ -159,6 +159,19 @@ std::map<V, std::set<K> > group_by_value(const std::map<K, V> in_map) {
   return out_map;
 }
 
+template <class V>
+std::vector<int> define_group_ordering(const std::map<int, V> local_lookup, const std::set<V> in_set) {
+  std::vector<int> group_ordering;
+  std::map<V, int> V_to_int = set_to_map(in_set);
+  int num_elements = local_lookup.size();
+  for(int element_idx=0; element_idx<num_elements; element_idx++) {
+    V v = get(local_lookup, element_idx);
+    int group_idx = V_to_int[v];
+    group_ordering.push_back(group_idx);
+  }
+  return group_ordering;
+}
+
 // semi numeric functions
 std::vector<double> create_crp_alpha_grid(int n_values, int N_GRID);
 void construct_continuous_base_hyper_grids(int n_grid,

@@ -176,6 +176,32 @@ double State::get_marginal_logp() const {
   return column_crp_score + data_score;
 }
 
+vector<map<string, double> > State::get_column_hypers() const {
+  vector<map<string, double> > column_hypers;
+  int num_cols = get_num_cols();
+  map<int, map<string, double> >::const_iterator it;
+  for(int global_col_idx=0; global_col_idx<num_cols; global_col_idx++) {
+    it = hypers_m.find(global_col_idx);
+    if(it==hypers_m.end()) continue;
+    map<string, double> hypers_i = it->second;
+    // FIXME: actually detect
+    hypers_i["fixed"] = 0.;
+    column_hypers.push_back(hypers_i);
+  }
+  return column_hypers;
+}
+
+void State::get_column_partition(map<string, double> &hypers,
+				 vector<int> &assignments,
+				 vector<int> &counts) const {
+  map<string, double> local_hypers;
+  local_hypers["log_alpha"] = log(get_column_crp_alpha());
+  //
+  hypers = local_hypers;
+  assignments = define_group_ordering(view_lookup, views);
+  counts = get_view_counts();
+}
+
 vector<vector<int> > State::get_X_D() const {
   vector<vector<int> > X_D;
   set<View*>::iterator it;

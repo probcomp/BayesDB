@@ -37,6 +37,11 @@ class State {
   double get_data_score() const;
   double get_marginal_logp() const;
   std::map<int, std::set<int> > get_column_groups() const;
+  // helpers for API
+  std::vector<std::map<std::string, double> > get_column_hypers() const;
+  void get_column_partition(std::map<std::string, double> &hypers,
+			    std::vector<int> &assignments,
+			    std::vector<int> &counts) const;
   std::vector<std::vector<int> > get_X_D() const;
   //
   // mutators

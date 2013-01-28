@@ -40,7 +40,7 @@ class View {
   std::vector<double> get_crp_alpha_grid() const;
   std::vector<std::string> get_hyper_strings();
   std::vector<double> get_hyper_grid(int global_col_idx, std::string which_hyper);
-  std::map<std::string, double> get_hypers(int local_col_idx);
+  std::map<std::string, double> get_hypers(int local_col_idx) const;
   /* double get_data_hyper_score(); */
   //
   // getters (internal use)
