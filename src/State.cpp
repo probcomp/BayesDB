@@ -176,6 +176,17 @@ double State::get_marginal_logp() const {
   return column_crp_score + data_score;
 }
 
+vector<vector<int> > State::get_X_D() const {
+  vector<vector<int> > X_D;
+  set<View*>::iterator it;
+  for(it=views.begin(); it!=views.end(); it++) {
+    View &v = **it;
+    vector<int> canonical_clustering = v.get_canonical_clustering();
+    X_D.push_back(canonical_clustering);
+  }
+  return X_D;
+}
+
 double State::transition_view_i(int which_view,
 				map<int, vector<double> > row_data_map) {
   // assumes views set ordering stays constant between calls

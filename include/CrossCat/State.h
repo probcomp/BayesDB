@@ -36,6 +36,7 @@ class State {
   double get_column_crp_score() const;
   double get_data_score() const;
   double get_marginal_logp() const;
+  std::vector<std::vector<int> > get_X_D() const;
   //
   // mutators
   double insert_feature(int feature_idx, std::vector<double> feature_data,
