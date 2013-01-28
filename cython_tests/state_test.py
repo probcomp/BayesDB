@@ -4,9 +4,10 @@ import numpy
 #
 import State
 
-def gen_data(gen_seed, num_clusters, num_cols, num_rows):
-    mu_grid = numpy.linspace(-10, 10, 31)
-    sigma_grid = 10 ** numpy.linspace(-1, .1, 31)
+def gen_data(gen_seed, num_clusters, num_cols, num_rows, max_mean=10, max_std=1):
+    n_grid = 11
+    mu_grid = numpy.linspace(-max_mean, max_mean, n_grid)
+    sigma_grid = 10 ** numpy.linspace(-1, numpy.log10(max_std), n_grid)
     num_rows_per_cluster = num_rows / num_clusters
     zs = numpy.repeat(range(num_clusters), num_rows_per_cluster)
     #
@@ -27,7 +28,8 @@ def gen_data(gen_seed, num_clusters, num_cols, num_rows):
     xs = numpy.vstack(clusters)
     return xs, zs
 
-def gen_factorial_data(gen_seed, num_clusters, num_cols, num_rows, num_splits):
+def gen_factorial_data(gen_seed, num_clusters, num_cols, num_rows, num_splits,
+                       max_mean=10, max_std=1):
     random_state = numpy.random.RandomState(gen_seed)
     data_list = []
     inverse_permutation_indices_list = []
@@ -46,14 +48,18 @@ def gen_factorial_data(gen_seed, num_clusters, num_cols, num_rows, num_splits):
     return data, inverse_permutation_indices_list
 
 gen_seed = 0
-num_clusters = 4
+num_clusters = 2
 num_cols = 6
-num_rows = 500
+num_rows = 1000
 num_splits = 2
+max_mean = 10
+max_std = 0.3
 data, inverse_permutation_indices_list = \
-    gen_factorial_data(gen_seed, num_clusters, num_cols, num_rows, num_splits)
+    gen_factorial_data(gen_seed, num_clusters, num_cols, num_rows, num_splits,
+                       max_mean, max_std)
 
-print data
+with open('data.csv', 'w') as fh:
+    data.tofile(fh, sep=',')
 
 ## need to actually generate clusters, this is all one cluster
 global_row_indices = range(num_rows)
