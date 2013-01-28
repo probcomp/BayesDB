@@ -187,6 +187,20 @@ vector<vector<int> > State::get_X_D() const {
   return X_D;
 }
 
+map<int, set<int> > State::get_column_groups() const {
+  map<View*, int> view_to_int = set_to_map(views);
+  map<View*, set<int> > view_to_set = group_by_value(view_lookup);
+  map<int, set<int> > view_idx_to_set;
+  set<View*>::iterator it;
+  for(it=views.begin(); it!=views.end(); it++) {
+    View* p_v = *it;
+    int view_idx = view_to_int[p_v];
+    set<int> int_set = view_to_set[p_v];
+    view_idx_to_set[view_idx] = int_set;
+  }
+  return view_idx_to_set;
+}
+
 double State::transition_view_i(int which_view,
 				map<int, vector<double> > row_data_map) {
   // assumes views set ordering stays constant between calls
