@@ -466,6 +466,17 @@ vector<vector<int> > View::get_cluster_groupings() const {
   return cluster_groupings;
 }
 
+vector<int> View::get_canonical_clustering() const {
+  map<Cluster*, int> view_to_int = set_to_map(clusters);
+  vector<int> canonical_clustering;
+  for(int i=0; i<cluster_lookup.size(); i++) {
+    Cluster *p_c = cluster_lookup.find(i)->second;
+    int canonical_cluster_idx = view_to_int[p_c];
+    canonical_clustering.push_back(canonical_cluster_idx);
+  }
+  return canonical_clustering;
+}
+
 void View::print_score_matrix() {
   vector<vector<double> > scores_v;
   set<Cluster*>::iterator c_it;
