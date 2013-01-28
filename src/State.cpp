@@ -191,15 +191,18 @@ vector<map<string, double> > State::get_column_hypers() const {
   return column_hypers;
 }
 
-void State::get_column_partition(map<string, double> &hypers,
-				 vector<int> &assignments,
-				 vector<int> &counts) const {
+map<string,double> State::get_column_partition_hypers() const {
   map<string, double> local_hypers;
   local_hypers["log_alpha"] = log(get_column_crp_alpha());
-  //
-  hypers = local_hypers;
-  assignments = define_group_ordering(view_lookup, views);
-  counts = get_view_counts();
+  return local_hypers;
+}
+
+vector<int> State::get_column_partition_assignments() const {
+  return define_group_ordering(view_lookup, views);
+}
+
+vector<int> State::get_column_partition_counts() const {
+  return get_view_counts();
 }
 
 vector<vector<int> > State::get_X_D() const {

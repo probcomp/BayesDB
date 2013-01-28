@@ -1,4 +1,5 @@
 from libcpp.vector cimport vector
+from libcpp.string cimport string
 from libcpp.map cimport map
 from libcpp.set cimport set
 from cython.operator import dereference
@@ -45,6 +46,10 @@ cdef extern from "State.h":
           double transition(matrix[double] data)
           double get_marginal_logp()
           map[int, set[int]] get_column_groups()
+          vector[map[string, double]] get_column_hypers()
+          map[string, double] get_column_partition_hypers()
+          vector[int] get_column_partition_assignments()
+          vector[int] get_column_partition_counts()
           void SaveResult()
      State *new_State "new State" (matrix[double] &data, vector[int] global_row_indices, vector[int] global_col_indices, int N_GRID, int SEED)
      void del_State "delete" (State *s)
@@ -84,5 +89,12 @@ cdef class p_State:
         return self.thisptr.get_marginal_logp()
     def get_column_groups(self):
         return self.thisptr.get_column_groups()
+    def get_column_hypers(self):
+        return self.thisptr.get_column_hypers()
+    def get_column_partition(self):
+        hypers = self.thisptr.get_column_partition_hypers()
+        assignments = self.thisptr.get_column_partition_assignments()
+        counts = self.thisptr.get_column_partition_counts()
+        return hypers, assignments, counts
     def __repr__(self):
         return "State[%s, %s]" % (self.dataptr.size1(), self.dataptr.size2())

@@ -39,9 +39,9 @@ class State {
   std::map<int, std::set<int> > get_column_groups() const;
   // helpers for API
   std::vector<std::map<std::string, double> > get_column_hypers() const;
-  void get_column_partition(std::map<std::string, double> &hypers,
-			    std::vector<int> &assignments,
-			    std::vector<int> &counts) const;
+  std::map<std::string, double> get_column_partition_hypers() const;
+  std::vector<int> get_column_partition_assignments() const;
+  std::vector<int> get_column_partition_counts() const;
   std::vector<std::vector<int> > get_X_D() const;
   //
   // mutators
