@@ -91,7 +91,7 @@ vector<double> View::get_hyper_grid(int global_col_idx, std::string which_hyper)
   return hyper_grid;
 }
 
-map<string, double> View::get_hypers(int local_col_idx) {
+map<string, double> View::get_hypers(int local_col_idx) const {
   return *(hypers_v[local_col_idx]);
 }
 
