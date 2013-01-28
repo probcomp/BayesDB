@@ -82,5 +82,6 @@ print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
 for idx in range(100):
     print "transitioning"
     p_State.transition()
+    print p_State.get_column_groups()
     #
     print "p_State.get_marginal_logp():", p_State.get_marginal_logp()

@@ -1,4 +1,6 @@
 from libcpp.vector cimport vector
+from libcpp.map cimport map
+from libcpp.set cimport set
 from cython.operator import dereference
 cimport numpy as np
 
@@ -42,6 +44,7 @@ cdef extern from "State.h":
      cdef cppclass State:
           double transition(matrix[double] data)
           double get_marginal_logp()
+          map[int, set[int]] get_column_groups()
           void SaveResult()
      State *new_State "new State" (matrix[double] &data, vector[int] global_row_indices, vector[int] global_col_indices, int N_GRID, int SEED)
      void del_State "delete" (State *s)
@@ -79,5 +82,7 @@ cdef class p_State:
         return self.thisptr.transition(dereference(self.dataptr))
     def get_marginal_logp(self):
         return self.thisptr.get_marginal_logp()
+    def get_column_groups(self):
+        return self.thisptr.get_column_groups()
     def __repr__(self):
         return "State[%s, %s]" % (self.dataptr.size1(), self.dataptr.size2())
