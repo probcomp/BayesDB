@@ -366,9 +366,7 @@ double View::remove_row(vector<double> vd, int row_idx) {
   return score_delta;
 }
 
-void View::crp_init_rows(vector<int> global_row_indices) {
-  vector<vector<int> > crp_init = draw_crp_init(global_row_indices,
-						crp_alpha, rng);
+void View::crp_init_rows(vector<vector<int> > crp_init) {
   int num_clusters = crp_init.size();
   vector<double> blank_row;
   for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
@@ -383,10 +381,20 @@ void View::crp_init_rows(vector<int> global_row_indices) {
   }
 }
 
-void View::prep_for_insert_col(vector<int> global_row_indices) {
-  int num_rows = global_row_indices.size();
+void View::prep_for_insert_col(vector<vector<int> > crp_init) {
+  int num_rows = 0;
+  vector<vector<int> >::iterator it;
+  for(it=crp_init.begin(); it!=crp_init.end(); it++) {
+    num_rows +=(*it).size();
+  }
   construct_base_hyper_grids(num_rows);
-  crp_init_rows(global_row_indices);
+  crp_init_rows(crp_init);
+}
+
+void View::prep_for_insert_col(vector<int> global_row_indices) {
+  vector<vector<int> > crp_init = draw_crp_init(global_row_indices, crp_alpha,
+						rng);
+  prep_for_insert_col(crp_init);
 }
 
 double View::insert_col(vector<double> col_data,
