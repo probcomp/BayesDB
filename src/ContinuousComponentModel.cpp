@@ -54,6 +54,8 @@ vector<double> ContinuousComponentModel::calc_hyper_conditionals(string which_hy
 						     sum_x_sq, r, nu, s);
   } else {
     // error condition
+    vector<double> error;
+    return error;
   }
 }
 
@@ -104,6 +106,10 @@ void ContinuousComponentModel::get_suffstats(int &count_out, double &sum_x,
   count_out = count;
   sum_x = get(suffstats, (string) "sum_x");
   sum_x_sq = get(suffstats, (string) "sum_x_sq");
+}
+
+map<string, double> ContinuousComponentModel::get_suffstats() const {
+  return suffstats;
 }
 
 void ContinuousComponentModel::get_hyper_doubles(double &r, double &nu,

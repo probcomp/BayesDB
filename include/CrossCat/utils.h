@@ -148,15 +148,28 @@ std::string stringify(T element) {
 int intify(std::string str);
 
 template <class K, class V>
-std::map<V, std::set<K> > group_by_value(std::map<K, V> in_map) {
+std::map<V, std::set<K> > group_by_value(const std::map<K, V> in_map) {
   std::map<V, std::set<K> > out_map;
-  typename std::map<K, V>::iterator it;
+  typename std::map<K, V>::const_iterator it;
   for(it=in_map.begin(); it!=in_map.end(); it++) {
     K k = it->first;
     V v = it->second;
     out_map[v].insert(k);
   }
   return out_map;
+}
+
+template <class V>
+std::vector<int> define_group_ordering(const std::map<int, V> local_lookup, const std::set<V> in_set) {
+  std::vector<int> group_ordering;
+  std::map<V, int> V_to_int = set_to_map(in_set);
+  int num_elements = local_lookup.size();
+  for(int element_idx=0; element_idx<num_elements; element_idx++) {
+    V v = get(local_lookup, element_idx);
+    int group_idx = V_to_int[v];
+    group_ordering.push_back(group_idx);
+  }
+  return group_ordering;
 }
 
 // semi numeric functions
@@ -173,7 +186,7 @@ void construct_continuous_specific_hyper_grid(int n_grid,
 template <class T>
 boost::numeric::ublas::matrix<T> vector_to_matrix(std::vector<T> vT) {
   boost::numeric::ublas::matrix<T> matrix_out(1, vT.size());
-  for(int i=0; i<vT.size(); i++) {
+  for(unsigned int i=0; i<vT.size(); i++) {
     matrix_out(0, i) = vT[i];
   }
   return matrix_out;

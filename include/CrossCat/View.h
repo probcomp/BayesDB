@@ -40,8 +40,13 @@ class View {
   std::vector<double> get_crp_alpha_grid() const;
   std::vector<std::string> get_hyper_strings();
   std::vector<double> get_hyper_grid(int global_col_idx, std::string which_hyper);
-  std::map<std::string, double> get_hypers(int local_col_idx);
-  /* double get_data_hyper_score(); */
+  std::map<std::string, double> get_hypers(int local_col_idx) const;
+  //
+  // API helpers
+  std::map<std::string, double> get_row_partition_model_hypers() const;
+  std::vector<int> get_row_partition_model_counts() const;
+  std::vector<std::map<std::string, double> > get_column_component_suffstats_i(int global_col_idx) const;
+  std::vector<std::vector<std::map<std::string, double> > > get_column_component_suffstats() const;
   //
   // getters (internal use)
   Cluster& get_cluster(int cluster_idx);
@@ -94,7 +99,8 @@ class View {
   std::vector<double> align_data(std::vector<double> values,
 				 std::vector<int> global_column_indices) const;
   std::vector<int> shuffle_row_indices();
-  std::vector<std::vector<int> > get_canonical_clustering() const;
+  std::vector<std::vector<int> > get_cluster_groupings() const;
+  std::vector<int> get_canonical_clustering() const;
   void print();
   void print_score_matrix();
   void assert_state_consistency();
