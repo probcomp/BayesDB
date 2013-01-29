@@ -13,6 +13,7 @@ class ContinuousComponentModel : public ComponentModel {
   // getters
   void get_hyper_doubles(double &r, double &nu, double &s, double &mu) const;
   void get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const;
+  std::map<std::string, double> get_suffstats() const;
   //
   // calculators
   double calc_marginal_logp() const;
