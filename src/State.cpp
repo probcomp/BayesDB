@@ -174,6 +174,26 @@ double State::get_marginal_logp() const {
   return column_crp_score + data_score;
 }
 
+map<string, double> State::get_row_partition_model_hypers_i(int view_idx) const {
+  set<View*>::const_iterator it = views.begin();
+  std::advance(it, view_idx);
+  return (**it).get_row_partition_model_hypers();
+}
+
+vector<int> State::get_row_partition_model_counts_i(int view_idx) const {
+  set<View*>::const_iterator it = views.begin();
+  std::advance(it, view_idx);
+  return (**it).get_row_partition_model_counts();
+}
+
+vector<vector<map<string, double> > > State::get_column_component_suffstats_i(int view_idx) const {
+  // ordering should be same as column_names
+  set<View*>::const_iterator it = views.begin();
+  std::advance(it, view_idx);
+  assert(it!=views.end());
+  return (**it).get_column_component_suffstats();
+}
+
 vector<map<string, double> > State::get_column_hypers() const {
   vector<map<string, double> > column_hypers;
   int num_cols = get_num_cols();

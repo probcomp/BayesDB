@@ -45,11 +45,16 @@ cdef extern from "State.h":
      cdef cppclass State:
           double transition(matrix[double] data)
           double get_marginal_logp()
+          int get_num_views()
           map[int, set[int]] get_column_groups()
           vector[map[string, double]] get_column_hypers()
           map[string, double] get_column_partition_hypers()
           vector[int] get_column_partition_assignments()
           vector[int] get_column_partition_counts()
+          #
+          map[string, double] get_row_partition_model_hypers_i(int view_idx)
+          vector[int] get_row_partition_model_counts_i(int view_idx)
+          vector[vector[map[string, double]]] get_column_component_suffstats_i(int view_idx)
           void SaveResult()
      State *new_State "new State" (matrix[double] &data, vector[int] global_row_indices, vector[int] global_col_indices, int N_GRID, int SEED)
      void del_State "delete" (State *s)
@@ -96,5 +101,38 @@ cdef class p_State:
         assignments = self.thisptr.get_column_partition_assignments()
         counts = self.thisptr.get_column_partition_counts()
         return hypers, assignments, counts
+    def get_num_views(self):
+        return self.thisptr.get_num_views()
+    def get_row_partition_model_i(self, view_idx):
+          hypers = self.thisptr.get_row_partition_model_hypers_i(view_idx)
+          counts = self.thisptr.get_row_partition_model_counts_i(view_idx)
+          row_parition_model_i = dict()
+          row_parition_model_i['hypers'] = hypers
+          row_parition_model_i['counts'] = counts
+          return row_parition_model_i
+    def get_column_names_i(self, view_idx):
+          return []
+    def get_column_component_suffstats_i(self, view_idx):
+          return self.thisptr.get_column_component_suffstats_i(view_idx)
+    def get_view_state_i(self, view_idx):
+          print "get_view_state_i(", view_idx, ")"
+          row_partition_model = self.get_row_partition_model_i(view_idx)
+          print "\trow_partition_model:", row_partition_model
+          column_names = self.get_column_names_i(view_idx)
+          print "\tcolumn_names:", column_names
+          column_component_suffstats = self.get_column_component_suffstats_i(
+                view_idx)
+          print "\tcolumn_component_suffstats:", column_component_suffstats
+          view_state_i = dict()
+          view_state_i['row_partition_model'] = row_partition_model
+          view_state_i['column_names'] = column_names
+          view_state_i['column_component_suffstats'] = column_component_suffstats
+          return view_state_i
+    def get_view_state(self):
+        view_state = []
+        for view_idx in range(self.get_num_views()):
+            view_state_i = self.get_view_state_i(view_idx)
+            view_state.append(view_state_i)
+        return view_state
     def __repr__(self):
         return "State[%s, %s]" % (self.dataptr.size1(), self.dataptr.size2())

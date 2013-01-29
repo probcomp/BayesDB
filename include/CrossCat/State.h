@@ -38,6 +38,10 @@ class State {
   double get_marginal_logp() const;
   std::map<int, std::set<int> > get_column_groups() const;
   // helpers for API
+  std::map<std::string, double> get_row_partition_model_hypers_i(int view_idx) const;
+  std::vector<int> get_row_partition_model_counts_i(int view_idx) const;
+  std::vector<std::vector<std::map<std::string, double> > > get_column_component_suffstats_i(int view_idx) const;
+  //
   std::vector<std::map<std::string, double> > get_column_hypers() const;
   std::map<std::string, double> get_column_partition_hypers() const;
   std::vector<int> get_column_partition_assignments() const;

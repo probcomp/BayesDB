@@ -45,7 +45,8 @@ class View {
   // API helpers
   std::map<std::string, double> get_row_partition_model_hypers() const;
   std::vector<int> get_row_partition_model_counts() const;
-  std::vector<std::map<std::string, double> > get_column_component_suffstats(int global_col_idx) const;
+  std::vector<std::map<std::string, double> > get_column_component_suffstats_i(int global_col_idx) const;
+  std::vector<std::vector<std::map<std::string, double> > > get_column_component_suffstats() const;
   //
   // getters (internal use)
   Cluster& get_cluster(int cluster_idx);

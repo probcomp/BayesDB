@@ -105,13 +105,26 @@ vector<int> View::get_row_partition_model_counts() const {
   return get_cluster_counts();
 }
 
-vector<map<string, double> > View::get_column_component_suffstats(int global_col_idx) const {
+vector<map<string, double> > View::get_column_component_suffstats_i(int global_col_idx) const {
   vector<map<string, double> > column_component_suffstats;
   set<Cluster*>::const_iterator it = clusters.begin();
   for(; it!=clusters.end(); it++) {
-    ContinuousComponentModel ccm  = (**it).get_model(global_col_idx);
+    int local_col_idx = get(global_to_local, global_col_idx);
+    ContinuousComponentModel ccm  = (**it).get_model(local_col_idx);
     map<string, double> suffstats = ccm.get_suffstats();
     column_component_suffstats.push_back(suffstats);
+  }
+  return column_component_suffstats;
+}
+
+vector<vector<map<string, double> > > View::get_column_component_suffstats() const {
+  vector<vector<map<string, double> > > column_component_suffstats;
+  map<int, int>::const_iterator it;
+  for(it=global_to_local.begin(); it!=global_to_local.end(); it++) {
+    int global_col_idx = it->first;
+    vector<map<string, double> > column_component_suffstats_i = \
+      get_column_component_suffstats_i(global_col_idx);
+    column_component_suffstats.push_back(column_component_suffstats_i);
   }
   return column_component_suffstats;
 }

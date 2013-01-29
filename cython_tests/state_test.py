@@ -86,3 +86,5 @@ for idx in range(100):
     print "p_State.get_column_hypers():", p_State.get_column_hypers()
     print "p_State.get_column_partition():", p_State.get_column_partition()
     print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
+    for view_idx, view_state_i in enumerate(p_State.get_view_state()):
+        print "view_state_i:", view_idx, view_state_i
