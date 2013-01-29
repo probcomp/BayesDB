@@ -59,6 +59,21 @@ def random_regression_pairs(n, pairs):
     
     return samples
 
+def write_data(samples, file_base):
+    
+    f = open(file_base + '-data.csv', 'w')
+    for i in range(len(samples)):
+        for j in range(len(samples[i]) - 1):
+            f.write(str(samples[i][j]) + ',')
+        f.write(str(samples[i][j + 1]) + '\n')
+    f.close()
+    
+    f = open(file_base + '-labels.csv', 'w')
+    for i in range(len(samples[0]) - 1):
+            f.write('numeric,')
+    f.write('numeric')
+    f.close()
+
 #samples = random_regression_pairs(1000,3)
 #m = zip(*samples)
 #plt.plot(m[0],m[4], 'r.')
