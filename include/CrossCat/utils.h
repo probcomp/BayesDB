@@ -175,7 +175,7 @@ std::vector<int> define_group_ordering(const std::map<int, V> local_lookup, cons
 // semi numeric functions
 std::vector<double> create_crp_alpha_grid(int n_values, int N_GRID);
 void construct_continuous_base_hyper_grids(int n_grid,
-					   std::vector<double> col_data,
+					   int data_num_vectors,
 					   std::vector<double> &r_grid,
 					   std::vector<double> &nu_grid);
 void construct_continuous_specific_hyper_grid(int n_grid,
