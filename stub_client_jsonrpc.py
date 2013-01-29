@@ -32,13 +32,24 @@ def call_and_print(method_name, args_dict):
     print json.loads(r.content)
     print
 
-non_stub = set(['initialize', 'initialize_and_analyze'])
 # non-stub functions
+non_stub = set(['initialize', 'initialize_and_analyze'])
+#
 method_name = 'initialize'
 args_dict = dict()
 args_dict['M_c'] = 'M_c'
 args_dict['M_r'] = 'M_r'
 args_dict['i'] = ''
+T_dim = (3, 4)
+T = (numpy.arange(numpy.prod(T_dim)).reshape(T_dim) * 1.0).tolist()
+args_dict['T'] = T
+call_and_print(method_name, args_dict)
+time.sleep(1)
+#
+method_name = 'initialize_and_analyze'
+args_dict = dict()
+args_dict['n_steps'] = 10
+args_dict['SEED'] = 0
 T_dim = (3, 4)
 T = (numpy.arange(numpy.prod(T_dim)).reshape(T_dim) * 1.0).tolist()
 args_dict['T'] = T
