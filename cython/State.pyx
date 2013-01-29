@@ -86,11 +86,15 @@ cdef class p_State:
     cdef matrix[double] *dataptr
     cdef vector[int] gri
     cdef vector[int] gci
-    def __cinit__(self, data, global_row_indices, global_col_indices, N_GRID, SEED):
-          self.dataptr = convert_data(data)
-          self.gri = convert_vector(global_row_indices)
-          self.gci = convert_vector(global_col_indices)
-          self.thisptr = new_State(dereference(self.dataptr), self.gri, self.gci, N_GRID, SEED)
+    def __cinit__(self, data, global_row_indices=None, global_col_indices=None, N_GRID=31, SEED=0):
+         if global_row_indices is None:
+              global_row_indices = range(len(data))
+         if global_col_indices is None:
+              global_col_indices = range(len(data[0]))
+         self.dataptr = convert_data(data)
+         self.gri = convert_vector(global_row_indices)
+         self.gci = convert_vector(global_col_indices)
+         self.thisptr = new_State(dereference(self.dataptr), self.gri, self.gci, N_GRID, SEED)
     def __dealloc__(self):
         del_matrix(self.dataptr)
         del_State(self.thisptr)
