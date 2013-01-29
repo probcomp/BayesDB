@@ -7,8 +7,8 @@ class FakeEngine(object):
         X_D = [[]]
         return M_c, M_r, X_L, X_D
 
-    def analyze(self, S, T, X_L, X_D, M_C, M_R, kernel_list,
-                              n_steps, c, r, max_iterations, max_time):
+    def analyze(self, M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
+                max_iterations, max_time):
         X_L_prime = {}
         X_D_prime = [[]]
         return X_L_prime, X_D_prime
@@ -17,8 +17,7 @@ class FakeEngine(object):
         x = []
         return x
 
-    def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q,
-                                                    n):
+    def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, n):
         p = None
         return p
 
@@ -27,7 +26,7 @@ class FakeEngine(object):
         return e
 
     def conditional_entropy(M_c, X_L, X_D, d_given, d_target,
-                                   n=None, max_time=None):
+                            n=None, max_time=None):
         e = None
         return e
 
