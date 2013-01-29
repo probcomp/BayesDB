@@ -238,7 +238,7 @@ void insert_into_counts(unsigned int draw, vector<int> &counts) {
   }
 }
 
-vector<int> determine_crp_init_counts(int num_datum, double alpha,
+vector<int> draw_crp_init_counts(int num_datum, double alpha,
 				      RandomNumberGenerator &rng) {
   vector<int> counts;
   double rand_u;
@@ -253,11 +253,11 @@ vector<int> determine_crp_init_counts(int num_datum, double alpha,
   return counts;
 }
 
-vector<vector<int> > determine_crp_init(vector<int> global_row_indices,
+vector<vector<int> > draw_crp_init(vector<int> global_row_indices,
 					double alpha,
 					RandomNumberGenerator &rng) {
   int num_datum = global_row_indices.size();
-  vector<int> counts = determine_crp_init_counts(num_datum, alpha, rng);
+  vector<int> counts = draw_crp_init_counts(num_datum, alpha, rng);
   std::random_shuffle(global_row_indices.begin(), global_row_indices.end());
   vector<int>::iterator it = global_row_indices.begin();
   vector<vector<int> > cluster_indices_v;

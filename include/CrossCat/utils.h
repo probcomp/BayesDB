@@ -107,7 +107,7 @@ std::vector<double> reorder_per_map(std::vector<double> raw_values,
 				    std::map<int, int> global_to_local);
 std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double> > raw_values, std::vector<int> global_column_indices, std::map<int, int> global_to_local);
 
-std::vector<std::vector<int> > determine_crp_init(std::vector<int> global_row_indices,
+std::vector<std::vector<int> > draw_crp_init(std::vector<int> global_row_indices,
 						  double alpha,
 						  RandomNumberGenerator &rng);
 

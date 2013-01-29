@@ -375,8 +375,8 @@ double View::insert_col(vector<double> col_data,
   //
   if(get_num_clusters()==0) {
     construct_base_hyper_grids(col_data.size());
-    vector<vector<int> > crp_init = determine_crp_init(data_global_row_indices,
-						       crp_alpha, rng);
+    vector<vector<int> > crp_init = draw_crp_init(data_global_row_indices,
+						  crp_alpha, rng);
     int num_clusters = crp_init.size();
     vector<double> blank_row;
     for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {

@@ -525,7 +525,8 @@ void State::init_hypers(vector<int> global_col_indices) {
 void State::init_views(const MatrixD &data, vector<int> global_row_indices,
 		       vector<int> global_col_indices) {
   vector<vector<int> > init_column_partition;
-  init_column_partition = determine_crp_init(global_col_indices, column_crp_alpha, rng);
+  init_column_partition = draw_crp_init(global_col_indices, column_crp_alpha,
+					rng);
   //
   vector<vector<int> >::iterator cp_it;
   for(cp_it=init_column_partition.begin(); cp_it!=init_column_partition.end();
