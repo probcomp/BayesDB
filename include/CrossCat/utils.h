@@ -191,5 +191,15 @@ boost::numeric::ublas::matrix<T> vector_to_matrix(std::vector<T> vT) {
   }
   return matrix_out;
 }
-				 
+
+template <class T>
+int count_elements(std::vector<std::vector<T> > v_v_T) {
+  int num_elements = 0;
+  typename std::vector<std::vector<T> >::iterator it;
+  for(it=v_v_T.begin(); it!=v_v_T.end(); it++) {
+    num_elements +=(*it).size();
+  }
+  return num_elements;
+}
+
 #endif // GUARD_utils_H

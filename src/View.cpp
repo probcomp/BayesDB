@@ -382,11 +382,7 @@ void View::crp_init_rows(vector<vector<int> > crp_init) {
 }
 
 void View::prep_for_insert_col(vector<vector<int> > crp_init) {
-  int num_rows = 0;
-  vector<vector<int> >::iterator it;
-  for(it=crp_init.begin(); it!=crp_init.end(); it++) {
-    num_rows +=(*it).size();
-  }
+  int num_rows = count_elements(crp_init);
   construct_base_hyper_grids(num_rows);
   crp_init_rows(crp_init);
 }
