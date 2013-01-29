@@ -1,11 +1,15 @@
 import inspect
+#
+import numpy
+#
 import cython.State as State
 
 class Engine(object):
 
     def initialize(self, M_c, M_r, T, i):
-        X_L = {}
-        X_D = [[]]
+        p_State = State.p_State(numpy.array(T))
+        X_L = p_State.get_X_L()
+        X_D = p_State.get_X_D()
         return M_c, M_r, X_L, X_D
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
@@ -15,7 +19,7 @@ class Engine(object):
         return X_L_prime, X_D_prime
 
     def initialize_and_analyze(self, M_c, M_r, T, n_steps):
-        p_State = State.p_State(T)
+        p_State = State.p_State(numpy.array(T))
         for idx in range(n_steps):
             print "transitioning"
             p_State.transition()
