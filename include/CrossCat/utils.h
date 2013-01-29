@@ -186,7 +186,7 @@ void construct_continuous_specific_hyper_grid(int n_grid,
 template <class T>
 boost::numeric::ublas::matrix<T> vector_to_matrix(std::vector<T> vT) {
   boost::numeric::ublas::matrix<T> matrix_out(1, vT.size());
-  for(int i=0; i<vT.size(); i++) {
+  for(unsigned int i=0; i<vT.size(); i++) {
     matrix_out(0, i) = vT[i];
   }
   return matrix_out;
