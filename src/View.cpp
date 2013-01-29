@@ -16,12 +16,14 @@ View::View(const MatrixD data,
 	   int SEED, int N_GRID) : n_grid(N_GRID), rng(SEED) {
   assert(global_row_indices.size()==data.size1());
   assert(global_col_indices.size()==data.size2());
+  int num_rows = data.size1();
+  int num_cols = data.size2();
   //
   crp_alpha = 0.8;
   crp_score = 0;
   data_score = 0;
   //
-  for(unsigned int data_col_idx=0; data_col_idx<data.size2(); data_col_idx++) {
+  for(int data_col_idx=0; data_col_idx<num_cols; data_col_idx++) {
     vector<double> col_data = extract_col(data, data_col_idx);
     int global_col_idx = global_col_indices[data_col_idx];
     map<string, double> &hypers = hypers_m[global_col_idx];
@@ -370,8 +372,9 @@ double View::insert_col(vector<double> col_data,
 			map<string, double> &hypers) {
   double score_delta = 0;
   construct_column_hyper_grid(col_data, global_col_idx);
+  //
   if(get_num_clusters()==0) {
-    construct_base_hyper_grids(col_data);
+    construct_base_hyper_grids(col_data.size());
     vector<vector<int> > crp_init = determine_crp_init(data_global_row_indices,
 						       crp_alpha, rng);
     int num_clusters = crp_init.size();
@@ -387,6 +390,7 @@ double View::insert_col(vector<double> col_data,
       }
     }
   }
+  //
   hypers_v.push_back(&hypers);
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
@@ -552,9 +556,9 @@ int View::draw_rand_i(int max) {
   return rng.nexti(max);
 }
 
-void View::construct_base_hyper_grids(vector<double> col_data) {
-  crp_alpha_grid = create_crp_alpha_grid(col_data.size(), n_grid);
-  construct_continuous_base_hyper_grids(n_grid, col_data, r_grid, nu_grid);
+void View::construct_base_hyper_grids(int num_rows) {
+  crp_alpha_grid = create_crp_alpha_grid(num_rows, n_grid);
+  construct_continuous_base_hyper_grids(n_grid, num_rows, r_grid, nu_grid);
 }
 
 void View::construct_column_hyper_grid(vector<double> col_data,

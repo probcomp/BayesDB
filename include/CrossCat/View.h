@@ -125,7 +125,7 @@ class View {
   double draw_rand_u();
   int draw_rand_i(int max);
   // helpers
-  void construct_base_hyper_grids(std::vector<double> col_data);
+  void construct_base_hyper_grids(int num_rows);
   void construct_column_hyper_grid(std::vector<double> col_data,
 				   int gobal_col_idx);
   /* std::map<std::string, double> data_hypers; */
