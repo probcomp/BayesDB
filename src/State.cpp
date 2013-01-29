@@ -60,8 +60,6 @@ double State::insert_feature(int feature_idx, vector<double> feature_data,
 
 double State::sample_insert_feature(int feature_idx, vector<double> feature_data,
 				    View &singleton_view) {
-  // map<string, double> hypers = singleton_view
-  map<string, double> &hypers = hypers_m[feature_idx];
   vector<double> unorm_logps = calc_feature_view_predictive_logps(feature_data,
 								  feature_idx);
   double rand_u = draw_rand_u();
@@ -128,7 +126,7 @@ View& State::get_new_view() {
 
 View& State::get_view(int view_idx) {
   assert(view_idx <= views.size());
-  bool not_new = view_idx < views.size();
+  bool not_new = ((unsigned int) view_idx) < views.size();
   if(not_new) {
     set<View*>::iterator it = views.begin();
     std::advance(it, view_idx);
@@ -364,7 +362,7 @@ void State::SaveResult(string filename, int iter_idx) {
   out << "paramPrior = " << paramPrior << endl;
 
   matrix<double> cumParamPrior(1, n_grid, 1./n_grid);
-  for(int i=0; i<cumParamPrior.size2(); i++) {
+  for(unsigned int i=0; i<cumParamPrior.size2(); i++) {
     cumParamPrior(0,i) *= (i+1); 
   }
   out << "cumParamPrior = " << cumParamPrior << endl;
