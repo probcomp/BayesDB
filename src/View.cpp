@@ -366,6 +366,29 @@ double View::remove_row(vector<double> vd, int row_idx) {
   return score_delta;
 }
 
+void View::crp_init_rows(vector<int> global_row_indices) {
+  vector<vector<int> > crp_init = draw_crp_init(global_row_indices,
+						crp_alpha, rng);
+  int num_clusters = crp_init.size();
+  vector<double> blank_row;
+  for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
+    vector<int> global_row_indices = crp_init[cluster_idx];
+    vector<int>::iterator it;
+    // create new cluster
+    Cluster &new_cluster = get_new_cluster();
+    for(it=global_row_indices.begin(); it!=global_row_indices.end(); it++) {
+      int global_row_index = *it;
+      insert_row(blank_row, new_cluster, global_row_index);
+    }
+  }
+}
+
+void View::prep_for_insert_col(vector<int> global_row_indices) {
+  int num_rows = global_row_indices.size();
+  construct_base_hyper_grids(num_rows);
+  crp_init_rows(global_row_indices);
+}
+
 double View::insert_col(vector<double> col_data,
 			vector<int> data_global_row_indices,
 			int global_col_idx,
@@ -374,21 +397,7 @@ double View::insert_col(vector<double> col_data,
   construct_column_hyper_grid(col_data, global_col_idx);
   //
   if(get_num_clusters()==0) {
-    construct_base_hyper_grids(col_data.size());
-    vector<vector<int> > crp_init = draw_crp_init(data_global_row_indices,
-						  crp_alpha, rng);
-    int num_clusters = crp_init.size();
-    vector<double> blank_row;
-    for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
-      vector<int> global_row_indices = crp_init[cluster_idx];
-      vector<int>::iterator it;
-      // create new cluster
-      Cluster &new_cluster = get_new_cluster();
-      for(it=global_row_indices.begin(); it!=global_row_indices.end(); it++) {
-	int global_row_index = *it;
-	insert_row(blank_row, new_cluster, global_row_index);
-      }
-    }
+    prep_for_insert_col(data_global_row_indices);
   }
   //
   hypers_v.push_back(&hypers);
