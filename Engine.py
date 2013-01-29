@@ -4,7 +4,11 @@ import numpy
 #
 import cython.State as State
 
+
 class Engine(object):
+
+    def __init__(self):
+        self.seed = 0
 
     def initialize(self, M_c, M_r, T, i):
         p_State = State.p_State(numpy.array(T))
@@ -18,14 +22,19 @@ class Engine(object):
         X_D_prime = [[]]
         return X_L_prime, X_D_prime
 
-    def initialize_and_analyze(self, M_c, M_r, T, n_steps):
-        p_State = State.p_State(numpy.array(T))
+    def initialize_and_analyze(self, T, n_steps, SEED=None):
+        if SEED is None:
+            SEED = self.seed
+            self.seed += 1
+        print 'initialize_and_analyze: using seed', SEED
+        p_State = State.p_State(numpy.array(T), SEED=SEED)
         for idx in range(n_steps):
             print "transitioning"
             p_State.transition()
         X_L_prime = p_State.get_X_L()
         X_D_prime = p_State.get_X_D()
         return X_L_prime, X_D_prime
+
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, q):
         x = []
         return x
