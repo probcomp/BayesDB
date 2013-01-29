@@ -55,6 +55,8 @@ cdef extern from "State.h":
           map[string, double] get_row_partition_model_hypers_i(int view_idx)
           vector[int] get_row_partition_model_counts_i(int view_idx)
           vector[vector[map[string, double]]] get_column_component_suffstats_i(int view_idx)
+          #
+          vector[vector[int]] get_X_D()
           void SaveResult()
      State *new_State "new State" (matrix[double] &data, vector[int] global_row_indices, vector[int] global_col_indices, int N_GRID, int SEED)
      void del_State "delete" (State *s)
@@ -134,5 +136,16 @@ cdef class p_State:
             view_state_i = self.get_view_state_i(view_idx)
             view_state.append(view_state_i)
         return view_state
+    def get_X_D(self):
+          return self.thisptr.get_X_D()
+    def get_X_L(self):
+          column_partition = self.get_column_partition()
+          column_hypers = self.get_column_hypers()
+          view_state = self.get_view_state()
+          X_L = dict()
+          X_L['column_partition'] = column_partition
+          X_L['column_hypers'] = column_hypers
+          X_L['view_state'] = view_state
+          return X_L
     def __repr__(self):
         return "State[%s, %s]" % (self.dataptr.size1(), self.dataptr.size2())
