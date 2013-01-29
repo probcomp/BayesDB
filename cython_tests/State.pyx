@@ -5,6 +5,17 @@ from libcpp.set cimport set
 from cython.operator import dereference
 cimport numpy as np
 
+
+cdef double set_double(double& to_set, double value):
+     to_set = value
+     return to_set
+
+cdef vector[int] convert_vector(python_vector):
+     cdef vector[int] ret_vec
+     for value in python_vector:
+          ret_vec.push_back(value)
+     return ret_vec
+
 cdef extern from "<boost/numeric/ublas/matrix.hpp>" namespace "boost::numeric::ublas":
     cdef cppclass matrix[double]:
         void clear()
@@ -25,7 +36,7 @@ cdef class p_matrix:
     def size2(self):
         return self.thisptr.size2()
     def get(self, i, j):
-        cdef matrix[double] m = dereference(self.thisptr)
+        # cdef matrix[double] m = dereference(self.thisptr)
         # return m(i,j) # this doesn't work: error: ‘operator()’ not defined
         # return m.operator()(i,j) # this doesn't work: Object of type 'matrix[double]' has no attribute 'operator'
         return dereference(self.thisptr)(i,j)
@@ -37,16 +48,25 @@ cdef class p_matrix:
     def __repr__(self):
         return "matrix[%s, %s]" % (self.thisptr.size1(), self.thisptr.size2())
 
-cdef double set_double(double& to_set, double value):
-     to_set = value
-     return to_set
+cdef matrix[double]* convert_data(np.ndarray[np.float64_t, ndim=2] data):
+     cdef int num_rows = data.shape[0]
+     cdef int num_cols = data.shape[1]
+     dataptr = new_matrix(num_rows, num_cols)
+     cdef int i,j
+     for i from 0 <= i < num_rows:
+          for j from 0 <= j < num_cols:
+               set_double(dereference(dataptr)(i,j), data[i,j])
+     return dataptr
 
 cdef extern from "State.h":
      cdef cppclass State:
+          # mutators
           double transition(matrix[double] data)
+          # getters
           double get_marginal_logp()
           int get_num_views()
           map[int, set[int]] get_column_groups()
+          # API helpers
           vector[map[string, double]] get_column_hypers()
           map[string, double] get_column_partition_hypers()
           vector[int] get_column_partition_assignments()
@@ -61,22 +81,6 @@ cdef extern from "State.h":
      State *new_State "new State" (matrix[double] &data, vector[int] global_row_indices, vector[int] global_col_indices, int N_GRID, int SEED)
      void del_State "delete" (State *s)
 
-cdef matrix[double]* convert_data(np.ndarray[np.float64_t, ndim=2] data):
-     cdef int num_rows = data.shape[0]
-     cdef int num_cols = data.shape[1]
-     dataptr = new_matrix(num_rows, num_cols)
-     cdef int i,j
-     for i from 0 <= i < num_rows:
-          for j from 0 <= j < num_cols:
-               set_double(dereference(dataptr)(i,j), data[i,j])
-     return dataptr
-
-cdef vector[int] convert_vector(python_vector):
-     cdef vector[int] ret_vec
-     for value in python_vector:
-          ret_vec.push_back(value)
-     return ret_vec
-	  
 cdef class p_State:
     cdef State *thisptr
     cdef matrix[double] *dataptr
@@ -90,21 +94,18 @@ cdef class p_State:
     def __dealloc__(self):
         del_matrix(self.dataptr)
         del_State(self.thisptr)
-    def transition(self):
-        return self.thisptr.transition(dereference(self.dataptr))
-    def get_marginal_logp(self):
-        return self.thisptr.get_marginal_logp()
+    def __repr__(self):
+        return "State[%s, %s]" % (self.dataptr.size1(), self.dataptr.size2())
+    #
+    # getters
     def get_column_groups(self):
         return self.thisptr.get_column_groups()
-    def get_column_hypers(self):
-        return self.thisptr.get_column_hypers()
-    def get_column_partition(self):
-        hypers = self.thisptr.get_column_partition_hypers()
-        assignments = self.thisptr.get_column_partition_assignments()
-        counts = self.thisptr.get_column_partition_counts()
-        return hypers, assignments, counts
+    def get_marginal_logp(self):
+        return self.thisptr.get_marginal_logp()
     def get_num_views(self):
         return self.thisptr.get_num_views()
+    #
+    # get_X_L helpers helpers
     def get_row_partition_model_i(self, view_idx):
           hypers = self.thisptr.get_row_partition_model_hypers_i(view_idx)
           counts = self.thisptr.get_row_partition_model_counts_i(view_idx)
@@ -117,25 +118,33 @@ cdef class p_State:
     def get_column_component_suffstats_i(self, view_idx):
           return self.thisptr.get_column_component_suffstats_i(view_idx)
     def get_view_state_i(self, view_idx):
-          print "get_view_state_i(", view_idx, ")"
           row_partition_model = self.get_row_partition_model_i(view_idx)
-          print "\trow_partition_model:", row_partition_model
           column_names = self.get_column_names_i(view_idx)
-          print "\tcolumn_names:", column_names
           column_component_suffstats = self.get_column_component_suffstats_i(
                 view_idx)
-          print "\tcolumn_component_suffstats:", column_component_suffstats
           view_state_i = dict()
           view_state_i['row_partition_model'] = row_partition_model
           view_state_i['column_names'] = column_names
           view_state_i['column_component_suffstats'] = column_component_suffstats
           return view_state_i
+    # get_X_L helpers
+    def get_column_partition(self):
+        hypers = self.thisptr.get_column_partition_hypers()
+        assignments = self.thisptr.get_column_partition_assignments()
+        counts = self.thisptr.get_column_partition_counts()
+        return hypers, assignments, counts
+    def get_column_hypers(self):
+        return self.thisptr.get_column_hypers()
     def get_view_state(self):
         view_state = []
         for view_idx in range(self.get_num_views()):
             view_state_i = self.get_view_state_i(view_idx)
             view_state.append(view_state_i)
         return view_state
+    # mutators
+    def transition(self):
+        return self.thisptr.transition(dereference(self.dataptr))
+    # API getters
     def get_X_D(self):
           return self.thisptr.get_X_D()
     def get_X_L(self):
@@ -147,5 +156,3 @@ cdef class p_State:
           X_L['column_hypers'] = column_hypers
           X_L['view_state'] = view_state
           return X_L
-    def __repr__(self):
-        return "State[%s, %s]" % (self.dataptr.size1(), self.dataptr.size2())
