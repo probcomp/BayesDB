@@ -13,6 +13,7 @@ INC=include/CrossCat
 SRC=src
 OBJ=obj
 TEST=tests
+CYT=cython
 #
 BIN = model
 MAIN = main.cpp
@@ -21,11 +22,12 @@ NAMES = ContinuousComponentModel MultinomialComponentModel ComponentModel \
 	utils numerics RandomNumberGenerator DateTime
 TEST_NAMES = test_continuous_component_model test_multinomial_component_model \
 	test_cluster test_view test_view_speed test_state
+CYTHON_NAMES = Makefile setup.py State.pyx
 HEADERS = $(foreach name, $(NAMES), $(INC)/$(name).h)
 SOURCES = $(foreach name, $(NAMES) $(MAIN), $(SRC)/$(name).cpp)
 OBJECTS = $(foreach name, $(NAMES), $(OBJ)/$(name).o)
 TESTS = $(foreach test, $(TEST_NAMES), $(TEST)/$(test))
-
+CYTHON = $(foreach name, $(CYTHON_NAMES), $(CYT)/$(name))
 
 all: $(OBJECTS)
 
@@ -47,3 +49,9 @@ $(TEST)/%: $(TEST)/%.cpp $(HEADERS) $(OBJECTS)
 
 clean:
 	rm -f $(BIN) $(OBJECTS) core *.stackdump *.gch $(TESTS)
+	cd $(CYT) && make clean
+
+cython: $(CYT)/State.so
+
+$(CYT)/State.so: $(HEADERS) $(SOURCE) $(CYTHON)
+	cd $(CYT) && make
