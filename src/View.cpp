@@ -21,7 +21,7 @@ View::View(const MatrixD data,
   crp_score = 0;
   data_score = 0;
   //
-  for(int data_col_idx=0; data_col_idx<data.size2(); data_col_idx++) {
+  for(unsigned int data_col_idx=0; data_col_idx<data.size2(); data_col_idx++) {
     vector<double> col_data = extract_col(data, data_col_idx);
     int global_col_idx = global_col_indices[data_col_idx];
     map<string, double> &hypers = hypers_m[global_col_idx];
@@ -95,9 +95,30 @@ map<string, double> View::get_hypers(int local_col_idx) const {
   return *(hypers_v[local_col_idx]);
 }
 
+map<string, double> View::get_row_partition_model_hypers() const {
+  map<string, double> hypers;
+  hypers["log_alpha"] = log(get_crp_alpha());
+  return hypers;
+}
+
+vector<int> View::get_row_partition_model_counts() const {
+  return get_cluster_counts();
+}
+
+vector<map<string, double> > View::get_column_component_suffstats(int global_col_idx) const {
+  vector<map<string, double> > column_component_suffstats;
+  set<Cluster*>::const_iterator it = clusters.begin();
+  for(; it!=clusters.end(); it++) {
+    ContinuousComponentModel ccm  = (**it).get_model(global_col_idx);
+    map<string, double> suffstats = ccm.get_suffstats();
+    column_component_suffstats.push_back(suffstats);
+  }
+  return column_component_suffstats;
+}
+
 Cluster& View::get_cluster(int cluster_idx) {
   assert(cluster_idx <= clusters.size());
-  bool not_new = cluster_idx < clusters.size();
+  bool not_new = ((unsigned int) cluster_idx) < clusters.size();
   if(not_new) {
     set<Cluster*>::iterator it = clusters.begin();
     std::advance(it, cluster_idx);
@@ -469,7 +490,7 @@ vector<vector<int> > View::get_cluster_groupings() const {
 vector<int> View::get_canonical_clustering() const {
   map<Cluster*, int> view_to_int = set_to_map(clusters);
   vector<int> canonical_clustering;
-  for(int i=0; i<cluster_lookup.size(); i++) {
+  for(unsigned int i=0; i<cluster_lookup.size(); i++) {
     Cluster *p_c = cluster_lookup.find(i)->second;
     int canonical_cluster_idx = view_to_int[p_c];
     canonical_clustering.push_back(canonical_cluster_idx);
@@ -507,7 +528,7 @@ void View::assert_state_consistency() {
   int sum_via_cluster_counts = std::accumulate(cluster_counts.begin(),
 					       cluster_counts.end(), 0);  
   assert(is_almost(get_num_vectors(), sum_via_cluster_counts, tolerance));
-  assert(is_almost(get_crp_score(),calc_crp_marginal(),tolerance));
+  assert(is_almost(get_crp_score(),calc_crp_marginal(), tolerance));
 }
 
 double View::draw_rand_u() {

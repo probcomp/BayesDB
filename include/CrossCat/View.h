@@ -41,7 +41,11 @@ class View {
   std::vector<std::string> get_hyper_strings();
   std::vector<double> get_hyper_grid(int global_col_idx, std::string which_hyper);
   std::map<std::string, double> get_hypers(int local_col_idx) const;
-  /* double get_data_hyper_score(); */
+  //
+  // API helpers
+  std::map<std::string, double> get_row_partition_model_hypers() const;
+  std::vector<int> get_row_partition_model_counts() const;
+  std::vector<std::map<std::string, double> > get_column_component_suffstats(int global_col_idx) const;
   //
   // getters (internal use)
   Cluster& get_cluster(int cluster_idx);
