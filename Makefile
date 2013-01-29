@@ -29,29 +29,29 @@ OBJECTS = $(foreach name, $(NAMES), $(OBJ)/$(name).o)
 TESTS = $(foreach test, $(TEST_NAMES), $(TEST)/$(test))
 CYTHON = $(foreach name, $(CYTHON_NAMES), $(CYT)/$(name))
 
-all: $(OBJECTS)
+all: cython
 
-bin: $(BIN)
+cython: $(CYT)/State.so
+
+bin: $(OBJECTS) $(BIN)
 	./$(BIN)
 
 # run each test
 tests: $(TESTS)
 	@echo tests are: $(TESTS) $(foreach test, $(TESTS), && ./$(test))
 
-$(BIN): $(MAIN) $(OBJECTS)
-	$(CXX) -o $(BIN) $(MAIN) $(OBJECTS) $(CXXOPTS) -I$(INC)
-
-$(OBJ)/%.o: $(SRC)/%.cpp $(INC)/%.h $(HEADERS)
-	$(CXX) -c $< -o $@ $(CXXOPTS) -I$(INC)
-
-$(TEST)/%: $(TEST)/%.cpp $(HEADERS) $(OBJECTS)
-	$(CXX) $< -o $@ $(CXXOPTS) -I$(INC) $(OBJECTS)
-
 clean:
 	rm -f $(BIN) $(OBJECTS) core *.stackdump *.gch $(TESTS)
 	cd $(CYT) && make clean
 
-cython: $(CYT)/State.so
-
 $(CYT)/State.so: $(HEADERS) $(SOURCE) $(CYTHON)
 	cd $(CYT) && make
+
+$(OBJ)/%.o: $(SRC)/%.cpp $(INC)/%.h $(HEADERS)
+	$(CXX) -c $< -o $@ $(CXXOPTS) -I$(INC)
+
+$(BIN): $(MAIN) $(OBJECTS)
+	$(CXX) -o $(BIN) $(MAIN) $(OBJECTS) $(CXXOPTS) -I$(INC)
+
+$(TEST)/%: $(TEST)/%.cpp $(HEADERS) $(OBJECTS)
+	$(CXX) $< -o $@ $(CXXOPTS) -I$(INC) $(OBJECTS)
