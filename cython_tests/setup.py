@@ -5,11 +5,6 @@ from Cython.Distutils import build_ext
 setup(
   name = 'Demos',
   ext_modules=[
-        # Extension("boost_matrix_test",
-        #       sources=["boost_matrix_test.pyx",
-        #                ],
-        #       include_dirs=["../include/CrossCat/"],
-        #       language="c++"),
         # Extension("continuous_component_model_test",
         #       sources=["continuous_component_model_test.pyx",
         #                "../src/utils.cpp",
