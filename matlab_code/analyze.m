@@ -44,7 +44,7 @@ function state = drawSample(state, kernelList, c, r)
                 
             case 'componentHyperparameters'
                 for ii = 1 : length(c)
-                    switch state.dataTypes{i}
+                    switch state.dataTypes{ii}
                         case 'numeric'
                             state = sampleComponentHyperparameters_numeric(state, c(ii));
                         case 'categorical'
