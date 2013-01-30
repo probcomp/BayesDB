@@ -81,6 +81,10 @@ class View {
 		    std::vector<int> data_global_row_indices,
 		    int global_col_idx,
 		    std::map<std::string, double> &hypers);
+  double insert_cols(const MatrixD data, 
+		     std::vector<int> global_row_indices,
+		     std::vector<int> global_col_indices,
+		     std::map<int, std::map<std::string, double> > &hypers_m);
   void remove_if_empty(Cluster& which_cluster);
   void remove_all();
   double transition_z(std::vector<double> vd, int row_idx);

@@ -9,6 +9,7 @@ using namespace std;
 
 typedef set<Cluster*> setCp;
 
+// row partitioning unspecified, sample from crp
 View::View(const MatrixD data,
 	   vector<int> global_row_indices,
 	   vector<int> global_col_indices,
@@ -16,8 +17,6 @@ View::View(const MatrixD data,
 	   int SEED, int N_GRID) : n_grid(N_GRID), rng(SEED) {
   assert(global_row_indices.size()==data.size1());
   assert(global_col_indices.size()==data.size2());
-  int num_rows = data.size1();
-  int num_cols = data.size2();
   //
   crp_alpha = 0.8;
   crp_score = 0;
@@ -26,15 +25,10 @@ View::View(const MatrixD data,
   vector<vector<int> > crp_init = draw_crp_init(global_row_indices, crp_alpha,
 						rng);
   prep_for_insert_col(crp_init);
-  //
-  for(int data_col_idx=0; data_col_idx<num_cols; data_col_idx++) {
-    vector<double> col_data = extract_col(data, data_col_idx);
-    int global_col_idx = global_col_indices[data_col_idx];
-    map<string, double> &hypers = hypers_m[global_col_idx];
-    insert_col(col_data, global_row_indices, global_col_idx, hypers);
-  }
+  insert_cols(data, global_row_indices, global_col_indices, hypers_m);
 }
 
+// empty View: for gibbs sampling a new partitioning of columns
 View::View(int SEED) : rng(SEED) {
   n_grid = 31;
   crp_alpha = 0.8;
@@ -370,11 +364,11 @@ double View::remove_row(vector<double> vd, int row_idx) {
   return score_delta;
 }
 
-void View::set_row_paritioning(vector<vector<int> > row_paritioning) {
-  int num_clusters = row_paritioning.size();
+void View::set_row_partitioning(vector<vector<int> > row_partitioning) {
+  int num_clusters = row_partitioning.size();
   vector<double> blank_row;
   for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
-    vector<int> global_row_indices = set_row_partitioning[cluster_idx];
+    vector<int> global_row_indices = row_partitioning[cluster_idx];
     vector<int>::iterator it;
     // create new cluster
     Cluster &new_cluster = get_new_cluster();
@@ -417,6 +411,19 @@ double View::insert_col(vector<double> col_data,
   global_to_local[global_col_idx] = num_cols;
   data_score += score_delta;
   return score_delta;
+}
+
+double View::insert_cols(const MatrixD data,
+		   std::vector<int> global_row_indices,
+		   std::vector<int> global_col_indices,
+		   map<int, map<string, double> > &hypers_m) {
+  int num_cols = global_col_indices.size();
+  for(int data_col_idx=0; data_col_idx<num_cols; data_col_idx++) {
+    vector<double> col_data = extract_col(data, data_col_idx);
+    int global_col_idx = global_col_indices[data_col_idx];
+    map<string, double> &hypers = hypers_m[global_col_idx];
+    insert_col(col_data, global_row_indices, global_col_idx, hypers);
+  }
 }
  
 double View::remove_col(int global_col_idx) {
