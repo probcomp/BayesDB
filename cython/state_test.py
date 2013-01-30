@@ -77,9 +77,9 @@ with open('data.csv', 'w') as fh:
 global_row_indices = range(num_rows)
 global_col_indices = range(num_cols)
 
-p_State = State.p_State(data, global_row_indices, global_col_indices, 31, 0)
+p_State = State.p_State(data, global_row_indices, global_col_indices, N_GRID=31, SEED=0)
 print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
-for idx in range(100):
+for idx in range(3):
     print "transitioning"
     p_State.transition()
     print "p_State.get_column_groups():", p_State.get_column_groups()
@@ -88,3 +88,16 @@ for idx in range(100):
     print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
     for view_idx, view_state_i in enumerate(p_State.get_view_state()):
         print "view_state_i:", view_idx, view_state_i
+X_D = p_State.get_X_D()
+X_L = p_State.get_X_L()
+
+print "X_D:", X_D
+print "X_L:", X_L
+
+constructor_args = State.transform_latent_state_to_constructor_args(X_L, X_D)
+p_State_2 = State.p_State(data, **constructor_args)
+X_D_prime = p_State_2.get_X_D()
+X_L_prime = p_State_2.get_X_L()
+
+print "X_D_prime:", X_D_prime
+print "X_L_prime:", X_L_prime
