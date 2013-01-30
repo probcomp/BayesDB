@@ -67,8 +67,8 @@ class View {
 				     std::map<std::string, double> hypers);
   //
   // mutators
-  void crp_init_rows(std::vector<std::vector<int> > crp_init);
-  void prep_for_insert_col(std::vector<std::vector<int> > crp_init);
+  void set_row_partitioning(std::vector<std::vector<int> > row_partitioning);
+  void prep_for_insert_col(std::vector<std::vector<int> > row_partitioning);
   void prep_for_insert_col(std::vector<int> global_row_indices);
   //
   double set_crp_alpha(double new_crp_alpha);

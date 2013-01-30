@@ -23,6 +23,10 @@ View::View(const MatrixD data,
   crp_score = 0;
   data_score = 0;
   //
+  vector<vector<int> > crp_init = draw_crp_init(global_row_indices, crp_alpha,
+						rng);
+  prep_for_insert_col(crp_init);
+  //
   for(int data_col_idx=0; data_col_idx<num_cols; data_col_idx++) {
     vector<double> col_data = extract_col(data, data_col_idx);
     int global_col_idx = global_col_indices[data_col_idx];
@@ -366,11 +370,11 @@ double View::remove_row(vector<double> vd, int row_idx) {
   return score_delta;
 }
 
-void View::crp_init_rows(vector<vector<int> > crp_init) {
-  int num_clusters = crp_init.size();
+void View::set_row_paritioning(vector<vector<int> > row_paritioning) {
+  int num_clusters = row_paritioning.size();
   vector<double> blank_row;
   for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
-    vector<int> global_row_indices = crp_init[cluster_idx];
+    vector<int> global_row_indices = set_row_partitioning[cluster_idx];
     vector<int>::iterator it;
     // create new cluster
     Cluster &new_cluster = get_new_cluster();
@@ -381,10 +385,10 @@ void View::crp_init_rows(vector<vector<int> > crp_init) {
   }
 }
 
-void View::prep_for_insert_col(vector<vector<int> > crp_init) {
-  int num_rows = count_elements(crp_init);
+void View::prep_for_insert_col(vector<vector<int> > row_partitioning) {
+  int num_rows = count_elements(row_partitioning);
   construct_base_hyper_grids(num_rows);
-  crp_init_rows(crp_init);
+  set_row_partitioning(row_partitioning);
 }
 
 void View::prep_for_insert_col(vector<int> global_row_indices) {
