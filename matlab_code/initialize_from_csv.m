@@ -30,10 +30,10 @@ function state = initialize_from_csv(dataFile, dataTypes, initialState)
     for f = 1 : state.F
         switch state.dataTypes{f}
 
-            case 'numeric'
+            case 'normal_inverse_gamma'
                 state = buildNumeric(state, f, bins);
 
-            case 'binary'
+            case 'asymmetric_beta_bernoulli'
                 state = buildBinary(state, f, bins);
         end
     end
