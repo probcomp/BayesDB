@@ -7,6 +7,7 @@ from cython.operator import preincrement
 
 cdef map[cpp_string, double] string_double_map
 
+
 cdef extern from "string" namespace "std":
     cdef cppclass string:
         char* c_str()

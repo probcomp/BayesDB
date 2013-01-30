@@ -58,7 +58,7 @@ double Cluster::calc_sum_marginal_logps() const {
 
 double Cluster::calc_row_predictive_logp(vector<double> values) const {
   double sum_logps = 0;
-  for(int col_idx=0; col_idx<values.size(); col_idx++) {
+  for(unsigned int col_idx=0; col_idx<values.size(); col_idx++) {
     double el = values[col_idx];
     sum_logps += get_model(col_idx).calc_element_predictive_logp(el);
   }
@@ -97,7 +97,7 @@ double Cluster::insert_row(vector<double> values, int row_idx) {
     row_indices.insert(row_idx);
   assert(set_pair.second);
   // track score
-  for(int col_idx=0; col_idx<values.size(); col_idx++) {
+  for(unsigned int col_idx=0; col_idx<values.size(); col_idx++) {
     sum_score_deltas += model_v[col_idx].insert_element(values[col_idx]);
   }
   score += sum_score_deltas;
@@ -107,10 +107,10 @@ double Cluster::insert_row(vector<double> values, int row_idx) {
 double Cluster::remove_row(vector<double> values, int row_idx) {
   double sum_score_deltas = 0;
   // track row indices
-  int num_removed = row_indices.erase(row_idx);
+  unsigned int num_removed = row_indices.erase(row_idx);
   assert(num_removed!=0);
   // track score
-  for(int col_idx=0; col_idx<values.size(); col_idx++) {
+  for(unsigned int col_idx=0; col_idx<values.size(); col_idx++) {
     sum_score_deltas += model_v[col_idx].remove_element(values[col_idx]);
   }
   score += sum_score_deltas;

@@ -1,9 +1,13 @@
+NAMES = continuous_component_model_test State
+SOS = $(foreach name, $(NAMES), $(name).so)
+INTERMEDIATE = $(foreach name, $(NAMES), $(name).cpp)
+RUN = state_test.py
 
 all:
 	python setup.py build_ext --inplace
 
 clean:
-	rm -rf build continuous_component_model_test.so
+	rm -rf build $(SOS) $(INTERMEDIATE)
 
 run: all
-	python use_ccm.py
+	python $(RUN)

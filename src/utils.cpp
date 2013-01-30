@@ -47,7 +47,7 @@ void LoadData(string file, matrix<double>& M) {
   while (std::getline(in,line)) {
     Tokenizer tok(line, sep);
     vec.assign(tok.begin(), tok.end());
-    int i = 0;
+    unsigned int i = 0;
     for(i=0; i < vec.size() ; i++) {
       Data(r, i) = ::strtod(vec[i].c_str(), 0);
     }
@@ -81,7 +81,7 @@ vector<double> log_linspace(double a, double b, int n) {
 vector<double> std_vector_sum(vector<double> vec1, vector<double> vec2) {
   assert(vec1.size()==vec2.size());
   vector<double> sum_vec;
-  for(int i=0; i<vec1.size(); i++) {
+  for(unsigned int i=0; i<vec1.size(); i++) {
     sum_vec.push_back(vec1[i] + vec2[i]);
   }
   return sum_vec;
@@ -109,7 +109,7 @@ double calc_sum_sq_deviation(vector<double> values) {
 
 vector<double> extract_row(const matrix<double> data, int row_idx) {
   vector<double> row;
-  for(int j=0;j < data.size2(); j++) {
+  for(unsigned int j=0;j < data.size2(); j++) {
     row.push_back(data(row_idx, j));
   }
   return row;
@@ -117,7 +117,7 @@ vector<double> extract_row(const matrix<double> data, int row_idx) {
 
 vector<double> extract_col(const matrix<double> data, int col_idx) {
   vector<double> col;
-  for(int j=0;j < data.size1(); j++) {
+  for(unsigned int j=0;j < data.size1(); j++) {
     col.push_back(data(j, col_idx));
   }
   return col;
@@ -143,7 +143,7 @@ template <class T>
 map<int, T> construct_lookup_map(vector<int> keys, vector<T> values) {
   assert(keys.size()==values.size());
   map<int, T> lookup;
-  for(int idx=0; idx<keys.size(); idx++) {
+  for(unsigned int idx=0; idx<keys.size(); idx++) {
     lookup[keys[idx]] = values[idx];
   }
   return lookup;
@@ -154,9 +154,9 @@ map<int, int> construct_lookup_map(vector<int> keys) {
 }
 
 map<int, vector<double> > construct_data_map(const MatrixD data) {
-  int num_rows = data.size1();
+  unsigned int num_rows = data.size1();
   map<int, vector<double> > data_map;
-  for(int row_idx=0; row_idx<num_rows; row_idx++) {
+  for(unsigned int row_idx=0; row_idx<num_rows; row_idx++) {
     data_map[row_idx] = extract_row(data, row_idx);
   }
   return data_map;
@@ -229,7 +229,7 @@ vector<int> create_sequence(int len, int start) {
   return sequence;
 }
 
-void insert_into_counts(int draw, vector<int> &counts) {
+void insert_into_counts(unsigned int draw, vector<int> &counts) {
   assert(draw<=counts.size());
   if(draw==counts.size()) {
     counts.push_back(1);
@@ -261,7 +261,7 @@ vector<vector<int> > determine_crp_init(vector<int> global_row_indices,
   std::random_shuffle(global_row_indices.begin(), global_row_indices.end());
   vector<int>::iterator it = global_row_indices.begin();
   vector<vector<int> > cluster_indices_v;
-  for(int cluster_idx=0; cluster_idx<counts.size(); cluster_idx++) {
+  for(unsigned int cluster_idx=0; cluster_idx<counts.size(); cluster_idx++) {
     int count = counts[cluster_idx];
     vector<int> cluster_indices(count, -1);
     std::copy(it, it+count, cluster_indices.begin());

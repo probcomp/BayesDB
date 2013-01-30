@@ -45,9 +45,15 @@ function state = drawSample(state, kernelList, c, r)
             case 'componentHyperparameters'
                 for ii = 1 : length(c)
                     switch state.dataTypes{ii}
+<<<<<<< HEAD
                         case 'normal_inverse_gamma'
                             state = sampleComponentHyperparameters_normal_inverse_gamma(state, c(ii));
                         case 'dirichlet_multinomial '
+=======
+                        case 'numeric'
+                            state = sampleComponentHyperparameters_numeric(state, c(ii));
+                        case 'categorical'
+>>>>>>> f0b0edc3deb030f7433a0c74de150f8643ea3dca
                             % FIXME!
                             disp('FIXME');
                         case 'asymmetric_beta_bernoulli '

@@ -21,7 +21,7 @@ View::View(const MatrixD data,
   crp_score = 0;
   data_score = 0;
   //
-  for(int data_col_idx=0; data_col_idx<data.size2(); data_col_idx++) {
+  for(unsigned int data_col_idx=0; data_col_idx<data.size2(); data_col_idx++) {
     vector<double> col_data = extract_col(data, data_col_idx);
     int global_col_idx = global_col_indices[data_col_idx];
     map<string, double> &hypers = hypers_m[global_col_idx];
@@ -91,13 +91,47 @@ vector<double> View::get_hyper_grid(int global_col_idx, std::string which_hyper)
   return hyper_grid;
 }
 
-map<string, double> View::get_hypers(int local_col_idx) {
+map<string, double> View::get_hypers(int local_col_idx) const {
   return *(hypers_v[local_col_idx]);
+}
+
+map<string, double> View::get_row_partition_model_hypers() const {
+  map<string, double> hypers;
+  hypers["log_alpha"] = log(get_crp_alpha());
+  return hypers;
+}
+
+vector<int> View::get_row_partition_model_counts() const {
+  return get_cluster_counts();
+}
+
+vector<map<string, double> > View::get_column_component_suffstats_i(int global_col_idx) const {
+  vector<map<string, double> > column_component_suffstats;
+  set<Cluster*>::const_iterator it = clusters.begin();
+  for(; it!=clusters.end(); it++) {
+    int local_col_idx = get(global_to_local, global_col_idx);
+    ContinuousComponentModel ccm  = (**it).get_model(local_col_idx);
+    map<string, double> suffstats = ccm.get_suffstats();
+    column_component_suffstats.push_back(suffstats);
+  }
+  return column_component_suffstats;
+}
+
+vector<vector<map<string, double> > > View::get_column_component_suffstats() const {
+  vector<vector<map<string, double> > > column_component_suffstats;
+  map<int, int>::const_iterator it;
+  for(it=global_to_local.begin(); it!=global_to_local.end(); it++) {
+    int global_col_idx = it->first;
+    vector<map<string, double> > column_component_suffstats_i = \
+      get_column_component_suffstats_i(global_col_idx);
+    column_component_suffstats.push_back(column_component_suffstats_i);
+  }
+  return column_component_suffstats;
 }
 
 Cluster& View::get_cluster(int cluster_idx) {
   assert(cluster_idx <= clusters.size());
-  bool not_new = cluster_idx < clusters.size();
+  bool not_new = ((unsigned int) cluster_idx) < clusters.size();
   if(not_new) {
     set<Cluster*>::iterator it = clusters.begin();
     std::advance(it, cluster_idx);
@@ -455,13 +489,24 @@ vector<int> View::shuffle_row_indices() {
   return shuffled_order;
 }
 
-vector<vector<int> > View::get_canonical_clustering() const {
-  vector<vector<int> > canonical_clustering;
+vector<vector<int> > View::get_cluster_groupings() const {
+  vector<vector<int> > cluster_groupings;
   set<Cluster*>::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
     Cluster &c = **it;
     vector<int> row_indices = c.get_row_indices_vector();
-    canonical_clustering.push_back(row_indices);
+    cluster_groupings.push_back(row_indices);
+  }
+  return cluster_groupings;
+}
+
+vector<int> View::get_canonical_clustering() const {
+  map<Cluster*, int> view_to_int = set_to_map(clusters);
+  vector<int> canonical_clustering;
+  for(unsigned int i=0; i<cluster_lookup.size(); i++) {
+    Cluster *p_c = cluster_lookup.find(i)->second;
+    int canonical_cluster_idx = view_to_int[p_c];
+    canonical_clustering.push_back(canonical_cluster_idx);
   }
   return canonical_clustering;
 }
@@ -496,7 +541,7 @@ void View::assert_state_consistency() {
   int sum_via_cluster_counts = std::accumulate(cluster_counts.begin(),
 					       cluster_counts.end(), 0);  
   assert(is_almost(get_num_vectors(), sum_via_cluster_counts, tolerance));
-  assert(is_almost(get_crp_score(),calc_crp_marginal(),tolerance));
+  assert(is_almost(get_crp_score(),calc_crp_marginal(), tolerance));
 }
 
 double View::draw_rand_u() {

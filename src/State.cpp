@@ -60,8 +60,6 @@ double State::insert_feature(int feature_idx, vector<double> feature_data,
 
 double State::sample_insert_feature(int feature_idx, vector<double> feature_data,
 				    View &singleton_view) {
-  // map<string, double> hypers = singleton_view
-  map<string, double> &hypers = hypers_m[feature_idx];
   vector<double> unorm_logps = calc_feature_view_predictive_logps(feature_data,
 								  feature_idx);
   double rand_u = draw_rand_u();
@@ -128,7 +126,7 @@ View& State::get_new_view() {
 
 View& State::get_view(int view_idx) {
   assert(view_idx <= views.size());
-  bool not_new = view_idx < views.size();
+  bool not_new = ((unsigned int) view_idx) < views.size();
   if(not_new) {
     set<View*>::iterator it = views.begin();
     std::advance(it, view_idx);
@@ -174,6 +172,80 @@ double State::get_data_score() const {
 
 double State::get_marginal_logp() const {
   return column_crp_score + data_score;
+}
+
+map<string, double> State::get_row_partition_model_hypers_i(int view_idx) const {
+  set<View*>::const_iterator it = views.begin();
+  std::advance(it, view_idx);
+  return (**it).get_row_partition_model_hypers();
+}
+
+vector<int> State::get_row_partition_model_counts_i(int view_idx) const {
+  set<View*>::const_iterator it = views.begin();
+  std::advance(it, view_idx);
+  return (**it).get_row_partition_model_counts();
+}
+
+vector<vector<map<string, double> > > State::get_column_component_suffstats_i(int view_idx) const {
+  // ordering should be same as column_names
+  set<View*>::const_iterator it = views.begin();
+  std::advance(it, view_idx);
+  assert(it!=views.end());
+  return (**it).get_column_component_suffstats();
+}
+
+vector<map<string, double> > State::get_column_hypers() const {
+  vector<map<string, double> > column_hypers;
+  int num_cols = get_num_cols();
+  map<int, map<string, double> >::const_iterator it;
+  for(int global_col_idx=0; global_col_idx<num_cols; global_col_idx++) {
+    it = hypers_m.find(global_col_idx);
+    if(it==hypers_m.end()) continue;
+    map<string, double> hypers_i = it->second;
+    // FIXME: actually detect
+    hypers_i["fixed"] = 0.;
+    column_hypers.push_back(hypers_i);
+  }
+  return column_hypers;
+}
+
+map<string,double> State::get_column_partition_hypers() const {
+  map<string, double> local_hypers;
+  local_hypers["log_alpha"] = log(get_column_crp_alpha());
+  return local_hypers;
+}
+
+vector<int> State::get_column_partition_assignments() const {
+  return define_group_ordering(view_lookup, views);
+}
+
+vector<int> State::get_column_partition_counts() const {
+  return get_view_counts();
+}
+
+vector<vector<int> > State::get_X_D() const {
+  vector<vector<int> > X_D;
+  set<View*>::iterator it;
+  for(it=views.begin(); it!=views.end(); it++) {
+    View &v = **it;
+    vector<int> canonical_clustering = v.get_canonical_clustering();
+    X_D.push_back(canonical_clustering);
+  }
+  return X_D;
+}
+
+map<int, set<int> > State::get_column_groups() const {
+  map<View*, int> view_to_int = set_to_map(views);
+  map<View*, set<int> > view_to_set = group_by_value(view_lookup);
+  map<int, set<int> > view_idx_to_set;
+  set<View*>::iterator it;
+  for(it=views.begin(); it!=views.end(); it++) {
+    View* p_v = *it;
+    int view_idx = view_to_int[p_v];
+    set<int> int_set = view_to_set[p_v];
+    view_idx_to_set[view_idx] = int_set;
+  }
+  return view_idx_to_set;
 }
 
 double State::transition_view_i(int which_view,
@@ -293,10 +365,10 @@ void State::SaveResult(string filename, int iter_idx) {
   for(; views_it!=views.end(); views_it++) {
     View* v_p = *views_it;
     int matrix_row_idx = view_to_int[v_p];
-    vector<vector<int> > canonical_clustering = v_p->get_canonical_clustering();
-    int num_clusters = canonical_clustering.size();
+    vector<vector<int> > cluster_groupings = v_p->get_cluster_groupings();
+    int num_clusters = cluster_groupings.size();
     for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
-      vector<int> cluster_indices = canonical_clustering[cluster_idx];
+      vector<int> cluster_indices = cluster_groupings[cluster_idx];
       int num_elements = cluster_indices.size();
       for(int element_idx=0; element_idx<num_elements; element_idx++) {
 	int row_idx = cluster_indices[element_idx];
@@ -310,7 +382,7 @@ void State::SaveResult(string filename, int iter_idx) {
   out << "paramPrior = " << paramPrior << endl;
 
   matrix<double> cumParamPrior(1, n_grid, 1./n_grid);
-  for(int i=0; i<cumParamPrior.size2(); i++) {
+  for(unsigned int i=0; i<cumParamPrior.size2(); i++) {
     cumParamPrior(0,i) *= (i+1); 
   }
   out << "cumParamPrior = " << cumParamPrior << endl;

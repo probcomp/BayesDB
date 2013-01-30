@@ -1,5 +1,6 @@
 import continuous_component_model_test as ccmt
 
+
 hyper_map = dict()
 hyper_map["mu"] = 1.0
 hyper_map["s"] = 1.0
