@@ -24,7 +24,11 @@ class State {
   State(const MatrixD &data,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
+	std::map<int, std::map<std::string, double> > HYPERS_M,
 	std::vector<std::vector<int> > column_partition,
+	double COLUMN_CRP_ALPHA,
+	std::vector<std::vector<std::vector<int> > > row_partition_v,
+	std::vector<double> row_crp_alpha_v,
 	//std::vector<std::string> global_col_datatypes,
 	int N_GRID=31, int SEED=0);
   State(const MatrixD &data,
@@ -119,7 +123,9 @@ class State {
   void init_views(const MatrixD &data,
 		  std::vector<int> global_row_indices,
 		  std::vector<int> global_col_indices,
-		  std::vector<std::vector<int> > column_partition);
+		  std::vector<std::vector<int> > column_partition,
+		  std::vector<std::vector<std::vector<int> > > row_partition_v,
+		  std::vector<double> row_crp_alpha_v);
   void init_views(const MatrixD &data,
 		  std::vector<int> global_row_indices,
 		  std::vector<int> global_col_indices);
