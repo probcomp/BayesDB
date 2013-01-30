@@ -8,6 +8,23 @@ using boost::numeric::ublas::range;
 State::State(const MatrixD &data,
 	     vector<int> global_row_indices,
 	     vector<int> global_col_indices,
+	     vector<vector<int> > column_partition,
+	     //vector<string> global_col_datatypes,
+	     int N_GRID, int SEED) : rng(SEED) {
+  int num_rows = data.size1();
+  int num_cols = data.size2();
+  construct_base_hyper_grids(num_rows, num_cols, N_GRID);
+  construct_column_hyper_grids(data, global_col_indices);
+  //
+  init_base_hypers();
+  init_column_hypers(global_col_indices);
+  //
+  init_views(data, global_row_indices, global_col_indices, column_partition);
+}
+
+State::State(const MatrixD &data,
+	     vector<int> global_row_indices,
+	     vector<int> global_col_indices,
 	     //vector<string> global_col_datatypes,
 	     int N_GRID, int SEED) : rng(SEED) {
   int num_rows = data.size1();
@@ -553,10 +570,8 @@ void State::init_column_hypers(vector<int> global_col_indices) {
 }
 
 void State::init_views(const MatrixD &data, vector<int> global_row_indices,
-		       vector<int> global_col_indices) {
-  vector<vector<int> > column_partition;
-  column_partition = draw_crp_init(global_col_indices, column_crp_alpha, rng);
-  //
+		       vector<int> global_col_indices,
+		       vector<vector<int> > column_partition) {
   vector<vector<int> >::iterator cp_it;
   for(cp_it=column_partition.begin(); cp_it!=column_partition.end(); cp_it++) {
     vector<int> column_indices = *cp_it;
@@ -572,4 +587,11 @@ void State::init_views(const MatrixD &data, vector<int> global_row_indices,
       view_lookup[column_index] = p_v;
     }
   }
+}
+
+void State::init_views(const MatrixD &data, vector<int> global_row_indices,
+		       vector<int> global_col_indices) {
+  vector<vector<int> > column_partition;
+  column_partition = draw_crp_init(global_col_indices, column_crp_alpha, rng);
+  init_views(data, global_row_indices, global_col_indices, column_partition);
 }

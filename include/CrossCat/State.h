@@ -24,6 +24,12 @@ class State {
   State(const MatrixD &data,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
+	std::vector<std::vector<int> > column_partition,
+	//std::vector<std::string> global_col_datatypes,
+	int N_GRID=31, int SEED=0);
+  State(const MatrixD &data,
+	std::vector<int> global_row_indices,
+	std::vector<int> global_col_indices,
 	//std::vector<std::string> global_col_datatypes,
 	int N_GRID=31, int SEED=0);
   ~State();
@@ -110,6 +116,10 @@ class State {
   void init_base_hypers();
   std::map<std::string, double> uniform_sample_hypers(int global_col_idx);
   void init_column_hypers(std::vector<int> global_col_indices);
+  void init_views(const MatrixD &data,
+		  std::vector<int> global_row_indices,
+		  std::vector<int> global_col_indices,
+		  std::vector<std::vector<int> > column_partition);
   void init_views(const MatrixD &data,
 		  std::vector<int> global_row_indices,
 		  std::vector<int> global_col_indices);
