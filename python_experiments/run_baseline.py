@@ -38,28 +38,105 @@ def joint_entropy(x_vec, y_vec, pdf):
 def cond_entropy(x_vec, y_vec, cond_pdf):
     return joint_entropy(x_vec, y_vec, cond_pdf)
 
-d = 2
+# TODO: clean up this function (make filenames, widths, etc. parameters)
+def run_ring(plot = False):
 
-widths = np.array(range(1,10))/10.0
-true_perc_ent = [0]*len(widths)
-r_sq_vals = [0]*len(widths)
+    d = 2
 
-for i in range(len(widths)):
+    widths = np.array(range(1,10,2))/10.0
+    true_percent_ent = [0]*len(widths)
+    r_sq_vals = [0]*len(widths)
 
-    w = widths[i]
+    f = open('../../results/ring-results.csv', 'w')
+    f.write('ring_width, percent_entropy, R_squared\n')
 
-    data = np.array(synth.random_ring(1000, d, w))
+    for i in range(len(widths)):
+        
+        w = widths[i]
+        
+        data = synth.random_ring(1000, d, w)
+        synth.write_data(data, '../../data/ring-width-' + str(w))
+        data = np.array(data)
+        
+        pdf = lambda x, y: ring_pdf(x, y, 1 - w)
+        c_pdf = lambda x, y: ring_cond_pdf(x, y, 1 - w)
+        ce = cond_entropy(data[:,0], data[:,1], c_pdf)
+        me = entropy(data[:,1], data[:,1], pdf, c_pdf)
+        true_percent_ent[i] = ce/me
+        
+        lm = ols.ols(data[:,0], data[:,1:], 'y', 
+                     map(lambda x: 'x' + str(x), range(d - 1)))
+        
+        r_sq_vals[i] = lm.R2
+        
+        f.write(str(w) + ',' + true_percent_ent[i] + ',' + str(lm.R2) + '\n')
+        
+    f.close()
 
-    pdf = lambda x, y: ring_pdf(x, y, 1 - w)
-    c_pdf = lambda x, y: ring_cond_pdf(x, y, 1 - w)
-    ce = cond_entropy(data[:,0], data[:,1], c_pdf)
-    me = entropy(data[:,1], data[:,1], pdf, c_pdf)
-    true_perc_ent[i] = ce/me
+    if plot:
+        plt.plot(true_percent_ent, r_sq_vals)
+        plt.show()
 
-    lm = ols.ols(data[:,0], data[:,1:], 'y', 
-                 map(lambda x: 'x' + str(x), range(d - 1)))
+def run_simple_regression(plot = False):
+    
+    ns = [10, 50, 100]
+    
+    sds = [0.1, 0.4, 0.8, 2] 
+    
+    f = open('../../results/regression-results.csv', 'w')
+    f.write('n,standard_deviation,beta0,beta1,R_squared,F_pvalue\n')
+    
+    for j in range(len(ns)):
+        for i in range(len(sds)):
+            
+            n = ns[j]
+            sd = sds[i]
+            
+            data = synth.random_regression(n, 1, sd_func = lambda x: sd)
+            synth.write_data(data, '../../data/regression-n-' +
+                             str(n) + '-sd-' + str(sd))
+            data = np.array(data)
+            
+            lm = ols.ols(data[:,1], data[:,0], 'y', ['x0'])
+            
+            f.write(','.join(map(str, [n,sd,lm.b[0],lm.b[1],lm.R2,lm.Fpv])) + '\n')
+                             
+    f.close()
 
-    r_sq_vals[i] = lm.R2
+    if plot:
+        y = lm.b[0] + data[:,0]*lm.b[1]
+        plt.plot(data[:,0], data[:,1], '.', data[:,0], y, 'r')
+        plt.show()
 
-plt.plot(true_perc_ent, r_sq_vals)
-plt.show()
+def run_outlier_regression(plot = False):
+    
+    ns = [10, 50, 100]
+    
+    sds = [0.1, 0.4, 0.8, 2] 
+    
+    f = open('../../results/outlier-regression-results.csv', 'w')
+    f.write('n,standard_deviation,beta0,beta1,R_squared,F_pvalue\n')
+    
+    for j in range(len(ns)):
+        for i in range(len(sds)):
+            
+            n = ns[j]
+            sd = sds[i]
+            
+            data = synth.random_regression(n, 1, 
+                                           outliers = 0.1,
+                                           sd_func = lambda x: sd)
+            synth.write_data(data, '../../data/outlier-regression-n-' +
+                             str(n) + '-sd-' + str(sd))
+            data = np.array(data)
+            
+            lm = ols.ols(data[:,1], data[:,0], 'y', ['x0'])
+            
+            f.write(','.join(map(str, [n,sd,lm.b[0],lm.b[1],lm.R2,lm.Fpv])) + '\n')
+                             
+    f.close()
+
+    if plot:
+        y = lm.b[0] + data[:,0]*lm.b[1]
+        plt.plot(data[:,0], data[:,1], '.', data[:,0], y, 'r', data[:,0], data[:,0])
+        plt.show()

@@ -20,10 +20,10 @@ def random_ring(n, d, width):
     
     return samples
 
-def sd_increasing(s):
-    return sum(map(lambda x: (x + 1.0)/(2*d), s))
-def sd_constant(s):
-    return 0.1
+def sd_increasing(value):
+    return sum(map(lambda x: (x + 1.0)/(2*d), value))
+def sd_constant(value, sd = 0.1):
+    return sd
 
 def random_regression(n, d = 1, 
                       outliers = 0, 
@@ -41,7 +41,7 @@ def random_regression(n, d = 1,
         
         y = sum(samples[i][0:p])
         if random.random() < outliers:
-            samples[i][j + 1] = y + random.random()*(p - y)
+            samples[i][j + 1] = 100*p*random.random() - 50*p
         else:       
             samples[i][j + 1] = y + random.gauss(0, sd_func(samples[i][0:p]))
 
