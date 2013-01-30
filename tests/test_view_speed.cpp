@@ -109,8 +109,23 @@ int main(int argc, char** argv) {
   int SEED = 0;
   vector<int> global_row_indices = create_sequence(data.size1());
   vector<int> global_column_indices = create_sequence(data.size2());
-  View v = View(data, global_row_indices, global_column_indices, hypers_m, SEED,
-		N_GRID);
+  // construct hyper grids
+  vector<double> row_crp_alpha_grid = create_crp_alpha_grid(num_rows, N_GRID);
+  vector<double> r_grid;
+  vector<double> nu_grid;
+  map<int, vector<double> > s_grids;
+  map<int, vector<double> > mu_grids;
+  construct_continuous_base_hyper_grids(N_GRID, num_rows, r_grid, nu_grid);
+  for(vector<int>::iterator it=global_column_indices.begin(); it!=global_column_indices.end(); it++) {
+    int global_col_idx = *it;
+    vector<double> col_data = extract_col(data, global_col_idx);
+    construct_continuous_specific_hyper_grid(N_GRID, col_data,
+					     s_grids[global_col_idx],
+					     mu_grids[global_col_idx]);
+  }
+  View v = View(data, global_row_indices, global_column_indices, hypers_m,
+		row_crp_alpha_grid, r_grid, nu_grid, s_grids, mu_grids,
+		SEED);
 
   v.print();
   // empty object and verify empty
