@@ -77,6 +77,7 @@ def run_ring(plot = False):
         plt.plot(true_percent_ent, r_sq_vals)
         plt.show()
 
+# TODO: should we vary the sd or the true beta1?
 def run_simple_regression(plot = False):
     
     ns = [10, 50, 100]
@@ -139,4 +140,61 @@ def run_outlier_regression(plot = False):
     if plot:
         y = lm.b[0] + data[:,0]*lm.b[1]
         plt.plot(data[:,0], data[:,1], '.', data[:,0], y, 'r', data[:,0], data[:,0])
+        plt.show()
+
+def run_pairwise_regressions(plot = False):
+    
+    n = 50
+
+    nums_pairs = [2, 5, 10]    
+    sds = [0.1, 2]
+    ps = [0.001, 0.01, 0.025, 0.05, 0.10]
+    
+    f = open('../../results/pairwise-regression-results.csv', 'w')
+    f.write('pairs,standard_deviation,p,unadj_tp,unadj_tn,adj_tp,adj_tn\n')
+    
+    adj_tp = [[[0]*len(ps) for i in range(len(sds))] for j in range(len(nums_pairs))]
+    adj_tn = [[[0]*len(ps) for i in range(len(sds))] for j in range(len(nums_pairs))]
+    unadj_tp = [[[0]*len(ps) for i in range(len(sds))] for j in range(len(nums_pairs))]
+    unadj_tn = [[[0]*len(ps) for i in range(len(sds))] for j in range(len(nums_pairs))]
+
+    for i in range(len(nums_pairs)):
+        for j in range(len(sds)):
+            
+            pairs = nums_pairs[i]
+            sd = sds[j]
+            
+            data = synth.random_regression_pairs(n, pairs,
+                                           sd_func = lambda x: sd)
+            synth.write_data(data, '../../data/pairwise-regression-pairs-' +
+                             str(pairs) + '-sd-' + str(sd))
+            data = np.array(data)                
+
+            for k in range(0, 2*pairs - 1):
+                for l in range(k + 1, 2*pairs):
+
+                    lm = ols.ols(data[:,l], data[:,k], 'y', ['x0'])
+                    
+                    for m in range(len(ps)):
+
+                        alpha = ps[m]
+                        bonferroni = ps[m]/(pairs * (pairs - 1) / 2)
+
+                        unadj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < alpha)
+                        unadj_tn[i][j][m] += (l != k + 1) and (lm.Fpv >= alpha)
+                        adj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < bonferroni)
+                        adj_tn[i][j][m] += (l != k + 1) and (lm.Fpv >= bonferroni)
+
+            for m in range(len(ps)):
+                utp = unadj_tp[i][j][m]
+                utn = unadj_tn[i][j][m]
+                atp = adj_tp[i][j][m]
+                atn = adj_tn[i][j][m]
+                f.write(','.join(map(str, [pairs,sd,ps[m],utp,utn,atp,atn])) + '\n')
+                             
+    f.close()
+
+    if plot:
+        plt.plot(adj_tp[2][1], adj_tn[2][1], '-', 
+                 unadj_tp[2][1], unadj_tn[2][1])
         plt.show()

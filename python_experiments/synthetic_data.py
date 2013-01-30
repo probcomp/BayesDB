@@ -47,13 +47,13 @@ def random_regression(n, d = 1,
 
     return samples
 
-def random_regression_pairs(n, pairs):
+def random_regression_pairs(n, pairs, sd_func):
     
     d = pairs * 2
     samples = [[0]*(d + 1) for i in range(n)]
 
     for i in range(pairs):
-        next = random_regression(n)
+        next = random_regression(n, sd_func = sd_func)
         for j in range(n):
             samples[j][(2*i):(2*i + 1)] = next[j]
     
