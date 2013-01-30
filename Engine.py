@@ -18,8 +18,14 @@ class Engine(object):
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
                 max_iterations, max_time):
-        X_L_prime = {}
-        X_D_prime = [[]]
+        constructor_args = \
+            State.transform_latent_state_to_constructor_args(X_L, X_D)
+        p_State = State.p_State(numpy.array(T), **constructor_args)
+        for idx in range(n_steps):
+            p_State.transition()
+        #
+        X_L_prime = p_State.get_X_L()
+        X_D_prime = p_State.get_X_D()
         return X_L_prime, X_D_prime
 
     def initialize_and_analyze(self, T, n_steps, SEED=None):
