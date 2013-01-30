@@ -1,10 +1,10 @@
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-from libcpp.map cimport map
+from libcpp.map cimport map as c_map
 from libcpp.set cimport set
 from cython.operator import dereference
 cimport numpy as np
-
+import numpy
 
 cdef double set_double(double& to_set, double value):
      to_set = value
@@ -65,20 +65,32 @@ cdef extern from "State.h":
           # getters
           double get_marginal_logp()
           int get_num_views()
-          map[int, set[int]] get_column_groups()
+          c_map[int, set[int]] get_column_groups()
           # API helpers
-          vector[map[string, double]] get_column_hypers()
-          map[string, double] get_column_partition_hypers()
+          vector[c_map[string, double]] get_column_hypers()
+          c_map[string, double] get_column_partition_hypers()
           vector[int] get_column_partition_assignments()
           vector[int] get_column_partition_counts()
           #
-          map[string, double] get_row_partition_model_hypers_i(int view_idx)
+          c_map[string, double] get_row_partition_model_hypers_i(int view_idx)
           vector[int] get_row_partition_model_counts_i(int view_idx)
-          vector[vector[map[string, double]]] get_column_component_suffstats_i(int view_idx)
+          vector[vector[c_map[string, double]]] get_column_component_suffstats_i(int view_idx)
           #
           vector[vector[int]] get_X_D()
           void SaveResult()
-     State *new_State "new State" (matrix[double] &data, vector[int] global_row_indices, vector[int] global_col_indices, int N_GRID, int SEED)
+     State *new_State "new State" (matrix[double] &data,
+                                   vector[int] global_row_indices,
+                                   vector[int] global_col_indices,
+                                   int N_GRID, int SEED)
+     State *new_State "new State" (matrix[double] &data,
+                                   vector[int] global_row_indices,
+                                   vector[int] global_col_indices,
+                                   c_map[int, c_map[string, double]] hypers_m,
+                                   vector[vector[int]] column_partition,
+                                   double column_crp_alpha,
+                                   vector[vector[vector[int]]] row_partition_v,
+                                   vector[double] row_crp_alpha_v,
+                                   int N_GRID, int SEED)
      void del_State "delete" (State *s)
 
 cdef class p_State:
@@ -86,7 +98,12 @@ cdef class p_State:
     cdef matrix[double] *dataptr
     cdef vector[int] gri
     cdef vector[int] gci
-    def __cinit__(self, data, global_row_indices=None, global_col_indices=None, N_GRID=31, SEED=0):
+    def __cinit__(self, data,
+                  global_row_indices=None, global_col_indices=None,
+                  hypers_m=None,
+                  column_partition=None, column_crp_alpha=None,
+                  row_partition_v=None, row_crp_alpha_v=None,
+                  N_GRID=31, SEED=0):
          if global_row_indices is None:
               global_row_indices = range(len(data))
          if global_col_indices is None:
@@ -94,7 +111,17 @@ cdef class p_State:
          self.dataptr = convert_data(data)
          self.gri = convert_vector(global_row_indices)
          self.gci = convert_vector(global_col_indices)
-         self.thisptr = new_State(dereference(self.dataptr), self.gri, self.gci, N_GRID, SEED)
+         if hypers_m is None:
+              self.thisptr = new_State(dereference(self.dataptr),
+                                       self.gri, self.gci,
+                                       N_GRID, SEED)
+         else:
+              self.thisptr = new_State(dereference(self.dataptr),
+                                       self.gri, self.gci,
+                                       hypers_m,
+                                       column_partition, column_crp_alpha,
+                                       row_partition_v, row_crp_alpha_v,
+                                       N_GRID, SEED)
     def __dealloc__(self):
         del_matrix(self.dataptr)
         del_State(self.thisptr)
@@ -113,10 +140,10 @@ cdef class p_State:
     def get_row_partition_model_i(self, view_idx):
           hypers = self.thisptr.get_row_partition_model_hypers_i(view_idx)
           counts = self.thisptr.get_row_partition_model_counts_i(view_idx)
-          row_parition_model_i = dict()
-          row_parition_model_i['hypers'] = hypers
-          row_parition_model_i['counts'] = counts
-          return row_parition_model_i
+          row_partition_model_i = dict()
+          row_partition_model_i['hypers'] = hypers
+          row_partition_model_i['counts'] = counts
+          return row_partition_model_i
     def get_column_names_i(self, view_idx):
           return []
     def get_column_component_suffstats_i(self, view_idx):
@@ -136,7 +163,11 @@ cdef class p_State:
         hypers = self.thisptr.get_column_partition_hypers()
         assignments = self.thisptr.get_column_partition_assignments()
         counts = self.thisptr.get_column_partition_counts()
-        return hypers, assignments, counts
+        column_partition = dict()
+        column_partition['hypers'] = hypers
+        column_partition['assignments'] = assignments
+        column_partition['counts'] = counts
+        return column_partition
     def get_column_hypers(self):
         return self.thisptr.get_column_hypers()
     def get_view_state(self):
@@ -160,3 +191,54 @@ cdef class p_State:
           X_L['column_hypers'] = column_hypers
           X_L['view_state'] = view_state
           return X_L
+
+def indicator_list_to_list_of_list(indicator_list):
+     list_of_list = []
+     num_clusters = max(indicator_list) + 1
+     import matplotlib.mlab
+     import numpy
+     for cluster_idx in range(num_clusters):
+          which_rows = numpy.array(indicator_list)==cluster_idx
+          list_of_list.append(matplotlib.mlab.find(which_rows))
+     return list_of_list
+
+def floatify_dict(in_dict):
+     for key in in_dict:
+          in_dict[key] = float(in_dict[key])
+     return in_dict
+
+def floatify_dict_dict(in_dict):
+     for key in in_dict:
+          in_dict[key] = floatify_dict(in_dict[key])
+     return in_dict
+
+def transform_latent_state_to_constructor_args(X_L, X_D):
+     extract_row_partition_alpha = lambda view_state: \
+         view_state['row_partition_model']['hypers']['log_alpha']
+     num_rows = len(X_D[0])
+     num_cols = len(X_L['column_hypers'])
+     #
+     global_row_indices = range(num_rows)
+     global_col_indices = range(num_cols)
+     hypers_m = dict(zip(global_col_indices, X_L['column_hypers']))
+     hypers_m = floatify_dict_dict(hypers_m)
+     column_indicator_list = X_L['column_partition']['assignments']
+     column_partition = indicator_list_to_list_of_list(column_indicator_list)
+     column_crp_alpha = numpy.exp(X_L['column_partition']['hypers']['log_alpha'])
+     row_partition_v = map(indicator_list_to_list_of_list, X_D)
+     row_crp_alpha_v = map(extract_row_partition_alpha, X_L['view_state'])
+     n_grid = 31
+     seed = 0
+     #
+     constructor_args = dict()
+     constructor_args['global_row_indices'] = global_row_indices
+     constructor_args['global_col_indices'] = global_col_indices
+     constructor_args['hypers_m'] = hypers_m
+     constructor_args['column_partition'] = column_partition
+     constructor_args['column_crp_alpha'] = column_crp_alpha
+     constructor_args['row_partition_v'] = row_partition_v
+     constructor_args['row_crp_alpha_v'] = row_crp_alpha_v
+     constructor_args['N_GRID'] = n_grid
+     constructor_args['SEED'] = seed
+     #
+     return constructor_args
