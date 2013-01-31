@@ -129,6 +129,11 @@ double ContinuousComponentModel::get_draw(double student_t_draw) const {
   return draw;
 }
 
+double ContinuousComponentModel::get_r() const {
+  double r = get(*p_hypers, (string) "r");
+  return r;
+}
+
 map<string, double> ContinuousComponentModel::get_suffstats() const {
   return suffstats;
 }
