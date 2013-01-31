@@ -3,12 +3,17 @@ import inspect
 import numpy
 #
 import cython.State as State
-
+import cython.ContinuousComponentModel as CCM
 
 class Engine(object):
 
     def __init__(self):
         self.seed = 0
+
+    def get_next_seed(self):
+        SEED = self.seed
+        self.seed += 1
+        return SEED
 
     def initialize(self, M_c, M_r, T, i):
         p_State = State.p_State(numpy.array(T))
@@ -30,8 +35,7 @@ class Engine(object):
 
     def initialize_and_analyze(self, T, n_steps, SEED=None):
         if SEED is None:
-            SEED = self.seed
-            self.seed += 1
+            SEED = self.get_next_seed()
         print 'initialize_and_analyze: using seed', SEED
         p_State = State.p_State(numpy.array(T), SEED=SEED)
         for idx in range(n_steps):
@@ -42,7 +46,41 @@ class Engine(object):
         return X_L_prime, X_D_prime
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, q):
+        which_row = q[0]
+        which_column = q[1]
+        #
+        num_rows = len(X_D[0])
+        num_cols = len(M_c['column_metadata'])
+        #
+        column_hypers = X_L['column_hypers'][which_column]
+        which_view = X_L['column_partition']['assignments'][which_column]
+        view_state_i = X_L['view_state'][which_view]
+        #
+        column_name = M_c['idx_to_name'][str(which_column)]
+        column_names = X_L['view_state'][which_view]['column_names']
+        which_column_name = column_names.index(column_name)
+        column_component_suffstats = \
+            X_L['view_state'][which_view]['column_component_suffstats']
+        column_component_suffstats_i = \
+            column_component_suffstats[which_column_name]
+        #
         x = []
+        if which_row is not None:
+            which_cluster = X_D[which_view][which_row]
+            component_suffstats = column_component_suffstats_i[which_cluster]
+            # build a suffstats object
+            component_model = CCM.p_ContinuousComponentModel(column_hypers,
+                                                             **component_suffstats)
+            SEED = self.get_next_seed()
+            print "seed is", SEED
+            r = component_model.get_r()
+            print "r is", r
+            random_state = numpy.random.RandomState(SEED)
+            standard_t_draw = random_state.standard_t(r)
+            print "standard_t_draw is", standard_t_draw
+            x.append(component_model.get_draw(standard_t_draw))
+        else:
+            pass
         return x
 
     def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, n):
@@ -52,8 +90,7 @@ class Engine(object):
     def impute(self, M_c, X_L, X_D, Y, q, n):
         # FIXME: actually implement 
         # FIXME: just spitting out random normals for now 
-        SEED = self.seed
-        self.seed += 1
+        SEED = self.get_next_seed()
         random_state = numpy.random.RandomState(SEED)
         #
         e = random_state.normal(size=len(q)).tolist()
