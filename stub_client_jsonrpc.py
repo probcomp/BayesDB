@@ -42,7 +42,7 @@ T_dim = (3, 4)
 T = (numpy.arange(numpy.prod(T_dim)).reshape(T_dim) * 1.0).tolist()
 
 # non-stub functions
-non_stub = set(['initialize', 'initialize_and_analyze', 'analyze'])
+non_stub = set(['initialize', 'initialize_and_analyze', 'analyze', 'impute'])
 #
 method_name = 'initialize'
 args_dict = dict()
@@ -75,6 +75,17 @@ args_dict['c'] = 'c'
 args_dict['r'] = 'r'
 args_dict['max_iterations'] = 'max_iterations'
 args_dict['max_time'] = 'max_time'
+out = call_and_print(method_name, args_dict)
+time.sleep(1)
+
+method_name = 'impute'
+args_dict = dict()
+args_dict['M_c'] = 'M_c'
+args_dict['X_L'] = 'X_L'
+args_dict['X_D'] = 'X_D'
+args_dict['Y'] = 'Y'
+args_dict['q'] = range(3)
+args_dict['n'] = 'n'
 out = call_and_print(method_name, args_dict)
 time.sleep(1)
 
