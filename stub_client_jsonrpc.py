@@ -67,25 +67,32 @@ def create_message(method_name, params):
         }
     return json.dumps(message)
 
-def call_and_print(method_name, args_dict):
+def call(method_name, args_dict, print_message=False):
     message = create_message(method_name, args_dict)
-    print 'trying message:', message
+    if print_message: print 'trying message:', message
     r = requests.put(URI, data=message)
     r.raise_for_status()
     out = json.loads(r.content)
-    print out
-    print
     if isinstance(out, dict) and 'result' in out:
         return out['result']
     else:
         # error?
         return out
+def call_and_print(method_name, args_dict):
+    out = call(method_name, args_dict, True)
+    print out
+    print
+    return out
 
-# random_state = numpy.random.RandomState(0)
-# T_dim = (10, 10)
-# T = (numpy.arange(numpy.prod(T_dim)).reshape(T_dim) * 1.0).tolist()
+
+seed = 0
+num_clusters = 2
+num_cols = 8
+num_rows = 300
+num_splits = 2
 T, data_inverse_permutation_indices = \
-    gen_factorial_data(0, 2, 6, 20, 2, max_mean=10, max_std=0.1)
+    gen_factorial_data(seed, num_clusters, num_cols, num_rows, num_splits,
+                       max_mean=10, max_std=0.1)
 T = T.tolist()
 
 # non-stub functions
@@ -98,14 +105,14 @@ args_dict['M_c'] = 'M_c'
 args_dict['M_r'] = 'M_r'
 args_dict['i'] = ''
 args_dict['T'] = T
-out = call_and_print(method_name, args_dict)
+out = call(method_name, args_dict)
 #
 method_name = 'initialize_and_analyze'
 args_dict = dict()
 args_dict['n_steps'] = 10
 args_dict['SEED'] = 0
 args_dict['T'] = T
-out = call_and_print(method_name, args_dict)
+out = call(method_name, args_dict)
 #
 X_L_prime, X_D_prime = out
 method_name = 'analyze'
@@ -120,7 +127,7 @@ args_dict['c'] = 'c'
 args_dict['r'] = 'r'
 args_dict['max_iterations'] = 'max_iterations'
 args_dict['max_time'] = 'max_time'
-out = call_and_print(method_name, args_dict)
+out = call(method_name, args_dict)
 X_L_prime, X_D_prime = out
 time.sleep(1)
 
@@ -132,7 +139,7 @@ args_dict['X_D'] = 'X_D'
 args_dict['Y'] = 'Y'
 args_dict['q'] = range(3)
 args_dict['n'] = 'n'
-out = call_and_print(method_name, args_dict)
+out = call(method_name, args_dict)
 time.sleep(1)
 
 num_cols = len(T[0])
@@ -148,7 +155,7 @@ for view_state_i in X_L_prime['view_state']:
 args_dict['X_L'] = X_L_prime
 args_dict['X_D'] = X_D_prime
 args_dict['Y'] = None
-args_dict['q'] = (0,0)
+args_dict['q'] = [(0,0)]
 values = []
 for idx in range(10):
     out = call_and_print(method_name, args_dict)
