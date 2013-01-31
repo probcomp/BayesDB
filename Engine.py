@@ -50,11 +50,13 @@ class Engine(object):
         return p
 
     def impute(self, M_c, X_L, X_D, Y, q, n):
+        # FIXME: actually implement 
+        # FIXME: just spitting out random normals for now 
         SEED = self.seed
         self.seed += 1
         random_state = numpy.random.RandomState(SEED)
         #
-        e = random_state.normal(size=len(q)).to_list()
+        e = random_state.normal(size=len(q)).tolist()
         return e
 
     def conditional_entropy(M_c, X_L, X_D, d_given, d_target,
