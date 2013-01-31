@@ -69,7 +69,7 @@ def run_ring(plot = False):
         
         r_sq_vals[i] = lm.R2
         
-        f.write(str(w) + ',' + true_percent_ent[i] + ',' + str(lm.R2) + '\n')
+        f.write(str(w) + ',' + str(true_percent_ent[i]) + ',' + str(lm.R2) + '\n')
         
     f.close()
 
@@ -151,12 +151,12 @@ def run_pairwise_regressions(plot = False):
     ps = [0.001, 0.01, 0.025, 0.05, 0.10]
     
     f = open('../../results/pairwise-regression-results.csv', 'w')
-    f.write('pairs,standard_deviation,p,unadj_tp,unadj_tn,adj_tp,adj_tn\n')
+    f.write('pairs,standard_deviation,p,unadj_tp,unadj_fp,adj_tp,adj_fp\n')
     
     adj_tp = [[[0]*len(ps) for i in range(len(sds))] for j in range(len(nums_pairs))]
-    adj_tn = [[[0]*len(ps) for i in range(len(sds))] for j in range(len(nums_pairs))]
+    adj_fp = [[[0]*len(ps) for i in range(len(sds))] for j in range(len(nums_pairs))]
     unadj_tp = [[[0]*len(ps) for i in range(len(sds))] for j in range(len(nums_pairs))]
-    unadj_tn = [[[0]*len(ps) for i in range(len(sds))] for j in range(len(nums_pairs))]
+    unadj_fp = [[[0]*len(ps) for i in range(len(sds))] for j in range(len(nums_pairs))]
 
     for i in range(len(nums_pairs)):
         for j in range(len(sds)):
@@ -181,20 +181,27 @@ def run_pairwise_regressions(plot = False):
                         bonferroni = ps[m]/(pairs * (pairs - 1) / 2)
 
                         unadj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < alpha)
-                        unadj_tn[i][j][m] += (l != k + 1) and (lm.Fpv >= alpha)
+                        unadj_fp[i][j][m] += (l != k + 1) and (lm.Fpv < alpha)
                         adj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < bonferroni)
-                        adj_tn[i][j][m] += (l != k + 1) and (lm.Fpv >= bonferroni)
+                        adj_fp[i][j][m] += (l != k + 1) and (lm.Fpv < bonferroni)
 
             for m in range(len(ps)):
                 utp = unadj_tp[i][j][m]
-                utn = unadj_tn[i][j][m]
+                ufp = unadj_fp[i][j][m]
                 atp = adj_tp[i][j][m]
-                atn = adj_tn[i][j][m]
-                f.write(','.join(map(str, [pairs,sd,ps[m],utp,utn,atp,atn])) + '\n')
+                afp = adj_fp[i][j][m]
+                f.write(','.join(map(str, [pairs,sd,ps[m],utp,ufp,atp,afp])) + '\n')
                              
     f.close()
 
     if plot:
-        plt.plot(adj_tp[2][1], adj_tn[2][1], '-', 
-                 unadj_tp[2][1], unadj_tn[2][1])
+        plt.plot(adj_tp[2][1], adj_fp[2][1], '-', 
+                 unadj_tp[2][1], unadj_fp[2][1])
         plt.show()
+
+if __name__ == "__main__":
+
+    run_ring()
+    run_simple_regression()
+    run_outlier_regression()
+    run_pairwise_regressions()
