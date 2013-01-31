@@ -16,8 +16,7 @@ class ContinuousComponentModel : public ComponentModel {
   void get_hyper_doubles(double &r, double &nu, double &s, double &mu) const;
   void get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const;
   std::map<std::string, double> get_suffstats() const;
-  double get_draw(double student_t_draw) const;
-  double get_r() const;
+  double get_draw(int random_seed) const;
   //
   // calculators
   double calc_marginal_logp() const;

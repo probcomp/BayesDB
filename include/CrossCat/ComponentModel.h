@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 #include "utils.h"
+#include <boost/random/student_t_distribution.hpp>
+#include <boost/random/mersenne_twister.hpp>
 
 class ComponentModel {
  public:

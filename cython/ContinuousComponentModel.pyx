@@ -23,8 +23,7 @@ cdef extern from "ContinuousComponentModel.h":
      cdef cppclass ContinuousComponentModel:
         double score
         cpp_string to_string()
-        double get_draw(double student_t_draw)
-        double get_r()
+        double get_draw(int seed)
         double insert_element(double element)
         double remove_element(double element)
         double incorporate_hyper_update()
@@ -47,8 +46,8 @@ cdef class p_ContinuousComponentModel:
         del_ContinuousComponentModel(self.thisptr)
     def get_draw(self, student_t_draw):
         return self.thisptr.get_draw(student_t_draw)
-    def get_r(self):
-        return self.thisptr.get_r()
+    def get_draw(self, seed):
+        return self.thisptr.get_draw(seed)
     def insert_element(self, element):
         return self.thisptr.insert_element(element)
     def remove_element(self, element):
