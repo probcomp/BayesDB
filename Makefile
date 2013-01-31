@@ -36,6 +36,8 @@ cython: $(CYT)/State.so
 bin: $(OBJECTS) $(BIN)
 	./$(BIN)
 
+obj: $(OBJECTS)
+
 # run each test
 tests: $(TESTS)
 	@echo tests are: $(TESTS) $(foreach test, $(TESTS), && ./$(test))
