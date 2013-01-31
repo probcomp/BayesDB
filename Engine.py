@@ -46,41 +46,28 @@ class Engine(object):
         return X_L_prime, X_D_prime
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, q):
-        which_row = q[0]
-        which_column = q[1]
-        #
-        num_rows = len(X_D[0])
-        num_cols = len(M_c['column_metadata'])
-        #
-        column_hypers = X_L['column_hypers'][which_column]
-        which_view = X_L['column_partition']['assignments'][which_column]
-        view_state_i = X_L['view_state'][which_view]
-        #
-        column_name = M_c['idx_to_name'][str(which_column)]
-        column_names = X_L['view_state'][which_view]['column_names']
-        which_column_name = column_names.index(column_name)
-        column_component_suffstats = \
-            X_L['view_state'][which_view]['column_component_suffstats']
-        column_component_suffstats_i = \
-            column_component_suffstats[which_column_name]
-        #
         x = []
-        if which_row is not None:
-            which_cluster = X_D[which_view][which_row]
-            component_suffstats = column_component_suffstats_i[which_cluster]
-            # build a suffstats object
-            component_model = CCM.p_ContinuousComponentModel(column_hypers,
-                                                             **component_suffstats)
-            SEED = self.get_next_seed()
-            print "seed is", SEED
-            r = component_model.get_r()
-            print "r is", r
-            random_state = numpy.random.RandomState(SEED)
-            standard_t_draw = random_state.standard_t(r)
-            print "standard_t_draw is", standard_t_draw
-            x.append(component_model.get_draw(standard_t_draw))
-        else:
-            pass
+        # FIXME: handle multiple queries
+        assert(len(q)==1)
+        for query in q:
+            which_row = query[0]
+            which_col = query[1]
+            #
+            num_rows = len(X_D[0])
+            num_cols = len(M_c['column_metadata'])
+            is_observed_row = which_row < num_rows
+            is_observed_col = which_col < num_cols
+            assert(is_observed_col)
+            # FIXME: handle unobserved rows
+            assert(is_observed_row)
+            if(is_observed_col and is_observed_row):
+                SEED = self.get_next_seed()
+                sample = simple_predictive_sample_observed(M_c, X_L, X_D, query,
+                                                           SEED)
+                x.append(sample)
+            else:
+                # FIXME: handle other cases
+                assert(False)
         return x
 
     def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, n):
@@ -142,3 +129,29 @@ def get_method_name_to_args():
         arg_str_list = inspect.getargspec(method).args[1:]
         method_name_to_args[method_name] = arg_str_list
     return method_name_to_args
+
+def simple_predictive_sample_observed(M_c, X_L, X_D, query, SEED):
+    which_row = query[0]
+    which_column = query[1]
+    #
+    column_hypers = X_L['column_hypers'][which_column]
+    which_view = X_L['column_partition']['assignments'][which_column]
+    view_state_i = X_L['view_state'][which_view]
+    #
+    column_name = M_c['idx_to_name'][str(which_column)]
+    column_names = X_L['view_state'][which_view]['column_names']
+    which_column_name = column_names.index(column_name)
+    column_component_suffstats = \
+        X_L['view_state'][which_view]['column_component_suffstats']
+    column_component_suffstats_i = \
+        column_component_suffstats[which_column_name]
+    #
+    which_cluster = X_D[which_view][which_row]
+    cluster_count = sum(numpy.array(X_D[which_view])==which_cluster)
+    component_suffstats = column_component_suffstats_i[which_cluster]
+    # build a suffstats object
+    component_model = CCM.p_ContinuousComponentModel(column_hypers,
+                                                     count=cluster_count,
+                                                     **component_suffstats)
+    draw = component_model.get_draw(SEED)
+    return draw
