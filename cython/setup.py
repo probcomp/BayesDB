@@ -5,8 +5,8 @@ from Cython.Distutils import build_ext
 setup(
   name = 'Demos',
   ext_modules=[
-        Extension("continuous_component_model_test",
-              sources=["continuous_component_model_test.pyx",
+        Extension("ContinuousComponentModel",
+              sources=["ContinuousComponentModel.pyx",
                        "../src/utils.cpp",
                        "../src/numerics.cpp",
                        "../src/RandomNumberGenerator.cpp",
