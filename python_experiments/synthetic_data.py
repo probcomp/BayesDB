@@ -70,8 +70,8 @@ def write_data(samples, file_base):
     
     f = open(file_base + '-labels.csv', 'w')
     for i in range(len(samples[0]) - 1):
-            f.write('numeric,')
-    f.write('numeric')
+            f.write('normal_inverse_gamma,')
+    f.write('normal_inverse_gamma')
     f.close()
 
 #samples = random_regression_pairs(1000,3)
