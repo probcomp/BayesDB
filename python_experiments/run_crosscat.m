@@ -14,6 +14,7 @@ state = analyze(state, {'columnPartitionHyperparameter',...
 out_file = '../../results/' + file_base + '-cc-results.csv';
 
 s = zeros(1000,2);
+h = zeros(1000,2);
 
 for i = 1:1000
     
@@ -22,7 +23,11 @@ for f = 1:state.F
     q{f} = struct('indices', [state.O + 1, f], 'dataTypes', 'normal_inverse_gamma');
 end
 
-s(i,:) = simple_predictive_sample(state, [], q);
+x = simple_predictive_sample(state, [], q);
+
+s(i,:) = x;
+h(i,:) = log(p/jointp);
+
 end
 
 plot(s(:,1), s(:,2), '.')
