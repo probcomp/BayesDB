@@ -52,6 +52,8 @@ function state = drawSample(state, kernelList, c, r)
                             disp('FIXME');
                         case 'asymmetric_beta_bernoulli '
                             state = sampleComponentHyperparameters_asymmetric_beta_bernoulli (state, c(ii));
+                        otherwise
+                            disp([state.dataTypes{ii}, ' is not a valid data type']);
                     end
                 end
                 
@@ -378,6 +380,8 @@ function logP = scoreFeature(state,f)
                 logP = logP + betaBern(state.data(theseData,f), ...
                                         state.betaBern_s(f), ...
                                         state.betaBern_b(f));
+            otherwise
+                disp([state.dataTypes{f}, ' is not a valid data type']);
         end
     end
 end
@@ -452,6 +456,8 @@ function logP = scoreObject(state,K,O)
                                 state.data(O,f), ...
                                 state.betaBern_s(f), ...
                                 state.betaBern_b(f));
+            otherwise
+                disp([state.dataTypes{f}, ' is not a valid data type']);
         end
     end
     
