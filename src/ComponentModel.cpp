@@ -21,3 +21,9 @@ std::ostream& operator<<(std::ostream& os, const ComponentModel& cm) {
   os << "marginal logp: " << cm.calc_marginal_logp() << endl;
   return os;
 }
+
+string ComponentModel::to_string() {
+  stringstream ss;
+  ss << *this;
+  return ss.str();
+}

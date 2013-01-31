@@ -22,6 +22,7 @@ cpdef set_string_double_map(in_map):
 cdef extern from "ContinuousComponentModel.h":
      cdef cppclass ContinuousComponentModel:
         double score
+        cpp_string to_string()
         double get_draw(double student_t_draw)
         double get_r()
         double insert_element(double element)
@@ -59,4 +60,4 @@ cdef class p_ContinuousComponentModel:
     def calc_element_predictive_logp(self, element):
         return self.thisptr.calc_element_predictive_logp(element)
     def __repr__(self):
-        return "ContinuousComponentModel[%s]" % (self.thisptr.calc_marginal_logp())
+        return self.thisptr.to_string()

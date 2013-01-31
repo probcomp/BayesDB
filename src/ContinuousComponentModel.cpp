@@ -125,12 +125,20 @@ double ContinuousComponentModel::get_draw(double student_t_draw) const {
   get_hyper_doubles(r, nu, s, mu);
   get_suffstats(count, sum_x, sum_x_sq);
   numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+  //
   double draw = mu + sqrt(s) * student_t_draw;
   return draw;
 }
 
 double ContinuousComponentModel::get_r() const {
-  double r = get(*p_hypers, (string) "r");
+  // get modified suffstats
+  double r, nu, s, mu;
+  int count;
+  double sum_x, sum_x_sq;
+  get_hyper_doubles(r, nu, s, mu);
+  get_suffstats(count, sum_x, sum_x_sq);
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+  //
   return r;
 }
 

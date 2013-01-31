@@ -12,6 +12,7 @@ component_model = CCM.p_ContinuousComponentModel(hyper_map)
 print component_model.calc_marginal_logp()
 component_model.insert_element(2.3)
 print component_model.calc_marginal_logp()
+print component_model
 print "component_model.get_draw(0):", component_model.get_draw(0)
 print "component_model.get_draw(1):", component_model.get_draw(1)
 component_model.remove_element(2.3)
