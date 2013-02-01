@@ -1,3 +1,4 @@
 Samples
 *~
 *.pyc
+*.DS_store
