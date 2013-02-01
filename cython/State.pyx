@@ -145,7 +145,8 @@ cdef class p_State:
           row_partition_model_i['counts'] = counts
           return row_partition_model_i
     def get_column_names_i(self, view_idx):
-          return []
+         column_groups = self.thisptr.get_column_groups()
+         return column_groups[view_idx]
     def get_column_component_suffstats_i(self, view_idx):
           return self.thisptr.get_column_component_suffstats_i(view_idx)
     def get_view_state_i(self, view_idx):
