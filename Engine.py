@@ -39,18 +39,20 @@ class Engine(object):
         assert(len(q)==1)
         for query in q:
             which_row = query[0]
-            which_col = query[1]
+            which_column = query[1]
             #
             num_rows = len(X_D[0])
             num_cols = len(M_c['column_metadata'])
             is_observed_row = which_row < num_rows
-            is_observed_col = which_col < num_cols
+            is_observed_col = which_column < num_cols
             assert(is_observed_col)
             # FIXME: handle unobserved rows
             assert(is_observed_row)
             if(is_observed_col and is_observed_row):
                 SEED = self.get_next_seed()
-                sample = simple_predictive_sample_observed(M_c, X_L, X_D, query,
+                sample = simple_predictive_sample_observed(M_c, X_L, X_D,
+                                                           which_row,
+                                                           which_column,
                                                            SEED)
                 x.append(sample)
             else:
@@ -118,10 +120,7 @@ def get_method_name_to_args():
         method_name_to_args[method_name] = arg_str_list
     return method_name_to_args
 
-def simple_predictive_sample_observed(M_c, X_L, X_D, query, SEED):
-    which_row = query[0]
-    which_column = query[1]
-    #
+def simple_predictive_sample_observed(M_c, X_L, X_D, which_row, which_column, SEED):
     column_hypers = X_L['column_hypers'][which_column]
     which_view = X_L['column_partition']['assignments'][which_column]
     view_state_i = X_L['view_state'][which_view]
@@ -137,7 +136,6 @@ def simple_predictive_sample_observed(M_c, X_L, X_D, query, SEED):
     which_cluster = X_D[which_view][which_row]
     cluster_count = sum(numpy.array(X_D[which_view])==which_cluster)
     component_suffstats = column_component_suffstats_i[which_cluster]
-    # build a suffstats object
     component_model = CCM.p_ContinuousComponentModel(column_hypers,
                                                      count=cluster_count,
                                                      **component_suffstats)
