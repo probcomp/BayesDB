@@ -178,24 +178,24 @@ Let $\vec{\tau^d_c}$ represent the sufficient statistics summarizing the data fr
 \SetKwInOut{Input}{input}
 \SetKwInOut{Output}{output}
 \SetKwInOut{Initialize}{initialize}
+\hl{FIXME: [[SDL: I've changd notation to make it more verbose but descriptive]]}
 
-\Input{$M_c, X_L, X_D, Y, q$.}
+\Input{$M_c, X_L, X_D, Y, queries$.}
 \Output{A list of sampled values $x$.}
 \BlankLine
-
-\ForEach{$i \in q$}{
+\ForEach{$query \in queries$}{
 
 Extract the queried row and dimension:\\
-$r,d \leftarrow q_i$
+$row,column \leftarrow query$
 
-Find all elements of $Y$ that apply to the same dimension:
-\[Y' \leftarrow Y s.t. \; Y_{*,2}=d\]
+Find all elements of $Y$ that apply to the same column:
+\[Y' \leftarrow Y s.t. \; Y_{*,2}=column\]
 
 Sample a view and category, allowing the possibility of choosing a new view and/or category: \[
 Pr(v', y'| X_L, Y') \propto Pr(Y'|v', y',X_L)Pr(v',y'|X_L)
 \] 
-The assignment of views is deterministic in the case where $d$ is previously observed,
-$v' \leftarrow z_d$. The assignment of categories is deterministic when $v'$ and $r$ are previously observed, 
+The assignment of views is deterministic in the case where $column$ is previously observed,
+$v' \leftarrow z_d$. The assignment of categories is deterministic when $v'$ and $row$ are previously observed, 
 $y' \leftarrow y^{v'}_r$.
 
 Sample a value from the appropriate posterior predictive (PP) distribution: \[ 
