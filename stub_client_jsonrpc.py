@@ -76,7 +76,7 @@ def call(method_name, args_dict, print_message=False):
     if isinstance(out, dict) and 'result' in out:
         return out['result']
     else:
-        # error?
+        print "call(): ERROR"
         return out
 def call_and_print(method_name, args_dict):
     out = call(method_name, args_dict, True)
@@ -85,6 +85,7 @@ def call_and_print(method_name, args_dict):
     return out
 
 
+# generate a synthetic dataset
 seed = 0
 num_clusters = 2
 num_cols = 8
@@ -94,6 +95,18 @@ T, data_inverse_permutation_indices = \
     gen_factorial_data(seed, num_clusters, num_cols, num_rows, num_splits,
                        max_mean=10, max_std=0.1)
 T = T.tolist()
+#
+column_metadata = [
+    dict(modeltype="normal_inverse_gamma",
+         value_to_code=dict(),
+         code_to_value=dict())
+    for col_idx in range(num_cols)
+    ]
+M_r = dict(name_to_idx=dict(zip(map(str, range(num_rows)),range(num_rows))),
+           idx_to_name=dict(zip(map(str, range(num_rows)),range(num_rows))))
+M_c = dict(name_to_idx=dict(zip(map(str, range(num_cols)),range(num_cols))),
+           idx_to_name=dict(zip(map(str, range(num_cols)),range(num_cols))),
+           column_metadata=column_metadata)
 
 # non-stub functions
 non_stub = set(['initialize', 'initialize_and_analyze', 'analyze', 'impute',
@@ -101,23 +114,16 @@ non_stub = set(['initialize', 'initialize_and_analyze', 'analyze', 'impute',
 
 method_name = 'initialize'
 args_dict = dict()
-args_dict['M_c'] = 'M_c'
-args_dict['M_r'] = 'M_r'
+args_dict['M_c'] = M_c
+args_dict['M_r'] = M_r
 args_dict['i'] = ''
 args_dict['T'] = T
 out = call(method_name, args_dict)
-#
-method_name = 'initialize_and_analyze'
-args_dict = dict()
-args_dict['n_steps'] = 10
-args_dict['SEED'] = 0
-args_dict['T'] = T
-out = call(method_name, args_dict)
-#
-X_L_prime, X_D_prime = out
+M_c, M_r, X_L_prime, X_D_prime = out
+
 method_name = 'analyze'
 args_dict = dict()
-args_dict['M_c'] = 'M_c'
+args_dict['M_c'] = M_c
 args_dict['T'] = T
 args_dict['X_L'] = X_L_prime
 args_dict['X_D'] = X_D_prime
@@ -131,27 +137,9 @@ out = call(method_name, args_dict)
 X_L_prime, X_D_prime = out
 time.sleep(1)
 
-method_name = 'impute'
-args_dict = dict()
-args_dict['M_c'] = 'M_c'
-args_dict['X_L'] = 'X_L'
-args_dict['X_D'] = 'X_D'
-args_dict['Y'] = 'Y'
-args_dict['q'] = range(3)
-args_dict['n'] = 'n'
-out = call(method_name, args_dict)
-time.sleep(1)
-
-num_cols = len(T[0])
-idx_to_name = dict(zip(range(num_cols),range(num_cols)))
-column_metadata=[None for idx in range(num_cols)]
-M_c = dict(idx_to_name=idx_to_name, column_metadata=column_metadata)
-#
 method_name = 'simple_predictive_sample'
 args_dict = dict()
 args_dict['M_c'] = M_c
-for view_state_i in X_L_prime['view_state']:
-    view_state_i['column_names'] = range(5)
 args_dict['X_L'] = X_L_prime
 args_dict['X_D'] = X_D_prime
 args_dict['Y'] = None
@@ -163,6 +151,16 @@ for idx in range(10):
 print values
 time.sleep(1)
 
+method_name = 'impute'
+args_dict = dict()
+args_dict['M_c'] = 'M_c'
+args_dict['X_L'] = 'X_L'
+args_dict['X_D'] = 'X_D'
+args_dict['Y'] = 'Y'
+args_dict['q'] = range(3)
+args_dict['n'] = 'n'
+out = call(method_name, args_dict)
+time.sleep(1)
 
 # programmatically call all the other method calls
 method_name_to_args = E.get_method_name_to_args()
