@@ -33,18 +33,6 @@ class Engine(object):
         X_D_prime = p_State.get_X_D()
         return X_L_prime, X_D_prime
 
-    def initialize_and_analyze(self, T, n_steps, SEED=None):
-        if SEED is None:
-            SEED = self.get_next_seed()
-        print 'initialize_and_analyze: using seed', SEED
-        p_State = State.p_State(numpy.array(T), SEED=SEED)
-        for idx in range(n_steps):
-            print "transitioning"
-            p_State.transition()
-        X_L_prime = p_State.get_X_L()
-        X_D_prime = p_State.get_X_D()
-        return X_L_prime, X_D_prime
-
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, q):
         x = []
         # FIXME: handle multiple queries
