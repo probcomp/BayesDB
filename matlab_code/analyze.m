@@ -51,7 +51,7 @@ function state = drawSample(state, kernelList, c, r)
                             % FIXME!
                             disp('FIXME');
                         case 'asymmetric_beta_bernoulli '
-                            state = sampleComponentHyperparameters_asymmetric_beta_bernoulli (state, c(ii));
+                            state = sampleComponentHyperparameters_asymmetric_beta_bernoulli(state, c(ii));
                         otherwise
                             disp([state.dataTypes{ii}, ' is not a valid data type']);
                     end
@@ -136,7 +136,7 @@ function state = sampleComponentHyperparameters_normal_inverse_gamma(state, f)
         end
         % choose state
         this = chooseState(logP);
-        state.NG_k(f) = state.kRange(this)+1;
+        state.NG_k(f) = state.kRange(this);%+1;
     end
 
     % a

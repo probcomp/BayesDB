@@ -14,8 +14,8 @@ function state = initialize_from_csv(dataFile, dataTypes, initialState)
     % parameters
     bins = 31; % must be odd
 
-    %Parameter priors are assumed to be uniform in this version
-    state.paramPrior = ones(1,bins); % uniform prior on parameters
+    %Parameter priors are assumed to be log-normal
+    state.paramPrior = normpdf(1:31, 16, 16);%ones(1,bins); % uniform prior on parameters
     state.paramPrior = state.paramPrior ./ sum(state.paramPrior);
     state.cumParamPrior = cumsum(state.paramPrior);
     
@@ -55,7 +55,7 @@ function state = initialize_from_csv(dataFile, dataTypes, initialState)
         case 'apart'
             state.f = 1 : state.F;
             for i = 1 : length(state.f)
-                state.o(state.f(i),:) = 1:state.O;
+                state.o(i,:) = 1:state.O;
                 state.crpPriorC(i) = state.crpCRange(find(state.cumParamPrior>rand,1));
             end
             
