@@ -113,3 +113,36 @@ function state = buildBinary(state, f, bins)
     state.betaBern_b(f) = state.bRange(find(state.cumParamPrior>rand,1));
 
 end
+
+function [partition] = sample_partition(n, gama)
+% this samples category partions given # objects from crp prior
+
+partition = ones(1,n);
+classes = [1,0];
+
+for i=2:n
+classprobs=[];
+
+for j=1:length(classes)
+
+if classes(j) > 0.5
+classprobs(j) = (classes(j))./(i-1+gama);
+else
+classprobs(j) = gama./(i-1+gama);
+end
+
+end
+
+cumclassprobs = cumsum(classprobs);
+c = min(find(rand<cumclassprobs));
+partition(i) = c;
+classes(c)=classes(c)+1;
+
+% if we add new class, need to replace placeholder
+
+if c==length(classes)
+classes(c+1)=0;
+end
+
+end
+end
