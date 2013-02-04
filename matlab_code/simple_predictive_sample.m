@@ -369,8 +369,10 @@ function thisCategory = chooseCategoryGivenView(state, Y, q, thisView)
                 switch state.dataTypes{Y.indices(relevantConditions(iii),2)}
 
                     case 'asymmetric_beta_bernoulli'
-                        sum1 = sum(theseData==1) + state.betaBern_s(tmpColumn) .* state.betaBern_b(tmpColumn);
-                        sum0 = sum(theseData==0) + state.betaBern_s(tmpColumn) .* (1 - state.betaBern_b(tmpColumn));
+                        thisValue = zeros(1,2);
+                        thisValue(Y.values(relevantConditions(iii))+1) = 1;
+                        sum1 = thisValue(2) + sum(theseData==1) + state.betaBern_s(tmpColumn) .* state.betaBern_b(tmpColumn);
+                        sum0 = thisValue(1) + sum(theseData==0) + state.betaBern_s(tmpColumn) .* (1 - state.betaBern_b(tmpColumn));
                         tmpProb = normalize([sum0, sum1]);
                         logProb(ii) = logProb(ii)+ log( tmpProb(Y.values(relevantConditions(iii))+1) );
 
