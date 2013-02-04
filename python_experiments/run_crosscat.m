@@ -7,27 +7,29 @@ label_file = strcat('../../data/',file_base,'-labels');
 out_file = ['../../results/', file_base, + '-cc-results.csv'];
 
 state = initialize_from_csv(data_file,...
-    label_file, 'together');
+    label_file, 'fromThePrior');
 
 state = analyze(state, {'columnPartitionHyperparameter',...
     'columnPartitionAssignments', 'componentHyperparameters',...
     'rowPartitionHyperparameters', 'rowPartitionAssignments'},...
-    100, 'all', 'all',[],[]);
+    200, 'all', 'all');
 
 s = zeros(1000,2);
 h = zeros(1000,2);
 
 for i = 1:1000
     
-q = cell(2,1);
-for f = 1:state.F
-    q{f} = struct('indices', [state.O + 1, f], 'dataTypes', 'normal_inverse_gamma');
-end
+%q = cell(2,1);
+%for f = 1:state.F
+%    q{f} = struct('indices', [state.O + 1, f], 'dataTypes', 'normal_inverse_gamma');
+%end
 
-x = simple_predictive_sample(state, [], q);
+%x = simple_predictive_sample(state, [], q);
 
-s(i,:) = x;
+%s(i,:) = x;
 %h(i,:) = log(p/jointp);
+
+s(i,:) = simple_predictive_sample_newRow(state, [], [1 2]);
 
 end
 
