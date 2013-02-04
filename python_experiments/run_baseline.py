@@ -162,6 +162,7 @@ def run_pairwise_regressions(plot = False):
         for j in range(len(sds)):
             
             pairs = nums_pairs[i]
+            n_cols = 2*pairs
             sd = sds[j]
             
             data = synth.random_regression_pairs(n, pairs,
@@ -170,15 +171,15 @@ def run_pairwise_regressions(plot = False):
                              str(pairs) + '-sd-' + str(sd))
             data = np.array(data)                
 
-            for k in range(0, 2*pairs - 1):
-                for l in range(k + 1, 2*pairs):
-
+            for k in range(0, n_cols - 1):
+                for l in range(k + 1, n_cols):
+                    
                     lm = ols.ols(data[:,l], data[:,k], 'y', ['x0'])
                     
                     for m in range(len(ps)):
 
                         alpha = ps[m]
-                        bonferroni = ps[m]/(pairs * (pairs - 1) / 2)
+                        bonferroni = ps[m]/(n_cols * (n_cols - 1) / 2)
 
                         unadj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < alpha)
                         unadj_fp[i][j][m] += (l != k + 1) and (lm.Fpv < alpha)
@@ -282,6 +283,120 @@ def run_outliers_correlated(plot = False):
         plt.plot(data[:,0], data[:,1], '.', data[:,0], y, 'r')
         plt.show()    
 
+def run_correlated_pairs(plot = False):
+    
+    pairs = 15
+    ncols = 2*pairs
+
+    ns = [5, 25, 50, 100, 200]    
+    corrs = np.array(range(0,11))/10.0
+    ps = [0.001, 0.01, 0.025, 0.05, 0.10]
+    
+    f = open('../../results/correlated-pairs-results.csv', 'w')
+    f.write('n,corr,p,unadj_tp,unadj_fp,adj_tp,adj_fp\n')
+    
+    adj_tp = [[[0]*len(ps) for i in range(len(corrs))] for j in range(len(ns))]
+    adj_fp = [[[0]*len(ps) for i in range(len(corrs))] for j in range(len(ns))]
+    unadj_tp = [[[0]*len(ps) for i in range(len(corrs))] for j in range(len(ns))]
+    unadj_fp = [[[0]*len(ps) for i in range(len(corrs))] for j in range(len(ns))]
+
+    for i in range(len(ns)):
+        for j in range(len(corrs)):
+            
+            n = ns[i]
+            corr = corrs[j]
+            
+            data = synth.correlated_pairs(n, pairs, corr)
+            synth.write_data(data, '../../data/correlated-pairs-n-' +
+                             str(n) + '-corr-' + str(corr))
+            data = np.array(data)                
+
+            for k in range(0, ncols - 1):
+                for l in range(k + 1, ncols):
+
+                    lm = ols.ols(data[:,l], data[:,k], 'y', ['x0'])
+                    
+                    for m in range(len(ps)):
+
+                        alpha = ps[m]
+                        bonferroni = ps[m]/(ncols * (ncols - 1) / 2)
+
+                        unadj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < alpha)
+                        unadj_fp[i][j][m] += (l != k + 1) and (lm.Fpv < alpha)
+                        adj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < bonferroni)
+                        adj_fp[i][j][m] += (l != k + 1) and (lm.Fpv < bonferroni)
+
+            for m in range(len(ps)):
+                utp = unadj_tp[i][j][m]
+                ufp = unadj_fp[i][j][m]
+                atp = adj_tp[i][j][m]
+                afp = adj_fp[i][j][m]
+                f.write(','.join(map(str, [n,corr,ps[m],utp,ufp,atp,afp])) + '\n')
+                             
+    f.close()
+
+    if plot:
+        plt.plot(adj_tp[2][1], adj_fp[2][1], '-', 
+                 unadj_tp[2][1], unadj_fp[2][1])
+        plt.show()
+
+
+def run_correlated_halves(plot = False):
+    
+    group_size = 25
+    ncols = group_size*2
+
+    ns = [5, 25, 50, 100, 200]    
+    corrs = np.array(range(0,11))/10.0
+    ps = [0.001, 0.01, 0.025, 0.05, 0.10]
+    
+    f = open('../../results/correlated-halves-results.csv', 'w')
+    f.write('n,corr,p,unadj_tp,unadj_fp,adj_tp,adj_fp\n')
+    
+    adj_tp = [[[0]*len(ps) for i in range(len(corrs))] for j in range(len(ns))]
+    adj_fp = [[[0]*len(ps) for i in range(len(corrs))] for j in range(len(ns))]
+    unadj_tp = [[[0]*len(ps) for i in range(len(corrs))] for j in range(len(ns))]
+    unadj_fp = [[[0]*len(ps) for i in range(len(corrs))] for j in range(len(ns))]
+
+    for i in range(len(ns)):
+        for j in range(len(corrs)):
+            
+            n = ns[i]
+            corr = corrs[j]
+            
+            data = synth.correlated_halves(n, group_size, corr)
+            synth.write_data(data, '../../data/correlated-halves-n-' +
+                             str(n) + '-corr-' + str(corr))
+            data = np.array(data)                
+
+            for k in range(0, ncols - 1):
+                for l in range(k + 1, ncols):
+
+                    lm = ols.ols(data[:,l], data[:,k], 'y', ['x0'])
+                    
+                    for m in range(len(ps)):
+
+                        alpha = ps[m]
+                        bonferroni = ps[m]/(ncols * (ncols - 1) / 2)
+
+                        unadj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < alpha)
+                        unadj_fp[i][j][m] += (l != k + 1) and (lm.Fpv < alpha)
+                        adj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < bonferroni)
+                        adj_fp[i][j][m] += (l != k + 1) and (lm.Fpv < bonferroni)
+
+            for m in range(len(ps)):
+                utp = unadj_tp[i][j][m]
+                ufp = unadj_fp[i][j][m]
+                atp = adj_tp[i][j][m]
+                afp = adj_fp[i][j][m]
+                f.write(','.join(map(str, [n,corr,ps[m],utp,ufp,atp,afp])) + '\n')
+                             
+    f.close()
+
+    if plot:
+        plt.plot(adj_tp[2][1], adj_fp[2][1], '-', 
+                 unadj_tp[2][1], unadj_fp[2][1])
+        plt.show()
 
 if __name__ == "__main__":
 
@@ -292,4 +407,5 @@ if __name__ == "__main__":
     run_correlation()
     run_outliers()
     run_outliers_correlated()
-    
+    run_correlated_pairs()
+    run_correlated_halves()

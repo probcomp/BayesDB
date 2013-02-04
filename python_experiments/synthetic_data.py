@@ -60,9 +60,32 @@ def random_regression_pairs(n, pairs, sd_func):
     
     return samples
 
-def correlated_data(n, corr):
-    cov = [[1,corr], [corr,1]]
-    samples = np.random.multivariate_normal([0,0],cov,n)
+def correlated_data(n, corr, dim = 2):
+    mean = [0]*dim
+    cov = [[corr]*dim for i in range(dim)]
+    for i in range(dim):
+        cov[i][i] = 1
+    samples = np.random.multivariate_normal(mean, cov, n)
+    return samples
+
+def correlated_pairs(n, pairs, corr):
+    
+    d = pairs*2
+    samples = [[0]*(d + 1) for i in range(n)]
+
+    for i in range(pairs):
+        next = correlated_data(n, corr)
+        for j in range(n):
+            samples[j][(2*i):(2*i + 1)] = next[j]
+    
+    return samples
+
+def correlated_halves(n, group_size, corr):
+    
+    first = correlated_data(n, corr, group_size)
+    second = correlated_data(n, corr, group_size)
+    samples = np.hstack([first, second])
+    
     return samples
 
 def outlier_data(n):
@@ -79,6 +102,12 @@ def outlier_correlated_data(n):
     outliers = np.random.multivariate_normal([-3.5,3.5],cov,n)
     samples = np.vstack([samples, outliers])
     return samples
+
+def regression_data(n):
+    x1 = np.random.normal(0, 1, n)
+    x2 = np.random.normal(0, 1, n)
+    x3 = x1 + x2
+    return np.transpose(np.vstack([x1, x2, x3]))
 
 def write_data(samples, file_base):
     
