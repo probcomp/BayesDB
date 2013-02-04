@@ -54,7 +54,7 @@ def run_ring(plot = False):
         
         w = widths[i]
         
-        data = synth.random_ring(1000, d, w)
+        data = synth.random_ring(200, d, w)
         synth.write_data(data, '../../data/ring-width-' + str(w))
         data = np.array(data)
         
@@ -199,9 +199,97 @@ def run_pairwise_regressions(plot = False):
                  unadj_tp[2][1], unadj_fp[2][1])
         plt.show()
 
+def run_correlation(plot = False):
+
+    ns = [5, 10, 25, 50, 100]
+    
+    corrs = np.array(range(0,11))/10.0
+
+    f = open('../../results/correlation-results.csv', 'w')
+    f.write('n,correlation,beta0,beta1,R_squared,F_pvalue\n')
+    
+    for j in range(len(ns)):
+        for i in range(len(corrs)):
+            
+            n = ns[j]
+            corr = corrs[i]
+            
+            data = synth.correlated_data(n, corr)
+            synth.write_data(data, '../../data/correlation-n-' +
+                             str(n) + '-corr-' + str(corr))
+            data = np.array(data)
+            
+            lm = ols.ols(data[:,1], data[:,0], 'y', ['x0'])
+            
+            f.write(','.join(map(str, [n,corr,lm.b[0],lm.b[1],lm.R2,lm.Fpv])) + '\n')
+                             
+    f.close()
+
+    if plot:
+        y = lm.b[0] + data[:,0]*lm.b[1]
+        plt.plot(data[:,0], data[:,1], '.', data[:,0], y, 'r')
+        plt.show()    
+
+def run_outliers(plot = False):
+
+    ns = [1, 5, 10, 25, 50]
+
+    f = open('../../results/outlier-results.csv', 'w')
+    f.write('n,beta0,beta1,R_squared,F_pvalue\n')
+    
+    for j in range(len(ns)):
+            
+        n = ns[j]
+            
+        data = synth.outlier_data(n)
+        synth.write_data(data, '../../data/outliers-n-' + str(n))
+        data = np.array(data)
+        
+        lm = ols.ols(data[:,1], data[:,0], 'y', ['x0'])
+            
+        f.write(','.join(map(str, [n,lm.b[0],lm.b[1],lm.R2,lm.Fpv])) + '\n')
+                             
+    f.close()
+
+    if plot:
+        y = lm.b[0] + data[:,0]*lm.b[1]
+        plt.plot(data[:,0], data[:,1], '.', data[:,0], y, 'r')
+        plt.show()    
+
+def run_outliers_correlated(plot = False):
+
+    ns = [1, 5, 10, 25, 50]
+
+    f = open('../../results/outlier-correlation-results.csv', 'w')
+    f.write('n,beta0,beta1,R_squared,F_pvalue\n')
+    
+    for j in range(len(ns)):
+            
+        n = ns[j]
+            
+        data = synth.outlier_correlated_data(n)
+        synth.write_data(data, '../../data/outlier-correlation-n-' + str(n))
+        data = np.array(data)
+        
+        lm = ols.ols(data[:,1], data[:,0], 'y', ['x0'])
+            
+        f.write(','.join(map(str, [n,lm.b[0],lm.b[1],lm.R2,lm.Fpv])) + '\n')
+                             
+    f.close()
+
+    if plot:
+        y = lm.b[0] + data[:,0]*lm.b[1]
+        plt.plot(data[:,0], data[:,1], '.', data[:,0], y, 'r')
+        plt.show()    
+
+
 if __name__ == "__main__":
 
     run_ring()
-    run_simple_regression()
-    run_outlier_regression()
-    run_pairwise_regressions()
+#    run_simple_regression()
+#    run_outlier_regression()
+#    run_pairwise_regressions()
+    run_correlation()
+    run_outliers()
+    run_outliers_correlated()
+    

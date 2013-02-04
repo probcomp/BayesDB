@@ -1,6 +1,7 @@
 import random
 import math
 import matplotlib.pyplot as plt
+import numpy as np
 
 # TODO: test!!! especially that width is what you think it is!
 def random_ring(n, d, width):
@@ -57,6 +58,26 @@ def random_regression_pairs(n, pairs, sd_func):
         for j in range(n):
             samples[j][(2*i):(2*i + 1)] = next[j]
     
+    return samples
+
+def correlated_data(n, corr):
+    cov = [[1,corr], [corr,1]]
+    samples = np.random.multivariate_normal([0,0],cov,n)
+    return samples
+
+def outlier_data(n):
+    cov = [[1,0], [0,1]]
+    samples = np.random.multivariate_normal([0,0],cov,50)
+    outliers = np.random.multivariate_normal([7,7],cov,n)
+    samples = np.vstack([samples, outliers])
+    return samples
+
+def outlier_correlated_data(n):
+    cov = [[1,0.8], [0.8,1]]
+    samples = np.random.multivariate_normal([0,0],cov,50)
+    cov = [[1,0], [0,1]]
+    outliers = np.random.multivariate_normal([-3.5,3.5],cov,n)
+    samples = np.vstack([samples, outliers])
     return samples
 
 def write_data(samples, file_base):
