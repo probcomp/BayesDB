@@ -1,4 +1,5 @@
 import inspect
+from collections import Counter
 #
 import numpy
 #
@@ -48,15 +49,22 @@ class Engine(object):
             assert(is_observed_col)
             # FIXME: handle unobserved rows
             assert(is_observed_row)
-            if(is_observed_col and is_observed_row):
+            if is_observed_col and is_observed_row:
                 SEED = self.get_next_seed()
                 sample = simple_predictive_sample_observed(M_c, X_L, X_D,
                                                            which_row,
                                                            which_column,
                                                            SEED)
                 x.append(sample)
+            elif is_observed_col and not is_observed_row:
+                SEED = self.get_next_seed()
+                sample = simple_predictive_sample_unobserved(M_c, X_L, X_D,
+                                                             Y,
+                                                             which_column,
+                                                             SEED)
+                x.append(sample)
             else:
-                # FIXME: handle other cases
+                # FIXME: not handling unobserved columns for now
                 assert(False)
         return x
 
@@ -141,3 +149,34 @@ def simple_predictive_sample_observed(M_c, X_L, X_D, which_row, which_column, SE
                                                      **component_suffstats)
     draw = component_model.get_draw(SEED)
     return draw
+
+def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, which_column, SEED):
+    column_hypers = X_L['column_hypers'][which_column]
+    which_view = X_L['column_partition']['assignments'][which_column]
+    view_state_i = X_L['view_state'][which_view]
+    column_names = X_L['view_state'][which_view]['column_names']
+    # find Y_prime = which conditions are in the same view as which_column
+    constraint_names = intersect(column_names, get_names(Y))
+    constraint_indices = map(lambda x: M_c['name_to_idx'][x], constraint_names)
+    # create a view comprised of columns in Y_prime
+    column_component_suffstats = \
+        X_L['view_state'][which_view]['column_component_suffstats']
+    column_component_suffstats = [
+        column_component_suffstats[x]
+        for x in constraint_indices
+        ]
+    # counts are missing from suffstats
+    which_view_ids = numpy.array(X_D[which_view])
+    counts_list = [Counter(data_col) for data_col in which_view_ids.T]
+
+    # determine logp_v for memebership in each cluster
+    # sample a cluster
+    # create a single component_model from the selected cluster and given column
+    num_clusters = len(column_component_suffstats[0])
+    for which_local_column in range(len(counts_list)):
+        for which_cluster in range(num_clusters):
+            component_suffstats = column_component_suffstats_i[which_cluster]
+            component_model = CCM.p_ContinuousComponentModel(column_hypers,
+                                                             count=cluster_count,
+                                                             **component_suffstats)
+            # do something
