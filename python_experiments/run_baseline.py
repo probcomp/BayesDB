@@ -379,10 +379,10 @@ def run_correlated_halves(plot = False):
                         alpha = ps[m]
                         bonferroni = ps[m]/(ncols * (ncols - 1) / 2)
 
-                        unadj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < alpha)
-                        unadj_fp[i][j][m] += (l != k + 1) and (lm.Fpv < alpha)
-                        adj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < bonferroni)
-                        adj_fp[i][j][m] += (l != k + 1) and (lm.Fpv < bonferroni)
+                        unadj_tp[i][j][m] += ((l < 25) == (k < 25)) and (lm.Fpv < alpha)
+                        unadj_fp[i][j][m] += ((l < 25) != (k < 25)) and (lm.Fpv < alpha)
+                        adj_tp[i][j][m] += ((l < 25) == (k < 25)) and (lm.Fpv < bonferroni)
+                        adj_fp[i][j][m] += ((l < 25) != (k < 25)) and (lm.Fpv < bonferroni)
 
             for m in range(len(ps)):
                 utp = unadj_tp[i][j][m]

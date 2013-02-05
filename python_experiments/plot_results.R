@@ -215,3 +215,87 @@ title(main = 'Correlation + Outliers', outer = TRUE)
 dev.off()
 
 
+### plot pairwise correlation
+
+ns = c('5', '25', '50', '100', '200')
+corrs = c('0.0', '0.1', '0.2', '0.3', '0.4',
+  '0.5', '0.6', '0.7', '0.8', '0.9', '1.0')
+
+results = read.csv('../../results/correlated-pairs-results.csv')
+
+for(i in 1:length(ns)) {
+
+  pdf(paste('../../plots/correlated-pairs-n-',ns[i],'-results.pdf',
+            sep=''))
+
+  par(oma = c(0,0,2,0))
+  par(mfrow = c(3, 4))
+  
+  for(j in 1:length(corrs)) {
+    indices = which(results[,1] == as.numeric(ns[i]) &
+      results[,2] == as.numeric(corrs[j]))
+    ncols = 50
+    hits = ncols/2
+    misses = ncols*(ncols - 1)/2 - hits
+    data = results[indices,]
+    tpr = data[,'unadj_tp']/hits
+    fpr = data[,'unadj_fp']/misses
+    plot(fpr, tpr, 
+         main = paste('corr = ',corrs[j],sep=''),
+         xlim = c(0,1), ylim = c(0,1))
+    tpr = data[,'adj_tp']/hits
+    fpr = data[,'adj_fp']/misses
+    points(fpr, tpr, col = 'red')
+
+    legend('bottomright', c('unadjusted', 'adjusted'),
+           col = c('black', 'red'), pch = 1)
+  }
+
+  title(main = paste('Pairwise Correlation Data, N =', ns[i]),
+        outer = TRUE)
+
+  dev.off()
+}
+
+### plot group correlation
+
+ns = c('5', '25', '50', '100', '200')
+corrs = c('0.0', '0.1', '0.2', '0.3', '0.4',
+  '0.5', '0.6', '0.7', '0.8', '0.9', '1.0')
+
+results = read.csv('../../results/correlated-halves-results.csv')
+
+for(i in 1:length(ns)) {
+
+  pdf(paste('../../plots/correlated-halves-n-',ns[i],'-results.pdf',
+            sep=''))
+
+  par(oma = c(0,0,2,0))
+  par(mfrow = c(3, 4))
+  
+  for(j in 1:length(corrs)) {
+    indices = which(results[,1] == as.numeric(ns[i]) &
+      results[,2] == as.numeric(corrs[j]))
+    ncols = 50
+    hits = 2*ncols/2*(ncols/2 - 1)/2
+    misses = ncols*(ncols - 1)/2 - hits
+    data = results[indices,]
+    tpr = data[,'unadj_tp']/hits
+    fpr = data[,'unadj_fp']/misses
+    plot(fpr, tpr, 
+         main = paste('corr = ',corrs[j],sep=''),
+         xlim = c(0,1), ylim = c(0,1))
+    tpr = data[,'adj_tp']/hits
+    fpr = data[,'adj_fp']/misses
+    points(fpr, tpr, col = 'red')
+
+    legend('bottomright', c('unadjusted', 'adjusted'),
+           col = c('black', 'red'), pch = 1)
+  }
+
+  title(main = paste('Group Correlation Data, N =', ns[i]),
+        outer = TRUE)
+
+  dev.off()
+}
+
