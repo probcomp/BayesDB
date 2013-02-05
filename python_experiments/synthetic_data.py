@@ -103,11 +103,13 @@ def outlier_correlated_data(n):
     samples = np.vstack([samples, outliers])
     return samples
 
-def regression_data(n):
-    x1 = np.random.normal(0, 1, n)
-    x2 = np.random.normal(0, 1, n)
-    x3 = x1 + x2
-    return np.transpose(np.vstack([x1, x2, x3]))
+def regression_data(n, corr = 0, omit = False):
+    samples = np.zeros((n, 3))
+    samples[:,0:2] = correlated_data(n, corr)
+    samples[:,2] = samples[:,0] + samples[:,1]
+    if omit:
+        samples[:,1] = np.random.normal(0, 1, n)
+    return samples
 
 def write_data(samples, file_base):
     
