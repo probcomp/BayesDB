@@ -1,3 +1,4 @@
+import argparse
 import time
 import requests
 import json
@@ -6,9 +7,14 @@ import numpy
 #
 import Engine as E
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--hostname', default='localhost', type=str)
+args = parser.parse_args()
+hostname = args.hostname
 
 # settings
-URI = 'http://localhost:8007'
+URI = 'http://' + hostname + ':8007'
+print 'URI: ', URI
 id = 0
 
 import sys
