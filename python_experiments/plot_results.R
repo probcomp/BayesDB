@@ -225,7 +225,7 @@ results = read.csv('../../results/correlated-pairs-results.csv')
 
 for(i in 1:length(ns)) {
 
-  pdf(paste('../../plots/correlated-pairs-n-',ns[i],'-results.pdf',
+  png(paste('../../plots/correlated-pairs-n-',ns[i],'-results.png',
             sep=''))
 
   par(oma = c(0,0,2,0))
@@ -267,7 +267,7 @@ results = read.csv('../../results/correlated-halves-results.csv')
 
 for(i in 1:length(ns)) {
 
-  pdf(paste('../../plots/correlated-halves-n-',ns[i],'-results.pdf',
+  png(paste('../../plots/correlated-halves-n-',ns[i],'-results.png',
             sep=''))
 
   par(oma = c(0,0,2,0))
