@@ -148,7 +148,7 @@ def run_pairwise_regressions(plot = False):
 
     nums_pairs = [2, 5, 10]    
     sds = [0.1, 2]
-    ps = [0.001, 0.01, 0.025, 0.05, 0.10]
+    ps = [0.0, 0.0001, 0.001, 0.01, 0.025, 0.05, 0.10, 0.2, 0.5, 1]
     
     f = open('../../results/pairwise-regression-results.csv', 'w')
     f.write('pairs,standard_deviation,p,unadj_tp,unadj_fp,adj_tp,adj_fp\n')
@@ -285,12 +285,12 @@ def run_outliers_correlated(plot = False):
 
 def run_correlated_pairs(plot = False):
     
-    pairs = 15
+    pairs = 25
     ncols = 2*pairs
 
     ns = [5, 25, 50, 100, 200]    
     corrs = np.array(range(0,11))/10.0
-    ps = [0.001, 0.01, 0.025, 0.05, 0.10]
+    ps = [0.0, 0.0001, 0.001, 0.01, 0.025, 0.05, 0.10, 0.2, 0.5, 1]
     
     f = open('../../results/correlated-pairs-results.csv', 'w')
     f.write('n,corr,p,unadj_tp,unadj_fp,adj_tp,adj_fp\n')
@@ -321,10 +321,10 @@ def run_correlated_pairs(plot = False):
                         alpha = ps[m]
                         bonferroni = ps[m]/(ncols * (ncols - 1) / 2)
 
-                        unadj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < alpha)
-                        unadj_fp[i][j][m] += (l != k + 1) and (lm.Fpv < alpha)
-                        adj_tp[i][j][m] += (l == k + 1) and (lm.Fpv < bonferroni)
-                        adj_fp[i][j][m] += (l != k + 1) and (lm.Fpv < bonferroni)
+                        unadj_tp[i][j][m] += (k % 2 == 0) and (l == k + 1) and (lm.Fpv < alpha)
+                        unadj_fp[i][j][m] += ( (k % 2 == 1) or (l != k + 1) ) and (lm.Fpv < alpha)
+                        adj_tp[i][j][m] += (k % 2 == 0) and (l == k + 1) and (lm.Fpv < bonferroni)
+                        adj_fp[i][j][m] += ( (k % 2 == 1) or (l != k + 1) ) and (lm.Fpv < bonferroni)
 
             for m in range(len(ps)):
                 utp = unadj_tp[i][j][m]
@@ -348,7 +348,7 @@ def run_correlated_halves(plot = False):
 
     ns = [5, 25, 50, 100, 200]    
     corrs = np.array(range(0,11))/10.0
-    ps = [0.001, 0.01, 0.025, 0.05, 0.10]
+    ps = [0.0, 0.0001, 0.001, 0.01, 0.025, 0.05, 0.10, 0.2, 0.5, 1]
     
     f = open('../../results/correlated-halves-results.csv', 'w')
     f.write('n,corr,p,unadj_tp,unadj_fp,adj_tp,adj_fp\n')
@@ -397,6 +397,24 @@ def run_correlated_halves(plot = False):
         plt.plot(adj_tp[2][1], adj_fp[2][1], '-', 
                  unadj_tp[2][1], unadj_fp[2][1])
         plt.show()
+
+def run_anova():
+
+    n = 100
+
+    f = open('../../results/simple-regression-results.csv', 'w')
+    f.write('n,correlation,beta0,beta1,R_squared,F_pvalue\n')
+    
+    data = synth.regression_data(n)
+    synth.write_data(data, '../../data/simple-regression')
+    data = np.array(data)
+    
+    lm = ols.ols(data[:,1], data[:,0], 'y', ['x0'])
+            
+    f.write(','.join(map(str, [n,corr,lm.b[0],lm.b[1],lm.R2,lm.Fpv])) + '\n')
+                             
+    f.close()
+
 
 if __name__ == "__main__":
 
