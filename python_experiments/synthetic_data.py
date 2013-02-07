@@ -21,45 +21,6 @@ def random_ring(n, d, width):
     
     return samples
 
-def sd_increasing(value):
-    return sum(map(lambda x: (x + 1.0)/(2*d), value))
-def sd_constant(value, sd = 0.1):
-    return sd
-
-def random_regression(n, d = 1, 
-                      outliers = 0, 
-                      distractors = 0, 
-                      sd_func = sd_constant):
-
-    samples = [[0]*(d + 1) for i in range(n)]
-
-    p = d - distractors
-
-    for i in range(n):
-        
-        for j in range(d):
-            samples[i][j] = random.random()*2 - 1
-        
-        y = sum(samples[i][0:p])
-        if random.random() < outliers:
-            samples[i][j + 1] = 100*p*random.random() - 50*p
-        else:       
-            samples[i][j + 1] = y + random.gauss(0, sd_func(samples[i][0:p]))
-
-    return samples
-
-def random_regression_pairs(n, pairs, sd_func):
-    
-    d = pairs * 2
-    samples = [[0]*(d + 1) for i in range(n)]
-
-    for i in range(pairs):
-        next = random_regression(n, sd_func = sd_func)
-        for j in range(n):
-            samples[j][(2*i):(2*i + 1)] = next[j]
-    
-    return samples
-
 def correlated_data(n, corr, dim = 2):
     mean = [0]*dim
     cov = [[corr]*dim for i in range(dim)]
@@ -103,13 +64,18 @@ def outlier_correlated_data(n):
     samples = np.vstack([samples, outliers])
     return samples
 
-def regression_data(n, corr = 0, omit = False):
-    samples = np.zeros((n, 3))
+def regression_data(n, b1 = 1, b2 = 1, 
+                    interaction = False, 
+                    corr = 0, omit = False):
+    samples = np.zeros((n, 4))
     samples[:,0:2] = correlated_data(n, corr)
-    samples[:,2] = samples[:,0] + samples[:,1]
     if omit:
-        samples[:,1] = np.random.normal(0, 1, n)
-    return samples
+        second_var = np.random.normal(0, 1, n)
+    else:
+        second_var = samples[:,1]
+    samples[:,2] = b1*samples[:,0] + b2*second_var
+    samples[:,2] += interaction*samples[:,0]*second_var
+    return samples[:,0:3]
 
 def write_data(samples, file_base):
     
@@ -126,10 +92,6 @@ def write_data(samples, file_base):
     f.write('normal_inverse_gamma')
     f.close()
 
-#samples = random_regression_pairs(1000,3)
-#m = zip(*samples)
-#plt.plot(m[0],m[4], 'r.')
-#plt.show()
 
     
 
