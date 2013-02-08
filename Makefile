@@ -2,19 +2,20 @@ OPTIMIZED =
 ifdef OPTIMIZED
 CXXOPTS := -O2 -g $(CXXOPTS)
 else
-CXXOPTS := -g $(CXXOPTS)	
+CXXOPTS := -g $(CXXOPTS) 
 endif
 
 CC = gcc
 CXX = g++
-CXXOPTS :=  $(CXXOPTS) -lm -lboost_program_options
+CXXOPTS :=  $(CXXOPTS) -lm -lboost_program_options -L$(BOOST_ROOT)/lib -I$(BOOST_ROOT)/include
 
 INC=include/CrossCat
 SRC=src
 OBJ=obj
 TEST=tests
 CYT=cython
-#
+# Assume BOOST_ROOT set as environment variable.
+# /usr/local/boost
 BIN = model
 MAIN = main.cpp
 NAMES = ContinuousComponentModel MultinomialComponentModel ComponentModel \
