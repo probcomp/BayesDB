@@ -12,7 +12,9 @@ function h = mutual_info(state, x_vars, y_vars, n_chains, n_pred_samples, n_mcmc
 % n_mcmc_iter    : number of mcmc steps to run each mcmc chain for
 %
 
-n = n_mcmc*n_pred;
+n = n_mcmc_iter*n_pred_samples;
+
+Y = struct('indices', [], 'values', []);
 
 h = 0;
 
@@ -33,17 +35,17 @@ for i = 1:n_chains
         indices = x_vars;
         values = s(indices);
         Q = struct('indices', indices, 'values', values);
-        p_x = simple_predictive_probability_newRows(state, [], Q);
+        p_x = simple_predictive_probability_newRows(state, Y, Q);
         
         indices = y_vars;
         values = s(indices);
         Q = struct('indices', indices, 'values', values);
-        p_y = simple_predictive_probability_newRows(state, [], Q);
+        p_y = simple_predictive_probability_newRows(state, Y, Q);
         
         indices = [x_vars, y_vars];
         values = s(indices);
         Q = struct('indices', indices, 'values', values);     
-        p_joint = simple_predictive_probability_newRows(state, [], Q);
+        p_joint = simple_predictive_probability_newRows(state, Y, Q);
         
         h = h + log(p_joint) - log(p_x) - log(p_y);
     

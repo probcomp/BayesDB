@@ -11,7 +11,9 @@ function h = entropy(state, vars, n_chains, n_pred_samples, n_mcmc_iter)
 % n_mcmc_iter    : number of mcmc steps to run each mcmc chain for
 %
 
-n = n_mcmc*n_pred;
+n = n_mcmc_iter*n_pred_samples;
+
+Y = struct('indices', [], 'values', []);
 
 h = 0;
 
@@ -34,7 +36,7 @@ for i = 1:n_chains
         
         Q = struct('indices', indices, 'values', values);
         
-        p = simple_predictive_probability_newRows(state, [], Q);
+        p = simple_predictive_probability_newRows(state, Y, Q);
         
         h = h + log(p);
     

@@ -12,7 +12,9 @@ function h = conditional_entropy(state, given_vars, target_vars, n_chains, n_pre
 % n_mcmc_iter    : number of mcmc steps to run each mcmc chain for
 %
 
-n = n_mcmc*n_pred;
+n = n_mcmc_iter*n_pred_samples;
+
+Y = struct('indices', [], 'values', []);
 
 h = 0;
 
@@ -35,14 +37,14 @@ for i = 1:n_chains
         
         Q = struct('indices', indices, 'values', values);
         
-        p_marg = simple_predictive_probability_newRows(state, [], Q);
+        p_marg = simple_predictive_probability_newRows(state, Y, Q);
         
         indices = [given_vars, target_vars];
         values = s(indices);
         
         Q = struct('indices', indices, 'values', values);
         
-        p_joint = simple_predictive_probability_newRows(state, [], Q);
+        p_joint = simple_predictive_probability_newRows(state, Y, Q);
         
         h = h + log(p_marg/p_joint);
     
