@@ -11,7 +11,7 @@ function prob = simple_predictive_probability_newRows(state, Y, Q)
     newRow(newRow==0) = NaN;
     newRow(Y.indices) = Y.values;
     
-    prob = zeros(length(Q.values,1),1);
+    prob = zeros(length(Q.values),1);
     
     for i = 1 : length(Q.indices)
         
@@ -37,9 +37,9 @@ function prob = simple_predictive_probability_newRows(state, Y, Q)
                                 newRow(theseFeatures(iii)), theseFeatures(iii));
             end
             
-            theseData = state.data(state.o(thisView,:)==uc(ii), Q.indices(i,2));
+            theseData = state.data(state.o(thisView,:)==uc(ii), Q.indices(i));
             logQueryProb(ii) =  posteriorPredictive(state, theseData, ...
-                                Q.values(i), Q.indices(i,2));
+                                Q.values(i), Q.indices(i));
             
         end
         
@@ -54,7 +54,7 @@ function prob = simple_predictive_probability_newRows(state, Y, Q)
         
         logP = logP - logsumexp(logP);
         
-        logQueryProb(end+1) = posteriorPredictive(state, [], Q.values(i), Q.indices(i,2));
+        logQueryProb(end+1) = posteriorPredictive(state, [], Q.values(i), Q.indices(i));
         
         % evaluate posterior predictive probability of Q weighted by categories
         prob(i) = sum(exp(logQueryProb+logP));
