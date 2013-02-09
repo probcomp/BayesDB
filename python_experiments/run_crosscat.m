@@ -12,9 +12,9 @@ function run_crosscat(file_base, experiment)
 %              of the other variables. conditional entropy assumes the 
 %              data set has only three columns.
 
-n_chains = 2;
-n_pred_samples = 10;
-n_mcmc_iter = 10;
+n_chains = 5;
+n_pred_samples = 200;
+n_mcmc_iter = 200;
 
 addpath ../matlab_code/
 
@@ -28,7 +28,7 @@ case 'mutual_info'
     for i = 1:(state.F - 1)
         for j = (i + 1):state.F
             h = mutual_info(state, i, j, n_chains, n_pred_samples, n_mcmc_iter);
-            fprintf(1, '%i, %i, %f', [i, j, h]);
+            fprintf(1, '%i, %i, %f\n', [i, j, h]);
         end
     end
 case 'conditional_entropy'
