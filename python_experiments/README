@@ -18,3 +18,21 @@
             NG_mu: [-0.0202 -0.0938]        # normal inverse gamma hyper
                 f: [2 2]                    # column assignments to views
                 o: [3x100 double]           # view-wise row assignments to components
+
+Compiling MATLAB Code on Picloud through CSAIL:
+- compile code using MATLAB compiler (mcc command) on a linux architecture (e.g., on CSAIL's login.csail.mit.edu)
+-- ssh to your login.csail.mit.edu 
+-- add matlab to ~/.software
+-- scp your matlab files to login.csail.mit.edu
+-- open matlab, use mcc
+- create a new picloud environment (or use mine) for matlab
+-- follow the picloud instructions for creating an environment
+-- download the most recent MCR
+-- scp zipped MCR to picloud environment
+-- install using silent mode
+- copy compiled code to picloud
+- make sure files have appropriate permissions
+- use e.g.
+>>> def test():
+...     return os.popen('sh ./run_test.sh matlab/mcr/v717/ 1').read()
+>>> cloud.call(test, _env='matlab') 
