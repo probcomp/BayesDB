@@ -6,6 +6,13 @@ function prob = simple_predictive_probability_newRows(state, Y, Q)
     % columns, values are values
     % Q is a struct with two fields: indices and values. indices is a vector with
     % column indices, values are values
+    % 
+    % example:
+    % Y.indices = [];
+    % Y.values = [];
+    % Q.indices = [1];
+    % Q.values = 0;
+    % prob = simple_predictive_probability_newRows(state, Y, Q)
     
     newRow = zeros(1,state.F);
     newRow(newRow==0) = NaN;
