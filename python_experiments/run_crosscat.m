@@ -14,7 +14,7 @@ function run_crosscat(file_base, experiment)
 
 n_chains = 5;
 n_pred_samples = 200;
-n_mcmc_iter = 200;
+n_mcmc_iter = 500;
 
 addpath ../matlab_code/
 
@@ -33,5 +33,5 @@ case 'mutual_info'
     end
 case 'conditional_entropy'
     h = conditional_entropy(state, [1,2], 3, n_chains, n_pred_samples, n_mcmc_iter);
-    fprintf(1, 'H(Z|X,Y): %f', h);
+    fprintf(1, 'H(Z|X,Y): %f\n', h);
 end
