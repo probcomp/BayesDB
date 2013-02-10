@@ -12,11 +12,10 @@ function h = mutual_info(state, x_var, y_var, n_chains, n_pred_samples, n_mcmc_i
 % n_mcmc_iter    : number of mcmc steps to run each mcmc chain for
 %
 
-n = n_mcmc_iter*n_pred_samples;
+n = n_chains*n_pred_samples;
 
 h = 0;
 
-k = 0;
 for i = 1:n_chains
     
     state = analyze(state, {'columnPartitionHyperparameter',...
@@ -25,10 +24,8 @@ for i = 1:n_chains
         n_mcmc_iter, 'all', 'all');
 
     for j = 1:n_pred_samples
-        
-        k = k + 1;
-    
-        s = simple_predictive_sample_newRow(state, [], [1 2]);
+            
+        s = simple_predictive_sample_newRow(state, [], [x_var y_var]);
         
         Y = struct('indices', [], 'values', []);
         Q = struct('indices', y_var, 'values', s(y_var));

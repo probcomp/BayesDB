@@ -12,7 +12,7 @@ function h = conditional_entropy(state, given_vars, target_var, n_chains, n_pred
 % n_mcmc_iter    : number of mcmc steps to run each mcmc chain for
 %
 
-n = n_mcmc_iter*n_pred_samples;
+n = n_chains*n_pred_samples;
 
 h = 0;
 
@@ -28,7 +28,7 @@ for i = 1:n_chains
         
         k = k + 1;
     
-        s = simple_predictive_sample_newRow(state, [], [1 2]);                                                                              
+        s = simple_predictive_sample_newRow(state, [], [given_vars target_var]);                                                                              
                 
         Y = struct('indices', given_vars, 'values', s(given_vars));
         Q = struct('indices', target_var, 'values', s(target_var));
