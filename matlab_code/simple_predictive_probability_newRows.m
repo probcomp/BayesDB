@@ -22,7 +22,7 @@ function prob = simple_predictive_probability_newRows(state, Y, Q)
     
     for i = 1 : length(Q.indices)
         
-        thisView = state.f(Q.indices);
+        thisView = state.f(Q.indices(i));
         theseFeatures = find(state.f==thisView);
         theseFeatures = intersect(theseFeatures, Y.indices);
         
