@@ -286,7 +286,7 @@ def run_anova(file_base, n = 100, n_outliers = 0,
     data = synth.regression_data(n, b1, b2, interaction, corr, omit,
                                  n_outliers = n_outliers)
     synth.write_data(data, '../../data/' + file_base)
-    x = np.zeros((n,3))
+    x = np.zeros((n + n_outliers, 3))
     x[:,0:2] = data[:,0:2]
     x[:,2] = data[:,0]*data[:,1]
     y = data[:,2]
@@ -302,7 +302,7 @@ def run_anova(file_base, n = 100, n_outliers = 0,
 if __name__ == "__main__":
 
     reps = 5
-    for i in range(5):
+    for i in range(reps):
         run_ring('ring-i-' + str(i))
         run_correlation('correlation-i-' + str(i))
         run_outliers('outliers-i-' + str(i))
