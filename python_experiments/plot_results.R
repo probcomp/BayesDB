@@ -2,10 +2,10 @@ library(lattice)
 
 ### plot ring data
 
-pdf('../../plots/ring-results.pdf')
+pdf('../../plots/ring-i-0-results.pdf')
 
 widths = c('0.1', '0.3', '0.5', '0.7', '0.9')
-results = read.csv('../../results/ring-results.csv')
+results = read.csv('../../results/ring-i-0-results.csv')
 
 par(oma = c(0,0,2,0))
 par(mfrow = c(2, 3))
@@ -13,7 +13,7 @@ par(mfrow = c(2, 3))
 for(i in 1:length(widths)) {
   w = widths[i]
   pe = round(results[i,2], 3)
-  data = read.csv(paste('../../data/ring-width-',w,'-data.csv',sep=''),
+  data = read.csv(paste('../../data/ring-i-0-width-',w,'-data.csv',sep=''),
     header = F)
   plot(data, pch = '.',
        main = paste('H(Y|X)/H(Y) =', pe))
@@ -32,19 +32,19 @@ ns = c('5', '10', '25', '50', '100')
 corrs = c('0.0', '0.1', '0.2', '0.3', '0.4',
   '0.5', '0.6', '0.7', '0.8', '0.9', '1.0')
 
-results = read.csv('../../results/correlation-results.csv')
+results = read.csv('../../results/correlation-i-0-results.csv')
 
 k = 0
 for(i in 1:length(ns)) {
 
-  png(paste('../../plots/correlation-results-n-',ns[i],'.png',sep=''))
+  png(paste('../../plots/correlation-i-0-results-n-',ns[i],'.png',sep=''))
 
   par(oma = c(0,0,2,0))
   par(mfrow = c(3, 4))
   
   for(j in 1:length(corrs)) {
     k = k + 1
-    data = read.csv(paste('../../data/correlation-n-',ns[i],
+    data = read.csv(paste('../../data/correlation-i-0-n-',ns[i],
       '-corr-',corrs[j],'-data.csv',sep=''),
       header = F)
     plot(data, pch = '.',
@@ -90,16 +90,16 @@ dev.off()
 
 ns = c('1', '5', '10', '25', '50')
 
-results = read.csv('../../results/outlier-correlation-results.csv')
+results = read.csv('../../results/outlier-correlated-i-0-results.csv')
 
-png(paste('../../plots/outlier-correlation-results.png',sep=''))
+png(paste('../../plots/outlier-correlated-i-0-results.png',sep=''))
 
 par(oma = c(0,0,2,0))
 par(mfrow = c(2,3))
 
 for(i in 1:length(ns)) {
   
-  data = read.csv(paste('../../data/outlier-correlation-n-',ns[i],
+  data = read.csv(paste('../../data/outlier-correlated-i-0-n-',ns[i],
     '-data.csv',sep=''),
     header = F)
   plot(data, pch = '.',
@@ -119,11 +119,11 @@ ns = c('5', '25', '50', '100', '200')
 corrs = c('0.0', '0.1', '0.2', '0.3', '0.4',
   '0.5', '0.6', '0.7', '0.8', '0.9', '1.0')
 
-results = read.csv('../../results/correlated-pairs-results.csv')
+results = read.csv('../../results/correlated-pairs-i-0-results.csv')
 
 for(i in 1:length(ns)) {
 
-  png(paste('../../plots/correlated-pairs-n-',ns[i],'-results.png',
+  png(paste('../../plots/correlated-pairs-i-0-n-',ns[i],'-results.png',
             sep=''))
 
   par(oma = c(0,0,2,0))
@@ -161,11 +161,11 @@ ns = c('5', '25', '50', '100', '200')
 corrs = c('0.0', '0.1', '0.2', '0.3', '0.4',
   '0.5', '0.6', '0.7', '0.8', '0.9', '1.0')
 
-results = read.csv('../../results/correlated-halves-results.csv')
+results = read.csv('../../results/correlated-halves-i-0-results.csv')
 
 for(i in 1:length(ns)) {
 
-  png(paste('../../plots/correlated-halves-n-',ns[i],'-results.png',
+  png(paste('../../plots/correlated-halves-i-0-n-',ns[i],'-results.png',
             sep=''))
 
   par(oma = c(0,0,2,0))
@@ -201,10 +201,12 @@ for(i in 1:length(ns)) {
 
 plot.anova <- function(file.base) {
 
-  results = read.csv(paste('../../results/', file.base, '-results.csv',
+  results = read.csv(paste('../../results/', file.base,
+    '-i-0-results.csv',
     sep = ''))
   
-  data = read.csv(paste('../../data/',file.base,'-data.csv',sep=''),
+  data = read.csv(paste('../../data/',file.base,
+    '-i-0-data.csv',sep=''),
     header = F)
   colnames(data) = c('x', 'y', 'z')
   
