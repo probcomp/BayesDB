@@ -49,28 +49,32 @@ def correlated_halves(n, group_size, corr):
     
     return samples
 
-def outlier_data(n):
-    cov = [[1,0], [0,1]]
-    samples = np.random.multivariate_normal([0,0],cov,50)
-    outliers = np.random.multivariate_normal([7,7],cov,n)
+def outlier_data(n_outliers, n_points = 50, corr = 0):
+    cov = [[1,corr], [corr,1]]
+    samples = np.random.multivariate_normal([0,0],cov,n_points)
+    outliers = np.random.multivariate_normal([7,7],cov,n_outliers)
     samples = np.vstack([samples, outliers])
     return samples
 
-def outlier_correlated_data(n):
+def outlier_correlated_data(n_outliers, n = 50):
     cov = [[1,0.8], [0.8,1]]
-    samples = np.random.multivariate_normal([0,0],cov,50)
+    samples = np.random.multivariate_normal([0,0],cov,n)
     cov = [[1,0], [0,1]]
-    outliers = np.random.multivariate_normal([-3.5,3.5],cov,n)
+    outliers = np.random.multivariate_normal([-7,7],cov,n_outliers)
     samples = np.vstack([samples, outliers])
     return samples
 
 def regression_data(n, b1 = 1, b2 = 1, 
                     interaction = False, 
-                    corr = 0, omit = False):
-    samples = np.zeros((n, 4))
-    samples[:,0:2] = correlated_data(n, corr)
+                    corr = 0, omit = False,
+                    n_outliers = 0):
+    samples = np.zeros((n + n_outliers, 4))
+    if n_outliers > 0:
+        samples[:,0:2] = outlier_correlated_data(n_outliers, n)
+    else:
+        samples[:,0:2] = correlated_data(n, corr)
     if omit:
-        second_var = np.random.normal(0, 1, n)
+        second_var = np.random.normal(0, 1, n + n_outliers)
     else:
         second_var = samples[:,1]
     samples[:,2] = b1*samples[:,0] + b2*second_var

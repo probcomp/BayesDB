@@ -39,7 +39,7 @@ def cond_entropy(x_vec, y_vec, cond_pdf):
     return joint_entropy(x_vec, y_vec, cond_pdf)
 
 # TODO: clean up this function (make filenames, widths, etc. parameters)
-def run_ring(plot = False):
+def run_ring(file_base, plot = False):
 
     d = 2
 
@@ -47,7 +47,7 @@ def run_ring(plot = False):
     true_percent_ent = [0]*len(widths)
     r_sq_vals = [0]*len(widths)
 
-    f = open('../../results/ring-results.csv', 'w')
+    f = open('../../results/' + file_base + '-results.csv', 'w')
     f.write('ring_width, percent_entropy, R_squared\n')
 
     for i in range(len(widths)):
@@ -55,7 +55,7 @@ def run_ring(plot = False):
         w = widths[i]
         
         data = synth.random_ring(200, d, w)
-        synth.write_data(data, '../../data/ring-width-' + str(w))
+        synth.write_data(data, '../../data/' + file_base + '-width-' + str(w))
         data = np.array(data)
         
         pdf = lambda x, y: ring_pdf(x, y, 1 - w)
@@ -77,13 +77,13 @@ def run_ring(plot = False):
         plt.plot(true_percent_ent, r_sq_vals)
         plt.show()
 
-def run_correlation(plot = False):
+def run_correlation(file_base, plot = False):
 
     ns = [5, 10, 25, 50, 100]
     
     corrs = np.array(range(0,11))/10.0
 
-    f = open('../../results/correlation-results.csv', 'w')
+    f = open('../../results/' + file_base + '-results.csv', 'w')
     f.write('n,correlation,beta0,beta1,R_squared,F_pvalue\n')
     
     for j in range(len(ns)):
@@ -93,7 +93,7 @@ def run_correlation(plot = False):
             corr = corrs[i]
             
             data = synth.correlated_data(n, corr)
-            synth.write_data(data, '../../data/correlation-n-' +
+            synth.write_data(data, '../../data/' + file_base + '-n-' +
                              str(n) + '-corr-' + str(corr))
             data = np.array(data)
             
@@ -108,11 +108,11 @@ def run_correlation(plot = False):
         plt.plot(data[:,0], data[:,1], '.', data[:,0], y, 'r')
         plt.show()    
 
-def run_outliers(plot = False):
+def run_outliers(file_base, plot = False):
 
     ns = [1, 5, 10, 25, 50]
 
-    f = open('../../results/outlier-results.csv', 'w')
+    f = open('../../results/' + file_base + '-results.csv', 'w')
     f.write('n,beta0,beta1,R_squared,F_pvalue\n')
     
     for j in range(len(ns)):
@@ -120,7 +120,7 @@ def run_outliers(plot = False):
         n = ns[j]
             
         data = synth.outlier_data(n)
-        synth.write_data(data, '../../data/outliers-n-' + str(n))
+        synth.write_data(data, '../../data/' + file_base + '-n-' + str(n))
         data = np.array(data)
         
         lm = ols.ols(data[:,1], data[:,0], 'y', ['x0'])
@@ -134,11 +134,11 @@ def run_outliers(plot = False):
         plt.plot(data[:,0], data[:,1], '.', data[:,0], y, 'r')
         plt.show()    
 
-def run_outliers_correlated(plot = False):
+def run_outliers_correlated(file_base, plot = False):
 
     ns = [1, 5, 10, 25, 50]
 
-    f = open('../../results/outlier-correlation-results.csv', 'w')
+    f = open('../../results/' + file_base + '-results.csv', 'w')
     f.write('n,beta0,beta1,R_squared,F_pvalue\n')
     
     for j in range(len(ns)):
@@ -146,7 +146,7 @@ def run_outliers_correlated(plot = False):
         n = ns[j]
             
         data = synth.outlier_correlated_data(n)
-        synth.write_data(data, '../../data/outlier-correlation-n-' + str(n))
+        synth.write_data(data, '../../data/' + file_base + '-n-' + str(n))
         data = np.array(data)
         
         lm = ols.ols(data[:,1], data[:,0], 'y', ['x0'])
@@ -160,7 +160,7 @@ def run_outliers_correlated(plot = False):
         plt.plot(data[:,0], data[:,1], '.', data[:,0], y, 'r')
         plt.show()    
 
-def run_correlated_pairs(plot = False):
+def run_correlated_pairs(file_base, plot = False):
     
     pairs = 25
     ncols = 2*pairs
@@ -169,7 +169,7 @@ def run_correlated_pairs(plot = False):
     corrs = np.array(range(0,11))/10.0
     ps = [0.0, 0.0001, 0.001, 0.01, 0.025, 0.05, 0.10, 0.2, 0.5, 1]
     
-    f = open('../../results/correlated-pairs-results.csv', 'w')
+    f = open('../../results/' + file_base + '-results.csv', 'w')
     f.write('n,corr,p,unadj_tp,unadj_fp,adj_tp,adj_fp\n')
     
     adj_tp = [[[0]*len(ps) for i in range(len(corrs))] for j in range(len(ns))]
@@ -184,7 +184,7 @@ def run_correlated_pairs(plot = False):
             corr = corrs[j]
             
             data = synth.correlated_pairs(n, pairs, corr)
-            synth.write_data(data, '../../data/correlated-pairs-n-' +
+            synth.write_data(data, '../../data/' + file_base + '-n-' +
                              str(n) + '-corr-' + str(corr))
             data = np.array(data)                
 
@@ -218,7 +218,7 @@ def run_correlated_pairs(plot = False):
         plt.show()
 
 
-def run_correlated_halves(plot = False):
+def run_correlated_halves(file_base, plot = False):
     
     group_size = 25
     ncols = group_size*2
@@ -227,7 +227,7 @@ def run_correlated_halves(plot = False):
     corrs = np.array(range(0,11))/10.0
     ps = [0.0, 0.0001, 0.001, 0.01, 0.025, 0.05, 0.10, 0.2, 0.5, 1]
     
-    f = open('../../results/correlated-halves-results.csv', 'w')
+    f = open('../../results/' + file_base + '-results.csv', 'w')
     f.write('n,corr,p,unadj_tp,unadj_fp,adj_tp,adj_fp\n')
     
     adj_tp = [[[0]*len(ps) for i in range(len(corrs))] for j in range(len(ns))]
@@ -242,7 +242,7 @@ def run_correlated_halves(plot = False):
             corr = corrs[j]
             
             data = synth.correlated_halves(n, group_size, corr)
-            synth.write_data(data, '../../data/correlated-halves-n-' +
+            synth.write_data(data, '../../data/' + file_base + '-n-' +
                              str(n) + '-corr-' + str(corr))
             data = np.array(data)                
 
@@ -276,15 +276,15 @@ def run_correlated_halves(plot = False):
         plt.show()
 
 
-def run_anova(file_base, b1 = 1, b2 = 1, interaction = False,
+def run_anova(file_base, n = 100, n_outliers = 0, 
+              b1 = 1, b2 = 1, interaction = False,
               corr = 0, omit = False):
-
-    n = 100
 
     f = open('../../results/' + file_base + '-results.csv', 'w')
     f.write('n,beta0,beta1,beta2,beta12,p1,p2,p12,R_squared,F_pvalue\n')
 
-    data = synth.regression_data(n, b1, b2, interaction, corr, omit)
+    data = synth.regression_data(n, b1, b2, interaction, corr, omit,
+                                 n_outliers = n_outliers)
     synth.write_data(data, '../../data/' + file_base)
     x = np.zeros((n,3))
     x[:,0:2] = data[:,0:2]
@@ -301,31 +301,39 @@ def run_anova(file_base, b1 = 1, b2 = 1, interaction = False,
 
 if __name__ == "__main__":
 
-    run_ring()
-    run_correlation()
-    run_outliers()
-    run_outliers_correlated()
-    run_correlated_pairs()
-    run_correlated_halves()
-    run_anova('simple-anova')
-    run_anova('simple-anova-omitted', omit = True)
-    run_anova('anova-1', interaction = True)
-    run_anova('anova-2', b2 = 0, interaction = True)
-    run_anova('anova-3', b1 = 0, b2 = 0, interaction = True)
-    run_anova('anova-1-omitted', interaction = True, omit = True)
-    run_anova('anova-2-omitted', b2 = 0, interaction = True, omit = True)
-    run_anova('anova-3-omitted', b1 = 0, b2 = 0, interaction = True,
-              omit = True)
-    run_anova('anova-correlated-1', interaction = True, corr = 0.8)
-    run_anova('anova-correlated-2', b2 = 0, interaction = True, 
-              corr = 0.8)
-    run_anova('anova-correlated-3', b1 = 0, b2 = 0, interaction = True,
-              corr = 0.8)
-    run_anova('anova-correlated-1-omitted', interaction = True, 
-              corr = 0.8, omit = True)
-    run_anova('anova-correlated-2-omitted', b2 = 0, interaction = True, 
-              corr = 0.8, omit = True)
-    run_anova('anova-correlated-3-omitted', b1 = 0, b2 = 0, 
-              interaction = True, corr = 0.8, omit = True)
+    reps = 5
+    for i in range(5):
+        run_ring('ring-i-' + str(i))
+        run_correlation('correlation-i-' + str(i))
+        run_outliers('outliers-i-' + str(i))
+        run_outliers_correlated('outliers-correlated-i-' + str(i))
+        run_correlated_pairs('correlated_pairs-i-' + str(i))
+        run_correlated_halves('correlated_halves-i-' + str(i))
+        run_anova('simple-anova-i-' + str(i))
+        run_anova('simple-anova-omitted-i-' + str(i), omit = True)
+        run_anova('simple-anova-mixture-i-' + str(i), n = 50, n_outliers = 5)
+        run_anova('anova-1-i-' + str(i), interaction = True)
+        run_anova('anova-2-i-' + str(i), b2 = 0, interaction = True)
+        run_anova('anova-3-i-' + str(i), b1 = 0, b2 = 0, interaction = True)
+        run_anova('anova-1-omitted-i-' + str(i), interaction = True, omit = True)
+        run_anova('anova-2-omitted-i-' + str(i), b2 = 0, interaction = True, omit = True)
+        run_anova('anova-3-omitted-i-' + str(i), b1 = 0, b2 = 0, interaction = True,
+                  omit = True)
+        run_anova('anova-1-mixture-i-' + str(i), interaction = True, n = 50, n_outliers = 5)
+        run_anova('anova-2-mixture-i-' + str(i), b2 = 0, interaction = True, n = 50, n_outliers = 5)
+        run_anova('anova-3-mixture-i-' + str(i), b1 = 0, b2 = 0, interaction = True, n = 50, n_outliers = 5)
+        
+        corr = 0.999
+        run_anova('anova-correlated-1-i-' + str(i), interaction = True, corr = corr)
+        run_anova('anova-correlated-2-i-' + str(i), b2 = 0, interaction = True, 
+                  corr = corr)
+        run_anova('anova-correlated-3-i-' + str(i), b1 = 0, b2 = 0, interaction = True,
+                  corr = corr)
+        run_anova('anova-correlated-1-omitted-i-' + str(i), interaction = True, 
+                  corr = corr, omit = True)
+        run_anova('anova-correlated-2-omitted-i-' + str(i), b2 = 0, interaction = True, 
+                  corr = corr, omit = True)
+        run_anova('anova-correlated-3-omitted-i-' + str(i), b1 = 0, b2 = 0, 
+                  interaction = True, corr = corr, omit = True)
 
 
