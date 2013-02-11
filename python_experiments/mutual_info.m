@@ -1,12 +1,14 @@
-function h = mutual_info(state, x_var, y_var, n_chains, n_pred_samples, n_mcmc_iter)
+function h = mutual_info(state, x_var, y_var, given_vars, ...
+    n_chains, n_pred_samples, n_mcmc_iter)
 %
-% approximate H(Y | X) using n_chains*n_pred_samples predictive samples
+% approximate I(X, Y | Z) using n_chains*n_pred_samples predictive samples
 %
 % input:
 %
 % state          : an initial crosscat state, e.g. from initialize_from_csv
-% x_var          : a column index for X (conditioning variable)
-% y_var          : a column index for Y (target variable)
+% x_var          : a column index for X (first variable)
+% y_var          : a column index for Y (second variable)
+% given_vars     : a vector of column indices for Z (conditioning variables)
 % n_chains       : number of mcmc chains to draw samples from
 % n_pred_samples : number of predictive samples to draw from each chain
 % n_mcmc_iter    : number of mcmc steps to run each mcmc chain for
@@ -25,16 +27,19 @@ for i = 1:n_chains
 
     for j = 1:n_pred_samples
             
-        s = simple_predictive_sample_newRow(state, [], [x_var y_var]);
+        s = simple_predictive_sample_newRow(state, [], 1:state.F);
         
-        Y = struct('indices', [], 'values', []);
+        Y = struct('indices', given_vars, 'values', s(given_vars));
         Q = struct('indices', y_var, 'values', s(y_var));
         p_y = simple_predictive_probability_newRows(state, Y, Q);
         
-        Y = struct('indices', x_var, 'values', s(x_var));
+        Y = struct('indices', [given_vars, x_var], 'values', s([given_vars, x_var]));
         Q = struct('indices', y_var, 'values', s(y_var));     
         p_conditional = simple_predictive_probability_newRows(state, Y, Q);
         
+        % I(X, Y | Z) = H(Y | Z) - H(Y | X, Z)
+        %   = E[ -log(y | z) + log(y | x, y) ]
+        %   = E[ log(y | x, z) - log(y | z) ]
         h = h + log(p_conditional) - log(p_y);
     
     end
