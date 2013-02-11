@@ -1,8 +1,12 @@
-function state = analyze(state, kernelList, nSteps, c, r, maxIterations, maxTime)
+function state = analyze(state, kernelList, nSteps, c, r, maxIterations, maxTime, verbose)
 % NOTE: this version does not support maxIterations or maxTime
 %     : assume that data are already my kind of state   
 %     : To get this to do different types of data, the whole thing needs to
 %     be reconstructed
+    
+    if nargin < 6
+        verbose = false;
+    end
     
     % convert 'all' option to numbers
     if isstr(c) && strcmp(c, 'all');
@@ -17,14 +21,20 @@ function state = analyze(state, kernelList, nSteps, c, r, maxIterations, maxTime
 
     % runModel
     for n = 1 : nSteps
-        tic
+        if verbose 
+            tic
+        end
         state = drawSample(state, kernelList, c, r); 
-        toc
+        if verbose
+            toc
+        end
     end
     
-    % saveResults
-    name = ['Samples/crossCat_', num2str(round(now*100000))];
-    save([name], 'state', 'kernelList', 'nSteps', 'c', 'r');
+    if verbose
+        % saveResults
+        name = ['Samples/crossCat_', num2str(round(now*100000))];
+        save([name], 'state', 'kernelList', 'nSteps', 'c', 'r');
+    end
 
 end
 

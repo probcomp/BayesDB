@@ -1,11 +1,11 @@
-function h = entropy(state, vars, n_chains, n_pred_samples, n_mcmc_iter)
+function h = entropy(state, var, n_chains, n_pred_samples, n_mcmc_iter)
 %
 % approximate H(X) using n_chains*n_pred_samples predictive samples
 %
 % input:
 %
 % state          : an initial crosscat state, e.g. from initialize_from_csv
-% vars           : a vector of column indices for X 
+% var            : a column index for X 
 % n_chains       : number of mcmc chains to draw samples from
 % n_pred_samples : number of predictive samples to draw from each chain
 % n_mcmc_iter    : number of mcmc steps to run each mcmc chain for
@@ -29,9 +29,9 @@ for i = 1:n_chains
         
         k = k + 1;
     
-        s = simple_predictive_sample_newRow(state, [], [1 2]);
+        s = simple_predictive_sample_newRow(state, [], var);
         
-        indices = vars;
+        indices = var;
         values = s(indices);
         
         Q = struct('indices', indices, 'values', values);
