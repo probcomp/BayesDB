@@ -12,11 +12,11 @@ else:
     in_folder = './data/'
     out_folder = '../../picloud/'
 
-data_reps = 1
-hist_reps = 2
-n_chains = '2'
-n_pred_samples = '2'
-n_mcmc_iter = '2'
+data_reps = 3
+hist_reps = 10
+n_chains = '5'
+n_pred_samples = '200'
+n_mcmc_iter = '500'
 
 def run_matlab(file_base, experiment):
 
@@ -36,16 +36,15 @@ def run_matlab(file_base, experiment):
 
 def parse_out(experiment, job_id):
     out = cloud.result(job_id)
+    out = out.split('#####')
     if experiment is 'regression':
-        out = out.split('#####')
         values = [0]*2
         values[0] = out[1]
         values[1] = out[3]
     if experiment is 'correlation':
-        out = out.split('#####')
         values = [0]*(len(out)/2)
         for i in range(len(values)):
-            values[i] = out[2*i - 1]
+            values[i] = out[2*i + 1]
     return values
 
 def get_job_ids(file_base):
@@ -86,7 +85,7 @@ def run_ring(file_base):
             if parse:
                 job_id = int(job_ids[k])
                 k += 1
-                h = str(parse_out('correlation', job_id))
+                h = parse_out('correlation', job_id)[0].split(',')[2]
                 f.write(str(w) + ',' + str(j) + ',' + h + '\n')
             else:
                 name = file_base + '-width-' + str(w)
@@ -103,8 +102,10 @@ def run_correlation(file_base):
 
     f = open(out_folder + file_base + '-results.csv', 'w')
     if parse:
+        job_ids = get_job_ids(file_base)
         f.write('n,correlation,rep,mutual_info\n')
     
+    m = 0
     for j in range(len(ns)):
         for i in range(len(corrs)):
             
@@ -115,7 +116,10 @@ def run_correlation(file_base):
                         
             for k in range(hist_reps):
                 if parse:
-                    f.write(','.join(map(str, [n,corr,k,job_id])) + '\n')
+                    job_id = int(job_ids[k])
+                    k += 1
+                    h = parse_out('correlation', job_id)[0].split(',')[2]
+                    f.write(','.join(map(str, [n,corr,k,h])) + '\n')
                 else:
                     job_id = run(name, 'correlation')
                     f.write(str(n) + ',' + str(corr) + ',' + str(k) + ',' + str(job_id) + '\n')
@@ -128,6 +132,7 @@ def run_outliers(file_base):
 
     f = open(out_folder + file_base + '-results.csv', 'w')
     if parse:
+        job_ids = get_job_ids(file_base)
         f.write('n,rep,mutual_info\n')
     
     for j in range(len(ns)):
@@ -138,6 +143,9 @@ def run_outliers(file_base):
 
         for k in range(hist_reps):
             if parse:
+                job_id = int(job_ids[k])
+                k += 1
+                h = parse_out('correlation', job_id)[0].split(',')[2]
                 f.write(','.join(map(str, [n,k,h])) + '\n')
             else:
                 job_id = run(name, 'correlation')
@@ -151,6 +159,7 @@ def run_outliers_correlated(file_base):
 
     f = open(out_folder + file_base + '-results.csv', 'w')
     if parse:
+        job_ids = get_job_ids(file_base)
         f.write('n,beta0,beta1,R_squared,F_pvalue\n')
     
     for j in range(len(ns)):
@@ -161,6 +170,9 @@ def run_outliers_correlated(file_base):
 
         for k in range(hist_reps):
             if parse:
+                job_id = int(job_ids[k])
+                k += 1
+                h = parse_out('correlation', job_id)[0].split(',')[2]
                 f.write(','.join(map(str, [n,k,h])) + '\n')
             else:
                 job_id = run(name, 'correlation')
@@ -175,7 +187,8 @@ def run_correlated_pairs(file_base):
     
     f = open(out_folder + file_base + '-results.csv', 'w')
     if parse:
-        f.write('n,corr,rep,mutual_info\n')
+        job_ids = get_job_ids(file_base)
+        f.write('n,corr,rep,i,j,mutual_info\n')
 
     for i in range(len(ns)):
         for j in range(len(corrs)):
@@ -187,7 +200,11 @@ def run_correlated_pairs(file_base):
             
             for k in range(hist_reps):
                 if parse:
-                    f.write(','.join(map(str, [n,corr,k,h])) + '\n')
+                    job_id = int(job_ids[k])
+                    k += 1
+                    h = parse_out('correlation', job_id)
+                    for m in range(len(h)):
+                        f.write(','.join(map(str, [n,corr,k])) + ',' + h[m] + '\n')
                 else:
                     job_id = run(name, 'correlation')
                     f.write(','.join(map(str, [n,corr,k,job_id])) + '\n')
@@ -201,6 +218,7 @@ def run_correlated_halves(file_base):
     
     f = open(out_folder + file_base + '-results.csv', 'w')
     if parse:
+        job_ids = get_job_ids(file_base)
         f.write('n,corr,rep,mutual_info\n')
     
     for i in range(len(ns)):
@@ -213,7 +231,11 @@ def run_correlated_halves(file_base):
             
             for k in range(hist_reps):
                 if parse:
-                    f.write(','.join(map(str, [n,corr,k,h])) + '\n')
+                    job_id = int(job_ids[k])
+                    k += 1
+                    h = parse_out('correlation', job_id)
+                    for m in range(len(h)):
+                        f.write(','.join(map(str, [n,corr,k])) + ',' + h[m] + '\n')
                 else:
                     job_id = run(name, 'correlation')
                     f.write(','.join(map(str, [n,corr,k,job_id])) + '\n')
@@ -227,28 +249,31 @@ def run_anova(file_base, n = 100, n_outliers = 0,
 
     f = open(out_folder + file_base + '-results.csv', 'w')
     if parse:
+        job_ids = get_job_ids(file_base)
         f.write('rep,cmi_xz,cmi_yz\n')
 
     name = file_base
 
     for k in range(hist_reps):
         if parse:
-            f.write(','.join(map(str, [k, h1, h2])) + '\n')
+            job_id = int(job_ids[k])
+            k += 1
+            h = parse_out('regression', job_id)
+            f.write(','.join(map(str, [k, h[0], h[1]])) + '\n')
         else:
             job_id = run(name, 'regression')
             f.write(','.join(map(str, [k, job_id])) + '\n')
                              
     f.close()
 
-#if __name__ == "__main__":
-if False:
+if __name__ == "__main__":
     for i in range(data_reps):
         run_ring('ring-i-' + str(i))
         run_correlation('correlation-i-' + str(i))
         run_outliers('outliers-i-' + str(i))
         run_outliers_correlated('outliers-correlated-i-' + str(i))
-        run_correlated_pairs('correlated-pairs-i-' + str(i))
-        run_correlated_halves('correlated-halves-i-' + str(i))
+#        run_correlated_pairs('correlated-pairs-i-' + str(i))
+#        run_correlated_halves('correlated-halves-i-' + str(i))
         run_anova('simple-anova-i-' + str(i))
         run_anova('simple-anova-omitted-i-' + str(i), omit = True)
         run_anova('simple-anova-mixture-i-' + str(i), n = 50, n_outliers = 5)
