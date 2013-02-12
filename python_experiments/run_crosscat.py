@@ -3,7 +3,6 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-debug = True
 parse = False
 
 if parse:
@@ -18,14 +17,9 @@ n_chains = '2'
 n_pred_samples = '2'
 n_mcmc_iter = '2'
 
-if debug:
-    cloud.start_simulator()
-
 def run_matlab(file_base, experiment):
-    if debug:
-        mcr_loc = '/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/'
-    else:
-        mcr_loc = 'matlab/mcr/v717/'
+
+    mcr_loc = 'matlab/mcr/v717/'
     
     command = 'sh ./run_run_crosscat.sh '
     command += mcr_loc + ' '
@@ -36,6 +30,7 @@ def run_matlab(file_base, experiment):
     command += n_pred_samples + ' '
     command += n_mcmc_iter
     out = os.popen(command).read()
+    
     return out
 
 def parse_out(experiment, out):
@@ -51,7 +46,16 @@ def parse_out(experiment, out):
             values[i] = out[2*i - 1]
     return values
 
-def run_ring(file_base, plot = False):
+def run(file_base, experiment):
+    id = cloud.call(run_matlab, 
+                    file_base, 
+                    experiment, 
+                    _type='c2',
+                    _env='matlab')
+    return id
+
+
+def run_ring(file_base):
 
     d = 2
 
@@ -66,95 +70,99 @@ def run_ring(file_base, plot = False):
     for i in range(len(widths)):
         
         w = widths[i]
-        
-        cloud.files.put(in_folder + file_base + '-width-' + str(w) + '-data.csv')
-        cloud.files.put(in_folder + file_base + '-width-' + str(w) + '-labels.csv')
-        
+
         for j in range(hist_reps):
             
             if parse:
                 f.write(str(w) + ',' + str(j) + ',' + h + '\n')
             else:
-                id = cloud.call(run_matlab, 
-                           file_base, 
-                           'correlation', 
-                           _type='c2',
-                           _env='matlab')
+                name = file_base + '-width-' + str(w)
+                id = run(name, 'correlation')
                 f.write(str(w) + ',' + str(j) + ',' + str(id) + '\n')
         
     f.close()
 
-def run_correlation(file_base, plot = False):
+def run_correlation(file_base):
 
     ns = [5, 10, 25, 50, 100]
     
     corrs = np.array(range(0,11))/10.0
 
     f = open(out_folder + file_base + '-results.csv', 'w')
-    f.write('n,correlation,rep,mutual_info\n')
+    if parse:
+        f.write('n,correlation,rep,mutual_info\n')
     
     for j in range(len(ns)):
         for i in range(len(corrs)):
             
             n = ns[j]
             corr = corrs[i]
-            
-            cloud.files.put(in_folder + file_base + '-n-' +
-                             str(n) + '-corr-' + str(corr) + '-data.csv')
-            cloud.files.put(in_folder + file_base + '-n-' +
-                             str(n) + '-corr-' + str(corr) + '-labels.csv')
-            
+
+            name = file_base + '-n-' + str(n) + '-corr-' + str(corr)
+                        
             for k in range(hist_reps):
-                f.write(','.join(map(str, [n,corr,k,h])) + '\n')
-                             
+                if parse:
+                    f.write(','.join(map(str, [n,corr,k,id])) + '\n')
+                else:
+                    id = run(name, 'correlation')
+                    f.write(str(n) + ',' + str(corr) + ',' + str(k) + ',' + str(id) + '\n')
+
     f.close()
 
-def run_outliers(file_base, plot = False):
+def run_outliers(file_base):
 
     ns = [1, 5, 10, 25, 50]
 
     f = open(out_folder + file_base + '-results.csv', 'w')
-    f.write('n,rep,mutual_info\n')
+    if parse:
+        f.write('n,rep,mutual_info\n')
     
     for j in range(len(ns)):
             
         n = ns[j]
             
-        cloud.files.put(in_folder + file_base + '-n-' + str(n) + '-data.csv')
-        cloud.files.put(in_folder + file_base + '-n-' + str(n) + '-labels.csv')
-        
+        name = file_base + '-n-' + str(n)        
+
         for k in range(hist_reps):
-            f.write(','.join(map(str, [n,k,h])) + '\n')
+            if parse:
+                f.write(','.join(map(str, [n,k,h])) + '\n')
+            else:
+                id = run(name, 'correlation')
+                f.write(','.join(map(str, [n,k,id])) + '\n')
                              
     f.close()
 
-def run_outliers_correlated(file_base, plot = False):
+def run_outliers_correlated(file_base):
 
     ns = [1, 5, 10, 25, 50]
 
     f = open(out_folder + file_base + '-results.csv', 'w')
-    f.write('n,beta0,beta1,R_squared,F_pvalue\n')
+    if parse:
+        f.write('n,beta0,beta1,R_squared,F_pvalue\n')
     
     for j in range(len(ns)):
             
         n = ns[j]
         
-        cloud.files.put(in_folder + file_base + '-n-' + str(n) + '-data.csv')
-        cloud.files.put(in_folder + file_base + '-n-' + str(n) + '-labels.csv')
+        name = file_base + '-n-' + str(n)
 
         for k in range(hist_reps):
-            f.write(','.join(map(str, [n,k,h])) + '\n')
+            if parse:
+                f.write(','.join(map(str, [n,k,h])) + '\n')
+            else:
+                id = run(name, 'correlation')
+                f.write(','.join(map(str, [n,k,id])) + '\n')
 
     f.close()
 
-def run_correlated_pairs(file_base, plot = False):
+def run_correlated_pairs(file_base):
 
     ns = [5, 25, 50, 100, 200]    
     corrs = np.array(range(0,11))/10.0
     
     f = open(out_folder + file_base + '-results.csv', 'w')
-    f.write('n,corr,rep,mutual_info\n')
-    
+    if parse:
+        f.write('n,corr,rep,mutual_info\n')
 
     for i in range(len(ns)):
         for j in range(len(corrs)):
@@ -162,23 +170,25 @@ def run_correlated_pairs(file_base, plot = False):
             n = ns[i]
             corr = corrs[j]
             
-            cloud.files.put(in_folder + file_base + '-n-' +
-                             str(n) + '-corr-' + str(corr) + '-data.csv')
-            cloud.files.put(in_folder + file_base + '-n-' +
-                             str(n) + '-corr-' + str(corr) + '-labels.csv')
+            name = file_base + '-n-' + str(n) + '-corr-' + str(corr)
             
             for k in range(hist_reps):
-                f.write(','.join(map(str, [n,corr,k,h])) + '\n')
+                if parse:
+                    f.write(','.join(map(str, [n,corr,k,h])) + '\n')
+                else:
+                    id = run(name, 'correlation')
+                    f.write(','.join(map(str, [n,corr,k,id])) + '\n')
                              
     f.close()
 
-def run_correlated_halves(file_base, plot = False):
+def run_correlated_halves(file_base):
     
     ns = [5, 25, 50, 100, 200]    
     corrs = np.array(range(0,11))/10.0
     
     f = open(out_folder + file_base + '-results.csv', 'w')
-    f.write('n,corr,rep,mutual_info\n')
+    if parse:
+        f.write('n,corr,rep,mutual_info\n')
     
     for i in range(len(ns)):
         for j in range(len(corrs)):
@@ -186,13 +196,15 @@ def run_correlated_halves(file_base, plot = False):
             n = ns[i]
             corr = corrs[j]
             
-            cloud.files.put(in_folder + file_base + '-n-' +
-                             str(n) + '-corr-' + str(corr) + '-data.csv')
-            cloud.files.put(in_folder + file_base + '-n-' +
-                             str(n) + '-corr-' + str(corr) + '-labels.csv')
+            name = file_base + '-n-' + str(n) + '-corr-' + str(corr)
             
             for k in range(hist_reps):
-                f.write(','.join(map(str, [n,corr,k,h])) + '\n')
+                if parse:
+                    f.write(','.join(map(str, [n,corr,k,h])) + '\n')
+                else:
+                    id = run(name, 'correlation')
+                    f.write(','.join(map(str, [n,corr,k,id])) + '\n')
+
                              
     f.close()
 
@@ -201,14 +213,17 @@ def run_anova(file_base, n = 100, n_outliers = 0,
               corr = 0, omit = False):
 
     f = open(out_folder + file_base + '-results.csv', 'w')
-    f.write('rep,cmi_xz,cmi_yz\n')
+    if parse:
+        f.write('rep,cmi_xz,cmi_yz\n')
 
-    
-    cloud.files.put(in_folder + file_base + '-data.csv')
-    cloud.files.put(in_folder + file_base + '-labels.csv')
+    name = file_base
 
     for k in range(hist_reps):
-        f.write(','.join(map(str, [i, h1, h2])) + '\n')
+        if parse:
+            f.write(','.join(map(str, [k, h1, h2])) + '\n')
+        else:
+            id = run(name, 'regression')
+            f.write(','.join(map(str, [k, id])) + '\n')
                              
     f.close()
 
