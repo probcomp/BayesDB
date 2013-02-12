@@ -63,16 +63,16 @@ for(i in 1:length(ns)) {
 
 ns = c('1', '5', '10', '25', '50')
 
-results = read.csv('../../results/outlier-results.csv')
+results = read.csv('../../results/outliers-i-0-results.csv')
 
-png(paste('../../plots/outlier-results.png',sep=''))
+png(paste('../../plots/outliers-i-0-results.png',sep=''))
 
 par(oma = c(0,0,2,0))
 par(mfrow = c(2,3))
 
 for(i in 1:length(ns)) {
   
-  data = read.csv(paste('../../data/outliers-n-',ns[i],
+  data = read.csv(paste('../../data/outliers-i-0-n-',ns[i],
     '-data.csv',sep=''),
     header = F)
   plot(data, pch = '.',
@@ -90,16 +90,16 @@ dev.off()
 
 ns = c('1', '5', '10', '25', '50')
 
-results = read.csv('../../results/outlier-correlated-i-0-results.csv')
+results = read.csv('../../results/outliers-correlated-i-0-results.csv')
 
-png(paste('../../plots/outlier-correlated-i-0-results.png',sep=''))
+png(paste('../../plots/outliers-correlated-i-0-results.png',sep=''))
 
 par(oma = c(0,0,2,0))
 par(mfrow = c(2,3))
 
 for(i in 1:length(ns)) {
   
-  data = read.csv(paste('../../data/outlier-correlated-i-0-n-',ns[i],
+  data = read.csv(paste('../../data/outliers-correlated-i-0-n-',ns[i],
     '-data.csv',sep=''),
     header = F)
   plot(data, pch = '.',
@@ -245,6 +245,11 @@ png(paste('../../plots/', file.base, '-results.png', sep = ''))
 plot.anova(file.base)
 dev.off()
 
+file.base = 'simple-anova-mixture'
+png(paste('../../plots/', file.base, '-results.png', sep = ''))
+plot.anova(file.base)
+dev.off()
+
 file.base = 'anova-1'
 png(paste('../../plots/', file.base, '-results.png', sep = ''))
 plot.anova(file.base)
@@ -260,7 +265,6 @@ png(paste('../../plots/', file.base, '-results.png', sep = ''))
 plot.anova(file.base)
 dev.off()
 
-
 file.base = 'anova-1-omitted'
 png(paste('../../plots/', file.base, '-results.png', sep = ''))
 plot.anova(file.base)
@@ -272,6 +276,21 @@ plot.anova(file.base)
 dev.off()
 
 file.base = 'anova-3-omitted'
+png(paste('../../plots/', file.base, '-results.png', sep = ''))
+plot.anova(file.base)
+dev.off()
+
+file.base = 'anova-1-mixture'
+png(paste('../../plots/', file.base, '-results.png', sep = ''))
+plot.anova(file.base)
+dev.off()
+
+file.base = 'anova-2-mixture'
+png(paste('../../plots/', file.base, '-results.png', sep = ''))
+plot.anova(file.base)
+dev.off()
+
+file.base = 'anova-3-mixture'
 png(paste('../../plots/', file.base, '-results.png', sep = ''))
 plot.anova(file.base)
 dev.off()
