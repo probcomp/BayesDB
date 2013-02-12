@@ -31,7 +31,9 @@ Compiling MATLAB Code on Picloud through CSAIL:
 -- scp zipped MCR to picloud environment
 -- install using silent mode
 - copy compiled code to picloud
+-- open the environment in your browser (this takes a while!)
 - make sure files have appropriate permissions
+-- scripts should be 775
 - use e.g.
 >>> def test():
 ...     return os.popen('sh ./run_test.sh matlab/mcr/v717/ 1').read()
