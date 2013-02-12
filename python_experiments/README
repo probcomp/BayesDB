@@ -32,6 +32,7 @@ Compiling MATLAB Code on Picloud through CSAIL:
 -- install using silent mode
 - copy compiled code to picloud
 -- open the environment in your browser (this takes a while!)
+-- follow the direction after pressing "connect"
 - make sure files have appropriate permissions
 -- scripts should be 775
 - use e.g.
