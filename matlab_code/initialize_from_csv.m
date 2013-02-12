@@ -65,8 +65,8 @@ function state = initialize_from_csv(dataFile, dataTypes, initialState)
     end
     
     % saveResults
-    name = ['Samples/crossCat_', num2str(round(now*100000))];
-    save(name, 'state');
+    %name = ['Samples/crossCat_', num2str(round(now*100000))];
+    %save(name, 'state');
 
 end
 
