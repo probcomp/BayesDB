@@ -3,11 +3,53 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-cloud.start_simulator()
+debug = True
+parse = False
 
-out_folder = '../../crosscat-results/'
-data_reps = 5
-hist_reps = 50
+if parse:
+    out_folder = '../../crosscat-results/'
+else:
+    in_folder = './data/'
+    out_folder = '../../picloud/'
+
+data_reps = 1
+hist_reps = 2
+n_chains = '2'
+n_pred_samples = '2'
+n_mcmc_iter = '2'
+
+if debug:
+    cloud.start_simulator()
+
+def run_matlab(file_base, experiment):
+    if debug:
+        mcr_loc = '/Applications/MATLAB/MATLAB_Compiler_Runtime/v80/'
+    else:
+        mcr_loc = 'matlab/mcr/v717/'
+    
+    command = 'sh ./run_run_crosscat.sh '
+    command += mcr_loc + ' '
+    command += in_folder + ' '
+    command += file_base + ' '
+    command += experiment + ' '
+    command += n_chains + ' '
+    command += n_pred_samples + ' '
+    command += n_mcmc_iter
+    out = os.popen(command).read()
+    return out
+
+def parse_out(experiment, out):
+    if experiment is 'regression':
+        out = out.split('#####')
+        values = [0]*2
+        values[0] = out[1]
+        values[1] = out[3]
+    if experiment is 'correlation':
+        out = out.split('#####')
+        values = [0]*(len(out)/2)
+        for i in range(len(values)):
+            values[i] = out[2*i - 1]
+    return values
 
 def run_ring(file_base, plot = False):
 
@@ -18,17 +60,27 @@ def run_ring(file_base, plot = False):
     r_sq_vals = [0]*len(widths)
 
     f = open(out_folder + file_base + '-results.csv', 'w')
-    f.write('ring_width, rep, mutual_info\n')
+    if parse:
+        f.write('ring_width, rep, mutual_info\n')
 
     for i in range(len(widths)):
         
         w = widths[i]
         
-        cloud.files.put('../../data/' + file_base + '-width-' + str(w) + '-data.csv')
-        cloud.files.put('../../data/' + file_base + '-width-' + str(w) + '-labels.csv')
+        cloud.files.put(in_folder + file_base + '-width-' + str(w) + '-data.csv')
+        cloud.files.put(in_folder + file_base + '-width-' + str(w) + '-labels.csv')
         
         for j in range(hist_reps):
-            f.write(str(w) + ',' + str(j) + ',' + h + '\n')
+            
+            if parse:
+                f.write(str(w) + ',' + str(j) + ',' + h + '\n')
+            else:
+                id = cloud.call(run_matlab, 
+                           file_base, 
+                           'correlation', 
+                           _type='c2',
+                           _env='matlab')
+                f.write(str(w) + ',' + str(j) + ',' + str(id) + '\n')
         
     f.close()
 
@@ -47,9 +99,9 @@ def run_correlation(file_base, plot = False):
             n = ns[j]
             corr = corrs[i]
             
-            cloud.files.put('../../data/' + file_base + '-n-' +
+            cloud.files.put(in_folder + file_base + '-n-' +
                              str(n) + '-corr-' + str(corr) + '-data.csv')
-            cloud.files.put('../../data/' + file_base + '-n-' +
+            cloud.files.put(in_folder + file_base + '-n-' +
                              str(n) + '-corr-' + str(corr) + '-labels.csv')
             
             for k in range(hist_reps):
@@ -68,8 +120,8 @@ def run_outliers(file_base, plot = False):
             
         n = ns[j]
             
-        cloud.files.put('../../data/' + file_base + '-n-' + str(n) + '-data.csv')
-        cloud.files.put('../../data/' + file_base + '-n-' + str(n) + '-labels.csv')
+        cloud.files.put(in_folder + file_base + '-n-' + str(n) + '-data.csv')
+        cloud.files.put(in_folder + file_base + '-n-' + str(n) + '-labels.csv')
         
         for k in range(hist_reps):
             f.write(','.join(map(str, [n,k,h])) + '\n')
@@ -87,8 +139,8 @@ def run_outliers_correlated(file_base, plot = False):
             
         n = ns[j]
         
-        cloud.files.put('../../data/' + file_base + '-n-' + str(n) + '-data.csv')
-        cloud.files.put('../../data/' + file_base + '-n-' + str(n) + '-labels.csv')
+        cloud.files.put(in_folder + file_base + '-n-' + str(n) + '-data.csv')
+        cloud.files.put(in_folder + file_base + '-n-' + str(n) + '-labels.csv')
 
         for k in range(hist_reps):
             f.write(','.join(map(str, [n,k,h])) + '\n')
@@ -110,9 +162,9 @@ def run_correlated_pairs(file_base, plot = False):
             n = ns[i]
             corr = corrs[j]
             
-            cloud.files.put('../../data/' + file_base + '-n-' +
+            cloud.files.put(in_folder + file_base + '-n-' +
                              str(n) + '-corr-' + str(corr) + '-data.csv')
-            cloud.files.put('../../data/' + file_base + '-n-' +
+            cloud.files.put(in_folder + file_base + '-n-' +
                              str(n) + '-corr-' + str(corr) + '-labels.csv')
             
             for k in range(hist_reps):
@@ -134,9 +186,9 @@ def run_correlated_halves(file_base, plot = False):
             n = ns[i]
             corr = corrs[j]
             
-            cloud.files.put('../../data/' + file_base + '-n-' +
+            cloud.files.put(in_folder + file_base + '-n-' +
                              str(n) + '-corr-' + str(corr) + '-data.csv')
-            cloud.files.put('../../data/' + file_base + '-n-' +
+            cloud.files.put(in_folder + file_base + '-n-' +
                              str(n) + '-corr-' + str(corr) + '-labels.csv')
             
             for k in range(hist_reps):
@@ -152,16 +204,16 @@ def run_anova(file_base, n = 100, n_outliers = 0,
     f.write('rep,cmi_xz,cmi_yz\n')
 
     
-    cloud.files.put('../../data/' + file_base + '-data.csv')
-    cloud.files.put('../../data/' + file_base + '-labels.csv')
+    cloud.files.put(in_folder + file_base + '-data.csv')
+    cloud.files.put(in_folder + file_base + '-labels.csv')
 
     for k in range(hist_reps):
         f.write(','.join(map(str, [i, h1, h2])) + '\n')
                              
     f.close()
 
-if __name__ == "__main__":
-
+#if __name__ == "__main__":
+if False:
     for i in range(data_reps):
         run_ring('ring-i-' + str(i))
         run_correlation('correlation-i-' + str(i))
