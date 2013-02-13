@@ -1,5 +1,5 @@
 function run_crosscat(data_dir, file_base, experiment, n_chains, n_pred_samples, ...
-    n_mcmc_iter)
+    n_mcmc_iter, seed)
 %
 % run mutual information or conditional entropy experiment
 %
@@ -11,6 +11,8 @@ function run_crosscat(data_dir, file_base, experiment, n_chains, n_pred_samples,
 %              each pair of columns or regression to compute
 %              the conditional mutual information of the last variable 
 %              and each other predictor given the remaining predictor
+
+rng(int(seed))
 
 n_chains = str2num(n_chains);
 n_pred_samples = str2num(n_pred_samples);
