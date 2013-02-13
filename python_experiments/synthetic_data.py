@@ -32,12 +32,12 @@ def correlated_data(n, corr, dim = 2):
 def correlated_pairs(n, pairs, corr):
     
     d = pairs*2
-    samples = [[0]*(d + 1) for i in range(n)]
+    samples = [[0]*d for i in range(n)]
 
     for i in range(pairs):
-        next = correlated_data(n, corr)
+        next_cols = correlated_data(n, corr)
         for j in range(n):
-            samples[j][(2*i):(2*i + 1)] = next[j]
+            samples[j][(2*i):(3*i)] = next_cols[j]
     
     return samples
 
