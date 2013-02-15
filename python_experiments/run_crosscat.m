@@ -1,20 +1,24 @@
-function run_crosscat(data_dir, file_base, experiment, n_chains, n_pred_samples, ...
+function run_crosscat(data_dir, file_base, experiment, n_pred_samples, ...
     n_mcmc_iter, seed)
 %
 % run mutual information or conditional entropy experiment
 %
 % input:
 %
-% file_base  : data set should be in files ../../data/file_base-data.csv 
+% file_base  : data set should be in files ../../data/file_base-data.csv
 %              and ../../data/file_base-labels.csv
-% experiment : either correlation to compute the mutual information for 
+% experiment : either correlation to compute the mutual information for
 %              each pair of columns or regression to compute
-%              the conditional mutual information of the last variable 
+%              the conditional mutual information of the last variable
 %              and each other predictor given the remaining predictor
+% n_chains       : number of mcmc chains to draw samples from
+% n_pred_samples : number of predictive samples to draw from each chain
+% n_mcmc_iter    : number of mcmc steps to run each mcmc chain for
+% seed           : random seed to use for this experiment
+%
 
-rng(int(seed))
+rng(str2num(seed))
 
-n_chains = str2num(n_chains);
 n_pred_samples = str2num(n_pred_samples);
 n_mcmc_iter = str2num(n_mcmc_iter);
 
@@ -23,23 +27,53 @@ label_file = strcat(data_dir, file_base, '-labels');
 
 state = initialize_from_csv(data_file, label_file, 'fromThePrior');
 
-switch experiment 
-case 'correlation'
-    for i = 1:(state.F - 1)
-        for j = (i + 1):state.F
-            h = mutual_info(state, i, j, [], n_chains, n_pred_samples, n_mcmc_iter);
-            fprintf(1, '#####%i, %i,%f#####\n', [i, j, h]);
+state = analyze(state, {'columnPartitionHyperparameter',...
+    'columnPartitionAssignments', 'componentHyperparameters',...
+    'rowPartitionHyperparameters', 'rowPartitionAssignments'},...
+    n_mcmc_iter, 'all', 'all');
+
+switch experiment
+    
+    case 'correlation'
+        
+        h = cell(state.F - 1, 1);
+        for i = 1:(state.F - 1)
+            h{i} = zeros(i,1);
         end
-    end
-case 'regression'
-    %h = conditional_entropy(state, 1, 3, n_chains, n_pred_samples, n_mcmc_iter);
-    %fprintf(1, 'H(Z|X): %f\n', h);
-    %h = conditional_entropy(state, 2, 3, n_chains, n_pred_samples, n_mcmc_iter);
-    %fprintf(1, 'H(Z|Y): %f\n', h);
-    %h = conditional_entropy(state, [1,2], 3, n_chains, n_pred_samples, n_mcmc_iter);
-    %fprintf(1, 'H(Z|X,Y): %f\n', h);
-    h = mutual_info(state, 1, 3, 2, n_chains, n_pred_samples, n_mcmc_iter);
-    fprintf(1, 'I(Z,X|Y): #####%f#####\n', h);
-    h = mutual_info(state, 2, 3, 1, n_chains, n_pred_samples, n_mcmc_iter);
-    fprintf(1, 'I(Z,Y|X): #####%f#####\n', h);
+        
+        for k = 1:n_pred_samples
+            
+            s = simple_predictive_sample_newRow(state, [], 1:state.F);
+            
+            for i = 2:state.F
+                for j = 1:(i - 1)
+                    h{i}(j) = mutual_info(s, state, i, j, []);
+                end
+            end
+            
+        end
+        
+        for i = 2:state.F
+            for j = 1:(i - 1)
+                fprintf(1, '#####%i, %i,%f#####\n', [i, j, h{i}(j)/n_pred_samples]);
+            end
+        end
+        
+    case 'regression'
+        
+        h_xz = 0;
+        h_yz = 0;
+        
+        for j = 1:n_pred_samples
+            
+            s = simple_predictive_sample_newRow(state, [], 1:state.F);
+            
+            h_xz = h_xz + mutual_info(s, state, 1, 3, 2);
+            h_yz = h_yz + mutual_info(s, state, 2, 3, 1);
+        end
+        
+        fprintf(1, 'I(Z,X|Y): #####%f#####\n', h_xz/n_pred_samples);
+        fprintf(1, 'I(Z,Y|X): #####%f#####\n', h_yz/n_pred_samples);
+        
 end
+
