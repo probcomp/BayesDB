@@ -15,17 +15,16 @@ def ring_cond_pdf(x, y, r):
 def ring_area(r):
     return math.pi - math.pi * r**2
 
+def ring_marg_pdf(x, r):
+    return ring_seg_area(x, r)/ring_area(r)
+
 def ring_pdf(x, y, r):
     return 1.0/ring_area(r)
 
 # TODO: test!!! compare to conditional calculateion
-#def entropy(x_vec, pdf):
-#    return sum(map(lambda x: -math.log(pdf(x)), x_vec))/len(x_vec)
-
-def entropy(x_vec, y_vec, joint_pdf, cond_pdf):
-    je = joint_entropy(x_vec, y_vec, joint_pdf)
-    ce = cond_entropy(y_vec, x_vec, cond_pdf)
-    return je - ce
+def entropy(x_vec, pdf):
+    n = len(x_vec)
+    return sum(map(lambda x: -math.log(pdf(x)), x_vec))/n
 
 def joint_entropy(x_vec, y_vec, pdf):
     n = len(x_vec)
@@ -48,7 +47,7 @@ def run_ring(file_base, plot = False):
     r_sq_vals = [0]*len(widths)
 
     f = open('../../results/' + file_base + '-results.csv', 'w')
-    f.write('ring_width, percent_entropy, R_squared\n')
+    f.write('ring_width, mutual_info, R_squared\n')
 
     for i in range(len(widths)):
         
@@ -58,11 +57,12 @@ def run_ring(file_base, plot = False):
         synth.write_data(data, '../../data/' + file_base + '-width-' + str(w))
         data = np.array(data)
         
-        pdf = lambda x, y: ring_pdf(x, y, 1 - w)
-        c_pdf = lambda x, y: ring_cond_pdf(x, y, 1 - w)
-        ce = cond_entropy(data[:,0], data[:,1], c_pdf)
-        me = entropy(data[:,1], data[:,1], pdf, c_pdf)
-        true_percent_ent[i] = ce/me
+        joint_pdf = lambda x, y: ring_pdf(x, y, 1 - w)
+        marg_pdf = lambda x: ring_marg_pdf(x, 1 - w)
+        me_x = entropy(data[:,0], marg_pdf)
+        me_y = entropy(data[:,1], marg_pdf)
+        je = joint_entropy(data[:,0], data[:,1], joint_pdf)
+        true_percent_ent[i] = me_x + me_y - je
         
         lm = ols.ols(data[:,0], data[:,1:], 'y', 
                      map(lambda x: 'x' + str(x), range(d - 1)))
@@ -299,8 +299,8 @@ def run_anova(file_base, n = 100, n_outliers = 0,
                              
     f.close()
 
-if __name__ == "__main__":
-
+#if __name__ == "__main__":
+if False:
     reps = 5
     for i in range(reps):
         run_ring('ring-i-' + str(i))
