@@ -36,8 +36,8 @@ switch experiment
     
     case 'correlation'
         
-        h = cell(state.F - 1, 1);
-        for i = 1:(state.F - 1)
+        h = cell(state.F, 1);
+        for i = 2:state.F
             h{i} = zeros(i,1);
         end
         
@@ -47,7 +47,7 @@ switch experiment
             
             for i = 2:state.F
                 for j = 1:(i - 1)
-                    h{i}(j) = mutual_info(s, state, i, j, []);
+                    h{i}(j) = h{i}(j) + mutual_info(s, state, i, j, []);
                 end
             end
             
