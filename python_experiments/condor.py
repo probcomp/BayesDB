@@ -23,6 +23,14 @@ License along with this package; if not, see
 http://www.gnu.org/licenses/lgpl-2.1.html
 """
 
+"""
+This package might do a few odd things. It assumes you are running it
+from the Condor cluster. It assumes the local packages you need are in
+your current working directory. It creates a directory to keep track
+of the jobs it creates.
+"""
+
+
 import pickle
 import marshal
 import types
