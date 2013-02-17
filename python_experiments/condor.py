@@ -28,10 +28,13 @@ import marshal
 import types
 import os
 import sys
+import stat
 
 out_dir = os.getcwd() + '/jobs/'
 if not os.path.exists(out_dir): 
     os.makedirs(out_dir)
+
+DEBUG = False
 
 def call(func, *args, **kwargs):
 
@@ -57,13 +60,53 @@ def call(func, *args, **kwargs):
                                 ' already exists! Seek help.')
                 
     write_job(job_dir, func, args)
+    write_description(job_dir, job_id)
 
+    if DEBUG:
+        os.system(job_dir + 'job.py')
+    else:
+        os.system('condor_submit ' + job_dir + 'description')
+    
+    return job_id
+
+def result(jids):
+    if isinstance(jids, collections.Iterable):
+        results = []
+        for jid in jids:
+            results += [get_result(jid)]
+    else:
+        results = get_result(jids)
+    return results
+
+########################
+### helper functions ###
+########################
+
+def get_result(jid):
+    out_file = out_dir + jid + '/stdout.txt'
+    f = open(out_file)
+    result = f.readlines()
+    f.close()
+    return result
+
+def write_description(job_dir, job_id):
     desc_f = open(job_dir + 'description', 'w')
+    desc_f.write('GetEnv = True')
+    desc_f.write('Universe = vanilla\n')
+    desc_f.write('Notification = Error\n')
+    desc_f.write('Executable = ' + job_dir + 'job.py\n')
+    desc_f.write('Log = /tmp/job.' + job_id + '.' 
+                 + os.environ['USER'] + '.log\n')
+    desc_f.write('Error = ' + job_dir + 'stderr.txt\n')
+    desc_f.write('Output = ' + job_dir + 'stdout.txt\n')
+    desc_f.close()
 
 def write_job(job_dir, func, args):
     
-    job_f = open(job_dir + 'job.py', 'w')
+    name = job_dir + 'job.py'
+    job_f = open(name, 'w')
 
+    job_f.write('#! /usr/bin/env python\n')
     job_f.write('import os, sys, marshal, types, pickle\n')
     job_f.write('os.chdir(\'' + os.getcwd() + '\')\n') 
     job_f.write('sys.path.append(\'' + os.getcwd() + '\')\n')
@@ -72,6 +115,8 @@ def write_job(job_dir, func, args):
     write_func(job_f, job_dir, func, args)
 
     job_f.close()
+    st = os.stat(name)
+    os.chmod(name, st.st_mode | stat.S_IEXEC)
 
 
 def write_func(job_f, job_dir, func, args):
