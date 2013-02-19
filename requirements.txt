@@ -1,0 +1,13 @@
+# yolk is for looking at python packages available
+yolk
+# 
+cython==0.17.1
+numpy=1.7.0
+#
+# for matplotlib
+# sudo apt-get install -y libfreetype6-dev
+# for interactive graphics in pylab: GtkAgg?
+# sudo apt-get install python-gtk{,-dev}
+#
+http://freetype-py.googlecode.com/files/freetype-py-0.4.1.tar.gz
+matplotlib
