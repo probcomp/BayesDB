@@ -14,7 +14,7 @@ EOF
 fi
 
 has_project=$(workon | grep $project_name)
-if [ -z $has_crosscat ] ; then
+if [ -z $has_project ] ; then
     # readlink doesn't work on macs
     my_abs_path=$(readlink -f "$0")
     project_location=$(dirname $my_abs_path)
