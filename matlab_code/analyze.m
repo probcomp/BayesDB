@@ -1,8 +1,12 @@
-function state = analyze(state, kernelList, nSteps, c, r, maxIterations, maxTime)
+function state = analyze(state, kernelList, nSteps, c, r, maxIterations, maxTime, verbose)
 % NOTE: this version does not support maxIterations or maxTime
 %     : assume that data are already my kind of state   
 %     : To get this to do different types of data, the whole thing needs to
 %     be reconstructed
+    
+    if nargin < 6
+        verbose = false;
+    end
     
     % convert 'all' option to numbers
     if isstr(c) && strcmp(c, 'all');
@@ -17,14 +21,20 @@ function state = analyze(state, kernelList, nSteps, c, r, maxIterations, maxTime
 
     % runModel
     for n = 1 : nSteps
-        tic
+        if verbose 
+            tic
+        end
         state = drawSample(state, kernelList, c, r); 
-        toc
+        if verbose
+            toc
+        end
     end
     
-    % saveResults
-    name = ['Samples/crossCat_', num2str(round(now*100000))];
-    save([name], 'state', 'kernelList', 'nSteps', 'c', 'r');
+    if verbose
+        % saveResults
+        name = ['Samples/crossCat_', num2str(round(now*100000))];
+        save([name], 'state', 'kernelList', 'nSteps', 'c', 'r');
+    end
 
 end
 
@@ -44,14 +54,16 @@ function state = drawSample(state, kernelList, c, r)
                 
             case 'componentHyperparameters'
                 for ii = 1 : length(c)
-                    switch state.dataTypes{i}
-                        case 'numeric'
-                            state = sampleComponentHyperparameters_numeric(state, c(ii));
-                        case 'categorical'
+                    switch state.dataTypes{ii}
+                        case 'normal_inverse_gamma'
+                            state = sampleComponentHyperparameters_normal_inverse_gamma(state, c(ii));
+                        case 'dirichlet_multinomial '
                             % FIXME!
                             disp('FIXME');
-                        case 'binary'
-                            state = sampleComponentHyperparameters_binary(state, c(ii));
+                        case 'asymmetric_beta_bernoulli '
+                            state = sampleComponentHyperparameters_asymmetric_beta_bernoulli(state, c(ii));
+                        otherwise
+                            disp([state.dataTypes{ii}, ' is not a valid data type']);
                     end
                 end
                 
@@ -108,9 +120,9 @@ function this = chooseState(logP)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Numeric hyperparameters %
+% normal_inverse_gamma hyperparameters %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-function state = sampleComponentHyperparameters_numeric(state, f)
+function state = sampleComponentHyperparameters_normal_inverse_gamma(state, f)
 
     thisK = state.f(f);
     c = unique(state.o(thisK,:));
@@ -134,7 +146,7 @@ function state = sampleComponentHyperparameters_numeric(state, f)
         end
         % choose state
         this = chooseState(logP);
-        state.NG_k(f) = state.kRange(this)+1;
+        state.NG_k(f) = state.kRange(this);%+1;
     end
 
     % a
@@ -190,9 +202,9 @@ function state = sampleComponentHyperparameters_numeric(state, f)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-% Binary Hyperparameters %
+% asymmetric_beta_bernoulli  Hyperparameters %
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-function state = sampleComponentHyperparameters_binary(state, f)  
+function state = sampleComponentHyperparameters_asymmetric_beta_bernoulli (state, f)  
     
     thisK = state.f(f);
     c = unique(state.o(thisK,:));
@@ -367,17 +379,19 @@ function logP = scoreFeature(state,f)
     for j = c
         theseData = state.o(K,:)==j;
         switch state.dataTypes{f}
-            case 'numeric'
+            case 'normal_inverse_gamma'
                 logP = logP + NG(state.data(theseData,f), ...
                                state.NG_mu(f), state.NG_k(f), ...
                                state.NG_a(f), state.NG_b(f));
-            case 'categorical'
+            case 'dirichlet_multinomial '
                 % FIXME
                 disp('FIXME!');
-            case 'binary'
+            case 'asymmetric_beta_bernoulli '
                 logP = logP + betaBern(state.data(theseData,f), ...
                                         state.betaBern_s(f), ...
                                         state.betaBern_b(f));
+            otherwise
+                disp([state.dataTypes{f}, ' is not a valid data type']);
         end
     end
 end
@@ -438,27 +452,29 @@ function logP = scoreObject(state,K,O)
     theseData(O) = 0; % eliminate this object
     for f = theseF
         switch state.dataTypes{f}
-            case 'numeric'
+            case 'normal_inverse_gamma'
                 logP = logP + NG_cat(state.data(theseData,f), ...
                              state.data(O,f), ...
                              state.NG_mu(f), state.NG_k(f), ...
                              state.NG_a(f), state.NG_b(f) ...
                             );
-            case 'categorical'
+            case 'dirichlet_multinomial'
                 % FIXME
                 disp('FIXME');
-            case 'binary'
+            case 'asymmetric_beta_bernoulli'
                 logP = logP + betaBern_cat(state.data(theseData,f), ...
                                 state.data(O,f), ...
                                 state.betaBern_s(f), ...
                                 state.betaBern_b(f));
+            otherwise
+                disp([state.dataTypes{f}, ' is not a valid data type']);
         end
     end
     
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Numeric likelihoods: Normal-Gamma %
+% normal_inverse_gamma likelihoods: Normal-Gamma %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function logProb = NG_cat(data, newData, mu0, k0, a0, b0)
@@ -552,7 +568,7 @@ function logProb = NG(data, mu0, k0, a0, b0)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Binary Likelihood: Beta-bernoulli %
+% asymmetric_beta_bernoulli  Likelihood: Beta-bernoulli %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function logProb = betaBern(data, strength, balance)
@@ -598,7 +614,7 @@ function logP = scoreState(state)
 end
 
 function s = logsumexp(a, dim)
-% Returns log(sum(exp(a),dim)) while avoiding numerical underflow.
+% Returns log(sum(exp(a),dim)) while avoiding normal_inverse_gammaal underflow.
 % Default is dim = 1 (rows) or dim=2 for a row vector
 % logsumexp(a, 2) will sum across columns instead of rows
 

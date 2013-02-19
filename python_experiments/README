@@ -1,0 +1,41 @@
+             data: [100x2 double]           # observations x features
+        dataTypes: {2x1 cell}               # either 'numeric' or 'binary'
+                F: 2                        # number of features
+                O: 100                      # number of observations
+       paramPrior: [1x31 double]            # prior on ???
+    cumParamPrior: [1x31 double]            # prior on ???
+        crpKRange: [1x31 double]            # ???
+        crpCRange: [1x31 double]            # ???
+        crpPriorK: 0.9117                   # ???
+        crpPriorC: [0.3981 11.6591 0.2929]  # ???
+           kRange: [1x31 double]            # ???
+           aRange: [1x31 double]            # ???
+          muRange: [2x30 double]            # ???
+           bRange: [2x31 double]            # ???
+             NG_a: [38.5217 8.0560]         # normal inverse gamma hyper
+             NG_k: [55.1170 1.2929]         # normal inverse gamma hyper
+             NG_b: [10.7815 0.5058]         # normal inverse gamma hyper
+            NG_mu: [-0.0202 -0.0938]        # normal inverse gamma hyper
+                f: [2 2]                    # column assignments to views
+                o: [3x100 double]           # view-wise row assignments to components
+
+Compiling MATLAB Code on Picloud through CSAIL:
+- compile code using MATLAB compiler (mcc command) on a linux architecture (e.g., on CSAIL's login.csail.mit.edu)
+-- ssh to your login.csail.mit.edu 
+-- add matlab to ~/.software
+-- scp your matlab files to login.csail.mit.edu
+-- open matlab, use mcc
+- create a new picloud environment (or use mine) for matlab
+-- follow the picloud instructions for creating an environment
+-- download the most recent MCR
+-- scp zipped MCR to picloud environment
+-- install using silent mode
+- copy compiled code to picloud
+-- open the environment in your browser (this takes a while!)
+-- follow the direction after pressing "connect"
+- make sure files have appropriate permissions
+-- scripts should be 775
+- use e.g.
+>>> def test():
+...     return os.popen('sh ./run_test.sh matlab/mcr/v717/ 1').read()
+>>> cloud.call(test, _env='matlab') 

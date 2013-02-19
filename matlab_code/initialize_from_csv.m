@@ -14,8 +14,8 @@ function state = initialize_from_csv(dataFile, dataTypes, initialState)
     % parameters
     bins = 31; % must be odd
 
-    %Parameter priors are assumed to be uniform in this version
-    state.paramPrior = ones(1,bins); % uniform prior on parameters
+    %Parameter priors are assumed to be log-normal
+    state.paramPrior = normpdf(1:31, 16, 16);%ones(1,bins); % uniform prior on parameters
     state.paramPrior = state.paramPrior ./ sum(state.paramPrior);
     state.cumParamPrior = cumsum(state.paramPrior);
     
@@ -30,10 +30,10 @@ function state = initialize_from_csv(dataFile, dataTypes, initialState)
     for f = 1 : state.F
         switch state.dataTypes{f}
 
-            case 'numeric'
+            case 'normal_inverse_gamma'
                 state = buildNumeric(state, f, bins);
 
-            case 'binary'
+            case 'asymmetric_beta_bernoulli'
                 state = buildBinary(state, f, bins);
         end
     end
@@ -55,7 +55,7 @@ function state = initialize_from_csv(dataFile, dataTypes, initialState)
         case 'apart'
             state.f = 1 : state.F;
             for i = 1 : length(state.f)
-                state.o(state.f(i),:) = 1:state.O;
+                state.o(i,:) = 1:state.O;
                 state.crpPriorC(i) = state.crpCRange(find(state.cumParamPrior>rand,1));
             end
             
@@ -65,8 +65,8 @@ function state = initialize_from_csv(dataFile, dataTypes, initialState)
     end
     
     % saveResults
-    name = ['Samples/crossCat_', num2str(round(now*100000))];
-    save(name, 'state');
+    %name = ['Samples/crossCat_', num2str(round(now*100000))];
+    %save(name, 'state');
 
 end
 
@@ -112,4 +112,37 @@ function state = buildBinary(state, f, bins)
     state.betaBern_s(f) = state.sRange(find(state.cumParamPrior>rand,1));
     state.betaBern_b(f) = state.bRange(find(state.cumParamPrior>rand,1));
 
+end
+
+function [partition] = sample_partition(n, gama)
+% this samples category partions given # objects from crp prior
+
+partition = ones(1,n);
+classes = [1,0];
+
+for i=2:n
+classprobs=[];
+
+for j=1:length(classes)
+
+if classes(j) > 0.5
+classprobs(j) = (classes(j))./(i-1+gama);
+else
+classprobs(j) = gama./(i-1+gama);
+end
+
+end
+
+cumclassprobs = cumsum(classprobs);
+c = min(find(rand<cumclassprobs));
+partition(i) = c;
+classes(c)=classes(c)+1;
+
+% if we add new class, need to replace placeholder
+
+if c==length(classes)
+classes(c+1)=0;
+end
+
+end
 end
