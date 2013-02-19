@@ -1,13 +1,16 @@
 # yolk is for looking at python packages available
-yolk
-# 
+yolk=0.4.3
+#
+# for api server
+jsonrpc==1.2
+requests==1.0.3
+#
+# for engine
 cython==0.17.1
 numpy=1.7.0
-#
-# for matplotlib
+# for engine for matplotlib
 # sudo apt-get install -y libfreetype6-dev
 # for interactive graphics in pylab: GtkAgg?
 # sudo apt-get install python-gtk{,-dev}
-#
-http://freetype-py.googlecode.com/files/freetype-py-0.4.1.tar.gz
-matplotlib
+freetype-py==0.4.1
+matplotlib==1.2.0
