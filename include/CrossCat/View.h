@@ -21,13 +21,34 @@ class View {
  public:
   //FIXME: add constructor with ranges as arguments, rather than recalculate
   View(const MatrixD data,
+       std::vector<std::vector<int> > row_partitioning,
        std::vector<int> global_row_indices,
        std::vector<int> global_col_indices,
        std::map<int, std::map<std::string, double> > &hypers_m,
-       int SEED=0, int N_GRID=31);
-  View(int SEED=0);
-  // FIXME: will need to add a deallocator for clusters
-  // for when View is garbage collected 
+       std::vector<double> ROW_CRP_ALPHA_GRID,
+       std::vector<double> R_GRID,
+       std::vector<double> NU_GRID,
+       std::map<int, std::vector<double> > S_GRIDS,
+       std::map<int, std::vector<double> > MU_GRIDS,
+       double CRP_ALPHA,
+       int SEED=0);
+  View(const MatrixD data,
+       std::vector<int> global_row_indices,
+       std::vector<int> global_col_indices,
+       std::map<int, std::map<std::string, double> > &hypers_m,
+       std::vector<double> ROW_CRP_ALPHA_GRID,
+       std::vector<double> R_GRID,
+       std::vector<double> NU_GRID,
+       std::map<int, std::vector<double> > S_GRIDS,
+       std::map<int, std::vector<double> > MU_GRIDS,
+       int SEED=0);
+  View(std::vector<int> global_row_indices,
+       std::vector<double> ROW_CRP_ALPHA_GRID,
+       std::vector<double> R_GRID,
+       std::vector<double> NU_GRID,
+       std::map<int, std::vector<double> > S_GRIDS,
+       std::map<int, std::vector<double> > MU_GRIDS,
+       int SEED=0);
   //
   // getters (external use)
   double get_num_vectors() const;
@@ -67,6 +88,8 @@ class View {
 				     std::map<std::string, double> hypers);
   //
   // mutators
+  void set_row_partitioning(std::vector<std::vector<int> > row_partitioning);
+  void set_row_partitioning(std::vector<int> global_row_indices);
   double set_crp_alpha(double new_crp_alpha);
   Cluster& get_new_cluster();
   double insert_row(std::vector<double> vd, Cluster &cd, int row_idx);
@@ -77,6 +100,10 @@ class View {
 		    std::vector<int> data_global_row_indices,
 		    int global_col_idx,
 		    std::map<std::string, double> &hypers);
+  double insert_cols(const MatrixD data, 
+		     std::vector<int> global_row_indices,
+		     std::vector<int> global_col_indices,
+		     std::map<int, std::map<std::string, double> > &hypers_m);
   void remove_if_empty(Cluster& which_cluster);
   void remove_all();
   double transition_z(std::vector<double> vd, int row_idx);
@@ -107,25 +134,25 @@ class View {
   // double score_test_set(std::vector<std::vector<double> > test_set) const;
   //
   // hyper inference grids FIXME: MOVE TO PRIVATE WHEN DONE TESTING
+  std::map<int, int> global_to_local; // FIXME: specify appicability to columns
+ private:
+  // parameters
+  double crp_alpha;
+  double crp_score;
+  double data_score;
+  //  grids
   std::vector<double> crp_alpha_grid;
   std::vector<double> r_grid;
   std::vector<double> nu_grid;
   std::map<int, std::vector<double> > s_grids;
   std::map<int, std::vector<double> > mu_grids;
-  std::map<int, int> global_to_local; // FIXME: specify appicability to columns
- private:
-  // parameters
-  int n_grid;
-  double crp_alpha;
-  double crp_score;
-  double data_score;
   // sub-objects
   RandomNumberGenerator rng;
   // resources
   double draw_rand_u();
   int draw_rand_i(int max);
   // helpers
-  void construct_base_hyper_grids(std::vector<double> col_data);
+  void construct_base_hyper_grids(int num_rows);
   void construct_column_hyper_grid(std::vector<double> col_data,
 				   int gobal_col_idx);
   /* std::map<std::string, double> data_hypers; */

@@ -238,7 +238,7 @@ void insert_into_counts(unsigned int draw, vector<int> &counts) {
   }
 }
 
-vector<int> determine_crp_init_counts(int num_datum, double alpha,
+vector<int> draw_crp_init_counts(int num_datum, double alpha,
 				      RandomNumberGenerator &rng) {
   vector<int> counts;
   double rand_u;
@@ -253,11 +253,11 @@ vector<int> determine_crp_init_counts(int num_datum, double alpha,
   return counts;
 }
 
-vector<vector<int> > determine_crp_init(vector<int> global_row_indices,
+vector<vector<int> > draw_crp_init(vector<int> global_row_indices,
 					double alpha,
 					RandomNumberGenerator &rng) {
   int num_datum = global_row_indices.size();
-  vector<int> counts = determine_crp_init_counts(num_datum, alpha, rng);
+  vector<int> counts = draw_crp_init_counts(num_datum, alpha, rng);
   std::random_shuffle(global_row_indices.begin(), global_row_indices.end());
   vector<int>::iterator it = global_row_indices.begin();
   vector<vector<int> > cluster_indices_v;
@@ -306,11 +306,10 @@ vector<double> create_crp_alpha_grid(int n_values, int N_GRID) {
 }
 
 void construct_continuous_base_hyper_grids(int n_grid,
-					   vector<double> col_data,
+					   int data_num_vectors,
 					   vector<double> &r_grid,
 					   vector<double> &nu_grid) {
   int APPEND_N = (n_grid + 1) / 2;
-  int data_num_vectors = col_data.size();
   //
   vector<double> paramRange = linspace(0.03, .97, n_grid/2);
   vector<double> r_grid_append = log_linspace(1., data_num_vectors,

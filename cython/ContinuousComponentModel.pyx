@@ -1,11 +1,9 @@
 from libcpp.vector cimport vector
 from libcpp.string cimport string as cpp_string
-from libcpp.map cimport map
-from libcpp.pair cimport pair
+from libcpp.map cimport map as cpp_map
 from cython.operator import dereference
-from cython.operator import preincrement
 
-cdef map[cpp_string, double] string_double_map
+cdef cpp_map[cpp_string, double] string_double_map
 
 
 cdef extern from "string" namespace "std":
@@ -24,21 +22,32 @@ cpdef set_string_double_map(in_map):
 cdef extern from "ContinuousComponentModel.h":
      cdef cppclass ContinuousComponentModel:
         double score
+        cpp_string to_string()
+        double get_draw(int seed)
         double insert_element(double element)
         double remove_element(double element)
         double incorporate_hyper_update()
         double calc_marginal_logp()
         double calc_element_predictive_logp(double element)
-     ContinuousComponentModel *new_ContinuousComponentModel "new ContinuousComponentModel" (map[cpp_string, double] &in_hypers)
+     ContinuousComponentModel *new_ContinuousComponentModel "new ContinuousComponentModel" (cpp_map[cpp_string, double] &in_hypers)
+     ContinuousComponentModel *new_ContinuousComponentModel "new ContinuousComponentModel" (cpp_map[cpp_string, double] &in_hypers, int COUNT, double SUM_X, double SUM_X_SQ)
      void del_ContinuousComponentModel "delete" (ContinuousComponentModel *ccm)
 
 cdef class p_ContinuousComponentModel:
     cdef ContinuousComponentModel *thisptr
-    def __cinit__(self, in_map):
+    def __cinit__(self, in_map, count=None, sum_x=None, sum_x_sq=None):
           set_string_double_map(in_map)
-          self.thisptr = new_ContinuousComponentModel(string_double_map)
+          if count is None:
+              self.thisptr = new_ContinuousComponentModel(string_double_map)
+          else:
+              self.thisptr = new_ContinuousComponentModel(string_double_map,
+                                                          count, sum_x, sum_x_sq)
     def __dealloc__(self):
         del_ContinuousComponentModel(self.thisptr)
+    def get_draw(self, student_t_draw):
+        return self.thisptr.get_draw(student_t_draw)
+    def get_draw(self, seed):
+        return self.thisptr.get_draw(seed)
     def insert_element(self, element):
         return self.thisptr.insert_element(element)
     def remove_element(self, element):
@@ -50,4 +59,4 @@ cdef class p_ContinuousComponentModel:
     def calc_element_predictive_logp(self, element):
         return self.thisptr.calc_element_predictive_logp(element)
     def __repr__(self):
-        return "ContinuousComponentModel[%s]" % (self.thisptr.calc_marginal_logp())
+        return self.thisptr.to_string()

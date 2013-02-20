@@ -4,10 +4,13 @@
 #define _USE_CMATH_DEFINES
 #include <cmath>
 #include <iostream>
+#include <sstream>
 #include <map>
 #include <string>
 #include <vector>
 #include "utils.h"
+#include <boost/random/student_t_distribution.hpp>
+#include <boost/random/mersenne_twister.hpp>
 
 class ComponentModel {
  public:
@@ -32,6 +35,7 @@ class ComponentModel {
   friend std::ostream& operator<<(std::ostream& os, const ComponentModel &cm);
   // make protected later
   std::map<std::string, double> *p_hypers;
+  std::string to_string();
  protected:
   int count;
   std::map<std::string, double> suffstats;

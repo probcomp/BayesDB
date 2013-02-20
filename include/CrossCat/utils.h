@@ -107,7 +107,7 @@ std::vector<double> reorder_per_map(std::vector<double> raw_values,
 				    std::map<int, int> global_to_local);
 std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double> > raw_values, std::vector<int> global_column_indices, std::map<int, int> global_to_local);
 
-std::vector<std::vector<int> > determine_crp_init(std::vector<int> global_row_indices,
+std::vector<std::vector<int> > draw_crp_init(std::vector<int> global_row_indices,
 						  double alpha,
 						  RandomNumberGenerator &rng);
 
@@ -175,7 +175,7 @@ std::vector<int> define_group_ordering(const std::map<int, V> local_lookup, cons
 // semi numeric functions
 std::vector<double> create_crp_alpha_grid(int n_values, int N_GRID);
 void construct_continuous_base_hyper_grids(int n_grid,
-					   std::vector<double> col_data,
+					   int data_num_vectors,
 					   std::vector<double> &r_grid,
 					   std::vector<double> &nu_grid);
 void construct_continuous_specific_hyper_grid(int n_grid,
@@ -191,5 +191,15 @@ boost::numeric::ublas::matrix<T> vector_to_matrix(std::vector<T> vT) {
   }
   return matrix_out;
 }
-				 
+
+template <class T>
+int count_elements(std::vector<std::vector<T> > v_v_T) {
+  int num_elements = 0;
+  typename std::vector<std::vector<T> >::iterator it;
+  for(it=v_v_T.begin(); it!=v_v_T.end(); it++) {
+    num_elements +=(*it).size();
+  }
+  return num_elements;
+}
+
 #endif // GUARD_utils_H

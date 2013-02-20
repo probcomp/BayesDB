@@ -10,6 +10,15 @@ ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hyper
   set_log_Z_0();
 }
 
+ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hypers, int COUNT, double SUM_X, double SUM_X_SQ) {
+  count = COUNT;
+  suffstats["sum_x"] = SUM_X;
+  suffstats["sum_x_sq"] = SUM_X_SQ;
+  p_hypers = &in_hypers;
+  set_log_Z_0();
+  score = calc_marginal_logp();
+}
+
 double ContinuousComponentModel::calc_marginal_logp() const {
   double r, nu, s, mu;
   int count;
@@ -106,6 +115,23 @@ void ContinuousComponentModel::get_suffstats(int &count_out, double &sum_x,
   count_out = count;
   sum_x = get(suffstats, (string) "sum_x");
   sum_x_sq = get(suffstats, (string) "sum_x_sq");
+}
+
+double ContinuousComponentModel::get_draw(int random_seed) const {
+  // get modified suffstats
+  double r, nu, s, mu;
+  int count;
+  double sum_x, sum_x_sq;
+  get_hyper_doubles(r, nu, s, mu);
+  get_suffstats(count, sum_x, sum_x_sq);
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+  //
+  boost::mt19937  _engine(random_seed);
+  boost::uniform_01<boost::mt19937> _dist(_engine);
+  boost::random::student_t_distribution<double> student_t(nu);
+  double student_t_draw = student_t(_dist);
+  double draw = student_t_draw * (s * (r+1)) / (nu * r) + mu;
+  return draw;
 }
 
 map<string, double> ContinuousComponentModel::get_suffstats() const {

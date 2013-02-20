@@ -24,6 +24,16 @@ class State {
   State(const MatrixD &data,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
+	std::map<int, std::map<std::string, double> > HYPERS_M,
+	std::vector<std::vector<int> > column_partition,
+	double COLUMN_CRP_ALPHA,
+	std::vector<std::vector<std::vector<int> > > row_partition_v,
+	std::vector<double> row_crp_alpha_v,
+	//std::vector<std::string> global_col_datatypes,
+	int N_GRID=31, int SEED=0);
+  State(const MatrixD &data,
+	std::vector<int> global_row_indices,
+	std::vector<int> global_col_indices,
 	//std::vector<std::string> global_col_datatypes,
 	int N_GRID=31, int SEED=0);
   ~State();
@@ -87,7 +97,13 @@ class State {
   double column_crp_alpha;
   double column_crp_score;
   double data_score;
+  // grids
   std::vector<double> column_crp_alpha_grid;
+  std::vector<double> row_crp_alpha_grid;
+  std::vector<double> r_grid;
+  std::vector<double> nu_grid;
+  std::map<int, std::vector<double> > s_grids;
+  std::map<int, std::vector<double> > mu_grids;
   // lookups
   std::set<View*> views;
   std::map<int, View*> view_lookup;  // global_column_index to View mapping
@@ -97,11 +113,21 @@ class State {
   double draw_rand_u();
   int draw_rand_i(int max=MAX_INT);
   // helpers
-  void construct_hyper_grids(boost::numeric::ublas::matrix<double> data,
-			     int N_GRID);
+  void construct_base_hyper_grids(int num_rows, int num_cols, int N_GRID);
+  void construct_column_hyper_grids(boost::numeric::ublas::matrix<double> data,
+				    std::vector<int> global_col_indices);
   std::map<std::string, double> get_default_hypers() const;
-  void init_hypers(std::vector<int> global_col_indices);
-  void init_views(const MatrixD &data, std::vector<int> global_row_indices,
+  void init_base_hypers();
+  std::map<std::string, double> uniform_sample_hypers(int global_col_idx);
+  void init_column_hypers(std::vector<int> global_col_indices);
+  void init_views(const MatrixD &data,
+		  std::vector<int> global_row_indices,
+		  std::vector<int> global_col_indices,
+		  std::vector<std::vector<int> > column_partition,
+		  std::vector<std::vector<std::vector<int> > > row_partition_v,
+		  std::vector<double> row_crp_alpha_v);
+  void init_views(const MatrixD &data,
+		  std::vector<int> global_row_indices,
 		  std::vector<int> global_col_indices);
 };
 

@@ -9,31 +9,81 @@ using namespace std;
 
 typedef set<Cluster*> setCp;
 
+// row partitioning, row_crp_alpha fully specified
+View::View(const MatrixD data,
+	   vector<vector<int> > row_partitioning,
+	   vector<int> global_row_indices,
+	   vector<int> global_col_indices,
+	   map<int, map<string, double> > &hypers_m,
+	   vector<double> ROW_CRP_ALPHA_GRID,
+	   vector<double> R_GRID,
+	   vector<double> NU_GRID,
+	   map<int, vector<double> > S_GRIDS,
+	   map<int, vector<double> > MU_GRIDS,
+	   double CRP_ALPHA,
+	   int SEED) : crp_alpha(CRP_ALPHA), rng(SEED) {
+  crp_score = 0;
+  data_score = 0;
+  //
+  crp_alpha_grid = ROW_CRP_ALPHA_GRID;
+  r_grid = R_GRID;
+  nu_grid = NU_GRID;
+  s_grids = S_GRIDS;
+  mu_grids = MU_GRIDS;  
+  //
+  set_row_partitioning(row_partitioning);
+  insert_cols(data, global_row_indices, global_col_indices, hypers_m);
+}
+
+// row partitioning unspecified, sample from crp
 View::View(const MatrixD data,
 	   vector<int> global_row_indices,
 	   vector<int> global_col_indices,
 	   map<int, map<string, double> > &hypers_m,
-	   int SEED, int N_GRID) : n_grid(N_GRID), rng(SEED) {
-  assert(global_row_indices.size()==data.size1());
-  assert(global_col_indices.size()==data.size2());
-  //
-  crp_alpha = 0.8;
+	   vector<double> ROW_CRP_ALPHA_GRID,
+	   vector<double> R_GRID,
+	   vector<double> NU_GRID,
+	   map<int, vector<double> > S_GRIDS,
+	   map<int, vector<double> > MU_GRIDS,
+	   int SEED) : rng(SEED) {
   crp_score = 0;
   data_score = 0;
   //
-  for(unsigned int data_col_idx=0; data_col_idx<data.size2(); data_col_idx++) {
-    vector<double> col_data = extract_col(data, data_col_idx);
-    int global_col_idx = global_col_indices[data_col_idx];
-    map<string, double> &hypers = hypers_m[global_col_idx];
-    insert_col(col_data, global_row_indices, global_col_idx, hypers);
-  }
+  crp_alpha_grid = ROW_CRP_ALPHA_GRID;
+  r_grid = R_GRID;
+  nu_grid = NU_GRID;
+  s_grids = S_GRIDS;
+  mu_grids = MU_GRIDS;  
+  //
+  // sample alpha
+  crp_alpha = crp_alpha_grid[draw_rand_i(crp_alpha_grid.size())];
+  // sample partitioning
+  set_row_partitioning(global_row_indices);
+  // insert data
+  insert_cols(data, global_row_indices, global_col_indices, hypers_m);
 }
 
-View::View(int SEED) : rng(SEED) {
-  n_grid = 31;
-  crp_alpha = 0.8;
+// empty View: for gibbs sampling a new partitioning of columns
+View::View(std::vector<int> global_row_indices,
+	   std::vector<double> ROW_CRP_ALPHA_GRID,
+	   std::vector<double> R_GRID,
+	   std::vector<double> NU_GRID,
+	   std::map<int, std::vector<double> > S_GRIDS,
+	   std::map<int, std::vector<double> > MU_GRIDS,
+	   int SEED) : rng(SEED) {
   crp_score = 0;
   data_score = 0;
+  //
+  crp_alpha_grid = ROW_CRP_ALPHA_GRID;
+  r_grid = R_GRID;
+  nu_grid = NU_GRID;
+  s_grids = S_GRIDS;
+  mu_grids = MU_GRIDS;  
+  //
+  // sample alpha
+  crp_alpha = crp_alpha_grid[draw_rand_i(crp_alpha_grid.size())];
+  // sample partitioning
+  set_row_partitioning(global_row_indices);
 }
 
 double View::get_num_vectors() const {
@@ -364,29 +414,33 @@ double View::remove_row(vector<double> vd, int row_idx) {
   return score_delta;
 }
 
+void View::set_row_partitioning(vector<vector<int> > row_partitioning) {
+  int num_clusters = row_partitioning.size();
+  vector<double> blank_row;
+  for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
+    vector<int> global_row_indices = row_partitioning[cluster_idx];
+    vector<int>::iterator it;
+    // create new cluster
+    Cluster &new_cluster = get_new_cluster();
+    for(it=global_row_indices.begin(); it!=global_row_indices.end(); it++) {
+      int global_row_index = *it;
+      insert_row(blank_row, new_cluster, global_row_index);
+    }
+  }
+}
+
+void View::set_row_partitioning(vector<int> global_row_indices) {
+  vector<vector<int> > crp_init = draw_crp_init(global_row_indices, crp_alpha,
+						rng);
+  set_row_partitioning(crp_init);
+}
+
 double View::insert_col(vector<double> col_data,
 			vector<int> data_global_row_indices,
 			int global_col_idx,
 			map<string, double> &hypers) {
   double score_delta = 0;
-  construct_column_hyper_grid(col_data, global_col_idx);
-  if(get_num_clusters()==0) {
-    construct_base_hyper_grids(col_data);
-    vector<vector<int> > crp_init = determine_crp_init(data_global_row_indices,
-						       crp_alpha, rng);
-    int num_clusters = crp_init.size();
-    vector<double> blank_row;
-    for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
-      vector<int> global_row_indices = crp_init[cluster_idx];
-      vector<int>::iterator it;
-      // create new cluster
-      Cluster &new_cluster = get_new_cluster();
-      for(it=global_row_indices.begin(); it!=global_row_indices.end(); it++) {
-	int global_row_index = *it;
-	insert_row(blank_row, new_cluster, global_row_index);
-      }
-    }
-  }
+  //
   hypers_v.push_back(&hypers);
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
@@ -396,6 +450,19 @@ double View::insert_col(vector<double> col_data,
   global_to_local[global_col_idx] = num_cols;
   data_score += score_delta;
   return score_delta;
+}
+
+double View::insert_cols(const MatrixD data,
+		   std::vector<int> global_row_indices,
+		   std::vector<int> global_col_indices,
+		   map<int, map<string, double> > &hypers_m) {
+  int num_cols = global_col_indices.size();
+  for(int data_col_idx=0; data_col_idx<num_cols; data_col_idx++) {
+    vector<double> col_data = extract_col(data, data_col_idx);
+    int global_col_idx = global_col_indices[data_col_idx];
+    map<string, double> &hypers = hypers_m[global_col_idx];
+    insert_col(col_data, global_row_indices, global_col_idx, hypers);
+  }
 }
  
 double View::remove_col(int global_col_idx) {
@@ -550,16 +617,4 @@ double View::draw_rand_u() {
 
 int View::draw_rand_i(int max) {
   return rng.nexti(max);
-}
-
-void View::construct_base_hyper_grids(vector<double> col_data) {
-  crp_alpha_grid = create_crp_alpha_grid(col_data.size(), n_grid);
-  construct_continuous_base_hyper_grids(n_grid, col_data, r_grid, nu_grid);
-}
-
-void View::construct_column_hyper_grid(vector<double> col_data,
-				       int global_col_idx) {
-  construct_continuous_specific_hyper_grid(n_grid, col_data,
-					   s_grids[global_col_idx],
-					   mu_grids[global_col_idx]);
 }
