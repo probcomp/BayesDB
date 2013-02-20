@@ -20,14 +20,16 @@ class tabular_predDBSetup(ClusterSetup):
           clone_tuple = (S.git.repo, S.path.remote_code_dir)
           checkout_tuple = (S.path.remote_code_dir, S.git.branch)
           local_ssh_key = os.path.expanduser('~/.ssh/id_rsa')
-          remote_ssh_key = os.path.join(S.path.remote_home_dir, '.ssh')
+          remote_ssh_key_dir = os.path.join(S.path.remote_home_dir, '.ssh')
           #
           for node in nodes:
                log.info("Copying up boto file on %s" % node.alias)
                node.ssh.put(S.s3.ec2_credentials_file, S.path.remote_home_dir)
                node.ssh.execute('chmod -R ugo+rwx %s' % boto_full_file)
-               node.ssh.put(local_ssh_key, remote_ssh_key)
+               node.ssh.put(local_ssh_key, remote_ssh_key_dir)
+               node.ssh.put(local_ssh_key + '.pub', remote_ssh_key_dir)
                node.ssh.put(local_ssh_key, '/root/.ssh/')
+               node.ssh.put(local_ssh_key + '.pub', '/root/.ssh/')
           for node in nodes:
                log.info("Installing tabular_predDB (part 1) on %s" % node.alias)
                #
