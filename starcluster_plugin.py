@@ -34,6 +34,7 @@ class tabular_predDBSetup(ClusterSetup):
                log.info("Installing tabular_predDB (part 1) on %s" % node.alias)
                #
                node.ssh.execute('rm -rf %s' % clone_tuple[-1])
+               node.ssh.execute('ssh -o StrictHostKeyChecking=no git@github.com')
                node.ssh.execute('git clone %s %s' % clone_tuple)
                node.ssh.execute('cd %s && git checkout %s' % checkout_tuple)
                node.ssh.execute('chmod -R ugo+rwx %s' % clone_tuple[-1])
@@ -50,5 +51,6 @@ class tabular_predDBSetup(ClusterSetup):
                node.ssh.execute(command_str)
                #
                script_full = os.path.join(S.path.remote_code_dir, S.path.virtualenv_setup_script)
-               command_str = 'bash -i %s >out1 2>err1' % script_full
-               run_as_user(node, user, command_str)
+               command_str = '%s %s >out1 2>err1' % (script_full, 'sgeadmin')
+               # run_as_user(node, user, command_str)
+               node.ssh.execute(command_str)
