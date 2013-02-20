@@ -55,25 +55,40 @@ switch experiment
         
         for i = 2:state.F
             for j = 1:(i - 1)
-                fprintf(1, '#####%i, %i,%f#####\n', [i, j, h{i}(j)/n_pred_samples]);
+                fprintf(1, '#####%i,%i,%f#####\n', [i, j, h{i}(j)/n_pred_samples]);
             end
         end
         
     case 'regression'
         
-        h_xz = 0;
-        h_yz = 0;
+        pi_x_y = 0;      
+        mi_x = 0;
+        mi_y = 0;
+        mi_xy = 0;
         
         for j = 1:n_pred_samples
             
             s = simple_predictive_sample_newRow(state, [], 1:state.F);
             
-            h_xz = h_xz + mutual_info(s, state, 1, 3, 2);
-            h_yz = h_yz + mutual_info(s, state, 2, 3, 1);
+            pi_x_y = partial_info(s, state, 3, 1, 2, n_pred_samples);
+            mi_x = m_x + mutual_info(s, state, 1, 3, []);
+            mi_y = m_y + mutual_info(s, state, 2, 3, []);
+            mi_xy = mi_xy + mutual_info(s, state, [1,2], 3, []);
         end
         
-        fprintf(1, 'I(Z,X|Y): #####%f#####\n', h_xz/n_pred_samples);
-        fprintf(1, 'I(Z,Y|X): #####%f#####\n', h_yz/n_pred_samples);
+        pi_x_y = pi_x_y/n_pred_samples;
+        mi_x = mi_x/n_pred_samples;
+        mi_y = mi_y/n_pred_samples;
+        mi_xy = mi_xy/n_pred_samples;
+        
+        pi_x = mi_x - pi_x_y;
+        pi_y = mi_y - pi_x_y;
+        pi_xy = mi_xy - pi_x - pi_y - pi_x_y;
+        
+        fprintf(1, 'Pi({X}): #####%f#####\n', pi_x);
+        fprintf(1, 'Pi({Y}): #####%f#####\n', pi_y);
+        fprintf(1, 'Pi({X}{Y}): #####%f#####\n', pi_x_y);
+        fprintf(1, 'Pi({X,Y}): #####%f#####\n', pi_xy);
         
 end
 
