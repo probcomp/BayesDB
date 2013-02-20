@@ -1,16 +1,9 @@
+WORKON_HOME=${HOME}/.virtualenvs
 project_name=tabular_predDB
-WORKON_HOME=$HOME/.virtualenvs
 wrapper_script=/usr/local/bin/virtualenvwrapper.sh
 
-# ensure virtualenv
-which_virtualenv=$(which virtualenv)
-if [ -z $which_virtualenv ]; then
-    sudo pip install virtualenv
-fi
-
-# ensure virtualenvwrapper
-if [ ! -f $wrapper_script ]; then
-    sudo pip install virtualenvwrapper
+# ensure virtualenvwrapper is loaded
+if [ -z $(grep WORKON_HOME ~/.bashrc) ]; then
     cat -- >> ~/.bashrc <<EOF
 export WORKON_HOME=$WORKON_HOME
 source $wrapper_script
