@@ -71,8 +71,8 @@ switch experiment
             s = simple_predictive_sample_newRow(state, [], 1:state.F);
             
             pi_x_y = partial_info(s, state, 3, 1, 2, n_pred_samples);
-            mi_x = m_x + mutual_info(s, state, 1, 3, []);
-            mi_y = m_y + mutual_info(s, state, 2, 3, []);
+            mi_x = mi_x + mutual_info(s, state, 1, 3, []);
+            mi_y = mi_y + mutual_info(s, state, 2, 3, []);
             mi_xy = mi_xy + mutual_info(s, state, [1,2], 3, []);
         end
         
