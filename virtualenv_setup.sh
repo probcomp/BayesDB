@@ -1,20 +1,26 @@
-WORKON_HOME=${HOME}/.virtualenvs
+USER=$1
+USER_HOME=/home/${USER}/
+WORKON_HOME=${USER_HOME}/.virtualenvs
 # FIXME: should take project_name as an argument passed from settings.py somehow
 project_name=tabular_predDB
 wrapper_script=/usr/local/bin/virtualenvwrapper.sh
 
 # ensure virtualenvwrapper is loaded
-if [ -z $(grep WORKON_HOME ~/.bashrc) ]; then
-    cat -- >> ~/.bashrc <<EOF
+if [[ -z $(grep WORKON_HOME ${USER_HOME}/.bashrc) ]]; then
+    cat -- >> ${USER_HOME}/.bashrc <<EOF
 export WORKON_HOME=$WORKON_HOME
 source $wrapper_script
 EOF
-    source ~/.bashrc
+    cat -- >> /root/.bashrc <<EOF
+export WORKON_HOME=$WORKON_HOME
+source $wrapper_script
+EOF
+    source /root/.bashrc
 fi
 
 # ensure requirements in virtualenv $project_name
 has_project=$(workon | grep $project_name)
-if [ -z $has_project ] ; then
+if [[ -z $has_project ]] ; then
     # BEWARE: readlink doesn't work on macs
     my_abs_path=$(readlink -f "$0")
     project_location=$(dirname $my_abs_path)
@@ -25,3 +31,5 @@ if [ -z $has_project ] ; then
     workon $project_name
     pip install -r requirements.txt
 fi
+
+chown -R $USER $WORKON_HOME
