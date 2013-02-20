@@ -86,9 +86,23 @@ def result(jids):
         results = get_result(jids)
     return results
 
+def status(jids):
+    if isinstance(jids, collections.Iterable):
+        statuses = []
+        for jid in jids:
+            statuses += [get_status(jid)]
+    else:
+        statuses = get_status(jids)
+    return statuses
+
+
 ########################
 ### helper functions ###
 ########################
+
+### TODO
+def get_status(jid):
+    return 'done'
 
 def get_result(jid):
     out_file = out_dir + jid + '/stdout.txt'
@@ -103,8 +117,8 @@ def write_description(job_dir, job_id):
     desc_f.write('Universe = vanilla\n')
     desc_f.write('Notification = Error\n')
     desc_f.write('Executable = ' + job_dir + 'job.py\n')
-    desc_f.write('Log = /tmp/job.' + job_id + '.' 
-                 + os.environ['USER'] + '.log\n')
+    desc_f.write('Log = /tmp/job.' + os.environ['USER'] + '.' +
+                 job_id + '.log\n')
     desc_f.write('Error = ' + job_dir + 'stderr.txt\n')
     desc_f.write('Output = ' + job_dir + 'stdout.txt\n')
     desc_f.close()
