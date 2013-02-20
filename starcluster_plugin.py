@@ -6,6 +6,8 @@ from starcluster.logger import log
 #
 import tabular_predDB.settings as S
 
+run_as_user = lambda user, command_str: \
+    node.ssh.execute('sudo -u %s %s' % user, command_str)
 
 class tabular_predDBSetup(ClusterSetup):
      def __init__(self):
@@ -34,9 +36,9 @@ class tabular_predDBSetup(ClusterSetup):
                log.info("Installing tabular_predDB (part 2) on %s" % node.alias)
                node.ssh.execute('apt-get install -y libfreetype6-dev')
                node.ssh.execute('apt-get install -y libpng12-dev')
-               node.ssh.execute('cd %s && bash -i %s' %
-                                (S.path.remote_code_dir,
-                                 S.path.install_boost_script))
-               node.ssh.execute('cd %s && bash -i %s' %
-                                (S.path.remote_code_dir,
-                                 S.path.virtualenv_setup_script))
+               node.ssh.execute('pip install virtualenv')
+               node.ssh.execute('pip install virtualenvwrapper')
+               command_str = 'cd %s && bash -i %s' % (S.path.remote_code_dir, S.path.virtualenv_setup_script)
+               run_as_user(user, command_str)
+               command_str = 'cd %s && bash -i %s' % (S.path.remote_code_dir, S.path.install_boost_script)
+               node.ssh.execute(command_str)
