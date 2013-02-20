@@ -1,4 +1,4 @@
-import cloud
+import condor
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -21,7 +21,7 @@ n_mcmc_iter = '500'
 
 def run_matlab(file_base, experiment):
 
-    mcr_loc = 'matlab/mcr/v717/'
+    mcr_loc = 'matlab/mcr/v80/'
     
     command = 'sh ./run_run_crosscat.sh '
     command += mcr_loc + ' '
@@ -37,8 +37,8 @@ def run_matlab(file_base, experiment):
 
 def parse_out(experiment, job_id):
     print 'processing job ' + str(job_id)
-    if cloud.status(job_id) == 'done':
-        out = cloud.result(job_id)
+    if condor.status(job_id) == 'done':
+        out = condor.result(job_id)
         out = out.split('#####')
         if experiment == 'regression':
             values = [0]*2
@@ -63,7 +63,7 @@ def get_job_ids(file_base):
     return job_ids
 
 def run(file_base, experiment):
-    job_id = cloud.call(run_matlab, 
+    job_id = condor.call(run_matlab, 
                     file_base, 
                     experiment, 
                     random.randint(0, 2**32 - 1),
