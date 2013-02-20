@@ -18,7 +18,9 @@ class gdocs():
     gdocs_folder_default = "MH"
 
 class git():
-    repo_prefix = 'https://github.com/'
+    # repo_prefix = 'https://github.com/'
+    # repo_prefix = 'git://github.com/'
+    repo_prefix = 'git@github.com:'
     repo_suffix = 'mit-probabilistic-computing-project/tabular-predDB.git'
-    repo = os.path.join(repo_prefix, repo_suffix)
+    repo = repo_prefix + repo_suffix
     branch = 'multinomial-integration'
