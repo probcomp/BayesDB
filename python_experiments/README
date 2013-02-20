@@ -1,3 +1,37 @@
+
+
+Help file from cluster:
+-----------------------------------------------------------------------
+GENERAL INFORMATION:
+The cluster is flocked with the CSAIL cluster, which runs Condor.
+Read the intro section of the Condor user manual and browse around the
+Condor website (http://www.cs.wisc.edu/condor) to get a sense of what
+the deal is.
+Steps:
+1. Login
+2. Find this file (/data/cocosci/README).
+3. add "matlab" and "condor" to your ~/.software file, each on a line
+of their own.
+4. Logout, login and continue.
+-----------------------------------------------------------------------
+RULES OF USE - 5/2007
+- The cluster is an experimental service. Do not be cranky if your
+job gets killed.
+- Join the cluster-hackers mailinglist at CSAIL, and read the traffic.
+- Don't submit jobs to non-cocosci machines unless you have learned the
+basics of condor.
+- Don't run jobs on cocosci nodes directly (that is, by sshing
+in). Doing so makes baby jesus cry. And when baby jesus cries, Godzilla
+gets angry.
+- Do not run more than 4 jobs simultaneously if any of your running jobs
+is long (ie will take more than 24 hours to complete).
+- Make all your jobs save their work to /data/scratch, but copy results
+to your CSAIL home directory or to /data/cocosci when you are done.
+Otherwise you might lose your results and be very sad.
+
+
+MATLAB crosscat state:
+
              data: [100x2 double]           # observations x features
         dataTypes: {2x1 cell}               # either 'numeric' or 'binary'
                 F: 2                        # number of features
@@ -28,8 +62,13 @@ Compiling MATLAB Code on Picloud through CSAIL:
 - create a new picloud environment (or use mine) for matlab
 -- follow the picloud instructions for creating an environment
 -- download the most recent MCR
+--- e.g., from http://www.mathworks.com/products/compiler/mcr/
 -- scp zipped MCR to picloud environment
 -- install using silent mode
+--- $ unzip MCRInstaller.zip
+--- $ chmod 755 installer_input.txt
+--- $ emacs installer_input.txt # change agree to license to yes, change destination file if necessary
+--- $ ./install -mode silent -inputFile installer_input.txt
 - copy compiled code to picloud
 -- open the environment in your browser (this takes a while!)
 -- follow the direction after pressing "connect"
@@ -39,3 +78,4 @@ Compiling MATLAB Code on Picloud through CSAIL:
 >>> def test():
 ...     return os.popen('sh ./run_test.sh matlab/mcr/v717/ 1').read()
 >>> cloud.call(test, _env='matlab') 
+
