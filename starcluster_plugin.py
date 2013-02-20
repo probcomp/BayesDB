@@ -51,6 +51,6 @@ class tabular_predDBSetup(ClusterSetup):
                node.ssh.execute(command_str)
                #
                script_full = os.path.join(S.path.remote_code_dir, S.path.virtualenv_setup_script)
-               command_str = '%s %s >out1 2>err1' % (script_full, 'sgeadmin')
+               command_str = 'bash -i %s %s >out1 2>err1' % (script_full, 'sgeadmin')
                # run_as_user(node, user, command_str)
                node.ssh.execute(command_str)
