@@ -11,12 +11,9 @@ if [[ -z $(grep WORKON_HOME ${USER_HOME}/.bashrc) ]]; then
 export WORKON_HOME=$WORKON_HOME
 source $wrapper_script
 EOF
-    cat -- >> /root/.bashrc <<EOF
-export WORKON_HOME=$WORKON_HOME
-source $wrapper_script
-EOF
-    source /root/.bashrc
 fi
+
+source ${USER_HOME}/.bashrc
 
 # ensure requirements in virtualenv $project_name
 has_project=$(workon | grep $project_name)
