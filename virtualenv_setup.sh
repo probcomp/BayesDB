@@ -4,7 +4,7 @@ project_name=tabular_predDB
 wrapper_script=/usr/local/bin/virtualenvwrapper.sh
 
 # ensure virtualenvwrapper is loaded
-if [[ -z $(grep WORKON_HOME ~/.bashrc) ]]; then
+if [ -z $(grep WORKON_HOME ~/.bashrc) ]; then
     cat -- >> ~/.bashrc <<EOF
 export WORKON_HOME=$WORKON_HOME
 source $wrapper_script
@@ -14,7 +14,7 @@ fi
 
 # ensure requirements in virtualenv $project_name
 has_project=$(workon | grep $project_name)
-if [[ -z $has_project ]] ; then
+if [ -z $has_project ] ; then
     # BEWARE: readlink doesn't work on macs
     my_abs_path=$(readlink -f "$0")
     project_location=$(dirname $my_abs_path)
