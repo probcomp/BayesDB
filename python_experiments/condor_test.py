@@ -7,9 +7,9 @@ condor.DEBUG = True
 def f():
      return 1
 def g():
-     print f()
+     return f()
 def h(x, y):
-    print x + y
+    return x + y
 
 ### test write job ###
 

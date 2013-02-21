@@ -157,9 +157,7 @@ def write_func(job_f, job_dir, func, args):
     job_f.write('args = pickle.load(arg_f)\n')
     job_f.write('arg_f.close()\n')
 
-    job_f.write('def _wrapper(args):\n')
-    job_f.write('    return ' + func.__name__ + '(*args)\n\n')
-    job_f.write('_wrapper(args)')
+    job_f.write('print ' + func.__name__ + '(*args)')
             
 def write_dependencies(job_f, job_dir):
 
