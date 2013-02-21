@@ -41,6 +41,7 @@ import types
 import os
 import sys
 import stat
+import inspect
 
 out_dir = os.getcwd() + '/jobs/'
 if not os.path.exists(out_dir): 
@@ -182,20 +183,7 @@ def write_dependencies(job_f, job_dir):
                 job_f.write(name + ' = \'' + val + '\'\n')
 
         if isinstance(val, types.FunctionType):
-            
-            f_name = job_dir + 'func_' + str(func_num)
-            func_num += 1
-
-            src = marshal.dumps(val.func_code)
-            
-            func_f = open(f_name, 'w')
-            func_f.write(src)
-            func_f.close()
-            
-            job_f.write('func_f = open(\'' + f_name + '\')\n')
-            job_f.write('src = marshal.load(func_f)\n')
-            job_f.write('func_f.close()\n')
-            job_f.write(name + ' = types.FunctionType(src, globals(),\'' + name + '\')\n')
+            job_f.write(inspect.getsource(val))
     
 class CondorPythonError(Exception):
     def __init__(self, value):
