@@ -34,9 +34,8 @@ that do not begin with "__" are supported. (though floats may not
 work properly.
 """
 
-
+import collections
 import pickle
-import marshal
 import types
 import os
 import sys
@@ -110,9 +109,9 @@ def get_status(jid):
     return 'done'
 
 def get_result(jid):
-    out_file = out_dir + jid + '/stdout.txt'
+    out_file = out_dir + str(jid) + '/stdout.txt'
     f = open(out_file)
-    result = f.readlines()
+    result = f.read()
     f.close()
     return result
 
@@ -135,7 +134,7 @@ def write_job(job_dir, func, args):
     job_f = open(name, 'w')
 
     job_f.write('#! /usr/bin/env python\n')
-    job_f.write('import os, sys, marshal, types, pickle\n')
+    job_f.write('import os, sys, types, pickle\n')
     job_f.write('os.chdir(\'' + os.getcwd() + '\')\n') 
     job_f.write('sys.path.append(\'' + os.getcwd() + '\')\n')
 
