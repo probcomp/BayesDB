@@ -278,10 +278,12 @@ def run_anova(file_base, n = 100, n_outliers = 0,
     f.close()
 
 if __name__ == "__main__":
-    for i in range(data_reps):
-        run_ring('ring-i-' + str(i))
 
-    if False:
+    run_anova('simple-anova-i-0')
+
+    if False:    
+    #for i in range(data_reps):
+        run_ring('ring-i-' + str(i))
         run_correlation('correlation-i-' + str(i))
         run_outliers('outliers-i-' + str(i))
         run_outliers_correlated('outliers-correlated-i-' + str(i))
