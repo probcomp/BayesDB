@@ -82,6 +82,8 @@ Compiling MATLAB Code on Picloud through CSAIL:
 --- $ chmod 755 installer_input.txt
 --- $ emacs installer_input.txt # change agree to license to yes, change destination file if necessary, e.g. /data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr
 --- $ ./install -mode silent -inputFile installer_input.txt
+--- make sure you follow any instructions at the end of the installation, such as setting environment variables in .bashrc!
+--- if things get really obnoxious, you may have to follow these directions: http://www.mathworks.ca/matlabcentral/newsreader/view_thread/162466
 - copy compiled code to picloud
 -- open the environment in your browser (this takes a while!)
 -- follow the direction after pressing "connect"
