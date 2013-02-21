@@ -4,33 +4,32 @@ import math
 import matplotlib.pyplot as plt
 import random
 
-parse = True
+parse = False
 
 if parse:
-    in_folder = '../../picloud/'
+    in_folder = '../../condor/'
     out_folder = '../../crosscat-results/'
 else:
-    in_folder = './data/'
-    out_folder = '../../picloud/'
+    in_folder = '../../data/'
+    out_folder = '../../condor/'
 
-data_reps = 3
-hist_reps = 10
-n_chains = '5'
-n_pred_samples = '200'
-n_mcmc_iter = '500'
+data_reps = 1
+hist_reps = 1
+n_pred_samples = '2'
+n_mcmc_iter = '3'
 
 def run_matlab(file_base, experiment):
 
-    mcr_loc = 'matlab/mcr/v80/'
+    mcr_loc = 'matlab/mcr/v717/'
     
     command = 'sh ./run_run_crosscat.sh '
     command += mcr_loc + ' '
     command += in_folder + ' '
     command += file_base + ' '
     command += experiment + ' '
-    command += n_chains + ' '
     command += n_pred_samples + ' '
-    command += n_mcmc_iter
+    command += n_mcmc_iter + ' '
+    command += str(random.randint(0, 2**32 - 1))
     out = os.popen(command).read()
     
     return out
@@ -65,8 +64,7 @@ def get_job_ids(file_base):
 def run(file_base, experiment):
     job_id = condor.call(run_matlab, 
                     file_base, 
-                    experiment, 
-                    random.randint(0, 2**32 - 1),
+                    experiment,
                     _type='c2',
                     _env='matlab')
     return job_id
@@ -282,6 +280,8 @@ def run_anova(file_base, n = 100, n_outliers = 0,
 if __name__ == "__main__":
     for i in range(data_reps):
         run_ring('ring-i-' + str(i))
+
+    if False:
         run_correlation('correlation-i-' + str(i))
         run_outliers('outliers-i-' + str(i))
         run_outliers_correlated('outliers-correlated-i-' + str(i))

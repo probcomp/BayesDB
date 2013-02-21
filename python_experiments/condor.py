@@ -27,7 +27,11 @@ http://www.gnu.org/licenses/lgpl-2.1.html
 This package might do a few odd things. It assumes you are running it
 from the Condor cluster. It assumes the local packages you need are in
 your current working directory. It creates a directory to keep track
-of the jobs it creates.
+of the jobs it creates. Also, certain variables that exist in the
+calling script will not be copied to the cluster. For example, lists
+are not currently supported. Booleans, integers, float, and strings
+that do not begin with "__" are supported. (though floats may not
+work properly.
 """
 
 
@@ -113,7 +117,7 @@ def get_result(jid):
 
 def write_description(job_dir, job_id):
     desc_f = open(job_dir + 'description', 'w')
-    desc_f.write('GetEnv = True')
+    desc_f.write('GetEnv = True\n')
     desc_f.write('Universe = vanilla\n')
     desc_f.write('Notification = Error\n')
     desc_f.write('Executable = ' + job_dir + 'job.py\n')
@@ -121,6 +125,7 @@ def write_description(job_dir, job_id):
                  job_id + '.log\n')
     desc_f.write('Error = ' + job_dir + 'stderr.txt\n')
     desc_f.write('Output = ' + job_dir + 'stdout.txt\n')
+    desc_f.write('queue 1\n')
     desc_f.close()
 
 def write_job(job_dir, func, args):
@@ -152,7 +157,7 @@ def write_func(job_f, job_dir, func, args):
     job_f.write('arg_f.close()\n')
 
     job_f.write('def _wrapper(args):\n')
-    job_f.write('    return ' + func.__name__ + '(*args)\n')
+    job_f.write('    return ' + func.__name__ + '(*args)\n\n')
     job_f.write('_wrapper(args)')
             
 def write_dependencies(job_f, job_dir):
@@ -166,6 +171,15 @@ def write_dependencies(job_f, job_dir):
 
         if isinstance(val, types.ModuleType):
             job_f.write('import ' + val.__name__ + ' as ' + name + '\n')
+
+        VarTypes = (types.BooleanType, types.IntType,
+                    types.FloatType)
+        if isinstance(val, VarTypes):
+            job_f.write(name + ' = ' + str(val) + '\n')
+
+        if isinstance(val, types.StringType):
+            if not val[0:2] == '__':
+                job_f.write(name + ' = \'' + val + '\'\n')
 
         if isinstance(val, types.FunctionType):
             
