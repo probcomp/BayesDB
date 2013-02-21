@@ -14,9 +14,9 @@ else:
     out_folder = '../../condor/'
 
 data_reps = 1
-hist_reps = 1
-n_pred_samples = '2'
-n_mcmc_iter = '3'
+hist_reps = 10
+n_pred_samples = '250'
+n_mcmc_iter = '500'
 
 def run_matlab(file_base, experiment):
 
@@ -40,9 +40,11 @@ def parse_out(experiment, job_id):
         out = condor.result(job_id)
         out = out.split('#####')
         if experiment == 'regression':
-            values = [0]*2
+            values = [0]*4
             values[0] = out[1]
             values[1] = out[3]
+            values[2] = out[5]
+            values[3] = out[7]
         if experiment == 'correlation':
             values = [0]*(len(out)/2)
             for i in range(len(values)):
@@ -214,8 +216,8 @@ def run_correlated_pairs(file_base):
                     job_id = int(job_ids[m])
                     m += 1
                     h = parse_out('correlation', job_id)
-                    for m in range(len(h)):
-                        f.write(','.join(map(str, [n,corr,k])) + ',' + h[m] + '\n')
+                    for l in range(len(h)):
+                        f.write(','.join(map(str, [n,corr,k])) + ',' + h[l] + '\n')
                 else:
                     job_id = run(name, 'correlation')
                     f.write(','.join(map(str, [n,corr,k,job_id])) + '\n')
@@ -246,8 +248,8 @@ def run_correlated_halves(file_base):
                     job_id = int(job_ids[m])
                     m += 1
                     h = parse_out('correlation', job_id)
-                    for m in range(len(h)):
-                        f.write(','.join(map(str, [n,corr,k])) + ',' + h[m] + '\n')
+                    for l in range(len(h)):
+                        f.write(','.join(map(str, [n,corr,k])) + ',' + h[l] + '\n')
                 else:
                     job_id = run(name, 'correlation')
                     f.write(','.join(map(str, [n,corr,k,job_id])) + '\n')
@@ -262,7 +264,7 @@ def run_anova(file_base, n = 100, n_outliers = 0,
     f = open(out_folder + file_base + '-results.csv', 'w')
     if parse:
         job_ids = get_job_ids(file_base)
-        f.write('rep,cmi_xz,cmi_yz\n')
+        f.write('rep,pi_x,pi_y,pi_x_y,pi_xy\n')
 
     name = file_base
 
@@ -270,7 +272,7 @@ def run_anova(file_base, n = 100, n_outliers = 0,
         if parse:
             job_id = int(job_ids[k])
             h = parse_out('regression', job_id)
-            f.write(','.join(map(str, [k, h[0], h[1]])) + '\n')
+            f.write(','.join(map(str, [k, h[0], h[1], h[2], h[3]])) + '\n')
         else:
             job_id = run(name, 'regression')
             f.write(','.join(map(str, [k, job_id])) + '\n')
@@ -279,16 +281,15 @@ def run_anova(file_base, n = 100, n_outliers = 0,
 
 if __name__ == "__main__":
 
-    run_anova('simple-anova-i-0')
-
-    if False:    
-    #for i in range(data_reps):
+    for i in range(data_reps):
         run_ring('ring-i-' + str(i))
         run_correlation('correlation-i-' + str(i))
         run_outliers('outliers-i-' + str(i))
         run_outliers_correlated('outliers-correlated-i-' + str(i))
-#        run_correlated_pairs('correlated-pairs-i-' + str(i))
-#        run_correlated_halves('correlated-halves-i-' + str(i))
+        run_correlated_pairs('correlated-pairs-i-' + str(i))
+        run_correlated_halves('correlated-halves-i-' + str(i))
+
+    if False:
         run_anova('simple-anova-i-' + str(i))
         run_anova('simple-anova-omitted-i-' + str(i), omit = True)
         run_anova('simple-anova-mixture-i-' + str(i), n = 50, n_outliers = 5)
