@@ -1,4 +1,15 @@
+MPLCONFIGDIR=/data/scratch/pkrafft/.matplotlib
+export MPLCONFIGDIR
 
+On the target computer, append the following to your LD_LIBRARY_PATH environment variable:
+
+/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/runtime/glnxa64:/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/bin/glnxa64:/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/sys/os/glnxa64:/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/sys/java/jre/glnxa64/jre/lib/amd64/native_threads:/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/sys/java/jre/glnxa64/jre/lib/amd64/server:/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/sys/java/jre/glnxa64/jre/lib/amd64
+
+
+
+Next, set the XAPPLRESDIR environment variable to the following value:
+
+/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/X11/app-defaults
 
 Help file from cluster:
 -----------------------------------------------------------------------
@@ -59,15 +70,17 @@ Compiling MATLAB Code on Picloud through CSAIL:
 -- add matlab to ~/.software
 -- scp your matlab files to login.csail.mit.edu
 -- open matlab, use mcc
+--- add paths, e.g. > addpath ../matlab_code/
+--- mcc file, e.g., > mcc -m run_crosscat.m
 - create a new picloud environment (or use mine) for matlab
 -- follow the picloud instructions for creating an environment
--- download the most recent MCR
+-- download the most recent MCR (sometimes you need to try multiple versions...)
 --- e.g., from http://www.mathworks.com/products/compiler/mcr/
 -- scp zipped MCR to picloud environment
 -- install using silent mode
 --- $ unzip MCRInstaller.zip
 --- $ chmod 755 installer_input.txt
---- $ emacs installer_input.txt # change agree to license to yes, change destination file if necessary
+--- $ emacs installer_input.txt # change agree to license to yes, change destination file if necessary, e.g. /data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr
 --- $ ./install -mode silent -inputFile installer_input.txt
 - copy compiled code to picloud
 -- open the environment in your browser (this takes a while!)
