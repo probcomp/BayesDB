@@ -31,7 +31,10 @@ of the jobs it creates. Also, certain variables that exist in the
 calling script will not be copied to the cluster. For example, lists
 are not currently supported. Booleans, integers, float, and strings
 that do not begin with "__" are supported. (though floats may not
-work properly.
+work properly. The status functionality is limited. It only tells you
+whether a job is "done" or "unknown", which doesn't match picloud's
+API. The condor cluster can take a few seconds to tell you the status of
+a job, so it is not worth implementing the full functionality.
 """
 
 
@@ -105,9 +108,11 @@ def status(jids):
 ### helper functions ###
 ########################
 
-### TODO
 def get_status(jid):
-    return 'done'
+    try open(job_dir + jid + '/success'):
+        return 'done'
+    except IOError:
+        return 'unknown'
 
 def get_result(jid):
     out_file = out_dir + jid + '/stdout.txt'
@@ -141,6 +146,8 @@ def write_job(job_dir, func, args):
 
     write_dependencies(job_f, job_dir)
     write_func(job_f, job_dir, func, args)
+
+    job_f.write('open(\'' + job_dir + 'success\',\'w\').close()')
 
     job_f.close()
     st = os.stat(name)
