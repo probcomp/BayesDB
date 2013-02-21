@@ -1,4 +1,4 @@
-NAMES = continuous_component_model_test State
+NAMES = ContinuousComponentModel State
 SOS = $(foreach name, $(NAMES), $(name).so)
 INTERMEDIATE = $(foreach name, $(NAMES), $(name).cpp)
 RUN = state_test.py
