@@ -150,7 +150,7 @@ def write_job(job_dir, func, args):
     write_dependencies(job_f)
     write_func(job_f, job_dir, func, args)
 
-    job_f.write('open(\'' + job_dir + 'success\',\'w\').close()')
+    job_f.write('open(\'' + job_dir + 'success\',\'w\').close()\n')
 
     job_f.close()
     st = os.stat(name)
@@ -167,7 +167,7 @@ def write_func(job_f, job_dir, func, args):
     job_f.write('args = pickle.load(arg_f)\n')
     job_f.write('arg_f.close()\n')
 
-    job_f.write('print ' + func.__name__ + '(*args)')
+    job_f.write('print ' + func.__name__ + '(*args)\n')
             
 def write_dependencies(job_f):
 
