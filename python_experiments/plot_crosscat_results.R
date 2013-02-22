@@ -1,9 +1,9 @@
 library(lattice)
 
-in.dir = '../../crosscat-results-backup/'
+in.dir = '../../crosscat-results/'
 out.dir = '../../crosscat-plots/'
 baseline.dir = '../../results/'
-data.reps = 3
+data.reps = 1
 
 get.results <- function(experiment, dir = in.dir) {
   results = data.frame()
@@ -22,14 +22,14 @@ png(paste(out.dir, 'ring.png', sep=''))
 results <- get.results('ring')
 compare <- get.results('ring', baseline.dir)
 
-mean.mi <- aggregate(results[,4], list(results[,2]), mean)
-mean.compare <- aggregate(compare[,3], list(compare[,2]), mean)
+plot.vars = results[,c(2,4)]
+plot.vars[,1] = sapply(plot.vars[,1], function(x) compare[compare[,2] == x,3])
 
-plot(mean.compare[2][[1]], mean.mi[2][[1]],
-     xlab = 'Estimated Mutual Information',
-     ylab = 'Actual Mutual Information',
+plot(plot.vars,
+     xlab = 'Actual Mutual Information',
+     ylab = 'Estimated Mutual Information',
      main = 'Ring Data, N = 200')
-lines(mean.compare[2][[1]], mean.compare[2][[1]], col = 'red')
+lines(plot.vars[,1], plot.vars[,1], col = 'red')
 
 dev.off()
 
@@ -38,24 +38,35 @@ dev.off()
 true.mi <- function(r)
   -0.5*log(1 - r^2)
 
+est.r2 <- function(mi) {
+  sqrt(1 - exp(-2*mi*(mi >= 0)))
+}
+
 experiment = 'correlation'
 
 all.results <- get.results(experiment)
+
+ylim = range(all.results[,5])
 
 for(n in unique(all.results[,2])) {
 
   png(paste(out.dir, experiment, '-n-', n, '.png', sep =''))
 
   results = all.results[all.results[,2] == n,]
-  
-  mean.mi  <- aggregate(results[,5], list(results[,3]), mean)
-  mean.compare <- true.mi(mean.mi[1][[1]])
 
-  plot(mean.compare, mean.mi[2][[1]],
+  plot.var = results[,c(3,5)]
+
+  #plot.var[,1] <- true.mi(plot.var[,1])
+  plot.var[,1] <- jitter(plot.var[,1])
+  plot.var[,2] <- est.r2(plot.var[,2])
+  ylim = c(0,1)
+
+  plot(plot.var,
        xlab = 'Actual Mutual Information',
        ylab = 'Estimated Mutual Information',
-       main = paste('Correlation, N = ', n, sep=''))
-  lines(mean.compare, mean.compare, col = 'red')
+       main = paste('Correlation, N = ', n, sep=''),
+       ylim = ylim)
+  lines(plot.var[,1], plot.var[,1], col = 'red')
 
   dev.off()
 }
@@ -66,10 +77,10 @@ plot.outliers <- function(experiment, name) {
   png(paste(out.dir, experiment, '.png', sep=''))
   
   results <- get.results(experiment)
+
+  plot.var = results[,c(2,4)]
   
-  mean.mi <- aggregate(results[,4], list(results[,2]), mean)
-  
-  plot(mean.mi[1][[1]], mean.mi[2][[1]],
+  plot(plot.var,
        xlab = 'Number of Outliers',
        ylab = 'Estimated Mutual Information',
        main = paste(name, ', N = 50'))
@@ -137,6 +148,8 @@ plot.anova <- function(file.base, name) {
        main = name)
   abline(v = 0, col='red')
 }
+
+out.dir = out.dir + 'anova/'
 
 file.base = 'simple-anova'
 png(paste(out.dir, file.base, '-results.png', sep = ''))
