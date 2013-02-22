@@ -1,15 +1,4 @@
-MPLCONFIGDIR=/data/scratch/pkrafft/.matplotlib
-export MPLCONFIGDIR
 
-On the target computer, append the following to your LD_LIBRARY_PATH environment variable:
-
-/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/runtime/glnxa64:/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/bin/glnxa64:/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/sys/os/glnxa64:/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/sys/java/jre/glnxa64/jre/lib/amd64/native_threads:/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/sys/java/jre/glnxa64/jre/lib/amd64/server:/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/sys/java/jre/glnxa64/jre/lib/amd64
-
-
-
-Next, set the XAPPLRESDIR environment variable to the following value:
-
-/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/X11/app-defaults
 
 Help file from cluster:
 -----------------------------------------------------------------------
@@ -80,10 +69,9 @@ Compiling MATLAB Code on Picloud through CSAIL:
 -- install using silent mode
 --- $ unzip MCRInstaller.zip
 --- $ chmod 755 installer_input.txt
---- $ emacs installer_input.txt # change agree to license to yes, change destination file if necessary, e.g. /data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr
+--- $ emacs installer_input.txt # change agree to license to yes
 --- $ ./install -mode silent -inputFile installer_input.txt
---- make sure you follow any instructions at the end of the installation, such as setting environment variables in .bashrc!
---- if things get really obnoxious, you may have to follow these directions: http://www.mathworks.ca/matlabcentral/newsreader/view_thread/162466
+--- make sure you follow any instructions at the end of the installation
 - copy compiled code to picloud
 -- open the environment in your browser (this takes a while!)
 -- follow the direction after pressing "connect"
@@ -93,4 +81,27 @@ Compiling MATLAB Code on Picloud through CSAIL:
 >>> def test():
 ...     return os.popen('sh ./run_test.sh matlab/mcr/v717/ 1').read()
 >>> cloud.call(test, _env='matlab') 
+
+
+Compiling MATLAB Code on Condor:
+- compile code using MATLAB compiler (mcc command) on a linux architecture (e.g., on CSAIL's login.csail.mit.edu)
+-- ssh to your login.csail.mit.edu 
+-- add matlab to ~/.software
+-- scp your matlab files to login.csail.mit.edu
+-- open matlab, use mcc
+--- add paths, e.g. > addpath ../matlab_code/
+--- mcc file, e.g., > mcc -m run_crosscat.m
+-- download the most recent MCR (sometimes you need to try multiple versions...)
+--- e.g., from http://www.mathworks.com/products/compiler/mcr/
+-- scp zipped MCR to picloud environment
+-- install using silent mode
+--- $ unzip MCRInstaller.zip
+--- $ chmod 755 installer_input.txt
+--- $ emacs installer_input.txt # change agree to license to yes, change destination file if necessary, e.g. /data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr
+--- $ ./install -mode silent -inputFile installer_input.txt
+--- make sure you follow any instructions at the end of the installation, such as setting environment variables in .bashrc! my bashrc looks like this:
+export XAPPLRESDIR=/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/X11/app-defaults # from instructions
+export MPLCONFIGDIR=/data/scratch/pkrafft/.matplotlib # fixes python import error
+export MCR_CACHE_ROOT=/data/scratch/pkrafft/ # fixes "Could not access the MCR component cache." matlab compiled code error
+--- you may have to change the LD_PATH_PREFIX to '/usr/lib' in matlab/mcr/v717/bin/.matlab7rc.sh (as http://www.mathworks.ca/matlabcentral/newsreader/view_thread/162466) # fixed interaction between numpy and compiled matlab code at some point...
 
