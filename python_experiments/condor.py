@@ -108,7 +108,9 @@ def status(jids):
 ########################
 
 def get_status(jid):
-    try open(job_dir + jid + '/success'):
+    status_file = out_dir + str(jid) + '/success'
+    try:
+        open(status_file)
         return 'done'
     except IOError:
         return 'unknown'

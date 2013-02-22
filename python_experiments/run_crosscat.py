@@ -3,8 +3,22 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import random
+import sys
+import optparse
 
-parse = False
+parser = optparse.OptionParser()
+
+parser.set_defaults(parse=False, run=False)
+parser.add_option("-r", "--run", action="store_true", dest="run")
+parser.add_option("-p", "--parse", action="store_true", dest="parse")
+(options, args) = parser.parse_args()
+
+parse = options.parse
+run = options.run
+if parse + run > 1:
+    sys.exit("You must choose only one of running or parsing!")    
+if parse + run == 0:
+    sys.exit("You must choose to either parse or run!")
 
 if parse:
     in_folder = '../../condor/'
@@ -279,42 +293,38 @@ def run_anova(file_base, n = 100, n_outliers = 0,
                              
     f.close()
 
-if __name__ == "__main__":
+for i in range(data_reps):
+    run_ring('ring-i-' + str(i))
+    run_correlation('correlation-i-' + str(i))
+    run_outliers('outliers-i-' + str(i))
+    run_outliers_correlated('outliers-correlated-i-' + str(i))
+    run_correlated_pairs('correlated-pairs-i-' + str(i))
+    run_correlated_halves('correlated-halves-i-' + str(i))
 
-    for i in range(data_reps):
-        run_ring('ring-i-' + str(i))
-        run_correlation('correlation-i-' + str(i))
-        run_outliers('outliers-i-' + str(i))
-        run_outliers_correlated('outliers-correlated-i-' + str(i))
-        run_correlated_pairs('correlated-pairs-i-' + str(i))
-        run_correlated_halves('correlated-halves-i-' + str(i))
-
-    if False:
-        run_anova('simple-anova-i-' + str(i))
-        run_anova('simple-anova-omitted-i-' + str(i), omit = True)
-        run_anova('simple-anova-mixture-i-' + str(i), n = 50, n_outliers = 5)
-        run_anova('anova-1-i-' + str(i), interaction = True)
-        run_anova('anova-2-i-' + str(i), b2 = 0, interaction = True)
-        run_anova('anova-3-i-' + str(i), b1 = 0, b2 = 0, interaction = True)
-        run_anova('anova-1-omitted-i-' + str(i), interaction = True, omit = True)
-        run_anova('anova-2-omitted-i-' + str(i), b2 = 0, interaction = True, omit = True)
-        run_anova('anova-3-omitted-i-' + str(i), b1 = 0, b2 = 0, interaction = True,
-                  omit = True)
-        run_anova('anova-1-mixture-i-' + str(i), interaction = True, n = 50, n_outliers = 5)
-        run_anova('anova-2-mixture-i-' + str(i), b2 = 0, interaction = True, n = 50, n_outliers = 5)
-        run_anova('anova-3-mixture-i-' + str(i), b1 = 0, b2 = 0, interaction = True, n = 50, n_outliers = 5)
-        
-        corr = 0.999
-        run_anova('anova-correlated-1-i-' + str(i), interaction = True, corr = corr)
-        run_anova('anova-correlated-2-i-' + str(i), b2 = 0, interaction = True, 
-                  corr = corr)
-        run_anova('anova-correlated-3-i-' + str(i), b1 = 0, b2 = 0, interaction = True,
-                  corr = corr)
-        run_anova('anova-correlated-1-omitted-i-' + str(i), interaction = True, 
-                  corr = corr, omit = True)
-        run_anova('anova-correlated-2-omitted-i-' + str(i), b2 = 0, interaction = True, 
-                  corr = corr, omit = True)
-        run_anova('anova-correlated-3-omitted-i-' + str(i), b1 = 0, b2 = 0, 
-                  interaction = True, corr = corr, omit = True)
-
-
+if False:
+    run_anova('simple-anova-i-' + str(i))
+    run_anova('simple-anova-omitted-i-' + str(i), omit = True)
+    run_anova('simple-anova-mixture-i-' + str(i), n = 50, n_outliers = 5)
+    run_anova('anova-1-i-' + str(i), interaction = True)
+    run_anova('anova-2-i-' + str(i), b2 = 0, interaction = True)
+    run_anova('anova-3-i-' + str(i), b1 = 0, b2 = 0, interaction = True)
+    run_anova('anova-1-omitted-i-' + str(i), interaction = True, omit = True)
+    run_anova('anova-2-omitted-i-' + str(i), b2 = 0, interaction = True, omit = True)
+    run_anova('anova-3-omitted-i-' + str(i), b1 = 0, b2 = 0, interaction = True,
+              omit = True)
+    run_anova('anova-1-mixture-i-' + str(i), interaction = True, n = 50, n_outliers = 5)
+    run_anova('anova-2-mixture-i-' + str(i), b2 = 0, interaction = True, n = 50, n_outliers = 5)
+    run_anova('anova-3-mixture-i-' + str(i), b1 = 0, b2 = 0, interaction = True, n = 50, n_outliers = 5)
+    
+    corr = 0.999
+    run_anova('anova-correlated-1-i-' + str(i), interaction = True, corr = corr)
+    run_anova('anova-correlated-2-i-' + str(i), b2 = 0, interaction = True, 
+              corr = corr)
+    run_anova('anova-correlated-3-i-' + str(i), b1 = 0, b2 = 0, interaction = True,
+              corr = corr)
+    run_anova('anova-correlated-1-omitted-i-' + str(i), interaction = True, 
+              corr = corr, omit = True)
+    run_anova('anova-correlated-2-omitted-i-' + str(i), b2 = 0, interaction = True, 
+              corr = corr, omit = True)
+    run_anova('anova-correlated-3-omitted-i-' + str(i), b1 = 0, b2 = 0, 
+              interaction = True, corr = corr, omit = True)
