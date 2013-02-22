@@ -27,7 +27,8 @@ else:
     in_folder = '../../data/'
     out_folder = '../../condor/'
 
-data_reps = 1
+data_offset = 1
+data_reps = 2
 hist_reps = 10
 n_pred_samples = '250'
 n_mcmc_iter = '500'
@@ -54,11 +55,9 @@ def parse_out(experiment, job_id):
         out = condor.result(job_id)
         out = out.split('#####')
         if experiment == 'regression':
-            values = [0]*4
+            values = [0]*2
             values[0] = out[1]
             values[1] = out[3]
-            values[2] = out[5]
-            values[3] = out[7]
         if experiment == 'correlation':
             values = [0]*(len(out)/2)
             for i in range(len(values)):
@@ -278,7 +277,7 @@ def run_anova(file_base, n = 100, n_outliers = 0,
     f = open(out_folder + file_base + '-results.csv', 'w')
     if parse:
         job_ids = get_job_ids(file_base)
-        f.write('rep,pi_x,pi_y,pi_x_y,pi_xy\n')
+        f.write('rep,mi_xz,mi_yz\n')
 
     name = file_base
 
@@ -286,14 +285,15 @@ def run_anova(file_base, n = 100, n_outliers = 0,
         if parse:
             job_id = int(job_ids[k])
             h = parse_out('regression', job_id)
-            f.write(','.join(map(str, [k, h[0], h[1], h[2], h[3]])) + '\n')
+            f.write(','.join(map(str, [k, h[0], h[1]])) + '\n')
         else:
             job_id = run(name, 'regression')
             f.write(','.join(map(str, [k, job_id])) + '\n')
                              
     f.close()
 
-for i in range(data_reps):
+for i in range(data_offset, data_offset + data_reps):
+
     run_ring('ring-i-' + str(i))
     run_correlation('correlation-i-' + str(i))
     run_outliers('outliers-i-' + str(i))
@@ -301,10 +301,9 @@ for i in range(data_reps):
     run_correlated_pairs('correlated-pairs-i-' + str(i))
     run_correlated_halves('correlated-halves-i-' + str(i))
 
-if False:
     run_anova('simple-anova-i-' + str(i))
     run_anova('simple-anova-omitted-i-' + str(i), omit = True)
-    run_anova('simple-anova-mixture-i-' + str(i), n = 50, n_outliers = 5)
+    #run_anova('simple-anova-mixture-i-' + str(i), n = 50, n_outliers = 5)
     run_anova('anova-1-i-' + str(i), interaction = True)
     run_anova('anova-2-i-' + str(i), b2 = 0, interaction = True)
     run_anova('anova-3-i-' + str(i), b1 = 0, b2 = 0, interaction = True)
@@ -312,9 +311,9 @@ if False:
     run_anova('anova-2-omitted-i-' + str(i), b2 = 0, interaction = True, omit = True)
     run_anova('anova-3-omitted-i-' + str(i), b1 = 0, b2 = 0, interaction = True,
               omit = True)
-    run_anova('anova-1-mixture-i-' + str(i), interaction = True, n = 50, n_outliers = 5)
-    run_anova('anova-2-mixture-i-' + str(i), b2 = 0, interaction = True, n = 50, n_outliers = 5)
-    run_anova('anova-3-mixture-i-' + str(i), b1 = 0, b2 = 0, interaction = True, n = 50, n_outliers = 5)
+    #run_anova('anova-1-mixture-i-' + str(i), interaction = True, n = 50, n_outliers = 5)
+    #run_anova('anova-2-mixture-i-' + str(i), b2 = 0, interaction = True, n = 50, n_outliers = 5)
+    #run_anova('anova-3-mixture-i-' + str(i), b1 = 0, b2 = 0, interaction = True, n = 50, n_outliers = 5)
     
     corr = 0.999
     run_anova('anova-correlated-1-i-' + str(i), interaction = True, corr = corr)
