@@ -7,6 +7,7 @@ in.dir = '../../crosscat-results/'
 out.dir = '../../crosscat-plots/'
 baseline.dir = '../../results/'
 data.reps = 1
+hist.reps = 10
 
 get.results <- function(experiment, dir = in.dir) {
   results = data.frame()
@@ -102,7 +103,7 @@ count.hits = function(vars, values, threshold, experiment) {
   fp = 0
   for(i in 1:nrow(vars)) {
     pair = sort(vars[i,])
-    guess = values[i] > threshold
+    guess = values[i] >= threshold
     if(experiment == 'correlated-pairs') {
       if((pair[1] %% 2) == 1 & (pair[2] - pair[1]) == 1) {
         tp = tp + guess 
@@ -117,7 +118,7 @@ count.hits = function(vars, values, threshold, experiment) {
       }
     }
   }
-  return(c(tp,fp))
+  return(c(fp,tp))
 }
 
 experiment = 'correlated-pairs'
@@ -129,9 +130,9 @@ ns = unique(cc.results[,'n'])
 corrs = unique(cc.results[,'corr'])
 
 for(i in 1:length(ns)) {
-
-  png(paste(out.dir, experiment, '-n-', ns[i], '.png')
-
+  
+  png(paste(out.dir, experiment, '-n-', ns[i], '.png'))
+  
   par(oma = c(0,0,2,0))
   par(mfrow = c(3, 4))
   
@@ -165,12 +166,38 @@ for(i in 1:length(ns)) {
     indices = which(cc.results[,'n'] == as.numeric(ns[i]) &
       cc.results[,'corr'] == as.numeric(corrs[j]))
     data = cc.results[indices,]
-    
-  }
+    data[,'mutual_info'] = est.r2(data[,'mutual_info'])
 
+    ps = seq(-0.1,1.1,length=13)
+    thresholds = seq(-0.1,1.1,length=13)
+    fpr.tpr = matrix(NA,length(ps)*length(thresholds),2)
+
+    by = list(apply(data[,c(1,5,6)], 1, paste, collapse = ''))
+    counts = sapply(thresholds, function(t) data[,7] > t)/hist.reps
+    values = apply(counts, 2, aggregate, by, sum)
+    values = data.frame(values)[,2*1:length(thresholds)]
+    
+    if(experiment == 'correlated-pairs') {
+      truth = (data[,6] %% 2) == 1 & (data[,5] - data[,6]) == 1
+    } else {
+      truth = (data[,5] <= 25) == (data[,6] <= 25)
+    }
+
+    guesses = lapply(ps, function(p) (values > p) & truth)
+    tp = lapply(guesses, function(x) apply(x, 2, sum))
+
+    guesses = lapply(ps, function(p) (values > p) & !truth)
+    fp = lapply(guesses, function(x) apply(x, 2, sum))
+
+    tpr = unlist(tp)/hits
+    fpr = unlist(fp)/hits
+    
+    points(fpr, tpr, col = 'blue')
+  }
+  
   title(main = paste('Pairwise Correlation Data, N =', ns[i]),
         outer = TRUE)
-
+  
   dev.off()
 }
 
@@ -202,10 +229,10 @@ png(paste(out.dir, file.base, '-results.png'))
 plot.anova(file.base, 'X + W = Z')
 dev.off()
 
-file.base = 'simple-anova-mixture'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + Y = Z, X,Y ~ mixture')
-dev.off()
+#file.base = 'simple-anova-mixture'
+#png(paste(out.dir, file.base, '-results.png'))
+#plot.anova(file.base, 'X + Y = Z, X,Y ~ mixture')
+#dev.off()
 
 file.base = 'anova-1'
 png(paste(out.dir, file.base, '-results.png'))
@@ -237,20 +264,20 @@ png(paste(out.dir, file.base, '-results.png'))
 plot.anova(file.base, 'XW = Z')
 dev.off()
 
-file.base = 'anova-1-mixture'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + Y + XY = Z, X,Y ~ mixture')
-dev.off()
+#file.base = 'anova-1-mixture'
+#png(paste(out.dir, file.base, '-results.png'))
+#plot.anova(file.base, 'X + Y + XY = Z, X,Y ~ mixture')
+#dev.off()
 
-file.base = 'anova-2-mixture'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + XY = Z, X,Y ~ mixture')
-dev.off()
+#file.base = 'anova-2-mixture'
+#png(paste(out.dir, file.base, '-results.png'))
+#plot.anova(file.base, 'X + XY = Z, X,Y ~ mixture')
+#dev.off()
 
-file.base = 'anova-3-mixture'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'XY = Z, X,Y ~ mixture')
-dev.off()
+#file.base = 'anova-3-mixture'
+#png(paste(out.dir, file.base, '-results.png'))
+#plot.anova(file.base, 'XY = Z, X,Y ~ mixture')
+#dev.off()
 
 file.base = 'anova-correlated-1'
 png(paste(out.dir, file.base, '-results.png'))
