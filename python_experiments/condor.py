@@ -30,11 +30,13 @@ your current working directory. It creates a directory to keep track
 of the jobs it creates. Also, certain variables that exist in the
 calling script will not be copied to the cluster. For example, lists
 are not currently supported. Booleans, integers, float, and strings
-that do not begin with "__" are supported. (though floats may not
-work properly. The status functionality is limited. It only tells you
+that do not begin with "__" are supported. (though floats may not work
+properly. The status functionality is limited. It only tells you
 whether a job is "done" or "unknown", which doesn't match picloud's
-API. The condor cluster can take a few seconds to tell you the status of
-a job, so it is not worth implementing the full functionality.
+API. The condor cluster can take a few seconds to tell you the status
+of a job, so it is not worth implementing the full
+functionality. Also, I don't do anything with locks, so don't expect
+scheduling multiple jobs in parallel to work without error!
 """
 
 import collections
@@ -66,21 +68,24 @@ def call(func, *args, **kwargs):
     f.write(job_id)
     f.close()
 
-    job_dir = out_dir + job_id + '/'
+    file_base = out_dir + job_id + '-'
 
+    job_marker = file_base + 'mark'
     try:
-        os.makedirs(job_dir)
-    except OSError as e:
+        open(job_marker).close()
         raise CondorPythonError('Job ' + job_id + 
-                                ' already exists! Seek help.')
+                                ' already exists! Please try again.')
+    except IOError:
+        open(job_marker, 'w').close()
+
                 
-    write_job(job_dir, func, args)
-    write_description(job_dir, job_id)
+    write_job(file_base, func, args)
+    write_description(file_base, job_id)
 
     if DEBUG:
-        os.system(job_dir + 'job.py')
+        os.system(file_base + 'job.py')
     else:
-        os.system('condor_submit ' + job_dir + 'description')
+        os.system('condor_submit ' + file_base + 'description')
     
     return job_id
 
@@ -108,7 +113,7 @@ def status(jids):
 ########################
 
 def get_status(jid):
-    status_file = out_dir + str(jid) + '/success'
+    status_file = out_dir + str(jid) + '-success'
     try:
         open(status_file)
         return 'done'
@@ -116,28 +121,28 @@ def get_status(jid):
         return 'unknown'
 
 def get_result(jid):
-    out_file = out_dir + str(jid) + '/stdout.txt'
+    out_file = out_dir + str(jid) + '-stdout.txt'
     f = open(out_file)
     result = f.read()
     f.close()
     return result
 
-def write_description(job_dir, job_id):
-    desc_f = open(job_dir + 'description', 'w')
+def write_description(file_base, job_id):
+    desc_f = open(file_base + 'description', 'w')
     desc_f.write('GetEnv = True\n')
     desc_f.write('Universe = vanilla\n')
     desc_f.write('Notification = Error\n')
-    desc_f.write('Executable = ' + job_dir + 'job.py\n')
+    desc_f.write('Executable = ' + file_base + 'job.py\n')
     desc_f.write('Log = /tmp/job.' + os.environ['USER'] + '.' +
                  job_id + '.log\n')
-    desc_f.write('Error = ' + job_dir + 'stderr.txt\n')
-    desc_f.write('Output = ' + job_dir + 'stdout.txt\n')
+    desc_f.write('Error = ' + file_base + 'stderr.txt\n')
+    desc_f.write('Output = ' + file_base + 'stdout.txt\n')
     desc_f.write('queue 1\n')
     desc_f.close()
 
-def write_job(job_dir, func, args):
+def write_job(file_base, func, args):
     
-    name = job_dir + 'job.py'
+    name = file_base + 'job.py'
     job_f = open(name, 'w')
 
     job_f.write('#! /usr/bin/env python\n')
@@ -145,29 +150,29 @@ def write_job(job_dir, func, args):
     job_f.write('os.chdir(\'' + os.getcwd() + '\')\n') 
     job_f.write('sys.path.append(\'' + os.getcwd() + '\')\n')
 
-    write_dependencies(job_f, job_dir)
-    write_func(job_f, job_dir, func, args)
+    write_dependencies(job_f)
+    write_func(job_f, file_base, func, args)
 
-    job_f.write('open(\'' + job_dir + 'success\',\'w\').close()')
+    job_f.write('open(\'' + file_base + 'success\',\'w\').close()\n')
 
     job_f.close()
     st = os.stat(name)
     os.chmod(name, st.st_mode | stat.S_IEXEC)
 
 
-def write_func(job_f, job_dir, func, args):
+def write_func(job_f, file_base, func, args):
     
-    arg_f = open(job_dir + 'args.pkl', 'wb')
+    arg_f = open(file_base + 'args.pkl', 'wb')
     pickle.dump(args, arg_f)
     arg_f.close()
     
-    job_f.write('arg_f = open(\'' + job_dir + 'args.pkl\')\n')
+    job_f.write('arg_f = open(\'' + file_base + 'args.pkl\')\n')
     job_f.write('args = pickle.load(arg_f)\n')
     job_f.write('arg_f.close()\n')
 
-    job_f.write('print ' + func.__name__ + '(*args)')
+    job_f.write('print ' + func.__name__ + '(*args)\n')
             
-def write_dependencies(job_f, job_dir):
+def write_dependencies(job_f):
 
     func_num = 0
     main = __import__("__main__")
