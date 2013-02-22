@@ -1,4 +1,14 @@
 
+to run experiments:
+- pull latest version from repo
+- do:
+> matlab
+$ addpath ../matlab_code/
+$ mcc -m run_crosscat.m
+- check parameters in run_crosscat.py
+- do:
+> python run_crosscat.py -r
+
 
 Help file from cluster:
 -----------------------------------------------------------------------
