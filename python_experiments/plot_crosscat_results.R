@@ -201,6 +201,25 @@ for(i in 1:length(ns)) {
       mine.results[,'corr'] == as.numeric(corrs[j]))
     data = mine.results[indices,]
 
+    values = data[,6]
+    vars = data[,c(4,5)]
+    
+    if(experiment == 'correlated-pairs') {
+      truth = (vars[,2] %% 2) == 1 & (vars[,1] - vars[,2]) == 1
+    } else {
+      truth = (vars[,1] <= 25) == (vars[,2] <= 25)
+    }
+
+    guesses = lapply(ps, function(p) (values > p) & truth)
+    tp = lapply(guesses, sum)
+
+    guesses = lapply(ps, function(p) (values > p) & !truth)
+    fp = lapply(guesses, sum)
+
+    tpr = unlist(tp)/hits
+    fpr = unlist(fp)/misses
+    
+    points(fpr, tpr, col = 'green')
     
   }
   
