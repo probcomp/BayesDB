@@ -245,7 +245,7 @@ def run_correlated_halves(file_base):
     f = open(out_folder + file_base + '-results.csv', 'w')
     if parse:
         job_ids = get_job_ids(file_base)
-        f.write('n,corr,rep,mutual_info\n')
+        f.write('n,corr,rep,i,j,mutual_info\n')
     
     m = 0
     for i in range(len(ns)):
