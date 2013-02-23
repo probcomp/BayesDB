@@ -6,6 +6,7 @@ paste = function(..., sep = '', collapse = NULL)
 in.dir = '../../crosscat-results/'
 out.dir = '../../crosscat-plots/'
 baseline.dir = '../../results/'
+mine.dir = '../../mine/'
 data.reps = 1
 hist.reps = 10
 
@@ -121,10 +122,11 @@ count.hits = function(vars, values, threshold, experiment) {
   return(c(fp,tp))
 }
 
-experiment = 'correlated-pairs'
+plot.pairwise <- function(experiment) {
 
 cc.results = get.results(experiment)
 lm.results = get.results(experiment, baseline.dir)
+mine.results = get.results(experiment, mine.dir)
 
 ns = unique(cc.results[,'n'])
 corrs = unique(cc.results[,'corr'])
@@ -138,8 +140,8 @@ for(i in 1:length(ns)) {
   
   for(j in 1:length(corrs)) {
 
-    indices = which(lm.results[,1] == as.numeric(ns[i]) &
-      lm.results[,2] == as.numeric(corrs[j]))
+    indices = which(lm.results[,2] == ns[i] &
+      lm.results[,3] == corrs[j])
 
     ncols = 50
     if(experiment == 'correlated-pairs') {
@@ -170,17 +172,18 @@ for(i in 1:length(ns)) {
 
     ps = seq(-0.1,1.1,length=13)
     thresholds = seq(-0.1,1.1,length=13)
-    fpr.tpr = matrix(NA,length(ps)*length(thresholds),2)
 
-    by = list(apply(data[,c(1,5,6)], 1, paste, collapse = ''))
+    by = list(data[,1], data[,5], data[,6])
     counts = sapply(thresholds, function(t) data[,7] > t)/hist.reps
     values = apply(counts, 2, aggregate, by, sum)
-    values = data.frame(values)[,2*1:length(thresholds)]
+    vars = values[[1]][,c(2,3)]
+    values = lapply(values, function(x) x[4])
+    values = data.frame(values)
     
     if(experiment == 'correlated-pairs') {
-      truth = (data[,6] %% 2) == 1 & (data[,5] - data[,6]) == 1
+      truth = (vars[,2] %% 2) == 1 & (vars[,1] - vars[,2]) == 1
     } else {
-      truth = (data[,5] <= 25) == (data[,6] <= 25)
+      truth = (vars[,1] <= 25) == (vars[,2] <= 25)
     }
 
     guesses = lapply(ps, function(p) (values > p) & truth)
@@ -190,9 +193,15 @@ for(i in 1:length(ns)) {
     fp = lapply(guesses, function(x) apply(x, 2, sum))
 
     tpr = unlist(tp)/hits
-    fpr = unlist(fp)/hits
+    fpr = unlist(fp)/misses
     
     points(fpr, tpr, col = 'blue')
+    
+    indices = which(mine.results[,'n'] == as.numeric(ns[i]) &
+      mine.results[,'corr'] == as.numeric(corrs[j]))
+    data = mine.results[indices,]
+
+    
   }
   
   title(main = paste('Pairwise Correlation Data, N =', ns[i]),
@@ -200,6 +209,10 @@ for(i in 1:length(ns)) {
   
   dev.off()
 }
+}
+
+plot.pairwise('correlated-pairs')
+plot.pairwise('correlated-halves')
 
 ### plot anova data
 
@@ -217,7 +230,7 @@ plot.anova <- function(file.base, name) {
   abline(v = 0, col='red')
 }
 
-out.dir = out.dir + 'anova/'
+out.dir = paste(out.dir, 'anova/')
 
 file.base = 'simple-anova'
 png(paste(out.dir, file.base, '-results.png'))
