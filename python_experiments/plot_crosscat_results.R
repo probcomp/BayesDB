@@ -7,7 +7,7 @@ in.dir = '../../crosscat-results/'
 out.dir = '../../crosscat-plots/'
 baseline.dir = '../../results/'
 mine.dir = '../../mine/'
-data.reps = 1
+data.reps = 3
 hist.reps = 10
 
 get.results <- function(experiment, dir = in.dir) {
@@ -29,7 +29,8 @@ results <- get.results('ring')
 compare <- get.results('ring', baseline.dir)
 
 plot.vars = results[,c(2,4)]
-plot.vars[,1] = sapply(plot.vars[,1], function(x) compare[compare[,2] == x,3])
+plot.vars[,1] = apply(cbind(results[,1], plot.vars[,1]), 1,
+           function(x) compare[compare[,1] == x[1] & compare[,2] == x[2],3])
 
 plot(plot.vars,
      xlab = 'Actual Mutual Information',
@@ -88,7 +89,7 @@ plot.outliers <- function(experiment, name) {
   
   plot(plot.var,
        xlab = 'Number of Outliers',
-       ylab = 'Estimated Mutual Information',
+       ylab = 'Estimated Transformed Mutual Information',
        main = paste(name, ', N = 50', sep = ' '))
   
   dev.off()
