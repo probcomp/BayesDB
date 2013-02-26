@@ -1,5 +1,5 @@
 function run_crosscat(data_dir, file_base, experiment, n_pred_samples, ...
-    n_mcmc_iter, seed)
+    n_mcmc_iter, seed, out_dir)
 %
 % run mutual information or conditional entropy experiment
 %
@@ -31,6 +31,9 @@ state = analyze(state, {'columnPartitionHyperparameter',...
     'columnPartitionAssignments', 'componentHyperparameters',...
     'rowPartitionHyperparameters', 'rowPartitionAssignments'},...
     n_mcmc_iter, 'all', 'all');
+
+name = [out_dir, file_base, '-', seed];
+save(name, 'state');
 
 switch experiment
     
