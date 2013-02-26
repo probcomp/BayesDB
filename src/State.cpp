@@ -6,6 +6,7 @@ using boost::numeric::ublas::project;
 using boost::numeric::ublas::range;
 
 State::State(const MatrixD &data,
+	     vector<string> global_col_datatypes,
 	     vector<int> global_row_indices,
 	     vector<int> global_col_indices,
 	     map<int, map<string, double> > HYPERS_M,
@@ -13,24 +14,25 @@ State::State(const MatrixD &data,
 	     double COLUMN_CRP_ALPHA,
 	     vector<vector<vector<int> > > row_partition_v,
 	     vector<double> row_crp_alpha_v,
-	     //vector<string> global_col_datatypes,
 	     int N_GRID, int SEED) : rng(SEED) {
   int num_rows = data.size1();
   int num_cols = data.size2();
   construct_base_hyper_grids(num_rows, num_cols, N_GRID);
+  // pass colmn types to construct_base_hyper_grids
   construct_column_hyper_grids(data, global_col_indices);
   //
   column_crp_alpha = COLUMN_CRP_ALPHA;
   hypers_m = HYPERS_M;
   //
+  // pass columntypes
   init_views(data, global_row_indices, global_col_indices, column_partition,
 	     row_partition_v, row_crp_alpha_v);
 }
 
 State::State(const MatrixD &data,
+	     vector<string> global_col_datatypes,
 	     vector<int> global_row_indices,
 	     vector<int> global_col_indices,
-	     //vector<string> global_col_datatypes,
 	     int N_GRID, int SEED) : rng(SEED) {
   int num_rows = data.size1();
   int num_cols = data.size2();

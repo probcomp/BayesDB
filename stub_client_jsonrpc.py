@@ -122,7 +122,6 @@ method_name = 'initialize'
 args_dict = dict()
 args_dict['M_c'] = M_c
 args_dict['M_r'] = M_r
-args_dict['i'] = ''
 args_dict['T'] = T
 out = call(method_name, args_dict)
 M_c, M_r, X_L_prime, X_D_prime = out

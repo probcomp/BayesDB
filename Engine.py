@@ -16,17 +16,17 @@ class Engine(object):
         self.seed += 1
         return SEED
 
-    def initialize(self, M_c, M_r, T, i):
-        p_State = State.p_State(numpy.array(T))
+    def initialize(self, M_c, M_r, T, initialization=None):
+        # FIXME: why is M_r passed?
+        p_State = State.p_State(M_c, T, initialization=initialization)
         X_L = p_State.get_X_L()
         X_D = p_State.get_X_D()
         return M_c, M_r, X_L, X_D
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
                 max_iterations, max_time):
-        constructor_args = \
-            State.transform_latent_state_to_constructor_args(X_L, X_D)
-        p_State = State.p_State(numpy.array(T), **constructor_args)
+        p_State = State.p_State(M_c, T, X_L, X_D)
+        # FIXME: actually pay attention to kernerl_list, max_time, etc
         for idx in range(n_steps):
             p_State.transition()
         #

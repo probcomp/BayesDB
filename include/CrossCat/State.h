@@ -22,6 +22,7 @@ const static double mu0_0 = 0.0;
 class State {
  public:
   State(const MatrixD &data,
+	std::vector<std::string> global_col_datatypes,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
 	std::map<int, std::map<std::string, double> > HYPERS_M,
@@ -29,12 +30,11 @@ class State {
 	double COLUMN_CRP_ALPHA,
 	std::vector<std::vector<std::vector<int> > > row_partition_v,
 	std::vector<double> row_crp_alpha_v,
-	//std::vector<std::string> global_col_datatypes,
 	int N_GRID=31, int SEED=0);
   State(const MatrixD &data,
+	std::vector<std::string> global_col_datatypes,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
-	//std::vector<std::string> global_col_datatypes,
 	int N_GRID=31, int SEED=0);
   ~State();
   //

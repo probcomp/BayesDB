@@ -10,10 +10,18 @@ cdef double set_double(double& to_set, double value):
      to_set = value
      return to_set
 
-cdef vector[int] convert_vector(python_vector):
+cdef vector[int] convert_int_vector_to_cpp(python_vector):
      cdef vector[int] ret_vec
      for value in python_vector:
           ret_vec.push_back(value)
+     return ret_vec
+
+cdef vector[string] convert_string_vector_to_cpp(python_vector):
+     cdef vector[string] ret_vec
+     cdef string str
+     for value in python_vector:
+          str = value
+          ret_vec.push_back(str)
      return ret_vec
 
 cdef extern from "<boost/numeric/ublas/matrix.hpp>" namespace "boost::numeric::ublas":
@@ -48,7 +56,7 @@ cdef class p_matrix:
     def __repr__(self):
         return "matrix[%s, %s]" % (self.thisptr.size1(), self.thisptr.size2())
 
-cdef matrix[double]* convert_data(np.ndarray[np.float64_t, ndim=2] data):
+cdef matrix[double]* convert_data_to_cpp(np.ndarray[np.float64_t, ndim=2] data):
      cdef int num_rows = data.shape[0]
      cdef int num_cols = data.shape[1]
      dataptr = new_matrix(num_rows, num_cols)
@@ -79,10 +87,12 @@ cdef extern from "State.h":
           vector[vector[int]] get_X_D()
           void SaveResult()
      State *new_State "new State" (matrix[double] &data,
+                                   vector[string] global_col_datatypes,
                                    vector[int] global_row_indices,
                                    vector[int] global_col_indices,
                                    int N_GRID, int SEED)
      State *new_State "new State" (matrix[double] &data,
+                                   vector[string] global_col_datatypes,
                                    vector[int] global_row_indices,
                                    vector[int] global_col_indices,
                                    c_map[int, c_map[string, double]] hypers_m,
@@ -93,30 +103,55 @@ cdef extern from "State.h":
                                    int N_GRID, int SEED)
      void del_State "delete" (State *s)
 
+
+def extract_column_types_counts(M_c):
+    # types we accept: normal_inverse_gamma, symmetric_dirichlet_discrete
+    # need to extract #types from symmetric_dirichlet_discrete
+    column_types = [
+        column_metadata['modeltype']
+        for column_metadata in M_c['column_metadata']
+        ]
+    event_counts = [
+        len(column_metadata.get('value_to_code',[]))
+        for column_metadata in M_c['column_metadata']
+        ]
+    return column_types, event_counts
+
 cdef class p_State:
     cdef State *thisptr
     cdef matrix[double] *dataptr
     cdef vector[int] gri
     cdef vector[int] gci
-    def __cinit__(self, data,
-                  global_row_indices=None, global_col_indices=None,
-                  hypers_m=None,
-                  column_partition=None, column_crp_alpha=None,
-                  row_partition_v=None, row_crp_alpha_v=None,
+    cdef vector[string] column_types
+    def __cinit__(self, M_c, T, X_L=None, X_D=None, initialization=None,
                   N_GRID=31, SEED=0):
-         if global_row_indices is None:
-              global_row_indices = range(len(data))
-         if global_col_indices is None:
-              global_col_indices = range(len(data[0]))
-         self.dataptr = convert_data(data)
-         self.gri = convert_vector(global_row_indices)
-         self.gci = convert_vector(global_col_indices)
-         if hypers_m is None:
+         # FIXME: actually use initialization 
+         # modify State.pyx to accept column_types, event_counts
+         # modify State.{h,cpp} to accept column_types, event_counts
+         column_types, event_counts = extract_column_types_counts(M_c)
+         global_row_indices = range(len(T))
+         global_col_indices = range(len(T[0]))
+         #
+         self.dataptr = convert_data_to_cpp(numpy.array(T))
+         self.column_types = convert_string_vector_to_cpp(column_types)
+         self.gri = convert_int_vector_to_cpp(global_row_indices)
+         self.gci = convert_int_vector_to_cpp(global_col_indices)
+         #
+         must_initialize = X_L is None
+         if must_initialize:
               self.thisptr = new_State(dereference(self.dataptr),
+                                       self.column_types,
                                        self.gri, self.gci,
                                        N_GRID, SEED)
          else:
+              constructor_args = transform_latent_state_to_constructor_args(X_L, X_D)
+              hypers_m = constructor_args['hypers_m']
+              column_partition = constructor_args['column_partition']
+              column_crp_alpha = constructor_args['column_crp_alpha']
+              row_partition_v = constructor_args['row_partition_v']
+              row_crp_alpha_v = constructor_args['row_crp_alpha_v']
               self.thisptr = new_State(dereference(self.dataptr),
+                                       self.column_types,
                                        self.gri, self.gci,
                                        hypers_m,
                                        column_partition, column_crp_alpha,
