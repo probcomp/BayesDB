@@ -25,6 +25,8 @@ function state = analyze(state, kernelList, nSteps, c, r, maxIterations, maxTime
             tic
         end
         state = drawSample(state, kernelList, c, r); 
+        prob = scoreState(state);
+        fprintf(1, '%i,%i,%f\n', n, length(unique(state.f)), prob);
         if verbose
             toc
         end
@@ -604,7 +606,7 @@ function logP = scoreState(state)
     
     F = unique(state.f);
     for f = F
-        logP = logP + crp(state.o(f,:),state.crpPriorC);
+        logP = logP + crp(state.o(f,:),state.crpPriorC(f));
     end
     
     for f = 1 : state.F
