@@ -10,9 +10,9 @@ mine.dir = '../../mine/'
 data.reps = 3
 hist.reps = 10
 
-get.results <- function(experiment, dir = in.dir) {
+get.results <- function(experiment, dir = in.dir, reps = data.reps) {
   results = data.frame()
-  for(i in 0:(data.reps - 1)) {
+  for(i in 0:(reps - 1)) {
     file.base = paste(experiment,'-i-',i,'-results.csv')
     in.file = paste(dir, file.base)
     raw = read.csv(in.file, header=T)
@@ -125,9 +125,9 @@ count.hits = function(vars, values, threshold, experiment) {
 
 plot.pairwise <- function(experiment) {
 
-cc.results = get.results(experiment)
-lm.results = get.results(experiment, baseline.dir)
-mine.results = get.results(experiment, mine.dir)
+cc.results = get.results(experiment, reps = 1)
+lm.results = get.results(experiment, baseline.dir, reps = 1)
+mine.results = get.results(experiment, mine.dir, reps = 1)
 
 ns = unique(cc.results[,'n'])
 corrs = unique(cc.results[,'corr'])
@@ -172,7 +172,8 @@ for(i in 1:length(ns)) {
     data[,'mutual_info'] = est.r2(data[,'mutual_info'])
 
     ps = seq(-0.1,1.1,length=13)
-    thresholds = seq(-0.1,1.1,length=13)
+    #thresholds = seq(-0.1,1.1,length=13)
+    thresholds = 0
 
     by = list(data[,1], data[,5], data[,6])
     counts = sapply(thresholds, function(t) data[,7] > t)/hist.reps
