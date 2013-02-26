@@ -1,29 +1,5 @@
 import condor
 import random
-import sys
-import optparse
-
-parser = optparse.OptionParser()
-
-parser.set_defaults(parse=False, run=False)
-parser.add_option("-r", "--run", action="store_true", dest="run")
-parser.add_option("-p", "--parse", action="store_true", dest="parse")
-(options, args) = parser.parse_args()
-
-parse = options.parse
-run = options.run
-if parse + run > 1:
-    sys.exit("You must choose only one of running or parsing!")    
-if parse + run == 0:
-    sys.exit("You must choose to either parse or run!")
-
-if parse:
-    in_folder = '../../condor/'
-    out_folder = '../../crosscat-results/'
-else:
-    in_folder = '../../data/'
-    out_folder = '../../condor/'
-    sample_folder = '../../crosscat-samples/'
 
 def run_matlab(file_base, experiment):
 
