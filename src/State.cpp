@@ -150,8 +150,8 @@ View& State::get_new_view() {
   // FIXME: this is a hack
   // it being necessary suggests perhaps I should not be passing
   // global_row_indices and instead always assume its a sequence of 0..N
-  vector<int> view_counts = get_view_counts();
-  int num_vectors = std::accumulate(view_counts.begin(), view_counts.end(), 0);
+  vector<int> first_view_cluster_counts = get_view(0).get_cluster_counts();
+  int num_vectors = std::accumulate(first_view_cluster_counts.begin(), first_view_cluster_counts.end(), 0);
   vector<int> global_row_indices = create_sequence(num_vectors);
   View *p_new_view = new View(global_row_indices,
 			      row_crp_alpha_grid, r_grid, nu_grid, s_grids,
