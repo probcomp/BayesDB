@@ -38,9 +38,9 @@ M_c = dict(
 )
 
 # generate state, do transitions
-p_State = State.p_State(M_c, T)
+p_State = State.p_State(M_c, T, SEED=1)
 for idx in range(600):
-    print "transitioning"
+    print "transitioning: %s" % idx
     p_State.transition()
 #
 X_D = p_State.get_X_D()
