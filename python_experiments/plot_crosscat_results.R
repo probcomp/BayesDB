@@ -32,12 +32,13 @@ compare = aggregate(compare[,3], list(compare[,2]), mean)
 plot.vars = results[,c(2,4)]
 plot.vars[,1] = apply(cbind(plot.vars[,1]), 1,
            function(x) compare[[2]][compare[[1]] == x[1]])
+colnames(plot.vars) <- c('x','y')
 
-plot(plot.vars,
-     xlab = 'Actual Mutual Information',
-     ylab = 'Estimated Mutual Information',
-     main = 'Ring Data, N = 200')
-lines(plot.vars[,1], plot.vars[,1], col = 'red')
+plot.vars[,1] = round(plot.vars[,1], 3)
+
+b = boxplot(y ~ x, data = plot.vars,
+     xlab = 'Empirical Mutual Information',
+     ylab = 'Crosscat-Estimated Mutual Information')
 
 dev.off()
 
@@ -62,20 +63,22 @@ for(n in unique(all.results[,2])) {
 
   results = all.results[all.results[,2] == n,]
 
-  plot.var = results[,c(3,5)]
+  plot.vars = results[,c(3,5)]
 
-  #plot.var[,1] <- true.mi(plot.var[,1])
-  plot.var[,1] <- jitter(plot.var[,1])
-  plot.var[,2] <- est.r2(plot.var[,2])
+  #plot.vars[,1] <- true.mi(plot.vars[,1])
+  plot.vars[,1] <- plot.vars[,1]
+  plot.vars[,2] <- est.r2(plot.vars[,2])
   ylim = c(0,1)
 
-  plot(plot.var,
-       xlab = 'Ground Truth Correlation',
-       ylab = 'Estimated Correlation',
-       main = paste('Correlation, N = ', n, sep = ' '),
-       ylim = ylim)
-  lines(plot.var[,1], plot.var[,1], col = 'red')
+  colnames(plot.vars) <- c('x','y')
 
+  b = boxplot(y ~ x, data = plot.vars,
+    xlab = 'Ground Truth Correlation',
+    ylab = 'Crosscat-Estimated Correlation',
+    ylim = c(0,1))
+    
+
+  
   dev.off()
 }
 
@@ -86,12 +89,14 @@ plot.outliers <- function(experiment, name) {
   
   results <- get.results(experiment)
 
-  plot.var = results[,c(2,4)]
+  plot.vars = results[,c(2,4)]
   
-  plot(plot.var,
-       xlab = 'Number of Outliers',
-       ylab = 'Estimated Transformed Mutual Information',
-       main = paste(name, ', N = 50', sep = ' '))
+  colnames(plot.vars) <- c('x','y')
+
+  b = boxplot(y ~ x, data = plot.vars,
+     xlab = 'Number of Outliers',
+     ylab = 'Crosscat-Estimated Transformed Mutual Information')
+
   
   dev.off()
 }
@@ -159,13 +164,7 @@ for(i in 1:length(ns)) {
     fpr = data[,'unadj_fp']/misses
     plot(fpr, tpr, 
          main = paste('corr = ',corrs[j]),
-         xlim = c(0,1), ylim = c(0,1))
-    tpr = data[,'adj_tp']/hits
-    fpr = data[,'adj_fp']/misses
-    points(fpr, tpr, col = 'red')
-
-    legend('bottomright', c('unadjusted', 'adjusted'),
-           col = c('black', 'red'), pch = 1)
+         xlim = c(0,1), ylim = c(0,1), type = 'l')
 
     indices = which(cc.results[,'n'] == as.numeric(ns[i]) &
       cc.results[,'corr'] == as.numeric(corrs[j]))
@@ -198,7 +197,7 @@ for(i in 1:length(ns)) {
     tpr = unlist(tp)/hits
     fpr = unlist(fp)/misses
     
-    points(fpr, tpr, col = 'blue')
+    lines(fpr, tpr, col = 'blue')
     
     indices = which(mine.results[,'n'] == as.numeric(ns[i]) &
       mine.results[,'corr'] == as.numeric(corrs[j]))
@@ -222,7 +221,7 @@ for(i in 1:length(ns)) {
     tpr = unlist(tp)/hits
     fpr = unlist(fp)/misses
     
-    points(fpr, tpr, col = 'green')
+    lines(fpr, tpr, col = 'green')
     
   }
   
