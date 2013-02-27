@@ -16,40 +16,39 @@ def update_continuous_hypers(column_hypers, cluster_suffstats, cluster_count):
     #
     return r_prime, nu_prime, s_prime, mu_prime
 
-def generate_column_sample(random_state, p_State, col_idx,
-                           which_view_idx, which_cluster_idx):
+def get_updated_continuous_hypers(p_State, view_idx, col_idx, cluster_idx):
+    view_state_i = p_State.get_view_state()[view_idx]
+    column_component_suffstats = view_state_i['column_component_suffstats'][view_idx]
+    cluster_suffstats = column_component_suffstats[cluster_idx]
     column_hypers = p_State.get_column_hypers()[col_idx]
-    view_state_list = p_State.get_view_state()
-    view_state_i = view_state_list[which_view_idx]
-    column_component_suffstats = view_state_i['column_component_suffstats'][which_view_idx]
-    cluster_suffstats = column_component_suffstats[which_cluster_idx]
-    cluster_count = view_state_i['row_partition_model']['counts'][which_cluster_idx]
+    cluster_count = view_state_i['row_partition_model']['counts'][cluster_idx]
     r, nu, s, mu = update_continuous_hypers(
         column_hypers, cluster_suffstats, cluster_count)
-    #
-    print r, nu, s, mu
-    standard_t_draw = random_state.standard_t(nu)
-    student_t_draw = standard_t_draw * (s * (r + 1)) / (nu * r) + mu
-    return student_t_draw
+    return r, nu, s, mu
 
-def generate_view_cluster_means(p_State, which_view_idx):
-    view_state_i = p_State.get_view_state()[which_view_idx]
-    column_idx_set = view_state_i['column_names']
-    column_component_suffstats = view_state_i['column_component_suffstats'][which_view_idx]
+def generate_view_cluster_means(p_State, view_idx):
+    view_state_i = p_State.get_view_state()[view_idx]
+    column_component_suffstats = view_state_i['column_component_suffstats']
     cluster_counts = view_state_i['row_partition_model']['counts']
-    num_clusters = len(column_component_suffstats)
+    num_clusters = len(column_component_suffstats[0])
+    column_idx_set = view_state_i['column_names']
+    num_cols = len(column_idx_set)
+    #
     cluster_posterior_hypers = []
     for cluster_idx in range(num_clusters):
         this_cluster_posterior_hypers = []
         for col_idx in sorted(list(column_idx_set)):
-            cluster_suffstats = column_component_suffstats[cluster_idx]
-            cluster_count = cluster_counts[cluster_idx]
-            column_hypers = p_State.get_column_hypers()[col_idx]
-            r, nu, s, mu = update_continuous_hypers(
-                column_hypers, cluster_suffstats, cluster_count)        
+            r, nu, s, mu = get_updated_continuous_hypers(
+                p_State, view_idx, col_idx, cluster_idx)
             this_cluster_posterior_hypers.append((r, nu, s, mu))
         cluster_posterior_hypers.append(this_cluster_posterior_hypers)
     return cluster_posterior_hypers
+
+def generate_column_sample(random_state, p_State, view_idx, col_idx, cluster_idx):
+    r, nu, s, mu = get_updated_continuous_hypers(p_State, view_idx, col_idx, cluster_idx)
+    standard_t_draw = random_state.standard_t(nu)
+    student_t_draw = standard_t_draw * (s * (r + 1)) / (nu * r) + mu
+    return student_t_draw
 
 def generate_cluster_draws(random_state, p_State, column_view_idx_lookup):
     view_state_list = p_State.get_view_state()
@@ -80,6 +79,6 @@ def generate_sample(random_state, p_State, column_view_idx_lookup):
         which_view_idx = column_view_idx_lookup[col_idx]
         which_cluster_idx = column_cluster_draws[col_idx]
         column_sample_value = generate_column_sample(
-            random_state, p_State, col_idx, which_view_idx, which_cluster_idx)
+            random_state, p_State, which_view_idx, col_idx, which_cluster_idx)
         column_sample_values.append(column_sample_value)
     return column_sample_values
