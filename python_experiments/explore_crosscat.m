@@ -1,13 +1,14 @@
 addpath ../matlab_code/
 
-file_base = 'simple-anova';
+%file_base = 'ring-i-0-width-0.3-missing';
+file_base = 'correlated-pairs-i-0-n-100-corr-0.6';
 
 data_file = strcat('../../data/',file_base,'-data');
 label_file = strcat('../../data/',file_base,'-labels');
 out_file = ['../../results/', file_base, + '-cc-results.csv'];
 
 state = initialize_from_csv(data_file,...
-    label_file, 'fromThePrior');
+    label_file, 'apart');
 
 s = zeros(1000,state.F);
 
@@ -17,7 +18,7 @@ for i = 1:5
     state = analyze(state, {'columnPartitionHyperparameter',...
     'columnPartitionAssignments', 'componentHyperparameters',...
     'rowPartitionHyperparameters', 'rowPartitionAssignments'},...
-    200, 'all', 'all');
+    500, 'all', 'all');
 
     for j = 1:200
         

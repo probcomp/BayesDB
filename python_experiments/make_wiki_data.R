@@ -29,7 +29,7 @@ png('../../plots/wiki-data.png',width=700,300)
 par(mfrow = c(3,7), mai = c(0.1,0.1,0.1,0.1),
         mgp = c(0,0.5,0))
 
-n = 500
+n = 200
 
 k = 0
 

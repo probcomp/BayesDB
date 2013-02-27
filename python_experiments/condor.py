@@ -167,7 +167,12 @@ def write_func(job_f, job_dir, func, args):
     job_f.write('args = pickle.load(arg_f)\n')
     job_f.write('arg_f.close()\n')
 
-    job_f.write('print ' + func.__name__ + '(*args)\n')
+    module = func.__module__
+    if module == '__main__':
+        module = ''
+    else:
+        module += '.'
+    job_f.write('print ' + module + func.__name__ + '(*args)\n')
             
 def write_dependencies(job_f):
 
@@ -180,6 +185,7 @@ def write_dependencies(job_f):
 
         if isinstance(val, types.ModuleType):
             job_f.write('import ' + val.__name__ + ' as ' + name + '\n')
+            job_f.write('import ' + val.__name__ + '\n')
 
         VarTypes = (types.BooleanType, types.IntType,
                     types.FloatType)

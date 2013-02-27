@@ -27,10 +27,11 @@ png(paste(out.dir, 'ring.png'))
 
 results <- get.results('ring')
 compare <- get.results('ring', baseline.dir)
+compare = aggregate(compare[,3], list(compare[,2]), mean)
 
 plot.vars = results[,c(2,4)]
-plot.vars[,1] = apply(cbind(results[,1], plot.vars[,1]), 1,
-           function(x) compare[compare[,1] == x[1] & compare[,2] == x[2],3])
+plot.vars[,1] = apply(cbind(plot.vars[,1]), 1,
+           function(x) compare[[2]][compare[[1]] == x[1]])
 
 plot(plot.vars,
      xlab = 'Actual Mutual Information',
