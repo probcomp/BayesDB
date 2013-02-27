@@ -1,6 +1,6 @@
 
-reps = 1;
-pred = 200;
+reps = 5;
+pred = 40;
 
 for i = [0:6,14:20]
     
