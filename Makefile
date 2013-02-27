@@ -39,8 +39,10 @@ bin: $(OBJECTS) $(BIN)
 
 obj: $(OBJECTS)
 
-# run each test
 tests: $(TESTS)
+
+# run each test
+runtests: $(TESTS)
 	@echo tests are: $(TESTS) $(foreach test, $(TESTS), && ./$(test))
 
 clean:
