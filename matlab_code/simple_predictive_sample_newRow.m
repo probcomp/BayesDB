@@ -212,7 +212,7 @@ function sample = sampleValue(theseData, q, state)
                 bN = b0;
                 muN = mu0;
             end
-            sample = trnd(2.*aN) .* (bN.*(kN+1))./(aN.*kN) + muN;
+            sample = trnd(2.*aN) .* sqrt((bN.*(kN+1))./(aN.*kN)) + muN;
     end
 end
 
