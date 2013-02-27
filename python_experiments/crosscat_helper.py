@@ -44,12 +44,3 @@ def get_job_ids(file_base):
     lines = g.readlines()
     job_ids = map(lambda x: x.strip().split(',')[-1], lines)
     return job_ids
-
-def run(file_base, experiment):
-    job_id = condor.call(run_matlab, 
-                    file_base, 
-                    experiment,
-                    _type='c2',
-                    _env='matlab')
-    return job_id
-
