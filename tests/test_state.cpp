@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "State.h"
+#include "utils.h"
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
@@ -9,19 +10,27 @@ typedef boost::numeric::ublas::matrix<double> matrixD;
 using namespace std;
 
 int main(int argc, char** argv) {
-  cout << endl << "Hello World!" << endl;
+  cout << endl << "test_state: Hello World!" << endl;
 
   // load some data
   matrixD data;
-  LoadData("SynData2.csv", data);
+  string filename = "SynData2.csv";
+  // string filename = "analyze_2d/ring_data.csv";
+  LoadData(filename, data);
+  cout << "data is: " << data << endl;
   int num_rows = data.size1();
   int num_cols = data.size2();
 
   // create the objects to test
   vector<int> global_row_indices = create_sequence(data.size1());
   vector<int> global_column_indices = create_sequence(data.size2());
-  State s = State(data, global_row_indices, global_column_indices, 11);
+  vector<string> global_col_types;
+  for(int i=0; i<global_row_indices.size(); i++) {
+    global_col_types.push_back("normal_inverse_gamma");
+  }
+  State s = State(data, global_col_types, global_row_indices, global_column_indices, 11);
 
+  cout << "start X_D" << endl << s.get_X_D() << endl;
   int num_views = s.get_num_views();
   cout << "s.num_views: " << num_views << endl;
   for(int view_idx=0; view_idx<num_views; view_idx++) {
@@ -43,6 +52,7 @@ int main(int argc, char** argv) {
     cout << "view_idx " << view_idx << ": " << endl;
     v.print();
   }
-
-  cout << endl << "Goodbye World!" << endl;
+  
+  cout << "end X_D" << endl << s.get_X_D() << endl;
+  cout << endl << "test_state: Goodbye World!" << endl;
 }
