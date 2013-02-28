@@ -194,6 +194,7 @@ namespace numerics {
       double logp = calc_continuous_logp(count,
 					 r_prime, nu_prime, s_prime,
 					 log_Z_0);
+      logp += -log(r_prime);
       logps.push_back(logp);
     }
     return logps;
@@ -219,6 +220,7 @@ namespace numerics {
       double logp = calc_continuous_logp(count,
 					 r_prime, nu_prime, s_prime,
 					 log_Z_0);
+      logp += -log(nu_prime);
       logps.push_back(logp);
     }
     return logps;
@@ -244,6 +246,7 @@ namespace numerics {
       double logp = calc_continuous_logp(count,
 					 r_prime, nu_prime, s_prime,
 					 log_Z_0);
+      logp += -log(s_prime);
       logps.push_back(logp);
     }
     return logps;
