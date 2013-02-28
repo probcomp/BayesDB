@@ -10,14 +10,24 @@ import tabular_predDB.analyze_2d.sampler_helpers as sh
 import tabular_predDB.cython.State as State
 
 
-# generate the data
+# generative settings
 N_datapoints = 1000
 gen_seed = 0
 gen_noise_scale = 0.1
-ring_data = make_ring.create_ring_data(N_datapoints, gen_seed, 0, gen_noise_scale)
+data_filename = 'ring_data.csv'
 #
-with open('ring_data.csv', 'w') as fh:
-    array_as_string = '\n'.join(map(lambda row: ','.join(map(str, row)), ring_data))
+# inference settings
+N_transitions = 600
+inference_seed = 1
+
+# generate data
+ring_data = make_ring.create_ring_data(
+    N_datapoints, gen_seed, 0, gen_noise_scale)
+#
+row_to_string = lambda row: ','.join(map(str, row))
+array_to_string = lambda array: '\n'.join(map(row_to_string, array))
+with open(data_filename, 'w') as fh:
+    array_as_string = array_to_string(ring_data)
     fh.write(array_as_string)
 
 # prepare datastructures for inference
@@ -38,8 +48,8 @@ M_c = dict(
 )
 
 # generate state, do transitions
-p_State = State.p_State(M_c, T, SEED=1)
-for idx in range(600):
+p_State = State.p_State(M_c, T, SEED=inference_seed)
+for idx in range(N_transitions):
     print "transitioning: %s" % idx
     p_State.transition()
 #
