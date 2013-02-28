@@ -1,32 +1,10 @@
+import os
 import sys
 import optparse
 import condor
 import random
 
-parser = optparse.OptionParser()
-
-parser.set_defaults(parse=False, run=False)
-parser.add_option("-r", "--run", action="store_true", dest="run")
-parser.add_option("-p", "--parse", action="store_true", dest="parse")
-(options, args) = parser.parse_args()
-
-parse = options.parse
-run_script = options.run
-if parse + run_script > 1:
-    sys.exit("You must choose only one of running or parsing!")    
-if parse + run_script == 0:
-    sys.exit("You must choose to either parse or run!")
-
-if parse:
-    in_folder = '../../condor/'
-    out_folder = '../../crosscat-results/'
-else:
-    in_folder = '../../data/'
-    out_folder = '../../condor/'
-    sample_folder = '../../crosscat-samples/'
-
-
-def run_matlab(file_base, experiment):
+def run_matlab(in_folder, file_base, experiment, n_pred_samples, n_mcmc_iter, sample_folder):
 
     mcr_loc = 'matlab/mcr/v717/'
     
@@ -70,10 +48,14 @@ def get_job_ids(file_base):
     job_ids = map(lambda x: x.strip().split(',')[-1], lines)
     return job_ids
 
-def run(file_base, experiment):
+def run(in_folder, file_base, experiment, n_pred_samples, n_mcmc_iter, sample_folder):
     job_id = condor.call(run_matlab,
-                         file_base, 
+                         in_folder,
+                         file_base,
                          experiment,
+                         n_pred_samples,
+                         n_mcmc_iter,
+                         sample_folder,
                          _type='c2',
                          _env='matlab')
     return job_id

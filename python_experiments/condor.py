@@ -171,6 +171,7 @@ def write_func(job_f, job_dir, func, args):
     if module == '__main__':
         module = ''
     else:
+        job_f.write('import ' + module + '\n')
         module += '.'
     job_f.write('print ' + module + func.__name__ + '(*args)\n')
             
