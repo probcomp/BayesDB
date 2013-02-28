@@ -17,7 +17,7 @@ gen_noise_scale = 0.1
 data_filename = 'ring_data.csv'
 #
 # inference settings
-N_transitions = 600
+N_transitions = 400
 inference_seed = 1
 
 # generate data
@@ -62,3 +62,5 @@ for view_idx, view_state_i in enumerate(p_State.get_view_state()):
     for key, value in view_state_i.iteritems():
         print key, value
     print
+
+execfile('posterior_analysis.py')
