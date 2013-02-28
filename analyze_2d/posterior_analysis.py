@@ -23,6 +23,8 @@ for sample_idx in range(N_samples):
 sample_arr = numpy.array(sample_list)
 pylab.figure()
 pylab.scatter(sample_arr[:,0], sample_arr[:,1])
+pylab.gca().set_aspect('equal')
+pylab.draw()
 
 # plot the latent state
 which_view = 0
@@ -39,6 +41,8 @@ for cluster_idx in list(unique_cluster_indices):
     print which_color, which_marker
     pylab.scatter(which_data[:, 0], which_data[:, 1],
                   color=which_color, marker=which_marker)
+pylab.gca().set_aspect('equal')
+pylab.draw()
 
 # plot some derived info
 which_view = 0
