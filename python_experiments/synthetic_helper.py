@@ -16,11 +16,11 @@ if parse + run_script == 0:
     sys.exit("You must choose to either parse or run!")
 
 if parse:
-    in_folder = '../../condor/'
+    in_folder = '../../cluster/'
     out_folder = '../../crosscat-results/'
 else:
     in_folder = '../../data/'
-    out_folder = '../../condor/'
+    out_folder = '../../cluster/'
     sample_folder = '../../crosscat-samples/'
 
 class Experiment:
@@ -73,7 +73,7 @@ class Experiment:
 
         f = open(out_folder + file_base + '-results.csv', 'w')
         if parse:
-            job_ids = get_job_ids(file_base)
+            job_ids = get_job_ids(in_folder, file_base)
             header = ','.join(par_names + ['rep,i,j,mutual_info\n']) 
             f.write(header)
 
