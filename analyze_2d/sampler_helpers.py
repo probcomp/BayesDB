@@ -18,7 +18,7 @@ def update_continuous_hypers(column_hypers, cluster_suffstats, cluster_count):
 
 def get_updated_continuous_hypers(p_State, view_idx, col_idx, cluster_idx):
     view_state_i = p_State.get_view_state()[view_idx]
-    column_component_suffstats = view_state_i['column_component_suffstats'][view_idx]
+    column_component_suffstats = view_state_i['column_component_suffstats'][col_idx]
     cluster_suffstats = column_component_suffstats[cluster_idx]
     column_hypers = p_State.get_column_hypers()[col_idx]
     cluster_count = view_state_i['row_partition_model']['counts'][cluster_idx]
@@ -27,6 +27,7 @@ def get_updated_continuous_hypers(p_State, view_idx, col_idx, cluster_idx):
     return r, nu, s, mu
 
 def generate_view_cluster_means(p_State, view_idx):
+# def generate_view_cluster_hyper_posterior(p_State, view_idx):
     view_state_i = p_State.get_view_state()[view_idx]
     column_component_suffstats = view_state_i['column_component_suffstats']
     cluster_counts = view_state_i['row_partition_model']['counts']
