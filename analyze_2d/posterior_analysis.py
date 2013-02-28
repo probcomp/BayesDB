@@ -26,14 +26,16 @@ pylab.scatter(sample_arr[:,0], sample_arr[:,1])
 
 # plot the latent state
 which_view = 0
-cluster_indices = X_D[which_view]
+cluster_indices = p_State.get_X_D()[which_view]
 unique_cluster_indices = set(cluster_indices)
 pylab.figure()
 for cluster_idx in list(unique_cluster_indices):
     which_data_bool = numpy.array(cluster_indices) == cluster_idx
     which_data = T[which_data_bool]
-    which_color = color_list[cluster_idx % len(color_list)]
-    which_marker = marker_list[cluster_idx / len(color_list)]
+    color_idx = cluster_idx % len(color_list)
+    marker_idx = (cluster_idx / len(color_list)) % len(marker_list)
+    which_color = color_list[color_idx]
+    which_marker = marker_list[marker_idx]
     print which_color, which_marker
     pylab.scatter(which_data[:, 0], which_data[:, 1],
                   color=which_color, marker=which_marker)
@@ -41,9 +43,11 @@ for cluster_idx in list(unique_cluster_indices):
 # plot some derived info
 which_view = 0
 get_mus = lambda hypers_pair: (hypers_pair[0][3], hypers_pair[1][3]) 
-cluster_hypers = sh.generate_view_cluster_means(p_State, which_view)
-cluster_means = numpy.array(map(get_mus, cluster_hypers))
-pylab.scatter(cluster_means[:, 0], cluster_means[:, 1],
+cluster_hyper_posterior = sh.generate_view_cluster_hyper_posterior(
+    p_State, which_view)
+cluster_hyper_posterior_means = numpy.array(map(get_mus, cluster_hyper_posterior))
+pylab.scatter(cluster_hyper_posterior_means[:, 0],
+              cluster_hyper_posterior_means[:, 1],
               color='k', marker='D', linewidths=2)
 
 print p_State.get_view_state()[0]['row_partition_model']['counts']
