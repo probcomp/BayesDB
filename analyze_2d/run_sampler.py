@@ -53,14 +53,19 @@ for idx in range(N_transitions):
     print "transitioning: %s" % idx
     p_State.transition()
 #
-X_D = p_State.get_X_D()
-X_L = p_State.get_X_L()
-print "X_D:", X_D
-print "X_L:", X_L
-for view_idx, view_state_i in enumerate(p_State.get_view_state()):
-    print "view_state_i:", view_idx
-    for key, value in view_state_i.iteritems():
-        print key, value
-    print
+for i in range(3):
+    for j in range(100):
+        print "transitioning: %s, %s" % (i, j)
+        p_State.transition()
+    execfile('posterior_analysis.py')
 
-execfile('posterior_analysis.py')
+def print_state_info():
+    X_D = p_State.get_X_D()
+    X_L = p_State.get_X_L()
+    print "X_D:", X_D
+    print "X_L:", X_L
+    for view_idx, view_state_i in enumerate(p_State.get_view_state()):
+        print "view_state_i:", view_idx
+        for key, value in view_state_i.iteritems():
+            print key, value
+        print
