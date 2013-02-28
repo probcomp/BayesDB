@@ -47,7 +47,7 @@ def generate_view_cluster_hyper_posterior(p_State, view_idx):
 def generate_column_sample(random_state, p_State, view_idx, col_idx, cluster_idx):
     r, nu, s, mu = get_updated_continuous_hypers(p_State, view_idx, col_idx, cluster_idx)
     standard_t_draw = random_state.standard_t(nu)
-    student_t_draw = standard_t_draw * (s * (r + 1)) / (nu * r) + mu
+    student_t_draw = standard_t_draw * numpy.sqrt((s * (r + 1)) / (nu / 2. * r)) + mu
     return student_t_draw
 
 def generate_cluster_draws(random_state, p_State, column_view_idx_lookup):
