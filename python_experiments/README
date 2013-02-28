@@ -91,6 +91,8 @@ Compiling MATLAB Code on Picloud through CSAIL:
 >>> def test():
 ...     return os.popen('sh ./run_test.sh matlab/mcr/v717/ 1').read()
 >>> cloud.call(test, _env='matlab') 
+- make sure to sync the relevant volumes
+cloud.volume.sync('/Users/peter/Documents/research/preddb/data/', 'crosscat-data:')
 
 
 Compiling MATLAB Code on Condor:
