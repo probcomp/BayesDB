@@ -140,7 +140,12 @@ int main(int argc, char** argv) {
 					     mu_grids[global_col_idx]);
   }
 
-  View v = View(data, global_row_indices, global_column_indices, hypers_m,
+  map<int, string> global_col_types;
+  for(int i=0; i<global_column_indices.size(); i++) {
+    global_col_types[i] = CONTINUOUS_MODELTYPE;
+  }
+  View v = View(data, global_col_types,
+		global_row_indices, global_column_indices, hypers_m,
 		row_crp_alpha_grid, r_grid, nu_grid, s_grids, mu_grids,
 		SEED);
 
