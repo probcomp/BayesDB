@@ -79,6 +79,7 @@ class State {
   //
   // calculators
   double calc_feature_view_predictive_logp(std::vector<double> col_data,
+					   std::string col_datatype,
 					   View v,
 					   double &crp_log_delta,
 					   double &data_log_delta,

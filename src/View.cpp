@@ -359,12 +359,13 @@ double View::transition(std::map<int, std::vector<double> > row_data_map) {
 }
 
 double View::calc_column_predictive_logp(vector<double> column_data,
+					 string col_datatype,
 					 vector<int> data_global_row_indices,
 					 map<string, double> hypers) {
   double score_delta = 0;
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    score_delta += (**it).calc_column_predictive_logp(column_data,
+    score_delta += (**it).calc_column_predictive_logp(column_data, col_datatype,
 						      data_global_row_indices,
 						      hypers);
   }

@@ -73,9 +73,11 @@ vector<int> State::get_view_counts() const {
 
 double State::insert_feature(int feature_idx, vector<double> feature_data,
 			     View &which_view) {
+  string col_datatype = global_col_datatypes[feature_idx];
   map<string, double> &hypers = hypers_m[feature_idx];
   double crp_logp_delta, data_logp_delta;
   double score_delta = calc_feature_view_predictive_logp(feature_data,
+							 col_datatype,
 							 which_view,
 							 crp_logp_delta,
 							 data_logp_delta,
@@ -103,6 +105,7 @@ double State::sample_insert_feature(int feature_idx, vector<double> feature_data
 
 double State::remove_feature(int feature_idx, vector<double> feature_data,
 			     View* &p_singleton_view) {
+  string col_datatype = global_col_datatypes[feature_idx];
   map<string, double> &hypers = hypers_m[feature_idx];
   map<int,View*>::iterator it = view_lookup.find(feature_idx);
   assert(it!=view_lookup.end());
@@ -112,6 +115,7 @@ double State::remove_feature(int feature_idx, vector<double> feature_data,
   double data_logp_delta = which_view.remove_col(feature_idx);
   double crp_logp_delta, other_data_logp_delta;
   double score_delta = calc_feature_view_predictive_logp(feature_data,
+							 col_datatype,
 							 which_view,
 							 crp_logp_delta,
 							 other_data_logp_delta,
@@ -315,7 +319,8 @@ double State::transition_views(const MatrixD &data) {
   return score_delta;
 }
 
-double State::calc_feature_view_predictive_logp(vector<double> col_data, View v,
+double State::calc_feature_view_predictive_logp(vector<double> col_data,
+						string col_datatype, View v,
 						double &crp_log_delta,
 						double &data_log_delta,
 						map<string, double> hypers) const {
@@ -326,7 +331,7 @@ double State::calc_feature_view_predictive_logp(vector<double> col_data, View v,
   //
   vector<int> data_global_row_indices = create_sequence(col_data.size());
   // pass singleton_view down to here, or at least hypers
-  data_log_delta = v.calc_column_predictive_logp(col_data,
+  data_log_delta = v.calc_column_predictive_logp(col_data, col_datatype,
 						 data_global_row_indices,
 						 hypers);
   //
@@ -340,9 +345,12 @@ vector<double> State::calc_feature_view_predictive_logps(vector<double> col_data
   map<string, double> hypers = get(hypers_m, global_col_idx);
   set<View*>::iterator it;
   double crp_log_delta, data_log_delta;
+  string col_datatype = get(global_col_datatypes, global_col_idx);
   for(it=views.begin(); it!=views.end(); it++) {
     View &v = **it;
-    double score_delta = calc_feature_view_predictive_logp(col_data, v,
+    double score_delta = calc_feature_view_predictive_logp(col_data,
+							   col_datatype,
+							   v,
 							   crp_log_delta,
 							   data_log_delta,
 							   hypers);

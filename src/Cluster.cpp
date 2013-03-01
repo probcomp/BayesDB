@@ -75,6 +75,7 @@ vector<double> Cluster::calc_hyper_conditionals(int which_col,
 }
 
 double Cluster::calc_column_predictive_logp(vector<double> column_data,
+					    string col_datatype,
 					    vector<int> data_global_row_indices,
 					    map<string, double> hypers) {
   map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);

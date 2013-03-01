@@ -87,6 +87,7 @@ class View {
 					      std::string which_hyper,
 					      std::vector<double> hyper_grid) const;
   double calc_column_predictive_logp(std::vector<double> column_data,
+				     std::string col_datatype,
 				     std::vector<int> data_global_row_indices,
 				     std::map<std::string, double> hypers);
   //
