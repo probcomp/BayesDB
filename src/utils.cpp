@@ -139,16 +139,6 @@ vector<int> extract_global_ordering(map<int, int> global_to_local) {
   return global_indices;
 }
 
-template <class T>
-map<int, T> construct_lookup_map(vector<int> keys, vector<T> values) {
-  assert(keys.size()==values.size());
-  map<int, T> lookup;
-  for(unsigned int idx=0; idx<keys.size(); idx++) {
-    lookup[keys[idx]] = values[idx];
-  }
-  return lookup;
-}
-
 map<int, int> construct_lookup_map(vector<int> keys) {
   return construct_lookup_map(keys, create_sequence(keys.size()));
 }
@@ -336,4 +326,14 @@ void construct_continuous_specific_hyper_grid(int n_grid,
   double max = *std::max_element(col_data.begin(), col_data.end());
   vector<double> mu_grid_append = linspace(min, max, APPEND_N);
   mu_grid = append(paramRange, mu_grid_append);
+}
+
+void construct_multinomial_base_hyper_grids(int n_grid,
+					    int data_num_vectors,
+					    vector<double> &multinomial_alpha_grid) {
+  int APPEND_N = (n_grid + 1) / 2;
+  //
+  vector<double> paramRange = linspace(0.03, .97, n_grid/2);
+  vector<double> multinomial_alpha_grid_append = log_linspace(1., data_num_vectors, APPEND_N);
+  multinomial_alpha_grid = append(paramRange, multinomial_alpha_grid_append);
 }
