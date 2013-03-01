@@ -79,15 +79,23 @@ double Cluster::calc_column_predictive_logp(vector<double> column_data,
 					    vector<int> data_global_row_indices,
 					    map<string, double> hypers) {
   map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
-  ContinuousComponentModel ccm(hypers);
+  ComponentModel *p_cm;
+  if(col_datatype==CONTINUOUS_DATATYPE) {
+    p_cm = new ContinuousComponentModel(hypers);
+  } else if(col_datatype==CONTINUOUS_DATATYPE) {
+    p_cm = new MultinomialComponentModel(hypers);
+  } else {
+    assert(1==0);
+  }
   set<int>::iterator it;
   for(it=row_indices.begin(); it!=row_indices.end(); it++) {
     int global_row_idx = *it;
     int data_idx = global_to_data[global_row_idx];
     double value = column_data[data_idx];
-    ccm.insert_element(value);
+    p_cm->insert_element(value);
   }
-  double score_delta = ccm.calc_marginal_logp();
+  double score_delta = p_cm->calc_marginal_logp();
+  delete p_cm;
   return score_delta;
 }
 

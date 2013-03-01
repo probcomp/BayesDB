@@ -11,7 +11,9 @@
 #include "assert.h"
 //
 #include "utils.h"
+#include "constants.h"
 #include "ContinuousComponentModel.h"
+#include "MultinomialComponentModel.h"
 
 
 class Cluster {
