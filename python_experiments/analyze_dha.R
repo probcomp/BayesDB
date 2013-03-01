@@ -8,6 +8,16 @@ results = results[order(results[,3], decreasing=T),]
 
 mine = read.csv('../../mine/dha-results.csv')
 
+z.mat = read.csv('../../crosscat-results/dha-z-results.csv',
+  header=F)
+z.mat = as.matrix(z.mat + t(z.mat))
+diag(z.mat) = 1
+
+library(fields)
+image.plot(z.mat, axes=F, col = )
+
+
+
 par(mfrow = c(3,3))
 for(i in 1:9) {
   col1 = mine[i,1]

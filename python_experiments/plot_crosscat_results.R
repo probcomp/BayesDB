@@ -29,7 +29,7 @@ results <- get.results('ring')
 compare <- get.results('ring', baseline.dir)
 compare = aggregate(compare[,3], list(compare[,2]), mean)
 
-plot.vars = results[,c(2,4)]
+plot.vars = results[,c(2,6)]
 plot.vars[,1] = apply(cbind(plot.vars[,1]), 1,
            function(x) compare[[2]][compare[[1]] == x[1]])
 colnames(plot.vars) <- c('x','y')
@@ -37,8 +37,8 @@ colnames(plot.vars) <- c('x','y')
 plot.vars[,1] = round(plot.vars[,1], 3)
 
 b = boxplot(y ~ x, data = plot.vars,
-     xlab = 'Empirical Mutual Information',
-     ylab = 'Crosscat-Estimated Mutual Information')
+  xlab = 'Empirical Mutual Information',
+  ylab = 'Crosscat-Estimated Mutual Information')
 
 dev.off()
 
@@ -63,9 +63,9 @@ for(n in unique(all.results[,2])) {
 
   results = all.results[all.results[,2] == n,]
 
-  plot.vars = results[,c(3,5)]
+  plot.vars = results[,c(3,7)]
 
-  #plot.vars[,1] <- true.mi(plot.vars[,1])
+                                        #plot.vars[,1] <- true.mi(plot.vars[,1])
   plot.vars[,1] <- plot.vars[,1]
   plot.vars[,2] <- est.r2(plot.vars[,2])
   ylim = c(0,1)
@@ -76,7 +76,7 @@ for(n in unique(all.results[,2])) {
     xlab = 'Ground Truth Correlation',
     ylab = 'Crosscat-Estimated Correlation',
     ylim = c(0,1))
-    
+  
 
   
   dev.off()
@@ -89,13 +89,13 @@ plot.outliers <- function(experiment, name) {
   
   results <- get.results(experiment)
 
-  plot.vars = results[,c(2,4)]
+  plot.vars = results[,c(2,6)]
   
   colnames(plot.vars) <- c('x','y')
 
   b = boxplot(y ~ x, data = plot.vars,
-     xlab = 'Number of Outliers',
-     ylab = 'Crosscat-Estimated Transformed Mutual Information')
+    xlab = 'Number of Outliers',
+    ylab = 'Crosscat-Estimated Transformed Mutual Information')
 
   
   dev.off()
@@ -130,26 +130,27 @@ count.hits = function(vars, values, threshold, experiment) {
 }
 
 plot.pairwise <- function(experiment) {
-
-cc.results = get.results(experiment, reps = 1)
-lm.results = get.results(experiment, baseline.dir, reps = 1)
-mine.results = get.results(experiment, mine.dir, reps = 1)
-
-ns = unique(cc.results[,'n'])
-corrs = unique(cc.results[,'corr'])
-
-for(i in 1:length(ns)) {
   
-  png(paste(out.dir, experiment, '-n-', ns[i], '.png'))
-  
-  par(oma = c(0,0,2,0))
-  par(mfrow = c(3, 4))
-  
-  for(j in 1:length(corrs)) {
+  cc.results = get.results(experiment, reps = 1)
+  lm.results = get.results(experiment, baseline.dir, reps = 1)
+  mine.results = get.results(experiment, mine.dir, reps = 1)
 
-    indices = which(lm.results[,2] == ns[i] &
-      lm.results[,3] == corrs[j])
+  ns = unique(cc.results[,'n'])
+  corrs = unique(cc.results[,'corr'])
+  
+  for(i in 1:nrow(pars)) {
 
+    n = pars[i,1]
+    corr = pars[i,2]
+
+    png(paste(out.dir, experiment, '-n-', n, '-corr-', corr, '.png'))
+    
+    par(oma = c(0,0,2,0))
+    r = sqrt(length(corrs))
+    
+    indices = which(lm.results[,2] == n &
+      lm.results[,3] == corr)
+    
     ncols = 50
     if(experiment == 'correlated-pairs') {
       hits = ncols/2
@@ -162,19 +163,21 @@ for(i in 1:length(ns)) {
     data = lm.results[indices,]
     tpr = data[,'unadj_tp']/hits
     fpr = data[,'unadj_fp']/misses
-    plot(fpr, tpr, 
-         main = paste('corr = ',corrs[j]),
+    plot(fpr, tpr,
+         xlab = 'False Positive Rate',
+         ylab = 'True Positive Rate',
+         main = paste('N = ', n,  ', Correlation = ',corr),
          xlim = c(0,1), ylim = c(0,1), type = 'l')
-
-    indices = which(cc.results[,'n'] == as.numeric(ns[i]) &
-      cc.results[,'corr'] == as.numeric(corrs[j]))
+    
+    indices = which(cc.results[,'n'] == as.numeric(n) &
+      cc.results[,'corr'] == as.numeric(corr))
     data = cc.results[indices,]
     data[,'mutual_info'] = est.r2(data[,'mutual_info'])
-
+    
     ps = seq(-0.1,1.1,length=13)
-    #thresholds = seq(-0.1,1.1,length=13)
+    
     thresholds = 0
-
+    
     by = list(data[,1], data[,5], data[,6])
     counts = sapply(thresholds, function(t) data[,7] > t)/hist.reps
     values = apply(counts, 2, aggregate, by, sum)
@@ -187,20 +190,20 @@ for(i in 1:length(ns)) {
     } else {
       truth = (vars[,1] <= 25) == (vars[,2] <= 25)
     }
-
+    
     guesses = lapply(ps, function(p) (values > p) & truth)
     tp = lapply(guesses, function(x) apply(x, 2, sum))
-
+    
     guesses = lapply(ps, function(p) (values > p) & !truth)
     fp = lapply(guesses, function(x) apply(x, 2, sum))
-
+    
     tpr = unlist(tp)/hits
     fpr = unlist(fp)/misses
     
     lines(fpr, tpr, col = 'blue')
     
-    indices = which(mine.results[,'n'] == as.numeric(ns[i]) &
-      mine.results[,'corr'] == as.numeric(corrs[j]))
+    indices = which(mine.results[,'n'] == as.numeric(n) &
+      mine.results[,'corr'] == as.numeric(corr))
     data = mine.results[indices,]
 
     values = data[,6]
@@ -211,134 +214,22 @@ for(i in 1:length(ns)) {
     } else {
       truth = (vars[,1] <= 25) == (vars[,2] <= 25)
     }
-
+    
     guesses = lapply(ps, function(p) (values > p) & truth)
     tp = lapply(guesses, sum)
-
+    
     guesses = lapply(ps, function(p) (values > p) & !truth)
     fp = lapply(guesses, sum)
-
+    
     tpr = unlist(tp)/hits
     fpr = unlist(fp)/misses
     
     lines(fpr, tpr, col = 'green')
-    
+
+    dev.off()
   }
-  
-  title(main = paste('Pairwise Correlation Data, N =', ns[i]),
-        outer = TRUE)
-  
-  dev.off()
-}
+
 }
 
-plot.pairwise('correlated-pairs')
+#plot.pairwise('correlated-pairs')
 plot.pairwise('correlated-halves')
-
-### plot anova data
-
-plot.anova <- function(file.base, name) {
-
-  results = get.results(file.base)
-
-  diffs = results[,3] - results[,4]
-  h = hist(diffs)
-  xlim = c(min(0,h$breaks), max(0,h$breaks))
-  hist(diffs,
-       xlab = 'I(X,Z|Y) - I(Y,Z|X)',
-       xlim = xlim,
-       main = name)
-  abline(v = 0, col='red')
-}
-
-out.dir = paste(out.dir, 'anova/')
-
-file.base = 'simple-anova'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + Y = Z')
-dev.off()
-
-file.base = 'simple-anova-omitted'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + W = Z')
-dev.off()
-
-#file.base = 'simple-anova-mixture'
-#png(paste(out.dir, file.base, '-results.png'))
-#plot.anova(file.base, 'X + Y = Z, X,Y ~ mixture')
-#dev.off()
-
-file.base = 'anova-1'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + Y + XY = Z')
-dev.off()
-
-file.base = 'anova-2'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + XY = Z')
-dev.off()
-
-file.base = 'anova-3'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'XY = Z')
-dev.off()
-
-file.base = 'anova-1-omitted'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + W + XW= Z')
-dev.off()
-
-file.base = 'anova-2-omitted'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + XW = Z')
-dev.off()
-
-file.base = 'anova-3-omitted'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'XW = Z')
-dev.off()
-
-#file.base = 'anova-1-mixture'
-#png(paste(out.dir, file.base, '-results.png'))
-#plot.anova(file.base, 'X + Y + XY = Z, X,Y ~ mixture')
-#dev.off()
-
-#file.base = 'anova-2-mixture'
-#png(paste(out.dir, file.base, '-results.png'))
-#plot.anova(file.base, 'X + XY = Z, X,Y ~ mixture')
-#dev.off()
-
-#file.base = 'anova-3-mixture'
-#png(paste(out.dir, file.base, '-results.png'))
-#plot.anova(file.base, 'XY = Z, X,Y ~ mixture')
-#dev.off()
-
-file.base = 'anova-correlated-1'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + Y + XY = Z, X,Y ~ correlated')
-dev.off()
-
-file.base = 'anova-correlated-2'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + XY = Z, X,Y ~ correlated')
-dev.off()
-
-file.base = 'anova-correlated-3'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'XY = Z, X,Y ~ correlated')
-dev.off()
-
-file.base = 'anova-correlated-1-omitted'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + W + XW = Z, X,Y ~ correlated')
-dev.off()
-
-file.base = 'anova-correlated-2-omitted'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'X + XW = Z, X,Y ~ correlated')
-dev.off()
-
-file.base = 'anova-correlated-3-omitted'
-png(paste(out.dir, file.base, '-results.png'))
-plot.anova(file.base, 'XW = Z, X,Y ~ correlated')
-dev.off()

@@ -39,9 +39,9 @@ class Experiment:
         ns = [5, 10, 25, 50, 100]    
         corrs = np.array(range(0,11))/10.0
         pars = []
-        for i in range(len(ns)):
-            for j in range(len(corrs)):
-                pars += [[ns[i], corrs[j]]]
+        for j in range(len(ns)):
+            for k in range(len(corrs)):
+                pars += [[ns[j], corrs[k]]]
         par_names = ['n', 'corr']
         self.run_corr_exp('correlation-i-' + str(i), pars, par_names)
         
@@ -64,9 +64,9 @@ class Experiment:
         ns = [5, 25, 50, 100, 200]    
         corrs = np.array(range(0,11))/10.0
         pars = []
-        for i in range(len(ns)):
-            for j in range(len(corrs)):
-                pars += [[ns[i], corrs[j]]]
+        for j in range(len(ns)):
+            for k in range(len(corrs)):
+                pars += [[ns[j], corrs[k]]]
         self.run_corr_exp('correlated-pairs-i-' + str(i), pars, par_names)
 
     def run_corr_exp(self, file_base, pars, par_names):
