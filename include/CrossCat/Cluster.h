@@ -12,6 +12,7 @@
 //
 #include "utils.h"
 #include "constants.h"
+#include "ComponentModel.h"
 #include "ContinuousComponentModel.h"
 #include "MultinomialComponentModel.h"
 
@@ -26,7 +27,7 @@ class Cluster {
   int get_num_cols() const;
   int get_count() const;
   double get_marginal_logp() const;
-  ContinuousComponentModel get_model(int idx) const;
+  ComponentModel get_model(int idx) const;
   std::set<int> get_row_indices_set() const;
   std::vector<int> get_row_indices_vector() const;
   //
@@ -47,6 +48,7 @@ class Cluster {
   double remove_row(std::vector<double> values, int row_idx);
   double remove_col(int col_idx);
   double insert_col(std::vector<double> data,
+		    std::string col_datatype,
 		    std::vector<int> data_global_row_indices,
 		    std::map<std::string, double> &hypers);
   double incorporate_hyper_update(int which_col);
@@ -55,7 +57,7 @@ class Cluster {
   friend std::ostream& operator<<(std::ostream& os, const Cluster& c);
   //
   // make private later
-  std::vector<ContinuousComponentModel> model_v;
+  std::vector<ComponentModel> model_v;
  private:
   int count;
   double score;

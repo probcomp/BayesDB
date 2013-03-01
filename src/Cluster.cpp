@@ -28,7 +28,7 @@ double Cluster::get_marginal_logp() const {
   return score;
 }
 
-ContinuousComponentModel Cluster::get_model(int idx) const {
+ComponentModel Cluster::get_model(int idx) const {
   return model_v[idx];
 }
 
@@ -42,7 +42,7 @@ vector<int> Cluster::get_row_indices_vector() const {
 
 std::vector<double> Cluster::calc_marginal_logps() const {
   std::vector<double> logps;
-  typename std::vector<ContinuousComponentModel>::const_iterator it;
+  typename std::vector<ComponentModel>::const_iterator it;
   for(it=model_v.begin(); it!=model_v.end(); it++) {
     double logp = (*it).calc_marginal_logp();
     logps.push_back(logp);
@@ -68,7 +68,7 @@ double Cluster::calc_row_predictive_logp(vector<double> values) const {
 vector<double> Cluster::calc_hyper_conditionals(int which_col,
 						string which_hyper,
 						vector<double> hyper_grid) const {
-  ContinuousComponentModel ccm = model_v[which_col];
+  ComponentModel ccm = model_v[which_col];
   vector<double> hyper_conditionals = ccm.calc_hyper_conditionals(which_hyper,
 								  hyper_grid);
   return hyper_conditionals;
@@ -134,20 +134,29 @@ double Cluster::remove_col(int col_idx) {
 }
 
 double Cluster::insert_col(vector<double> data,
+			   string col_datatype,
 			   vector<int> data_global_row_indices,
 			   map<string, double> &hypers) {
   map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
-  ContinuousComponentModel ccm(hypers);
+  ComponentModel *p_cm;
+  if(col_datatype==CONTINUOUS_DATATYPE) {
+    p_cm = new ContinuousComponentModel(hypers);
+  } else if(col_datatype==CONTINUOUS_DATATYPE) {
+    p_cm = new MultinomialComponentModel(hypers);
+  } else {
+    assert(1==0);
+  }
   set<int>::iterator it;
   for(it=row_indices.begin(); it!=row_indices.end(); it++) {
     int global_row_idx = *it;
     int data_idx = global_to_data[global_row_idx];
     double value = data[data_idx];
-    ccm.insert_element(value);
+    p_cm->insert_element(value);
   }
-  double score_delta = ccm.calc_marginal_logp();
-  model_v.push_back(ccm);
+  double score_delta = p_cm->calc_marginal_logp();
+  model_v.push_back(*p_cm);
   score += score_delta;
+  delete p_cm;
   //
   return score_delta;
 }
@@ -175,7 +184,14 @@ void Cluster::init_columns(vector<map<string, double>*> &hypers_v) {
   vector<map<string, double>*>::iterator it;
   for(it=hypers_v.begin(); it!=hypers_v.end(); it++) {
     map<string, double> &hypers = **it;
-    model_v.push_back(ContinuousComponentModel(hypers));
+    string continuous_key = "nu";
+    string multinomial_key = "multinomial_alpha";
+    if(in(hypers, continuous_key)) {
+      model_v.push_back(ContinuousComponentModel(hypers));
+    } else if(in(hypers, multinomial_key)) {
+    } else {
+      assert(1==0);
+    }
     int col_idx = model_v.size() - 1;
     score += model_v[col_idx].calc_marginal_logp();
   }

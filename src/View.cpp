@@ -166,7 +166,7 @@ vector<map<string, double> > View::get_column_component_suffstats_i(int global_c
   set<Cluster*>::const_iterator it = clusters.begin();
   for(; it!=clusters.end(); it++) {
     int local_col_idx = get(global_to_local, global_col_idx);
-    ContinuousComponentModel ccm  = (**it).get_model(local_col_idx);
+    ComponentModel ccm  = (**it).get_model(local_col_idx);
     map<string, double> suffstats = ccm.get_suffstats();
     column_component_suffstats.push_back(suffstats);
   }
@@ -447,11 +447,13 @@ double View::insert_col(vector<double> col_data,
 			int global_col_idx,
 			map<string, double> &hypers) {
   double score_delta = 0;
+  string col_datatype = global_col_datatypes[global_col_idx];
   //
   hypers_v.push_back(&hypers);
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    score_delta += (**it).insert_col(col_data, data_global_row_indices, hypers);
+    score_delta += (**it).insert_col(col_data, col_datatype,
+				     data_global_row_indices, hypers);
   }
   int num_cols = get_num_cols();
   global_to_local[global_col_idx] = num_cols;

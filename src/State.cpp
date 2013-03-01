@@ -87,7 +87,8 @@ double State::insert_feature(int feature_idx, vector<double> feature_data,
 							 data_logp_delta,
 							 hypers);
   vector<int> data_global_row_indices = create_sequence(feature_data.size());
-  which_view.insert_col(feature_data, data_global_row_indices, feature_idx,
+  which_view.insert_col(feature_data,
+			data_global_row_indices, feature_idx,
 			hypers);
   view_lookup[feature_idx] = &which_view;
   column_crp_score += crp_logp_delta;
@@ -97,6 +98,7 @@ double State::insert_feature(int feature_idx, vector<double> feature_data,
 
 double State::sample_insert_feature(int feature_idx, vector<double> feature_data,
 				    View &singleton_view) {
+  string col_datatype = global_col_datatypes[feature_idx];
   vector<double> unorm_logps = calc_feature_view_predictive_logps(feature_data,
 								  feature_idx);
   double rand_u = draw_rand_u();
