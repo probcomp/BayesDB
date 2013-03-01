@@ -16,10 +16,10 @@ e = Experiment(
 for i in range(data_offset, data_offset + data_reps):
 
     #e.run_ring(i)
-    e.run_correlation(i)
+    #e.run_correlation(i)
     #e.run_outliers(i)
     #e.run_outliers_correlated(i)
     #e.run_correlated_halves(i)
 
-    #e.run_correlated_pairs(i)
+    e.run_correlated_pairs(i)
 

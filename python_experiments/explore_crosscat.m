@@ -24,11 +24,11 @@ for j = 1:200
     s(k,:) = simple_predictive_sample_newRow(state, [], 1:state.F);
 end
 
-
-plot(s(:,1), s(:,2), '.')
-
 figure
 hold all
+
+plot(s(:,1), s(:,2), 'x')
+
 for i = 1:100
     inds = state.o(1,:) == i;
     plot(state.data(inds, 1), state.data(inds, 2), '.')

@@ -15,4 +15,4 @@ end
 
 feature_z = feature_z./reps;
 
-dlmwrite('../../crosscat-results/dha-z-results.csv',',');
+dlmwrite('../../crosscat-results/dha-z-results.csv',feature_z,',');

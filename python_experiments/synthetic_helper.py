@@ -61,12 +61,8 @@ class Experiment:
         self.run_corr_exp('correlated-halves-i-' + str(i), pars, par_names)
     
     def run_correlated_pairs(self, i):
-        ns = [5, 25, 50, 100, 200]    
-        corrs = np.array(range(0,11))/10.0
-        pars = []
-        for j in range(len(ns)):
-            for k in range(len(corrs)):
-                pars += [[ns[j], corrs[k]]]
+        pars = [[25, 0.5], [50, 0.3], [100, 0.2]]
+        par_names = ['n', 'corr']
         self.run_corr_exp('correlated-pairs-i-' + str(i), pars, par_names)
 
     def run_corr_exp(self, file_base, pars, par_names):
@@ -100,7 +96,7 @@ class Experiment:
                                  self.n_pred_samples,
                                  self.n_mcmc_iter,
                                  sample_folder)
-                    f.write(','.join(map(str, pars + [j,job_id])) + '\n')
+                    f.write(','.join(map(str, pars[i] + [j,job_id])) + '\n')
 
         f.close()
 

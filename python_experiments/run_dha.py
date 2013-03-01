@@ -1,7 +1,7 @@
 from crosscat_helper import *
 import numpy as np
 
-hist_reps = 10#10
+hist_reps = 100#10
 n_pred_samples = '250'#'250'
 n_mcmc_iter = '500'#'500'
 
@@ -29,7 +29,7 @@ else:
 
 file_base = 'dha'
 
-f = open(out_folder + file_base + '-results.csv', 'w')
+f = open(out_folder + file_base + '-results.csv', 'a')
 if parse:
     job_ids = get_job_ids(in_folder, file_base)
     header = 'rep,i,j,mutual_info\n'
