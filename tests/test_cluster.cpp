@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
   cout << "hypers_v: " << hypers_v << endl;
   
   Cluster cd(hypers_v);
-  vector<ContinuousComponentModel> ccm_v;
+  vector<ComponentModel> ccm_v;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
     ContinuousComponentModel ccm(*hypers_v[col_idx]);
     ccm_v.push_back(ccm);
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
   for(int which_col=0; which_col<num_cols; which_col++) {
     int N_grid = 11;
     double test_scale = 10;
-    ContinuousComponentModel ccm_i = cd.get_model(which_col);
+    ComponentModel ccm_i = cd.get_model(which_col);
     double r, nu, s, mu;
     double precision = 1E-10;
     ccm_i.get_hyper_doubles(r, nu, s, mu);
