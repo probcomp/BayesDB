@@ -7,6 +7,7 @@ using boost::numeric::ublas::range;
 
 State::State(const MatrixD &data,
 	     vector<string> GLOBAL_COL_DATATYPES,
+	     vector<int> GLOBAL_COL_MULTINOMIAL_COUNTS,
 	     vector<int> global_row_indices,
 	     vector<int> global_col_indices,
 	     map<int, map<string, double> > HYPERS_M,
@@ -18,6 +19,7 @@ State::State(const MatrixD &data,
   int num_rows = data.size1();
   int num_cols = data.size2();
   global_col_datatypes = construct_lookup_map(global_col_indices, GLOBAL_COL_DATATYPES);
+  global_col_multinomial_counts = construct_lookup_map(global_col_indices, GLOBAL_COL_MULTINOMIAL_COUNTS);
   construct_base_hyper_grids(num_rows, num_cols, N_GRID);
   // pass colmn types to construct_base_hyper_grids
   construct_column_hyper_grids(data, global_col_indices);
@@ -33,12 +35,14 @@ State::State(const MatrixD &data,
 
 State::State(const MatrixD &data,
 	     vector<string> GLOBAL_COL_DATATYPES,
+	     vector<int> GLOBAL_COL_MULTINOMIAL_COUNTS,
 	     vector<int> global_row_indices,
 	     vector<int> global_col_indices,
 	     int N_GRID, int SEED) : rng(SEED) {
   int num_rows = data.size1();
   int num_cols = data.size2();
   global_col_datatypes = construct_lookup_map(global_col_indices, GLOBAL_COL_DATATYPES);
+  global_col_multinomial_counts = construct_lookup_map(global_col_indices, GLOBAL_COL_MULTINOMIAL_COUNTS);
   construct_base_hyper_grids(num_rows, num_cols, N_GRID);
   construct_column_hyper_grids(data, global_col_indices);
   //
@@ -568,13 +572,19 @@ int State::draw_rand_i(int max) {
 map<string, double> State::uniform_sample_hypers(int global_col_idx) {
   // presume all grids the same size
   int N_GRID = r_grid.size();
+  string col_datatype = global_col_datatypes[global_col_idx];
   map<string, double> hypers;
-  // FIXME: should be selective about which hypers are initialized
-  hypers["r"] = r_grid[draw_rand_i(N_GRID)];
-  hypers["nu"] = nu_grid[draw_rand_i(N_GRID)];
-  hypers["s"] = s_grids[global_col_idx][draw_rand_i(N_GRID)];
-  hypers["mu"] = mu_grids[global_col_idx][draw_rand_i(N_GRID)];
-  hypers["multinomial_alpha"] = multinomial_alpha_grid[draw_rand_i(N_GRID)];
+  if(col_datatype==CONTINUOUS_DATATYPE) {
+    hypers["r"] = r_grid[draw_rand_i(N_GRID)];
+    hypers["nu"] = nu_grid[draw_rand_i(N_GRID)];
+    hypers["s"] = s_grids[global_col_idx][draw_rand_i(N_GRID)];
+    hypers["mu"] = mu_grids[global_col_idx][draw_rand_i(N_GRID)];
+  } else if(col_datatype==MULTINOMIAL_DATATYPE) {
+    hypers["multinomial_alpha"] = multinomial_alpha_grid[draw_rand_i(N_GRID)];
+    hypers["N_distinct_values"] = global_col_multinomial_counts[global_col_idx];
+  } else {
+    assert(1==0);
+  }
   return hypers;
 }
 

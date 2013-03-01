@@ -23,6 +23,7 @@ class State {
  public:
   State(const MatrixD &data,
 	std::vector<std::string> GLOBAL_COL_DATATYPES,
+	std::vector<int> GLOBAL_COL_MULTINOMIAL_COUNTS,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
 	std::map<int, std::map<std::string, double> > HYPERS_M,
@@ -33,6 +34,7 @@ class State {
 	int N_GRID=31, int SEED=0);
   State(const MatrixD &data,
 	std::vector<std::string> GLOBAL_COL_DATATYPES,
+	std::vector<int> GLOBAL_COL_MULTINOMIAL_COUNTS,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
 	int N_GRID=31, int SEED=0);
@@ -95,6 +97,7 @@ class State {
  private:
   // parameters
   std::map<int, std::string> global_col_datatypes;
+  std::map<int, int> global_col_multinomial_counts;
   std::map<int, std::map<std::string, double> > hypers_m;
   double column_crp_alpha;
   double column_crp_score;

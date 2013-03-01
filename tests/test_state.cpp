@@ -26,10 +26,12 @@ int main(int argc, char** argv) {
   vector<int> global_row_indices = create_sequence(data.size1());
   vector<int> global_column_indices = create_sequence(data.size2());
   vector<string> global_col_types;
+  vector<int> global_col_multinomial_counts;
   for(int i=0; i<global_column_indices.size(); i++) {
     global_col_types.push_back(CONTINUOUS_DATATYPE);
+    global_col_multinomial_counts.push_back(0);
   }
-  State s = State(data, global_col_types, global_row_indices, global_column_indices, 11);
+  State s = State(data, global_col_types, global_col_multinomial_counts, global_row_indices, global_column_indices, 11);
 
   cout << "start X_D" << endl << s.get_X_D() << endl;
   int num_views = s.get_num_views();
