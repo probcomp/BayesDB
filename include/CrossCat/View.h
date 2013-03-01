@@ -21,7 +21,7 @@ class View {
  public:
   //FIXME: add constructor with ranges as arguments, rather than recalculate
   View(const MatrixD data,
-       std::map<int, std::string> global_col_datatypes,
+       std::map<int, std::string> GLOBAL_COL_DATATYPES,
        std::vector<std::vector<int> > row_partitioning,
        std::vector<int> global_row_indices,
        std::vector<int> global_col_indices,
@@ -34,7 +34,7 @@ class View {
        double CRP_ALPHA,
        int SEED=0);
   View(const MatrixD data,
-       std::map<int, std::string> global_col_datatypes,
+       std::map<int, std::string> GLOBAL_COL_DATATYPES,
        std::vector<int> global_row_indices,
        std::vector<int> global_col_indices,
        std::map<int, std::map<std::string, double> > &hypers_m,
@@ -44,7 +44,7 @@ class View {
        std::map<int, std::vector<double> > S_GRIDS,
        std::map<int, std::vector<double> > MU_GRIDS,
        int SEED=0);
-  View(std::map<int, std::string> global_col_datatypes,
+  View(std::map<int, std::string> GLOBAL_COL_DATATYPES,
        std::vector<int> global_row_indices,
        std::vector<double> ROW_CRP_ALPHA_GRID,
        std::vector<double> R_GRID,
@@ -143,6 +143,7 @@ class View {
   double crp_alpha;
   double crp_score;
   double data_score;
+  std::map<int, std::string> global_col_datatypes;
   //  grids
   std::vector<double> crp_alpha_grid;
   std::vector<double> r_grid;

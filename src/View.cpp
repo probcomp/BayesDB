@@ -11,7 +11,7 @@ typedef set<Cluster*> setCp;
 
 // row partitioning, row_crp_alpha fully specified
 View::View(const MatrixD data,
-	   map<int, string> global_col_datatypes,
+	   map<int, string> GLOBAL_COL_DATATYPES,
 	   vector<vector<int> > row_partitioning,
 	   vector<int> global_row_indices,
 	   vector<int> global_col_indices,
@@ -25,6 +25,7 @@ View::View(const MatrixD data,
 	   int SEED) : crp_alpha(CRP_ALPHA), rng(SEED) {
   crp_score = 0;
   data_score = 0;
+  global_col_datatypes = GLOBAL_COL_DATATYPES;
   //
   crp_alpha_grid = ROW_CRP_ALPHA_GRID;
   r_grid = R_GRID;
@@ -38,7 +39,7 @@ View::View(const MatrixD data,
 
 // row partitioning unspecified, sample from crp
 View::View(const MatrixD data,
-	   map<int, string> global_col_datatypes,
+	   map<int, string> GLOBAL_COL_DATATYPES,
 	   vector<int> global_row_indices,
 	   vector<int> global_col_indices,
 	   map<int, map<string, double> > &hypers_m,
@@ -50,6 +51,7 @@ View::View(const MatrixD data,
 	   int SEED) : rng(SEED) {
   crp_score = 0;
   data_score = 0;
+  global_col_datatypes = GLOBAL_COL_DATATYPES;
   //
   crp_alpha_grid = ROW_CRP_ALPHA_GRID;
   r_grid = R_GRID;
@@ -66,7 +68,7 @@ View::View(const MatrixD data,
 }
 
 // empty View: for gibbs sampling a new partitioning of columns
-View::View(std::map<int, std::string> global_col_datatypes,
+View::View(std::map<int, std::string> GLOBAL_COL_DATATYPES,
 	   std::vector<int> global_row_indices,
 	   std::vector<double> ROW_CRP_ALPHA_GRID,
 	   std::vector<double> R_GRID,
@@ -76,6 +78,7 @@ View::View(std::map<int, std::string> global_col_datatypes,
 	   int SEED) : rng(SEED) {
   crp_score = 0;
   data_score = 0;
+  global_col_datatypes = GLOBAL_COL_DATATYPES;
   //
   crp_alpha_grid = ROW_CRP_ALPHA_GRID;
   r_grid = R_GRID;
