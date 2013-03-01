@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
 
   map<int, string> global_col_types;
   for(int i=0; i<global_column_indices.size(); i++) {
-    global_col_types[i] = CONTINUOUS_MODELTYPE;
+    global_col_types[i] = CONTINUOUS_DATATYPE;
   }
   View v = View(data, global_col_types,
 		global_row_indices, global_column_indices, hypers_m,

@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   vector<int> global_column_indices = create_sequence(data.size2());
   vector<string> global_col_types;
   for(int i=0; i<global_column_indices.size(); i++) {
-    global_col_types.push_back(CONTINUOUS_MODELTYPE);
+    global_col_types.push_back(CONTINUOUS_DATATYPE);
   }
   State s = State(data, global_col_types, global_row_indices, global_column_indices, 11);
 
