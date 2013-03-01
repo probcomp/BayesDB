@@ -6,7 +6,7 @@ using boost::numeric::ublas::project;
 using boost::numeric::ublas::range;
 
 State::State(const MatrixD &data,
-	     vector<string> global_col_datatypes,
+	     vector<string> GLOBAL_COL_DATATYPES,
 	     vector<int> global_row_indices,
 	     vector<int> global_col_indices,
 	     map<int, map<string, double> > HYPERS_M,
@@ -17,6 +17,7 @@ State::State(const MatrixD &data,
 	     int N_GRID, int SEED) : rng(SEED) {
   int num_rows = data.size1();
   int num_cols = data.size2();
+  global_col_datatypes = construct_lookup_map(global_col_indices, GLOBAL_COL_DATATYPES);
   construct_base_hyper_grids(num_rows, num_cols, N_GRID);
   // pass colmn types to construct_base_hyper_grids
   construct_column_hyper_grids(data, global_col_indices);
@@ -25,24 +26,26 @@ State::State(const MatrixD &data,
   hypers_m = HYPERS_M;
   //
   // pass columntypes
-  init_views(data, global_row_indices, global_col_indices, column_partition,
-	     row_partition_v, row_crp_alpha_v);
+  init_views(data, global_col_datatypes,
+	     global_row_indices, global_col_indices,
+	     column_partition, row_partition_v, row_crp_alpha_v);
 }
 
 State::State(const MatrixD &data,
-	     vector<string> global_col_datatypes,
+	     vector<string> GLOBAL_COL_DATATYPES,
 	     vector<int> global_row_indices,
 	     vector<int> global_col_indices,
 	     int N_GRID, int SEED) : rng(SEED) {
   int num_rows = data.size1();
   int num_cols = data.size2();
+  global_col_datatypes = construct_lookup_map(global_col_indices, GLOBAL_COL_DATATYPES);
   construct_base_hyper_grids(num_rows, num_cols, N_GRID);
   construct_column_hyper_grids(data, global_col_indices);
   //
   init_base_hypers();
   init_column_hypers(global_col_indices);
   //
-  init_views(data, global_row_indices, global_col_indices);
+  init_views(data, global_col_datatypes, global_row_indices, global_col_indices);
 }
 
 State::~State() {
@@ -153,7 +156,8 @@ View& State::get_new_view() {
   vector<int> first_view_cluster_counts = get_view(0).get_cluster_counts();
   int num_vectors = std::accumulate(first_view_cluster_counts.begin(), first_view_cluster_counts.end(), 0);
   vector<int> global_row_indices = create_sequence(num_vectors);
-  View *p_new_view = new View(global_row_indices,
+  View *p_new_view = new View(global_col_datatypes,
+			      global_row_indices,
 			      row_crp_alpha_grid, r_grid, nu_grid, s_grids,
 			      mu_grids, draw_rand_i());
   views.insert(p_new_view);
@@ -529,6 +533,7 @@ void State::construct_base_hyper_grids(int num_rows, int num_cols, int N_GRID) {
   row_crp_alpha_grid = create_crp_alpha_grid(num_rows, N_GRID);
   column_crp_alpha_grid = create_crp_alpha_grid(num_cols, N_GRID);
   construct_continuous_base_hyper_grids(N_GRID, num_rows, r_grid, nu_grid);
+  construct_multinomial_base_hyper_grids(N_GRID, num_rows, multinomial_alpha_grid);
 }
 
 void State::construct_column_hyper_grids(const MatrixD data,
@@ -556,10 +561,12 @@ map<string, double> State::uniform_sample_hypers(int global_col_idx) {
   // presume all grids the same size
   int N_GRID = r_grid.size();
   map<string, double> hypers;
+  // FIXME: should be selective about which hypers are initialized
   hypers["r"] = r_grid[draw_rand_i(N_GRID)];
   hypers["nu"] = nu_grid[draw_rand_i(N_GRID)];
   hypers["s"] = s_grids[global_col_idx][draw_rand_i(N_GRID)];
   hypers["mu"] = mu_grids[global_col_idx][draw_rand_i(N_GRID)];
+  hypers["multinomial_alpha"] = multinomial_alpha_grid[draw_rand_i(N_GRID)];
   return hypers;
 }
 
@@ -577,6 +584,7 @@ void State::init_column_hypers(vector<int> global_col_indices) {
 }
 
 void State::init_views(const MatrixD &data,
+		       map<int, string> global_col_datatypes,
 		       vector<int> global_row_indices,
 		       vector<int> global_col_indices,
 		       vector<vector<int> > column_partition,
@@ -591,6 +599,7 @@ void State::init_views(const MatrixD &data,
     double row_crp_alpha = row_crp_alpha_v[view_idx];
     const MatrixD data_subset = extract_columns(data, column_indices);
     View *p_v = new View(data_subset,
+			 global_col_datatypes,
 			 row_partition,
 			 global_row_indices, column_indices,
 			 hypers_m,
@@ -607,6 +616,7 @@ void State::init_views(const MatrixD &data,
 }
 
 void State::init_views(const MatrixD &data,
+		       map<int, string> global_col_datatypes,
 		       vector<int> global_row_indices,
 		       vector<int> global_col_indices) {
   // generate column paritition
@@ -624,6 +634,6 @@ void State::init_views(const MatrixD &data,
     row_crp_alpha_v.push_back(row_crp_alpha);
     row_partition_v.push_back(row_partition);
   }
-  init_views(data, global_row_indices, global_col_indices,
+  init_views(data, global_col_datatypes, global_row_indices, global_col_indices,
 	     column_partition, row_partition_v, row_crp_alpha_v);
 }

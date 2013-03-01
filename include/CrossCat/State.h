@@ -22,7 +22,7 @@ const static double mu0_0 = 0.0;
 class State {
  public:
   State(const MatrixD &data,
-	std::vector<std::string> global_col_datatypes,
+	std::vector<std::string> GLOBAL_COL_DATATYPES,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
 	std::map<int, std::map<std::string, double> > HYPERS_M,
@@ -32,7 +32,7 @@ class State {
 	std::vector<double> row_crp_alpha_v,
 	int N_GRID=31, int SEED=0);
   State(const MatrixD &data,
-	std::vector<std::string> global_col_datatypes,
+	std::vector<std::string> GLOBAL_COL_DATATYPES,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
 	int N_GRID=31, int SEED=0);
@@ -93,6 +93,7 @@ class State {
   void SaveResult(std::string filename, int iter_idx=-1);
  private:
   // parameters
+  std::map<int, std::string> global_col_datatypes;
   std::map<int, std::map<std::string, double> > hypers_m;
   double column_crp_alpha;
   double column_crp_score;
@@ -102,6 +103,7 @@ class State {
   std::vector<double> row_crp_alpha_grid;
   std::vector<double> r_grid;
   std::vector<double> nu_grid;
+  std::vector<double> multinomial_alpha_grid;
   std::map<int, std::vector<double> > s_grids;
   std::map<int, std::vector<double> > mu_grids;
   // lookups
@@ -121,12 +123,14 @@ class State {
   std::map<std::string, double> uniform_sample_hypers(int global_col_idx);
   void init_column_hypers(std::vector<int> global_col_indices);
   void init_views(const MatrixD &data,
+		  std::map<int, std::string> global_col_datatypes,
 		  std::vector<int> global_row_indices,
 		  std::vector<int> global_col_indices,
 		  std::vector<std::vector<int> > column_partition,
 		  std::vector<std::vector<std::vector<int> > > row_partition_v,
 		  std::vector<double> row_crp_alpha_v);
   void init_views(const MatrixD &data,
+		  std::map<int, std::string> global_col_datatypes,
 		  std::vector<int> global_row_indices,
 		  std::vector<int> global_col_indices);
 };
