@@ -6,7 +6,7 @@ using namespace std;
 double ComponentModel::calc_marginal_logp() const { assert(0); return NaN; }
 double ComponentModel::calc_element_predictive_logp(double element) const { assert(0); return NaN; }
 vector<double> ComponentModel::calc_hyper_conditionals(string which_hyper,
-						       vector<double> hyper_grid)
+						       vector<double> hyper_grid) const
 { assert(0); }
 //
 double ComponentModel::insert_element(double element) { assert(0); return NaN; }
