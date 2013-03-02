@@ -28,6 +28,7 @@ class Cluster {
   int get_count() const;
   double get_marginal_logp() const;
   std::map<std::string, double> get_suffstats_i(int idx) const;
+  std::map<std::string, double> get_hypers_i(int idx) const;
   std::set<int> get_row_indices_set() const;
   std::vector<int> get_row_indices_vector() const;
   //
@@ -57,7 +58,7 @@ class Cluster {
   friend std::ostream& operator<<(std::ostream& os, const Cluster& c);
   //
   // make private later
-  std::vector<ComponentModel> model_v;
+  std::vector<ComponentModel*> p_model_v;
  private:
   int count;
   double score;

@@ -48,10 +48,10 @@ int main(int argc, char** argv) {
   cout << "hypers_v: " << hypers_v << endl;
   
   Cluster cd(hypers_v);
-  vector<ComponentModel> ccm_v;
+  vector<ComponentModel*> p_cm_v;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    ContinuousComponentModel ccm(*hypers_v[col_idx]);
-    ccm_v.push_back(ccm);
+    ContinuousComponentModel *p_cm = new ContinuousComponentModel(*hypers_v[col_idx]);
+    p_cm_v.push_back(p_cm);
   }
 
   // print the empty cluster
@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
     vector<double> row_data = rows[row_idx];
     for(int col_idx=0; col_idx<num_cols; col_idx++) {
       double random_value = rows[row_idx][col_idx];
-      ccm_v[col_idx].insert_element(random_value);
+      p_cm_v[col_idx]->insert_element(random_value);
     }
     cd.insert_row(row_data, row_idx);
   }
@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
   vector<double> score_v;
   double sum_scores = 0;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    double suff_score = ccm_v[col_idx].calc_marginal_logp();
+    double suff_score = p_cm_v[col_idx]->calc_marginal_logp();
     score_v.push_back(suff_score);
     sum_scores += suff_score;
   }
@@ -103,11 +103,11 @@ int main(int argc, char** argv) {
   for(int which_col=0; which_col<num_cols; which_col++) {
     int N_grid = 11;
     double test_scale = 10;
-    ComponentModel ccm_i = cd.get_model(which_col);
+    ContinuousComponentModel *p_ccm_i = dynamic_cast<ContinuousComponentModel*>(cd.p_model_v[which_col]);
     double r, nu, s, mu;
     double precision = 1E-10;
-    ccm_i.get_hyper_doubles(r, nu, s, mu);
-    double score_0 = ccm_i.calc_marginal_logp();
+    p_ccm_i->get_hyper_doubles(r, nu, s, mu);
+    double score_0 = p_ccm_i->calc_marginal_logp();
     vector<double> hyper_grid;
     vector<double> hyper_conditionals;
     double curr_hyper_conditional_in_grid;
@@ -122,7 +122,8 @@ int main(int argc, char** argv) {
     cout << "curr r conditional in grid: " << curr_hyper_conditional_in_grid << endl;
     assert(is_almost(score_0, curr_hyper_conditional_in_grid, precision));
 
-    map<string, double> &hypers = *(cd.model_v[which_col].p_hypers);
+    // map<string, double> &hypers = cd.get_hypers_i(which_col);
+    map<string, double> &hypers = *(*cd.p_model_v[which_col]).p_hypers;
     double prior_r = hypers["r"];
     double new_r = hyper_grid[0]; 
     //
@@ -130,12 +131,12 @@ int main(int argc, char** argv) {
     cout << "new r: " << new_r << endl;
     hypers["r"] = new_r;
     cd.incorporate_hyper_update(which_col);
-    cout << "marginal logp with new r: " << cd.get_model(which_col).calc_marginal_logp() << endl;
+    cout << "marginal logp with new r: " << cd.p_model_v[which_col]->calc_marginal_logp() << endl;
     //
     cout << "changing r back to: " << prior_r << endl;
     hypers["r"] = prior_r;
     cd.incorporate_hyper_update(which_col);
-    cout << "marginal logp with prior r: " << cd.get_model(which_col).calc_marginal_logp() << endl;
+    cout << "marginal logp with prior r: " << cd.p_model_v[which_col]->calc_marginal_logp() << endl;
     cout << "done testing incorporate hyper update on col" << endl << endl;
 
     //
@@ -182,7 +183,7 @@ int main(int argc, char** argv) {
     vector<double> row_data = rows[row_idx];
     for(int col_idx=0; col_idx<num_cols; col_idx++) {
       double random_value = rows[row_idx][col_idx];
-      ccm_v[col_idx].remove_element(random_value);
+      p_cm_v[col_idx]->remove_element(random_value);
     }
     cd.remove_row(row_data, row_idx);
   }
@@ -191,7 +192,7 @@ int main(int argc, char** argv) {
   score_v.clear();
   sum_scores = 0;
   for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    double suff_score = ccm_v[col_idx].calc_marginal_logp();
+    double suff_score = p_cm_v[col_idx]->calc_marginal_logp();
     score_v.push_back(suff_score);
     sum_scores += suff_score;
   }
