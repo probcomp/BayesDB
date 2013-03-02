@@ -21,7 +21,8 @@ MAIN = main.cpp
 NAMES = ContinuousComponentModel MultinomialComponentModel ComponentModel \
 	Cluster View State \
 	utils numerics RandomNumberGenerator DateTime
-TEST_NAMES = test_continuous_component_model test_multinomial_component_model \
+TEST_NAMES = test_component_model \
+	test_continuous_component_model test_multinomial_component_model \
 	test_cluster test_view test_view_speed test_state
 CYTHON_NAMES = Makefile setup.py State.pyx
 HEADERS = $(foreach name, $(NAMES), $(INC)/$(name).h)
