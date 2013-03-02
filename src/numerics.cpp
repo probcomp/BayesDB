@@ -147,12 +147,22 @@ namespace numerics {
     mu = mu_prime;
   }
 
+  double calc_hyperprior(double r, double nu, double s) {
+    double logp = 0;
+    logp += -log(r);
+    logp += -log(nu);
+    logp += -log(s);
+    return logp;
+  }
+
   double calc_continuous_log_Z(double r, double nu, double s)  {
     double nu_over_2 = .5 * nu;
-    return nu_over_2 * (LOG_2 - log(s))			\
+    double log_Z = nu_over_2 * (LOG_2 - log(s))		\
       + HALF_LOG_2PI					\
       - .5 * log(r)					\
       + lgamma(nu_over_2);
+    log_Z += calc_hyperprior(r, nu, s);
+    return log_Z;
   }
 
   double calc_continuous_logp(int count,
@@ -194,7 +204,6 @@ namespace numerics {
       double logp = calc_continuous_logp(count,
 					 r_prime, nu_prime, s_prime,
 					 log_Z_0);
-      logp += -log(r_prime);
       logps.push_back(logp);
     }
     return logps;
@@ -220,7 +229,6 @@ namespace numerics {
       double logp = calc_continuous_logp(count,
 					 r_prime, nu_prime, s_prime,
 					 log_Z_0);
-      logp += -log(nu_prime);
       logps.push_back(logp);
     }
     return logps;
@@ -246,7 +254,6 @@ namespace numerics {
       double logp = calc_continuous_logp(count,
 					 r_prime, nu_prime, s_prime,
 					 log_Z_0);
-      logp += -log(s_prime);
       logps.push_back(logp);
     }
     return logps;
