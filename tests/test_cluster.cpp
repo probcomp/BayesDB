@@ -225,5 +225,11 @@ int main(int argc, char** argv) {
     cout << cd << endl;
   }
 
+  while(p_cm_v.size()!=0) {
+    ComponentModel *p_cm = p_cm_v.back();
+    delete p_cm;
+    p_cm_v.pop_back();
+  }
+
   cout << "Stop:: test_cluster" << endl;
 }
