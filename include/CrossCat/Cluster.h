@@ -27,7 +27,7 @@ class Cluster {
   int get_num_cols() const;
   int get_count() const;
   double get_marginal_logp() const;
-  ComponentModel get_model(int idx) const;
+  std::map<std::string, double> get_suffstats_i(int idx) const;
   std::set<int> get_row_indices_set() const;
   std::vector<int> get_row_indices_vector() const;
   //

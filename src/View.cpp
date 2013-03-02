@@ -166,8 +166,7 @@ vector<map<string, double> > View::get_column_component_suffstats_i(int global_c
   set<Cluster*>::const_iterator it = clusters.begin();
   for(; it!=clusters.end(); it++) {
     int local_col_idx = get(global_to_local, global_col_idx);
-    ComponentModel ccm  = (**it).get_model(local_col_idx);
-    map<string, double> suffstats = ccm.get_suffstats();
+    map<string, double> suffstats = (**it).get_suffstats_i(local_col_idx);
     column_component_suffstats.push_back(suffstats);
   }
   return column_component_suffstats;

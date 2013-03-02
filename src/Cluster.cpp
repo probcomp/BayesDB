@@ -28,8 +28,8 @@ double Cluster::get_marginal_logp() const {
   return score;
 }
 
-ComponentModel Cluster::get_model(int idx) const {
-  return model_v[idx];
+map<string, double> Cluster::get_suffstats_i(int idx) const {
+  return model_v[idx].get_suffstats();
 }
 
 set<int> Cluster::get_row_indices_set() const {
@@ -60,7 +60,7 @@ double Cluster::calc_row_predictive_logp(vector<double> values) const {
   double sum_logps = 0;
   for(unsigned int col_idx=0; col_idx<values.size(); col_idx++) {
     double el = values[col_idx];
-    sum_logps += get_model(col_idx).calc_element_predictive_logp(el);
+    sum_logps += model_v[col_idx].calc_element_predictive_logp(el);
   }
   return sum_logps;
 }
