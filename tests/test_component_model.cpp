@@ -1,4 +1,6 @@
+#include <boost/variant.hpp>
 #include <iostream>
+#include <vector>
 #include "ComponentModel.h"
 #include "ContinuousComponentModel.h"
 #include "MultinomialComponentModel.h"
@@ -17,8 +19,30 @@ int main() {
   multinomial_hypers["K"] = 10;
   multinomial_hypers["dirichlet_alpha"] = 10;
 
-  ComponentModel ccm = ContinuousComponentModel(continuous_hypers);
-  ComponentModel mcm = MultinomialComponentModel(multinomial_hypers);
+  // boost variant based operations
+  // typedef boost::variant<ContinuousComponentModel, MultinomialComponentModel> component_model_variant;
+  // vector<component_model_variant> cm_v;
+  // component_model_variant ccm = ContinuousComponentModel(continuous_hypers);
+  // component_model_variant mcm = MultinomialComponentModel(multinomial_hypers);
+  // cm_v.push_back(ccm);
+  // cm_v.push_back(mcm);
 
+  // container of pointers with memory management
+  ContinuousComponentModel *p_ccm = new ContinuousComponentModel(continuous_hypers);
+  MultinomialComponentModel *p_mcm = new MultinomialComponentModel(multinomial_hypers);
+  vector<ComponentModel*> p_cm_v;
+  p_cm_v.push_back(p_ccm);
+  p_cm_v.push_back(p_mcm);
+  p_cm_v[0]->insert_element(10);
+  p_cm_v[1]->insert_element(10);
+  cout << "p_cm_v[0]->calc_marginal_logp(): " << p_cm_v[0]->calc_marginal_logp() << endl;
+  cout << "p_cm_v[1]->calc_marginal_logp(): " << p_cm_v[1]->calc_marginal_logp() << endl;
+
+  while(p_cm_v.size()!=0) {
+    ComponentModel *p_cm = p_cm_v.back();
+    cout << "p_cm->get_hypers(): " << p_cm->get_hypers() << endl;
+    delete p_cm;
+    p_cm_v.pop_back();
+  }
   cout << "Goodbye World" << endl;
 }
