@@ -78,7 +78,7 @@ void remove_all_data(View &v, map<int, vector<double> > data_map) {
 }
 
 int main(int argc, char** argv) {
-  cout << endl << "Hello World!" << endl;
+  cout << endl << "test_view: Hello World!" << endl;
 
   // load some data
   matrixD data;
@@ -341,5 +341,5 @@ int main(int argc, char** argv) {
     delete (*it);
   }
 
-  cout << endl << "Goodbye World!" << endl;
+  cout << endl << "test_view: Goodbye World!" << endl;
 }

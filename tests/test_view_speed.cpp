@@ -78,7 +78,7 @@ void remove_all_data(View &v, map<int, vector<double> > data_map) {
 }
 
 int main(int argc, char** argv) {
-  cout << endl << "Hello World!" << endl;
+  cout << endl << "test_view_speed: Hello World!" << endl;
 
   // load some data
   matrixD data;
@@ -264,5 +264,5 @@ int main(int argc, char** argv) {
   v.remove_row(aligned_row, row_idx);
   print_with_header(v, "view after removeing single row (2)");
 
-  cout << endl << "Goodbye World!" << endl;
+  cout << endl << "test_view_speed: Goodbye World!" << endl;
 }
