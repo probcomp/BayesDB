@@ -9,6 +9,7 @@ pyOpenSSL==0.13
 #
 # for engine
 cython==0.17.1
+# sudo apt-get install -y python-dev
 numpy==1.7.0
 # for engine for matplotlib
 # sudo apt-get install -y tk-dev

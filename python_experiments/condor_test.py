@@ -1,15 +1,15 @@
-
+import condor_test_helper as c
 import os
 import condor
 
-condor.DEBUG = True
+condor.DEBUG = False
 
 def f():
      return 1
 def g():
-     print f()
+     return f()
 def h(x, y):
-    print x + y
+    return x + y
 
 ### test write job ###
 
@@ -20,5 +20,4 @@ os.system('/tmp/job.py')
 
 condor.call(g)
 condor.call(h, -1, 2)
-
-
+condor.call(c.g)

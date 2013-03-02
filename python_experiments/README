@@ -1,4 +1,14 @@
 
+to run experiments:
+- pull latest version from repo
+- do:
+> matlab
+$ addpath ../matlab_code/
+$ mcc -m run_crosscat.m
+- check parameters in run_crosscat.py
+- do:
+> python run_crosscat.py -r
+
 
 Help file from cluster:
 -----------------------------------------------------------------------
@@ -59,16 +69,19 @@ Compiling MATLAB Code on Picloud through CSAIL:
 -- add matlab to ~/.software
 -- scp your matlab files to login.csail.mit.edu
 -- open matlab, use mcc
+--- add paths, e.g. > addpath ../matlab_code/
+--- mcc file, e.g., > mcc -m run_crosscat.m
 - create a new picloud environment (or use mine) for matlab
 -- follow the picloud instructions for creating an environment
--- download the most recent MCR
+-- download the most recent MCR (sometimes you need to try multiple versions...)
 --- e.g., from http://www.mathworks.com/products/compiler/mcr/
 -- scp zipped MCR to picloud environment
 -- install using silent mode
 --- $ unzip MCRInstaller.zip
 --- $ chmod 755 installer_input.txt
---- $ emacs installer_input.txt # change agree to license to yes, change destination file if necessary
+--- $ emacs installer_input.txt # change agree to license to yes
 --- $ ./install -mode silent -inputFile installer_input.txt
+--- make sure you follow any instructions at the end of the installation
 - copy compiled code to picloud
 -- open the environment in your browser (this takes a while!)
 -- follow the direction after pressing "connect"
@@ -78,4 +91,33 @@ Compiling MATLAB Code on Picloud through CSAIL:
 >>> def test():
 ...     return os.popen('sh ./run_test.sh matlab/mcr/v717/ 1').read()
 >>> cloud.call(test, _env='matlab') 
+- make sure to sync the relevant volumes
+cloud.volume.sync('/Users/peter/Documents/research/preddb/data/', 'crosscat-data:')
 
+
+Compiling MATLAB Code on Condor:
+- compile code using MATLAB compiler (mcc command) on a linux architecture (e.g., on CSAIL's login.csail.mit.edu)
+-- ssh to your login.csail.mit.edu 
+-- add matlab to ~/.software
+-- scp your matlab files to login.csail.mit.edu
+
+-- download the most recent MCR (sometimes you need to try multiple versions...)
+--- e.g., wget http://www.mathworks.com/supportfiles/MCR_Runtime/R2012a/MCR_R2012a_glnxa64_installer.zip
+-- install using silent mode
+--- $ unzip MCRInstaller.zip -d matlab
+--- $ chmod 755 installer_input.txt
+--- $ emacs installer_input.txt # change agree to license to yes, change destination file if necessary, e.g. /data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr
+--- add the following to your .bashrc if necessary
+export MCR_CACHE_ROOT=/data/scratch/pkrafft/ # fixes "Could not access the MCR component cache." matlab compiled code error
+--- $ ./install -mode silent -inputFile installer_input.txt
+--- make sure you follow any instructions at the end of the installation, such as setting environment variables in .bashrc! my bashrc looks like this:
+export MCR_CACHE_ROOT=/data/scratch/pkrafft/ # fixes "Could not access the MCR component cache." matlab compiled code error
+export XAPPLRESDIR=/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/X11/app-defaults # from instructions
+export MPLCONFIGDIR=/data/scratch/pkrafft/.matplotlib # fixes python import error
+--- you may have to change the LD_PATH_PREFIX to '/usr/lib' in matlab/mcr/v717/bin/.matlab7rc.sh (as http://www.mathworks.ca/matlabcentral/newsreader/view_thread/162466) # fixed interaction between numpy and compiled matlab code at some point...
+
+-- open matlab, use mcc
+--- add paths, e.g. > addpath ../matlab_code/
+--- mcc file, e.g., > mcc -m run_crosscat.m
+
+-- test with sh run_run_crosscat matlab/mcr/v717 [parameters]

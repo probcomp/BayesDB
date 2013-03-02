@@ -27,16 +27,25 @@ http://www.gnu.org/licenses/lgpl-2.1.html
 This package might do a few odd things. It assumes you are running it
 from the Condor cluster. It assumes the local packages you need are in
 your current working directory. It creates a directory to keep track
-of the jobs it creates.
+of the jobs it creates. Also, certain variables that exist in the
+calling script will not be copied to the cluster. For example, lists
+are not currently supported. Booleans, integers, float, and strings
+that do not begin with "__" are supported. (though floats may not work
+properly. The status functionality is limited. It only tells you
+whether a job is "done" or "unknown", which doesn't match picloud's
+API. The condor cluster can take a few seconds to tell you the status
+of a job, so it is not worth implementing the full functionality.
+Also, I don't do anything with locks, so don't expect scheduling
+multiple jobs in parallel to work without error!
 """
 
-
+import collections
 import pickle
-import marshal
 import types
 import os
 import sys
 import stat
+import inspect
 
 out_dir = os.getcwd() + '/jobs/'
 if not os.path.exists(out_dir): 
@@ -100,20 +109,24 @@ def status(jids):
 ### helper functions ###
 ########################
 
-### TODO
 def get_status(jid):
-    return 'done'
+    status_file = out_dir + str(jid) + '/success'
+    try:
+        open(status_file)
+        return 'done'
+    except IOError:
+        return 'unknown'
 
 def get_result(jid):
-    out_file = out_dir + jid + '/stdout.txt'
+    out_file = out_dir + str(jid) + '/stdout.txt'
     f = open(out_file)
-    result = f.readlines()
+    result = f.read()
     f.close()
     return result
 
 def write_description(job_dir, job_id):
     desc_f = open(job_dir + 'description', 'w')
-    desc_f.write('GetEnv = True')
+    desc_f.write('GetEnv = True\n')
     desc_f.write('Universe = vanilla\n')
     desc_f.write('Notification = Error\n')
     desc_f.write('Executable = ' + job_dir + 'job.py\n')
@@ -121,6 +134,7 @@ def write_description(job_dir, job_id):
                  job_id + '.log\n')
     desc_f.write('Error = ' + job_dir + 'stderr.txt\n')
     desc_f.write('Output = ' + job_dir + 'stdout.txt\n')
+    desc_f.write('queue 1\n')
     desc_f.close()
 
 def write_job(job_dir, func, args):
@@ -129,12 +143,14 @@ def write_job(job_dir, func, args):
     job_f = open(name, 'w')
 
     job_f.write('#! /usr/bin/env python\n')
-    job_f.write('import os, sys, marshal, types, pickle\n')
+    job_f.write('import os, sys, types, pickle\n')
     job_f.write('os.chdir(\'' + os.getcwd() + '\')\n') 
     job_f.write('sys.path.append(\'' + os.getcwd() + '\')\n')
 
-    write_dependencies(job_f, job_dir)
+    write_dependencies(job_f)
     write_func(job_f, job_dir, func, args)
+
+    job_f.write('open(\'' + job_dir + 'success\',\'w\').close()\n')
 
     job_f.close()
     st = os.stat(name)
@@ -151,11 +167,15 @@ def write_func(job_f, job_dir, func, args):
     job_f.write('args = pickle.load(arg_f)\n')
     job_f.write('arg_f.close()\n')
 
-    job_f.write('def _wrapper(args):\n')
-    job_f.write('    return ' + func.__name__ + '(*args)\n')
-    job_f.write('_wrapper(args)')
+    module = func.__module__
+    if module == '__main__':
+        module = ''
+    else:
+        job_f.write('import ' + module + '\n')
+        module += '.'
+    job_f.write('print ' + module + func.__name__ + '(*args)\n')
             
-def write_dependencies(job_f, job_dir):
+def write_dependencies(job_f):
 
     func_num = 0
     main = __import__("__main__")
@@ -166,22 +186,19 @@ def write_dependencies(job_f, job_dir):
 
         if isinstance(val, types.ModuleType):
             job_f.write('import ' + val.__name__ + ' as ' + name + '\n')
+            job_f.write('import ' + val.__name__ + '\n')
+
+        VarTypes = (types.BooleanType, types.IntType,
+                    types.FloatType)
+        if isinstance(val, VarTypes):
+            job_f.write(name + ' = ' + str(val) + '\n')
+
+        if isinstance(val, types.StringType):
+            if not val[0:2] == '__':
+                job_f.write(name + ' = \'' + val + '\'\n')
 
         if isinstance(val, types.FunctionType):
-            
-            f_name = job_dir + 'func_' + str(func_num)
-            func_num += 1
-
-            src = marshal.dumps(val.func_code)
-            
-            func_f = open(f_name, 'w')
-            func_f.write(src)
-            func_f.close()
-            
-            job_f.write('func_f = open(\'' + f_name + '\')\n')
-            job_f.write('src = marshal.load(func_f)\n')
-            job_f.write('func_f.close()\n')
-            job_f.write(name + ' = types.FunctionType(src, globals(),\'' + name + '\')\n')
+            job_f.write(inspect.getsource(val))
     
 class CondorPythonError(Exception):
     def __init__(self, value):

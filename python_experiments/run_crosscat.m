@@ -1,5 +1,5 @@
 function run_crosscat(data_dir, file_base, experiment, n_pred_samples, ...
-    n_mcmc_iter, seed)
+    n_mcmc_iter, seed, out_dir, out_file)
 %
 % run mutual information or conditional entropy experiment
 %
@@ -17,6 +17,12 @@ function run_crosscat(data_dir, file_base, experiment, n_pred_samples, ...
 % seed           : random seed to use for this experiment
 %
 
+if nargin < 8
+    fid = 1;
+else
+    fid = fopen(out_file,'w');
+end
+
 rng(str2num(seed))
 
 n_pred_samples = str2num(n_pred_samples);
@@ -30,7 +36,10 @@ state = initialize_from_csv(data_file, label_file, 'fromThePrior');
 state = analyze(state, {'columnPartitionHyperparameter',...
     'columnPartitionAssignments', 'componentHyperparameters',...
     'rowPartitionHyperparameters', 'rowPartitionAssignments'},...
-    n_mcmc_iter, 'all', 'all');
+    n_mcmc_iter, 'all', 'all', false, fid);
+
+name = [out_dir, file_base, '-', seed];
+save(name, 'state');
 
 switch experiment
     
@@ -55,40 +64,27 @@ switch experiment
         
         for i = 2:state.F
             for j = 1:(i - 1)
-                fprintf(1, '#####%i,%i,%f#####\n', [i, j, h{i}(j)/n_pred_samples]);
+                fprintf(fid, '#####%i,%i,%f#####\n', [i, j, h{i}(j)/n_pred_samples]);
             end
         end
         
     case 'regression'
         
-        pi_x_y = 0;      
-        mi_x = 0;
-        mi_y = 0;
-        mi_xy = 0;
+        h_xz = 0;
+        h_yz = 0;
         
         for j = 1:n_pred_samples
             
             s = simple_predictive_sample_newRow(state, [], 1:state.F);
             
-            pi_x_y = partial_info(s, state, 3, 1, 2, n_pred_samples);
-            mi_x = mi_x + mutual_info(s, state, 1, 3, []);
-            mi_y = mi_y + mutual_info(s, state, 2, 3, []);
-            mi_xy = mi_xy + mutual_info(s, state, [1,2], 3, []);
+            h_xz = h_xz + mutual_info(s, state, 1, 3, 2);
+            h_yz = h_yz + mutual_info(s, state, 2, 3, 1);
         end
         
-        pi_x_y = pi_x_y/n_pred_samples;
-        mi_x = mi_x/n_pred_samples;
-        mi_y = mi_y/n_pred_samples;
-        mi_xy = mi_xy/n_pred_samples;
-        
-        pi_x = mi_x - pi_x_y;
-        pi_y = mi_y - pi_x_y;
-        pi_xy = mi_xy - pi_x - pi_y - pi_x_y;
-        
-        fprintf(1, 'Pi({X}): #####%f#####\n', pi_x);
-        fprintf(1, 'Pi({Y}): #####%f#####\n', pi_y);
-        fprintf(1, 'Pi({X}{Y}): #####%f#####\n', pi_x_y);
-        fprintf(1, 'Pi({X,Y}): #####%f#####\n', pi_xy);
-        
+        fprintf(fid, 'I(Z,X|Y): #####%f#####\n', h_xz/n_pred_samples);
+        fprintf(fid, 'I(Z,Y|X): #####%f#####\n', h_yz/n_pred_samples);
 end
 
+if fid ~= 1
+    fclose(fid);
+end
