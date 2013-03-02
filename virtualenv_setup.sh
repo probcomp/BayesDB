@@ -26,6 +26,7 @@ if [[ -z $has_project ]] ; then
     echo "cd $project_location" >> bin/postactivate
     deactivate
     workon $project_name
+    pip install numpy==1.7.0
     pip install -r requirements.txt
 fi
 
