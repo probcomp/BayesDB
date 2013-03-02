@@ -22,6 +22,7 @@ class Cluster {
   //Cluster(const std::vector<std::map<std::string, double>*> hypers_v);
   Cluster(std::vector<std::map<std::string, double>*> &hypers_v);
   Cluster();
+  ~Cluster();
   //
   // getters
   int get_num_cols() const;

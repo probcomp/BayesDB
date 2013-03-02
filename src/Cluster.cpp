@@ -16,6 +16,14 @@ Cluster::Cluster() {
   init_columns(hypers_v);
 }
 
+Cluster::~Cluster() {
+  // while(p_model_v.size()!=0) {
+  //   ComponentModel *p_cm = p_model_v.back();
+  //   p_model_v.pop_back();
+  //   delete p_cm;
+  // }
+}
+
 int Cluster::get_num_cols() const {
   return p_model_v.size();
 }
