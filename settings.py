@@ -5,8 +5,11 @@ import os
 class path():
     remote_home_dir = '/home/sgeadmin/'
     remote_code_dir = '/home/sgeadmin/tabular_predDB'
+    install_ubuntu_script = os.path.join(remote_code_dir,
+                                         'install_ubuntu_packages.sh')
     install_boost_script = os.path.join(remote_code_dir, 'install_boost.sh')
-    virtualenv_setup_script = os.path.join(remote_code_dir, 'virtualenv_setup.sh')
+    virtualenv_setup_script = os.path.join(remote_code_dir,
+                                           'virtualenv_setup.sh')
 
 class s3():
     bucket_str = 'mitpcp-tabular-predDB'
