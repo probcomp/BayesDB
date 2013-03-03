@@ -337,8 +337,17 @@ int main(int argc, char** argv) {
   remove_all_data(v, data_map);
   v.print();
 
+  // FIXME: still have a data score!?
+
   for(vectorCp::iterator it = cd_v.begin(); it!=cd_v.end(); it++) {
-    delete (*it);
+    Cluster *p_c = (*it);
+    while(p_c->get_count()!=0) {
+      vector<int> row_indices = p_c->get_row_indices_vector();
+      int row_idx = row_indices[0];
+      p_c->remove_row(data_map[row_idx], row_idx);
+    }
+    p_c->delete_component_models();
+    delete p_c;
   }
 
   cout << endl << "test_view: Goodbye World!" << endl;
