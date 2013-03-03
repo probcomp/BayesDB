@@ -6,22 +6,18 @@ Cluster::Cluster(vector<map<string, double>*> &hypers_v) {
   init_columns(hypers_v);
 }
 
-// Cluster::Cluster(const vector<map<string, double>*> &hypers_v) {
-//   vector<map<string, double>*> temp_hypers_v = hypers_v;
-//   init_columns(temp_hypers_v);
-// }
-
 Cluster::Cluster() {
   vector<map<string, double>*> hypers_v;
   init_columns(hypers_v);
 }
 
-Cluster::~Cluster() {
-  // while(p_model_v.size()!=0) {
-  //   ComponentModel *p_cm = p_model_v.back();
-  //   p_model_v.pop_back();
-  //   delete p_cm;
-  // }
+void Cluster::delete_component_models() {
+  assert(row_indices.size()==0);
+  while(p_model_v.size()!=0) {
+    ComponentModel *p_cm = p_model_v.back();
+    p_model_v.pop_back();
+    delete p_cm;
+  }
 }
 
 int Cluster::get_num_cols() const {
@@ -132,7 +128,9 @@ double Cluster::remove_row(vector<double> values, int row_idx) {
   assert(num_removed!=0);
   // track score
   for(unsigned int col_idx=0; col_idx<values.size(); col_idx++) {
-    sum_score_deltas += p_model_v[col_idx]->remove_element(values[col_idx]);
+    double value_to_remove = values[col_idx];
+    ComponentModel *p_cm = p_model_v[col_idx];
+    sum_score_deltas += p_cm->remove_element(value_to_remove);
   }
   score += sum_score_deltas;
   return sum_score_deltas;
@@ -200,13 +198,14 @@ void Cluster::init_columns(vector<map<string, double>*> &hypers_v) {
     map<string, double> &hypers = **it;
     string continuous_key = "nu";
     string multinomial_key = "multinomial_alpha";
+    ComponentModel *p_cm;
     if(in(hypers, continuous_key)) {
       // FIXME: should be passed col_datatypes here
       //         and instantiate correct type?
-      ComponentModel *p_cm = new ContinuousComponentModel(hypers);
+      p_cm = new ContinuousComponentModel(hypers);
       p_model_v.push_back(p_cm);
     } else if(in(hypers, multinomial_key)) {
-      ComponentModel *p_cm = new MultinomialComponentModel(hypers);
+      p_cm = new MultinomialComponentModel(hypers);
       p_model_v.push_back(p_cm);
     } else {
       assert(1==0);

@@ -22,7 +22,6 @@ class Cluster {
   //Cluster(const std::vector<std::map<std::string, double>*> hypers_v);
   Cluster(std::vector<std::map<std::string, double>*> &hypers_v);
   Cluster();
-  ~Cluster();
   //
   // getters
   int get_num_cols() const;
@@ -54,6 +53,7 @@ class Cluster {
 		    std::vector<int> data_global_row_indices,
 		    std::map<std::string, double> &hypers);
   double incorporate_hyper_update(int which_col);
+  void delete_component_models();
   //
   // helpers
   friend std::ostream& operator<<(std::ostream& os, const Cluster& c);

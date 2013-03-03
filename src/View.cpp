@@ -495,6 +495,7 @@ double View::remove_col(int global_col_idx) {
 void View::remove_if_empty(Cluster& which_cluster) {
   if(which_cluster.get_count()==0) {
     clusters.erase(clusters.find(&which_cluster));
+    which_cluster.delete_component_models();
     delete &which_cluster;
   }
 }
