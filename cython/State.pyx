@@ -125,6 +125,7 @@ cdef class p_State:
     cdef vector[int] gri
     cdef vector[int] gci
     cdef vector[string] column_types
+    cdef vector[int] event_counts
     def __cinit__(self, M_c, T, X_L=None, X_D=None, initialization=None,
                   N_GRID=31, SEED=0):
          # FIXME: actually use initialization 
