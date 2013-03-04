@@ -648,7 +648,7 @@ void State::init_views(const MatrixD &data,
   int num_views = column_partition.size();
   int N_GRID = row_crp_alpha_grid.size();
   for(int view_idx=0; view_idx<num_views; view_idx++) {
-    double row_crp_alpha = row_crp_alpha_grid[N_GRID];
+    double row_crp_alpha = row_crp_alpha_grid[rng.nexti(N_GRID)];
     vector<vector<int> > row_partition;
     row_partition = draw_crp_init(global_row_indices, row_crp_alpha, rng);
     row_crp_alpha_v.push_back(row_crp_alpha);
