@@ -40,9 +40,11 @@ int main() {
 
   while(p_cm_v.size()!=0) {
     ComponentModel *p_cm = p_cm_v.back();
+    cout << "*p_cm_v[i]: " << *p_cm << endl;
     cout << "p_cm->get_hypers(): " << p_cm->get_hypers() << endl;
     delete p_cm;
     p_cm_v.pop_back();
   }
+
   cout << "Goodbye World" << endl;
 }

@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
     v.print();
   }
 
-  for(int i=0;i<5;i++) {
+  for(int i=0;i<200;i++) {
     cout << "transition #: " << i << endl;
     s.transition(data);
     cout << "s.num_views: " << s.get_num_views();
@@ -58,6 +58,9 @@ int main(int argc, char** argv) {
     cout << "view_idx " << view_idx << ": " << endl;
     v.print();
   }
+
+  cout << "FINAL STATE" << endl;
+  cout << s << endl;
   
   cout << "end X_D" << endl << s.get_X_D() << endl;
   cout << endl << "test_state: Goodbye World!" << endl;
