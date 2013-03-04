@@ -42,11 +42,14 @@ int main(int argc, char** argv) {
     v.print();
   }
 
-  for(int i=0;i<200;i++) {
+  for(int i=0;i<5;i++) {
     cout << "transition #: " << i << endl;
     s.transition(data);
-    cout << "FLAG: s.column_crp_alpha: " << s.get_column_crp_alpha() << endl;
-    cout << "FLAG: s.num_views: " << s.get_num_views() << endl;
+    cout << "s.num_views: " << s.get_num_views();
+    cout << "; s.column_crp_score: " << s.get_column_crp_score();
+    cout << "; s.data_score: " << s.get_data_score();
+    cout << "; s.score: " << s.get_marginal_logp();
+    cout << endl;
   }
 
   num_views = s.get_num_views();
