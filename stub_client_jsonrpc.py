@@ -5,61 +5,35 @@ import json
 #
 import numpy
 #
-import Engine as E
+import tabular_predDB.Engine as E
+import tabular_predDB.cython.gen_data as gen_data
 
+
+# parse some arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--hostname', default='localhost', type=str)
+parser.add_argument('--seed', default=0, type=int)
+parser.add_argument('--num_clusters', default=2, type=int)
+parser.add_argument('--num_cols', default=8, type=int)
+parser.add_argument('--num_rows', default=300, type=int)
+parser.add_argument('--num_splits', default=2, type=int)
+parser.add_argument('--max_mean', default=10, type=float)
+parser.add_argument('--max_std', default=0.1, type=float)
+parser.add_argument('--start_id', default=0, type=int)
 args = parser.parse_args()
 hostname = args.hostname
+seed = args.seed
+num_clusters = args.num_clusters
+num_cols = args.num_cols
+num_rows = args.num_rows
+num_splits = args.num_splits
+max_mean = args.max_mean
+max_std = args.max_std
+id = args.start_id
 
 # settings
 URI = 'http://' + hostname + ':8007'
 print 'URI: ', URI
-id = 0
-
-import sys
-def gen_data(gen_seed, num_clusters, num_cols, num_rows, max_mean=10, max_std=1):
-    n_grid = 11
-    mu_grid = numpy.linspace(-max_mean, max_mean, n_grid)
-    sigma_grid = 10 ** numpy.linspace(-1, numpy.log10(max_std), n_grid)
-    num_rows_per_cluster = num_rows / num_clusters
-    zs = numpy.repeat(range(num_clusters), num_rows_per_cluster)
-    #
-    random_state = numpy.random.RandomState(gen_seed)
-    #
-    which_mus = random_state.randint(len(mu_grid), size=(num_clusters,num_cols))
-    which_sigmas = random_state.randint(len(sigma_grid), size=(num_clusters,num_cols))
-    mus = mu_grid[which_mus]
-    sigmas = sigma_grid[which_sigmas]
-    clusters = []
-    for row_mus, row_sigmas in zip(mus, sigmas):
-        cluster_columns = []
-        for mu, sigma in zip(row_mus, row_sigmas):
-            cluster_column = random_state.normal(mu, sigma, num_rows_per_cluster)
-            cluster_columns.append(cluster_column)
-        cluster = numpy.vstack(cluster_columns).T
-        clusters.append(cluster)
-    xs = numpy.vstack(clusters)
-    return xs, zs
-
-def gen_factorial_data(gen_seed, num_clusters, num_cols, num_rows, num_splits,
-                       max_mean=10, max_std=1):
-    random_state = numpy.random.RandomState(gen_seed)
-    data_list = []
-    inverse_permutation_indices_list = []
-    for data_idx in xrange(num_splits):
-        data_i, zs_i = gen_data(
-            gen_seed=random_state.randint(sys.maxint),
-            num_clusters=num_clusters,
-            num_cols=num_cols/num_splits,
-            num_rows=num_rows,
-            )
-        permutation_indices = numpy.random.permutation(xrange(num_rows))
-        inverse_permutation_indices = numpy.argsort(permutation_indices)
-        inverse_permutation_indices_list.append(inverse_permutation_indices)
-        data_list.append(numpy.array(data_i)[permutation_indices])
-    data = numpy.hstack(data_list)
-    return data, inverse_permutation_indices_list
 
 # helper functions
 def create_message(method_name, params):
@@ -91,28 +65,11 @@ def call_and_print(method_name, args_dict):
     return out
 
 
-# generate a synthetic dataset
-seed = 0
-num_clusters = 2
-num_cols = 8
-num_rows = 300
-num_splits = 2
-T, data_inverse_permutation_indices = \
-    gen_factorial_data(seed, num_clusters, num_cols, num_rows, num_splits,
-                       max_mean=10, max_std=0.1)
-T = T.tolist()
-#
-column_metadata = [
-    dict(modeltype="normal_inverse_gamma",
-         value_to_code=dict(),
-         code_to_value=dict())
-    for col_idx in range(num_cols)
-    ]
-M_r = dict(name_to_idx=dict(zip(map(str, range(num_rows)),range(num_rows))),
-           idx_to_name=dict(zip(map(str, range(num_rows)),range(num_rows))))
-M_c = dict(name_to_idx=dict(zip(map(str, range(num_cols)),range(num_cols))),
-           idx_to_name=dict(zip(map(str, range(num_cols)),range(num_cols))),
-           column_metadata=column_metadata)
+T, M_r, M_c = gen_data.gen_factorial_data_objects(
+    seed, num_clusters,
+    num_cols, num_rows, num_splits,
+    max_mean=max_mean, max_std=max_std,
+    )
 
 # non-stub functions
 non_stub = set(['initialize', 'initialize_and_analyze', 'analyze', 'impute',
