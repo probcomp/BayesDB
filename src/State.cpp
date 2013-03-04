@@ -661,3 +661,25 @@ void State::init_views(const MatrixD &data,
   init_views(data, global_col_datatypes, global_row_indices, global_col_indices,
 	     column_partition, row_partition_v, row_crp_alpha_v);
 }
+
+std::ostream& operator<<(std::ostream& os, const State& s) {
+  os << s.to_string() << endl;
+  return os;
+}
+
+string State::to_string(string join_str) const {
+  stringstream ss;
+  int view_idx = 0;
+  set<View*>::const_iterator it;
+  ss << "========" << std::endl;
+  for(it=views.begin(); it!=views.end(); it++) {
+    View v = **it;
+    ss << "view idx: " << view_idx << endl;
+    ss << v << endl;
+    ss << "========" << std::endl;
+  }    
+  ss << "column_crp_alpha: " << column_crp_alpha;
+  ss << "; column_crp_score: " << column_crp_score;
+  ss << "; data_score: " << data_score;
+  return ss.str();
+}

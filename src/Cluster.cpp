@@ -181,16 +181,21 @@ double Cluster::incorporate_hyper_update(int which_col) {
   return score_delta;
 }
 
-
 std::ostream& operator<<(std::ostream& os, const Cluster& c) {
-  os << "========" << std::endl;
-  os <<  "cluster row_indices:: " << c.row_indices << endl;
-  for(int col_idx=0; col_idx<c.get_num_cols(); col_idx++) {
-    os << endl << "column idx: " << col_idx << " :: " << *(c.p_model_v[col_idx]);
-  }
-  os << "========" << std::endl;
-  os << "cluster marginal logp: " << c.get_marginal_logp() << std::endl;
+  os << c.to_string() << endl;
   return os;
+}
+
+string Cluster::to_string(string join_str) const {
+  stringstream ss;
+  ss << "========" << std::endl;
+  ss <<  "row_indices:: " << row_indices;
+  for(int col_idx=0; col_idx<get_num_cols(); col_idx++) {
+    ss << join_str << "column idx: " << col_idx << " :: " << *(p_model_v[col_idx]);
+  }
+  ss << "========" << std::endl;
+  ss << "cluster marginal logp: " << get_marginal_logp() << std::endl;
+  return ss.str();
 }
 
 void Cluster::init_columns(vector<map<string, double>*> &hypers_v) {

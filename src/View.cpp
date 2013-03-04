@@ -589,6 +589,26 @@ vector<int> View::get_canonical_clustering() const {
   return canonical_clustering;
 }
 
+std::ostream& operator<<(std::ostream& os, const View& v) {
+  os << v.to_string() << endl;
+  return os;
+}
+
+string View::to_string(string join_str) const {
+  stringstream ss;
+  set<Cluster*>::iterator it = clusters.begin();
+  int cluster_idx = 0;
+  for(; it!=clusters.end(); it++) {
+    ss << "CLUSTER IDX: " << cluster_idx++ << join_str;
+    ss << **it << endl;
+  }
+  ss << "global_to_local: " << global_to_local << join_str;
+  ss << "crp_score: " << crp_score;
+  ss << ", " << "data_score: " << data_score;
+  ss << ", " << "score: " << get_score();
+  return ss.str();
+}
+
 void View::print_score_matrix() {
   vector<vector<double> > scores_v;
   set<Cluster*>::iterator c_it;
@@ -602,15 +622,7 @@ void View::print_score_matrix() {
 }
 
 void View::print() {
-  set<Cluster*>::iterator it = clusters.begin();
-  int cluster_idx = 0;
-  for(; it!=clusters.end(); it++) {
-    cout << "CLUSTER IDX: " << cluster_idx++ << endl;
-    cout << **it << endl;
-  }
-  cout << "global_to_local: " << global_to_local << endl;
-  cout << "crp_score: " << crp_score << ", " << "data_score: " << data_score;
-  cout << ", " << "score: " << get_score() << endl;
+  cout << to_string() << endl;
 }
 
 void View::assert_state_consistency() {

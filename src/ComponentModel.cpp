@@ -28,15 +28,15 @@ map<string, double> ComponentModel::get_suffstats() const {
 }
 
 std::ostream& operator<<(std::ostream& os, const ComponentModel& cm) {
-  os << "count: " << cm.count << endl;
-  os << "suffstats: " << cm.suffstats << endl;
-  os << "hypers: " << *cm.p_hypers << endl;
-  os << "marginal logp: " << cm.calc_marginal_logp() << endl;
+  os << cm.to_string() << endl;
   return os;
 }
 
-string ComponentModel::to_string() {
+string ComponentModel::to_string(string join_str) const {
   stringstream ss;
-  ss << *this;
+  ss << "count: " << count << join_str;
+  ss << "suffstats: " << suffstats << join_str;
+  ss << "hypers: " << *p_hypers << join_str;
+  ss << "marginal logp: " << calc_marginal_logp();
   return ss.str();
 }

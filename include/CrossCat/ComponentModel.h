@@ -36,7 +36,7 @@ class ComponentModel {
   friend std::ostream& operator<<(std::ostream& os, const ComponentModel &cm);
   // make protected later
   std::map<std::string, double> *p_hypers;
-  std::string to_string();
+  std::string to_string(std::string join_str="\n") const;
  protected:
   int count;
   std::map<std::string, double> suffstats;

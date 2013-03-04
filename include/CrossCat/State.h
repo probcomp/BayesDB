@@ -119,6 +119,8 @@ class State {
   double draw_rand_u();
   int draw_rand_i(int max=MAX_INT);
   // helpers
+  friend std::ostream& operator<<(std::ostream& os, const State& s);
+  std::string to_string(std::string join_str="\n") const;
   void construct_base_hyper_grids(int num_rows, int num_cols, int N_GRID);
   void construct_column_hyper_grids(boost::numeric::ublas::matrix<double> data,
 				    std::vector<int> global_col_indices);

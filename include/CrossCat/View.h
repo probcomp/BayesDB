@@ -132,6 +132,9 @@ class View {
   std::vector<int> shuffle_row_indices();
   std::vector<std::vector<int> > get_cluster_groupings() const;
   std::vector<int> get_canonical_clustering() const;
+  //
+  friend std::ostream& operator<<(std::ostream& os, const View& v);
+  std::string to_string(std::string join_str="\n") const;
   void print();
   void print_score_matrix();
   void assert_state_consistency();
