@@ -16,6 +16,8 @@ State::State(const MatrixD &data,
 	     vector<vector<vector<int> > > row_partition_v,
 	     vector<double> row_crp_alpha_v,
 	     int N_GRID, int SEED) : rng(SEED) {
+  column_crp_score = 0;
+  data_score = 0;
   int num_rows = data.size1();
   int num_cols = data.size2();
   global_col_datatypes = construct_lookup_map(global_col_indices, GLOBAL_COL_DATATYPES);
@@ -39,6 +41,8 @@ State::State(const MatrixD &data,
 	     vector<int> global_row_indices,
 	     vector<int> global_col_indices,
 	     int N_GRID, int SEED) : rng(SEED) {
+  column_crp_score = 0;
+  data_score = 0;
   int num_rows = data.size1();
   int num_cols = data.size2();
   global_col_datatypes = construct_lookup_map(global_col_indices, GLOBAL_COL_DATATYPES);
