@@ -236,6 +236,7 @@ vector<double> View::calc_cluster_vector_predictive_logps(vector<double> vd) {
   logps.push_back(calc_cluster_vector_predictive_logp(vd, empty_cluster,
 						      crp_logp_delta,
 						      data_logp_delta));
+  empty_cluster.delete_component_models();
   return logps;
 }
 
