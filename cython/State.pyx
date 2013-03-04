@@ -88,11 +88,13 @@ cdef extern from "State.h":
           void SaveResult()
      State *new_State "new State" (matrix[double] &data,
                                    vector[string] global_col_datatypes,
+                                   vector[int] global_col_multinomial_counts,
                                    vector[int] global_row_indices,
                                    vector[int] global_col_indices,
                                    int N_GRID, int SEED)
      State *new_State "new State" (matrix[double] &data,
                                    vector[string] global_col_datatypes,
+                                   vector[int] global_col_multinomial_counts,
                                    vector[int] global_row_indices,
                                    vector[int] global_col_indices,
                                    c_map[int, c_map[string, double]] hypers_m,
@@ -134,6 +136,7 @@ cdef class p_State:
          #
          self.dataptr = convert_data_to_cpp(numpy.array(T))
          self.column_types = convert_string_vector_to_cpp(column_types)
+         self.event_counts = convert_int_vector_to_cpp(event_counts)
          self.gri = convert_int_vector_to_cpp(global_row_indices)
          self.gci = convert_int_vector_to_cpp(global_col_indices)
          #
@@ -141,6 +144,7 @@ cdef class p_State:
          if must_initialize:
               self.thisptr = new_State(dereference(self.dataptr),
                                        self.column_types,
+                                       self.event_counts,
                                        self.gri, self.gci,
                                        N_GRID, SEED)
          else:
@@ -152,6 +156,7 @@ cdef class p_State:
               row_crp_alpha_v = constructor_args['row_crp_alpha_v']
               self.thisptr = new_State(dereference(self.dataptr),
                                        self.column_types,
+                                       self.event_counts,
                                        self.gri, self.gci,
                                        hypers_m,
                                        column_partition, column_crp_alpha,
