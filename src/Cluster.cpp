@@ -11,8 +11,10 @@ Cluster::Cluster() {
   init_columns(hypers_v);
 }
 
-void Cluster::delete_component_models() {
-  assert(row_indices.size()==0);
+void Cluster::delete_component_models(bool check_empty) {
+  if(check_empty) {
+    assert(row_indices.size()==0);
+  }
   while(p_model_v.size()!=0) {
     ComponentModel *p_cm = p_model_v.back();
     p_model_v.pop_back();

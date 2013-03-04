@@ -53,7 +53,7 @@ class Cluster {
 		    std::vector<int> data_global_row_indices,
 		    std::map<std::string, double> &hypers);
   double incorporate_hyper_update(int which_col);
-  void delete_component_models();
+  void delete_component_models(bool check_empty=true);
   //
   // helpers
   friend std::ostream& operator<<(std::ostream& os, const Cluster& c);
