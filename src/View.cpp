@@ -507,6 +507,7 @@ void View::remove_all() {
   while(it!=clusters.end()) {
     Cluster &which_cluster = **it;
     clusters.erase(clusters.find(&which_cluster));
+    which_cluster.delete_component_models(false);
     delete &which_cluster;
     it = clusters.begin();
   }
