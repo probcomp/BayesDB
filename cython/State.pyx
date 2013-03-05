@@ -71,6 +71,10 @@ cdef extern from "State.h":
      cdef cppclass State:
           # mutators
           double transition(matrix[double] data)
+          double transition_features(matrix[double] data)
+          double transition_views(matrix[double] data)
+          double transition_view_i(int i, matrix[double] data)
+          double transition_column_crp_alpha()
           # getters
           double get_column_crp_alpha()
           double get_column_crp_score()
@@ -232,6 +236,14 @@ cdef class p_State:
     # mutators
     def transition(self):
         return self.thisptr.transition(dereference(self.dataptr))
+    def transition_features(self):
+        return self.thisptr.transition_features(dereference(self.dataptr))
+    def transition_views(self):
+        return self.thisptr.transition_views(dereference(self.dataptr))
+    def transition_view_i(self, i):
+        return self.thisptr.transition_view_i(i, dereference(self.dataptr))
+    def transition_column_crp_alpha(self):
+        return self.thisptr.transition_column_crp_alpha()
     # API getters
     def get_X_D(self):
           return self.thisptr.get_X_D()
