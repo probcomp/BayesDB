@@ -94,6 +94,8 @@ class State {
   std::vector<double> calc_column_crp_marginals(std::vector<double> alphas_to_score) const;
   std::vector<double> calc_row_crp_marginals(std::vector<double> alphas_to_score) const;
   void SaveResult(std::string filename, int iter_idx=-1);
+  friend std::ostream& operator<<(std::ostream& os, const State& s);
+  std::string to_string(std::string join_str="\n") const;
  private:
   // parameters
   std::map<int, std::string> global_col_datatypes;
@@ -118,9 +120,6 @@ class State {
   // resources
   double draw_rand_u();
   int draw_rand_i(int max=MAX_INT);
-  // helpers
-  friend std::ostream& operator<<(std::ostream& os, const State& s);
-  std::string to_string(std::string join_str="\n") const;
   void construct_base_hyper_grids(int num_rows, int num_cols, int N_GRID);
   void construct_column_hyper_grids(boost::numeric::ublas::matrix<double> data,
 				    std::vector<int> global_col_indices);
