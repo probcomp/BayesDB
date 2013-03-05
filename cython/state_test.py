@@ -13,6 +13,8 @@ parser.add_argument('--num_rows', default=1000, type=int)
 parser.add_argument('--num_splits', default=2, type=int)
 parser.add_argument('--max_mean', default=10, type=float)
 parser.add_argument('--max_std', default=0.3, type=float)
+parser.add_argument('--num_transitions', default=300, type=int)
+parser.add_argument('--N_GRID', default=11, type=int)
 args = parser.parse_args()
 #
 gen_seed = args.gen_seed
@@ -22,6 +24,8 @@ num_rows = args.num_rows
 num_splits = args.num_splits
 max_mean = args.max_mean
 max_std = args.max_std
+num_transitions = args.num_transitions
+N_GRID = args.N_GRID
 
 # create the data
 T, M_r, M_c = gen_data.gen_factorial_data_objects(
@@ -38,11 +42,11 @@ T, M_r, M_c = gen_data.gen_factorial_data_objects(
 #     M_c = gen_data.gen_M_c_from_T(T)
 
 # create the state
-p_State = State.p_State(M_c, T)
+p_State = State.p_State(M_c, T, N_GRID=N_GRID)
 
 # transition the sampler
 print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
-for transition_idx in range(300):
+for transition_idx in range(num_transitions):
     print "transition #: %s" % transition_idx
     p_State.transition()
     print "s.num_views: %s; s.column_crp_score: %.3f; s.data_score: %.1f; s.score:%.1f" % (p_State.get_num_views(), p_State.get_column_crp_score(), p_State.get_data_score(), p_State.get_marginal_logp())
