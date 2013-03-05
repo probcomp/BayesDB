@@ -674,7 +674,7 @@ string State::to_string(string join_str) const {
   ss << "========" << std::endl;
   for(it=views.begin(); it!=views.end(); it++) {
     View v = **it;
-    ss << "view idx: " << view_idx << endl;
+    ss << "view idx: " << view_idx++ << endl;
     ss << v << endl;
     ss << "========" << std::endl;
   }    
