@@ -60,13 +60,13 @@ for transition_idx in range(num_transitions):
             "s.data_score: %.1f",
             "s.score:%.1f",
             ])
-    values_list = [
+    values_tuple = (
         p_State.get_num_views(),
         p_State.get_column_crp_score(),
         p_State.get_data_score(),
         p_State.get_marginal_logp(),
-        ]
-    print format_list % values_list
+        )
+    print format_list % values_tuple
     if transition_idx % 10 == 0:
         p_State.plot(iter_idx=transition_idx)
     print p_State
