@@ -50,13 +50,18 @@ def gen_factorial_data(gen_seed, num_clusters,
     data = numpy.hstack(data_list)
     return data, inverse_permutation_indices_list
 
-def gen_factorial_data_objects(gen_seed, num_clusters,
-                               num_cols, num_rows, num_splits,
-                               max_mean=10, max_std=1):
-    T, data_inverse_permutation_indices = gen_factorial_data(
-        gen_seed, num_clusters,
-        num_cols, num_rows, num_splits, max_mean, max_std)
-    T  = T.tolist()
+def gen_M_r_from_T(T):
+    num_rows = len(T)
+    num_cols = len(T[0])
+    #
+    name_to_idx = dict(zip(map(str, range(num_rows)), range(num_rows)))
+    idx_to_name = dict(zip(map(str, range(num_rows)), range(num_rows)))
+    M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
+    return M_r
+
+def gen_M_c_from_T(T):
+    num_rows = len(T)
+    num_cols = len(T[0])
     #
     gen_continuous_metadata = lambda: dict(modeltype="normal_inverse_gamma",
                                            value_to_code=dict(),
@@ -65,11 +70,6 @@ def gen_factorial_data_objects(gen_seed, num_clusters,
         gen_continuous_metadata()
         for col_idx in range(num_cols)
         ]
-    #
-    name_to_idx = dict(zip(map(str, range(num_rows)), range(num_rows)))
-    idx_to_name = dict(zip(map(str, range(num_rows)), range(num_rows)))
-    M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
-    #
     name_to_idx = dict(zip(map(str, range(num_cols)),range(num_cols)))
     idx_to_name = dict(zip(map(str, range(num_cols)),range(num_cols)))
     M_c = dict(
@@ -77,4 +77,15 @@ def gen_factorial_data_objects(gen_seed, num_clusters,
         idx_to_name=idx_to_name,
         column_metadata=column_metadata,
         )
+    return M_c
+
+def gen_factorial_data_objects(gen_seed, num_clusters,
+                               num_cols, num_rows, num_splits,
+                               max_mean=10, max_std=1):
+    T, data_inverse_permutation_indices = gen_factorial_data(
+        gen_seed, num_clusters,
+        num_cols, num_rows, num_splits, max_mean, max_std)
+    T  = T.tolist()
+    M_r = gen_M_r_from_T(T)
+    M_c = gen_M_c_from_T(T)
     return T, M_r, M_c
