@@ -68,3 +68,19 @@ X_L_prime = p_State_2.get_X_L()
 
 print "X_D_prime:", X_D_prime
 print "X_L_prime:", X_L_prime
+
+import pylab
+aspect_ratio = float(num_cols)/num_rows
+T_array = numpy.array(T)
+for view_idx, X_D_i in enumerate(X_D):
+    argsorted = numpy.argsort(X_D_i)
+    pylab.figure()
+    pylab.imshow(T_array[argsorted], aspect=aspect_ratio,
+                 interpolation='none')
+    save_str = 'X_D_%s' % view_idx
+    pylab.savefig(save_str)
+
+pylab.figure()
+pylab.imshow(T_array, aspect=aspect_ratio, interpolation='none')
+save_str = 'T'
+pylab.savefig(save_str)
