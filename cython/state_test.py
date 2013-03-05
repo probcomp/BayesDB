@@ -1,5 +1,8 @@
 import argparse
 #
+import pylab
+import numpy
+#
 import tabular_predDB.cython.State as State
 import tabular_predDB.cython.gen_data as gen_data
 
@@ -33,13 +36,21 @@ T, M_r, M_c = gen_data.gen_factorial_data_objects(
     num_cols, num_rows, num_splits,
     max_mean=max_mean, max_std=max_std,
     )
-
+#
 # with open('SynData2.csv') as fh:
 #     import numpy
 #     import csv
 #     T = numpy.array([row for row in csv.reader(fh)], dtype=float).tolist()
 #     M_r = gen_data.gen_M_r_from_T(T)
 #     M_c = gen_data.gen_M_c_from_T(T)
+#
+aspect_ratio = float(num_cols)/num_rows
+T_array = numpy.array(T)
+pylab.figure()
+pylab.imshow(T_array, aspect=aspect_ratio, interpolation='none')
+save_str = 'T'
+pylab.savefig(save_str)
+
 
 # create the state
 p_State = State.p_State(M_c, T, N_GRID=N_GRID)
@@ -69,9 +80,10 @@ X_L_prime = p_State_2.get_X_L()
 print "X_D_prime:", X_D_prime
 print "X_L_prime:", X_L_prime
 
-import pylab
-aspect_ratio = float(num_cols)/num_rows
-T_array = numpy.array(T)
+for transition_idx in range(num_transitions):
+    p_State.transition()
+
+X_D = p_State.get_X_D()
 for view_idx, X_D_i in enumerate(X_D):
     argsorted = numpy.argsort(X_D_i)
     pylab.figure()
@@ -80,7 +92,3 @@ for view_idx, X_D_i in enumerate(X_D):
     save_str = 'X_D_%s' % view_idx
     pylab.savefig(save_str)
 
-pylab.figure()
-pylab.imshow(T_array, aspect=aspect_ratio, interpolation='none')
-save_str = 'T'
-pylab.savefig(save_str)
