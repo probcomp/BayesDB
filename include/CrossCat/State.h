@@ -75,6 +75,7 @@ class State {
   void remove_all();
   double transition_view_i(int which_view,
 			 std::map<int, std::vector<double> > row_data_map);
+  double transition_view_i(int which_view, const MatrixD &data);
   double transition_views(const MatrixD &data);
   double transition_column_crp_alpha();  
   double transition(const MatrixD &data);

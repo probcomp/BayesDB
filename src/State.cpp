@@ -313,6 +313,17 @@ double State::transition_view_i(int which_view,
   return score_delta;
 }
 
+// helper for cython
+double State::transition_view_i(int which_view, const MatrixD &data) {
+  vector<int> global_column_indices = create_sequence(data.size2());
+  View &v = get_view(which_view);
+  vector<int> view_cols = get_indices_to_reorder(global_column_indices,
+						 v.global_to_local);
+  const MatrixD data_subset = extract_columns(data, view_cols);
+  map<int, vector<double> > data_subset_map = construct_data_map(data_subset);
+  return transition_view_i(which_view, data_subset_map);
+}
+
 double State::transition_views(const MatrixD &data) {
   vector<int> global_column_indices = create_sequence(data.size2());
   //
@@ -537,6 +548,8 @@ double State::transition(const MatrixD &data) {
   for(it=which_transitions.begin(); it!=which_transitions.end(); it++) {
     int which_transition = *it;
     if(which_transition==0) {
+      score_delta += transition_views(data);
+      score_delta += transition_views(data);
       score_delta += transition_views(data);
     } else if(which_transition==1) {
       score_delta += transition_features(data);
