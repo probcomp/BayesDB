@@ -30,25 +30,6 @@ max_std = args.max_std
 num_transitions = args.num_transitions
 N_GRID = args.N_GRID
 
-def get_aspect_ratio(T_array):
-    num_rows = len(T_array)
-    num_cols = len(T_array[0])
-    aspect_ratio = float(num_cols)/num_rows
-    return aspect_ratio
-
-def plot_views(T_array, X_D, iter_idx=None):
-    iter_str = ''
-    if iter_idx is not None:
-        iter_str = 'iter_%s_' % iter_idx
-    aspect_ratio = get_aspect_ratio(T_array)
-    for view_idx, X_D_i in enumerate(X_D):
-        argsorted = numpy.argsort(X_D_i)
-        pylab.figure()
-        pylab.imshow(T_array[argsorted], aspect=aspect_ratio,
-                     interpolation='none')
-        save_str = '%sX_D_%s' % (iter_str, view_idx)
-        pylab.savefig(save_str)
-
 # create the data
 T, M_r, M_c = gen_data.gen_factorial_data_objects(
     gen_seed, num_clusters,
@@ -63,15 +44,10 @@ T, M_r, M_c = gen_data.gen_factorial_data_objects(
 #     M_r = gen_data.gen_M_r_from_T(T)
 #     M_c = gen_data.gen_M_c_from_T(T)
 #
-T_array = numpy.array(T)
-aspect_ratio = get_aspect_ratio(T_array)
-save_str = 'T'
-pylab.figure()
-pylab.imshow(T_array, aspect=aspect_ratio, interpolation='none')
-pylab.savefig(save_str)
 
 # create the state
 p_State = State.p_State(M_c, T, N_GRID=N_GRID)
+p_State.plot_T()
 
 # transition the sampler
 print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
@@ -80,8 +56,7 @@ for transition_idx in range(num_transitions):
     p_State.transition()
     print "s.num_views: %s; s.column_crp_score: %.3f; s.data_score: %.1f; s.score:%.1f" % (p_State.get_num_views(), p_State.get_column_crp_score(), p_State.get_data_score(), p_State.get_marginal_logp())
     if transition_idx % 10 == 0:
-        X_D = p_State.get_X_D()
-        plot_views(numpy.array(T), X_D, transition_idx)
+        p_State.plot(iter_idx=transition_idx)
     print p_State
 
 # print the final state

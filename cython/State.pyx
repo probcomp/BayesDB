@@ -6,6 +6,8 @@ from libcpp.set cimport set
 from cython.operator import dereference
 cimport numpy as np
 import numpy
+import pylab
+
 
 cdef double set_double(double& to_set, double value):
      to_set = value
@@ -128,6 +130,22 @@ def extract_column_types_counts(M_c):
         ]
     return column_types, event_counts
 
+def get_aspect_ratio(T_array):
+    num_rows = len(T_array)
+    num_cols = len(T_array[0])
+    aspect_ratio = float(num_cols)/num_rows
+    return aspect_ratio
+
+def plot_views(T_array, X_D, save_str_prefix=''): # iter_idx=None):
+    aspect_ratio = get_aspect_ratio(T_array)
+    for view_idx, X_D_i in enumerate(X_D):
+        argsorted = numpy.argsort(X_D_i)
+        pylab.figure()
+        pylab.imshow(T_array[argsorted], aspect=aspect_ratio,
+                     interpolation='none')
+        save_str = '%sX_D_%s' % (save_str_prefix, view_idx)
+        pylab.savefig(save_str)
+
 cdef class p_State:
     cdef State *thisptr
     cdef matrix[double] *dataptr
@@ -135,6 +153,8 @@ cdef class p_State:
     cdef vector[int] gci
     cdef vector[string] column_types
     cdef vector[int] event_counts
+    cdef np.ndarray T_array
+
     def __cinit__(self, M_c, T, X_L=None, X_D=None, initialization=None,
                   N_GRID=11, SEED=0):
          # FIXME: actually use initialization 
@@ -144,7 +164,9 @@ cdef class p_State:
          global_row_indices = range(len(T))
          global_col_indices = range(len(T[0]))
          #
-         self.dataptr = convert_data_to_cpp(numpy.array(T))
+         # FIXME: keeping TWO copies of the data here
+         self.T_array = numpy.array(T)
+         self.dataptr = convert_data_to_cpp(self.T_array)
          self.column_types = convert_string_vector_to_cpp(column_types)
          self.event_counts = convert_int_vector_to_cpp(event_counts)
          self.gri = convert_int_vector_to_cpp(global_row_indices)
@@ -177,6 +199,22 @@ cdef class p_State:
         del_State(self.thisptr)
     def __repr__(self):
          return "State[%s, %s]:\n%s" % (self.dataptr.size1(), self.dataptr.size2(), self.thisptr.to_string(";", False))
+    def to_string(self, join_str='\n', top_level=False):
+         return self.thisptr.to_string(join_str, top_level)
+    def plot(self, save_str_prefix='', iter_idx=None):
+         T_array = self.T_array
+         X_D = self.get_X_D()
+         #
+         if iter_idx is not None:
+              save_str_prefix = 'iter_%s_' % iter_idx
+         plot_views(T_array, X_D, save_str_prefix)
+    def plot_T(self, save_str='T'):
+         T_array = self.T_array
+         #
+         aspect_ratio = get_aspect_ratio(T_array)
+         pylab.figure()
+         pylab.imshow(T_array, aspect=aspect_ratio, interpolation='none')
+         pylab.savefig(save_str)
     #
     # getters
     def get_column_groups(self):
