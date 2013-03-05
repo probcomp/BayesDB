@@ -1,3 +1,4 @@
+from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libcpp.map cimport map as c_map
@@ -77,7 +78,7 @@ cdef extern from "State.h":
           double get_marginal_logp()
           int get_num_views()
           c_map[int, set[int]] get_column_groups()
-          string to_string()
+          string to_string(string join_str, bool top_level)
           # API helpers
           vector[c_map[string, double]] get_column_hypers()
           c_map[string, double] get_column_partition_hypers()
@@ -171,7 +172,7 @@ cdef class p_State:
         del_matrix(self.dataptr)
         del_State(self.thisptr)
     def __repr__(self):
-         return "State[%s, %s]:\n%s" % (self.dataptr.size1(), self.dataptr.size2(), self.thisptr.to_string())
+         return "State[%s, %s]:\n%s" % (self.dataptr.size1(), self.dataptr.size2(), self.thisptr.to_string(";", False))
     #
     # getters
     def get_column_groups(self):
