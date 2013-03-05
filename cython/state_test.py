@@ -54,7 +54,19 @@ print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
 for transition_idx in range(num_transitions):
     print "transition #: %s" % transition_idx
     p_State.transition()
-    print "s.num_views: %s; s.column_crp_score: %.3f; s.data_score: %.1f; s.score:%.1f" % (p_State.get_num_views(), p_State.get_column_crp_score(), p_State.get_data_score(), p_State.get_marginal_logp())
+    format_list = '; '.join([
+            "s.num_views: %s",
+            "s.column_crp_score: %.3f",
+            "s.data_score: %.1f",
+            "s.score:%.1f",
+            ])
+    values_list = [
+        p_State.get_num_views(),
+        p_State.get_column_crp_score(),
+        p_State.get_data_score(),
+        p_State.get_marginal_logp(),
+        ]
+    print format_list % values_list
     if transition_idx % 10 == 0:
         p_State.plot(iter_idx=transition_idx)
     print p_State
