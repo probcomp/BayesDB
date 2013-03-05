@@ -667,17 +667,19 @@ std::ostream& operator<<(std::ostream& os, const State& s) {
   return os;
 }
 
-string State::to_string(string join_str) const {
+string State::to_string(string join_str, bool top_level) const {
   stringstream ss;
-  int view_idx = 0;
-  set<View*>::const_iterator it;
-  ss << "========" << std::endl;
-  for(it=views.begin(); it!=views.end(); it++) {
-    View v = **it;
-    ss << "view idx: " << view_idx++ << endl;
-    ss << v << endl;
+  if(!top_level) {
+    int view_idx = 0;
+    set<View*>::const_iterator it;
     ss << "========" << std::endl;
-  }    
+    for(it=views.begin(); it!=views.end(); it++) {
+      View v = **it;
+      ss << "view idx: " << view_idx++ << endl;
+      ss << v << endl;
+      ss << "========" << std::endl;
+    }    
+  }
   ss << "column_crp_alpha: " << column_crp_alpha;
   ss << "; column_crp_score: " << column_crp_score;
   ss << "; data_score: " << data_score;

@@ -95,7 +95,7 @@ class State {
   std::vector<double> calc_row_crp_marginals(std::vector<double> alphas_to_score) const;
   void SaveResult(std::string filename, int iter_idx=-1);
   friend std::ostream& operator<<(std::ostream& os, const State& s);
-  std::string to_string(std::string join_str="\n") const;
+  std::string to_string(std::string join_str="\n", bool top_level=false) const;
  private:
   // parameters
   std::map<int, std::string> global_col_datatypes;

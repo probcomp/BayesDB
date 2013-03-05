@@ -57,7 +57,7 @@ class Cluster {
   //
   // helpers
   friend std::ostream& operator<<(std::ostream& os, const Cluster& c);
-  std::string to_string(std::string join_str="\n") const;
+  std::string to_string(std::string join_str="\n", bool top_level=false) const;
   //
   // make private later
   std::vector<ComponentModel*> p_model_v;

@@ -594,13 +594,15 @@ std::ostream& operator<<(std::ostream& os, const View& v) {
   return os;
 }
 
-string View::to_string(string join_str) const {
+string View::to_string(string join_str, bool top_level) const {
   stringstream ss;
-  set<Cluster*>::iterator it = clusters.begin();
-  int cluster_idx = 0;
-  for(; it!=clusters.end(); it++) {
-    ss << "CLUSTER IDX: " << cluster_idx++ << join_str;
-    ss << **it << endl;
+  if(!top_level) {
+    set<Cluster*>::iterator it = clusters.begin();
+    int cluster_idx = 0;
+    for(; it!=clusters.end(); it++) {
+      ss << "CLUSTER IDX: " << cluster_idx++ << join_str;
+      ss << **it << endl;
+    }
   }
   ss << "global_to_local: " << global_to_local << join_str;
   ss << "crp_score: " << crp_score;

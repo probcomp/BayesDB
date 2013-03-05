@@ -186,14 +186,17 @@ std::ostream& operator<<(std::ostream& os, const Cluster& c) {
   return os;
 }
 
-string Cluster::to_string(string join_str) const {
+string Cluster::to_string(string join_str, bool top_level) const {
   stringstream ss;
-  ss << "========" << std::endl;
-  ss <<  "row_indices:: " << row_indices;
-  for(int col_idx=0; col_idx<get_num_cols(); col_idx++) {
-    ss << join_str << "column idx: " << col_idx << " :: " << *(p_model_v[col_idx]);
+  if(!top_level) {
+    ss << "========" << std::endl;
+    ss <<  "row_indices:: " << row_indices;
+    for(int col_idx=0; col_idx<get_num_cols(); col_idx++) {
+      ss << join_str << "column idx: " << col_idx << " :: ";
+      ss << *(p_model_v[col_idx]);
+    }
+    ss << "========" << std::endl;
   }
-  ss << "========" << std::endl;
   ss << "cluster marginal logp: " << get_marginal_logp() << std::endl;
   return ss.str();
 }
