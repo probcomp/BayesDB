@@ -71,9 +71,13 @@ cdef extern from "State.h":
           # mutators
           double transition(matrix[double] data)
           # getters
+          double get_column_crp_alpha()
+          double get_column_crp_score()
+          double get_data_score()
           double get_marginal_logp()
           int get_num_views()
           c_map[int, set[int]] get_column_groups()
+          string to_string()
           # API helpers
           vector[c_map[string, double]] get_column_hypers()
           c_map[string, double] get_column_partition_hypers()
@@ -127,7 +131,7 @@ cdef class p_State:
     cdef vector[string] column_types
     cdef vector[int] event_counts
     def __cinit__(self, M_c, T, X_L=None, X_D=None, initialization=None,
-                  N_GRID=31, SEED=0):
+                  N_GRID=11, SEED=0):
          # FIXME: actually use initialization 
          # modify State.pyx to accept column_types, event_counts
          # modify State.{h,cpp} to accept column_types, event_counts
@@ -167,11 +171,17 @@ cdef class p_State:
         del_matrix(self.dataptr)
         del_State(self.thisptr)
     def __repr__(self):
-        return "State[%s, %s]" % (self.dataptr.size1(), self.dataptr.size2())
+         return "State[%s, %s]:\n%s" % (self.dataptr.size1(), self.dataptr.size2(), self.thisptr.to_string())
     #
     # getters
     def get_column_groups(self):
         return self.thisptr.get_column_groups()
+    def get_column_crp_alpha(self):
+         return self.thisptr.get_column_crp_alpha()
+    def get_column_crp_score(self):
+         return self.thisptr.get_column_crp_score()
+    def get_data_score(self):
+         return self.thisptr.get_data_score()
     def get_marginal_logp(self):
         return self.thisptr.get_marginal_logp()
     def get_num_views(self):
