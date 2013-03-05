@@ -45,7 +45,7 @@ print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
 for transition_idx in range(300):
     print "transition #: %s" % transition_idx
     p_State.transition()
-    print "s.num_views:", p_State.get_num_views(), "; s.column_crp_score:", p_State.get_column_crp_score(), "; s.data_score:", p_State.get_data_score(), "; s.score:", p_State.get_marginal_logp()
+    print "s.num_views: %s; s.column_crp_score: %.3f; s.data_score: %.1f; s.score:%.1f" % (p_State.get_num_views(), p_State.get_column_crp_score(), p_State.get_data_score(), p_State.get_marginal_logp())
     print p_State
 
 # print the final state
