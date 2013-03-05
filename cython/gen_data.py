@@ -2,6 +2,9 @@ import sys
 #
 import numpy
 
+def get_ith_ordering(in_list, i):
+    temp_list = [in_list[j::(i+1)][:] for j in range(i+1)]
+    return [el for sub_list in temp_list for el in sub_list]
 
 def gen_data(gen_seed, num_clusters,
              num_cols, num_rows, max_mean=10, max_std=1):
@@ -44,6 +47,7 @@ def gen_factorial_data(gen_seed, num_clusters,
             num_rows=num_rows,
             )
         permutation_indices = numpy.random.permutation(xrange(num_rows))
+        # permutation_indices = get_ith_ordering(range(num_rows), data_idx)
         inverse_permutation_indices = numpy.argsort(permutation_indices)
         inverse_permutation_indices_list.append(inverse_permutation_indices)
         data_list.append(numpy.array(data_i)[permutation_indices])
