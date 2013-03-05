@@ -30,25 +30,35 @@ T, M_r, M_c = gen_data.gen_factorial_data_objects(
     max_mean=max_mean, max_std=max_std,
     )
 
+# with open('SynData2.csv') as fh:
+#     import numpy
+#     import csv
+#     T = numpy.array([row for row in csv.reader(fh)], dtype=float).tolist()
+#     M_r = gen_data.gen_M_r_from_T(T)
+#     M_c = gen_data.gen_M_c_from_T(T)
+
+# create the state
 p_State = State.p_State(M_c, T)
+
+# transition the sampler
 print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
-for idx in range(3):
-    print "transitioning"
+for transition_idx in range(300):
+    print "transition #: %s" % transition_idx
     p_State.transition()
-    print "p_State.get_column_groups():", p_State.get_column_groups()
-    print "p_State.get_column_hypers():", p_State.get_column_hypers()
-    print "p_State.get_column_partition():", p_State.get_column_partition()
-    print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
-    for view_idx, view_state_i in enumerate(p_State.get_view_state()):
-        print "view_state_i:", view_idx, view_state_i
+    print "s.num_views:", p_State.get_num_views(), "; s.column_crp_score:", p_State.get_column_crp_score(), "; s.data_score:", p_State.get_data_score(), "; s.score:", p_State.get_marginal_logp()
+    print p_State
+
+# print the final state
 X_D = p_State.get_X_D()
 X_L = p_State.get_X_L()
-
 print "X_D:", X_D
 print "X_L:", X_L
+for view_idx, view_state_i in enumerate(p_State.get_view_state()):
+    print "view_state_i:", view_idx, view_state_i
+print p_State
 
-constructor_args = State.transform_latent_state_to_constructor_args(X_L, X_D)
-p_State_2 = State.p_State(M_c, T, X_L, X_D) # **constructor_args)
+# test generation of state from X_L, X_D
+p_State_2 = State.p_State(M_c, T, X_L, X_D)
 X_D_prime = p_State_2.get_X_D()
 X_L_prime = p_State_2.get_X_L()
 
