@@ -156,7 +156,7 @@ double Cluster::insert_col(vector<double> data,
   ComponentModel *p_cm;
   if(col_datatype==CONTINUOUS_DATATYPE) {
     p_cm = new ContinuousComponentModel(hypers);
-  } else if(col_datatype==CONTINUOUS_DATATYPE) {
+  } else if(col_datatype==MULTINOMIAL_DATATYPE) {
     p_cm = new MultinomialComponentModel(hypers);
   } else {
     assert(1==0);
