@@ -324,7 +324,7 @@ void construct_continuous_specific_hyper_grid(int n_grid,
   double sum_sq_deviation = calc_sum_sq_deviation(col_data);
   // vector<double> s_grid_append = log_linspace(1., sum_sq_deviation, APPEND_N);
   // s_grid = append(paramRange, s_grid_append);
-  s_grid = log_linspace(1., sum_sq_deviation, n_grid);
+  s_grid = log_linspace(sum_sq_deviation / 100., sum_sq_deviation, n_grid);
   // construct mu grids
   double min = *std::min_element(col_data.begin(), col_data.end());
   double max = *std::max_element(col_data.begin(), col_data.end());
