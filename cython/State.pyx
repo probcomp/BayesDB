@@ -2,7 +2,7 @@ from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libcpp.map cimport map as c_map
-from libcpp.set cimport set
+from libcpp.set cimport set as c_set
 from cython.operator import dereference
 cimport numpy as np
 import numpy
@@ -83,7 +83,7 @@ cdef extern from "State.h":
           double get_data_score()
           double get_marginal_logp()
           int get_num_views()
-          c_map[int, set[int]] get_column_groups()
+          c_map[int, c_set[int]] get_column_groups()
           string to_string(string join_str, bool top_level)
           # API helpers
           vector[c_map[string, double]] get_column_hypers()
@@ -136,15 +136,26 @@ def get_aspect_ratio(T_array):
     aspect_ratio = float(num_cols)/num_rows
     return aspect_ratio
 
-def plot_views(T_array, X_D, save_str_prefix=''): # iter_idx=None):
-    aspect_ratio = get_aspect_ratio(T_array)
-    for view_idx, X_D_i in enumerate(X_D):
-        argsorted = numpy.argsort(X_D_i)
-        pylab.figure()
-        pylab.imshow(T_array[argsorted], aspect=aspect_ratio,
-                     interpolation='none')
-        save_str = '%sX_D_%s' % (save_str_prefix, view_idx)
-        pylab.savefig(save_str)
+def plot_views(T_array, X_D, X_L, save_str_prefix=''): # iter_idx=None):
+     pylab.figure()
+     view_assignments = X_L['column_partition']['assignments']
+     view_assignments = numpy.array(view_assignments)
+     num_views = len(set(view_assignments))
+     for view_idx in range(num_views):
+          X_D_i = X_D[view_idx]
+          argsorted = numpy.argsort(X_D_i)
+          is_this_view = view_assignments==view_idx
+          xticklabels = numpy.nonzero(is_this_view)[0]
+          num_cols_i = sum(is_this_view)
+          T_array_sub = T_array[:,is_this_view][argsorted]
+          aspect_ratio = get_aspect_ratio(T_array_sub)
+          pylab.subplot(1, num_views, view_idx)
+          pylab.imshow(T_array_sub, aspect=aspect_ratio,
+                       interpolation='none')
+          pylab.gca().set_xticks(range(num_cols_i))
+          pylab.gca().set_xticklabels(map(str, xticklabels))
+     save_str = '%sX_D' % save_str_prefix
+     pylab.savefig(save_str)
 
 cdef class p_State:
     cdef State *thisptr
@@ -204,10 +215,11 @@ cdef class p_State:
     def plot(self, save_str_prefix='', iter_idx=None):
          T_array = self.T_array
          X_D = self.get_X_D()
+         X_L = self.get_X_L()
          #
          if iter_idx is not None:
               save_str_prefix = 'iter_%s_' % iter_idx
-         plot_views(T_array, X_D, save_str_prefix)
+         plot_views(T_array, X_D, X_L, save_str_prefix)
     def plot_T(self, save_str='T'):
          T_array = self.T_array
          #
