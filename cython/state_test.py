@@ -10,6 +10,7 @@ import tabular_predDB.cython.gen_data as gen_data
 # parse input
 parser = argparse.ArgumentParser()
 parser.add_argument('--gen_seed', default=0, type=int)
+parser.add_argument('--inf_seed', default=0, type=int)
 parser.add_argument('--num_clusters', default=4, type=int)
 parser.add_argument('--num_cols', default=16, type=int)
 parser.add_argument('--num_rows', default=300, type=int)
@@ -21,6 +22,7 @@ parser.add_argument('--N_GRID', default=31, type=int)
 args = parser.parse_args()
 #
 gen_seed = args.gen_seed
+inf_seed = args.inf_seed
 num_clusters = args.num_clusters
 num_cols = args.num_cols
 num_rows = args.num_rows
@@ -49,7 +51,7 @@ else:
 
 
 # create the state
-p_State = State.p_State(M_c, T, N_GRID=N_GRID)
+p_State = State.p_State(M_c, T, N_GRID=N_GRID, SEED=inf_seed)
 p_State.plot_T()
 
 # transition the sampler
