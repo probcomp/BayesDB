@@ -353,6 +353,8 @@ double View::transition(std::map<int, std::vector<double> > row_data_map) {
       score_delta += transition_zs(row_data_map);
     } else if(which_transition==2) {
       score_delta += transition_crp_alpha();
+    } else {
+      assert(0);
     }
   }
   return score_delta;
