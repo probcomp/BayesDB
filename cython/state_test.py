@@ -77,9 +77,9 @@ for transition_idx in range(num_transitions):
         p_State.get_data_score(),
         p_State.get_marginal_logp(),
         )
-    print format_list % values_tuple
-    if transition_idx % 10 == 0:
-        p_State.plot(iter_idx=transition_idx)
+    print format_list % values_tuple    
+    iter_idx = transition_idx if transition_idx % 10 == 0 else None
+    p_State.plot(iter_idx=iter_idx)
 
 # # print the final state
 # X_D = p_State.get_X_D()
