@@ -147,7 +147,7 @@ namespace numerics {
     mu = mu_prime;
   }
 
-  double calc_hyperprior(double r, double nu, double s) {
+  double calc_continuous_hyperprior(double r, double nu, double s) {
     double logp = 0;
     logp += -log(r);
     logp += -log(nu);
@@ -161,7 +161,7 @@ namespace numerics {
       + HALF_LOG_2PI					\
       - .5 * log(r)					\
       + lgamma(nu_over_2);
-    log_Z += calc_hyperprior(r, nu, s);
+    log_Z += calc_continuous_hyperprior(r, nu, s);
     return log_Z;
   }
 
