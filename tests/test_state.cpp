@@ -45,8 +45,11 @@ int main(int argc, char** argv) {
   for(int i=0;i<200;i++) {
     cout << "transition #: " << i << endl;
     s.transition(data);
-    cout << "s.num_views: " << s.get_num_views();
-    cout << "; s.column_crp_score: " << s.get_column_crp_score();
+    cout << "s.num_views: " << s.get_num_views() << endl;
+    for(int j=0;j<s.get_num_views(); j++) {
+      cout << "view " << j << " row_paritition_model_counts: " << s.get_row_partition_model_counts_i(j) << endl;
+    }
+    cout << "s.column_crp_score: " << s.get_column_crp_score();
     cout << "; s.data_score: " << s.get_data_score();
     cout << "; s.score: " << s.get_marginal_logp();
     cout << endl;
