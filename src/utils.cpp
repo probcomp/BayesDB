@@ -343,3 +343,7 @@ void construct_multinomial_base_hyper_grids(int n_grid,
   // multinomial_alpha_grid = append(paramRange, multinomial_alpha_grid_append);
   multinomial_alpha_grid = log_linspace(1., data_num_vectors, n_grid);
 }
+
+bool is_bad_value(double value) {
+  return isnan(value) || !isfinite(value);
+}

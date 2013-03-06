@@ -9,6 +9,7 @@
 #include <sstream> // stringstream in stringify()
 #include <set>
 #include <map>
+#include <math.h> // isnan, isfinite
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 
@@ -216,5 +217,7 @@ int count_elements(std::vector<std::vector<T> > v_v_T) {
   }
   return num_elements;
 }
+
+bool is_bad_value(double value);
 
 #endif // GUARD_utils_H
