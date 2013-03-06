@@ -55,6 +55,13 @@ namespace numerics {
     return draw;
   }
 
+  double calc_crp_alpha_hyperprior(double alpha) {
+    double logp = 0;
+    // invert the effect of log gridding
+    // logp += +log(alpha);
+    return logp;
+  }
+
   // p(alpha | clusters)
   double calc_crp_alpha_conditional(std::vector<int> counts,
 				    double alpha, int sum_counts,
@@ -75,6 +82,7 @@ namespace numerics {
       }
       logp += sum_log_gammas;
     }
+    logp += calc_crp_alpha_hyperprior(alpha);
     return logp;
   }
 
@@ -149,9 +157,10 @@ namespace numerics {
 
   double calc_continuous_hyperprior(double r, double nu, double s) {
     double logp = 0;
-    logp += -log(r);
-    logp += -log(nu);
-    logp += -log(s);
+    // invert the effect of log gridding
+    logp += log(r) + log(nu) + log(s);
+    // 
+    logp += -(log(r) + log(nu) + log(s)) / 16. / 3.;
     return logp;
   }
 
