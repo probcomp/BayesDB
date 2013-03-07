@@ -13,11 +13,11 @@ parser.add_argument('--gen_seed', default=0, type=int)
 parser.add_argument('--inf_seed', default=0, type=int)
 parser.add_argument('--num_clusters', default=4, type=int)
 parser.add_argument('--num_cols', default=2, type=int)
-parser.add_argument('--num_rows', default=20, type=int)
+parser.add_argument('--num_rows', default=2000, type=int)
 parser.add_argument('--num_splits', default=1, type=int)
 parser.add_argument('--max_mean', default=10, type=float)
 parser.add_argument('--max_std', default=0.3, type=float)
-parser.add_argument('--num_transitions', default=10, type=int)
+parser.add_argument('--num_transitions', default=100, type=int)
 parser.add_argument('--N_GRID', default=31, type=int)
 args = parser.parse_args()
 #
@@ -61,9 +61,12 @@ multinomial_column_metadata['modeltype'] = 'symmetric_dirichlet_discrete'
 multinomial_column_metadata['code_to_value'] = code_to_value
 multinomial_column_metadata['value_to_code'] = value_to_code
 
+print M_c
 # create the state
-p_State = State.p_State(M_c, T, N_GRID=N_GRID, SEED=inf_seed)
+p_State = State.p_State(M_c, T_array.tolist(), N_GRID=N_GRID, SEED=inf_seed)
 p_State.plot_T()
+print T_array
+print p_State
 
 # transition the sampler
 print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
