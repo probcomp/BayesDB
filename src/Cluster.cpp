@@ -206,8 +206,6 @@ void Cluster::init_columns(vector<map<string, double>*> &hypers_v) {
   vector<map<string, double>*>::iterator it;
   for(it=hypers_v.begin(); it!=hypers_v.end(); it++) {
     map<string, double> &hypers = **it;
-    string continuous_key = "nu";
-    string multinomial_key = "multinomial_alpha";
     ComponentModel *p_cm;
     if(in(hypers, continuous_key)) {
       // FIXME: should be passed col_datatypes here
