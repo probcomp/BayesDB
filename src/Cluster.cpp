@@ -78,8 +78,8 @@ double Cluster::calc_row_predictive_logp(vector<double> values) const {
 vector<double> Cluster::calc_hyper_conditionals(int which_col,
 						string which_hyper,
 						vector<double> hyper_grid) const {
-  ComponentModel *ccm = p_model_v[which_col];
-  vector<double> hyper_conditionals = ccm->calc_hyper_conditionals(which_hyper,
+  ComponentModel *cm = p_model_v[which_col];
+  vector<double> hyper_conditionals = cm->calc_hyper_conditionals(which_hyper,
 								  hyper_grid);
   return hyper_conditionals;
 }
@@ -92,9 +92,10 @@ double Cluster::calc_column_predictive_logp(vector<double> column_data,
   ComponentModel *p_cm;
   if(col_datatype==CONTINUOUS_DATATYPE) {
     p_cm = new ContinuousComponentModel(hypers);
-  } else if(col_datatype==CONTINUOUS_DATATYPE) {
+  } else if(col_datatype==MULTINOMIAL_DATATYPE) {
     p_cm = new MultinomialComponentModel(hypers);
   } else {
+    cout << "Cluster::calc_column_predictive_logp: col_datatype=" << col_datatype << endl;
     assert(1==0);
   }
   set<int>::iterator it;
