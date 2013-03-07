@@ -48,6 +48,14 @@ int main() {
   State s(data, GLOBAL_COL_DATATYPES, GLOBAL_COL_MULTINOMIAL_COUNTS,
 	  global_row_indices, global_col_indices);
 
+  for(int i=0; i<3; i++) {
+    cout << "transition " << i << endl;
+    s.transition(data);
+    cout << s << endl;
+    cout << endl;
+    cout << endl;
+  }
+
   cout << "test_mixed_types: Goodbye World" << endl;
 
 }
