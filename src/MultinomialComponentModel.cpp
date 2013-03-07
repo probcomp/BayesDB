@@ -45,6 +45,8 @@ vector<double> MultinomialComponentModel::calc_hyper_conditionals(string which_h
 								  K);
   } else {
     // error condition
+    cout << "MultinomialComponentModel::calc_hyper_conditional: bad value for which_hyper=" << which_hyper << endl;
+    assert(0);
   }
 }
 
