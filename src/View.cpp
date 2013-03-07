@@ -132,7 +132,15 @@ vector<double> View::get_crp_alpha_grid() const {
 
 vector<string> View::get_hyper_strings(int which_col) {
   vector<string> hyper_strings;
-  string global_col_datatype = global_col_datatypes[which_col];
+  int global_col_idx = get_key_of_value(global_to_local, which_col);
+  // int global_col_idx = -1;
+  // map<int, int>::const_iterator it;
+  // for(it=global_to_local.begin(); it!=global_to_local.end(); it++) {
+  //   if(it->second==which_col) {
+  //     global_col_idx = it->first;
+  //   }
+  // }
+  string global_col_datatype = global_col_datatypes[global_col_idx];
   if(global_col_datatype==CONTINUOUS_DATATYPE) {
     hyper_strings.push_back("r");
     hyper_strings.push_back("nu");
