@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--gen_seed', default=0, type=int)
 parser.add_argument('--inf_seed', default=0, type=int)
 parser.add_argument('--num_clusters', default=4, type=int)
-parser.add_argument('--num_cols', default=2, type=int)
+parser.add_argument('--num_cols', default=4, type=int)
 parser.add_argument('--num_rows', default=2000, type=int)
 parser.add_argument('--num_splits', default=1, type=int)
 parser.add_argument('--max_mean', default=10, type=float)
@@ -32,6 +32,11 @@ max_std = args.max_std
 num_transitions = args.num_transitions
 N_GRID = args.N_GRID
 
+p_multinomial = .5
+random_state = numpy.random.RandomState(gen_seed)
+is_multinomial = random_state.binomial(1, p_multinomial, num_cols)
+multinomial_column_indices = numpy.nonzero(is_multinomial)[0]
+
 # create the data
 if True:
     T, M_r, M_c = gen_data.gen_factorial_data_objects(
@@ -50,16 +55,16 @@ else:
         M_c = gen_data.gen_M_c_from_T(T)
 
 T_array = numpy.array(T)
-multinomial_idx = 1
-multinomial_column = numpy.array(T_array[:,multinomial_idx], dtype=int)
-multinomial_set = set(multinomial_column)
-T_array[:, multinomial_idx] = multinomial_column
-multinomial_column_metadata = M_c['column_metadata'][multinomial_idx]
-code_to_value = dict(zip(list(multinomial_set), list(multinomial_set)))
-value_to_code = dict(zip(list(multinomial_set), list(multinomial_set)))
-multinomial_column_metadata['modeltype'] = 'symmetric_dirichlet_discrete'
-multinomial_column_metadata['code_to_value'] = code_to_value
-multinomial_column_metadata['value_to_code'] = value_to_code
+for multinomial_idx in multinomial_column_indices:
+    multinomial_column = numpy.array(T_array[:,multinomial_idx], dtype=int)
+    multinomial_set = set(multinomial_column)
+    T_array[:, multinomial_idx] = multinomial_column
+    multinomial_column_metadata = M_c['column_metadata'][multinomial_idx]
+    code_to_value = dict(zip(list(multinomial_set), list(multinomial_set)))
+    value_to_code = dict(zip(list(multinomial_set), list(multinomial_set)))
+    multinomial_column_metadata['modeltype'] = 'symmetric_dirichlet_discrete'
+    multinomial_column_metadata['code_to_value'] = code_to_value
+    multinomial_column_metadata['value_to_code'] = value_to_code
 
 print M_c
 # create the state
@@ -67,6 +72,7 @@ p_State = State.p_State(M_c, T_array.tolist(), N_GRID=N_GRID, SEED=inf_seed)
 p_State.plot_T()
 print T_array
 print p_State
+print "multinomial_column_indices: %s" % str(multinomial_column_indices)
 
 # transition the sampler
 print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
