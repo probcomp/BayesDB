@@ -172,7 +172,7 @@ View& State::get_new_view() {
   vector<int> global_row_indices = create_sequence(num_vectors);
   View *p_new_view = new View(global_col_datatypes,
 			      global_row_indices,
-			      row_crp_alpha_grid, r_grid, nu_grid, s_grids,
+			      row_crp_alpha_grid, multinomial_alpha_grid, r_grid, nu_grid, s_grids,
 			      mu_grids, draw_rand_i());
   views.insert(p_new_view);
   return *p_new_view;
@@ -549,8 +549,6 @@ double State::transition(const MatrixD &data) {
     int which_transition = *it;
     if(which_transition==0) {
       score_delta += transition_views(data);
-      score_delta += transition_views(data);
-      score_delta += transition_views(data);
     } else if(which_transition==1) {
       score_delta += transition_features(data);
     } else if(which_transition==2) {
@@ -640,7 +638,9 @@ void State::init_views(const MatrixD &data,
 			 row_partition,
 			 global_row_indices, column_indices,
 			 hypers_m,
-			 row_crp_alpha_grid, r_grid, nu_grid, s_grids, mu_grids,
+			 row_crp_alpha_grid,
+			 multinomial_alpha_grid, r_grid, nu_grid,
+			 s_grids, mu_grids,
 			 row_crp_alpha,
 			 draw_rand_i());
     views.insert(p_v);

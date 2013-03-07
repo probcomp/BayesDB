@@ -17,6 +17,7 @@ View::View(const MatrixD data,
 	   vector<int> global_col_indices,
 	   map<int, map<string, double> > &hypers_m,
 	   vector<double> ROW_CRP_ALPHA_GRID,
+	   vector<double> MULTINOMIAL_ALPHA_GRID,
 	   vector<double> R_GRID,
 	   vector<double> NU_GRID,
 	   map<int, vector<double> > S_GRIDS,
@@ -28,6 +29,7 @@ View::View(const MatrixD data,
   global_col_datatypes = GLOBAL_COL_DATATYPES;
   //
   crp_alpha_grid = ROW_CRP_ALPHA_GRID;
+  multinomial_alpha_grid = MULTINOMIAL_ALPHA_GRID;
   r_grid = R_GRID;
   nu_grid = NU_GRID;
   s_grids = S_GRIDS;
@@ -44,6 +46,7 @@ View::View(const MatrixD data,
 	   vector<int> global_col_indices,
 	   map<int, map<string, double> > &hypers_m,
 	   vector<double> ROW_CRP_ALPHA_GRID,
+	   vector<double> MULTINOMIAL_ALPHA_GRID,
 	   vector<double> R_GRID,
 	   vector<double> NU_GRID,
 	   map<int, vector<double> > S_GRIDS,
@@ -54,6 +57,7 @@ View::View(const MatrixD data,
   global_col_datatypes = GLOBAL_COL_DATATYPES;
   //
   crp_alpha_grid = ROW_CRP_ALPHA_GRID;
+  multinomial_alpha_grid = MULTINOMIAL_ALPHA_GRID;
   r_grid = R_GRID;
   nu_grid = NU_GRID;
   s_grids = S_GRIDS;
@@ -71,6 +75,7 @@ View::View(const MatrixD data,
 View::View(std::map<int, std::string> GLOBAL_COL_DATATYPES,
 	   std::vector<int> global_row_indices,
 	   std::vector<double> ROW_CRP_ALPHA_GRID,
+	   std::vector<double> MULTINOMIAL_ALPHA_GRID,
 	   std::vector<double> R_GRID,
 	   std::vector<double> NU_GRID,
 	   std::map<int, std::vector<double> > S_GRIDS,
@@ -81,6 +86,7 @@ View::View(std::map<int, std::string> GLOBAL_COL_DATATYPES,
   global_col_datatypes = GLOBAL_COL_DATATYPES;
   //
   crp_alpha_grid = ROW_CRP_ALPHA_GRID;
+  multinomial_alpha_grid = MULTINOMIAL_ALPHA_GRID;
   r_grid = R_GRID;
   nu_grid = NU_GRID;
   s_grids = S_GRIDS;
@@ -124,12 +130,20 @@ vector<double> View::get_crp_alpha_grid() const {
   return crp_alpha_grid;
 }
 
-vector<string> View::get_hyper_strings() {
+vector<string> View::get_hyper_strings(int which_col) {
   vector<string> hyper_strings;
-  hyper_strings.push_back("r");
-  hyper_strings.push_back("nu");
-  hyper_strings.push_back("s");
-  hyper_strings.push_back("mu");
+  string global_col_datatype = global_col_datatypes[which_col];
+  if(global_col_datatype==CONTINUOUS_DATATYPE) {
+    hyper_strings.push_back("r");
+    hyper_strings.push_back("nu");
+    hyper_strings.push_back("s");
+    hyper_strings.push_back("mu");
+  } else if(global_col_datatype==MULTINOMIAL_DATATYPE) {
+    hyper_strings.push_back("dirichlet_alpha");
+  } else {
+    cout << "View::get_hyper_strings(" << which_col << "): invalid global_col_datatype: " << global_col_datatype << endl;
+    assert(0);
+  }
   return hyper_strings;
 }
 
@@ -143,6 +157,11 @@ vector<double> View::get_hyper_grid(int global_col_idx, std::string which_hyper)
     hyper_grid = s_grids[global_col_idx];
   } else if (which_hyper=="mu") {
     hyper_grid = mu_grids[global_col_idx];
+  } else if (which_hyper=="dirichlet_alpha") {
+    hyper_grid = multinomial_alpha_grid;
+  } else {
+    cout << "View::get_hyper_grid(" << global_col_idx << ", " << which_hyper << "): invalid which_hyper" << endl;
+    assert(0);
   }
   return hyper_grid;
 }
@@ -318,7 +337,7 @@ double View::transition_hyper_i(int which_col, std::string which_hyper) {
 }
 
 double View::transition_hypers_i(int which_col) {
-  vector<string> hyper_strings = get_hyper_strings();
+  vector<string> hyper_strings = get_hyper_strings(which_col);
   // FIXME: use own shuffle so its seed controlled
   std::random_shuffle(hyper_strings.begin(), hyper_strings.end());
   double score_delta = 0;
