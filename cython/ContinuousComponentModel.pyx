@@ -44,8 +44,6 @@ cdef class p_ContinuousComponentModel:
                                                           count, sum_x, sum_x_sq)
     def __dealloc__(self):
         del_ContinuousComponentModel(self.thisptr)
-    def get_draw(self, student_t_draw):
-        return self.thisptr.get_draw(student_t_draw)
     def get_draw(self, seed):
         return self.thisptr.get_draw(seed)
     def insert_element(self, element):
