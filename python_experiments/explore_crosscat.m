@@ -29,9 +29,11 @@ hold all
 
 plot(s(:,1), s(:,2), 'x')
 
-for i = 1:100
+hold all
+
+for i = 1:1000
     inds = state.o(1,:) == i;
-    plot(state.data(inds, 1), state.data(inds, 2), '.')
+    plot(state.data(inds, 9), state.data(inds, 60), '.')
 end
 
 

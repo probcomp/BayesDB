@@ -5,16 +5,18 @@ function run_crosscat(data_dir, file_base, experiment, n_pred_samples, ...
 %
 % input:
 %
-% file_base  : data set should be in files ../../data/file_base-data.csv
-%              and ../../data/file_base-labels.csv
+% data_dir : directory that data is stored in, should include data/file_base-data.csv
+%               and data/file_base-labels.csv
+% file_base  : see data_dir
 % experiment : either correlation to compute the mutual information for
 %              each pair of columns or regression to compute
 %              the conditional mutual information of the last variable
 %              and each other predictor given the remaining predictor
-% n_chains       : number of mcmc chains to draw samples from
 % n_pred_samples : number of predictive samples to draw from each chain
 % n_mcmc_iter    : number of mcmc steps to run each mcmc chain for
 % seed           : random seed to use for this experiment
+% out_dir        : where to print state file
+% out_file : where to print model data probabilities and other output
 %
 
 if nargin < 8

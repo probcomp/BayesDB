@@ -32,10 +32,19 @@ write.table(results, out.file, quote=F, sep=',',
 data = t(data)
 
 f = ncol(data)
-results = matrix(NA, f*(f-1)/2, 3)
+results = matrix(NA, f*(f-1)/2, 4)
 
+k = 1
 for(i in 1:(f-1)) {
-  for(j in 2:f) {
-    fit = lm(data[,i] ~ data[,j])
+  for(j in (i+1):f) {
+    fit = summary(lm(data[,i] ~ data[,j]))
+    p = pf(fit$fstatistic[1],fit$fstatistic[2],fit$fstatistic[3],lower.tail=FALSE)
+    results[k,] = c(i,j,fit$r.squared,p)
+    k = k + 1
   }
 }
+
+colnames(results) = c('i', 'j', 'r2', 'p')
+
+write.table(results, file = '../../results/dha-lm.csv',
+            sep = ',', row.names = F)
