@@ -88,7 +88,10 @@ bool in(const std::map<K, V> m, K key) {
 template <class K, class V>
 V get(const std::map<K, V> m, K key) {
   typename std::map<K, V>::const_iterator it = m.find(key);
-  if(it == m.end()) assert(1==0);
+  if(it == m.end()) {
+    std::cout << "map: " << m << "; key: " << key << std::endl;
+    assert(1==0);
+  }
   return it->second;
 }
 
