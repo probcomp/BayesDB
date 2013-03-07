@@ -599,7 +599,7 @@ map<string, double> State::uniform_sample_hypers(int global_col_idx) {
     hypers["s"] = s_grids[global_col_idx][draw_rand_i(N_GRID)];
     hypers["mu"] = mu_grids[global_col_idx][draw_rand_i(N_GRID)];
   } else if(col_datatype==MULTINOMIAL_DATATYPE) {
-    hypers["multinomial_alpha"] = multinomial_alpha_grid[draw_rand_i(N_GRID)];
+    hypers["dirichlet_alpha"] = multinomial_alpha_grid[draw_rand_i(N_GRID)];
     hypers["K"] = global_col_multinomial_counts[global_col_idx];
   } else {
     assert(1==0);
