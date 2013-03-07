@@ -10,6 +10,19 @@ MultinomialComponentModel::MultinomialComponentModel(map<string, double> &in_hyp
   set_log_Z_0();
 }
 
+MultinomialComponentModel::MultinomialComponentModel(map<string, double> &in_hypers,
+						     int count_in,
+						     std::map<std::string, double> counts) {
+  count = 0;
+  score = 0;
+  p_hypers = &in_hypers;
+  set_log_Z_0();
+  // set suffstats
+  count = count_in;
+  suffstats = counts;
+  score = calc_marginal_logp();
+}
+
 double MultinomialComponentModel::calc_marginal_logp() const {
   int count;
   map<string, double> counts;
