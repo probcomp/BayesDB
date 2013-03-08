@@ -1,13 +1,9 @@
 import argparse
 import time
-import requests
-import json
-#
-import numpy
 #
 import tabular_predDB.Engine as E
 import tabular_predDB.cython.gen_data as gen_data
-
+import tabular_predDB.api_utils as au
 
 # parse some arguments
 parser = argparse.ArgumentParser()
@@ -35,36 +31,6 @@ id = args.start_id
 URI = 'http://' + hostname + ':8007'
 print 'URI: ', URI
 
-# helper functions
-def create_message(method_name, params):
-    global id
-    id += 1
-    message = {
-        'jsonrpc': '2.0',
-        'method': method_name,
-        'params': params,
-        'id': str(id),
-        }
-    return json.dumps(message)
-
-def call(method_name, args_dict, print_message=False):
-    message = create_message(method_name, args_dict)
-    if print_message: print 'trying message:', message
-    r = requests.put(URI, data=message)
-    r.raise_for_status()
-    out = json.loads(r.content)
-    if isinstance(out, dict) and 'result' in out:
-        return out['result']
-    else:
-        print "call(): ERROR"
-        return out
-def call_and_print(method_name, args_dict):
-    out = call(method_name, args_dict, True)
-    print out
-    print
-    return out
-
-
 T, M_r, M_c = gen_data.gen_factorial_data_objects(
     seed, num_clusters,
     num_cols, num_rows, num_splits,
@@ -80,7 +46,7 @@ args_dict = dict()
 args_dict['M_c'] = M_c
 args_dict['M_r'] = M_r
 args_dict['T'] = T
-out = call(method_name, args_dict)
+out, id = au.call(method_name, args_dict, URI)
 M_c, M_r, X_L_prime, X_D_prime = out
 
 method_name = 'analyze'
@@ -95,7 +61,7 @@ args_dict['c'] = 'c'
 args_dict['r'] = 'r'
 args_dict['max_iterations'] = 'max_iterations'
 args_dict['max_time'] = 'max_time'
-out = call(method_name, args_dict)
+out, id = au.call(method_name, args_dict, URI)
 X_L_prime, X_D_prime = out
 time.sleep(1)
 
@@ -108,7 +74,7 @@ args_dict['Y'] = None
 args_dict['q'] = [(0,0)]
 values = []
 for idx in range(10):
-    out = call_and_print(method_name, args_dict)
+    out, id = au.call_and_print(method_name, args_dict, URI)
     values.append(out[0])
 print values
 time.sleep(1)
@@ -121,7 +87,7 @@ args_dict['X_D'] = 'X_D'
 args_dict['Y'] = 'Y'
 args_dict['q'] = range(3)
 args_dict['n'] = 'n'
-out = call(method_name, args_dict)
+out, id = au.call(method_name, args_dict, URI)
 time.sleep(1)
 
 # programmatically call all the other method calls
@@ -132,5 +98,5 @@ for method_name, arg_str_list in method_name_to_args.iteritems():
         print
         continue
     args_dict = dict(zip(arg_str_list, arg_str_list))
-    call_and_print(method_name, args_dict)
+    au.call_and_print(method_name, args_dict, URI)
     time.sleep(1)
