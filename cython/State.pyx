@@ -309,12 +309,12 @@ cdef class p_State:
           X_L['column_hypers'] = column_hypers
           X_L['view_state'] = view_state
           return X_L
-    def save(self, filename, M_c=None):
+    def save(self, filename, **kwargs):
          save_dict = dict(
-              M_c=M_c,
               X_L=self.get_X_L(),
               X_D=self.get_X_D(),
               )
+         save_dict.update(**kwargs)
          fu.pickle(save_dict, filename)
 
 def indicator_list_to_list_of_list(indicator_list):
