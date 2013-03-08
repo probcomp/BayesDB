@@ -1,8 +1,6 @@
 import requests
 import json
 
-
-# helper functions
 def create_message(method_name, params, id):
     id += 1
     message = {
@@ -11,12 +9,7 @@ def create_message(method_name, params, id):
         'params': params,
         'id': str(id),
         }
-    try:
-        json_message = json.dumps(message)
-    except Exception, e:
-        import pdb
-        pdb.set_trace()
-        print e
+    json_message = json.dumps(message)
     return json_message, id
 
 def call(method_name, args_dict, URI, id=0, print_message=False):
