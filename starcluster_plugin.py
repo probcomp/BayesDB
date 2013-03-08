@@ -34,7 +34,7 @@ class tabular_predDBSetup(ClusterSetup):
                log.info("Installing tabular_predDB (part 1) on %s" % node.alias)
                #
                node.ssh.execute('rm -rf %s' % clone_tuple[-1])
-               node.ssh.execute('ssh -o StrictHostKeyChecking=no git@github.com')
+               node.ssh.execute('ssh -o StrictHostKeyChecking=no git@github.com', ignore_exit_status=True)
                node.ssh.execute('git clone %s %s' % clone_tuple)
                node.ssh.execute('cd %s && git checkout %s' % checkout_tuple)
                node.ssh.execute('chmod -R ugo+rwx %s' % clone_tuple[-1])
