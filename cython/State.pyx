@@ -247,7 +247,7 @@ cdef class p_State:
               self.get_column_component_suffstats_i(view_idx)
           view_state_i = dict()
           view_state_i['row_partition_model'] = row_partition_model
-          view_state_i['column_names'] = column_names
+          view_state_i['column_names'] = list(column_names)
           view_state_i['column_component_suffstats'] = \
               column_component_suffstats
           return view_state_i
