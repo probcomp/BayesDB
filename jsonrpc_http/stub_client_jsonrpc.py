@@ -2,8 +2,8 @@ import argparse
 import time
 #
 import tabular_predDB.jsonrpc_http.Engine as E
-import tabular_predDB.cython.gen_data as gen_data
-import tabular_predDB.api_utils as au
+import tabular_predDB.python_utils.data_utils as du
+import tabular_predDB.python_utils.api_utils as au
 
 # parse some arguments
 parser = argparse.ArgumentParser()
@@ -31,7 +31,7 @@ id = args.start_id
 URI = 'http://' + hostname + ':8007'
 print 'URI: ', URI
 
-T, M_r, M_c = gen_data.gen_factorial_data_objects(
+T, M_r, M_c = du.gen_factorial_data_objects(
     seed, num_clusters,
     num_cols, num_rows, num_splits,
     max_mean=max_mean, max_std=max_std,

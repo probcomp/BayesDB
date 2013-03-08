@@ -2,6 +2,7 @@ import sys
 #
 import numpy
 
+
 def get_ith_ordering(in_list, i):
     temp_list = [in_list[j::(i+1)][:] for j in range(i+1)]
     return [el for sub_list in temp_list for el in sub_list]

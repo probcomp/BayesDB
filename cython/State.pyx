@@ -8,8 +8,8 @@ cimport numpy as np
 #
 import numpy
 #
-import tabular_predDB.file_utils as fu
-import tabular_predDB.plot_utils as pu
+import tabular_predDB.python_utils.file_utils as fu
+import tabular_predDB.python_utils.plot_utils as pu
 
 
 cdef double set_double(double& to_set, double value):

@@ -1,7 +1,7 @@
 import argparse
 #
-import tabular_predDB.api_utils as au
-import tabular_predDB.file_utils as fu
+import tabular_predDB.python_utils.api_utils as au
+import tabular_predDB.python_utils.file_utils as fu
 
 # issue is that M_c is using numpy.int64 instead of int
 

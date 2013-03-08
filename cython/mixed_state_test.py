@@ -4,7 +4,7 @@ import pylab
 import numpy
 #
 import tabular_predDB.cython.State as State
-import tabular_predDB.cython.gen_data as gen_data
+import tabular_predDB.python_utils.data_utils as du
 
 
 # parse input
@@ -39,7 +39,7 @@ multinomial_column_indices = numpy.nonzero(is_multinomial)[0]
 
 # create the data
 if True:
-    T, M_r, M_c = gen_data.gen_factorial_data_objects(
+    T, M_r, M_c = du.gen_factorial_data_objects(
         gen_seed, num_clusters,
         num_cols, num_rows, num_splits,
         max_mean=max_mean, max_std=max_std,
@@ -51,10 +51,10 @@ else:
         T = numpy.array([
                 row for row in csv.reader(fh)
                 ], dtype=float).tolist()
-        M_r = gen_data.gen_M_r_from_T(T)
-        M_c = gen_data.gen_M_c_from_T(T)
+        M_r = du.gen_M_r_from_T(T)
+        M_c = du.gen_M_c_from_T(T)
 
-T, M_r, M_c = gen_data.discretize_data(T, M_r, M_c,
+T, M_r, M_c = du.discretize_data(T, M_r, M_c,
                                        multinomial_column_indices)
 
 # create the state
