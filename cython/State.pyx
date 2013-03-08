@@ -5,8 +5,11 @@ from libcpp.map cimport map as c_map
 from libcpp.set cimport set as c_set
 from cython.operator import dereference
 cimport numpy as np
+#
 import numpy
 import pylab
+#
+import tabular_predDB.file_utils as fu
 
 
 cdef double set_double(double& to_set, double value):
@@ -306,15 +309,21 @@ cdef class p_State:
           X_L['column_hypers'] = column_hypers
           X_L['view_state'] = view_state
           return X_L
+    def save(self, filename, M_c=None):
+         save_dict = dict(
+              M_c=M_c,
+              X_L=self.get_X_L(),
+              X_D=self.get_X_D(),
+              )
+         fu.pickle(save_dict, filename)
 
 def indicator_list_to_list_of_list(indicator_list):
      list_of_list = []
      num_clusters = max(indicator_list) + 1
-     import matplotlib.mlab
      import numpy
      for cluster_idx in range(num_clusters):
           which_rows = numpy.array(indicator_list)==cluster_idx
-          list_of_list.append(matplotlib.mlab.find(which_rows))
+          list_of_list.append(numpy.nonzero(which_rows)[0])
      return list_of_list
 
 def floatify_dict(in_dict):
