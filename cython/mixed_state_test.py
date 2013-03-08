@@ -65,12 +65,7 @@ print numpy.array(T)
 print p_State
 print "multinomial_column_indices: %s" % str(multinomial_column_indices)
 
-
-# transition the sampler
-print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
-for transition_idx in range(num_transitions):
-    print "transition #: %s" % transition_idx
-    p_State.transition()
+def summarize_p_State(p_State):
     counts = [
         view_state['row_partition_model']['counts']
         for view_state in p_State.get_X_L()['view_state']
@@ -90,11 +85,19 @@ for transition_idx in range(num_transitions):
         p_State.get_marginal_logp(),
         )
     print format_list % values_tuple    
-    iter_idx = transition_idx if transition_idx % 10 == 0 else None
-    p_State.plot(iter_idx=iter_idx)
-    if transition_idx % 10 == 0:
-        save_str = 'iter_%s_pickled_state.pkl.gz' % transition_idx
-        p_State.save(save_str, M_c=M_c, T=T)
     if not numpy.isfinite(p_State.get_data_score()):
         print "bad data score"
         print p_State
+
+# transition the sampler
+for transition_idx in range(num_transitions):
+    print "transition #: %s" % transition_idx
+    p_State.transition()
+    summarize_p_State(p_State)
+    iter_idx = None
+    save_str = 'last_iter_pickled_state.pkl.gz'
+    if transition_idx % 10 == 0:
+        iter_idx = transition_idx
+        save_str = 'iter_%s_pickled_state.pkl.gz' % transition_idx
+    p_State.save(save_str, M_c=M_c, T=T)
+    p_State.plot(iter_idx=iter_idx)
