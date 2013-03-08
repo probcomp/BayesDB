@@ -32,18 +32,19 @@ from __future__ import print_function
 #
 #
 
-from twisted.internet import reactor, ssl
-from twisted.web import server
+from twisted.internet import ssl
 import traceback
+
+from twisted.internet import reactor
+from twisted.web import server
 
 from jsonrpc.server import ServerEvents, JSON_RPC
 
-import FakeEngine as FE
-from FakeEngine import FakeEngine
+import tabular_predDB.jsonrpc_http.Engine as E
+Engine_methods = E.get_method_names()
 
-from FakeEngine import FakeEngine
-fake_engine = FakeEngine()
-FakeEngine_methods = FE.get_method_names()
+from tabular_predDB.jsonrpc_http.Engine import Engine
+engine = Engine()
 
 class ExampleServer(ServerEvents):
 	# inherited hooks
@@ -59,12 +60,12 @@ class ExampleServer(ServerEvents):
 
 	def findmethod(self, method, args=None, kwargs=None):
 		if method in self.methods:
-			return getattr(fake_engine, method)
+			return getattr(engine, method)
 		else:
 			return None
 
 	# helper methods
-	methods = set(FakeEngine_methods)
+	methods = set(Engine_methods)
 	def _get_msg(self, response):
 		print('response', repr(response))
 		return ' '.join(str(x) for x in [response.id, response.result or response.error])

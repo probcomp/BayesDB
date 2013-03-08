@@ -4,9 +4,9 @@ from collections import Counter
 #
 import numpy
 #
-import cython.State as State
-import cython.ContinuousComponentModel as CCM
-import cython.MultinomialComponentModel as MCM
+import tabular_predDB.cython.State as State
+import tabular_predDB.cython.ContinuousComponentModel as CCM
+import tabular_predDB.cython.MultinomialComponentModel as MCM
 
 class Engine(object):
 

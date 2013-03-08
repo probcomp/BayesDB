@@ -1,7 +1,7 @@
 import argparse
 import time
 #
-import tabular_predDB.Engine as E
+import tabular_predDB.jsonrpc_http.Engine as E
 import tabular_predDB.cython.gen_data as gen_data
 import tabular_predDB.api_utils as au
 
