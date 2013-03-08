@@ -7,9 +7,9 @@ from cython.operator import dereference
 cimport numpy as np
 #
 import numpy
-import pylab
 #
 import tabular_predDB.file_utils as fu
+import tabular_predDB.plot_utils as pu
 
 
 cdef double set_double(double& to_set, double value):
@@ -50,17 +50,26 @@ cdef class p_matrix:
     def size2(self):
         return self.thisptr.size2()
     def get(self, i, j):
-        # cdef matrix[double] m = dereference(self.thisptr)
-        # return m(i,j) # this doesn't work: error: ‘operator()’ not defined
-        # return m.operator()(i,j) # this doesn't work: Object of type 'matrix[double]' has no attribute 'operator'
+         # cdef matrix[double] m = dereference(self.thisptr)
+         # this doesn't work: error: ‘operator()’ not defined
+         # return m(i,j) 
+         #
+         # this doesn't work: Object of type 'matrix[double]' has
+         #   no attribute 'operator'
+         # return m.operator()(i,j) 
         return dereference(self.thisptr)(i,j)
     def set(self, i, j, val):
-        #dereference(self.thisptr)(i,j) = val # this doesn't work: Cannot assign to or delete this
-        #cdef double &intermediate = dereference(self.thisptr)(i,j) # this doesn't work: error: ‘__pyx_v_intermediate’ declared as reference but not initialized
-        set_double(dereference(self.thisptr)(i,j), val)
-        return dereference(self.thisptr)(i,j)
+         # this doesn't work: Cannot assign to or delete this
+         # dereference(self.thisptr)(i,j) = val
+         #
+         # this doesn't work: error: ‘__pyx_v_intermediate’ declared as
+         #   reference but not initialized
+         # cdef double &intermediate = dereference(self.thisptr)(i,j)
+         set_double(dereference(self.thisptr)(i,j), val)
+         return dereference(self.thisptr)(i,j)
     def __repr__(self):
-        return "matrix[%s, %s]" % (self.thisptr.size1(), self.thisptr.size2())
+         print_tuple = (self.thisptr.size1(), self.thisptr.size2())
+         return "matrix[%s, %s]" % print_tuple
 
 cdef matrix[double]* convert_data_to_cpp(np.ndarray[np.float64_t, ndim=2] data):
      cdef int num_rows = data.shape[0]
@@ -121,8 +130,6 @@ cdef extern from "State.h":
 
 
 def extract_column_types_counts(M_c):
-    # types we accept: normal_inverse_gamma, symmetric_dirichlet_discrete
-    # need to extract #types from symmetric_dirichlet_discrete
     column_types = [
         column_metadata['modeltype']
         for column_metadata in M_c['column_metadata']
@@ -132,33 +139,6 @@ def extract_column_types_counts(M_c):
         for column_metadata in M_c['column_metadata']
         ]
     return column_types, event_counts
-
-def get_aspect_ratio(T_array):
-    num_rows = len(T_array)
-    num_cols = len(T_array[0])
-    aspect_ratio = float(num_cols)/num_rows
-    return aspect_ratio
-
-def plot_views(T_array, X_D, X_L, save_str_prefix=''): # iter_idx=None):
-     pylab.figure()
-     view_assignments = X_L['column_partition']['assignments']
-     view_assignments = numpy.array(view_assignments)
-     num_views = len(set(view_assignments))
-     for view_idx in range(num_views):
-          X_D_i = X_D[view_idx]
-          argsorted = numpy.argsort(X_D_i)
-          is_this_view = view_assignments==view_idx
-          xticklabels = numpy.nonzero(is_this_view)[0]
-          num_cols_i = sum(is_this_view)
-          T_array_sub = T_array[:,is_this_view][argsorted]
-          aspect_ratio = get_aspect_ratio(T_array_sub)
-          pylab.subplot(1, num_views, view_idx)
-          pylab.imshow(T_array_sub, aspect=aspect_ratio,
-                       interpolation='none')
-          pylab.gca().set_xticks(range(num_cols_i))
-          pylab.gca().set_xticklabels(map(str, xticklabels))
-     save_str = '%sX_D' % save_str_prefix
-     pylab.savefig(save_str)
 
 cdef class p_State:
     cdef State *thisptr
@@ -194,7 +174,8 @@ cdef class p_State:
                                        self.gri, self.gci,
                                        N_GRID, SEED)
          else:
-              constructor_args = transform_latent_state_to_constructor_args(X_L, X_D)
+              constructor_args = \
+                  transform_latent_state_to_constructor_args(X_L, X_D)
               hypers_m = constructor_args['hypers_m']
               column_partition = constructor_args['column_partition']
               column_crp_alpha = constructor_args['column_crp_alpha']
@@ -212,7 +193,12 @@ cdef class p_State:
         del_matrix(self.dataptr)
         del_State(self.thisptr)
     def __repr__(self):
-         return "State[%s, %s]:\n%s" % (self.dataptr.size1(), self.dataptr.size2(), self.thisptr.to_string(";", False))
+         print_tuple = (
+              self.dataptr.size1(),
+              self.dataptr.size2(),
+              self.thisptr.to_string(";", False),
+              )
+         return "State[%s, %s]:\n%s" % print_tuple
     def to_string(self, join_str='\n', top_level=False):
          return self.thisptr.to_string(join_str, top_level)
     def plot(self, save_str_prefix='', iter_idx=None):
@@ -222,14 +208,10 @@ cdef class p_State:
          #
          if iter_idx is not None:
               save_str_prefix = 'iter_%s_' % iter_idx
-         plot_views(T_array, X_D, X_L, save_str_prefix)
+         pu.plot_views(T_array, X_D, X_L, save_str_prefix)
     def plot_T(self, save_str='T'):
          T_array = self.T_array
-         #
-         aspect_ratio = get_aspect_ratio(T_array)
-         pylab.figure()
-         pylab.imshow(T_array, aspect=aspect_ratio, interpolation='none')
-         pylab.savefig(save_str)
+         pu.plot_T(T_array, save_str)
     #
     # getters
     def get_column_groups(self):
@@ -261,12 +243,13 @@ cdef class p_State:
     def get_view_state_i(self, view_idx):
           row_partition_model = self.get_row_partition_model_i(view_idx)
           column_names = self.get_column_names_i(view_idx)
-          column_component_suffstats = self.get_column_component_suffstats_i(
-                view_idx)
+          column_component_suffstats = \
+              self.get_column_component_suffstats_i(view_idx)
           view_state_i = dict()
           view_state_i['row_partition_model'] = row_partition_model
           view_state_i['column_names'] = column_names
-          view_state_i['column_component_suffstats'] = column_component_suffstats
+          view_state_i['column_component_suffstats'] = \
+              column_component_suffstats
           return view_state_i
     # get_X_L helpers
     def get_column_partition(self):
@@ -348,7 +331,8 @@ def transform_latent_state_to_constructor_args(X_L, X_D):
      hypers_m = floatify_dict_dict(hypers_m)
      column_indicator_list = X_L['column_partition']['assignments']
      column_partition = indicator_list_to_list_of_list(column_indicator_list)
-     column_crp_alpha = numpy.exp(X_L['column_partition']['hypers']['log_alpha'])
+     column_crp_alpha = \
+         numpy.exp(X_L['column_partition']['hypers']['log_alpha'])
      row_partition_v = map(indicator_list_to_list_of_list, X_D)
      row_crp_alpha_v = map(extract_row_partition_alpha, X_L['view_state'])
      n_grid = 31
