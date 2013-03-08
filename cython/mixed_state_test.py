@@ -100,3 +100,6 @@ for transition_idx in range(num_transitions):
     print format_list % values_tuple    
     iter_idx = transition_idx if transition_idx % 10 == 0 else None
     p_State.plot(iter_idx=iter_idx)
+    if not numpy.isfinite(p_State.get_data_score()):
+        print "bad data score"
+        print p_State
