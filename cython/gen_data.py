@@ -93,3 +93,23 @@ def gen_factorial_data_objects(gen_seed, num_clusters,
     M_r = gen_M_r_from_T(T)
     M_c = gen_M_c_from_T(T)
     return T, M_r, M_c
+
+def dictify_list(in_list):
+    return dict(zip(in_list, in_list))
+
+def discretize_data(T, M_r, M_c, discretize_column_indices):
+    modeltype = 'symmetric_dirichlet_discrete'
+    T_array = numpy.array(T)
+    for multinomial_idx in discretize_column_indices:
+        multinomial_column = T_array[:,multinomial_idx]
+        multinomial_column = numpy.array(multinomial_column)
+        multinomial_set = set(multinomial_column)
+        multinomial_set = map(int, list(multinomial_set))
+        T_array[:, multinomial_idx] = multinomial_column
+        multinomial_column_metadata = M_c['column_metadata'][multinomial_idx]
+        code_to_value = dictify_list(list(multinomial_set))
+        value_to_code = dictify_list(list(multinomial_set))
+        multinomial_column_metadata['modeltype'] = modeltype
+        multinomial_column_metadata['code_to_value'] = code_to_value
+        multinomial_column_metadata['value_to_code'] = value_to_code
+    return T_array.tolist(), M_r, M_c

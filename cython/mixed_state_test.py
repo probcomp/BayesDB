@@ -54,25 +54,14 @@ else:
         M_r = gen_data.gen_M_r_from_T(T)
         M_c = gen_data.gen_M_c_from_T(T)
 
-T_array = numpy.array(T)
-for multinomial_idx in multinomial_column_indices:
-    multinomial_column = numpy.array(T_array[:,multinomial_idx], dtype=int)
-    multinomial_set = set(multinomial_column)
-    multinomial_set = map(int, list(multinomial_set))
-    T_array[:, multinomial_idx] = multinomial_column
-    multinomial_column_metadata = M_c['column_metadata'][multinomial_idx]
-    code_to_value = dict(zip(list(multinomial_set), list(multinomial_set)))
-    value_to_code = dict(zip(list(multinomial_set), list(multinomial_set)))
-    multinomial_column_metadata['modeltype'] = 'symmetric_dirichlet_discrete'
-    multinomial_column_metadata['code_to_value'] = code_to_value
-    multinomial_column_metadata['value_to_code'] = value_to_code
+T, M_r, M_c = gen_data.discretize_data(T, M_r, M_c,
+                                       multinomial_column_indices)
 
-T = T_array.tolist()
-print M_c
 # create the state
 p_State = State.p_State(M_c, T, N_GRID=N_GRID, SEED=inf_seed)
 p_State.plot_T()
-print T_array
+print M_c
+print numpy.array(T)
 print p_State
 print "multinomial_column_indices: %s" % str(multinomial_column_indices)
 
