@@ -19,8 +19,8 @@ cpdef set_string_double_map(in_map):
     for key in in_map:
         string_double_map[get_string(key)] = in_map[key]
 
-cdef extern from "ContinuousComponentModel.h":
-     cdef cppclass ContinuousComponentModel:
+cdef extern from "MultinomialComponentModel.h":
+     cdef cppclass MultinomialComponentModel:
         double score
         cpp_string to_string()
         double get_draw(int seed)
@@ -29,21 +29,21 @@ cdef extern from "ContinuousComponentModel.h":
         double incorporate_hyper_update()
         double calc_marginal_logp()
         double calc_element_predictive_logp(double element)
-     ContinuousComponentModel *new_ContinuousComponentModel "new ContinuousComponentModel" (cpp_map[cpp_string, double] &in_hypers)
-     ContinuousComponentModel *new_ContinuousComponentModel "new ContinuousComponentModel" (cpp_map[cpp_string, double] &in_hypers, int COUNT, double SUM_X, double SUM_X_SQ)
-     void del_ContinuousComponentModel "delete" (ContinuousComponentModel *ccm)
+     MultinomialComponentModel *new_MultinomialComponentModel "new MultinomialComponentModel" (cpp_map[cpp_string, double] &in_hypers)
+     MultinomialComponentModel *new_MultinomialComponentModel "new MultinomialComponentModel" (cpp_map[cpp_string, double] &in_hypers, int COUNT, cpp_map[cpp_string, double] counts)
+     void del_MultinomialComponentModel "delete" (MultinomialComponentModel *ccm)
 
-cdef class p_ContinuousComponentModel:
-    cdef ContinuousComponentModel *thisptr
-    def __cinit__(self, in_map, count=None, sum_x=None, sum_x_sq=None):
+cdef class p_MultinomialComponentModel:
+    cdef MultinomialComponentModel *thisptr
+    def __cinit__(self, in_map, count=None, counts=None):
           set_string_double_map(in_map)
           if count is None:
-              self.thisptr = new_ContinuousComponentModel(string_double_map)
+              self.thisptr = new_MultinomialComponentModel(string_double_map)
           else:
-              self.thisptr = new_ContinuousComponentModel(string_double_map,
-                                                          count, sum_x, sum_x_sq)
+              self.thisptr = new_MultinomialComponentModel(string_double_map,
+                                                          count, counts)
     def __dealloc__(self):
-        del_ContinuousComponentModel(self.thisptr)
+        del_MultinomialComponentModel(self.thisptr)
     def get_draw(self, seed):
         return self.thisptr.get_draw(seed)
     def insert_element(self, element):

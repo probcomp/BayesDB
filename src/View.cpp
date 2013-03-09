@@ -11,11 +11,13 @@ typedef set<Cluster*> setCp;
 
 // row partitioning, row_crp_alpha fully specified
 View::View(const MatrixD data,
+	   map<int, string> GLOBAL_COL_DATATYPES,
 	   vector<vector<int> > row_partitioning,
 	   vector<int> global_row_indices,
 	   vector<int> global_col_indices,
 	   map<int, map<string, double> > &hypers_m,
 	   vector<double> ROW_CRP_ALPHA_GRID,
+	   vector<double> MULTINOMIAL_ALPHA_GRID,
 	   vector<double> R_GRID,
 	   vector<double> NU_GRID,
 	   map<int, vector<double> > S_GRIDS,
@@ -24,8 +26,10 @@ View::View(const MatrixD data,
 	   int SEED) : crp_alpha(CRP_ALPHA), rng(SEED) {
   crp_score = 0;
   data_score = 0;
+  global_col_datatypes = GLOBAL_COL_DATATYPES;
   //
   crp_alpha_grid = ROW_CRP_ALPHA_GRID;
+  multinomial_alpha_grid = MULTINOMIAL_ALPHA_GRID;
   r_grid = R_GRID;
   nu_grid = NU_GRID;
   s_grids = S_GRIDS;
@@ -37,10 +41,12 @@ View::View(const MatrixD data,
 
 // row partitioning unspecified, sample from crp
 View::View(const MatrixD data,
+	   map<int, string> GLOBAL_COL_DATATYPES,
 	   vector<int> global_row_indices,
 	   vector<int> global_col_indices,
 	   map<int, map<string, double> > &hypers_m,
 	   vector<double> ROW_CRP_ALPHA_GRID,
+	   vector<double> MULTINOMIAL_ALPHA_GRID,
 	   vector<double> R_GRID,
 	   vector<double> NU_GRID,
 	   map<int, vector<double> > S_GRIDS,
@@ -48,8 +54,10 @@ View::View(const MatrixD data,
 	   int SEED) : rng(SEED) {
   crp_score = 0;
   data_score = 0;
+  global_col_datatypes = GLOBAL_COL_DATATYPES;
   //
   crp_alpha_grid = ROW_CRP_ALPHA_GRID;
+  multinomial_alpha_grid = MULTINOMIAL_ALPHA_GRID;
   r_grid = R_GRID;
   nu_grid = NU_GRID;
   s_grids = S_GRIDS;
@@ -64,8 +72,10 @@ View::View(const MatrixD data,
 }
 
 // empty View: for gibbs sampling a new partitioning of columns
-View::View(std::vector<int> global_row_indices,
+View::View(std::map<int, std::string> GLOBAL_COL_DATATYPES,
+	   std::vector<int> global_row_indices,
 	   std::vector<double> ROW_CRP_ALPHA_GRID,
+	   std::vector<double> MULTINOMIAL_ALPHA_GRID,
 	   std::vector<double> R_GRID,
 	   std::vector<double> NU_GRID,
 	   std::map<int, std::vector<double> > S_GRIDS,
@@ -73,8 +83,10 @@ View::View(std::vector<int> global_row_indices,
 	   int SEED) : rng(SEED) {
   crp_score = 0;
   data_score = 0;
+  global_col_datatypes = GLOBAL_COL_DATATYPES;
   //
   crp_alpha_grid = ROW_CRP_ALPHA_GRID;
+  multinomial_alpha_grid = MULTINOMIAL_ALPHA_GRID;
   r_grid = R_GRID;
   nu_grid = NU_GRID;
   s_grids = S_GRIDS;
@@ -118,12 +130,28 @@ vector<double> View::get_crp_alpha_grid() const {
   return crp_alpha_grid;
 }
 
-vector<string> View::get_hyper_strings() {
+vector<string> View::get_hyper_strings(int which_col) {
   vector<string> hyper_strings;
-  hyper_strings.push_back("r");
-  hyper_strings.push_back("nu");
-  hyper_strings.push_back("s");
-  hyper_strings.push_back("mu");
+  int global_col_idx = get_key_of_value(global_to_local, which_col);
+  // int global_col_idx = -1;
+  // map<int, int>::const_iterator it;
+  // for(it=global_to_local.begin(); it!=global_to_local.end(); it++) {
+  //   if(it->second==which_col) {
+  //     global_col_idx = it->first;
+  //   }
+  // }
+  string global_col_datatype = global_col_datatypes[global_col_idx];
+  if(global_col_datatype==CONTINUOUS_DATATYPE) {
+    hyper_strings.push_back("r");
+    hyper_strings.push_back("nu");
+    hyper_strings.push_back("s");
+    hyper_strings.push_back("mu");
+  } else if(global_col_datatype==MULTINOMIAL_DATATYPE) {
+    hyper_strings.push_back("dirichlet_alpha");
+  } else {
+    cout << "View::get_hyper_strings(" << which_col << "): invalid global_col_datatype: " << global_col_datatype << endl;
+    assert(0);
+  }
   return hyper_strings;
 }
 
@@ -137,6 +165,11 @@ vector<double> View::get_hyper_grid(int global_col_idx, std::string which_hyper)
     hyper_grid = s_grids[global_col_idx];
   } else if (which_hyper=="mu") {
     hyper_grid = mu_grids[global_col_idx];
+  } else if (which_hyper=="dirichlet_alpha") {
+    hyper_grid = multinomial_alpha_grid;
+  } else {
+    cout << "View::get_hyper_grid(" << global_col_idx << ", " << which_hyper << "): invalid which_hyper" << endl;
+    assert(0);
   }
   return hyper_grid;
 }
@@ -160,8 +193,7 @@ vector<map<string, double> > View::get_column_component_suffstats_i(int global_c
   set<Cluster*>::const_iterator it = clusters.begin();
   for(; it!=clusters.end(); it++) {
     int local_col_idx = get(global_to_local, global_col_idx);
-    ContinuousComponentModel ccm  = (**it).get_model(local_col_idx);
-    map<string, double> suffstats = ccm.get_suffstats();
+    map<string, double> suffstats = (**it).get_suffstats_i(local_col_idx);
     column_component_suffstats.push_back(suffstats);
   }
   return column_component_suffstats;
@@ -231,6 +263,7 @@ vector<double> View::calc_cluster_vector_predictive_logps(vector<double> vd) {
   logps.push_back(calc_cluster_vector_predictive_logp(vd, empty_cluster,
 						      crp_logp_delta,
 						      data_logp_delta));
+  empty_cluster.delete_component_models();
   return logps;
 }
 
@@ -312,7 +345,7 @@ double View::transition_hyper_i(int which_col, std::string which_hyper) {
 }
 
 double View::transition_hypers_i(int which_col) {
-  vector<string> hyper_strings = get_hyper_strings();
+  vector<string> hyper_strings = get_hyper_strings(which_col);
   // FIXME: use own shuffle so its seed controlled
   std::random_shuffle(hyper_strings.begin(), hyper_strings.end());
   double score_delta = 0;
@@ -347,18 +380,21 @@ double View::transition(std::map<int, std::vector<double> > row_data_map) {
       score_delta += transition_zs(row_data_map);
     } else if(which_transition==2) {
       score_delta += transition_crp_alpha();
+    } else {
+      assert(0);
     }
   }
   return score_delta;
 }
 
 double View::calc_column_predictive_logp(vector<double> column_data,
+					 string col_datatype,
 					 vector<int> data_global_row_indices,
 					 map<string, double> hypers) {
   double score_delta = 0;
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    score_delta += (**it).calc_column_predictive_logp(column_data,
+    score_delta += (**it).calc_column_predictive_logp(column_data, col_datatype,
 						      data_global_row_indices,
 						      hypers);
   }
@@ -440,11 +476,13 @@ double View::insert_col(vector<double> col_data,
 			int global_col_idx,
 			map<string, double> &hypers) {
   double score_delta = 0;
+  string col_datatype = global_col_datatypes[global_col_idx];
   //
   hypers_v.push_back(&hypers);
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
-    score_delta += (**it).insert_col(col_data, data_global_row_indices, hypers);
+    score_delta += (**it).insert_col(col_data, col_datatype,
+				     data_global_row_indices, hypers);
   }
   int num_cols = get_num_cols();
   global_to_local[global_col_idx] = num_cols;
@@ -487,6 +525,7 @@ double View::remove_col(int global_col_idx) {
 void View::remove_if_empty(Cluster& which_cluster) {
   if(which_cluster.get_count()==0) {
     clusters.erase(clusters.find(&which_cluster));
+    which_cluster.delete_component_models();
     delete &which_cluster;
   }
 }
@@ -497,6 +536,7 @@ void View::remove_all() {
   while(it!=clusters.end()) {
     Cluster &which_cluster = **it;
     clusters.erase(clusters.find(&which_cluster));
+    which_cluster.delete_component_models(false);
     delete &which_cluster;
     it = clusters.begin();
   }
@@ -578,6 +618,28 @@ vector<int> View::get_canonical_clustering() const {
   return canonical_clustering;
 }
 
+std::ostream& operator<<(std::ostream& os, const View& v) {
+  os << v.to_string() << endl;
+  return os;
+}
+
+string View::to_string(string join_str, bool top_level) const {
+  stringstream ss;
+  if(!top_level) {
+    set<Cluster*>::iterator it = clusters.begin();
+    int cluster_idx = 0;
+    for(; it!=clusters.end(); it++) {
+      ss << "CLUSTER IDX: " << cluster_idx++ << join_str;
+      ss << **it << endl;
+    }
+  }
+  ss << "global_to_local: " << global_to_local << join_str;
+  ss << "crp_score: " << crp_score;
+  ss << ", " << "data_score: " << data_score;
+  ss << ", " << "score: " << get_score();
+  return ss.str();
+}
+
 void View::print_score_matrix() {
   vector<vector<double> > scores_v;
   set<Cluster*>::iterator c_it;
@@ -591,15 +653,7 @@ void View::print_score_matrix() {
 }
 
 void View::print() {
-  set<Cluster*>::iterator it = clusters.begin();
-  int cluster_idx = 0;
-  for(; it!=clusters.end(); it++) {
-    cout << "CLUSTER IDX: " << cluster_idx++ << endl;
-    cout << **it << endl;
-  }
-  cout << "global_to_local: " << global_to_local << endl;
-  cout << "crp_score: " << crp_score << ", " << "data_score: " << data_score;
-  cout << ", " << "score: " << get_score() << endl;
+  cout << to_string() << endl;
 }
 
 void View::assert_state_consistency() {

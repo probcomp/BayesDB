@@ -1,7 +1,6 @@
 #ifndef GUARD_continuouscomponentmodel_h
 #define GUARD_continuouscomponentmodel_h
 
-#include <iomanip> // std::setprecision
 #include "ComponentModel.h"
 #include "numerics.h"
 #include "utils.h"

@@ -22,6 +22,8 @@ const static double mu0_0 = 0.0;
 class State {
  public:
   State(const MatrixD &data,
+	std::vector<std::string> GLOBAL_COL_DATATYPES,
+	std::vector<int> GLOBAL_COL_MULTINOMIAL_COUNTS,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
 	std::map<int, std::map<std::string, double> > HYPERS_M,
@@ -29,12 +31,12 @@ class State {
 	double COLUMN_CRP_ALPHA,
 	std::vector<std::vector<std::vector<int> > > row_partition_v,
 	std::vector<double> row_crp_alpha_v,
-	//std::vector<std::string> global_col_datatypes,
 	int N_GRID=31, int SEED=0);
   State(const MatrixD &data,
+	std::vector<std::string> GLOBAL_COL_DATATYPES,
+	std::vector<int> GLOBAL_COL_MULTINOMIAL_COUNTS,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
-	//std::vector<std::string> global_col_datatypes,
 	int N_GRID=31, int SEED=0);
   ~State();
   //
@@ -73,12 +75,14 @@ class State {
   void remove_all();
   double transition_view_i(int which_view,
 			 std::map<int, std::vector<double> > row_data_map);
+  double transition_view_i(int which_view, const MatrixD &data);
   double transition_views(const MatrixD &data);
   double transition_column_crp_alpha();  
   double transition(const MatrixD &data);
   //
   // calculators
   double calc_feature_view_predictive_logp(std::vector<double> col_data,
+					   std::string col_datatype,
 					   View v,
 					   double &crp_log_delta,
 					   double &data_log_delta,
@@ -91,8 +95,12 @@ class State {
   std::vector<double> calc_column_crp_marginals(std::vector<double> alphas_to_score) const;
   std::vector<double> calc_row_crp_marginals(std::vector<double> alphas_to_score) const;
   void SaveResult(std::string filename, int iter_idx=-1);
+  friend std::ostream& operator<<(std::ostream& os, const State& s);
+  std::string to_string(std::string join_str="\n", bool top_level=false) const;
  private:
   // parameters
+  std::map<int, std::string> global_col_datatypes;
+  std::map<int, int> global_col_multinomial_counts;
   std::map<int, std::map<std::string, double> > hypers_m;
   double column_crp_alpha;
   double column_crp_score;
@@ -102,6 +110,7 @@ class State {
   std::vector<double> row_crp_alpha_grid;
   std::vector<double> r_grid;
   std::vector<double> nu_grid;
+  std::vector<double> multinomial_alpha_grid;
   std::map<int, std::vector<double> > s_grids;
   std::map<int, std::vector<double> > mu_grids;
   // lookups
@@ -112,7 +121,6 @@ class State {
   // resources
   double draw_rand_u();
   int draw_rand_i(int max=MAX_INT);
-  // helpers
   void construct_base_hyper_grids(int num_rows, int num_cols, int N_GRID);
   void construct_column_hyper_grids(boost::numeric::ublas::matrix<double> data,
 				    std::vector<int> global_col_indices);
@@ -121,12 +129,14 @@ class State {
   std::map<std::string, double> uniform_sample_hypers(int global_col_idx);
   void init_column_hypers(std::vector<int> global_col_indices);
   void init_views(const MatrixD &data,
+		  std::map<int, std::string> global_col_datatypes,
 		  std::vector<int> global_row_indices,
 		  std::vector<int> global_col_indices,
 		  std::vector<std::vector<int> > column_partition,
 		  std::vector<std::vector<std::vector<int> > > row_partition_v,
 		  std::vector<double> row_crp_alpha_v);
   void init_views(const MatrixD &data,
+		  std::map<int, std::string> global_col_datatypes,
 		  std::vector<int> global_row_indices,
 		  std::vector<int> global_col_indices);
 };

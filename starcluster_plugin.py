@@ -34,23 +34,21 @@ class tabular_predDBSetup(ClusterSetup):
                log.info("Installing tabular_predDB (part 1) on %s" % node.alias)
                #
                node.ssh.execute('rm -rf %s' % clone_tuple[-1])
-               node.ssh.execute('ssh -o StrictHostKeyChecking=no git@github.com')
+               node.ssh.execute('ssh -o StrictHostKeyChecking=no git@github.com', ignore_exit_status=True)
                node.ssh.execute('git clone %s %s' % clone_tuple)
                node.ssh.execute('cd %s && git checkout %s' % checkout_tuple)
                node.ssh.execute('chmod -R ugo+rwx %s' % clone_tuple[-1])
                node.ssh.execute('chown -R sgeadmin %s' % clone_tuple[-1])
           for node in nodes:
                log.info("Installing tabular_predDB (part 2) on %s" % node.alias)
-               node.ssh.execute('apt-get install -y libfreetype6-dev')
-               node.ssh.execute('apt-get install -y libpng12-dev')
                node.ssh.execute('pip install virtualenv')
                node.ssh.execute('pip install virtualenvwrapper')
+               # install ubuntu packages
+               command_str = 'bash %s' % S.path.install_ubuntu_script
+               node.ssh.execute(command_str)
                # install boost
-               script_full = os.path.join(S.path.remote_code_dir, S.path.install_boost_script)
-               command_str = 'bash %s >out2 2>err2' % script_full
+               command_str = 'bash %s >out2 2>err2' % S.path.install_boost_script
                node.ssh.execute(command_str)
                #
-               script_full = os.path.join(S.path.remote_code_dir, S.path.virtualenv_setup_script)
-               command_str = 'bash -i %s %s >out1 2>err1' % (script_full, 'sgeadmin')
-               # run_as_user(node, user, command_str)
+               command_str = 'bash -i %s %s >out1 2>err1' % (S.path.virtualenv_setup_script, 'sgeadmin')
                node.ssh.execute(command_str)

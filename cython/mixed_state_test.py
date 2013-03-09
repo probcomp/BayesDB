@@ -12,12 +12,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--gen_seed', default=0, type=int)
 parser.add_argument('--inf_seed', default=0, type=int)
 parser.add_argument('--num_clusters', default=4, type=int)
-parser.add_argument('--num_cols', default=16, type=int)
-parser.add_argument('--num_rows', default=300, type=int)
-parser.add_argument('--num_splits', default=2, type=int)
+parser.add_argument('--num_cols', default=4, type=int)
+parser.add_argument('--num_rows', default=2000, type=int)
+parser.add_argument('--num_splits', default=1, type=int)
 parser.add_argument('--max_mean', default=10, type=float)
 parser.add_argument('--max_std', default=0.3, type=float)
-parser.add_argument('--num_transitions', default=300, type=int)
+parser.add_argument('--num_transitions', default=100, type=int)
 parser.add_argument('--N_GRID', default=31, type=int)
 args = parser.parse_args()
 #
@@ -31,6 +31,11 @@ max_mean = args.max_mean
 max_std = args.max_std
 num_transitions = args.num_transitions
 N_GRID = args.N_GRID
+
+p_multinomial = .5
+random_state = numpy.random.RandomState(gen_seed)
+is_multinomial = random_state.binomial(1, p_multinomial, num_cols)
+multinomial_column_indices = numpy.nonzero(is_multinomial)[0]
 
 # create the data
 if True:
@@ -49,16 +54,18 @@ else:
         M_r = du.gen_M_r_from_T(T)
         M_c = du.gen_M_c_from_T(T)
 
+T, M_r, M_c = du.discretize_data(T, M_r, M_c,
+                                       multinomial_column_indices)
 
 # create the state
 p_State = State.p_State(M_c, T, N_GRID=N_GRID, SEED=inf_seed)
 p_State.plot_T()
+print M_c
+print numpy.array(T)
+print p_State
+print "multinomial_column_indices: %s" % str(multinomial_column_indices)
 
-# transition the sampler
-print "p_State.get_marginal_logp():", p_State.get_marginal_logp()
-for transition_idx in range(num_transitions):
-    print "transition #: %s" % transition_idx
-    p_State.transition()
+def summarize_p_State(p_State):
     counts = [
         view_state['row_partition_model']['counts']
         for view_state in p_State.get_X_L()['view_state']
@@ -78,24 +85,19 @@ for transition_idx in range(num_transitions):
         p_State.get_marginal_logp(),
         )
     print format_list % values_tuple    
-    iter_idx = transition_idx if transition_idx % 10 == 0 else None
+    if not numpy.isfinite(p_State.get_data_score()):
+        print "bad data score"
+        print p_State
+
+# transition the sampler
+for transition_idx in range(num_transitions):
+    print "transition #: %s" % transition_idx
+    p_State.transition()
+    summarize_p_State(p_State)
+    iter_idx = None
+    save_str = 'last_iter_pickled_state.pkl.gz'
+    if transition_idx % 10 == 0:
+        iter_idx = transition_idx
+        save_str = 'iter_%s_pickled_state.pkl.gz' % transition_idx
+    p_State.save(save_str, M_c=M_c, T=T)
     p_State.plot(iter_idx=iter_idx)
-
-# # print the final state
-# X_D = p_State.get_X_D()
-# X_L = p_State.get_X_L()
-# print "X_D:", X_D
-# print "X_L:", X_L
-# for view_idx, view_state_i in enumerate(p_State.get_view_state()):
-#     print "view_state_i:", view_idx, view_state_i
-# print p_State
-
-# # test generation of state from X_L, X_D
-# p_State_2 = State.p_State(M_c, T, X_L, X_D)
-# X_D_prime = p_State_2.get_X_D()
-# X_L_prime = p_State_2.get_X_L()
-
-# print "X_D_prime:", X_D_prime
-# print "X_L_prime:", X_L_prime
-
-# p_State.transition_views(); p_State.get_X_L()['view_state'][0]['row_partition_model']

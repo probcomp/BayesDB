@@ -10,6 +10,19 @@ MultinomialComponentModel::MultinomialComponentModel(map<string, double> &in_hyp
   set_log_Z_0();
 }
 
+MultinomialComponentModel::MultinomialComponentModel(map<string, double> &in_hypers,
+						     int count_in,
+						     std::map<std::string, double> counts) {
+  count = 0;
+  score = 0;
+  p_hypers = &in_hypers;
+  set_log_Z_0();
+  // set suffstats
+  count = count_in;
+  suffstats = counts;
+  score = calc_marginal_logp();
+}
+
 double MultinomialComponentModel::calc_marginal_logp() const {
   int count;
   map<string, double> counts;
@@ -45,6 +58,8 @@ vector<double> MultinomialComponentModel::calc_hyper_conditionals(string which_h
 								  K);
   } else {
     // error condition
+    cout << "MultinomialComponentModel::calc_hyper_conditional: bad value for which_hyper=" << which_hyper << endl;
+    assert(0);
   }
 }
 
@@ -89,6 +104,36 @@ void MultinomialComponentModel::get_hyper_values(int &K,
 						 double &dirichlet_alpha) const {
   K = get(*p_hypers, (string) "K");
   dirichlet_alpha = get(*p_hypers, (string) "dirichlet_alpha");
+}
+
+double MultinomialComponentModel::get_draw(int random_seed) const {
+  // get modified suffstats
+  int count;
+  map<string, double> counts;
+  int K;
+  double dirichlet_alpha;
+  get_hyper_values(K, dirichlet_alpha);
+  get_suffstats(count, counts);
+  // get a random draw
+  boost::mt19937  _engine(random_seed);
+  boost::uniform_01<boost::mt19937> _dist(_engine);
+  double uniform_draw = _dist();
+  //
+  vector<string> keys;
+  vector<double> log_counts_for_draw;
+  map<string, double>::const_iterator it;
+  for(it=counts.begin(); it!=counts.end(); it++) {
+    string key = it->first;
+    int count_for_draw = it->second;
+    // "update" counts by adding dirichlet alpha to each value
+    count_for_draw += dirichlet_alpha;
+    keys.push_back(key);
+    log_counts_for_draw.push_back(log(count_for_draw));
+  }
+  int key_idx = numerics::draw_sample_unnormalized(log_counts_for_draw,
+						   uniform_draw);
+  double draw = intify(keys[key_idx]);
+  return draw;
 }
 
 void MultinomialComponentModel::get_suffstats(int &count_out,

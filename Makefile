@@ -17,15 +17,16 @@ CYT=cython
 # Assume BOOST_ROOT set as environment variable.
 # /usr/local/boost
 BIN = model
-MAIN = main.cpp
+MAIN = main
 NAMES = ContinuousComponentModel MultinomialComponentModel ComponentModel \
 	Cluster View State \
 	utils numerics RandomNumberGenerator DateTime
-TEST_NAMES = test_continuous_component_model test_multinomial_component_model \
+TEST_NAMES = test_component_model \
+	test_continuous_component_model test_multinomial_component_model \
 	test_cluster test_view test_view_speed test_state
 CYTHON_NAMES = Makefile setup.py State.pyx
 HEADERS = $(foreach name, $(NAMES), $(INC)/$(name).h)
-SOURCES = $(foreach name, $(NAMES) $(MAIN), $(SRC)/$(name).cpp)
+SOURCES = $(foreach name, $(NAMES), $(SRC)/$(name).cpp)
 OBJECTS = $(foreach name, $(NAMES), $(OBJ)/$(name).o)
 TESTS = $(foreach test, $(TEST_NAMES), $(TEST)/$(test))
 CYTHON = $(foreach name, $(CYTHON_NAMES), $(CYT)/$(name))
@@ -39,15 +40,17 @@ bin: $(OBJECTS) $(BIN)
 
 obj: $(OBJECTS)
 
-# run each test
 tests: $(TESTS)
+
+# run each test
+runtests: $(TESTS)
 	@echo tests are: $(TESTS) $(foreach test, $(TESTS), && ./$(test))
 
 clean:
 	rm -f $(BIN) $(OBJECTS) core *.stackdump *.gch $(TESTS)
 	cd $(CYT) && make clean
 
-$(CYT)/State.so: $(HEADERS) $(SOURCE) $(CYTHON)
+$(CYT)/State.so: $(HEADERS) $(SOURCES) $(CYTHON)
 	cd $(CYT) && make
 
 $(OBJ)/%.o: $(SRC)/%.cpp $(INC)/%.h $(HEADERS)

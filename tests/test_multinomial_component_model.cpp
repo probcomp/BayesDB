@@ -59,7 +59,7 @@ int main() {
   cout << "dirichlet_alphas_to_test: " << dirichlet_alphas_to_test << endl;
   cout << "values_to_test: " << values_to_test << endl;
 
-  hypers["dirichlet_alpha"] = dirichlet_alphas_to_test[0];
+  hypers["dirichlet_alpha"] = dirichlet_alphas_to_test[1];
   hypers["K"] = NUM_BUCKETS;
   MCM mcm(hypers);
 
@@ -84,6 +84,25 @@ int main() {
   remove_elements(mcm, values_to_test_shuffled);
   cout << mcm << endl;
 
+  cout << "test draws" << endl;
+  cout << "inserting: " << values_to_test << endl;
+  insert_elements(mcm, values_to_test);
+  cout << mcm << endl;
+  vector<double> draws;
+  map<double, int> draw_counts;
+  int num_draws = 10000;
+  for(int i=0; i<num_draws; i++) {
+    int rand_int = rng.nexti();
+    double draw = mcm.get_draw(rand_int);
+    draws.push_back(draw);
+    if(in(draw_counts, draw)) {
+      draw_counts[draw]++;
+    } else {
+      draw_counts[draw] = 1;
+    }
+  }
+  // cout << "draws are: " << draws << endl;
+  cout << "draw_counts is: " << draw_counts << endl;
 
   cout << endl << "End:: test_multinomial_component_model" << endl;
 }

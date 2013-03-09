@@ -4,6 +4,8 @@ yolk==0.4.3
 # for api server
 jsonrpc==1.2
 requests==1.0.3
+Twisted==12.3.0
+pyOpenSSL==0.13
 #
 # for engine
 cython==0.17.1

@@ -9,6 +9,7 @@
 #include <sstream> // stringstream in stringify()
 #include <set>
 #include <map>
+#include <math.h> // isnan, isfinite
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 
@@ -85,15 +86,40 @@ bool in(const std::map<K, V> m, K key) {
 }
 
 template <class K, class V>
+K get_key_of_value(const std::map<K, V> m, V value) {
+  typename std::map<K, V>::const_iterator it;
+  for(it=m.begin(); it!=m.end(); it++) {
+    if(it->second==value) {
+      return it->first;
+    }
+  }
+  assert(0);
+}
+
+template <class K, class V>
 V get(const std::map<K, V> m, K key) {
   typename std::map<K, V>::const_iterator it = m.find(key);
-  if(it == m.end()) assert(1==0);
+  if(it == m.end()) {
+    std::cout << "map: " << m << "; key: " << key << std::endl;
+    assert(1==0);
+  }
   return it->second;
 }
 
 std::vector<int> extract_global_ordering(std::map<int, int> global_to_local);
+
 template <class T>
-std::map<int, T> construct_lookup_map(std::vector<int> keys, std::vector<T> values);
+std::map<int, T> construct_lookup_map(std::vector<int> keys, std::vector<T> values) {
+  assert(keys.size()==values.size());
+  std::map<int, T> lookup;
+  for(unsigned int idx=0; idx<keys.size(); idx++) {
+    lookup[keys[idx]] = values[idx];
+  }
+  return lookup;
+}
+/* template <class T> */
+/* std::map<int, T> construct_lookup_map(std::vector<int> keys, std::vector<T> values); */
+
 std::map<int, std::vector<double> > construct_data_map(const MatrixD data);
 std::map<int, int> construct_lookup_map(std::vector<int> values);
 std::map<int, int> remove_and_reorder(std::map<int, int> global_to_local,
@@ -183,6 +209,10 @@ void construct_continuous_specific_hyper_grid(int n_grid,
 					      std::vector<double> &s_grid,
 					      std::vector<double> &mu_grid);
 
+void construct_multinomial_base_hyper_grids(int n_grid,
+					    int data_num_vectors,
+					    std::vector<double> &multinomial_alpha_grid);
+
 template <class T>
 boost::numeric::ublas::matrix<T> vector_to_matrix(std::vector<T> vT) {
   boost::numeric::ublas::matrix<T> matrix_out(1, vT.size());
@@ -201,5 +231,7 @@ int count_elements(std::vector<std::vector<T> > v_v_T) {
   }
   return num_elements;
 }
+
+bool is_bad_value(double value);
 
 #endif // GUARD_utils_H

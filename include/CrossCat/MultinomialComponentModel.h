@@ -8,11 +8,14 @@
 class MultinomialComponentModel : public ComponentModel {
  public:
   MultinomialComponentModel(std::map<std::string, double> &in_hypers);
+  MultinomialComponentModel(std::map<std::string, double> &in_hypers,
+			    int count, std::map<std::string, double> counts);
   //
   // getters
   std::map<std::string, double> get_hypers() const;
   void get_hyper_values(int &K, double &dirichlet_alpha) const;
   void get_suffstats(int &count_out, std::map<std::string, double> &counts) const;
+  double get_draw(int random_seed) const;
   //
   // calculators
   double calc_marginal_logp() const;
