@@ -112,8 +112,8 @@ function sample = simple_predictive_sample_newRow(state, Y, q)
         % generate a prediction for each query column in this view
         theseColumns = find(theseViews==thisView);
         for ii = 1 : length(theseColumns)
-            sample(theseColumns(ii)) = sampleValue(state.data(theseRows,theseColumns(ii)), ...
-                                                    theseColumns(ii), state);
+            sample(theseColumns(ii)) = sampleValue(state.data(theseRows,q(theseColumns(ii))), ...
+                                                    q(theseColumns(ii)), state);
         end
         
     end
