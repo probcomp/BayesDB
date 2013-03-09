@@ -9,13 +9,15 @@ def my_open(filename):
         opener = gzip.open
     return opener
 
-def pickle(variable, filename):
-    opener = my_open(filename)
-    with opener(filename, 'wb') as fh:
+def pickle(variable, filename, dir=''):
+    full_filename = os.path.join(dir, filename)
+    opener = my_open(full_filename)
+    with opener(full_filename, 'wb') as fh:
         cPickle.dump(variable, fh)
 
-def unpickle(filename):
-    opener = my_open(filename)
-    with opener(filename, 'rb') as fh:
+def unpickle(filename, dir=''):
+    full_filename = os.path.join(dir, filename)
+    opener = my_open(full_filename)
+    with opener(full_filename, 'rb') as fh:
         variable = cPickle.load(fh)
     return variable

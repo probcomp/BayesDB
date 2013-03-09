@@ -201,17 +201,14 @@ cdef class p_State:
          return "State[%s, %s]:\n%s" % print_tuple
     def to_string(self, join_str='\n', top_level=False):
          return self.thisptr.to_string(join_str, top_level)
-    def plot(self, save_str_prefix='', iter_idx=None):
+    def plot(self, filename=None, dir=''):
          T_array = self.T_array
          X_D = self.get_X_D()
          X_L = self.get_X_L()
-         #
-         if iter_idx is not None:
-              save_str_prefix = 'iter_%s_' % iter_idx
-         pu.plot_views(T_array, X_D, X_L, save_str_prefix)
-    def plot_T(self, save_str='T'):
+         pu.plot_views(T_array, X_D, X_L, filename, dir)
+    def plot_T(self, filename=None, dir=''):
          T_array = self.T_array
-         pu.plot_T(T_array, save_str)
+         pu.plot_T(T_array, filename, dir)
     #
     # getters
     def get_column_groups(self):
@@ -292,13 +289,13 @@ cdef class p_State:
           X_L['column_hypers'] = column_hypers
           X_L['view_state'] = view_state
           return X_L
-    def save(self, filename, **kwargs):
+    def save(self, filename, dir='', **kwargs):
          save_dict = dict(
               X_L=self.get_X_L(),
               X_D=self.get_X_D(),
               )
          save_dict.update(**kwargs)
-         fu.pickle(save_dict, filename)
+         fu.pickle(save_dict, filename, dir=dir)
 
 def indicator_list_to_list_of_list(indicator_list):
      list_of_list = []

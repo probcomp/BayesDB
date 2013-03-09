@@ -59,7 +59,7 @@ T, M_r, M_c = du.discretize_data(T, M_r, M_c,
 
 # create the state
 p_State = State.p_State(M_c, T, N_GRID=N_GRID, SEED=inf_seed)
-p_State.plot_T()
+p_State.plot_T(filename='T')
 print M_c
 print numpy.array(T)
 print p_State
@@ -95,9 +95,10 @@ for transition_idx in range(num_transitions):
     p_State.transition()
     summarize_p_State(p_State)
     iter_idx = None
-    save_str = 'last_iter_pickled_state.pkl.gz'
+    pkl_filename = 'last_iter_pickled_state.pkl.gz'
+    plot_filename = 'last_iter_X_D'
     if transition_idx % 10 == 0:
-        iter_idx = transition_idx
-        save_str = 'iter_%s_pickled_state.pkl.gz' % transition_idx
-    p_State.save(save_str, M_c=M_c, T=T)
-    p_State.plot(iter_idx=iter_idx)
+        plot_filename = 'iter_%s_X_D' % transition_idx
+        pkl_filename = 'iter_%s_pickled_state.pkl.gz' % transition_idx
+    p_State.save(filename=pkl_filename, M_c=M_c, T=T)
+    p_State.plot(filename=plot_filename)
