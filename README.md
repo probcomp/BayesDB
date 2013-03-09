@@ -13,8 +13,9 @@ This package is configured to be installed as a StarCluster plugin.  Roughly, th
 * [SSH access](https://help.github.com/articles/generating-ssh-keys) to the [tabular-predDB github repo](https://github.com/mit-probabilistic-computing-project/tabular-predDB) via ssh key pair, ~/.ssh/id_rsa{,.pub} **these will be copied up to EC2**
     * [[FIXME: consider 'starcluster put'ing from local to remotes]]
 * tabular_predDB package available on your local machine and available on the PTYHONPATH
+    * The package directory must be renamed to tabular\_predDB from tabular**-**predDB
     * if not on the PYTHONPATH, all starcluster commands must be run one level above the package directory
- 
+
 Everything will be set up for a user named 'sgeadmin'.  Required python packages will be installed in a virtualenv named tabular_predDB.  To access the environment necessary to build the software, you should be logged in as sgeadmin and run
 
     > workon tabular_predDB
