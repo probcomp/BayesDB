@@ -284,14 +284,14 @@ cdef class p_State:
     def get_X_D(self):
           return self.thisptr.get_X_D()
     def get_X_L(self):
-          column_partition = self.get_column_partition()
-          column_hypers = self.get_column_hypers()
-          view_state = self.get_view_state()
-          X_L = dict()
-          X_L['column_partition'] = column_partition
-          X_L['column_hypers'] = column_hypers
-          X_L['view_state'] = view_state
-          return X_L
+         column_partition = self.get_column_partition()
+         column_hypers = self.get_column_hypers()
+         view_state = self.get_view_state()
+         X_L = dict()
+         X_L['column_partition'] = column_partition
+         X_L['column_hypers'] = column_hypers
+         X_L['view_state'] = view_state
+         return X_L
     def save(self, filename, **kwargs):
          save_dict = dict(
               X_L=self.get_X_L(),
