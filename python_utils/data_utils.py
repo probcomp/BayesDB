@@ -103,7 +103,7 @@ def discretize_data(T, M_r, M_c, discretize_column_indices):
     T_array = numpy.array(T)
     for multinomial_idx in discretize_column_indices:
         multinomial_column = T_array[:,multinomial_idx]
-        multinomial_column = numpy.array(multinomial_column)
+        multinomial_column = numpy.array(multinomial_column, dtype=int)
         multinomial_set = set(multinomial_column)
         multinomial_set = map(int, list(multinomial_set))
         T_array[:, multinomial_idx] = multinomial_column
