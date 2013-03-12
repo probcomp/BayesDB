@@ -2,3 +2,5 @@
 *.pyc
 *.gz
 *.png
+*.so
+*.pdf
