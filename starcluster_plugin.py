@@ -9,8 +9,10 @@ import tabular_predDB.settings as S
 
 # maybe should prefix the command with "source /etc/profile"
 # as starclusters' sshutils.ssh.execute(..., source_profile=True) does
-run_as_user = lambda node, user, command_str: \
-    node.ssh.execute('sudo -H -u %s %s' % (user, command_str))
+def run_as_user(node, user, command_str, **kwargs):
+     cmd_str = 'sudo -H -u %s %s'
+     cmd_str %= (user, command_str)
+     node.ssh.execute(cmd_str, **kwargs)
 
 def auto_accept_key(node, user):
      # make sure you can programmatically ssh into node
@@ -132,9 +134,11 @@ class tabular_predDBSetup(ClusterSetup):
                # compile cython
                cmd_str = 'bash -c -i "workon tabular_predDB && make cython"'
                run_as_user(node, user, cmd_str)
-               # set up a server
-               server_script = os.path.join(S.path.remote_code_dir,
-                                            S.path.server_script)
-               cmd_str = 'bash -c -i "workon tabular_predDB && python %s"'
-               cmd_str %= server_script
-               node.ssh.execute_async(cmd_str)
+               # run server
+               # THIS NEVER RETURNS
+               # cmd_str = 'bash -c -i "workon tabular_predDB && nohup python jsonrpc_http/server_jsonrpc.py >out 2>err & disown"'
+               # run_as_user(node, user, cmd_str)
+               # adding detach=True causes it to not run
+
+#this works from command line
+# ssh -i ~/.ssh/dlovell_mitpcp.pem sgeadmin@ec2-54-234-15-181.compute-1.amazonaws.com 'nohup bash -i -c "workon tabular_predDB && nohup python /home/sgeadmin/tabular_predDB/jsonrpc_http/server_jsonrpc.py >out 2>err"' &
