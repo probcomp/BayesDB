@@ -7,8 +7,10 @@ from starcluster.logger import log
 #
 import tabular_predDB.settings as S
 
+# maybe should prefix the command with "source /etc/profile"
+# as starclusters' sshutils.ssh.execute(..., source_profile=True) does
 run_as_user = lambda node, user, command_str: \
-    node.ssh.execute('sudo -u %s %s' % (user, command_str))
+    node.ssh.execute('sudo -H -u %s %s' % (user, command_str))
 
 def auto_accept_key(node, user):
      # make sure you can programmatically ssh into node
@@ -60,7 +62,7 @@ def push_local_repo_to_new_remote(remote_code_dir, node, user):
      push_repo_using_node_key(remote_code_dir, node)
      update_remote_repot_working_tree(remote_code_dir, node)
 
-def copy_this_repo(remote_code_dir, node, user, branch=None,
+def copy_this_repo(remote_code_dir, node, user, branch='master',
                    temp_base_dir='/tmp/'):
      local_dir = os.path.split(__file__)[0]
      # generate temporary resources
@@ -71,23 +73,25 @@ def copy_this_repo(remote_code_dir, node, user, branch=None,
      cmd_str %= (local_dir, temp_dir_name)
      os.system(cmd_str)
      # tgz for speed
-     cmd_str = 'cd %s && tar cvfz %s .'
+     cmd_str = 'cd %s && tar cvfz %s . >tar.out 2>tar.err'
      cmd_str %= (temp_dir_name, temp_tgz_name)
      os.system(cmd_str)
      # put up to node and untar
      node.ssh.put(temp_tgz_name, temp_tgz_name)
-     cmd_str = 'mkdir -p %s && cd %s && tar xvfz %s && chown -R %s .'
-     cmd_str %= (remote_code_dir, remote_code_dir, temp_tgz_name, user)
+     cmd_str = ' && '.join([
+               'mkdir -p %s',
+               'cd %s',
+               'tar xvfz %s',
+               'git checkout %s',
+               'chown -R %s .'
+               ])
+     cmd_str %= (remote_code_dir, remote_code_dir, temp_tgz_name,
+                 branch, user)
      node.ssh.execute(cmd_str)
      # clean up
      cmd_str = 'rm -rf %s %s'
      cmd_str %= (temp_tgz_name, temp_dir_name)
      os.system(cmd_str)
-     # switch to branch
-     if branch is not None:
-          cmd_str = 'cd %s && git checkout %s'
-          cmd_str %= (remote_code_dir, branch)
-          node.ssh.execute(cmd_str)
 
 class tabular_predDBSetup(ClusterSetup):
      def __init__(self):
@@ -125,3 +129,12 @@ class tabular_predDBSetup(ClusterSetup):
                          ])
                cmd_str %= (remote_home_dir, remote_home_dir)
                node.ssh.execute(cmd_str)
+               # compile cython
+               cmd_str = 'bash -c -i "workon tabular_predDB && make cython"'
+               run_as_user(node, user, cmd_str)
+               # set up a server
+               server_script = os.path.join(S.path.remote_code_dir,
+                                            S.path.server_script)
+               cmd_str = 'bash -c -i "workon tabular_predDB && python %s"'
+               cmd_str %= server_script
+               node.ssh.execute_async(cmd_str)
