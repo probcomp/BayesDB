@@ -2,6 +2,11 @@ from collections import Counter
 
 modeltypes = set(["asymmetric_beta_bernoulli", "normal_inverse_gamma", "pitmanyor_atom", "symmetric_dirichlet_discrete", "poisson_gamma"])
 
+strify_dict = lambda in_dict: dict([
+        (str(key), str(value))
+        for key, value in in_dict.iteritems()
+        ])
+
 def assert_map_consistency(map_1, map_2):
     assert(len(map_1)==len(map_2))
     for key in map_1:
@@ -20,6 +25,7 @@ def asymmetric_beta_bernoulli_hyper_validator(in_dict):
 
 def normal_inverse_gamma_hyper_validator(in_dict):
     required_keys = ["mu", "log_kappa", "log_alpha", "log_beta"]
+    # required_keys = ["mu", "s", "nu", "r"]
     verify_keys(required_keys, in_dict)
     #
     # mu, log_kappa, log_alpha, log_beta range from negative infinity to positive infinity
@@ -34,6 +40,7 @@ def pitmanyor_atom_hyper_validator(in_dict):
 
 def symmetric_dirichlet_discrete_hyper_validator(in_dict):
     required_keys = ["log_alpha", "K"]
+    # required_keys = ["dirichlet_alpha", "K"]
     verify_keys(required_keys, in_dict)
     # range of log_alpha is negative infinity to positive infinity
     assert in_dict["K"] > 1
@@ -61,8 +68,8 @@ def asymmetric_beta_bernoulli_suffstats_validator(in_dict):
 
 def normal_inverse_gamma_suffstats_validator(in_dict):
     required_keys = ["sum_x", "sum_x_squared", "N"]
+    # required_keys = ["sum_x", "sum_x_sq"]
     verify_keys(required_keys, in_dict)
-    #
     assert 0 <= in_dict["sum_x_squared"]
     assert 0 <= in_dict["N"]
 
@@ -112,7 +119,8 @@ def assert_xl_view_state_consistency(view_state_i, mc):
     column_component_suffstats = view_state_i["column_component_suffstats"]
     for column_name_i, column_component_suffstats_i in \
             zip(column_names, column_component_suffstats):
-        global_column_idx = mc["name_to_idx"][column_name_i]
+        # keys must be strings
+        global_column_idx = mc["name_to_idx"][str(column_name_i)]
         modeltype = mc["column_metadata"][int(global_column_idx)]["modeltype"]
         suffstats_validator = modeltype_suffstats_validators[modeltype]
         for component_suffstats in column_component_suffstats_i:
@@ -129,10 +137,10 @@ def assert_xl_consistency(xl, mc):
         validator = modeltype_hyper_validators[modeltype]
         validator(column_hypers_i)
         if modeltype == "symmetric_dirichlet_discrete":
-            # FIXME: can't do this, you may know there are N values but only have
-            # M datapoints where M < N
-            # assert column_hypers_i["K"] == len(column_metadata_i["value_to_code"])
-            pass
+            num_codes_metadata = len(column_metadata_i["value_to_code"])
+            num_codes_hypers = column_hypers_i["K"]
+            assert num_codes_metadata == num_codes_hypers
+            # FIXME: should assert len(suffstats['counts']) <= num_codes_hypers
     for view_state_i in xl["view_state"]:
         assert_xl_view_state_consistency(view_state_i, mc)
     assert sum(xl["column_partition"]["counts"]) == len(mc["name_to_idx"])

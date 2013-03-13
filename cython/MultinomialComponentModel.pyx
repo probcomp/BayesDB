@@ -24,6 +24,7 @@ cdef extern from "MultinomialComponentModel.h":
         double score
         cpp_string to_string()
         double get_draw(int seed)
+        void get_suffstats(int count_out, cpp_map[cpp_string, double] counts)
         double insert_element(double element)
         double remove_element(double element)
         double incorporate_hyper_update()
@@ -46,6 +47,12 @@ cdef class p_MultinomialComponentModel:
         del_MultinomialComponentModel(self.thisptr)
     def get_draw(self, seed):
         return self.thisptr.get_draw(seed)
+    def get_suffstats(self):
+        cdef int count_out
+        count_out = 0
+        counts = dict()
+        self.thisptr.get_suffstats(count_out, counts)
+        return count_out, counts
     def insert_element(self, element):
         return self.thisptr.insert_element(element)
     def remove_element(self, element):

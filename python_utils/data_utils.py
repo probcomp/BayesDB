@@ -46,6 +46,8 @@ def gen_factorial_data(gen_seed, num_clusters,
             num_clusters=num_clusters,
             num_cols=num_cols/num_splits,
             num_rows=num_rows,
+            max_mean=max_mean,
+            max_std=max_std,
             )
         permutation_indices = numpy.random.permutation(xrange(num_rows))
         # permutation_indices = get_ith_ordering(range(num_rows), data_idx)
@@ -103,7 +105,7 @@ def discretize_data(T, M_r, M_c, discretize_column_indices):
     T_array = numpy.array(T)
     for multinomial_idx in discretize_column_indices:
         multinomial_column = T_array[:,multinomial_idx]
-        multinomial_column = numpy.array(multinomial_column)
+        multinomial_column = numpy.array(multinomial_column, dtype=int)
         multinomial_set = set(multinomial_column)
         multinomial_set = map(int, list(multinomial_set))
         T_array[:, multinomial_idx] = multinomial_column
