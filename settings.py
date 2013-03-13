@@ -3,7 +3,6 @@ import os
 
 
 class path():
-    remote_home_dir = '/home/sgeadmin/'
     remote_code_dir = '/home/sgeadmin/tabular_predDB'
     install_ubuntu_script = os.path.join(remote_code_dir,
                                          'install_ubuntu_packages.sh')

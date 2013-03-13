@@ -1,3 +1,5 @@
+pip install virtualenv
+pip install virtualenvwrapper
 apt-get install -y python-dev
 apt-get install -y libfreetype6-dev
 apt-get install -y tk-dev
