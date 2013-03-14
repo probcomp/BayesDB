@@ -113,14 +113,17 @@ class tabular_predDBSetup(ClusterSetup):
                log.info("Installing tabular_predDB (part 2) on %s"
                         % node.alias)
                # install ubuntu packages
+               log.info("Installing ubuntu packages on %s" % node.alias)
                cmd_str = 'bash %s >ubuntu.out 2>ubuntu.err'
                cmd_str %= S.path.install_ubuntu_script
                node.ssh.execute(cmd_str)
                # install boost
+               log.info("Installing boost on %s" % node.alias)
                cmd_str = 'bash %s >boost.out 2>boost.err'
                cmd_str %= S.path.install_boost_script
                node.ssh.execute(cmd_str)
                # install python packages in a virtual env
+               log.info("Installing python packages on %s" % node.alias)
                cmd_str = 'bash -i %s %s >virtualenv.out 2>virtualenv.err'
                cmd_str %= (S.path.virtualenv_setup_script, user)
                node.ssh.execute(cmd_str)
@@ -128,15 +131,14 @@ class tabular_predDBSetup(ClusterSetup):
                cmd_str = ' && '.join([
                          'mkdir -p %s/.matplotlib',
                          'echo backend: Agg > %s/.matplotlib/matplotlibrc',
-                         'chown -R %s %s/.matplotlib',
-                         'grp -R %s %s/.matplotlib',
+                         'chown -R %s:%s %s/.matplotlib',
                          ])
                cmd_str %= (remote_home_dir,
                            remote_home_dir,
-                           user, remote_home_dir,
-                           user, remote_home_dir)
+                           user, user, remote_home_dir)
                node.ssh.execute(cmd_str)
                # compile cython
+               log.info("Installing engine (compiling cython) on %s" % node.alias)
                cmd_str = 'bash -c -i "workon tabular_predDB && make cython"'
                run_as_user(node, user, cmd_str)
                # run server
