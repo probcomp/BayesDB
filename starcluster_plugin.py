@@ -128,17 +128,20 @@ class tabular_predDBSetup(ClusterSetup):
                cmd_str = ' && '.join([
                          'mkdir -p %s/.matplotlib',
                          'echo backend: Agg > %s/.matplotlib/matplotlibrc',
+                         'chown -R %s %s/.matplotlib',
+                         'grp -R %s %s/.matplotlib',
                          ])
-               cmd_str %= (remote_home_dir, remote_home_dir)
+               cmd_str %= (remote_home_dir,
+                           remote_home_dir,
+                           user, remote_home_dir,
+                           user, remote_home_dir)
                node.ssh.execute(cmd_str)
                # compile cython
                cmd_str = 'bash -c -i "workon tabular_predDB && make cython"'
                run_as_user(node, user, cmd_str)
                # run server
-               # THIS NEVER RETURNS
-               # cmd_str = 'bash -c -i "workon tabular_predDB && nohup python jsonrpc_http/server_jsonrpc.py >out 2>err & disown"'
-               # run_as_user(node, user, cmd_str)
-               # adding detach=True causes it to not run
-
-#this works from command line
-# ssh -i ~/.ssh/dlovell_mitpcp.pem sgeadmin@ec2-54-234-15-181.compute-1.amazonaws.com 'nohup bash -i -c "workon tabular_predDB && nohup python /home/sgeadmin/tabular_predDB/jsonrpc_http/server_jsonrpc.py >out 2>err"' &
+               run_server_script = os.path.join(S.path.remote_code_dir,
+                                                S.path.run_server_script)
+               cmd_str = 'bash -i %s'
+               cmd_str %= (run_server_script) 
+               run_as_user(node, user, cmd_str)

@@ -10,6 +10,7 @@ class path():
     virtualenv_setup_script = os.path.join(remote_code_dir,
                                            'virtualenv_setup.sh')
     server_script = os.path.join('jsonrpc_http', 'server_jsonrpc.py')
+    run_server_script = 'run_server.sh'
 
 class s3():
     bucket_str = 'mitpcp-tabular-predDB'
