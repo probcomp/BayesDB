@@ -5,6 +5,7 @@ from collections import Counter
 import numpy
 #
 import tabular_predDB.cython.State as State
+import tabular_predDB.python_utils.sample_utils as su
 
 
 class Engine(object):
@@ -52,17 +53,17 @@ class Engine(object):
             assert(is_observed_row)
             if is_observed_col and is_observed_row:
                 SEED = self.get_next_seed()
-                sample = simple_predictive_sample_observed(M_c, X_L, X_D,
-                                                           which_row,
-                                                           which_column,
-                                                           SEED)
+                sample = su.simple_predictive_sample_observed(M_c, X_L, X_D,
+                                                              which_row,
+                                                              which_column,
+                                                              SEED)
                 x.append(sample)
             elif is_observed_col and not is_observed_row:
                 SEED = self.get_next_seed()
-                sample = simple_predictive_sample_unobserved(M_c, X_L, X_D,
-                                                             Y,
-                                                             which_column,
-                                                             SEED)
+                sample = su.simple_predictive_sample_unobserved(M_c, X_L, X_D,
+                                                                Y,
+                                                                which_column,
+                                                                SEED)
                 x.append(sample)
             else:
                 # FIXME: not handling unobserved columns for now
