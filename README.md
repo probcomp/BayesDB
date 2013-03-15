@@ -17,17 +17,19 @@ This package is configured to be installed as a StarCluster plugin.  Roughly, th
 
 A starcluster_plugin.py file in included in this repo.  Assuming the above prerequisites are fulfilled,
 
-    local> starcluster start -c tabular_predDB [cluster_name]
+    local> starcluster start -c tabular_predDB [CLUSTER_NAME]
 
 should start a single c1.medium StarCluster server on EC2, install the necessary software, compile the engine, and start an engine listening on port 8007.
 
 Everything will be set up for a user named 'sgeadmin'.  Required python packages will be installed in a virtualenv named tabular_predDB.  To access the environment necessary to build the software, you should be logged in as sgeadmin and run
 
+    local> starcluster sshmaster [CLUSTER_NAME] -u sgeadmin
     sgeadmin> workon tabular_predDB
 
 
 Starting the engine (Note: the engine is started on boot)
 ---------------------------
+    local> starcluster sshmaster [CLUSTER_NAME] -u sgeadmin
     sgeadmin> pkill -f server_jsonrpc
     sgeadmin> workon tabular_predDB
     sgeadmin> make cython
@@ -38,17 +40,20 @@ Starting the engine (Note: the engine is started on boot)
 
 Running tests
 ---------------------------
+    local> starcluster sshmaster [CLUSTER_NAME] -u sgeadmin
     sgeadmin> workon tabular_predDB
     sgeadmin> # capture stdout, stderr separately
     sgeadmin> make runtests >tests.out 2>tests.err
 
 Building local binary
 -------------------------------------------------
+    local> starcluster sshmaster [CLUSTER_NAME] -u sgeadmin
     sgeadmin> workon tabular_predDB
     sgeadmin> make bin
 
 Setting up password login via ssh
 ---------------------------------
+    local> starcluster sshmaster [CLUSTER_NAME]
     root> perl -pi.bak -e 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
     root> service ssh reload
     root> echo "sgeadmin:[PASSWORD]" | chpasswd
