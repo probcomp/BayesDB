@@ -43,7 +43,7 @@ $max\_iterations$ is the maximum number of desired iterations and $max\_time$ is
 \item \texttt{simple\_predictive\_sample($M_c, X_L,X_D,Y,Q$)} $\rightarrow x$. $Y$ is a list of conditions (indices paired with values) on a single row. 
 $Q$ is a list of variable indices to simultaneously sample given the conditions are true.
 \footnote{Note that $q$ is overloaded, representing both the indices of the queried variable and the variable.}
-The output is a list sampled values $x$,
+The output is a list sampled values $x$ with the same ordering of variables as Q,
 $$
 x \sim Pr[Q|X_L,Y].
 $$
