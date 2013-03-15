@@ -36,38 +36,29 @@ class Engine(object):
         X_D_prime = p_State.get_X_D()
         return X_L_prime, X_D_prime
 
-    def simple_predictive_sample(self, M_c, X_L, X_D, Y, q):
-        x = []
-        # FIXME: handle multiple queries
-        assert(len(q)==1)
-        for query in q:
-            which_row = query[0]
-            which_column = query[1]
-            #
-            num_rows = len(X_D[0])
-            num_cols = len(M_c['column_metadata'])
-            is_observed_row = which_row < num_rows
-            is_observed_col = which_column < num_cols
-            assert(is_observed_col)
-            # FIXME: handle unobserved rows
-            assert(is_observed_row)
-            if is_observed_col and is_observed_row:
-                SEED = self.get_next_seed()
-                sample = su.simple_predictive_sample_observed(M_c, X_L, X_D,
-                                                              which_row,
-                                                              which_column,
-                                                              SEED)
-                x.append(sample)
-            elif is_observed_col and not is_observed_row:
-                SEED = self.get_next_seed()
-                sample = su.simple_predictive_sample_unobserved(M_c, X_L, X_D,
-                                                                Y,
-                                                                which_column,
-                                                                SEED)
-                x.append(sample)
-            else:
+    def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q):
+        num_rows = len(X_D[0])
+        num_cols = len(M_c['column_metadata'])
+        which_row = Q[0][0]
+        is_observed_row = which_row < num_rows
+        # FIXME: handle unobserved rows
+        assert(is_observed_row)
+        assert(all([which_tuple[0]==which_row for which_tuple in Q]))
+        if not is_observed_row:
+            SEED = self.get_next_seed()
+            x = su.simple_predictive_sample_unobserved(
+                M_c, X_L, X_D, Y, which_column, SEED)
+        else:
+            x = []
+            for query in Q:
+                which_column = query[1]
+                is_observed_col = which_column < num_cols
                 # FIXME: not handling unobserved columns for now
-                assert(False)
+                assert(is_observed_col)
+                SEED = self.get_next_seed()
+                sample = su.simple_predictive_sample_observed(
+                    M_c, X_L, X_D, which_row, which_column, SEED)
+                x.append(sample)
         return x
 
     def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, n):
