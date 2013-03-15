@@ -9,8 +9,10 @@ all: pdf
 
 pdf: $(FILENAME).pdf
 
-$(FILENAME).pdf: $(FILENAME).tex
-	pdflatex $(FILENAME)
+experimental: $(FILENAME)_experimental.pdf
+
+%.pdf: %.tex
+	pdflatex $<
 
 clean:
 	rm -f *.aux *.log *.pdf *.dvi *.blg *.bbl *~
