@@ -53,6 +53,7 @@ doc:
 clean:
 	rm -f $(BIN) $(OBJECTS) core *.stackdump *.gch $(TESTS)
 	cd $(CYT) && make clean
+	cd $(DOC) && make clean
 
 $(CYT)/State.so: $(HEADERS) $(SOURCES) $(CYTHON)
 	cd $(CYT) && make
