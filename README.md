@@ -15,36 +15,40 @@ This package is configured to be installed as a StarCluster plugin.  Roughly, th
     * The package directory must be renamed to tabular\_predDB from tabular**-**predDB
     * if not on the PYTHONPATH, all starcluster commands must be run one level above the package directory
 
-Everything will be set up for a user named 'sgeadmin'.  Required python packages will be installed in a virtualenv named tabular_predDB.  To access the environment necessary to build the software, you should be logged in as sgeadmin and run
-
-    > workon tabular_predDB
-
 A starcluster_plugin.py file in included in this repo.  Assuming the above prerequisites are fulfilled,
 
-    > starcluster start -c tabular_predDB [cluster_name]
+    local> starcluster start -c tabular_predDB [cluster_name]
 
-should start a single c1.medium StarCluster server on EC2, install the necessary software and be ready for running the engine.
+should start a single c1.medium StarCluster server on EC2, install the necessary software, compile the engine, and start an engine listening on port 8007.
 
-Running server
+Everything will be set up for a user named 'sgeadmin'.  Required python packages will be installed in a virtualenv named tabular_predDB.  To access the environment necessary to build the software, you should be logged in as sgeadmin and run
+
+    sgeadmin> workon tabular_predDB
+
+
+Starting the engine (Note: the engine is started on boot)
 ---------------------------
-    > workon tabular_predDB
-    > cd /path/to/tabular-predDB
-    > make cython
-    > cd /path/to/tabular-predDB/jsonrpc_http
-    > # capture stdout, stderr separately
-    > python server_jsonrpc.py >server_jsonrpc.out 2>server_jsonrpc.err &
-    > # test with 'python stub_client_jsonrpc.py'
+    sgeadmin> pkill -f server_jsonrpc
+    sgeadmin> workon tabular_predDB
+    sgeadmin> make cython
+    sgeadmin> cd jsonrpc_http
+    sgeadmin> # capture stdout, stderr separately
+    sgeadmin> python server_jsonrpc.py >server_jsonrpc.out 2>server_jsonrpc.err &
+    sgeadmin> # test with 'python stub_client_jsonrpc.py'
 
 Running tests
 ---------------------------
-    > workon tabular_predDB
-    > cd /path/to/tabular-predDB
-    > # capture stdout, stderr separately
-    > make runtests >tests.out 2>tests.err
+    sgeadmin> workon tabular_predDB
+    sgeadmin> # capture stdout, stderr separately
+    sgeadmin> make runtests >tests.out 2>tests.err
 
 Building local binary
 -------------------------------------------------
-    > workon tabular_predDB
-    > cd /path/to/tabular-predDB
-    > make bin
+    sgeadmin> workon tabular_predDB
+    sgeadmin> make bin
 
+Setting up password login via ssh
+---------------------------------
+    root> perl -pi.bak -e 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    root> service ssh reload
+    root> echo "sgeadmin:[PASSWORD]" | chpasswd
