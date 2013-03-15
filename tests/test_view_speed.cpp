@@ -128,9 +128,12 @@ int main(int argc, char** argv) {
   for(int i=0; i<global_column_indices.size(); i++) {
     global_col_types[i] = CONTINUOUS_DATATYPE;
   }
+  vector<double> multinomial_alpha_grid = \
+    log_linspace(1., num_rows, N_GRID);
   View v = View(data, global_col_types,
 		global_row_indices, global_column_indices, hypers_m,
-		row_crp_alpha_grid, r_grid, nu_grid, s_grids, mu_grids,
+		row_crp_alpha_grid, multinomial_alpha_grid,
+		r_grid, nu_grid, s_grids, mu_grids,
 		SEED);
 
   v.print();
