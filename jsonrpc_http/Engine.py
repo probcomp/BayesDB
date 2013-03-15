@@ -38,7 +38,7 @@ class Engine(object):
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q):
         return su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
-                                           self.get_nex_seed)
+                                           self.get_next_seed)
 
     def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, n):
         p = None
