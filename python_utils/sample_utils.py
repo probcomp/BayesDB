@@ -17,6 +17,31 @@ class Bunch(dict):
 
 Constraints = Bunch
 
+def simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed):
+    num_rows = len(X_D[0])
+    num_cols = len(M_c['column_metadata'])
+    which_row = Q[0][0]
+    assert(all([which_tuple[0]==which_row for which_tuple in Q]))
+    # FIXME: handle unobserved rows
+    is_observed_row = which_row < num_rows
+    assert(is_observed_row)
+    x = []
+    if not is_observed_row:
+        SEED = get_next_seed()
+        x = simple_predictive_sample_unobserved(
+            M_c, X_L, X_D, Y, Q, SEED)
+    else:
+        for query in Q:
+            which_column = query[1]
+            is_observed_col = which_column < num_cols
+            # FIXME: not handling unobserved columns for now
+            assert(is_observed_col)
+            SEED = get_next_seed()
+            sample = simple_predictive_sample_observed(
+                M_c, X_L, X_D, which_row, which_column, SEED)
+            x.append(sample)
+    return x
+
 def simple_predictive_sample_observed(M_c, X_L, X_D, which_row, which_column, SEED):
     modeltype = M_c['column_metadata'][which_column]['modeltype']
     column_hypers = X_L['column_hypers'][which_column]
@@ -39,6 +64,8 @@ def simple_predictive_sample_observed(M_c, X_L, X_D, which_row, which_column, SE
         component_model_constructor = CCM.p_ContinuousComponentModel
     elif modeltype == 'symmetric_dirichlet_discrete':
         component_model_constructor = MCM.p_MultinomialComponentModel
+        # FIXME: this is a hack
+        component_suffstats = dict(counts=component_suffstats)
     else:
         assert False, "simple_predictive_sample_observed: unknown modeltype: %s" % modeltype
     component_model = component_model_constructor(column_hypers,
