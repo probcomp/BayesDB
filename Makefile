@@ -12,6 +12,7 @@ CXXOPTS :=  $(CXXOPTS) -lm -lboost_program_options -L$(BOOST_ROOT)/lib -I$(BOOST
 INC=include/CrossCat
 SRC=src
 OBJ=obj
+DOC=docs
 TEST=tests
 CYT=cython
 # Assume BOOST_ROOT set as environment variable.
@@ -31,7 +32,7 @@ OBJECTS = $(foreach name, $(NAMES), $(OBJ)/$(name).o)
 TESTS = $(foreach test, $(TEST_NAMES), $(TEST)/$(test))
 CYTHON = $(foreach name, $(CYTHON_NAMES), $(CYT)/$(name))
 
-all: cython
+all: cython doc
 
 cython: $(CYT)/State.so
 
@@ -45,6 +46,9 @@ tests: $(TESTS)
 # run each test
 runtests: $(TESTS)
 	@echo tests are: $(TESTS) $(foreach test, $(TESTS), && ./$(test))
+
+doc:
+	cd $(DOC) && make
 
 clean:
 	rm -f $(BIN) $(OBJECTS) core *.stackdump *.gch $(TESTS)
