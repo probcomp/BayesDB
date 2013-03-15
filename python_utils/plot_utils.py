@@ -4,11 +4,12 @@ import pylab
 import numpy
 
 
-def my_savefig(filename, dir=''):
+def my_savefig(filename, dir='', close=True):
     if filename is not None:
         full_filename = os.path.join(dir, filename)
         pylab.savefig(full_filename)
-        pylab.close()
+        if close:
+            pylab.close()
 
 def get_aspect_ratio(T_array):
     num_rows = len(T_array)
