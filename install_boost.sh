@@ -4,6 +4,10 @@ with_libraries=program_options
 #
 which_gz=${which_boost}.tar.gz
 
+# if [ ! -d ${install_prefix}/include/boost ]; then
+#     exit
+# fi
+
 cd
 if [ ! -f $which_gz ]; then
     wget http://downloads.sourceforge.net/project/boost/boost/1.48.0/$which_gz
