@@ -1,0 +1,19 @@
+# yolk is for looking at python packages available
+yolk==0.4.3
+#
+# for api server
+jsonrpc==1.2
+requests==1.0.3
+Twisted==12.3.0
+pyOpenSSL==0.13
+#
+# for engine
+cython==0.17.1
+# sudo apt-get install -y python-dev
+numpy==1.7.0
+# for engine for matplotlib
+# sudo apt-get install -y tk-dev
+# sudo apt-get install -y libfreetype6-dev
+# sudo apt-get install -y libpng12-dev
+freetype-py==0.4.1
+matplotlib==1.2.0

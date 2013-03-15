@@ -2,6 +2,7 @@
 
 #include "Cluster.h"
 #include "utils.h"
+#include "constants.h"
 #include "numerics.h"
 #include "View.h"
 #include "RandomNumberGenerator.h"
@@ -77,7 +78,7 @@ void remove_all_data(View &v, map<int, vector<double> > data_map) {
 }
 
 int main(int argc, char** argv) {
-  cout << endl << "Hello World!" << endl;
+  cout << endl << "test_view_speed: Hello World!" << endl;
 
   // load some data
   matrixD data;
@@ -109,8 +110,28 @@ int main(int argc, char** argv) {
   int SEED = 0;
   vector<int> global_row_indices = create_sequence(data.size1());
   vector<int> global_column_indices = create_sequence(data.size2());
-  View v = View(data, global_row_indices, global_column_indices, hypers_m, SEED,
-		N_GRID);
+  // construct hyper grids
+  vector<double> row_crp_alpha_grid = create_crp_alpha_grid(num_rows, N_GRID);
+  vector<double> r_grid;
+  vector<double> nu_grid;
+  map<int, vector<double> > s_grids;
+  map<int, vector<double> > mu_grids;
+  construct_continuous_base_hyper_grids(N_GRID, num_rows, r_grid, nu_grid);
+  for(vector<int>::iterator it=global_column_indices.begin(); it!=global_column_indices.end(); it++) {
+    int global_col_idx = *it;
+    vector<double> col_data = extract_col(data, global_col_idx);
+    construct_continuous_specific_hyper_grid(N_GRID, col_data,
+					     s_grids[global_col_idx],
+					     mu_grids[global_col_idx]);
+  }
+  map<int, string> global_col_types;
+  for(int i=0; i<global_column_indices.size(); i++) {
+    global_col_types[i] = CONTINUOUS_DATATYPE;
+  }
+  View v = View(data, global_col_types,
+		global_row_indices, global_column_indices, hypers_m,
+		row_crp_alpha_grid, r_grid, nu_grid, s_grids, mu_grids,
+		SEED);
 
   v.print();
   // empty object and verify empty
@@ -194,7 +215,7 @@ int main(int argc, char** argv) {
   insert_col_idx = remove_col_idx;
   cout << "inserting column: " << insert_col_idx;
   score_0 = v.get_score();
-  score_delta_1 = v.calc_column_predictive_logp(col_data, data_global_row_indices, hypers_m[insert_col_idx]);
+  score_delta_1 = v.calc_column_predictive_logp(col_data, CONTINUOUS_DATATYPE, data_global_row_indices, hypers_m[insert_col_idx]);
   score_delta_2 = v.insert_col(col_data, data_global_row_indices, insert_col_idx, hypers_m[insert_col_idx]);
   score_1 = v.get_score();
   cout << "FLAG:: " << "score_0: " << score_0 << ", score_1: " << score_1;
@@ -243,5 +264,5 @@ int main(int argc, char** argv) {
   v.remove_row(aligned_row, row_idx);
   print_with_header(v, "view after removeing single row (2)");
 
-  cout << endl << "Goodbye World!" << endl;
+  cout << endl << "test_view_speed: Goodbye World!" << endl;
 }

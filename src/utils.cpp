@@ -47,7 +47,7 @@ void LoadData(string file, matrix<double>& M) {
   while (std::getline(in,line)) {
     Tokenizer tok(line, sep);
     vec.assign(tok.begin(), tok.end());
-    int i = 0;
+    unsigned int i = 0;
     for(i=0; i < vec.size() ; i++) {
       Data(r, i) = ::strtod(vec[i].c_str(), 0);
     }
@@ -64,7 +64,8 @@ bool is_almost(double val1, double val2, double precision) {
 vector<double> linspace(double a, double b, int n) {
   vector<double> values;
   double step = (b-a) / (n-1);
-  while(a <= b) {
+  double epsilon = step * 1E-6;
+  while(a <= (b + epsilon)) {
     values.push_back(a);
     a += step;
   }
@@ -81,7 +82,7 @@ vector<double> log_linspace(double a, double b, int n) {
 vector<double> std_vector_sum(vector<double> vec1, vector<double> vec2) {
   assert(vec1.size()==vec2.size());
   vector<double> sum_vec;
-  for(int i=0; i<vec1.size(); i++) {
+  for(unsigned int i=0; i<vec1.size(); i++) {
     sum_vec.push_back(vec1[i] + vec2[i]);
   }
   return sum_vec;
@@ -109,7 +110,7 @@ double calc_sum_sq_deviation(vector<double> values) {
 
 vector<double> extract_row(const matrix<double> data, int row_idx) {
   vector<double> row;
-  for(int j=0;j < data.size2(); j++) {
+  for(unsigned int j=0;j < data.size2(); j++) {
     row.push_back(data(row_idx, j));
   }
   return row;
@@ -117,7 +118,7 @@ vector<double> extract_row(const matrix<double> data, int row_idx) {
 
 vector<double> extract_col(const matrix<double> data, int col_idx) {
   vector<double> col;
-  for(int j=0;j < data.size1(); j++) {
+  for(unsigned int j=0;j < data.size1(); j++) {
     col.push_back(data(j, col_idx));
   }
   return col;
@@ -139,24 +140,14 @@ vector<int> extract_global_ordering(map<int, int> global_to_local) {
   return global_indices;
 }
 
-template <class T>
-map<int, T> construct_lookup_map(vector<int> keys, vector<T> values) {
-  assert(keys.size()==values.size());
-  map<int, T> lookup;
-  for(int idx=0; idx<keys.size(); idx++) {
-    lookup[keys[idx]] = values[idx];
-  }
-  return lookup;
-}
-
 map<int, int> construct_lookup_map(vector<int> keys) {
   return construct_lookup_map(keys, create_sequence(keys.size()));
 }
 
 map<int, vector<double> > construct_data_map(const MatrixD data) {
-  int num_rows = data.size1();
+  unsigned int num_rows = data.size1();
   map<int, vector<double> > data_map;
-  for(int row_idx=0; row_idx<num_rows; row_idx++) {
+  for(unsigned int row_idx=0; row_idx<num_rows; row_idx++) {
     data_map[row_idx] = extract_row(data, row_idx);
   }
   return data_map;
@@ -229,7 +220,7 @@ vector<int> create_sequence(int len, int start) {
   return sequence;
 }
 
-void insert_into_counts(int draw, vector<int> &counts) {
+void insert_into_counts(unsigned int draw, vector<int> &counts) {
   assert(draw<=counts.size());
   if(draw==counts.size()) {
     counts.push_back(1);
@@ -238,7 +229,7 @@ void insert_into_counts(int draw, vector<int> &counts) {
   }
 }
 
-vector<int> determine_crp_init_counts(int num_datum, double alpha,
+vector<int> draw_crp_init_counts(int num_datum, double alpha,
 				      RandomNumberGenerator &rng) {
   vector<int> counts;
   double rand_u;
@@ -253,15 +244,15 @@ vector<int> determine_crp_init_counts(int num_datum, double alpha,
   return counts;
 }
 
-vector<vector<int> > determine_crp_init(vector<int> global_row_indices,
+vector<vector<int> > draw_crp_init(vector<int> global_row_indices,
 					double alpha,
 					RandomNumberGenerator &rng) {
   int num_datum = global_row_indices.size();
-  vector<int> counts = determine_crp_init_counts(num_datum, alpha, rng);
+  vector<int> counts = draw_crp_init_counts(num_datum, alpha, rng);
   std::random_shuffle(global_row_indices.begin(), global_row_indices.end());
   vector<int>::iterator it = global_row_indices.begin();
   vector<vector<int> > cluster_indices_v;
-  for(int cluster_idx=0; cluster_idx<counts.size(); cluster_idx++) {
+  for(unsigned int cluster_idx=0; cluster_idx<counts.size(); cluster_idx++) {
     int count = counts[cluster_idx];
     vector<int> cluster_indices(count, -1);
     std::copy(it, it+count, cluster_indices.begin());
@@ -297,44 +288,37 @@ int intify(std::string str) {
 }
 
 vector<double> create_crp_alpha_grid(int n_values, int N_GRID) {
-  vector<double> paramRange = linspace(0.03, .97, N_GRID/2);
-  int APPEND_N = (N_GRID + 1) / 2;
-  vector<double> crp_alpha_grid_append = log_linspace(1., n_values,
-						      APPEND_N);
-  vector<double> crp_alpha_grid = append(paramRange, crp_alpha_grid_append);
+  vector<double> crp_alpha_grid = log_linspace(1., n_values, N_GRID);
   return crp_alpha_grid;
 }
 
 void construct_continuous_base_hyper_grids(int n_grid,
-					   vector<double> col_data,
+					   int data_num_vectors,
 					   vector<double> &r_grid,
 					   vector<double> &nu_grid) {
-  int APPEND_N = (n_grid + 1) / 2;
-  int data_num_vectors = col_data.size();
-  //
-  vector<double> paramRange = linspace(0.03, .97, n_grid/2);
-  vector<double> r_grid_append = log_linspace(1., data_num_vectors,
-					      APPEND_N);
-  vector<double> nu_grid_append = log_linspace(1., data_num_vectors/2.,
-					       APPEND_N);
-  //
-  r_grid = append(paramRange, r_grid_append);
-  nu_grid = append(paramRange, nu_grid_append);
+  r_grid = log_linspace(1, data_num_vectors, n_grid);
+  nu_grid = log_linspace(1, data_num_vectors, n_grid);
 }
 
 void construct_continuous_specific_hyper_grid(int n_grid,
 				 vector<double> col_data,
 				 vector<double> &s_grid,
 				 vector<double> &mu_grid) {
-  int APPEND_N = (n_grid + 1) / 2;
-  vector<double> paramRange = linspace(0.03, .97, n_grid/2);
   // construct s grid
   double sum_sq_deviation = calc_sum_sq_deviation(col_data);
-  vector<double> s_grid_append = log_linspace(1., sum_sq_deviation, APPEND_N);
-  s_grid = append(paramRange, s_grid_append);
+  s_grid = log_linspace(sum_sq_deviation / 100., sum_sq_deviation, n_grid);
   // construct mu grids
   double min = *std::min_element(col_data.begin(), col_data.end());
   double max = *std::max_element(col_data.begin(), col_data.end());
-  vector<double> mu_grid_append = linspace(min, max, APPEND_N);
-  mu_grid = append(paramRange, mu_grid_append);
+  mu_grid = linspace(min, max, n_grid);
+}
+
+void construct_multinomial_base_hyper_grids(int n_grid,
+					    int data_num_vectors,
+					    vector<double> &multinomial_alpha_grid) {
+  multinomial_alpha_grid = log_linspace(1., data_num_vectors, n_grid);
+}
+
+bool is_bad_value(double value) {
+  return isnan(value) || !isfinite(value);
 }

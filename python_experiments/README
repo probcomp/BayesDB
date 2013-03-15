@@ -1,0 +1,123 @@
+
+to run experiments:
+- pull latest version from repo
+- do:
+> matlab
+$ addpath ../matlab_code/
+$ mcc -m run_crosscat.m
+- check parameters in run_crosscat.py
+- do:
+> python run_crosscat.py -r
+
+
+Help file from cluster:
+-----------------------------------------------------------------------
+GENERAL INFORMATION:
+The cluster is flocked with the CSAIL cluster, which runs Condor.
+Read the intro section of the Condor user manual and browse around the
+Condor website (http://www.cs.wisc.edu/condor) to get a sense of what
+the deal is.
+Steps:
+1. Login
+2. Find this file (/data/cocosci/README).
+3. add "matlab" and "condor" to your ~/.software file, each on a line
+of their own.
+4. Logout, login and continue.
+-----------------------------------------------------------------------
+RULES OF USE - 5/2007
+- The cluster is an experimental service. Do not be cranky if your
+job gets killed.
+- Join the cluster-hackers mailinglist at CSAIL, and read the traffic.
+- Don't submit jobs to non-cocosci machines unless you have learned the
+basics of condor.
+- Don't run jobs on cocosci nodes directly (that is, by sshing
+in). Doing so makes baby jesus cry. And when baby jesus cries, Godzilla
+gets angry.
+- Do not run more than 4 jobs simultaneously if any of your running jobs
+is long (ie will take more than 24 hours to complete).
+- Make all your jobs save their work to /data/scratch, but copy results
+to your CSAIL home directory or to /data/cocosci when you are done.
+Otherwise you might lose your results and be very sad.
+
+
+MATLAB crosscat state:
+
+             data: [100x2 double]           # observations x features
+        dataTypes: {2x1 cell}               # either 'numeric' or 'binary'
+                F: 2                        # number of features
+                O: 100                      # number of observations
+       paramPrior: [1x31 double]            # prior on ???
+    cumParamPrior: [1x31 double]            # prior on ???
+        crpKRange: [1x31 double]            # ???
+        crpCRange: [1x31 double]            # ???
+        crpPriorK: 0.9117                   # ???
+        crpPriorC: [0.3981 11.6591 0.2929]  # ???
+           kRange: [1x31 double]            # ???
+           aRange: [1x31 double]            # ???
+          muRange: [2x30 double]            # ???
+           bRange: [2x31 double]            # ???
+             NG_a: [38.5217 8.0560]         # normal inverse gamma hyper
+             NG_k: [55.1170 1.2929]         # normal inverse gamma hyper
+             NG_b: [10.7815 0.5058]         # normal inverse gamma hyper
+            NG_mu: [-0.0202 -0.0938]        # normal inverse gamma hyper
+                f: [2 2]                    # column assignments to views
+                o: [3x100 double]           # view-wise row assignments to components
+
+Compiling MATLAB Code on Picloud through CSAIL:
+- compile code using MATLAB compiler (mcc command) on a linux architecture (e.g., on CSAIL's login.csail.mit.edu)
+-- ssh to your login.csail.mit.edu 
+-- add matlab to ~/.software
+-- scp your matlab files to login.csail.mit.edu
+-- open matlab, use mcc
+--- add paths, e.g. > addpath ../matlab_code/
+--- mcc file, e.g., > mcc -m run_crosscat.m
+- create a new picloud environment (or use mine) for matlab
+-- follow the picloud instructions for creating an environment
+-- download the most recent MCR (sometimes you need to try multiple versions...)
+--- e.g., from http://www.mathworks.com/products/compiler/mcr/
+-- scp zipped MCR to picloud environment
+-- install using silent mode
+--- $ unzip MCRInstaller.zip
+--- $ chmod 755 installer_input.txt
+--- $ emacs installer_input.txt # change agree to license to yes
+--- $ ./install -mode silent -inputFile installer_input.txt
+--- make sure you follow any instructions at the end of the installation
+- copy compiled code to picloud
+-- open the environment in your browser (this takes a while!)
+-- follow the direction after pressing "connect"
+- make sure files have appropriate permissions
+-- scripts should be 775
+- use e.g.
+>>> def test():
+...     return os.popen('sh ./run_test.sh matlab/mcr/v717/ 1').read()
+>>> cloud.call(test, _env='matlab') 
+- make sure to sync the relevant volumes
+cloud.volume.sync('/Users/peter/Documents/research/preddb/data/', 'crosscat-data:')
+
+
+Compiling MATLAB Code on Condor:
+- compile code using MATLAB compiler (mcc command) on a linux architecture (e.g., on CSAIL's login.csail.mit.edu)
+-- ssh to your login.csail.mit.edu 
+-- add matlab to ~/.software
+-- scp your matlab files to login.csail.mit.edu
+
+-- download the most recent MCR (sometimes you need to try multiple versions...)
+--- e.g., wget http://www.mathworks.com/supportfiles/MCR_Runtime/R2012a/MCR_R2012a_glnxa64_installer.zip
+-- install using silent mode
+--- $ unzip MCRInstaller.zip -d matlab
+--- $ chmod 755 installer_input.txt
+--- $ emacs installer_input.txt # change agree to license to yes, change destination file if necessary, e.g. /data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr
+--- add the following to your .bashrc if necessary
+export MCR_CACHE_ROOT=/data/scratch/pkrafft/ # fixes "Could not access the MCR component cache." matlab compiled code error
+--- $ ./install -mode silent -inputFile installer_input.txt
+--- make sure you follow any instructions at the end of the installation, such as setting environment variables in .bashrc! my bashrc looks like this:
+export MCR_CACHE_ROOT=/data/scratch/pkrafft/ # fixes "Could not access the MCR component cache." matlab compiled code error
+export XAPPLRESDIR=/data/scratch/pkrafft/tabular-predDB/python_experiments/matlab/mcr/v717/X11/app-defaults # from instructions
+export MPLCONFIGDIR=/data/scratch/pkrafft/.matplotlib # fixes python import error
+--- you may have to change the LD_PATH_PREFIX to '/usr/lib' in matlab/mcr/v717/bin/.matlab7rc.sh (as http://www.mathworks.ca/matlabcentral/newsreader/view_thread/162466) # fixed interaction between numpy and compiled matlab code at some point...
+
+-- open matlab, use mcc
+--- add paths, e.g. > addpath ../matlab_code/
+--- mcc file, e.g., > mcc -m run_crosscat.m
+
+-- test with sh run_run_crosscat matlab/mcr/v717 [parameters]

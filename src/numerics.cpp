@@ -4,6 +4,22 @@ using namespace std;
 
 namespace numerics {
 
+  double calc_crp_alpha_hyperprior(double alpha) {
+    double logp = 0;
+    // invert the effect of log gridding
+    // logp += +log(alpha);
+    return logp;
+  }
+
+  double calc_continuous_hyperprior(double r, double nu, double s) {
+    double logp = 0;
+    // invert the effect of log gridding
+    // logp += log(r) + log(nu) + log(s);
+    // // 
+    // logp += -(log(r) + log(nu) + log(s)) / 16. / 3.;
+    return logp;
+  }
+
   // subtract minimum value, logaddexp residuals, pass residuals and partition to
   // draw_sample_with_partition
   int draw_sample_unnormalized(vector<double> unorm_logps, double rand_u) {
@@ -75,6 +91,7 @@ namespace numerics {
       }
       logp += sum_log_gammas;
     }
+    logp += calc_crp_alpha_hyperprior(alpha);
     return logp;
   }
 
@@ -149,10 +166,12 @@ namespace numerics {
 
   double calc_continuous_log_Z(double r, double nu, double s)  {
     double nu_over_2 = .5 * nu;
-    return nu_over_2 * (LOG_2 - log(s))			\
+    double log_Z = nu_over_2 * (LOG_2 - log(s))		\
       + HALF_LOG_2PI					\
       - .5 * log(r)					\
       + lgamma(nu_over_2);
+    log_Z += calc_continuous_hyperprior(r, nu, s);
+    return log_Z;
   }
 
   double calc_continuous_logp(int count,
