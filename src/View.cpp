@@ -495,12 +495,15 @@ double View::insert_cols(const MatrixD data,
 		   std::vector<int> global_col_indices,
 		   map<int, map<string, double> > &hypers_m) {
   int num_cols = global_col_indices.size();
+  double score_delta = 0;
   for(int data_col_idx=0; data_col_idx<num_cols; data_col_idx++) {
     vector<double> col_data = extract_col(data, data_col_idx);
     int global_col_idx = global_col_indices[data_col_idx];
     map<string, double> &hypers = hypers_m[global_col_idx];
-    insert_col(col_data, global_row_indices, global_col_idx, hypers);
+    score_delta += insert_col(col_data, global_row_indices, global_col_idx,
+			      hypers);
   }
+  return score_delta;
 }
  
 double View::remove_col(int global_col_idx) {

@@ -94,6 +94,7 @@ K get_key_of_value(const std::map<K, V> m, V value) {
     }
   }
   assert(0);
+  return m.end()->first;
 }
 
 template <class K, class V>
