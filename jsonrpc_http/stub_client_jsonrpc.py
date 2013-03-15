@@ -71,9 +71,9 @@ args_dict['M_c'] = M_c
 args_dict['X_L'] = X_L_prime
 args_dict['X_D'] = X_D_prime
 args_dict['Y'] = None
-args_dict['q'] = [(0,0)]
+args_dict['Q'] = [(0,0), (0,1)]
 values = []
-for idx in range(10):
+for idx in range(3):
     out, id = au.call_and_print(method_name, args_dict, URI)
     values.append(out[0])
 print values
