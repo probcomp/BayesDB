@@ -38,15 +38,15 @@ class Engine(object):
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, N=1):
         if N==1:
-            return su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
-                                               self.get_next_seed)
+            samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
+                                                  self.get_next_seed)
         else:
             samples = [
                 su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
                                             self.get_next_seed)
                 for sample_idx in range(N)
                 ]
-            return samples
+        return samples
 
     def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, n):
         p = None
