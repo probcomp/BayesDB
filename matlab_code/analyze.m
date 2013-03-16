@@ -65,7 +65,7 @@ for i = 1 : length(kernelList)
                     case 'dirichlet_multinomial '
                         % FIXME!
                         disp('FIXME');
-                    case 'asymmetric_beta_bernoulli '
+                    case 'asymmetric_beta_bernoulli'
                         state = sampleComponentHyperparameters_asymmetric_beta_bernoulli(state, c(ii));
                     otherwise
                         disp([state.dataTypes{ii}, ' is not a valid data type']);
@@ -391,7 +391,7 @@ for j = c
         case 'dirichlet_multinomial '
             % FIXME
             disp('FIXME!');
-        case 'asymmetric_beta_bernoulli '
+        case 'asymmetric_beta_bernoulli'
             logP = logP + betaBern(state.data(theseData,f), ...
                 state.betaBern_s(f), ...
                 state.betaBern_b(f));
