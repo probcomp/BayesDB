@@ -71,7 +71,6 @@ def simple_predictive_sample_observed_old(M_c, X_L, X_D, which_row, which_column
     component_model = component_model_constructor(column_hypers,
                                                   count=cluster_count,
                                                   **component_suffstats)
-    print component_model
     draw = component_model.get_draw(SEED)
     return draw
 
@@ -81,7 +80,6 @@ def simple_predictive_sample_observed(M_c, X_L, X_D, which_row, which_column, SE
     cluster_model = create_cluster_model_from_X_L(M_c, X_L,
                                                   which_view, which_cluster)
     component_model = cluster_model[which_column]
-    print component_model
     draw = component_model.get_draw(SEED)
     return draw
 
