@@ -3,8 +3,6 @@ from libcpp.string cimport string as cpp_string
 from libcpp.map cimport map as cpp_map
 from cython.operator import dereference
 
-cdef cpp_map[cpp_string, double] string_double_map
-
 
 cdef extern from "string" namespace "std":
     cdef cppclass string:
@@ -15,9 +13,9 @@ cdef cpp_string get_string(in_string):
      cdef cpp_string cps = string(in_string)
      return cps
 
-cpdef set_string_double_map(in_map):
+cpdef set_string_double_map(out_map, in_map):
     for key in in_map:
-        string_double_map[get_string(key)] = in_map[key]
+        out_map[get_string(key)] = in_map[key]
 
 cdef extern from "MultinomialComponentModel.h":
      cdef cppclass MultinomialComponentModel:
@@ -36,12 +34,13 @@ cdef extern from "MultinomialComponentModel.h":
 
 cdef class p_MultinomialComponentModel:
     cdef MultinomialComponentModel *thisptr
+    cdef cpp_map[cpp_string, double] hypers
     def __cinit__(self, in_map, count=None, counts=None):
-          set_string_double_map(in_map)
+          set_string_double_map(self.hypers, in_map)
           if count is None:
-              self.thisptr = new_MultinomialComponentModel(string_double_map)
+              self.thisptr = new_MultinomialComponentModel(self.hypers)
           else:
-              self.thisptr = new_MultinomialComponentModel(string_double_map,
+              self.thisptr = new_MultinomialComponentModel(self.hypers,
                                                           count, counts)
     def __dealloc__(self):
         del_MultinomialComponentModel(self.thisptr)
