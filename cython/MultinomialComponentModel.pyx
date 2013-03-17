@@ -13,7 +13,7 @@ cdef cpp_string get_string(in_string):
      cdef cpp_string cps = string(in_string)
      return cps
 
-cpdef set_string_double_map(out_map, in_map):
+cdef set_string_double_map(cpp_map[cpp_string, double] &out_map, in_map):
     for key in in_map:
         out_map[get_string(key)] = in_map[key]
 
