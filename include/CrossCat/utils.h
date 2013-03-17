@@ -101,7 +101,8 @@ template <class K, class V>
 V get(const std::map<K, V> m, K key) {
   typename std::map<K, V>::const_iterator it = m.find(key);
   if(it == m.end()) {
-    std::cout << "map: " << m << "; key: " << key << std::endl;
+    std::cout << "utils.h::get() lookup failure: map: " << m;
+    std::cout << "; key: " << key << std::endl;
     assert(1==0);
   }
   return it->second;
