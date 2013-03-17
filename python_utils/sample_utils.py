@@ -31,7 +31,7 @@ def simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed):
     if not is_observed_row:
         SEED = get_next_seed()
         x = simple_predictive_sample_unobserved(
-            M_c, X_L, X_D, Y, Q, SEED)
+            M_c, X_L, X_D, Y, query_columns, SEED)
     else:
         SEED = get_next_seed()
         x = simple_predictive_sample_observed(
@@ -46,17 +46,17 @@ def simple_predictive_sample_observed(M_c, X_L, X_D, which_row,
     for which_column in which_columns:
         column_to_view[which_column] = get_which_view(which_column)
     #
-    cluster_models = dict()
+    view_to_cluster_model = dict()
     for which_view in list(set(column_to_view.values())):
         which_cluster = X_D[which_view][which_row]
         cluster_model = create_cluster_model_from_X_L(M_c, X_L, which_view,
                                                       which_cluster)
-        cluster_models[which_view] = cluster_model
+        view_to_cluster_model[which_view] = cluster_model
     #
     draws = []
     for which_column in which_columns:
         which_view = column_to_view[which_column]
-        cluster_model = cluster_models[which_view]
+        cluster_model = view_to_cluster_model[which_view]
         component_model = cluster_model[which_column]
         draw = component_model.get_draw(SEED)
         draws.append(draw)
@@ -67,7 +67,7 @@ def names_to_global_indices(column_names, M_c):
     # FIXME: str(column_name) is hack
     return [name_to_idx[str(column_name)] for column_name in column_names]
 
-def extract_view_info(M_c, X_L, view_idx):
+def extract_view_column_info(M_c, X_L, view_idx):
     view_state_i = X_L['view_state'][view_idx]
     column_names = view_state_i['column_names']
     column_component_suffstats = view_state_i['column_component_suffstats']
@@ -109,7 +109,7 @@ def create_component_model(column_metadata, column_hypers, count, suffstats):
     modeltype = column_metadata['modeltype']
     component_model_constructor = get_component_model_constructor(modeltype)
     # FIXME: this is a hack
-    if modeltype == 'symmetric_dirichlet_discrete':
+    if modeltype == 'symmetric_dirichlet_discrete' and suffstats is not None:
         suffstats = dict(counts=suffstats)
     component_model = component_model_constructor(column_hypers, count,
                                                   **suffstats)
@@ -135,17 +135,16 @@ def create_empty_cluster_model(zipped_column_info):
         column_metadata, column_hypers, column_component_suffstats = \
             zipped_column_info[global_column_idx]
         component_model = create_component_model(column_metadata,
-                                                 column_hypers, None, None)
+                                                 column_hypers, None, dict())
         cluster_component_models[global_column_idx] = component_model
     return cluster_component_models
 
-def create_cluster_models(M_c, X_L, view_idx, constraints=None):
-    zipped_column_info, row_partition_model = extract_view_info(
+def create_cluster_models(M_c, X_L, view_idx, which_columns=None):
+    zipped_column_info, row_partition_model = extract_view_column_info(
         M_c, X_L, view_idx)
-    if constraints is not None:
-        constraint_columns = [constraint.index for constraint in constraints]
+    if which_columns is not None:
         zipped_column_info = get_column_info_subset(
-            zipped_column_info, constraint_columns)
+            zipped_column_info, which_columns)
     cluster_models = []
     for cluster_idx in range():
         cluster_model = create_cluster_model(
@@ -161,15 +160,35 @@ def determine_cluster_data_logp(cluster_model, column_constraints):
     for column_constraint in column_constraints:
         constraint_index = column_constraint.index
         constraint_value = column_constraint.value
-        component_model = cluster_model[constraint_index]
-        logp += component_model.cacl_element_predictive_logp(constraint_value)
+        if constraint_index in cluster_model:
+            component_model = cluster_model[constraint_index]
+            logp += component_model.calc_element_predictive_logp(
+                constraint_value)
     return logp
 
 def determine_cluster_data_logps(M_c, X_L, X_D, Y, view_idx):
-    cluster_models = create_cluster_models(M_c, X_L, view_idx, constraints=Y)
-    for cluster_model in cluster_models:
-        logp = determine_cluster_data_logp(cluster_model)
-        logps.append(logp)
+    logps = []
+    if Y is not None:
+        constraint_columns = [constraint.index for constraint in Y]
+        cluster_models = create_cluster_models(M_c, X_L, view_idx,
+                                               constraint_columns)
+        for cluster_model in cluster_models:
+            logp = determine_cluster_data_logp(cluster_model, Y)
+            logps.append(logp)
+    else:
+        view_state_i = X_L['view_state'][view_idx]
+        num_clusters = len(view_state_i['row_partition_model']['counts'])
+        logps = [0 for cluster_idx in range(num_clusters)]
+        logps.append(0)
+    return logps
+
+def determine_cluster_crp_logps(view_state_i):
+    counts = view_state_i['row_partition_model']['counts']
+    log_alpha = view_state_i['row_partition_model']['hypers']['log_alpha']
+    alpha = numpy.exp(log_alpha)
+    counts_appended = numpy.append(counts, alpha)
+    sum_counts_appended = sum(counts_appended)
+    logps = numpy.log(counts_appended / float(sum_counts_appended))
     return logps
 
 def determine_cluster_logps(M_c, X_L, X_D, Y, view_idx):
@@ -183,49 +202,80 @@ def determine_cluster_logps(M_c, X_L, X_D, Y, view_idx):
     cluster_logps = cluster_crp_logps + cluster_data_logps
     return cluster_logps
 
-def determine_cluster_crp_logps(view_state_i):
-    counts = view_state_i['row_paritition_model']['counts']
-    alpha = numpy.exp(view_state_i['row_paritition_model']['log_alpha'])
-    counts_appended = numpy.append(counts, alpha)
-    sum_counts_appended = sum(counts_appended)
-    logps = numpy.log(counts_appended / float(sum_counts_appended))
-    return logps
-
-def sample_from_cluster(cluster_model, SEED):
-    random_state = numpy.random.RandomState(SEED)
+def sample_from_cluster(cluster_model, random_state):
     sample = []
-    for component_model in cluster_model:
-        seed_i = random_state.randint(sys.MAXINT)
+    for column_index in sorted(cluster_model.keys()):
+        component_model = cluster_model[column_index]
+        seed_i = random_state.randint(32767) # sys.maxint)
         sample_i = component_model.get_draw(seed_i)
         sample.append(sample_i)
     return sample
 
 def create_cluster_model_from_X_L(M_c, X_L, view_idx, cluster_idx):
-    zipped_column_info, row_partition_model = extract_view_info(
+    zipped_column_info, row_partition_model = extract_view_column_info(
         M_c, X_L, view_idx)
-    cluster_model = create_cluster_model(
-        zipped_column_info, row_partition_model, cluster_idx
-        )
+    num_clusters = len(row_partition_model['counts'])
+    if(cluster_idx==num_clusters):
+        # drew a new cluster
+        cluster_model = create_empty_cluster_model(zipped_column_info)
+    else:
+        cluster_model = create_cluster_model(
+            zipped_column_info, row_partition_model, cluster_idx
+            )
     return cluster_model
 
-def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, which_column,
-                                        SEED):
+def determine_cluster_view_logps(M_c, X_L, X_D, Y):
+    get_which_view = lambda which_column: \
+        X_L['column_partition']['assignments'][which_column]
+    column_to_view = dict()
+    for which_column in which_columns:
+        column_to_view[which_column] = get_which_view(which_column)
+
     num_views = len(X_D)
+
     cluster_logps_list = []
     for view_idx in range(num_views):
         cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, view_idx)
         cluster_logps_list.append(cluster_logp)
-    # sample a cluster index from each view
+    return cluster_view_logps
+
+def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, which_columns,
+                                        SEED):
     random_state = numpy.random.RandomState(SEED)
-    sample_list = []
-    for view_idx, cluster_logps in enumerate(cluster_lopgs_list):
-        draw = numpy.nonzero(numpy.random.multinomial(1, cluster_logps))[0]
-        cluster_model = create_cluster_model_from_X_L(M_c, X_L, view_idx,
-                                                      draw)
-        sample = sample_from_cluster(cluster_model)
-        sample_list.append(sample)
-    # FIXME: clean up and make a lookup from individual sample dictionaries
-    return sample_list
+    num_views = len(X_D)
+    #
+    cluster_logps_list = []
+    for view_idx in range(num_views):
+        cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, view_idx)
+        cluster_logps_list.append(cluster_logps)
+    #
+    view_cluster_draws = dict()
+    for view_idx, cluster_logps in enumerate(cluster_logps_list):
+        probs = numpy.exp(cluster_logps)
+        probs /= sum(probs)
+        draw = numpy.nonzero(numpy.random.multinomial(1, probs))[0]
+        view_cluster_draws[view_idx] = draw
+    #
+    get_which_view = lambda which_column: \
+        X_L['column_partition']['assignments'][which_column]
+    column_to_view = dict()
+    for which_column in which_columns:
+        column_to_view[which_column] = get_which_view(which_column)
+    view_to_cluster_model = dict()
+    for which_view in list(set(column_to_view.values())):
+        which_cluster = view_cluster_draws[which_view]
+        cluster_model = create_cluster_model_from_X_L(M_c, X_L, which_view,
+                                                      which_cluster)
+        view_to_cluster_model[which_view] = cluster_model
+    #
+    draws = []
+    for which_column in which_columns:
+        which_view = get_which_view(which_column)
+        cluster_model = view_to_cluster_model[which_view]
+        component_model = cluster_model[which_column]
+        draw = component_model.get_draw(SEED)
+        draws.append(draw)
+    return draws
 
 # def sample_from_view(M_c, X_L, X_D, Y, view_idx, SEED):
 #     random_state = numpy.random.RandomState(SEED)
