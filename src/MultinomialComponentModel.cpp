@@ -99,7 +99,12 @@ void MultinomialComponentModel::set_log_Z_0() {
 }
 
 void MultinomialComponentModel::init_suffstats() {
-  
+  int K;
+  double dirichlet_alpha;
+  get_hyper_values(K, dirichlet_alpha);
+  for(int key=0; key<K; key++) {
+    suffstats[stringify(key)] = 0;
+  }    
 }
 
 void MultinomialComponentModel::get_hyper_values(int &K,
