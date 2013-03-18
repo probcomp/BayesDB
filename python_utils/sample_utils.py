@@ -253,7 +253,7 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, which_columns,
     for view_idx, cluster_logps in enumerate(cluster_logps_list):
         probs = numpy.exp(cluster_logps)
         probs /= sum(probs)
-        draw = numpy.nonzero(numpy.random.multinomial(1, probs))[0]
+        draw = numpy.nonzero(numpy.random.multinomial(1, probs))[0][0]
         view_cluster_draws[view_idx] = draw
     #
     get_which_view = lambda which_column: \
@@ -276,72 +276,3 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, which_columns,
         draw = component_model.get_draw(SEED)
         draws.append(draw)
     return draws
-
-# def sample_from_view(M_c, X_L, X_D, Y, view_idx, SEED):
-#     random_state = numpy.random.RandomState(SEED)
-#     cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, view_idx)
-#     draw = numpy.nonzero(numpy.random.multinomial(1, cluster_logps))[0]
-#     cluster_model = create_cluster_model_from_X_L(M_c, X_L, view_idx, draw)
-#     sample = sample_from_cluster(cluster_model)
-#     return sample
-
-# def get_column_reordering(M_c, column_names):
-#     name_to_idx = M_c['name_to_idx']
-#     global_column_indices = [
-#         name_to_idx[column_name]
-#         for column_name in column_names
-#         ]
-#     column_reordering = numpy.argsort(global_column_indices)
-#     return column_reordering
-
-# def simple_predictive_sample_observed_old(M_c, X_L, X_D, which_row, which_column, SEED):
-#     modeltype = M_c['column_metadata'][which_column]['modeltype']
-#     column_hypers = X_L['column_hypers'][which_column]
-#     which_view = X_L['column_partition']['assignments'][which_column]
-#     view_state_i = X_L['view_state'][which_view]
-#     #
-#     column_name = M_c['idx_to_name'][str(which_column)]
-#     column_names = X_L['view_state'][which_view]['column_names']
-#     which_column_name = column_names.index(column_name)
-#     column_component_suffstats = \
-#         X_L['view_state'][which_view]['column_component_suffstats']
-#     column_component_suffstats_i = \
-#         column_component_suffstats[which_column_name]
-#     #
-#     which_cluster = X_D[which_view][which_row]
-#     cluster_count = sum(numpy.array(X_D[which_view])==which_cluster)
-#     component_suffstats = column_component_suffstats_i[which_cluster]
-#     component_model_constructor = None
-#     if modeltype == 'normal_inverse_gamma':
-#         component_model_constructor = CCM.p_ContinuousComponentModel
-#     elif modeltype == 'symmetric_dirichlet_discrete':
-#         component_model_constructor = MCM.p_MultinomialComponentModel
-#         # FIXME: this is a hack
-#         component_suffstats = dict(counts=component_suffstats)
-#     else:
-#         assert False, "simple_predictive_sample_observed: unknown modeltype: %s" % modeltype
-#     component_model = component_model_constructor(column_hypers,
-#                                                   count=cluster_count,
-#                                                   **component_suffstats)
-#     draw = component_model.get_draw(SEED)
-#     return draw
-
-# def determine_constraints_in_view(view_state_i, M_c, Y):
-#     Y_subset = []
-#     name_to_idx = M_c['name_to_idx']
-#     these_column_names = set(view_state_i['column_names'])
-#     for y in Y:
-#         constraint_column = y.index
-#         constraint_column_name = name_to_idx[constraint_column]
-#         if constraint_column_name in these_column_names:
-#             Y_subset.append(y)
-#     return Y_subset
-
-# def determine_constraint_view_tuples(X_L, M_c, Y):
-#     constraint_view_tuples = []
-#     for view_state_i in X_L['view_state']:
-#         constraints_in_view = determine_constraints_in_view(
-#             view_state_i, M_c, Y)
-#         constraint_view_tuple = (constraints_in_view, view_state_i)
-#         constraint_view_tuples.append(constraint_view_tuple)
-#     return constraint_view_tuples
