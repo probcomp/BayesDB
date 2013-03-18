@@ -97,17 +97,20 @@ def gen_factorial_data_objects(gen_seed, num_clusters,
     M_c = gen_M_c_from_T(T)
     return T, M_r, M_c
 
-def discretize_data(T, M_r, M_c, discretize_column_indices):
+def discretize_data(T, discretize_indices):
+    T_array = numpy.array(T)
+    discretize_indices = numpy.array(discretize_indices)
+    T_array[:, discretize_indices] = \
+        numpy.array(T_array[:, discretize_indices], dtype=int)
+    return T_array.tolist()
+
+def convert_columns_to_multinomial(T, M_c, multinomial_indices):
+    multinomial_indices = numpy.array(multinomial_indices)
     modeltype = 'symmetric_dirichlet_discrete'
     T_array = numpy.array(T)
-    for multinomial_idx in discretize_column_indices:
-        # change the data
-        multinomial_column = T_array[:,multinomial_idx]
-        multinomial_column = numpy.array(multinomial_column, dtype=int)
-        T_array[:, multinomial_idx] = multinomial_column
-        # replace info in M_c  
-        multinomial_values = set(multinomial_column)
-        multinomial_values = map(int, list(multinomial_values))
+    for multinomial_idx in multinomial_indices:
+        multinomial_column = T_array[:, multinomial_idx]
+        multinomial_values = list(set(multinomial_column))
         K = len(multinomial_values)
         code_to_value = dict(zip(range(K), multinomial_values))
         value_to_code = dict(zip(multinomial_values, range(K)))
@@ -115,5 +118,8 @@ def discretize_data(T, M_r, M_c, discretize_column_indices):
         multinomial_column_metadata['modeltype'] = modeltype
         multinomial_column_metadata['code_to_value'] = code_to_value
         multinomial_column_metadata['value_to_code'] = value_to_code
-    return T_array.tolist(), M_r, M_c
+    return T, M_c
+
+
+    pass
 

@@ -54,8 +54,9 @@ else:
         M_r = du.gen_M_r_from_T(T)
         M_c = du.gen_M_c_from_T(T)
 
-T, M_r, M_c = du.discretize_data(T, M_r, M_c,
-                                       multinomial_column_indices)
+T = du.discretize_data(T, multinomial_column_indices)
+T, M_c = du.convert_columns_to_multinomial(T, M_c,
+                                           multinomial_column_indices)
 
 # create the state
 p_State = State.p_State(M_c, T, N_GRID=N_GRID, SEED=inf_seed)
