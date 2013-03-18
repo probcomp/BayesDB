@@ -17,7 +17,7 @@ class Bunch(dict):
 
 Constraints = Bunch
 
-def simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed):
+def simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed, n=1):
     num_rows = len(X_D[0])
     num_cols = len(M_c['column_metadata'])
     query_row = Q[0][0]
@@ -29,17 +29,15 @@ def simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed):
     is_observed_row = query_row < num_rows
     x = []
     if not is_observed_row:
-        SEED = get_next_seed()
         x = simple_predictive_sample_unobserved(
-            M_c, X_L, X_D, Y, query_columns, SEED)
+            M_c, X_L, X_D, Y, query_columns, get_next_seed, n)
     else:
-        SEED = get_next_seed()
         x = simple_predictive_sample_observed(
-            M_c, X_L, X_D, query_row, query_columns, SEED)
+            M_c, X_L, X_D, query_row, query_columns, get_next_seed, n)
     return x
 
 def simple_predictive_sample_observed(M_c, X_L, X_D, which_row,
-                                      which_columns, SEED):
+                                      which_columns, get_next_seed, n=1):
     get_which_view = lambda which_column: \
         X_L['column_partition']['assignments'][which_column]
     column_to_view = dict()
@@ -53,14 +51,18 @@ def simple_predictive_sample_observed(M_c, X_L, X_D, which_row,
                                                       which_cluster)
         view_to_cluster_model[which_view] = cluster_model
     #
-    draws = []
-    for which_column in which_columns:
-        which_view = column_to_view[which_column]
-        cluster_model = view_to_cluster_model[which_view]
-        component_model = cluster_model[which_column]
-        draw = component_model.get_draw(SEED)
-        draws.append(draw)
-    return draws
+    samples_list = []
+    for sample_idx in range(n):
+        this_sample_draws = []
+        for which_column in which_columns:
+            which_view = column_to_view[which_column]
+            cluster_model = view_to_cluster_model[which_view]
+            component_model = cluster_model[which_column]
+            SEED = get_next_seed()
+            draw = component_model.get_draw(SEED)
+            this_sample_draws.append(draw)
+        samples_list.append(this_sample_draws)
+    return samples_list
 
 def names_to_global_indices(column_names, M_c):
     name_to_idx = M_c['name_to_idx']
@@ -240,8 +242,7 @@ def determine_cluster_view_logps(M_c, X_L, X_D, Y):
     return cluster_view_logps
 
 def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, which_columns,
-                                        SEED):
-    random_state = numpy.random.RandomState(SEED)
+                                        get_next_seed, n=1):
     num_views = len(X_D)
     #
     cluster_logps_list = []
@@ -249,30 +250,35 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, which_columns,
         cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, view_idx)
         cluster_logps_list.append(cluster_logps)
     #
-    view_cluster_draws = dict()
-    for view_idx, cluster_logps in enumerate(cluster_logps_list):
-        probs = numpy.exp(cluster_logps)
-        probs /= sum(probs)
-        draw = numpy.nonzero(numpy.random.multinomial(1, probs))[0][0]
-        view_cluster_draws[view_idx] = draw
-    #
-    get_which_view = lambda which_column: \
-        X_L['column_partition']['assignments'][which_column]
-    column_to_view = dict()
-    for which_column in which_columns:
-        column_to_view[which_column] = get_which_view(which_column)
-    view_to_cluster_model = dict()
-    for which_view in list(set(column_to_view.values())):
-        which_cluster = view_cluster_draws[which_view]
-        cluster_model = create_cluster_model_from_X_L(M_c, X_L, which_view,
-                                                      which_cluster)
-        view_to_cluster_model[which_view] = cluster_model
-    #
-    draws = []
-    for which_column in which_columns:
-        which_view = get_which_view(which_column)
-        cluster_model = view_to_cluster_model[which_view]
-        component_model = cluster_model[which_column]
-        draw = component_model.get_draw(SEED)
-        draws.append(draw)
-    return draws
+    samples_list = []
+    for sample_idx in range(n):
+        view_cluster_draws = dict()
+        for view_idx, cluster_logps in enumerate(cluster_logps_list):
+            probs = numpy.exp(cluster_logps)
+            probs /= sum(probs)
+            draw = numpy.nonzero(numpy.random.multinomial(1, probs))[0][0]
+            view_cluster_draws[view_idx] = draw
+        #
+        get_which_view = lambda which_column: \
+            X_L['column_partition']['assignments'][which_column]
+        column_to_view = dict()
+        for which_column in which_columns:
+            column_to_view[which_column] = get_which_view(which_column)
+        view_to_cluster_model = dict()
+        for which_view in list(set(column_to_view.values())):
+            which_cluster = view_cluster_draws[which_view]
+            cluster_model = create_cluster_model_from_X_L(M_c, X_L,
+                                                          which_view,
+                                                          which_cluster)
+            view_to_cluster_model[which_view] = cluster_model
+        #
+        this_sample_draws = []
+        for which_column in which_columns:
+            which_view = get_which_view(which_column)
+            cluster_model = view_to_cluster_model[which_view]
+            component_model = cluster_model[which_column]
+            SEED = get_next_seed()
+            draw = component_model.get_draw(SEED)
+            this_sample_draws.append(draw)
+        samples_list.append(this_sample_draws)
+    return samples_list

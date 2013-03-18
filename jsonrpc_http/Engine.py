@@ -36,23 +36,16 @@ class Engine(object):
         X_D_prime = p_State.get_X_D()
         return X_L_prime, X_D_prime
 
-    def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, N=1):
-        if N==1:
-            samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
-                                                  self.get_next_seed)
-        else:
-            samples = [
-                su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
-                                            self.get_next_seed)
-                for sample_idx in range(N)
-                ]
+    def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
+        samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
+                                              self.get_next_seed, n)
         return samples
 
     def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, n):
         p = None
         return p
 
-    def impute(self, M_c, X_L, X_D, Y, q, n):
+    def impute(self, M_c, X_L, X_D, Y, Q, n):
         # FIXME: actually implement 
         # FIXME: just spitting out random normals for now 
         SEED = self.get_next_seed()
