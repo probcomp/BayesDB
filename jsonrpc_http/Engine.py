@@ -42,9 +42,7 @@ class Engine(object):
         return p
 
     def impute(self, M_c, X_L, X_D, Y, Q, n):
-        samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
-                                              self.get_next_seed, n)
-        e = sum(samples) / double(n)
+        e = su.impute(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
         return e
 
     def conditional_entropy(M_c, X_L, X_D, d_given, d_target,
