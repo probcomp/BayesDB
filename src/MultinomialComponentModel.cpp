@@ -44,6 +44,32 @@ double MultinomialComponentModel::calc_element_predictive_logp(double element) c
   return logp;
 }
 
+double MultinomialComponentModel::calc_element_predictive_logp_constrained(double element, vector<double> constraints) const {
+  int K;
+  double dirichlet_alpha;
+  get_hyper_values(K, dirichlet_alpha);
+  //
+  map<string, double> suffstats_copy = suffstats;
+  int count_copy = count;
+  for(int constraint_idx=0; constraint_idx<constraints.size();
+      constraint_idx++) {
+    double constraint = constraints[constraint_idx];
+    string constraint_str = stringify(constraint);
+    count_copy++;
+    if(!in(suffstats_copy, constraint_str)) {
+      suffstats_copy[constraint_str] = 0;
+    }
+    suffstats_copy[constraint_str]++;
+  }
+  string element_str = stringify(element);
+  double predictive = \
+    numerics::calc_multinomial_predictive_logp(element_str,
+					       suffstats_copy,
+					       count_copy, 
+					       K, dirichlet_alpha);
+  return predictive;
+}
+
 vector<double> MultinomialComponentModel::calc_hyper_conditionals(string which_hyper, vector<double> hyper_grid) const {
   int count;
   map<string, double> counts;

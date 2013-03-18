@@ -42,6 +42,30 @@ double ContinuousComponentModel::calc_element_predictive_logp(double element) co
   return logp_prime - score;
 }
 
+double ContinuousComponentModel::calc_element_predictive_logp_constrained(double element, vector<double> constraints) const {
+  double r, nu, s, mu;
+  int count;
+  double sum_x, sum_x_sq;
+  get_hyper_doubles(r, nu, s, mu);
+  get_suffstats(count, sum_x, sum_x_sq);
+  //
+  for(int constraint_idx=0; constraint_idx<constraints.size();
+      constraint_idx++) {
+    double constraint = constraints[constraint_idx];
+    numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq,
+					     constraint);
+  }
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+  double baseline = numerics::calc_continuous_logp(count, r, nu, s, log_Z_0);
+  //
+  get_hyper_doubles(r, nu, s, mu);
+  numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq, element);
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+  double updated = numerics::calc_continuous_logp(count, r, nu, s, log_Z_0);
+  double predictive_logp = updated - baseline;
+  return predictive_logp;
+}
+
 vector<double> ContinuousComponentModel::calc_hyper_conditionals(string which_hyper, vector<double> hyper_grid) const {
   double r, nu, s, mu;
   int count;

@@ -24,6 +24,7 @@ class ComponentModel {
   // calculators
   virtual double calc_marginal_logp() const;
   virtual double calc_element_predictive_logp(double element) const;
+  virtual double calc_element_predictive_logp_constrained(double element, std::vector<double> constraints) const;
   virtual std::vector<double> calc_hyper_conditionals(std::string which_hyper,
 						      std::vector<double> hyper_grid) const;
   //

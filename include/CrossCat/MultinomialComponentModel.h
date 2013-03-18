@@ -20,6 +20,7 @@ class MultinomialComponentModel : public ComponentModel {
   // calculators
   double calc_marginal_logp() const;
   double calc_element_predictive_logp(double element) const;
+  double calc_element_predictive_logp_constrained(double element, std::vector<double> constraints) const;
   std::vector<double> calc_hyper_conditionals(std::string which_hyper,
 					      std::vector<double> hyper_grid) const;
   //

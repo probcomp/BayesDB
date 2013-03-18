@@ -27,6 +27,7 @@ cdef extern from "ContinuousComponentModel.h":
         double incorporate_hyper_update()
         double calc_marginal_logp()
         double calc_element_predictive_logp(double element)
+        double calc_element_predictive_logp_constrained(double element, vector[double] constraints)
      ContinuousComponentModel *new_ContinuousComponentModel "new ContinuousComponentModel" (cpp_map[cpp_string, double] &in_hypers)
      ContinuousComponentModel *new_ContinuousComponentModel "new ContinuousComponentModel" (cpp_map[cpp_string, double] &in_hypers, int COUNT, double SUM_X, double SUM_X_SQ)
      void del_ContinuousComponentModel "delete" (ContinuousComponentModel *ccm)
@@ -55,5 +56,9 @@ cdef class p_ContinuousComponentModel:
         return self.thisptr.calc_marginal_logp()
     def calc_element_predictive_logp(self, element):
         return self.thisptr.calc_element_predictive_logp(element)
+    def calc_element_predictive_logp_constrained(self, element,
+                                                  constraints):
+        return self.thisptr.calc_element_predictive_logp_constrained(
+            element, constraints)
     def __repr__(self):
         return self.thisptr.to_string()

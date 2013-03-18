@@ -5,6 +5,7 @@ using namespace std;
 // virtuals that should be component model specific
 double ComponentModel::calc_marginal_logp() const { assert(0); return NaN; }
 double ComponentModel::calc_element_predictive_logp(double element) const { assert(0); return NaN; }
+double ComponentModel::calc_element_predictive_logp_constrained(double element, vector<double> constraints) const { assert(0); return NaN; }
 vector<double> ComponentModel::calc_hyper_conditionals(string which_hyper,
 						       vector<double> hyper_grid) const
 { assert(0); vector<double> vd; return vd; }
