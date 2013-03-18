@@ -1,8 +1,4 @@
 import inspect
-import sys
-from collections import Counter
-#
-import numpy
 #
 import tabular_predDB.cython.State as State
 import tabular_predDB.python_utils.sample_utils as su
@@ -46,12 +42,9 @@ class Engine(object):
         return p
 
     def impute(self, M_c, X_L, X_D, Y, Q, n):
-        # FIXME: actually implement 
-        # FIXME: just spitting out random normals for now 
-        SEED = self.get_next_seed()
-        random_state = numpy.random.RandomState(SEED)
-        #
-        e = random_state.normal(size=len(q)).tolist()
+        samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
+                                              self.get_next_seed, n)
+        e = sum(samples) / double(n)
         return e
 
     def conditional_entropy(M_c, X_L, X_D, d_given, d_target,
