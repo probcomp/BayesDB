@@ -17,7 +17,7 @@ import tabular_predDB.python_utils.api_utils as au
 parser = argparse.ArgumentParser()
 parser.add_argument('pkl_name', type=str)
 parser.add_argument('--inf_seed', default=0, type=int)
-parser.add_argument('--hostname', default='localhost', type=str)
+parser.add_argument('--hostname', default='127.0.0.1', type=str)
 args = parser.parse_args()
 pkl_name = args.pkl_name
 inf_seed = args.inf_seed
