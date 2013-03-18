@@ -283,9 +283,11 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, which_columns,
         samples_list.append(this_sample_draws)
     return samples_list
 
-def impute(self, M_c, X_L, X_D, Y, Q, n, get_next_seed):
+def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed):
+    # FIXME: allow more than one cell to be imputed
+    assert(len(Q)==1)
     samples = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
                                        get_next_seed, n)
-    # FIXME: does this presume its only one cell being imputed?
-    e = sum(samples) / double(n)
+    samples = numpy.array(samples).T[0]
+    e = sum(samples) / float(n)
     return e
