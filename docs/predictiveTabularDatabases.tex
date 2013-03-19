@@ -99,28 +99,33 @@ Let $\vec{\tau^d_c}$ represent the sufficient statistics summarizing the data fr
 \SetKwInOut{Output}{output}
 \SetKwInOut{Initialize}{initialize}
 
-\Input{$M_c, X_L, X_D, Y, queries$.}
+\Input{$M_c, X_L, X_D, Y, q_r, Q_c$.}
 \Output{A list of sampled values $x$.}
 \BlankLine
-\ForEach{$query \in queries$}{
-
-Extract the queried row and dimension:\\
-$row,column \leftarrow query$
-
-Find all elements of $Y$ that apply to the same column:
-\[Y' \leftarrow Y s.t. \; Y_{*,2}=column\]
-
-Sample a view and category, allowing the possibility of choosing a new view and/or category: \[
-Pr(v', y'| X_L, Y') \propto Pr(Y'|v', y',X_L)Pr(v',y'|X_L)
-\] 
-The assignment of views is deterministic in the case where $column$ is previously observed,
-$v' \leftarrow z_d$. The assignment of categories is deterministic when $v'$ and $row$ are previously observed, 
-$y' \leftarrow y^{v'}_r$.
-
-Sample a value from the appropriate posterior predictive (PP) distribution: \[ 
-x_i \sim  PP(\vec{\tau^{d}_c}) 
-\] 
+\tcp{Separate the conditions, $Y$, by whether they apply to the query row, $q_r$}
+$Y^q \leftarrow Y s.t. \; Y_{*,1}=q_r$ \;
+$Y^o \leftarrow Y s.t. \; Y_{*,1}!=q_r$ \;
+\ForEach{$view_i \in views $}{
+  \eIf{$q_r$ denotes an observed row}{
+    \tcp{The category is determinstically set}
+    $c_{view_i} \leftarrow get\_category(X_D, view_i, q_r)$ \;
+  }{
+    \tcp{sample a category, allowing the possibility of choosing a new category}
+    $Pr(c | view, Y^q, Y^o, X_L) \propto Pr(Y^q | y', view, Y^o, X_L)Pr(y'|view, X_L)$ \;
+    $c_{view_i} \sim Pr(c | view_i, Y^q, Y^o, X_L)$ \;
+  }
 }
+\ForEach{$q_i \in Q_c$}{
+  $view_i \leftarrow get\_view(X_L, q_i)$ \;
+  $cm \leftarrow get\_component\_model(X_L, view_i, c_{view_i}, q_i)$ \;
+  \tcp{Determine constraints that modify this component model}
+  $Y^c = Y s.t. \; Y_{*,1} = q_i \; and \; get\_category(X_D, view_i, Y_{*,2}) = c_{view_i}$ \;
+  \tcp{Update the component model}
+  $cm' \leftarrow update\_component\_model(cm, Y^c)$ \;
+  \tcp{Sample a value from the posterior predictive (PP) distribution}
+  $x_i \sim  PP(cm')$ \;
+}  
+
 
 \caption{\texttt{simple\_predictive\_sample}}
 \end{algorithm}
@@ -146,15 +151,15 @@ x_i \sim  PP(\vec{\tau^{d}_c})
 
 \ForEach{$i \in Q$}{
 
-Extract the queried row and dimension:\\
-$r,d,x \leftarrow Q_i$
+Extract the queried row, column and hypothesized value:\\
+$r,c,h \leftarrow Q_i$
 
-Find all elements of $Y$ that apply to the same dimension:
-\[Y' \leftarrow Y s.t. \; Y_{*,2}=d\]
+Find all elements of $Y$ that apply to the same column:
+\[Y' \leftarrow Y s.t. \; Y_{*,2}=c\]
 
 $p_i \leftarrow 0$
 
-\For{n iterations}{
+\For{i in 1..n}{
 Sample a view and category, allowing the possibility of choosing a new view and/or category: \[
 Pr(v', y'| X_L, Y') \propto Pr(Y'|v', y',X_L)Pr(v',y'|X_L)
 \] 
@@ -163,7 +168,7 @@ Pr(v', y'| X_L, Y') \propto Pr(Y'|v', y',X_L)Pr(v',y'|X_L)
 %$y' \leftarrow y^{v'}_r$.
 
 Assess probability based on the appropriate posterior predictive (PP) distribution: \[ 
-p_i =  p_i + PP(Q_i | \vec{\tau^{d}_c}) 
+p_i =  p_i + PP(Q_i | \vec{\tau^{f}_{category}}) 
 \] 
 }
 
