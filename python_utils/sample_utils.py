@@ -177,17 +177,14 @@ def determine_cluster_data_logp(cluster_model, cluster_sampling_constraints,
     for column_idx, column_constraint_dict \
             in cluster_sampling_constraints.iteritems():
         if column_idx in cluster_model:
-            all_constraint_values = []
+            other_constraint_values = []
             for other_row, other_value in column_constraint_dict['others']:
                 if X_D_i[other_row]==cluster_idx:
-                    all_constraint_values.append(other_value)
+                    other_constraint_values.append(other_value)
             this_constraint_value = column_constraint_dict['this']
-            all_constraint_values.append(this_constraint_value)
-            #
             component_model = cluster_model[constraint_index]
-            # FIXME: need to add this function
-            logp += component_model.calc_elements_predictive_logp(
-                all_constraint_values)
+            logp += component_model.calc_element_predictive_logp_constrained(
+                this_constraint_value, other_constraint_values)
     return logp
 
 def get_cluster_sampling_constraints(Y, query_row):
