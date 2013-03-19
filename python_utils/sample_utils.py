@@ -22,18 +22,31 @@ def simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed, n=1):
     num_cols = len(M_c['column_metadata'])
     query_row = Q[0][0]
     query_columns = [query[1] for query in Q]
-    # enforce all same row
+    # enforce query rows all same row
     assert(all([query[0]==query_row for query in Q]))
-    # enforce observed column
+    # enforce query columns observed column
     assert(all([query_column<num_cols for query_column in query_columns]))
     is_observed_row = query_row < num_rows
     x = []
     if not is_observed_row:
         x = simple_predictive_sample_unobserved(
-            M_c, X_L, X_D, Y, query_columns, get_next_seed, n)
+            M_c, X_L, X_D, Y, query_row, query_columns, get_next_seed, n)
     else:
         x = simple_predictive_sample_observed(
-            M_c, X_L, X_D, query_row, query_columns, get_next_seed, n)
+            M_c, X_L, X_D, query_row, query_columns, get_next_seed, n)    
+    # # more modular logic
+    # observed_view_cluster_tuples = ()
+    # if is_observed_row:
+    #     observed_view_cluster_tuples = get_view_cluster_tuple(
+    #         M_c, X_L, X_D, query_row)
+    #     observed_view_cluster_tuples = [observed_view_cluster_tuples] * n
+    # else:
+    #     view_cluster_logps = determine_view_cluster_logps(
+    #         M_c, X_L, X_D, Y, query_row)
+    #     observed_view_cluster_tuples = \
+    #         sample_view_cluster_tuples_from_logp(view_cluster_logps, n)
+    # x = draw_from_view_cluster_tuples(M_c, X_L, X_D, Y,
+    #                                   observed_view_cluster_tuples)
     return x
 
 def simple_predictive_sample_observed(M_c, X_L, X_D, which_row,
@@ -147,8 +160,9 @@ def create_cluster_models(M_c, X_L, view_idx, which_columns=None):
     if which_columns is not None:
         zipped_column_info = get_column_info_subset(
             zipped_column_info, which_columns)
+    num_clusters = len(row_partition_model['counts'])
     cluster_models = []
-    for cluster_idx in range():
+    for cluster_idx in range(num_clusters):
         cluster_model = create_cluster_model(
             zipped_column_info, row_partition_model, cluster_idx
             )
@@ -157,26 +171,55 @@ def create_cluster_models(M_c, X_L, view_idx, which_columns=None):
     cluster_models.append(empty_cluster_model)
     return cluster_models
 
-def determine_cluster_data_logp(cluster_model, column_constraints):
+def determine_cluster_data_logp(cluster_model, cluster_sampling_constraints,
+                                X_D_i, cluster_idx):
     logp = 0
-    for column_constraint in column_constraints:
-        constraint_index = column_constraint.index
-        constraint_value = column_constraint.value
-        if constraint_index in cluster_model:
+    for column_idx, column_constraint_dict \
+            in cluster_sampling_constraints.iteritems():
+        if column_idx in cluster_model:
+            all_constraint_values = []
+            for other_row, other_value in column_constraint_dict['others']:
+                if X_D_i[other_row]==cluster_idx:
+                    all_constraint_values.append(other_value)
+            this_constraint_value = column_constraint_dict['this']
+            all_constraint_values.append(this_constraint_value)
+            #
             component_model = cluster_model[constraint_index]
-            logp += component_model.calc_element_predictive_logp(
-                constraint_value)
+            # FIXME: need to add this function
+            logp += component_model.calc_elements_predictive_logp(
+                all_constraint_values)
     return logp
 
-def determine_cluster_data_logps(M_c, X_L, X_D, Y, view_idx):
-    logps = []
+def get_cluster_sampling_constraints(Y, query_row):
+    constraint_dict = dict()
     if Y is not None:
-        constraint_columns = [constraint.index for constraint in Y]
-        cluster_models = create_cluster_models(M_c, X_L, view_idx,
-                                               constraint_columns)
-        for cluster_model in cluster_models:
-            logp = determine_cluster_data_logp(cluster_model, Y)
-            logps.append(logp)
+        for constraint in Y:
+            constraint_row, constraint_col, constraint_value = constraint
+            is_same_row = constraint_row == query_row
+            if is_same_row:
+                constraint_dict[constraint_col] = dict(this=constraint_value)
+                constraint_dict[constraint_col]['others'] = []
+        for constraint in Y:
+            constraint_row, constraint_col, constraint_value = constraint
+            is_same_row = constraint_row == query_row
+            is_same_col = constraint_col in constraint_dict
+            if is_same_col and not is_same_row:
+                other = (constraint_row, constraint_value)
+                constraint_dict[constraint_col]['others'].append(other)
+    return constraint_dict
+
+def determine_cluster_data_logps(M_c, X_L, X_D, Y, query_row, view_idx):
+    logps = []
+    cluster_sampling_constraints = \
+        get_cluster_sampling_constraints(Y, query_row)
+    relevant_constraint_columns = cluster_sampling_constraints.keys()
+    cluster_models = create_cluster_models(M_c, X_L, view_idx,
+                                           relevant_constraint_columns)
+    X_D_i = X_D[view_idx]
+    for cluster_idx, cluster_model in enumerate(cluster_models):
+        logp = determine_cluster_data_logp(
+            cluster_model, cluster_sampling_constraints, X_D_i, cluster_idx)
+        logps.append(logp)
     else:
         view_state_i = X_L['view_state'][view_idx]
         num_clusters = len(view_state_i['row_partition_model']['counts'])
@@ -193,12 +236,12 @@ def determine_cluster_crp_logps(view_state_i):
     logps = numpy.log(counts_appended / float(sum_counts_appended))
     return logps
 
-def determine_cluster_logps(M_c, X_L, X_D, Y, view_idx):
+def determine_cluster_logps(M_c, X_L, X_D, Y, query_row, view_idx):
     view_state_i = X_L['view_state'][view_idx]
     cluster_crp_logps = determine_cluster_crp_logps(view_state_i)
     cluster_crp_logps = numpy.array(cluster_crp_logps)
     cluster_data_logps = determine_cluster_data_logps(M_c, X_L, X_D, Y,
-                                                      view_idx)
+                                                      query_row, view_idx)
     cluster_data_logps = numpy.array(cluster_data_logps)
     # 
     cluster_logps = cluster_crp_logps + cluster_data_logps
@@ -226,28 +269,14 @@ def create_cluster_model_from_X_L(M_c, X_L, view_idx, cluster_idx):
             )
     return cluster_model
 
-def determine_cluster_view_logps(M_c, X_L, X_D, Y):
-    get_which_view = lambda which_column: \
-        X_L['column_partition']['assignments'][which_column]
-    column_to_view = dict()
-    for which_column in which_columns:
-        column_to_view[which_column] = get_which_view(which_column)
-
-    num_views = len(X_D)
-
-    cluster_logps_list = []
-    for view_idx in range(num_views):
-        cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, view_idx)
-        cluster_logps_list.append(cluster_logp)
-    return cluster_view_logps
-
-def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, which_columns,
-                                        get_next_seed, n=1):
+def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, query_row,
+                                        query_columns, get_next_seed, n=1):
     num_views = len(X_D)
     #
     cluster_logps_list = []
     for view_idx in range(num_views):
-        cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, view_idx)
+        cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, query_row,
+                                                view_idx)
         cluster_logps_list.append(cluster_logps)
     #
     samples_list = []
@@ -262,8 +291,8 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, which_columns,
         get_which_view = lambda which_column: \
             X_L['column_partition']['assignments'][which_column]
         column_to_view = dict()
-        for which_column in which_columns:
-            column_to_view[which_column] = get_which_view(which_column)
+        for query_column in query_columns:
+            column_to_view[query_column] = get_which_view(query_column)
         view_to_cluster_model = dict()
         for which_view in list(set(column_to_view.values())):
             which_cluster = view_cluster_draws[which_view]
@@ -273,10 +302,10 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, which_columns,
             view_to_cluster_model[which_view] = cluster_model
         #
         this_sample_draws = []
-        for which_column in which_columns:
-            which_view = get_which_view(which_column)
+        for query_column in query_columns:
+            which_view = get_which_view(query_column)
             cluster_model = view_to_cluster_model[which_view]
-            component_model = cluster_model[which_column]
+            component_model = cluster_model[query_column]
             SEED = get_next_seed()
             draw = component_model.get_draw(SEED)
             this_sample_draws.append(draw)
@@ -291,3 +320,16 @@ def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     samples = numpy.array(samples).T[0]
     e = sum(samples) / float(n)
     return e
+
+# def determine_cluster_view_logps(M_c, X_L, X_D, Y):
+#     get_which_view = lambda which_column: \
+#         X_L['column_partition']['assignments'][which_column]
+#     column_to_view = dict()
+#     for which_column in which_columns:
+#         column_to_view[which_column] = get_which_view(which_column)
+#     num_views = len(X_D)
+#     cluster_logps_list = []
+#     for view_idx in range(num_views):
+#         cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, view_idx)
+#         cluster_logps_list.append(cluster_logp)
+#     return cluster_view_logps
