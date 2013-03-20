@@ -33,7 +33,7 @@ def simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed, n=1):
             M_c, X_L, X_D, Y, query_row, query_columns, get_next_seed, n)
     else:
         x = simple_predictive_sample_observed(
-            M_c, X_L, X_D, query_row, query_columns, get_next_seed, n)    
+            M_c, X_L, X_D, Y, query_row, query_columns, get_next_seed, n)    
     # # more modular logic
     # observed_view_cluster_tuples = ()
     # if is_observed_row:
@@ -49,7 +49,7 @@ def simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed, n=1):
     #                                   observed_view_cluster_tuples)
     return x
 
-def simple_predictive_sample_observed(M_c, X_L, X_D, which_row,
+def simple_predictive_sample_observed(M_c, X_L, X_D, Y, which_row,
                                       which_columns, get_next_seed, n=1):
     get_which_view = lambda which_column: \
         X_L['column_partition']['assignments'][which_column]
@@ -71,8 +71,11 @@ def simple_predictive_sample_observed(M_c, X_L, X_D, which_row,
             which_view = column_to_view[which_column]
             cluster_model = view_to_cluster_model[which_view]
             component_model = cluster_model[which_column]
+            draw_constraints = get_draw_constraints(X_L, X_D, Y,
+                                                    which_row, which_column)
             SEED = get_next_seed()
-            draw = component_model.get_draw(SEED)
+            draw = component_model.get_draw_constrained(SEED,
+                                                        draw_constraints)
             this_sample_draws.append(draw)
         samples_list.append(this_sample_draws)
     return samples_list
@@ -205,6 +208,22 @@ def get_cluster_sampling_constraints(Y, query_row):
                 constraint_dict[constraint_col]['others'].append(other)
     return constraint_dict
 
+def get_draw_constraints(X_L, X_D, Y, draw_row, draw_column):
+    constraint_values = []
+    if Y is not None:
+        column_partition_assignments = X_L['column_partition']['assignments']
+        view_idx = column_partition_assignments[draw_column]
+        X_D_i = X_D[view_idx]
+        draw_cluster = X_D_i[draw_row]
+        #
+        for constraint in Y:
+            constraint_row, constraint_col, constraint_value = constraint
+            constraint_cluster = X_D_i[constraint_row]
+            if (constraint_col == draw_column) \
+                    and (constraint_cluster == draw_cluster):
+                constraint_values.append(constraint_value)
+    return constraint_values
+
 def determine_cluster_data_logps(M_c, X_L, X_D, Y, query_row, view_idx):
     logps = []
     cluster_sampling_constraints = \
@@ -303,8 +322,11 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, query_row,
             which_view = get_which_view(query_column)
             cluster_model = view_to_cluster_model[which_view]
             component_model = cluster_model[query_column]
+            draw_constraints = get_draw_constraints(X_L, X_D, Y,
+                                                    query_row, query_column)
             SEED = get_next_seed()
-            draw = component_model.get_draw(SEED)
+            draw = component_model.get_draw_constrained(SEED,
+                                                        draw_constraints)
             this_sample_draws.append(draw)
         samples_list.append(this_sample_draws)
     return samples_list
