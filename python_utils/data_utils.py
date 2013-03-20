@@ -119,7 +119,3 @@ def convert_columns_to_multinomial(T, M_c, multinomial_indices):
         multinomial_column_metadata['code_to_value'] = code_to_value
         multinomial_column_metadata['value_to_code'] = value_to_code
     return T, M_c
-
-
-    pass
-
