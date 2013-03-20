@@ -110,20 +110,22 @@ V get(const std::map<K, V> m, K key) {
 
 std::vector<int> extract_global_ordering(std::map<int, int> global_to_local);
 
-template <class T>
-std::map<int, T> construct_lookup_map(std::vector<int> keys, std::vector<T> values) {
+template <class K, class V>
+std::map<K, V> construct_lookup_map(std::vector<K> keys, std::vector<V> values) {
   assert(keys.size()==values.size());
-  std::map<int, T> lookup;
+  std::map<K, V> lookup;
   for(unsigned int idx=0; idx<keys.size(); idx++) {
     lookup[keys[idx]] = values[idx];
   }
   return lookup;
 }
-/* template <class T> */
-/* std::map<int, T> construct_lookup_map(std::vector<int> keys, std::vector<T> values); */
+
+template <class K>
+std::map<K, int> construct_lookup_map(std::vector<K> keys) {
+  return construct_lookup_map(keys, create_sequence(keys.size()));
+}
 
 std::map<int, std::vector<double> > construct_data_map(const MatrixD data);
-std::map<int, int> construct_lookup_map(std::vector<int> values);
 std::map<int, int> remove_and_reorder(std::map<int, int> global_to_local,
 				      int global_to_remove);
 

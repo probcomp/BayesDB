@@ -140,10 +140,6 @@ vector<int> extract_global_ordering(map<int, int> global_to_local) {
   return global_indices;
 }
 
-map<int, int> construct_lookup_map(vector<int> keys) {
-  return construct_lookup_map(keys, create_sequence(keys.size()));
-}
-
 map<int, vector<double> > construct_data_map(const MatrixD data) {
   unsigned int num_rows = data.size1();
   map<int, vector<double> > data_map;
