@@ -17,13 +17,13 @@ def get_aspect_ratio(T_array):
     aspect_ratio = float(num_cols)/num_rows
     return aspect_ratio
 
-def plot_T(T_array, filename=None, dir=''):
+def plot_T(T_array, filename=None, dir='', close=True):
     aspect_ratio = get_aspect_ratio(T_array)
     pylab.figure()
     pylab.imshow(T_array, aspect=aspect_ratio, interpolation='none')
-    my_savefig(filename, dir)
+    my_savefig(filename, dir, close)
 
-def plot_views(T_array, X_D, X_L, filename=None, dir=''):
+def plot_views(T_array, X_D, X_L, filename=None, dir='', close=True):
      pylab.figure()
      view_assignments = X_L['column_partition']['assignments']
      view_assignments = numpy.array(view_assignments)
@@ -42,4 +42,4 @@ def plot_views(T_array, X_D, X_L, filename=None, dir=''):
           pylab.gca().set_xticks(range(num_cols_i))
           pylab.gca().set_xticklabels(map(str, xticklabels))
           if view_idx!=0: pylab.gca().set_yticklabels([])
-     my_savefig(filename, dir)
+     my_savefig(filename, dir, close)
