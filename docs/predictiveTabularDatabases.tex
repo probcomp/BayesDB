@@ -111,7 +111,7 @@ $Y^o \leftarrow Y s.t. \; Y_{*,1}!=q_r$ \;
     $c_{view_i} \leftarrow get\_category(X_D, view_i, q_r)$ \;
   }{
     \tcp{sample a category, allowing the possibility of a new category}
-    $Pr(c | view, Y^q, Y^o, X_L) \propto Pr(Y^q | y', view, Y^o, X_L)Pr(y'|view, X_L)$ \;
+    $Pr(c | view, Y^q, Y^o, X_L) \propto Pr(Y^q | c, view, Y^o, X_L)Pr(c|view, X_L)$ \;
     $c_{view_i} \sim Pr(c | view_i, Y^q, Y^o, X_L)$ \;
   }
 }
