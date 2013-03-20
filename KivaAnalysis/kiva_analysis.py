@@ -10,13 +10,12 @@ import tabular_predDB.python_utils.data_utils as du
 
 # parse input
 parser = argparse.ArgumentParser()
-parser.add_argument('--filename',
-                    default='testdata_kiva100files_mod.csv',
+parser.add_argument('--filename', default='testdata_kiva100files_mod.csv',
                     type=str)
 parser.add_argument('--inf_seed', default=0, type=int)
 parser.add_argument('--num_transitions', default=100, type=int)
 parser.add_argument('--N_GRID', default=31, type=int)
-parser.add_argument('--max_rows', default=600, type=int)
+parser.add_argument('--max_rows', default=4000, type=int)
 
 args = parser.parse_args([])
 #
@@ -54,8 +53,6 @@ with open(filename) as fh:
     M_r = du.gen_M_r_from_T(T)
     M_c = du.gen_M_c_from_T(T)
 
-import pdb
-pdb.set_trace()
 is_multinomial = [label in multinomial_labels for label in header]
 multinomial_column_indices = numpy.nonzero(is_multinomial)[0]
 T, M_c = du.convert_columns_to_multinomial(T, M_c,
