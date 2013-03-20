@@ -22,6 +22,7 @@ cdef extern from "ContinuousComponentModel.h":
         double score
         cpp_string to_string()
         double get_draw(int seed)
+        double get_draw_constrained(int seed, vector[double] constraints)
         double insert_element(double element)
         double remove_element(double element)
         double incorporate_hyper_update()
@@ -46,6 +47,8 @@ cdef class p_ContinuousComponentModel:
         del_ContinuousComponentModel(self.thisptr)
     def get_draw(self, seed):
         return self.thisptr.get_draw(seed)
+    def get_draw_constrained(self, seed, constraints):
+        return self.thisptr.get_draw_constrained(seed, constraints)
     def insert_element(self, element):
         return self.thisptr.insert_element(element)
     def remove_element(self, element):

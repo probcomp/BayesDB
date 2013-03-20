@@ -139,21 +139,10 @@ void MultinomialComponentModel::get_hyper_values(int &K,
   dirichlet_alpha = get(*p_hypers, (string) "dirichlet_alpha");
 }
 
-double MultinomialComponentModel::get_draw(int random_seed) const {
-  // get modified suffstats
-  int count;
-  map<string, double> counts;
+void MultinomialComponentModel::get_keys_counts_for_draw(vector<string> &keys, vector<double> &log_counts_for_draw, map<string, double> counts) const {
   int K;
   double dirichlet_alpha;
   get_hyper_values(K, dirichlet_alpha);
-  get_suffstats(count, counts);
-  // get a random draw
-  boost::mt19937  _engine(random_seed);
-  boost::uniform_01<boost::mt19937> _dist(_engine);
-  double uniform_draw = _dist();
-  //
-  vector<string> keys;
-  vector<double> log_counts_for_draw;
   map<string, double>::const_iterator it;
   for(it=counts.begin(); it!=counts.end(); it++) {
     string key = it->first;
@@ -163,6 +152,51 @@ double MultinomialComponentModel::get_draw(int random_seed) const {
     keys.push_back(key);
     log_counts_for_draw.push_back(log(count_for_draw));
   }
+  return;
+}
+
+double MultinomialComponentModel::get_draw(int random_seed) const {
+  // get modified suffstats
+  int count;
+  map<string, double> counts;
+  get_suffstats(count, counts);
+  // get a random draw
+  boost::mt19937  _engine(random_seed);
+  boost::uniform_01<boost::mt19937> _dist(_engine);
+  double uniform_draw = _dist();
+  //
+  vector<string> keys;
+  vector<double> log_counts_for_draw;
+  get_keys_counts_for_draw(keys, log_counts_for_draw, counts);
+  //
+  int key_idx = numerics::draw_sample_unnormalized(log_counts_for_draw,
+						   uniform_draw);
+  double draw = intify(keys[key_idx]);
+  return draw;
+}
+
+double MultinomialComponentModel::get_draw_constrained(int random_seed, vector<double> constraints) const {
+  // get modified suffstats
+  int count;
+  map<string, double> counts;
+  get_suffstats(count, counts);
+  // get a random draw
+  boost::mt19937  _engine(random_seed);
+  boost::uniform_01<boost::mt19937> _dist(_engine);
+  double uniform_draw = _dist();
+  //
+  vector<string> keys;
+  vector<double> log_counts_for_draw;
+  get_keys_counts_for_draw(keys, log_counts_for_draw, counts);
+  map<string, int> index_lookup = construct_lookup_map(keys);
+  for(int constraint_idx=0; constraint_idx<constraints.size(); constraint_idx++) {
+    double constraint = constraints[constraint_idx];
+    string constraint_str = stringify(constraint);
+    int constraint_idx = index_lookup[constraint_str];
+    double log_count = log_counts_for_draw[constraint_idx];
+    log_counts_for_draw[constraint_idx] = log(exp(log_count) + 1);
+  }
+  //
   int key_idx = numerics::draw_sample_unnormalized(log_counts_for_draw,
 						   uniform_draw);
   double draw = intify(keys[key_idx]);

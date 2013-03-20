@@ -158,6 +158,29 @@ double ContinuousComponentModel::get_draw(int random_seed) const {
   return draw;
 }
 
+double ContinuousComponentModel::get_draw_constrained(int random_seed, vector<double> constraints) const {
+  // get modified suffstats
+  double r, nu, s, mu;
+  int count;
+  double sum_x, sum_x_sq;
+  get_hyper_doubles(r, nu, s, mu);
+  get_suffstats(count, sum_x, sum_x_sq);
+  for(int constraint_idx=0; constraint_idx<constraints.size();
+      constraint_idx++) {
+    double constraint = constraints[constraint_idx];
+    numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq,
+					     constraint);
+  }
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+  //
+  boost::mt19937  _engine(random_seed);
+  boost::uniform_01<boost::mt19937> _dist(_engine);
+  boost::random::student_t_distribution<double> student_t(nu);
+  double student_t_draw = student_t(_dist);
+  double draw = student_t_draw * (s * (r+1)) / (nu * r) + mu;
+  return draw;
+}
+
 map<string, double> ContinuousComponentModel::get_suffstats() const {
   return suffstats;
 }

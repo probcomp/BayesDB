@@ -16,6 +16,7 @@ class ContinuousComponentModel : public ComponentModel {
   void get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const;
   std::map<std::string, double> get_suffstats() const;
   double get_draw(int random_seed) const;
+  double get_draw_constrained(int random_seed, std::vector<double> constraints) const;
   //
   // calculators
   double calc_marginal_logp() const;

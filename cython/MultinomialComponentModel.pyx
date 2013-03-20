@@ -22,6 +22,7 @@ cdef extern from "MultinomialComponentModel.h":
         double score
         cpp_string to_string()
         double get_draw(int seed)
+        double get_draw_constrained(int seed, vector[double] constraints)
         void get_suffstats(int count_out, cpp_map[cpp_string, double] counts)
         double insert_element(double element)
         double remove_element(double element)
@@ -47,6 +48,8 @@ cdef class p_MultinomialComponentModel:
         del_MultinomialComponentModel(self.thisptr)
     def get_draw(self, seed):
         return self.thisptr.get_draw(seed)
+    def get_draw_constrained(self, seed, constraints):
+        return self.thisptr.get_draw_constrained(seed, constraints)
     def get_suffstats(self):
         cdef int count_out
         count_out = 0
