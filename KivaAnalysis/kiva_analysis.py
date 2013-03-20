@@ -13,11 +13,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--filename', default='testdata_kiva100files_mod.csv',
                     type=str)
 parser.add_argument('--inf_seed', default=0, type=int)
-parser.add_argument('--num_transitions', default=100, type=int)
+parser.add_argument('--num_transitions', default=1000, type=int)
 parser.add_argument('--N_GRID', default=31, type=int)
-parser.add_argument('--max_rows', default=4000, type=int)
-
-args = parser.parse_args([])
+parser.add_argument('--max_rows', default=2000, type=int)
+args = parser.parse_args()
 #
 filename = args.filename
 inf_seed = args.inf_seed
