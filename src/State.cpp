@@ -225,6 +225,7 @@ double State::get_data_score() const {
 }
 
 double State::get_marginal_logp() const {
+  // return column_crp_score + get_data_score();
   return column_crp_score + data_score;
 }
 
@@ -354,6 +355,7 @@ double State::transition_views_zs(const MatrixD &data) {
     map<int, vector<double> > data_subset_map = construct_data_map(data_subset);
     score_delta += v.transition_zs(data_subset_map);
   }
+  data_score += score_delta;
   return score_delta;
 }
 
@@ -363,6 +365,7 @@ double State::transition_views_row_partition_hyper() {
     View &v = get_view(view_idx);
     score_delta += v.transition_crp_alpha();
   }
+  data_score += score_delta;
   return score_delta;
 }
 
@@ -372,6 +375,7 @@ double State::transition_views_col_hypers() {
     View &v = get_view(view_idx);
     score_delta += v.transition_hypers();
   }
+  data_score += score_delta;
   return score_delta;
 }
 
