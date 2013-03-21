@@ -270,7 +270,7 @@ cdef class p_State:
             view_state.append(view_state_i)
         return view_state
     # mutators
-    def transition(self, which_transitions=None):
+    def transition(self, which_transitions=None, n_steps=1):
          transition_lookup = dict(
               column_partition_hyperparameter= \
                    self.transition_column_crp_alpha,
@@ -283,14 +283,15 @@ cdef class p_State:
          if which_transitions is None:
               which_transitions = transition_lookup.keys()
          score_delta = 0
-         for which_transition in which_transitions:
-              which_method=transition_lookup.get(which_transition)
-              if which_method is not None:
-                   score_delta += which_method()
-              else:
-                   print_str = 'INVALID TRANSITION TYPE TO' \
-                       'State.transition: %s' % which_method
-                   print print_str
+         for step_idx in range(n_steps):
+              for which_transition in which_transitions:
+                   which_method=transition_lookup.get(which_transition)
+                   if which_method is not None:
+                        score_delta += which_method()
+                   else:
+                        print_str = 'INVALID TRANSITION TYPE TO' \
+                            'State.transition: %s' % which_method
+                        print print_str
          return score_delta
     def transition_features(self):
         return self.thisptr.transition_features(dereference(self.dataptr))
