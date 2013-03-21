@@ -321,7 +321,7 @@ double State::transition_view_i(int which_view, const MatrixD &data) {
 						 v.global_to_local);
   const MatrixD data_subset = extract_columns(data, view_cols);
   map<int, vector<double> > data_subset_map = construct_data_map(data_subset);
-  return transition_view_i(which_view, data_subset_map);
+  return v.transition(data_subset_map);
 }
 
 double State::transition_views(const MatrixD &data) {
@@ -335,7 +335,42 @@ double State::transition_views(const MatrixD &data) {
 						   v.global_to_local);
     const MatrixD data_subset = extract_columns(data, view_cols);
     map<int, vector<double> > data_subset_map = construct_data_map(data_subset);
-    score_delta += transition_view_i(view_idx, data_subset_map);
+    score_delta += v.transition(data_subset_map);
+  }
+  return score_delta;
+}
+
+
+double State::transition_views_zs(const MatrixD &data) {
+  vector<int> global_column_indices = create_sequence(data.size2());
+  //
+  double score_delta = 0;
+  // ordering doesn't matter, don't need to shuffle
+  for(int view_idx=0; view_idx<get_num_views(); view_idx++) {
+    View &v = get_view(view_idx);
+    vector<int> view_cols = get_indices_to_reorder(global_column_indices,
+						   v.global_to_local);
+    const MatrixD data_subset = extract_columns(data, view_cols);
+    map<int, vector<double> > data_subset_map = construct_data_map(data_subset);
+    score_delta += v.transition_zs(data_subset_map);
+  }
+  return score_delta;
+}
+
+double State::transition_views_row_partition_hyper() {
+  double score_delta = 0;
+  for(int view_idx=0; view_idx<get_num_views(); view_idx++) {
+    View &v = get_view(view_idx);
+    score_delta += v.transition_crp_alpha();
+  }
+  return score_delta;
+}
+
+double State::transition_views_col_hypers() {
+  double score_delta = 0;
+  for(int view_idx=0; view_idx<get_num_views(); view_idx++) {
+    View &v = get_view(view_idx);
+    score_delta += v.transition_hypers();
   }
   return score_delta;
 }

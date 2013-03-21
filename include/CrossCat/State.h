@@ -77,7 +77,12 @@ class State {
 			 std::map<int, std::vector<double> > row_data_map);
   double transition_view_i(int which_view, const MatrixD &data);
   double transition_views(const MatrixD &data);
+  //
+  double transition_views_row_partition_hyper();
+  double transition_views_col_hypers();
+  double transition_views_zs(const MatrixD &data);
   double transition_column_crp_alpha();  
+  //
   double transition(const MatrixD &data);
   //
   // calculators
