@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--filename', default='testdata_kiva100files_mod.csv',
                     type=str)
 parser.add_argument('--inf_seed', default=0, type=int)
+parser.add_argument('--gen_seed', default=0, type=int)
 parser.add_argument('--num_transitions', default=1000, type=int)
 parser.add_argument('--N_GRID', default=31, type=int)
 parser.add_argument('--max_rows', default=2000, type=int)
@@ -20,6 +21,7 @@ args = parser.parse_args()
 #
 filename = args.filename
 inf_seed = args.inf_seed
+gen_seed = args.gen_seed
 num_transitions = args.num_transitions
 N_GRID = args.N_GRID
 max_rows = args.max_rows
@@ -46,7 +48,7 @@ with open(filename) as fh:
             ], dtype=float).tolist()
     num_rows = len(T)
     if num_rows > max_rows:
-        random_state = numpy.random.RandomState(inf_seed)
+        random_state = numpy.random.RandomState(gen_seed)
         which_rows = random_state.permutation(xrange(num_rows))[:max_rows]
         T = [T[which_row] for which_row in which_rows]
     M_r = du.gen_M_r_from_T(T)
