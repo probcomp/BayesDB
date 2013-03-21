@@ -89,6 +89,9 @@ cdef extern from "State.h":
           double transition_views(matrix[double] data)
           double transition_view_i(int i, matrix[double] data)
           double transition_column_crp_alpha()
+          double transition_views_row_partition_hyper()
+          double transition_views_col_hypers()
+          double transition_views_zs(matrix[double] data)
           # getters
           double get_column_crp_alpha()
           double get_column_crp_score()
@@ -267,8 +270,28 @@ cdef class p_State:
             view_state.append(view_state_i)
         return view_state
     # mutators
-    def transition(self):
-        return self.thisptr.transition(dereference(self.dataptr))
+    def transition(self, which_transitions=None):
+         transition_lookup = dict(
+              column_partition_hyperparameter= \
+                   self.transition_column_crp_alpha,
+              column_partition_assignments=self.transition_features,
+              component_hyperparameters=self.transition_views_col_hypers,
+              row_partition_hyperparameters= \
+                   self.transition_views_row_partition_hyper,
+              row_partition_assignments=self.transition_views_zs,
+              )
+         if which_transitions is None:
+              which_transitions = transition_lookup.keys()
+         score_delta = 0
+         for which_transition in which_transitions:
+              which_method=transition_lookup.get(which_transition)
+              if which_method is not None:
+                   score_delta += which_method()
+              else:
+                   print_str = 'INVALID TRANSITION TYPE TO' \
+                       'State.transition: %s' % which_method
+                   print print_str
+              return score_delta
     def transition_features(self):
         return self.thisptr.transition_features(dereference(self.dataptr))
     def transition_views(self):
@@ -277,6 +300,12 @@ cdef class p_State:
         return self.thisptr.transition_view_i(i, dereference(self.dataptr))
     def transition_column_crp_alpha(self):
         return self.thisptr.transition_column_crp_alpha()
+    def transition_views_col_hypers(self):
+         return self.thisptr.transition_views_col_hypers()
+    def transition_views_row_partition_hyper(self):
+         return self.thisptr.transition_views_row_partition_hyper()
+    def transition_views_zs(self):
+         return self.thisptr.transition_views_zs(dereference(self.dataptr))
     # API getters
     def get_X_D(self):
           return self.thisptr.get_X_D()
