@@ -291,7 +291,7 @@ cdef class p_State:
                    print_str = 'INVALID TRANSITION TYPE TO' \
                        'State.transition: %s' % which_method
                    print print_str
-              return score_delta
+         return score_delta
     def transition_features(self):
         return self.thisptr.transition_features(dereference(self.dataptr))
     def transition_views(self):
@@ -299,7 +299,7 @@ cdef class p_State:
     def transition_view_i(self, i):
         return self.thisptr.transition_view_i(i, dereference(self.dataptr))
     def transition_column_crp_alpha(self):
-        return self.thisptr.transition_column_crp_alpha()
+         return self.thisptr.transition_column_crp_alpha()
     def transition_views_col_hypers(self):
          return self.thisptr.transition_views_col_hypers()
     def transition_views_row_partition_hyper(self):
