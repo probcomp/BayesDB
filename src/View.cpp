@@ -313,6 +313,7 @@ double View::set_hyper(int which_col, string which_hyper, double new_value) {
   for(it=clusters.begin(); it!=clusters.end(); it++) {
     score_delta += (**it).incorporate_hyper_update(which_col);
   }
+  // DOES THIS CAUSE UNBOUNDED SCORE GROWTH?
   data_score += score_delta;
   return score_delta;
 }
@@ -330,8 +331,6 @@ double View::transition_hyper_i(int which_col, std::string which_hyper,
   // update all clusters
   double score_delta = set_hyper(which_col, which_hyper, new_hyper_value);
   //
-  // update score
-  data_score += score_delta;
   return score_delta;
 }
 
