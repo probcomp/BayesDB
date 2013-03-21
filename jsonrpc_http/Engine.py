@@ -1,6 +1,6 @@
 import inspect
 #
-import tabular_predDB.cython.State as State
+import tabular_predDB.cython_code.State as State
 import tabular_predDB.python_utils.sample_utils as su
 
 

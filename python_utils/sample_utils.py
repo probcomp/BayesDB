@@ -2,8 +2,8 @@ import sys
 #
 import numpy
 #
-import tabular_predDB.cython.ContinuousComponentModel as CCM
-import tabular_predDB.cython.MultinomialComponentModel as MCM
+import tabular_predDB.cython_code.ContinuousComponentModel as CCM
+import tabular_predDB.cython_code.MultinomialComponentModel as MCM
 
 
 class Bunch(dict):

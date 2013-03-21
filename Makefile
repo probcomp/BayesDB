@@ -14,7 +14,7 @@ SRC=src
 OBJ=obj
 DOC=docs
 TEST=tests
-CYT=cython
+CYT=cython_code
 # Assume BOOST_ROOT set as environment variable.
 # /usr/local/boost
 BIN = model
