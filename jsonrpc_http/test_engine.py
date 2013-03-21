@@ -3,6 +3,7 @@ import argparse
 import numpy
 #
 import tabular_predDB.python_utils.data_utils as du
+import tabular_predDB.cython.State as State
 from tabular_predDB.jsonrpc_http.Engine import Engine
 
 
@@ -42,9 +43,28 @@ multinomial_column_indices = numpy.nonzero(is_multinomial)[0]
 T, M_c = du.convert_columns_to_multinomial(T, M_c,
                                            multinomial_column_indices)
 
-kernel_list = None
-n_steps = 2
-c, r, max_iterations, max_time = None, None, None, None
+
+burn_in = 10
+lag = 10
+num_samples = 10
 engine = Engine()
+
+# initialize
+kernel_list = None
+c, r, max_iterations, max_time = None, None, None, None
 M_c, M_r, X_L, X_D = engine.initialize(M_c, M_r, T)
-X_L, X_D = engine.analyze(M_c, T, X_L, X_D, kernel_list, n_steps, c, r, max_iterations, max_time)
+
+# burn in 
+X_L, X_D = engine.analyze(M_c, T, X_L, X_D, kernel_list, burn_in,
+                          c, r, max_iterations, max_time)
+
+# draw sample states
+for sample_idx in range(num_samples):
+    print "starting sample_idx #: %s" % sample_idx
+    X_L, X_D = engine.analyze(M_c, T, X_L, X_D, kernel_list, lag,
+                              c, r, max_iterations, max_time)
+    p_State = State.p_State(M_c, T, X_L, X_D, N_GRID=N_GRID)
+    plot_filename = 'sample_%s_X_D' % sample_idx
+    pkl_filename = 'sample_%s_pickled_state.pkl.gz' % sample_idx
+    p_State.save(filename=pkl_filename, M_c=M_c, T=T)
+    p_State.plot(filename=plot_filename)
