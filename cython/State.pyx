@@ -153,7 +153,7 @@ cdef class p_State:
     cdef np.ndarray T_array
 
     def __cinit__(self, M_c, T, X_L=None, X_D=None, initialization=None,
-                  N_GRID=11, SEED=0):
+                  N_GRID=31, SEED=0):
          # FIXME: actually use initialization 
          # modify State.pyx to accept column_types, event_counts
          # modify State.{h,cpp} to accept column_types, event_counts
