@@ -1,4 +1,5 @@
 import sys
+import csv
 #
 import numpy
 
@@ -119,3 +120,23 @@ def convert_columns_to_multinomial(T, M_c, multinomial_indices):
         multinomial_column_metadata['code_to_value'] = code_to_value
         multinomial_column_metadata['value_to_code'] = value_to_code
     return T, M_c
+
+def all_continuous_from_file(filename, max_rows=None, gen_seed=0, has_header=True):
+    header = None
+    T, M_r, M_c = None, None, None
+    with open(filename) as fh:
+        csv_reader = csv.reader(fh)
+        if has_header:
+            header = csv_reader.next()
+        T = numpy.array([
+                row for row in csv_reader
+                ], dtype=float).tolist()
+        num_rows = len(T)
+        if (max_rows is not None) and (num_rows > max_rows):
+            random_state = numpy.random.RandomState(gen_seed)
+            which_rows = random_state.permutation(xrange(num_rows))
+            which_rows = which_rows[:max_rows]
+            T = [T[which_row] for which_row in which_rows]
+        M_r = gen_M_r_from_T(T)
+        M_c = gen_M_c_from_T(T)
+    return T, M_r, M_c, header
