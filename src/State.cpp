@@ -221,12 +221,16 @@ double State::get_column_crp_score() const {
 }
 
 double State::get_data_score() const {
+  set<View*>::const_iterator it;
+  double data_score = 0;
+  for(it=views.begin(); it!=views.end(); it++) {
+    data_score += (**it).get_data_score();
+  }
   return data_score;
 }
 
 double State::get_marginal_logp() const {
-  // return column_crp_score + get_data_score();
-  return column_crp_score + data_score;
+  return column_crp_score + get_data_score();
 }
 
 map<string, double> State::get_row_partition_model_hypers_i(int view_idx) const {
