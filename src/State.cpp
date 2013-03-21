@@ -224,7 +224,8 @@ double State::get_data_score() const {
   set<View*>::const_iterator it;
   double data_score = 0;
   for(it=views.begin(); it!=views.end(); it++) {
-    data_score += (**it).get_data_score();
+    double data_score_i = (**it).get_score();
+    data_score += data_score_i;
   }
   return data_score;
 }
@@ -738,6 +739,6 @@ string State::to_string(string join_str, bool top_level) const {
   }
   ss << "column_crp_alpha: " << column_crp_alpha;
   ss << "; column_crp_score: " << column_crp_score;
-  ss << "; data_score: " << data_score;
+  ss << "; data_score: " << get_data_score();
   return ss.str();
 }

@@ -111,15 +111,22 @@ int View::get_num_clusters() const {
 }
 
 double View::get_crp_score() const {
+  // return calc_crp_marginal();
   return crp_score;
 }
 
 double View::get_data_score() const {
+  // set<Cluster*>::const_iterator it = clusters.begin();
+  // double data_score = 0;
+  // for(; it!=clusters.end(); it++) {
+  //   double data_score_i = (**it).get_marginal_logp();
+  //   data_score += data_score_i;
+  // }
   return data_score;
 }
 
 double View::get_score() const {
-  return crp_score + data_score;
+  return get_crp_score() + get_data_score();
 }
 
 double View::get_crp_alpha() const {
@@ -636,8 +643,8 @@ string View::to_string(string join_str, bool top_level) const {
     }
   }
   ss << "global_to_local: " << global_to_local << join_str;
-  ss << "crp_score: " << crp_score;
-  ss << ", " << "data_score: " << data_score;
+  ss << "crp_score: " << get_crp_score();
+  ss << ", " << "data_score: " << get_data_score();
   ss << ", " << "score: " << get_score();
   return ss.str();
 }
