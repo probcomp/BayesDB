@@ -24,10 +24,8 @@ class Engine(object):
     def analyze(self, M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
                 max_iterations, max_time):
         p_State = State.p_State(M_c, T, X_L, X_D)
-        # FIXME: actually pay attention to kernerl_list, max_time, etc
-        for idx in range(n_steps):
-            p_State.transition()
-        #
+        # FIXME: actually pay attention to c, r, max_time
+        p_State.transition(kernel_list, n_steps)
         X_L_prime = p_State.get_X_L()
         X_D_prime = p_State.get_X_D()
         return X_L_prime, X_D_prime
