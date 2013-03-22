@@ -18,18 +18,46 @@
 
 Consists of a language for interfacing with domain-general multidimensional density approximator e.g, CrossCat!
 
+\subsection{Terminology}
+
+\begin{itemize}
+\item $T$ is the data table.
+\item $M_c$ is the column metadata. This includes the model types for the data in each column.
+\item $X_L$ is the model, comprised of hyperparameters and sufficient statistics for CRP models and component models. CRP model hyperparameters are denoted by $\alpha$ and sufficient statistics are denoted by $\vec{\psi}$.  Component model hyperparameters are denoted by $\vec{\lambda}$ and sufficient statistics are denoted by and $\vec{\tau}$.  Subscripts and superscripts specify applicability to views, columns or clusters.
+\begin{itemize}
+
+\item $\alpha_D$: CRP prior on views.
+
+\item $\vec{\psi}^v$: sufficient statistics (the count of columns) for view $v$.
+
+\item $\alpha_v$: CRP prior on categories in view $v$.
+
+\item $\vec{\psi}_c^{v}$: sufficient statistics (the count of rows) for category $c$ in view $v$.
+
+\item $\vec{\tau}_{c}^{d}$: sufficient statistics summarizing the data from category $c$ in dimension $d$.  Note: the shape of the sufficient statistics varies by component model type (categorical, continuous, etc).
+\end{itemize}
+
+\item $X_D$ is the mapping between the model and the data. Let $z_d$ represent the assigned view for dimension $d$ and $c^v_r$ represent the category for row $r$ in view $v$.
+
+\item $Y$ is a list of individual conditions, $y$.  Each condition is a tuple of row, dimension and value, $y=(r, d, v)$, specifying an entry for a previously unobserved value in the table, including potentially novel rows and dimensions, $T_{r,d}=v$.  The $5^{th}$ condition's row would by specified by $Y_{5,0}$.  The columns for all conditions would be specified by $Y_{*,1}$.
+
+\item $Q$ is a list of queried values, $q$.  Each queried value is specified as a tuple of row and dimensions, $q=(r, d)$. 
+
+\end{itemize}
+
 \section{Queries}
 
 \subsection{Core inference}
 
 \begin{itemize}
 
-\item \texttt{initialize($M_c, M_r, T, i$)} $\rightarrow \{ M_c, M_r, X_L, X_D \}$. $M_c$ is the metadata for columns including bidirectional mappings between labels and indices, the modeltype---`asymmetric\_beta\_bernoulli' for binary data, `symmetric\_dirichlet\_discrete' for closed categorical data, `pitmanyor\_atom' for open categorical data, `poisson\_gamma' for frequency data, and `normal\_inverse\_gamma' for numeric data. $M_r$ is the metadata for rows including bidirectional mappings between labels and indices. $T$ is a table indicating the values for a collection of variables, and $i$ is an initialization (together, apart, or from\_the\_prior). It returns $X_L$ and $X_D$. $X_L$ is the latent state, including all information necessary for prediction. $X_D$ is a mapping between the latent state and the table $T$. 
+\item \texttt{initialize($M_c, M_r, T, i$)} $\rightarrow \{ M_c, M_r, X_L, X_D \}$. \\
+$M_c$ is the metadata for columns including bidirectional mappings between labels and indices, the modeltype---`asymmetric\_beta\_bernoulli' for binary data, `symmetric\_dirichlet\_discrete' for closed categorical data, `pitmanyor\_atom' for open categorical data, `poisson\_gamma' for frequency data, and `normal\_inverse\_gamma' for numeric data. $M_r$ is the metadata for rows including bidirectional mappings between labels and indices. $T$ is a table indicating the values for a collection of variables, and $i$ is an initialization (together, apart, or from\_the\_prior). It returns $X_L$ and $X_D$. $X_L$ is the latent state, including all information necessary for prediction. $X_D$ is a mapping between the latent state and the table $T$. 
 
-\item \texttt{analyze($M_c, T, X_L, X_D, kernel\_list, n\_steps, c, r, max\_iterations, max\_time$)} $\rightarrow \{X'_L, X'_D\}$. 
+\item \texttt{analyze($M_c, T, X_L, X_D, kernel\_list, n\_steps, c, r, max\_iterations, max\_time$)} $\rightarrow \{X'_L, X'_D\}$. \\
 $kernel\_list$ contains a list of the kernels to be run. This list may contain one or more of the following: `column\_partition\_hyperparameter', `column\_partition\_assignments', `component\_hyperparameters', `row\_partition\_hyperparameters', and/or `row\_partition\_assignments'.
 $n\_steps$ is the number of times the $kernel\_list$ will be run. $c$ is an array that specifies which columns on which to run the kernels, by indices or `all'. This applies only to column kernels. $r$ is an array that specifies which rows on which to run the kernels and applies only to row kernels.
-$max\_iterations$ is the maximum number of desired iterations and $max\_time$ is the maximum wall clock time before returning a state. \texttt{Analyze} returns a new latent state, $X'_L$, and a corresponding mapping between the state and the table, $X'_D$, based on the $min(max\_iterations, max\_time)$. 
+$max\_iterations$ is the maximum number of desired iterations and $max\_time$ is the maximum wall clock time before returning a state. \texttt{analyze} returns a new latent state, $X'_L$, and a corresponding mapping between the state and the table, $X'_D$, based on the $min(max\_iterations, max\_time)$. 
 
 \end{itemize}
 
@@ -40,24 +68,24 @@ $max\_iterations$ is the maximum number of desired iterations and $max\_time$ is
 \begin{itemize}
 
 % SimplePredictiveSample
-\item \texttt{simple\_predictive\_sample($M_c, X_L,X_D,Y,Q$)} $\rightarrow x$. $Y$ is a list of conditions (indices paired with values) on a single row. 
-$Q$ is a list of variable indices to simultaneously sample given the conditions are true.
-\footnote{Note that $q$ is overloaded, representing both the indices of the queried variable and the variable.}
-The output is a list sampled values $x$ with the same ordering of variables as Q,
+\item \texttt{simple\_predictive\_sample($M_c, X_L,X_D,Y,q_r, q_C$)} $\rightarrow x$. \\
+$q_C$ is a list of columns on a single row $q_r$ to be simultaneously sampled given the conditions $Y$.  The output is a list sampled values $x$ with the same ordering as $q_C$,
 $$
-x \sim Pr[Q|X_L,Y].
+x \sim Pr[T_{q_r, q_C}|X_L,Y].
 $$
 
 % SimplePredictiveProbability
-\item \texttt{simple\_predictive\_probability($M_c, X_L,X_D,Y,Q,n$)} $\rightarrow p$. $Y$ is a list of conditioning conditions (indices paired with values) on a single row, while $Q$ is a list of queried conditions (indices paired with values) to be simultaneously satisfied given the conditions are true.  $n$ is the number of samples used to approximate the predictive probability.  The output, $p$, is the marginal predictive probability of the queried $Q$ given the conditions $Y$, assuming the model in $X_L$,
+\item \texttt{simple\_predictive\_probability($M_c, X_L,X_D,Y_{cond},Y_{query},n$)} $\rightarrow p$. \\
+$Y_{cond}$ is a list of conditioning conditions, while $Y_{query}$ is a list of queried conditions to be simultaneously satisfied given the conditioning conditions are true.  $n$ is the number of samples used to approximate the predictive probability.  The output, $p$, is the marginal predictive probability of $Y_{query}$ given $Y_{cond}$, assuming the model in $X_L$,
 $$
-p = Pr[Q | X_L,Y].
+p = Pr[Y_{query} | X_L,Y_{cond}].
 $$
 
 % Impute
-\item \texttt{impute($M_c, X_L,X_D,Y,q,n$) } $\rightarrow e$. The output is a list of the expected values of the posterior predictive distribution for variables corresponding to the indices $q$, approximated using $n$ samples,
+\item \texttt{impute($M_c, X_L,X_D,Y,q,n$) } $\rightarrow e$. \\
+The output is a list of the expected values of the posterior predictive distribution for variables corresponding to the indices $q$, approximated using $n$ samples,
 $$
-e = E_{\textrm{Pr}[q | X_L,Y]}[q].
+e = E_{\textrm{Pr}[T_q | X_L,Y]}[T_q].
 $$
 
 \end{itemize}
@@ -72,20 +100,6 @@ The notation in this section is derived from Mansinghka, Shafto, et al, ``CrossC
 
 \subsection{Prediction}
 
-\begin{itemize}
-\item $M_c$ is the column metadata. This includes the model types for the data in each column.
-\item $X_L$ is the model, including the prior parameters $\alpha$, the CRP priors, $\vec{\lambda}$, the hyperparameters for the likelihood models, and $\vec{\psi}$ and $\vec{\tau}$ the sufficient statistics for the CRPs and likelihoods. Let $\alpha_D$ represent the CRP prior on views and $\alpha_v$ represent the CRP prior on the categories in view $v$. 
-Let $\vec{\lambda_d}$ represent the hyperparameters for likelihood model for dimension $d$. 
-Let $\vec{\psi^v}$ represent the sufficient statistics for view $v$ (the count) and $\vec{\psi^v_c}$ represent the sufficient statistics for category $c$ in view $v$ (the count).
-Let $\vec{\tau^d_c}$ represent the sufficient statistics summarizing the data from dimension $d$ in category $c$.
-
-\item $X_D$ is the mapping between the model and the data, including $z$ and $y$. Let $z_d$ represent the assigned view for dimension $d$ and $y^v_r$ represent the category for row $r$ in view $v$.
-
-\item $Y$ is a list of conditions, specified as indices $(r,d)$ paired with values $v$. Each pair in this list, specifies an entry for a previously unobserved value in the table, including potentially novel rows and dimensions, $T_{r,d}=v$. 
-
-\item $q$ is a list of queried variables, specified as indices. 
-
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%
 % Begin SimplePredictiveSample
@@ -99,27 +113,27 @@ Let $\vec{\tau^d_c}$ represent the sufficient statistics summarizing the data fr
 \SetKwInOut{Output}{output}
 \SetKwInOut{Initialize}{initialize}
 
-\Input{$M_c, X_L, X_D, Y, q_r, Q_c$.}
+\Input{$M_c, X_L, X_D, Y, r, D$.}
 \Output{A list of sampled values $x$.}
 \BlankLine
-\tcp{Separate conditions, $Y$, by whether they apply to the queried row, $q_r$}
-$Y^q \leftarrow Y s.t. \; Y_{*,1}=q_r$ \;
-$Y^o \leftarrow Y s.t. \; Y_{*,1}!=q_r$ \;
+\tcp{Separate conditions, $Y$, by whether they apply to the queried row, $r$}
+$Y^q \leftarrow Y s.t. \; Y_{*,1}=r$ \;
+$Y^o \leftarrow Y s.t. \; Y_{*,1}!=r$ \;
 \ForEach{$view_i \in views $}{
-  \eIf{$q_r$ denotes an observed row}{
+  \eIf{$r$ denotes an observed row}{
     \tcp{The category is determinstically set}
-    $c_{view_i} \leftarrow get\_category(X_D, view_i, q_r)$ \;
+    $c_{view_i} \leftarrow get\_category(X_D, view_i, r)$ \;
   }{
     \tcp{sample a category, allowing the possibility of a new category}
     $Pr(c | view, Y^q, Y^o, X_L) \propto Pr(Y^q | c, view, Y^o, X_L)Pr(c|view, X_L)$ \;
     $c_{view_i} \sim Pr(c | view_i, Y^q, Y^o, X_L)$ \;
   }
 }
-\ForEach{$q_i \in Q_c$}{
-  $view_i \leftarrow get\_view(X_L, q_i)$ \;
-  $cm \leftarrow get\_component\_model(X_L, view_i, c_{view_i}, q_i)$ \;
+\ForEach{$d \in D$}{
+  $view_i \leftarrow get\_view(X_L, d)$ \;
+  $cm \leftarrow get\_component\_model(X_L, view_i, c_{view_i}, d)$ \;
   \tcp{Determine conditions that modify this component model}
-  $Y^c = Y s.t. \; Y_{*,1} = q_i \; and \; get\_category(X_D, view_i, Y_{*,2}) = c_{view_i}$ \;
+  $Y^c = Y s.t. \; Y_{*,1} = d \; and \; get\_category(X_D, view_i, Y_{*,2}) = c_{view_i}$ \;
   \tcp{Update the component model}
   $cm' \leftarrow update\_component\_model(cm, Y^c)$ \;
   \tcp{Sample a value from the posterior predictive (PP) distribution}
