@@ -39,7 +39,7 @@ setup(
                        "../src/MultinomialComponentModel.cpp",
                        "../src/ContinuousComponentModel.cpp"],
               include_dirs=["../include/CrossCat/",
-                            numpy_include_full_dir
+                            numpy_include_full_dir,
                             os.environ.get('BOOST_ROOT', '.'),
                             ],
               language="c++"),
