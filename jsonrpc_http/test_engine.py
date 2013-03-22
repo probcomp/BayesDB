@@ -16,7 +16,7 @@ parser.add_argument('--gen_seed', default=0, type=int)
 parser.add_argument('--num_transitions', default=1000, type=int)
 parser.add_argument('--N_GRID', default=31, type=int)
 parser.add_argument('--max_rows', default=500, type=int)
-args = parser.parse_args(['--filename', '../KivaAnalysis/testdata_kiva100files_mod.csv'])
+args = parser.parse_args()
 #
 filename = args.filename
 inf_seed = args.inf_seed
