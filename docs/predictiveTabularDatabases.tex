@@ -68,10 +68,10 @@ $max\_iterations$ is the maximum number of desired iterations and $max\_time$ is
 \begin{itemize}
 
 % SimplePredictiveSample
-\item \texttt{simple\_predictive\_sample($M_c, X_L,X_D,Y,q_r, q_C$)} $\rightarrow x$. \\
-$q_C$ is a list of columns on a single row $q_r$ to be simultaneously sampled given the conditions $Y$.  The output is a list sampled values $x$ with the same ordering as $q_C$,
+\item \texttt{simple\_predictive\_sample($M_c, X_L,X_D,Y,r, D$)} $\rightarrow x$. \\
+$D$ is a list of columns on a single row $r$ to be simultaneously sampled given the conditions $Y$.  The output is a list sampled values $x$ with the same ordering as $D$,
 $$
-x \sim Pr[T_{q_r, q_C}|X_L,Y].
+x \sim Pr[T_{r, D}|X_L,Y].
 $$
 
 % SimplePredictiveProbability
@@ -119,7 +119,8 @@ The notation in this section is derived from Mansinghka, Shafto, et al, ``CrossC
 \tcp{Separate conditions, $Y$, by whether they apply to the queried row, $r$}
 $Y^q \leftarrow Y s.t. \; Y_{*,1}=r$ \;
 $Y^o \leftarrow Y s.t. \; Y_{*,1}!=r$ \;
-\ForEach{$view_i \in views $}{
+$views_{sampling} \leftarrow \{get\_view(X_L, d)\}_{d \in D}$ \;
+\ForEach{$view_i \in views_{sampling} $}{
   \eIf{$r$ denotes an observed row}{
     \tcp{The category is determinstically set}
     $c_{view_i} \leftarrow get\_category(X_D, view_i, r)$ \;
