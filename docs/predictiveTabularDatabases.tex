@@ -268,7 +268,7 @@ $M_c$ is a list, where each element is a dict containing four keys: \texttt{name
 column names, respectively. 
 %
 \texttt{column\_metadata} is an array, where each entry is a dict with three keys: \texttt{modeltype}, \texttt{value\_to\_code}, and \texttt{code\_to\_value}. \texttt{modeltype} maps to a string containing one of five possible model types: `asymmetric\_beta\_bernoulli', `normal\_inverse\_gamma', `pitmanyor\_atom', `symmetric\_dirichlet\_discrete', `poisson\_gamma'.
-\texttt{value\_to\_code} maps between values and how they are encoded in the data. For instance, for the `binary' data type, this might map `True' to 1 and `False' to 0. For the `categorical' data types, this would function similarly, but with more possible values. For the `normal\_inverse\_gamma' and `poisson\_gamma' model types, \texttt{valueConverter} is empty because there is no conversion to be done. \texttt{code\_to\_value} maps back from codes to values. 
+\texttt{value\_to\_code} maps between values and how they are encoded in the data. For instance, for the `binary' data type, this might map `True' to 1 and `False' to 0. For the `categorical' data types, this would function similarly, but with more possible values. For both `categorical' and `binary' data types, values must start from zero and increment up by 1. \texttt{code\_to\_value} maps back from codes to values. For the `normal\_inverse\_gamma' and `poisson\_gamma' model types, \texttt{value\_to\_code} and \texttt{code\_to\_value} are empty because there is no conversion to be done.
 
 %Finally, the \texttt{likelihoodModel} key contains one of the following strings: `betaBernoilli', `multinomialDirichlet', or `normalInverseChisquared'. The choice of likelihood model is determined by the data type.
  
@@ -323,7 +323,7 @@ The latent state, $X_L$, is a dict with three keys:
 
 \texttt{row\_partition\_model} is a dict with two keys: \texttt{hypers} and \texttt{counts}. \texttt{hypers} is a dict with a single key, \texttt{alpha}, which maps to a number representing the concentration parameter for the row CRP in that view. \texttt{counts} is an array, with length equal to the number of categories, where each element is the number of rows assigned to that category.
 %
-\texttt{column\_component\_suffstats} is an array of arrays of dicts, where the structure of each dict depends on the model type. The outer array is over the columns while the inner array is over categories. Each dict contains the sufficient statistics that are appropriate for the model type of the column.  For instance, for an `asymmetric\_beta\_bernoulli' column, the dict would have three keys: \texttt{0\_count}, \texttt{1\_count}, and \texttt{N}.
+\texttt{column\_component\_suffstats} is an array of arrays of dicts, where the structure of each dict depends on the model type. The outer array is over the columns while the inner array is over categories. Each dict contains the sufficient statistics that are appropriate for the model type of the column.  For instance, for an `asymmetric\_beta\_bernoulli' column, the dict would have three keys: \texttt{0\_count}, \texttt{1\_count}, and \texttt{N}.  Continuous model types' suffstats must include a value \texttt{N} for the count of the number of non-empty values.
 
 Assume the underlying crosscat state is:
 \begin{verbatim}
@@ -338,29 +338,30 @@ categories: [
 Then, $X_L$ could be: 
 \begin{verbatim}
 X_L: {
-  “column_partition”: {
-	“hypers”: {“log_alpha”: 1.1},
-	“assignments”: [0, 0, 1, 2],
-	“counts”: [2, 1, 1],
+  "column_partition": {
+	"hypers": {"log_alpha": 1.1},
+	"assignments": [0, 0, 1, 2],
+	"counts": [2, 1, 1],
 },
-  “column_hypers”: [
-	{“fixed”: false, “mu”: 63.5, ”log_kappa”: 8.2, ”log_alpha”: 2.3, “log_beta”: 3.4},
-	{“fixed”: false, “log_strength”: 10, “balance”: 1.2}
-	{“fixed”: true, “log_alpha”: .5, “K”: 2},
-	{“fixed”: false, “mu”: 101.1, ”log_kappa”: 4, “log_alpha”: 10.1, “log_beta”: 5}
+  "column_hypers": [
+	{"fixed": false, "mu": 63.5, "log_kappa": 8.2, "log_alpha": 2.3, "log_beta": 3.4},
+	{"fixed": false, "log_strength": 10, "balance": 1.2}
+	{"fixed": true, "log_alpha": .5, "K": 2},
+	{"fixed": false, "mu": 101.1, "log_kappa": 4, "log_alpha": 10.1, "log_beta": 5}
 	],
-  “view_state”: [
-	{“row_partition_model”: {“hypers”: {“log_alpha”:3.2}, “counts”:[2, 1]}, ...
+  "view_state": [
+	{"row_partition_model": {"hypers": {"log_alpha":3.2}, "counts":[2, 1]}, ...
 		"column_names": ["Height(in)", "Gender"], ...
-		“column_component_suffstats”: [[{“sum_x”: 66.0, “sum_x_sq”: 4356.0},...
-		{“sum_x”: 60.0, “sum_x_sq”: 3600.0}], [{“0_count”: 2, “1_count”: 0}, ...
-			{“0_count”: 0, “1_count”: 1}]]},
-	{“row_partition_model”: {“hypers”: {“log_alpha”:2.2}, “counts”:[2, 1]}, ...
+		"column_component_suffstats": [[{"sum_x": 66.0, "sum_x_sq": 4356.0, "N": 1},...
+		{"sum_x": 60.0, "sum_x_sq": 3600.0, "N": 1}], [{"0_count": 2, "1_count": 0, "N": 2}, ...
+			{"0_count": 0, "1_count": 1, "N": 1}]]},
+	{"row_partition_model": {"hypers": {"log_alpha":2.2}, "counts":[2, 1]}, ...
 		"column_names": ["Nationality"], ...
-		“column_component_suffstats”: [[{“0_count”: 2, “1_count”:0},{“0_count”: 2, “1_count”:0}]]},
-	{“row_partition_model”: {“hypers”: {“log_alpha”:0.8}, “counts”:[3]}, ...
+		"column_component_suffstats": [[{"0_count": 2, "1_count":0, "N": 2},...
+		{"0_count": 2, "1_count":0, "N": 2}]]},
+	{"row_partition_model": {"hypers": {"log_alpha":0.8}, "counts":[3]}, ...
 		"column_names": ["IQ"], ...
-		“column_component_suffstats”: [[{“sum_x”: 309.0, “sum_x_sq”: 31481.0}]]}
+		"column_component_suffstats": [[{"sum_x": 309.0, "sum_x_sq": 31481.0, "N": 3}]]}
 	]
 }
 \end{verbatim}
