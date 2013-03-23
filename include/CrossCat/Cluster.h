@@ -62,7 +62,6 @@ class Cluster {
   // make private later
   std::vector<ComponentModel*> p_model_v;
  private:
-  int count;
   double score;
   void init_columns(std::vector<std::map<std::string, double>*> &hypers_v);
   std::set<int> row_indices;
