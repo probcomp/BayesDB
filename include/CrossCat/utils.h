@@ -86,6 +86,17 @@ bool in(const std::map<K, V> m, K key) {
 }
 
 template <class K, class V>
+V setdefault(std::map<K, V> m, K key, V value) {
+  bool is_in = in(m, key);
+  if(!is_in) {
+    m[key] = value;
+  } else {
+    value = m[key];
+  }
+  return value;
+}
+
+template <class K, class V>
 K get_key_of_value(const std::map<K, V> m, V value) {
   typename std::map<K, V>::const_iterator it;
   for(it=m.begin(); it!=m.end(); it++) {
