@@ -1,4 +1,5 @@
 import sys
+import copy
 #
 import numpy
 #
@@ -123,7 +124,9 @@ def get_component_model_constructor(modeltype):
             "get_model_constructor: unknown modeltype: %s" % modeltype
     return component_model_constructor
     
-def create_component_model(column_metadata, column_hypers, count, suffstats):
+def create_component_model(column_metadata, column_hypers, suffstats):
+    suffstats = copy.deepcopy(suffstats)
+    count = suffstats.pop('N')
     modeltype = column_metadata['modeltype']
     component_model_constructor = get_component_model_constructor(modeltype)
     # FIXME: this is a hack
@@ -135,15 +138,13 @@ def create_component_model(column_metadata, column_hypers, count, suffstats):
 
 def create_cluster_model(zipped_column_info, row_partition_model,
                          cluster_idx):
-    count = row_partition_model['counts'][cluster_idx]
     cluster_component_models = dict()
     for global_column_idx in zipped_column_info:
         column_metadata, column_hypers, column_component_suffstats = \
             zipped_column_info[global_column_idx]
         cluster_component_suffstats = column_component_suffstats[cluster_idx]
         component_model = create_component_model(
-            column_metadata, column_hypers, count,
-            cluster_component_suffstats)
+            column_metadata, column_hypers, cluster_component_suffstats)
         cluster_component_models[global_column_idx] = component_model
     return cluster_component_models
 
@@ -153,7 +154,7 @@ def create_empty_cluster_model(zipped_column_info):
         column_metadata, column_hypers, column_component_suffstats = \
             zipped_column_info[global_column_idx]
         component_model = create_component_model(column_metadata,
-                                                 column_hypers, None, dict())
+                                                 column_hypers, dict(N=None))
         cluster_component_models[global_column_idx] = component_model
     return cluster_component_models
 
