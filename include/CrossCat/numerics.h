@@ -7,6 +7,7 @@
 #include <numeric>
 #include <string>
 #include <map>
+#include "utils.h"
 #include "assert.h"
 
 const static double LOG_2PI = log(2.0 * M_PI);

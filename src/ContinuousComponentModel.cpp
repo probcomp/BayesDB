@@ -30,6 +30,7 @@ double ContinuousComponentModel::calc_marginal_logp() const {
 }
 
 double ContinuousComponentModel::calc_element_predictive_logp(double element) const {
+  if(isnan(element)) return 0;
   double r, nu, s, mu;
   int count;
   double sum_x, sum_x_sq;
@@ -43,6 +44,7 @@ double ContinuousComponentModel::calc_element_predictive_logp(double element) co
 }
 
 double ContinuousComponentModel::calc_element_predictive_logp_constrained(double element, vector<double> constraints) const {
+  if(isnan(element)) return 0;
   double r, nu, s, mu;
   int count;
   double sum_x, sum_x_sq;
@@ -93,6 +95,7 @@ vector<double> ContinuousComponentModel::calc_hyper_conditionals(string which_hy
 }
 
 double ContinuousComponentModel::insert_element(double element) {
+  if(isnan(element)) return 0;
   double score_0 = score;
   numerics::insert_to_continuous_suffstats(count,
 					   suffstats["sum_x"],
@@ -104,6 +107,7 @@ double ContinuousComponentModel::insert_element(double element) {
 }
 
 double ContinuousComponentModel::remove_element(double element) {
+  if(isnan(element)) return 0;
   double score_0 = score;
   numerics::remove_from_continuous_suffstats(count,
 					     suffstats["sum_x"],

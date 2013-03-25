@@ -34,6 +34,7 @@ double MultinomialComponentModel::calc_marginal_logp() const {
 }
 
 double MultinomialComponentModel::calc_element_predictive_logp(double element) const {
+  if(isnan(element)) return 0;
   int K;
   double dirichlet_alpha;
   get_hyper_values(K, dirichlet_alpha);
@@ -45,6 +46,7 @@ double MultinomialComponentModel::calc_element_predictive_logp(double element) c
 }
 
 double MultinomialComponentModel::calc_element_predictive_logp_constrained(double element, vector<double> constraints) const {
+  if(isnan(element)) return 0;
   int K;
   double dirichlet_alpha;
   get_hyper_values(K, dirichlet_alpha);
@@ -56,9 +58,7 @@ double MultinomialComponentModel::calc_element_predictive_logp_constrained(doubl
     double constraint = constraints[constraint_idx];
     string constraint_str = stringify(constraint);
     count_copy++;
-    if(!in(suffstats_copy, constraint_str)) {
-      suffstats_copy[constraint_str] = 0;
-    }
+    setdefault(suffstats_copy, constraint_str, 0.);
     suffstats_copy[constraint_str]++;
   }
   string element_str = stringify(element);
@@ -92,24 +92,24 @@ vector<double> MultinomialComponentModel::calc_hyper_conditionals(string which_h
 }
 
 double MultinomialComponentModel::insert_element(double element) {
+  if(isnan(element)) return 0;
   string element_str = stringify(element);
-  if(!in(suffstats, element_str)) {
-    suffstats[element_str] = 0;
-  }
-  double score_delta = calc_element_predictive_logp(element);
+  setdefault(suffstats, element_str, 0.);
+  double delta_score = calc_element_predictive_logp(element);
   suffstats[element_str] += 1;
   count += 1;
-  score += score_delta;
-  return score_delta;
+  score += delta_score;
+  return delta_score;
 }
 
 double MultinomialComponentModel::remove_element(double element) {
+  if(isnan(element)) return 0;
   string element_str = stringify(element);
   suffstats[element_str] -= 1;
-  double score_delta = calc_element_predictive_logp(element);
+  double delta_score = calc_element_predictive_logp(element);
   count -= 1;
-  score -= score_delta;
-  return score_delta;
+  score -= delta_score;
+  return delta_score;
 }
 
 double MultinomialComponentModel::incorporate_hyper_update() {

@@ -128,6 +128,7 @@ namespace numerics {
   void insert_to_continuous_suffstats(int &count,
 				      double &sum_x, double &sum_x_sq,
 				      double el) {
+    if(isnan(el)) return;
     count += 1;
     sum_x += el;
     sum_x_sq += el * el;
@@ -136,6 +137,7 @@ namespace numerics {
   void remove_from_continuous_suffstats(int &count,
 					double &sum_x, double &sum_x_sq,
 					double el) {
+    if(isnan(el)) return;
     count -= 1;
     sum_x -= el;
     sum_x_sq -= el * el;
@@ -187,6 +189,7 @@ namespace numerics {
 				   double s, double mu,
 				   double el,
 				   double score_0) {
+    if(isnan(el)) return 0;
     insert_to_continuous_suffstats(count, sum_x, sum_x_sq, el);
     update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
     double logp = calc_continuous_logp(count, r, nu, s, score_0);
@@ -318,6 +321,7 @@ namespace numerics {
 					  map<string, double> counts,
 					  int sum_counts,
 					  int K, double dirichlet_alpha) {
+    if(isnan(element)) return 0;
     map<string, double>::iterator it = counts.find(element);
     double numerator = dirichlet_alpha;
     if(it!=counts.end()) {
