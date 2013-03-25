@@ -1,10 +1,13 @@
 #include "State.h"
 
+
 using namespace std;
 using boost::numeric::ublas::matrix;
 using boost::numeric::ublas::project;
 using boost::numeric::ublas::range;
 
+
+// FIXME: shouldn't need T, not really using suffstats here
 State::State(const MatrixD &data,
 	     vector<string> GLOBAL_COL_DATATYPES,
 	     vector<int> GLOBAL_COL_MULTINOMIAL_COUNTS,
