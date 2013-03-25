@@ -111,6 +111,7 @@ def convert_columns_to_multinomial(T, M_c, multinomial_indices):
     T_array = numpy.array(T)
     for multinomial_idx in multinomial_indices:
         multinomial_column = T_array[:, multinomial_idx]
+        multinomial_column = multinomial_column[~numpy.isnan(multinomial_column)]
         multinomial_values = list(set(multinomial_column))
         K = len(multinomial_values)
         code_to_value = dict(zip(range(K), multinomial_values))
