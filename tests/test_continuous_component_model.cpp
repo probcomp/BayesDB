@@ -195,6 +195,23 @@ int main(int argc, char** argv) {
   cout << endl << "component model after removal of data in shuffled order" << endl;
   cout << ccm << endl;
 
+  // Test marginal_logp and predictive_logp analytically
+  hypers["r"] = 9;
+  hypers["nu"] = 17;
+  hypers["s"] = 15;
+  hypers["m"] = 13;
+  CCM ccm2(hypers);
+  values_to_test.clear();
+  values_to_test.push_back(7);
+  values_to_test.push_back(4);
+  values_to_test.push_back(3);
+  values_to_test.push_back(2);
+  insert_elements(ccm2, values_to_test);
+  assert(is_almost(ccm2.calc_marginal_logp(), -34.2990812968, precision));
+  assert(is_almost(ccm2.calc_element_predictive_logp(7), -2.73018549043, precision));
+  assert(is_almost(ccm2.calc_element_predictive_logp(4), -3.74794102225, precision));
+  assert(is_almost(ccm2.calc_element_predictive_logp(3), -4.18966316516, precision));
+  assert(is_almost(ccm2.calc_element_predictive_logp(2), -4.67271754595, precision));
   
   cout << "Stop:: test_component model" << endl;
 }

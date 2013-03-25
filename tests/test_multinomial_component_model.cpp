@@ -30,6 +30,7 @@ int main() {
   // test settings
   int NUM_BUCKETS = 5;
   int num_values_to_test = 30;
+  double precision = 1E-10;
   map<string, double> hypers;
 
   // generate all the random data to use
@@ -65,22 +66,42 @@ int main() {
 
   cout << "calc_marginal_logp() on empty MultinomialComponentModel: ";
   cout << mcm.calc_marginal_logp() << endl;
+  assert(is_almost(mcm.calc_marginal_logp(), 0, precision));
+  
   //
   cout << "test insertion and removal in same order" << endl;
   insert_elements(mcm, values_to_test);
   cout << mcm << endl;
+  assert(is_almost(mcm.calc_marginal_logp(), -49.9364531937, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(0), 3.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(1), 7.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(2), 10.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(3), 6.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(4), 9.0/35, precision));
   remove_elements(mcm, values_to_test);
   cout << mcm << endl;
   //
   cout << "test insertion and removal in reversed order" << endl;
   insert_elements(mcm, values_to_test);
   cout << mcm << endl;
+  assert(is_almost(mcm.calc_marginal_logp(), -49.9364531937, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(0), 3.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(1), 7.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(2), 10.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(3), 6.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(4), 9.0/35, precision));
   remove_elements(mcm, values_to_test_reversed);
   cout << mcm << endl;
   //
   cout << "test insertion and removal in shuffled order" << endl;
   insert_elements(mcm, values_to_test);
   cout << mcm << endl;
+  assert(is_almost(mcm.calc_marginal_logp(), -49.9364531937, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(0), 3.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(1), 7.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(2), 10.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(3), 6.0/35, precision));
+  assert(is_almost(mcm.calc_element_predictive_logp(4), 9.0/35, precision));
   remove_elements(mcm, values_to_test_shuffled);
   cout << mcm << endl;
 
