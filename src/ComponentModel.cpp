@@ -25,7 +25,9 @@ int ComponentModel::get_count() const {
 }
 
 map<string, double> ComponentModel::get_suffstats() const {
-  return suffstats;
+  map<string, double> suffstats_out = suffstats;
+  suffstats_out["N"] = count;
+  return suffstats_out;
 }
 
 std::ostream& operator<<(std::ostream& os, const ComponentModel& cm) {
