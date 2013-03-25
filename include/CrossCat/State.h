@@ -128,7 +128,8 @@ class State {
   int draw_rand_i(int max=MAX_INT);
   void construct_base_hyper_grids(int num_rows, int num_cols, int N_GRID);
   void construct_column_hyper_grids(boost::numeric::ublas::matrix<double> data,
-				    std::vector<int> global_col_indices);
+				    std::vector<int> global_col_indices,
+				    std::vector<std::string> global_col_datatypes);
   std::map<std::string, double> get_default_hypers() const;
   void init_base_hypers();
   std::map<std::string, double> uniform_sample_hypers(int global_col_idx);
