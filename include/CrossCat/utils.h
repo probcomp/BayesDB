@@ -248,5 +248,6 @@ int count_elements(std::vector<std::vector<T> > v_v_T) {
 }
 
 bool is_bad_value(double value);
+bool isnan(std::string value);
 
 #endif // GUARD_utils_H

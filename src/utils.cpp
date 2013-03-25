@@ -318,3 +318,11 @@ void construct_multinomial_base_hyper_grids(int n_grid,
 bool is_bad_value(double value) {
   return isnan(value) || !isfinite(value);
 }
+
+bool isnan(string value_str) {
+  bool isnan = (value_str.compare("NaN") == 0) || (value_str.compare("nan") == 0);
+  if(isnan) {
+    cout << "utils::isnan(" << value_str << ") = True" << endl;
+  }
+  return isnan;
+}
