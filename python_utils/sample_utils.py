@@ -1,5 +1,6 @@
 import sys
 import copy
+from collections import Counter
 #
 import numpy
 #
@@ -340,6 +341,32 @@ def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     samples = numpy.array(samples).T[0]
     e = sum(samples) / float(n)
     return e
+
+def determine_replicating_samples(X_L, X_D):
+    view_assignments_array = X_L['column_partition']['assignments']
+    view_assignments_array = numpy.array(view_assignments_array)
+    views_replicating_samples = []
+    for view_idx, view_zs in enumerate(X_D):
+        is_this_view = view_assignments_array == view_idx
+        this_view_columns = numpy.nonzero(is_this_view)[0]
+        this_view_replicating_samples = []
+        for cluster_idx, cluster_count in Counter(view_zs).iteritems():
+            view_zs_array = numpy.array(view_zs)
+            first_row_idx = numpy.nonzero(view_zs_array==cluster_idx)[0][0]
+            Y = None
+            Q = [
+                (first_row_idx, this_view_column)
+                for this_view_column in this_view_columns
+                ]
+            n = cluster_count
+            replicating_sample = dict(
+                Y=Y,
+                Q=Q,
+                n=n,
+                )
+            this_view_replicating_samples.append(replicating_sample)
+        views_replicating_samples.append(this_view_replicating_samples)
+    return views_replicating_samples
 
 # def determine_cluster_view_logps(M_c, X_L, X_D, Y):
 #     get_which_view = lambda which_column: \
