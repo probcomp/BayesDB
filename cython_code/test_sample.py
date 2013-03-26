@@ -39,23 +39,13 @@ X_D = save_dict['X_D']
 Y = None
 
 # test simple_predictive_sample_observed LOCALLY
-view_assignments_array = X_L['column_partition']['assignments']
-view_assignments_array = numpy.array(view_assignments_array)
+views_replicating_samples_params = su.determine_replicating_samples_params(X_L, X_D)
 views_samples = []
-for view_idx, view_zs in enumerate(X_D):
-    is_this_view = view_assignments_array == view_idx
-    this_view_columns = numpy.nonzero(is_this_view)[0]
+for replicating_samples_params in views_replicating_samples_params:
     this_view_samples = []
-    for cluster_idx, cluster_count in Counter(view_zs).iteritems():
-        view_zs_array = numpy.array(view_zs)
-        # any row in cluster is equivalent, pick first
-        first_row_idx = numpy.nonzero(view_zs_array==cluster_idx)[0][0]
-        Q = [
-            (first_row_idx, this_view_column)
-            for this_view_column in this_view_columns
-            ]
+    for replicating_sample_params in replicating_samples_params:
         this_view_this_sample = su.simple_predictive_sample(
-            M_c, X_L, X_D, Y, Q, get_next_seed, cluster_count)
+            M_c, X_L, X_D, get_next_seed=get_next_seed, **replicating_sample_params)
         this_view_samples.extend(this_view_this_sample)
     views_samples.append(this_view_samples)
 for view_idx, view_samples in enumerate(views_samples):
@@ -68,29 +58,18 @@ for view_idx, view_samples in enumerate(views_samples):
 URI = 'http://' + hostname + ':8007'
 method_name = 'simple_predictive_sample'
 #
-view_assignments_array = X_L['column_partition']['assignments']
-view_assignments_array = numpy.array(view_assignments_array)
 views_samples = []
-for view_idx, view_zs in enumerate(X_D):
-    is_this_view = view_assignments_array == view_idx
-    this_view_columns = numpy.nonzero(is_this_view)[0]
+for replicating_samples_params in views_replicating_samples_params:
     this_view_samples = []
-    for cluster_idx, cluster_count in Counter(view_zs).iteritems():
-        view_zs_array = numpy.array(view_zs)
-        first_row_idx = numpy.nonzero(view_zs_array==cluster_idx)[0][0]
-        Y = None
-        Q = [
-            (int(first_row_idx), int(this_view_column))
-            for this_view_column in this_view_columns
-            ]
+    for replicating_sample_params in replicating_samples_params:
         args_dict = dict(
             M_c=save_dict['M_c'],
             X_L=save_dict['X_L'],
             X_D=save_dict['X_D'],
-            Y=Y,
-            Q=Q,
+            Y=replicating_sample_params['Y'],
+            Q=replicating_sample_params['Q'],
+            n=replicating_sample_params['n'],
             )
-        args_dict['n'] = cluster_count
         this_view_this_sample, id = au.call(
             method_name, args_dict, URI)
         print id
@@ -102,10 +81,8 @@ for view_idx, view_samples in enumerate(views_samples):
     pylab.title('simple_predictive_sample observed, view %s on remote' % view_idx)
 
 # test simple_predictive_sample_unobserved
-Q = [
-    (1E6, this_view_column)
-    for this_view_column in this_view_columns
-    ]
+observed_Q = views_replicating_samples_params[0][0]['Q']
+Q = [(int(1E6), old_tuple[1]) for old_tuple in observed_Q]
 new_row_samples = []
 new_row_sample = su.simple_predictive_sample(
     M_c, X_L, X_D, Y, Q, get_next_seed, n=1000)
@@ -113,5 +90,10 @@ new_row_samples.extend(new_row_sample)
 new_row_samples = numpy.array(new_row_samples)
 pu.plot_T(new_row_samples)
 
+# once more with constraint
+Y = [(int(1E6), 0, 100)]
+new_row_sample = su.simple_predictive_sample(
+    M_c, X_L, X_D, Y, Q, get_next_seed, n=1)
+
 # test impute
-imputed_value = su.impute(M_c, X_L, X_D, Y, [Q[3]], 100, get_next_seed)
+# imputed_value = su.impute(M_c, X_L, X_D, Y, [Q[3]], 100, get_next_seed)

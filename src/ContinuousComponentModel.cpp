@@ -158,7 +158,8 @@ double ContinuousComponentModel::get_draw(int random_seed) const {
   boost::uniform_01<boost::mt19937> _dist(_engine);
   boost::random::student_t_distribution<double> student_t(nu);
   double student_t_draw = student_t(_dist);
-  double draw = student_t_draw * (s * (r+1)) / (nu * r) + mu;
+  double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
+  double draw = student_t_draw * coeff + mu;
   return draw;
 }
 
@@ -181,7 +182,8 @@ double ContinuousComponentModel::get_draw_constrained(int random_seed, vector<do
   boost::uniform_01<boost::mt19937> _dist(_engine);
   boost::random::student_t_distribution<double> student_t(nu);
   double student_t_draw = student_t(_dist);
-  double draw = student_t_draw * (s * (r+1)) / (nu * r) + mu;
+  double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
+  double draw = student_t_draw * coeff + mu;
   return draw;
 }
 

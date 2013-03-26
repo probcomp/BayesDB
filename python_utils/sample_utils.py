@@ -1,5 +1,6 @@
 import sys
 import copy
+from collections import Counter
 #
 import numpy
 #
@@ -186,7 +187,7 @@ def determine_cluster_data_logp(cluster_model, cluster_sampling_constraints,
                 if X_D_i[other_row]==cluster_idx:
                     other_constraint_values.append(other_value)
             this_constraint_value = column_constraint_dict['this']
-            component_model = cluster_model[constraint_index]
+            component_model = cluster_model[column_idx]
             logp += component_model.calc_element_predictive_logp_constrained(
                 this_constraint_value, other_constraint_values)
     return logp
@@ -215,11 +216,16 @@ def get_draw_constraints(X_L, X_D, Y, draw_row, draw_column):
         column_partition_assignments = X_L['column_partition']['assignments']
         view_idx = column_partition_assignments[draw_column]
         X_D_i = X_D[view_idx]
-        draw_cluster = X_D_i[draw_row]
-        #
+        try:
+            draw_cluster = X_D_i[draw_row]
+        except IndexError, e:
+            draw_cluster = None
         for constraint in Y:
             constraint_row, constraint_col, constraint_value = constraint
-            constraint_cluster = X_D_i[constraint_row]
+            try:
+                constraint_cluster = X_D_i[constraint_row]
+            except IndexError, e:
+                constraint_cluster = None
             if (constraint_col == draw_column) \
                     and (constraint_cluster == draw_cluster):
                 constraint_values.append(constraint_value)
@@ -237,11 +243,6 @@ def determine_cluster_data_logps(M_c, X_L, X_D, Y, query_row, view_idx):
         logp = determine_cluster_data_logp(
             cluster_model, cluster_sampling_constraints, X_D_i, cluster_idx)
         logps.append(logp)
-    else:
-        view_state_i = X_L['view_state'][view_idx]
-        num_clusters = len(view_state_i['row_partition_model']['counts'])
-        logps = [0 for cluster_idx in range(num_clusters)]
-        logps.append(0)
     return logps
 
 def determine_cluster_crp_logps(view_state_i):
@@ -340,6 +341,32 @@ def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     samples = numpy.array(samples).T[0]
     e = sum(samples) / float(n)
     return e
+
+def determine_replicating_samples_params(X_L, X_D):
+    view_assignments_array = X_L['column_partition']['assignments']
+    view_assignments_array = numpy.array(view_assignments_array)
+    views_replicating_samples = []
+    for view_idx, view_zs in enumerate(X_D):
+        is_this_view = view_assignments_array == view_idx
+        this_view_columns = numpy.nonzero(is_this_view)[0]
+        this_view_replicating_samples = []
+        for cluster_idx, cluster_count in Counter(view_zs).iteritems():
+            view_zs_array = numpy.array(view_zs)
+            first_row_idx = numpy.nonzero(view_zs_array==cluster_idx)[0][0]
+            Y = None
+            Q = [
+                (int(first_row_idx), int(this_view_column))
+                for this_view_column in this_view_columns
+                ]
+            n = cluster_count
+            replicating_sample = dict(
+                Y=Y,
+                Q=Q,
+                n=n,
+                )
+            this_view_replicating_samples.append(replicating_sample)
+        views_replicating_samples.append(this_view_replicating_samples)
+    return views_replicating_samples
 
 # def determine_cluster_view_logps(M_c, X_L, X_D, Y):
 #     get_which_view = lambda which_column: \
