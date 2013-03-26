@@ -187,7 +187,7 @@ def determine_cluster_data_logp(cluster_model, cluster_sampling_constraints,
                 if X_D_i[other_row]==cluster_idx:
                     other_constraint_values.append(other_value)
             this_constraint_value = column_constraint_dict['this']
-            component_model = cluster_model[constraint_index]
+            component_model = cluster_model[column_idx]
             logp += component_model.calc_element_predictive_logp_constrained(
                 this_constraint_value, other_constraint_values)
     return logp
@@ -216,11 +216,16 @@ def get_draw_constraints(X_L, X_D, Y, draw_row, draw_column):
         column_partition_assignments = X_L['column_partition']['assignments']
         view_idx = column_partition_assignments[draw_column]
         X_D_i = X_D[view_idx]
-        draw_cluster = X_D_i[draw_row]
-        #
+        try:
+            draw_cluster = X_D_i[draw_row]
+        except IndexError, e:
+            draw_cluster = None
         for constraint in Y:
             constraint_row, constraint_col, constraint_value = constraint
-            constraint_cluster = X_D_i[constraint_row]
+            try:
+                constraint_cluster = X_D_i[constraint_row]
+            except IndexError, e:
+                constraint_cluster = None
             if (constraint_col == draw_column) \
                     and (constraint_cluster == draw_cluster):
                 constraint_values.append(constraint_value)
@@ -238,11 +243,6 @@ def determine_cluster_data_logps(M_c, X_L, X_D, Y, query_row, view_idx):
         logp = determine_cluster_data_logp(
             cluster_model, cluster_sampling_constraints, X_D_i, cluster_idx)
         logps.append(logp)
-    else:
-        view_state_i = X_L['view_state'][view_idx]
-        num_clusters = len(view_state_i['row_partition_model']['counts'])
-        logps = [0 for cluster_idx in range(num_clusters)]
-        logps.append(0)
     return logps
 
 def determine_cluster_crp_logps(view_state_i):
