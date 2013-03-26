@@ -82,13 +82,18 @@ for view_idx, view_samples in enumerate(views_samples):
 
 # test simple_predictive_sample_unobserved
 observed_Q = views_replicating_samples_params[0][0]['Q']
-Q = [(1E6, old_tuple[1]) for old_tuple in observed_Q]
+Q = [(int(1E6), old_tuple[1]) for old_tuple in observed_Q]
 new_row_samples = []
 new_row_sample = su.simple_predictive_sample(
     M_c, X_L, X_D, Y, Q, get_next_seed, n=1000)
 new_row_samples.extend(new_row_sample)
 new_row_samples = numpy.array(new_row_samples)
 pu.plot_T(new_row_samples)
+
+# once more with constraint
+Y = [(int(1E6), 0, 100)]
+new_row_sample = su.simple_predictive_sample(
+    M_c, X_L, X_D, Y, Q, get_next_seed, n=1)
 
 # test impute
 # imputed_value = su.impute(M_c, X_L, X_D, Y, [Q[3]], 100, get_next_seed)
