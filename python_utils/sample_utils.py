@@ -355,7 +355,7 @@ def determine_replicating_samples_params(X_L, X_D):
             first_row_idx = numpy.nonzero(view_zs_array==cluster_idx)[0][0]
             Y = None
             Q = [
-                (first_row_idx, this_view_column)
+                (int(first_row_idx), int(this_view_column))
                 for this_view_column in this_view_columns
                 ]
             n = cluster_count
