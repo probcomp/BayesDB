@@ -342,7 +342,7 @@ def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     e = sum(samples) / float(n)
     return e
 
-def determine_replicating_samples(X_L, X_D):
+def determine_replicating_samples_params(X_L, X_D):
     view_assignments_array = X_L['column_partition']['assignments']
     view_assignments_array = numpy.array(view_assignments_array)
     views_replicating_samples = []
