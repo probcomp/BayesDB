@@ -98,11 +98,23 @@ vector<double> std_vector_sum(vector<vector<double> > vec_vec) {
   return sum_vec;
 }
 
+vector<double> filter_nans(vector<double> values) {
+  vector<double> non_nan_values;
+  vector<double>::iterator it;
+  for(it=values.begin(); it!=values.end(); it++) {
+    if(isnan(*it)) continue;
+    non_nan_values.push_back(*it);
+  }
+  return non_nan_values;
+}
+
 double calc_sum_sq_deviation(vector<double> values) {
+  values = filter_nans(values);
   double sum = std::accumulate(values.begin(), values.end(), 0.0);
   double mean = sum / values.size();
   double sum_sq_deviation = 0;
-  for(vector<double>::iterator it = values.begin(); it!=values.end(); it++) {
+  vector<double>::iterator it;
+  for(it=values.begin(); it!=values.end(); it++) {
     sum_sq_deviation += pow((*it) - mean, 2) ;
   }
   return sum_sq_deviation;
