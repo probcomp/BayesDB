@@ -18,4 +18,4 @@ numpy==1.7.0
 freetype-py==0.4.1
 matplotlib==1.2.0
 # for middleware
-psycopg==2.4.6
+psycopg2==2.4.6
