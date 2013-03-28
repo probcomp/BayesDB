@@ -140,7 +140,8 @@
 			
 /* JSON functions*/
 			function JSONRPC_init() {
-	 	 		JSONRPC_URL = "http://localhost:8007/"
+				// "http://ec2-54-235-235-103.compute-1.amazonaws.com:8007"
+	 	 		JSONRPC_URL = "http://ec2-54-235-235-103.compute-1.amazonaws.com:8007" //"http://ec2-54-224-73-22.compute-1.amazonaws.com:8007" //"http://localhost:8007/"
 		 	 	JSONRPC_ID = 0				
 			}
 			
@@ -156,7 +157,7 @@
 	 	 				type: 'PUT', 
 	 	 				data: JSON.stringify(data_in),
 	 	 				dataType: 'json', 
-	 	 				async: false,	
+	 	 				async: true,	
 	 	 				crossDomain: true,
 	 	 				success:function(data) {
 	 	 					function_to_call(data)
@@ -194,20 +195,58 @@
 			
 			
 			
+			function parseCreateCommand(commandString){
+				var returnDict = new Object() //the main dict for the tablename and the columns
+				var columnsDict = new Object()
+				var columnSubstring = commandString.substring(commandString.indexOf("(") + 1,
+						commandString.indexOf(")"))
+				var columnTriples = columnSubstring.split(',')
+				for (i = 0; i < columnTriples.length; i++){
+					var tempColProperties = new Object()
+					tempString =  columnTriples[i].split(' ')
+					tempColProperties["name"] = tempString[0]
+					tempColProperties["data type"] = tempString[1]
+					tempColProperties["crosscat type"] = tempString[2]
+					columnsDict[i] = tempColProperties
+				}
+				
+				createCommandParsed = commandString.split(' ');
+				var tableName;
+				tableName = createCommandParsed[$.inArray("TABLE", createCommandParsed) + 1]
+				
+				returnDict["tableName"] = tableName
+				returnDict["columns"] = columnsDict
+				
+				return returnDict
+			}
+			
+			
+			function sendBackUploadedFile(csvDataFile){
+				
+			}
+			
 /* Loading and jqueries functions*/
 			function LoadToDatabaseTheCSVData(fileName, missingValsArray) {
 				data = preloadedDataFiles[fileName]
  	 			window.masterData = data
  	 			window.currentTable = fileName;
 	        	
-	        	
-	        	/* JSONRPC_init()
-	 	 		JSONRPC_send_method("initialize",
-				            { M_c: JSONDict["M_c"], M_r: JSONDict["M_r"], T: JSONDict["T"], i: "i" },
+				
+	        	/*JSONRPC_init()
+	            JSONRPC_send_method("upload",
+				            { "csv": data },
+				            function(returnedData) {
+				            	console.log(returnedData)
+				            	alert("Welcome!")
+				            }) */
+			        
+				            
+	 	 		/*JSONRPC_send_method("initialize",
+				            { M_c: "M_c", M_r: "M_r", T: "T", i: "i" },
 				            function(data) {
 				            	console.log(data)
 				            	alert("Welcome!")
-				            }) */	
+				            }) 	*/
 	            /* 
 	 	 		JSONRPC_send_method("initialize",
 				            { M_c: JSONDict["M_c"], M_r: JSONDict["M_r"], T: JSONDict["T"], i: "i" },
@@ -290,42 +329,42 @@
 							    	counter += 1
 							  }
 					    	}
+					    if (command.split(' ')[0]=="CREATE") // command is a supported SQL command
+					    	{
+					    		tempString = parseCreateCommand(command)
+					    		JSONRPC_init()
+					            JSONRPC_send_method("create",
+								            { "tablename": tempString["tableName"],  "columns":
+								            	tempString["columns"]},
+								            function(returnedData) {
+								            	console.log(returnedData)
+								            	alert("Welcome!")
+								            }) 
+					    	}
+					   /* if (command.split(' ')[0]=="INFER") // command is a supported SQL command
+				    	{
+				    		tempString = parseInferCommand(command)
+				    		JSONRPC_init()
+				            JSONRPC_send_method("infer",
+							            { "tablename": tempString["tableName"],  "columns":
+							            	tempString["columns"]},
+							            function(returnedData) {
+							            	console.log(returnedData)
+							            	alert("Welcome!")
+							            }) 
+				    	}*/
 					    else   //Command is not a supported SQL command; need to parse and send back
 					    	{ 
-					    	var confidence = 0
-					    	/*if(window.scrollChange == false){
-					    		commandString = commandHistory[commandHistory.length - 1];
-					    		JSONObj = parseCommand(commandString);
-						    	window.sliders.style.display = '';
-						    	//$("#range_confidence").val(confidence) 
-					    	} */
-					    	/*if(window.scrollChange == true){
-					    		confidence =  $("#range_confidence").val()
-					    	}*/
+					    	
 					    	/* send these two to backend and retrieve new CSVfile */
-					    	LoadToDatabaseTheCSVData("dha", findNaNValuesInCSV(data))
+					    	
+					    	LoadToDatabaseTheCSVData("dha", findNaNValuesInCSV(window.masterData))
 					    	var aDataSet = $.csv.toArrays(masterData); 
 					    	var columns = new Array();
-						    var counter = 0;
 						    for (var c = 0; c < aDataSet[0].length; c++){
 						    	columns[c] = { "sTitle": aDataSet[0][c] , "sClass": "center"}
-						    	counter += 1
 						    }
 					    	aDataSet.shift();
-							
-					    	
-					    	
-		//			    	mydat = CSVtoSQLFormat(masterData, "dha")
-		//			    	var tableData = mydat["dataTable"]
-		//		        	var columnDefs = mydat["columnDefs"]
-		//			    	//return from the middleware the csv file instead of the following 
-		//			    	// 2 lines and the for loop. note that "out" is a csv file.
-		//			    	command = commandHistory[commandHistory.length - 1]
-		//			    	command = command.replace("INFER","SELECT");
-		//			    	command = command.substring(0, command.indexOf("WITH") - 1); 
-		//			    	var statement = queryLang.parseSQL(command);
-		//					var result = statement.filter(tableData); 
-					    	
 					    	
 					    }
 					    
@@ -378,6 +417,14 @@
 					preloadedDataFiles[e.target.file_name] = e.target.result;
 					jQuery(document.getElementById('menu')).append("<option value='" + e.target.file_name + "'>" + e.target.file_name + "</option>")
 					// LoadToDatabaseTheCSVData(e.target.result)
+					JSONRPC_init()
+		            JSONRPC_send_method("upload",
+					            { "csv": e.target.result, "crosscat_column_types":
+					            	"", "tablename": reader.file_name},
+					            function(returnedData) {
+					            	console.log(returnedData)
+					            	alert("Welcome!")
+					            }) 
 				}
 				reader.readAsBinaryString(files_input[file_index])	
 			}
