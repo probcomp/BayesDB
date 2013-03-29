@@ -37,6 +37,8 @@ class State {
 	std::vector<int> GLOBAL_COL_MULTINOMIAL_COUNTS,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
+	std::string col_initialization=FROM_THE_PRIOR,
+	std::string row_initialization="",
 	int N_GRID=31, int SEED=0);
   ~State();
   //
@@ -144,7 +146,9 @@ class State {
   void init_views(const MatrixD &data,
 		  std::map<int, std::string> global_col_datatypes,
 		  std::vector<int> global_row_indices,
-		  std::vector<int> global_col_indices);
+		  std::vector<int> global_col_indices,
+		  std::string col_initialization,
+		  std::string row_initialization);
 };
 
 #endif // GUARD_state_h

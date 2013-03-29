@@ -23,11 +23,14 @@ State::State(const MatrixD &data,
   data_score = 0;
   int num_rows = data.size1();
   int num_cols = data.size2();
-  global_col_datatypes = construct_lookup_map(global_col_indices, GLOBAL_COL_DATATYPES);
-  global_col_multinomial_counts = construct_lookup_map(global_col_indices, GLOBAL_COL_MULTINOMIAL_COUNTS);
+  global_col_datatypes = construct_lookup_map(global_col_indices,
+					      GLOBAL_COL_DATATYPES);
+  global_col_multinomial_counts = \
+    construct_lookup_map(global_col_indices, GLOBAL_COL_MULTINOMIAL_COUNTS);
   construct_base_hyper_grids(num_rows, num_cols, N_GRID);
   // pass colmn types to construct_base_hyper_grids
-  construct_column_hyper_grids(data, global_col_indices, GLOBAL_COL_DATATYPES);
+  construct_column_hyper_grids(data, global_col_indices,
+			       GLOBAL_COL_DATATYPES);
   //
   column_crp_alpha = COLUMN_CRP_ALPHA;
   hypers_m = HYPERS_M;
@@ -43,20 +46,29 @@ State::State(const MatrixD &data,
 	     vector<int> GLOBAL_COL_MULTINOMIAL_COUNTS,
 	     vector<int> global_row_indices,
 	     vector<int> global_col_indices,
+	     string col_initialization,
+	     string row_initialization,
 	     int N_GRID, int SEED) : rng(SEED) {
+  // FIXME: unlink these when API is updated
+  if(row_initialization=="") {row_initialization = col_initialization; }
   column_crp_score = 0;
   data_score = 0;
   int num_rows = data.size1();
   int num_cols = data.size2();
-  global_col_datatypes = construct_lookup_map(global_col_indices, GLOBAL_COL_DATATYPES);
-  global_col_multinomial_counts = construct_lookup_map(global_col_indices, GLOBAL_COL_MULTINOMIAL_COUNTS);
+  global_col_datatypes = construct_lookup_map(global_col_indices,
+					      GLOBAL_COL_DATATYPES);
+  global_col_multinomial_counts = \
+    construct_lookup_map(global_col_indices, GLOBAL_COL_MULTINOMIAL_COUNTS);
+			 
   construct_base_hyper_grids(num_rows, num_cols, N_GRID);
-  construct_column_hyper_grids(data, global_col_indices, GLOBAL_COL_DATATYPES);
+  construct_column_hyper_grids(data, global_col_indices,
+			       GLOBAL_COL_DATATYPES);
   //
   init_base_hypers();
   init_column_hypers(global_col_indices);
   //
-  init_views(data, global_col_datatypes, global_row_indices, global_col_indices);
+  init_views(data, global_col_datatypes, global_row_indices,
+	     global_col_indices, col_initialization, row_initialization);
 }
 
 State::~State() {
@@ -705,10 +717,13 @@ void State::init_views(const MatrixD &data,
 void State::init_views(const MatrixD &data,
 		       map<int, string> global_col_datatypes,
 		       vector<int> global_row_indices,
-		       vector<int> global_col_indices) {
+		       vector<int> global_col_indices,
+		       string col_initialization,
+		       string row_initialization) {
   // generate column paritition
   vector<vector<int> > column_partition;
-  column_partition = draw_crp_init(global_col_indices, column_crp_alpha, rng);
+  column_partition = draw_crp_init(global_col_indices, column_crp_alpha, rng,
+				   col_initialization);
   // generate row paritition
   vector<vector<vector<int> > > row_partition_v;
   vector<double> row_crp_alpha_v;
@@ -717,12 +732,15 @@ void State::init_views(const MatrixD &data,
   for(int view_idx=0; view_idx<num_views; view_idx++) {
     double row_crp_alpha = row_crp_alpha_grid[rng.nexti(N_GRID)];
     vector<vector<int> > row_partition;
-    row_partition = draw_crp_init(global_row_indices, row_crp_alpha, rng);
+    row_partition = draw_crp_init(global_row_indices, row_crp_alpha, rng,
+				  row_initialization);
     row_crp_alpha_v.push_back(row_crp_alpha);
     row_partition_v.push_back(row_partition);
   }
-  init_views(data, global_col_datatypes, global_row_indices, global_col_indices,
-	     column_partition, row_partition_v, row_crp_alpha_v);
+  init_views(data, global_col_datatypes, global_row_indices,
+	     global_col_indices, column_partition, row_partition_v,
+	     row_crp_alpha_v);
+	     
 }
 
 std::ostream& operator<<(std::ostream& os, const State& s) {
