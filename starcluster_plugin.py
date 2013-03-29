@@ -114,6 +114,10 @@ class tabular_predDBSetup(ClusterSetup):
                         % node.alias)
                # install ubuntu packages
                log.info("Installing ubuntu packages on %s" % node.alias)
+               # apt-get update
+               cmd_str = 'apt-get update'
+               node.ssh.execute(cmd_str)
+               # install ubuntu packages
                cmd_str = 'bash %s >ubuntu.out 2>ubuntu.err'
                cmd_str %= S.path.install_ubuntu_script
                node.ssh.execute(cmd_str)
@@ -141,9 +145,9 @@ class tabular_predDBSetup(ClusterSetup):
                log.info("Installing engine (compiling cython) on %s" % node.alias)
                cmd_str = 'bash -c -i "workon tabular_predDB && make cython"'
                run_as_user(node, user, cmd_str)
-               # create table BEFORE running middleware server
-               cmd_str = 'psql -f table_setup.sql'
-               run_as_user(node, user, cmd_str)
+               # set up postgres user, database
+               cmd_str = 'bash postgres_setup.sh'
+               node.ssh.execute(cmd_str)
                # run server
                run_server_script = os.path.join(S.path.remote_code_dir,
                                                 S.path.run_server_script)
