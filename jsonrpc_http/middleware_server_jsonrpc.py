@@ -74,7 +74,7 @@ class ExampleServer(ServerEvents):
   methods = set(Engine_methods)
   mymethods = set(['add', 'runsql', 'upload', 'start', 'select', 'infer', 'predict'])
   hostname = 'localhost'
-  URI = 'http://' + hostname + ':8007'
+  URI = 'http://' + hostname + ':8008'
   def _get_msg(self, response):
     print('response', repr(response))
     return ' '.join(str(x) for x in [response.id, response.result or response.error])

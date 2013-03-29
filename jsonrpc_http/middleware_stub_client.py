@@ -35,7 +35,7 @@ max_std = args.max_std
 id = args.start_id
 
 # settings
-URI = 'http://' + hostname + ':8007'
+URI = 'http://' + hostname + ':8008'
 print 'URI: ', URI
 
 T, M_r, M_c = du.gen_factorial_data_objects(
