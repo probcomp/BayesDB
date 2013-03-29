@@ -13,7 +13,7 @@ ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hyper
 ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hypers, int COUNT, double SUM_X, double SUM_X_SQ) {
   count = COUNT;
   suffstats["sum_x"] = SUM_X;
-  suffstats["sum_x_sq"] = SUM_X_SQ;
+  suffstats["sum_x_squared"] = SUM_X_SQ;
   p_hypers = &in_hypers;
   set_log_Z_0();
   score = calc_marginal_logp();
@@ -99,7 +99,7 @@ double ContinuousComponentModel::insert_element(double element) {
   double score_0 = score;
   numerics::insert_to_continuous_suffstats(count,
 					   suffstats["sum_x"],
-					   suffstats["sum_x_sq"],
+					   suffstats["sum_x_squared"],
 					   element);
   score = calc_marginal_logp();
   double delta_score = score - score_0;
@@ -111,7 +111,7 @@ double ContinuousComponentModel::remove_element(double element) {
   double score_0 = score;
   numerics::remove_from_continuous_suffstats(count,
 					     suffstats["sum_x"],
-					     suffstats["sum_x_sq"],
+					     suffstats["sum_x_squared"],
 					     element);
   score = calc_marginal_logp();
   double delta_score = score - score_0;
@@ -135,14 +135,14 @@ void ContinuousComponentModel::set_log_Z_0() {
 
 void ContinuousComponentModel::init_suffstats() {
   suffstats["sum_x"] = 0;
-  suffstats["sum_x_sq"] = 0;
+  suffstats["sum_x_squared"] = 0;
 }
 
 void ContinuousComponentModel::get_suffstats(int &count_out, double &sum_x,
 					     double &sum_x_sq) const {
   count_out = count;
   sum_x = get(suffstats, (string) "sum_x");
-  sum_x_sq = get(suffstats, (string) "sum_x_sq");
+  sum_x_sq = get(suffstats, (string) "sum_x_squared");
 }
 
 double ContinuousComponentModel::get_draw(int random_seed) const {
