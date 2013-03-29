@@ -109,6 +109,8 @@ class ExampleServer(ServerEvents):
   """
 
   def upload(self, tablename, csv, crosscat_column_types):
+    pickle.dump(crosscat_column_types, open('crosscat_column_types.pkl', 'w'))
+
     # Write csv to file, temporarily (do I have to remove first row? test both ways)
     f = open('../postgres/%s.csv' % tablename, 'w')
     csv_abs_path = os.path.abspath(f.name)
@@ -129,14 +131,17 @@ class ExampleServer(ServerEvents):
     # Parse column names to create table
     csv = csv.replace('\r', '')
     colnames = csv.split('\n')[0].split(',')
-    #def get_postgres_datatype(crosscat_column_type):
-    #  return 'float8'
     
+    coltypes = []
     for colname in colnames:
-      pass
+      cctype = crosscat_column_types[colname]
+      if cctype == 'ignore':
+        coltypes.append('varchar(200)')
+      elif cctype == 'continuous':
+        coltypes.append('float8')
+      elif cctype == 'multinomial':
+        coltypes.append('varchar(200)')
 
-    coltypes = ['float8']*len(colnames) #[crosscat_column_types['
-    coltypes[0] = 'varchar(100)'
     colstring = ', '.join([tup[0] + ' ' + tup[1] for tup in zip(colnames, coltypes)])
     # TODO: add my own primary key
     print ("CREATE TABLE IF NOT EXISTS %s (%s);" % (tablename, colstring))
