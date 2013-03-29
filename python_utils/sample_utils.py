@@ -51,6 +51,25 @@ def simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed, n=1):
     #                                   observed_view_cluster_tuples)
     return x
 
+def simple_predictive_sample_multistate(M_c, X_L_list, X_D_list, Y, Q,
+                                        get_next_seed, n=1):
+    num_states = len(X_L_list)
+    assert(num_states==len(X_D_list))
+    n_from_each = n / num_states
+    n_sampled = n % num_states
+    random_state = numpy.random.RandomState(get_next_seed())
+    which_sampled = random_state.permutation(xrange(num_states))[:n_sampled]
+    which_sampled = set(which_sampled)
+    x = []
+    for state_idx, (X_L, X_D) in enumerate(zip(X_L_list, X_D_list)):
+        this_n = n_from_each
+        if state_idx in which_sampled:
+            this_n += 1
+        this_x = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
+                                          get_next_seed, this_n)
+        x.extend(this_x)
+    return x
+
 def simple_predictive_sample_observed(M_c, X_L, X_D, Y, which_row,
                                       which_columns, get_next_seed, n=1):
     get_which_view = lambda which_column: \
