@@ -14,7 +14,7 @@ class Engine(object):
         self.seed += 1
         return SEED
 
-    def initialize(self, M_c, M_r, T, initialization=None):
+    def initialize(self, M_c, M_r, T, initialization='from_the_prior'):
         # FIXME: why is M_r passed?
         p_State = State.p_State(M_c, T, initialization=initialization)
         X_L = p_State.get_X_L()

@@ -74,7 +74,7 @@ class ExampleServer(ServerEvents):
   methods = set(Engine_methods)
   mymethods = set(['add', 'runsql', 'upload', 'start', 'select', 'infer', 'predict'])
   hostname = 'localhost'
-  URI = 'http://' + hostname + ':8007'
+  URI = 'http://' + hostname + ':8008'
   def _get_msg(self, response):
     print('response', repr(response))
     return ' '.join(str(x) for x in [response.id, response.result or response.error])
@@ -131,9 +131,14 @@ class ExampleServer(ServerEvents):
     colnames = csv.split('\n')[0].split(',')
     #def get_postgres_datatype(crosscat_column_type):
     #  return 'float8'
+    
+    for colname in colnames:
+      pass
+
     coltypes = ['float8']*len(colnames) #[crosscat_column_types['
     coltypes[0] = 'varchar(100)'
     colstring = ', '.join([tup[0] + ' ' + tup[1] for tup in zip(colnames, coltypes)])
+    # TODO: add my own primary key
     print ("CREATE TABLE IF NOT EXISTS %s (%s);" % (tablename, colstring))
     cur.execute("CREATE TABLE IF NOT EXISTS %s (%s);" % (tablename, colstring))
 
@@ -217,8 +222,8 @@ root = My_JSON_RPC().customize(ExampleServer)
 site = server.Site(root)
 
 
-# 8007 is the port you want to run under. Choose something >1024
-PORT = 8007
+# 8008 is the port you want to run under. Choose something >1024
+PORT = 8008
 print('Listening on port %d...' % PORT)
 reactor.listenTCP(PORT, site)
 reactor.run()

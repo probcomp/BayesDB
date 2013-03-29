@@ -2,6 +2,7 @@
 #define GUARD_utils_h
 
 #include "numerics.h"
+#include "constants.h"
 #include "RandomNumberGenerator.h"
 //
 #include <iostream>
@@ -149,8 +150,9 @@ std::vector<double> reorder_per_map(std::vector<double> raw_values,
 std::vector<std::vector<double> > reorder_per_map(std::vector<std::vector<double> > raw_values, std::vector<int> global_column_indices, std::map<int, int> global_to_local);
 
 std::vector<std::vector<int> > draw_crp_init(std::vector<int> global_row_indices,
-						  double alpha,
-						  RandomNumberGenerator &rng);
+					     double alpha,
+					     RandomNumberGenerator &rng,
+					     std::string initialization=FROM_THE_PRIOR);
 
 void copy_column(const MatrixD fromM, int from_col, MatrixD &toM, int to_col);
 MatrixD extract_columns(const MatrixD fromM, std::vector<int> from_cols);

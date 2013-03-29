@@ -98,11 +98,23 @@ vector<double> std_vector_sum(vector<vector<double> > vec_vec) {
   return sum_vec;
 }
 
+vector<double> filter_nans(vector<double> values) {
+  vector<double> non_nan_values;
+  vector<double>::iterator it;
+  for(it=values.begin(); it!=values.end(); it++) {
+    if(isnan(*it)) continue;
+    non_nan_values.push_back(*it);
+  }
+  return non_nan_values;
+}
+
 double calc_sum_sq_deviation(vector<double> values) {
+  values = filter_nans(values);
   double sum = std::accumulate(values.begin(), values.end(), 0.0);
   double mean = sum / values.size();
   double sum_sq_deviation = 0;
-  for(vector<double>::iterator it = values.begin(); it!=values.end(); it++) {
+  vector<double>::iterator it;
+  for(it=values.begin(); it!=values.end(); it++) {
     sum_sq_deviation += pow((*it) - mean, 2) ;
   }
   return sum_sq_deviation;
@@ -241,19 +253,36 @@ vector<int> draw_crp_init_counts(int num_datum, double alpha,
 }
 
 vector<vector<int> > draw_crp_init(vector<int> global_row_indices,
-					double alpha,
-					RandomNumberGenerator &rng) {
-  int num_datum = global_row_indices.size();
-  vector<int> counts = draw_crp_init_counts(num_datum, alpha, rng);
-  std::random_shuffle(global_row_indices.begin(), global_row_indices.end());
-  vector<int>::iterator it = global_row_indices.begin();
+				   double alpha,
+				   RandomNumberGenerator &rng,
+				   string initialization) {
   vector<vector<int> > cluster_indices_v;
-  for(unsigned int cluster_idx=0; cluster_idx<counts.size(); cluster_idx++) {
-    int count = counts[cluster_idx];
-    vector<int> cluster_indices(count, -1);
-    std::copy(it, it+count, cluster_indices.begin());
-    cluster_indices_v.push_back(cluster_indices);
-    it += count;
+  if(initialization==TOGETHER) {
+    cluster_indices_v.push_back(global_row_indices);
+  } else if(initialization==APART) {
+    for(int i=0; i<global_row_indices.size(); i++) {
+      vector<int> singleton_cluster;
+      singleton_cluster.push_back(global_row_indices[i]);
+      cluster_indices_v.push_back(singleton_cluster);
+    }
+  } else if(initialization==FROM_THE_PRIOR) {
+    int num_datum = global_row_indices.size();
+    vector<int> counts = draw_crp_init_counts(num_datum, alpha, rng);
+    std::random_shuffle(global_row_indices.begin(),
+			global_row_indices.end());
+    vector<int>::iterator it = global_row_indices.begin();
+    for(unsigned int cluster_idx=0; cluster_idx<counts.size();
+	cluster_idx++) {
+      int count = counts[cluster_idx];
+      vector<int> cluster_indices(count, -1);
+      std::copy(it, it+count, cluster_indices.begin());
+      cluster_indices_v.push_back(cluster_indices);
+      it += count;
+    }
+  } else {
+    assert(1==0);
+    cout << "utils::draw_crp_init: UNKOWN INITIALIZATION: ";
+    cout << initialization << endl;
   }
   return cluster_indices_v;
 }
@@ -301,6 +330,7 @@ void construct_continuous_specific_hyper_grid(int n_grid,
 				 vector<double> &s_grid,
 				 vector<double> &mu_grid) {
   // construct s grid
+  // FIXME: should s_grid be a linspace from min el**2 to max el**2
   double sum_sq_deviation = calc_sum_sq_deviation(col_data);
   s_grid = log_linspace(sum_sq_deviation / 100., sum_sq_deviation, n_grid);
   // construct mu grids

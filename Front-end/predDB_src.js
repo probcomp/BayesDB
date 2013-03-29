@@ -1,4 +1,6 @@
 			
+// jQuery(document.getElementById("example").rows[2].cells[1]).addClass("redText")
+// jQuery(document.getElementById("example").rows[2].cells[1]).removeClass("redText")
 
 /* Converter functions*/
 			function encodeValues(observedValue){
@@ -172,34 +174,23 @@
 			}
 			
 			
-			
-			
-			
 
 /* Parser functions*/
 			function parseCommand(commandString){
-				if (commandString.split(' ')[0]=="INFER"){
+				if (command.split(' ')[0]=="SELECT"){
 					inferCommandParsed = commandString.split(' ');
 			    	confidence = inferCommandParsed[$.inArray("CONFIDENCE", inferCommandParsed) + 1]
 			    	resolution = inferCommandParsed[$.inArray("RESOLUTION", inferCommandParsed) + 1]
-			    	return {"COMMAND":"INFER", "CONFIDENCE": confidence}
-				}
-				if (commandString.split(' ')[0]=="PREDICT"){
-					inferCommandParsed = commandString.split(' ');
-			    	confidence = inferCommandParsed[$.inArray("CONFIDENCE", inferCommandParsed) + 1]
-			    	resolution = inferCommandParsed[$.inArray("RESOLUTION", inferCommandParsed) + 1]
-			    	return {"COMMAND":"PREDICT", "CONFIDENCE": confidence}
 				}
 			}
 			
 			
 			
 /* Loading and jqueries functions*/
-			function LoadToDatabaseTheCSVData(fileName, missingValsArray) {
-				data = preloadedDataFiles[fileName]
+			function LoadToDatabaseTheCSVData(data) {
  	 			window.masterData = data
- 	 			window.currentTable = fileName;
-	        	
+	        	JSONDict = CSVtoJSON(data)
+	        	test2 = JSONToSQL(JSONDict, "dha")
 	        	
 	        	/* JSONRPC_init()
 	 	 		JSONRPC_send_method("initialize",
@@ -226,125 +217,108 @@
 				}
 				aDataSet.shift()  
 	     		$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
+				console.log($('#example'))
 				$('#example').dataTable( {
-					"aaSorting": [],
 					"aaData": aDataSet,
 					"aoColumns": columns 
 				} );
-				if (missingValsArray.length != 0){
-					missingCells = missingValsArray;
-					for (var i = 0; i < missingCells.length ; i ++){
-						jQuery(document.getElementById("example").rows[missingCells[i][0] + 1].cells[missingCells[i][1]+1]).addClass("redText")
-					}
-				}
+				jQuery(document.getElementById("example").rows[2].cells[1]).addClass("redText")
  			}
+			
 			
 			
 			
 	 	 	$(document).ready(function() {	 
 	 	 		window.commandHistory = [];
 	 	 		window.scrollChange = false
-	 	 		window.currentTable = "";
-	 	 		$('body').layout({ north:{size:0.4}, west:{initHidden:	true }, east:{size:0.5}})
-
-	
-               /* $('#range_confidence').rangeinput({progress: true, max: 100})
+                $('#range_confidence').rangeinput({progress: true, max: 100})
                 $("#range_confidence").change(function(event, value) {
                     window.scrollChange = true
-                });*/
+                });
+                $('#range_resolution').rangeinput({progress: true, max: 100})
+                $("#range_resolution").change(function(event, value) {
+                	 window.scrollChange = true
+                });
                    window.sliders.style.display = 'none';
 			} );  
 			
 	 	 	
 		    jQuery(function($, undefined) {
 		        $('#term_demo').terminal(function(command, term) {
-		        
-		        	mydat = CSVtoSQLFormat(masterData, window.currentTable)
+		        	mydat = CSVtoSQLFormat(masterData, "dha")
 		        	if (command !== ''){
 		        		commandHistory.push(command)
 		        	}
 		        if (command !== '' || commandHistory.length != 0) {
-			        try {
-			        	var tableData = mydat["dataTable"]
-			        	var columnDefs = mydat["columnDefs"]
-					    var queryLang = TrimPath.makeQueryLang(columnDefs);
-					    if (command.split(' ')[0]=="SELECT") // command is a supported SQL command
-					    	{
-					    	   var statement = queryLang.parseSQL(command);
-							   var result = statement.filter(tableData);
-							   window.sliders.style.display = 'none';
-							   window.scrollChange = false
-							   commandHistory.length = 0
-							   var out = "";
-							    for (var r = 0; r < result.length; r++) {
-							        for (var c in result[r])
-							            /* out += c + ": " + result[r][c] + ", "; */
-							        	out += result[r][c] + ", ";
-							        out += "\n";
-							    }
-							    var aDataSet = $.csv.toArrays(out); 
-							    var columns = new Array();
-							    var counter = 0;
-							    for (var c in result[0]){
-							    	columns[counter] = { "sTitle": c , "sClass": "center"}
-							    	counter += 1
-							  }
-					    	}
-					    else   //Command is not a supported SQL command; need to parse and send back
-					    	{ 
-					    	var confidence = 0
-					    	/*if(window.scrollChange == false){
-					    		commandString = commandHistory[commandHistory.length - 1];
-					    		JSONObj = parseCommand(commandString);
-						    	window.sliders.style.display = '';
-						    	//$("#range_confidence").val(confidence) 
-					    	} */
-					    	/*if(window.scrollChange == true){
-					    		confidence =  $("#range_confidence").val()
-					    	}*/
-					    	/* send these two to backend and retrieve new CSVfile */
-					    	LoadToDatabaseTheCSVData("dha", findNaNValuesInCSV(data))
-					    	var aDataSet = $.csv.toArrays(masterData); 
-					    	var columns = new Array();
-						    var counter = 0;
-						    for (var c = 0; c < aDataSet[0].length; c++){
-						    	columns[c] = { "sTitle": aDataSet[0][c] , "sClass": "center"}
-						    	counter += 1
-						    }
-					    	aDataSet.shift();
-							
-					    	
-					    	
-		//			    	mydat = CSVtoSQLFormat(masterData, "dha")
-		//			    	var tableData = mydat["dataTable"]
-		//		        	var columnDefs = mydat["columnDefs"]
-		//			    	//return from the middleware the csv file instead of the following 
-		//			    	// 2 lines and the for loop. note that "out" is a csv file.
-		//			    	command = commandHistory[commandHistory.length - 1]
-		//			    	command = command.replace("INFER","SELECT");
-		//			    	command = command.substring(0, command.indexOf("WITH") - 1); 
-		//			    	var statement = queryLang.parseSQL(command);
-		//					var result = statement.filter(tableData); 
-					    	
-					    	
-					    }
-					    
-			     		$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
-						$('#example').dataTable( {
-							"aaData": aDataSet,
-							"aoColumns": columns
-						} );
-						
-				        if (result !== undefined) {
-				        /* term.echo(new String(result)); */
-				        }
-			        } catch(e) { //catch the error in the terminal
-			        term.error(new String(e));
-			        //term.echo(''); 
-			        }
-		        } 
-			    else {
-		        term.echo(''); 
+		        	
+		        try {
+		        	var tableData = mydat["dataTable"]
+		        	var columnDefs = mydat["columnDefs"]
+				
+			    var queryLang = TrimPath.makeQueryLang(columnDefs);
+			    if (command.split(' ')[0]=="SELECT")
+			    	{
+			    	   var statement = queryLang.parseSQL(command);
+					   var result = statement.filter(tableData);
+					   window.sliders.style.display = 'none';
+					   window.scrollChange = false
+					   commandHistory.length = 0
+			    	}
+			    else  
+			    	{ var confidence = 0
+			    	  var resolution = 0
+			    	if(window.scrollChange == false){
+			    		inferCommandParsed = commandHistory[commandHistory.length - 1].split(' ');
+				    	confidence = inferCommandParsed[$.inArray("CONFIDENCE", inferCommandParsed) + 1]
+				    	resolution = inferCommandParsed[$.inArray("RESOLUTION", inferCommandParsed) + 1]
+				    	window.sliders.style.display = '';
+				    	$("#range_confidence").val(confidence) 
+				    	$("#range_resolution").val(resolution) 
+			    	} if(window.scrollChange == true){
+			    		confidence =  $("#range_confidence").val()
+			    		resolution =  $("#range_resolution").val()
+			    	}
+			    	/* send these two to backend and retrieve new table */
+			    	tableData =  { 
+		        	        Invoice  : [ { "id": 1, "total": 100, "custId": 10 }]}
+			    	
+			    	command = commandHistory[commandHistory.length - 1]
+			    	command = command.replace("INFER","SELECT");
+			    	command = command.substring(0, command.indexOf("WITH") - 1); 
+			    	var statement = queryLang.parseSQL(command);
+					var result = statement.filter(tableData);  
+			    	}
+			    
+			    var out = "";
+			    for (var r = 0; r < result.length; r++) {
+			        for (var c in result[r])
+			            /* out += c + ": " + result[r][c] + ", "; */
+			        	out += result[r][c] + ", ";
+			        out += "\n";
+			    }
+			    var aDataSet = $.csv.toArrays(out); 
+			    
+			    var columns = new Array();
+			    var counter = 0;
+			    for (var c in result[0]){
+			    	columns[counter] = { "sTitle": c , "sClass": "center"}
+			    	counter += 1
+			    }
+			    
+	     		$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
+				$('#example').dataTable( {
+					"aaData": aDataSet,
+					"aoColumns": columns
+				} );
+				
+		        if (result !== undefined) {
+		        /* term.echo(new String(result)); */
+		        }
+		        } catch(e) {
+		        term.error(new String(e));
+		        }
+		        } else {
+		        /* term.echo(''); */
 		        }
 		        }, {
 		        greetings: '',
@@ -353,43 +327,14 @@
 		        width: 1000,
 		        prompt: 'SQL Command>'});
 		        });
-		
-		preloadedDataFiles = new Object();
-		
-		function menu_select(event) {
-			if (event.target.selectedIndex == 0) {
-				$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
-				$('#example').dataTable( {
-					"aaData": [],
-					"aoColumns": []
-				} );
-			} else {
-				LoadToDatabaseTheCSVData(event.target.value, []);
-				
-				//send the file to backend for analysis
-			}
-		}
-		
+			
 		function ProcessFiles(files_input) {
 			for (var file_index = 0; file_index < files_input.length; file_index++) {
+				console.log(files_input[0].name);
 				var reader = new FileReader();
-				reader.file_name = files_input[file_index].name.replace(".csv","");
 				reader.onload = function(e) {
-					preloadedDataFiles[e.target.file_name] = e.target.result;
-					jQuery(document.getElementById('menu')).append("<option value='" + e.target.file_name + "'>" + e.target.file_name + "</option>")
-					// LoadToDatabaseTheCSVData(e.target.result)
+					LoadToDatabaseTheCSVData(e.target.result)
 				}
 				reader.readAsBinaryString(files_input[file_index])	
 			}
 		}
-		
-		
-		
-		/*tempFakeDataFiles = new Object()
-		function tempFakeFileLoading(files_input){
-			var reader = new FileReader();
-			reader.file_name = files_input[file_index].name.replace(".csv","");
-		}*/
-		
-		
-		
