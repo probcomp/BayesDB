@@ -36,13 +36,13 @@ cdef extern from "ContinuousComponentModel.h":
 cdef class p_ContinuousComponentModel:
     cdef ContinuousComponentModel *thisptr
     cdef cpp_map[cpp_string, double] hypers
-    def __cinit__(self, in_map, count=None, sum_x=None, sum_x_sq=None):
+    def __cinit__(self, in_map, count=None, sum_x=None, sum_x_squared=None):
           set_string_double_map(self.hypers, in_map)
           if count is None:
               self.thisptr = new_ContinuousComponentModel(self.hypers)
           else:
               self.thisptr = new_ContinuousComponentModel(self.hypers,
-                                                          count, sum_x, sum_x_sq)
+                                                          count, sum_x, sum_x_squared)
     def __dealloc__(self):
         del_ContinuousComponentModel(self.thisptr)
     def get_draw(self, seed):
