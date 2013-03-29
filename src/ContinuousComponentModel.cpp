@@ -158,6 +158,9 @@ double ContinuousComponentModel::get_draw(int random_seed) const {
   boost::uniform_01<boost::mt19937> _dist(_engine);
   boost::random::student_t_distribution<double> student_t(nu);
   double student_t_draw = student_t(_dist);
+  // FIXME: should 's' be divided by 2 as well here to reconcile Murphy with Teh?
+  // http://www.cs.ubc.ca/~murphyk/Teaching/CS340-Fall07/reading/NG.pdf
+  // http://www.stats.ox.ac.uk/~teh/research/notes/GaussianInverseGamma.pdf
   double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
   double draw = student_t_draw * coeff + mu;
   return draw;
