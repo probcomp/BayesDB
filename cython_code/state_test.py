@@ -79,9 +79,12 @@ for transition_idx in range(num_transitions):
         )
     print format_list % values_tuple
     plot_filename = 'X_D'
+    save_filename = 'last_state.pkl.gz'
     if transition_idx % 10 == 0:
         plot_filename = 'iter_%s_X_D' % transition_idx
+        save_filename = 'iter_%s_state.pkl.gz' % transition_idx
     p_State.plot(filename=plot_filename)
+    p_State.save(filename=save_filename, M_r=M_r, M_c=M_c, T=T)
 
 # # print the final state
 # X_D = p_State.get_X_D()
