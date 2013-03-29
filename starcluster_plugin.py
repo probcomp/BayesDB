@@ -141,6 +141,9 @@ class tabular_predDBSetup(ClusterSetup):
                log.info("Installing engine (compiling cython) on %s" % node.alias)
                cmd_str = 'bash -c -i "workon tabular_predDB && make cython"'
                run_as_user(node, user, cmd_str)
+               # create table BEFORE running middleware server
+               cmd_str = 'psql -f table_setup.sql'
+               run_as_user(node, user, cmd_str)
                # run server
                run_server_script = os.path.join(S.path.remote_code_dir,
                                                 S.path.run_server_script)
