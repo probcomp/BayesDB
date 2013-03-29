@@ -677,6 +677,9 @@ void State::init_column_hypers(vector<int> global_col_indices) {
   for(gci_it=global_col_indices.begin();gci_it!=global_col_indices.end(); gci_it++) {
     int global_col_idx = *gci_it;
     hypers_m[global_col_idx] = uniform_sample_hypers(global_col_idx);
+    if(!in(hypers_m[global_col_idx], (string) "fixed")) {
+      hypers_m[global_col_idx]["fixed"] = 0;
+    }	   
   }
 }
 
