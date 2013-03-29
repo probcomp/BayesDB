@@ -117,6 +117,8 @@ cdef extern from "State.h":
                                    vector[int] global_col_multinomial_counts,
                                    vector[int] global_row_indices,
                                    vector[int] global_col_indices,
+                                   string col_initialization,
+                                   string row_initialization,
                                    int N_GRID, int SEED)
      State *new_State "new State" (matrix[double] &data,
                                    vector[string] global_col_datatypes,
@@ -152,7 +154,8 @@ cdef class p_State:
     cdef vector[int] event_counts
     cdef np.ndarray T_array
 
-    def __cinit__(self, M_c, T, X_L=None, X_D=None, initialization=None,
+    def __cinit__(self, M_c, T, X_L=None, X_D=None,
+                  initialization='from_the_prior', row_initialization=-1,
                   N_GRID=31, SEED=0):
          # FIXME: actually use initialization 
          # modify State.pyx to accept column_types, event_counts
@@ -171,10 +174,15 @@ cdef class p_State:
          #
          must_initialize = X_L is None
          if must_initialize:
+              col_initialization = initialization
+              if row_initialization == -1:
+                   row_initialization = initialization
               self.thisptr = new_State(dereference(self.dataptr),
                                        self.column_types,
                                        self.event_counts,
                                        self.gri, self.gci,
+                                       col_initialization,
+                                       row_initialization,
                                        N_GRID, SEED)
          else:
               constructor_args = \
