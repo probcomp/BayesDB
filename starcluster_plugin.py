@@ -146,7 +146,10 @@ class tabular_predDBSetup(ClusterSetup):
                cmd_str = 'bash -c -i "workon tabular_predDB && make cython"'
                run_as_user(node, user, cmd_str)
                # set up postgres user, database
-               cmd_str = 'bash postgres_setup.sh'
+               postgres_setup_script = os.path.join(S.path.remote_code_dir,
+                                                    S.path.postgres_setup_script)
+               cmd_str = 'bash %s'
+               cmd_str %= postgres_setup_script
                node.ssh.execute(cmd_str)
                # run server
                run_server_script = os.path.join(S.path.remote_code_dir,
