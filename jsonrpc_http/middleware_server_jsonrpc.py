@@ -53,6 +53,7 @@ import json
 import datetime
 import tabular_predDB.python_utils.api_utils as au
 import tabular_predDB.python_utils.data_utils as du
+import pdb
 
 class ExampleServer(ServerEvents):
   # inherited hooks
@@ -89,9 +90,13 @@ class ExampleServer(ServerEvents):
     conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
     cur = conn.cursor()
     cur.execute(sql_command)
+    if sql_command.split()[0].lower() == 'select':
+      ret = cur.fetchall()
+    else:
+      ret = 0
     conn.commit()
     conn.close()
-    return 0
+    return ret
 
   def upload(self, tablename, csv, crosscat_column_types):
     # Write csv to file, temporarily (do I have to remove first row? test both ways)
@@ -109,8 +114,7 @@ class ExampleServer(ServerEvents):
     f.close()
     os.chmod(clean_csv_abs_path, 0755)
     
-    conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
-    cur = conn.cursor()
+    
     # Parse column names to create table
     csv = csv.replace('\r', '')
     colnames = csv.split('\n')[0].split(',')
@@ -134,32 +138,34 @@ class ExampleServer(ServerEvents):
     # Read T from file, while using appropriate cctypes, e.g. ignoring "ignore"s
     # TODO: warning: m_r and m_c have 0-indexed indices, but the db has 1-indexed keys
     t, m_r, m_c, header = du.continuous_or_ignore_from_file_with_colnames(csv_abs_path, cctypes)
-
     colstring = ', '.join([tup[0] + ' ' + tup[1] for tup in zip(colnames, postgres_coltypes)])
-    cur.execute("CREATE TABLE IF NOT EXISTS %s (%s);" % (tablename, colstring))
-    # Load CSV into Postgres
-    #print ("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
-    cur.execute("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
-    uploadtime = datetime.datetime.now().ctime()
-    cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, uploadtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
+
 
     # Call initialize on backend
-    """
     args_dict = dict()
     args_dict['M_c'] = m_c
     args_dict['M_r'] = m_r
-    args_dict['T'] = T
-    out, id = au.call('initialize', args_dict, BACKEND_URI)
+    args_dict['T'] = t
+    out, id = au.call('initialize', args_dict, self.BACKEND_URI)
     m_c, m_r, x_l_prime, x_d_prime = out
-    
-    cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s' AND uploadtime=%s;" % (tablename, uploadtime))
-    tableid = cur.fetchone()
-    print 'tableid:',tableid
-    modeltime = datetime.datetime.now().strftime()
-    cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime) VALUES (%d, '%s', '%s', '%s');" % (tableid, json.dumps(x_l_prime), json.dumps(x_d_prime), modeltime))
-    """
-    conn.commit()
-    conn.close()    
+
+    # Execute queries
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute("CREATE TABLE %s (%s);" % (tablename, colstring))
+      cur.execute("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
+      curtime = datetime.datetime.now().ctime()
+      cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s' AND uploadtime='%s';" % (tablename, curtime))
+      tableid = cur.fetchone()[0]
+      cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime) VALUES (%d, '%s', '%s', '%s');" % (tableid, json.dumps(x_l_prime), json.dumps(x_d_prime), curtime))
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+    finally:
+      if conn:
+        conn.close()    
     return 0
 
 

@@ -47,7 +47,7 @@ args_dict = dict()
 args_dict['sql_command'] = 'CREATE TABLE IF NOT EXISTS bob(id INT PRIMARY KEY, num INT);'
 out, id = au.call(method_name, args_dict, URI)
 print out
-assert (out==0)
+#assert (out==0)
 # TODO: Test that command was executed
 au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
 time.sleep(1)
@@ -60,6 +60,7 @@ args_dict['crosscat_column_types'] = crosscat_column_types
 out, id = au.call(method_name, args_dict, URI)
 assert (out==0)
 # TODO: Test that table was created and data was inserted into table
+#out, id = au.call('runsql', {'sql_command': 'SELECT...
 time.sleep(1)
 
 method_name = 'createmodel'
@@ -117,5 +118,9 @@ for value in cctypes:
 time.sleep(1)
 
 # Clean up: remove test rows from the db
-au.call('runsql', {'sql_command': 'DROP TABLE dhatest;'}, URI) 
-au.call('runsql', {'sql_command': "DELETE FROM preddb.table_index WHERE tablename='dhatest';"}, URI)
+au.call('runsql', {'sql_command': 'DROP TABLE %s;' % tablename}, URI)
+out, id = au.call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename}, URI)
+for result in out:
+    tableid = result[0]
+    au.call('runsql', {'sql_command': "DELETE FROM preddb.models WHERE tableid=%d " % tableid}, URI)
+    au.call('runsql', {'sql_command': "DELETE FROM preddb.table_index WHERE tableid=%d;" % tableid}, URI)
