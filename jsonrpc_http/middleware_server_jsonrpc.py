@@ -87,19 +87,24 @@ class ExampleServer(ServerEvents):
     return ' '.join(str(x) for x in [response.id, response.result or response.error])
   
   def runsql(self, sql_command):
-    conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
-    cur = conn.cursor()
-    cur.execute(sql_command)
-    if sql_command.split()[0].lower() == 'select':
-      ret = cur.fetchall()
-    else:
-      ret = 0
-    conn.commit()
-    conn.close()
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute(sql_command)
+      if sql_command.split()[0].lower() == 'select':
+        ret = cur.fetchall()
+      else:
+        ret = 0
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)      
+      return e
+    finally:
+      conn.close()
     return ret
 
   def upload(self, tablename, csv, crosscat_column_types):
-    # Write csv to file, temporarily (do I have to remove first row? test both ways)
+    # Write csv to file
     f = open('../postgres/%s.csv' % tablename, 'w')
     csv_abs_path = os.path.abspath(f.name)
     f.write(csv)
@@ -140,7 +145,6 @@ class ExampleServer(ServerEvents):
     t, m_r, m_c, header = du.continuous_or_ignore_from_file_with_colnames(csv_abs_path, cctypes)
     colstring = ', '.join([tup[0] + ' ' + tup[1] for tup in zip(colnames, postgres_coltypes)])
 
-
     # Call initialize on backend
     args_dict = dict()
     args_dict['M_c'] = m_c
@@ -163,6 +167,7 @@ class ExampleServer(ServerEvents):
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
+      return e
     finally:
       if conn:
         conn.close()    
@@ -171,7 +176,12 @@ class ExampleServer(ServerEvents):
 
   def createmodel(self, tablename, number=10, iterations=2):
     # Call analyze on backend
-    # Need to get M_c, M_r, and T!!
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user-sgeadmin')
+      cur = conn.cursor()
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      tableid = cur.fethone()[0]
+      
     """
     args_dict = dict()
     args_dict['M_c'] = M_c
