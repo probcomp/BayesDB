@@ -119,7 +119,6 @@ class ExampleServer(ServerEvents):
     f.close()
     os.chmod(clean_csv_abs_path, 0755)
     
-    
     # Parse column names to create table
     csv = csv.replace('\r', '')
     colnames = csv.split('\n')[0].split(',')
@@ -175,22 +174,57 @@ class ExampleServer(ServerEvents):
 
 
   def createmodel(self, tablename, number=10, iterations=2):
-    # Call analyze on backend
+    # Get M_c, T, X_L, and X_D from database
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user-sgeadmin')
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
-      tableid = cur.fethone()[0]
-      
-    """
+      tableid = cur.fetchone()[0]
+      cur.execute("SELECT m_c, t FROM preddb.table_index WHERE tableid=%d;" % tableid)
+      M_c, T = cur.fetchone()
+      cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND "
+                  + "modeltime=(SELECT MAX(modeltime) FROM preddb.models WHERE tableid=%d);" % (tableid, tableid))
+      X_L_prime_json, X_D_prime_json = cur.fetchone()
+      X_L_prime = json.loads(X_L_prime_json)
+      X_D_prime = json.loads(X_D_prime_json)
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()
+
+    # Call analyze on backend      
     args_dict = dict()
     args_dict['M_c'] = M_c
-    args_dict['M_r'] = M_r
     args_dict['T'] = T
-    out, id = au.call('initialize', args_dict, URI)
-    M_c, M_r, X_L_prime, X_D_prime = out
-    """
-    # Do I need to save X_L_prime and X_D_prime?
+    args_dict['X_L'] = X_L_prime
+    args_dict['X_D'] = X_D_prime
+    args_dict['kernel_list'] = 'kernel_list'
+    args_dict['n_steps'] = number
+    args_dict['c'] = 'c' # Currently ignored by analyze
+    args_dict['r'] = 'r' # Currently ignored by analyze
+    args_dict['max_iterations'] = 'max_iterations' # Currently ignored by analyze
+    args_dict['max_time'] = 'max_time' # Currently ignored by analyze
+    out, id = au.call('analyze', args_dict, self.BACKEND_URI)
+    X_L_prime, X_D_prime = out
+
+    # Store X_L_prime, X_D_prime
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      curtime = datetime.datetime.now().ctime()
+      cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime) " + \
+                  "VALUES (%d, '%s', '%s', '%s');" % \
+                    (tableid, json.dumps(X_L_prime), json.dumps(X_D_prime), curtime))
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()      
     return 0
 
   def select(self, querystring):
@@ -229,31 +263,8 @@ class ExampleServer(ServerEvents):
     conn.close()
     return json.loads(cctypes)
 
-# an attempt to change the header access-control-allow-origin: *
-class My_JSON_RPC(JSON_RPC):
-  def _ebRender(self, result, request, id, finish=True):
-    err = None
-    if not isinstance(result, BaseException):
-      try: result.raiseException()
-      except BaseException, e:
-        err = e
-        self.eventhandler.log(err, request, error=True)
-    else: err = result
-
-    err = self.render_error(err, id)
-    self._setresponseCode(err, request)
-
-    request.setHeader("content-type", 'application/json')
-    result = jsonrpc.jsonutil.encode(err).encode('utf-8')
-    request.setHeader("content-length", len(result))
-    request.setHeader("Access-Control-Allow-Origin", '*')
-    request.write(result)
-    if finish: request.finish()
-
-#root = JSON_RPC().customize(ExampleServer)
-root = My_JSON_RPC().customize(ExampleServer)
+root = JSON_RPC().customize(ExampleServer)
 site = server.Site(root)
-
 
 # 8008 is the port you want to run under. Choose something >1024
 PORT = 8008

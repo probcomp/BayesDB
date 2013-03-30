@@ -70,7 +70,9 @@ args_dict['number'] = 10
 args_dict['iterations'] = 2
 out, id = au.call(method_name, args_dict, URI)
 assert (out==0)
-# Test that inference was started?
+# TODO
+# Test that inference was started - there should now be two rows of latent states
+# once analyze is finished running.
 time.sleep(1)
 
 method_name = 'select'
@@ -78,6 +80,7 @@ args_dict = dict()
 args_dict['querystring'] = 'SELECT * FROM %s;' % tablename
 out, id = au.call(method_name, args_dict, URI)
 csv_results = out
+# TODO
 # Test that correct things were selected
 #assert(csv_results == table_csv)
 time.sleep(1)
@@ -92,6 +95,7 @@ args_dict['confidence'] = 0
 args_dict['limit'] = ""
 out, id = au.call(method_name, args_dict, URI)
 csv_results, cellnumbers = out
+# TODO
 # Test that missing values are filled in
 time.sleep(1)
 
@@ -104,6 +108,7 @@ args_dict['whereclause'] = ""
 args_dict['numpredictions'] = 10
 out, id = au.call(method_name, args_dict, URI)
 csv_results = out
+# TODO
 # Test that prediction worked properly
 time.sleep(1)
 
