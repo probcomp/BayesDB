@@ -44,17 +44,12 @@ crosscat_column_types = pickle.load(open('dhatest_column_types.pkl', 'r'))
 
 method_name = 'runsql'
 args_dict = dict()
-#args_dict['sql_command'] = 'DROP TABLE bob;'
 args_dict['sql_command'] = 'CREATE TABLE IF NOT EXISTS bob(id INT PRIMARY KEY, num INT);'
 out, id = au.call(method_name, args_dict, URI)
 print out
 assert (out==0)
-# Test that command was executed
-conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
-cur = conn.cursor()
-cur.execute('DROP TABLE bob;')
-conn.commit()
-conn.close()
+# TODO: Test that command was executed
+au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
 time.sleep(1)
 
 method_name = 'upload'
@@ -64,7 +59,7 @@ args_dict['csv'] = table_csv
 args_dict['crosscat_column_types'] = crosscat_column_types
 out, id = au.call(method_name, args_dict, URI)
 assert (out==0)
-# Test that table was created and data was inserted into table
+# TODO: Test that table was created and data was inserted into table
 time.sleep(1)
 
 method_name = 'createmodel'
@@ -93,6 +88,7 @@ args_dict['columnstring'] = ""
 args_dict['newtablename'] = ""
 args_dict['whereclause'] = ""
 args_dict['confidence'] = 0
+args_dict['limit'] = ""
 out, id = au.call(method_name, args_dict, URI)
 csv_results, cellnumbers = out
 # Test that missing values are filled in
@@ -109,3 +105,17 @@ out, id = au.call(method_name, args_dict, URI)
 csv_results = out
 # Test that prediction worked properly
 time.sleep(1)
+
+method_name = 'guessschema'
+args_dict = dict()
+args_dict['tablename'] = tablename
+args_dict['csv'] = table_csv
+out, id = au.call(method_name, args_dict, URI)
+cctypes = out
+for value in cctypes:
+    assert(value == 'ignore' or value == 'continuous' or value == 'multinomial')
+time.sleep(1)
+
+# Clean up: remove test rows from the db
+au.call('runsql', {'sql_command': 'DROP TABLE dhatest;'}, URI) 
+au.call('runsql', {'sql_command': "DELETE FROM preddb.table_index WHERE tablename='dhatest';"}, URI)

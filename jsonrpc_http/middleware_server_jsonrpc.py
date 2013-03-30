@@ -76,7 +76,7 @@ class ExampleServer(ServerEvents):
 
   # helper methods
   methods = set(Engine_methods)
-  mymethods = set(['add', 'runsql', 'upload', 'start', 'select', 'infer', 'predict'])
+  mymethods = set(['add', 'runsql', 'upload', 'select', 'infer', 'predict', 'createmodel', 'guessschema'])
   hostname = 'localhost'
   backend_hostname = 'localhost'
   URI = 'http://' + hostname + ':8008'
@@ -93,26 +93,7 @@ class ExampleServer(ServerEvents):
     conn.close()
     return 0
 
-  """
-  def create(self, tablename, columns):
-    # dump columns, so that we have it stored for testing with middleware_stub_client
-    pickle.dump(columns, open('create_%s_columns.pkl' % tablename, 'w'))
-    # parse the columns
-
-    conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
-    cur = conn.cursor()
-    #create_table_querystring = ''
-    #cur.execute(create_table_querystring)
-    #cur.execute("CREATE TABLE dha (id serial PRIMARY KEY, num integer, data varchar);")
-
-    conn.commit()
-    conn.close()
-    return 'table created'
-  """
-
   def upload(self, tablename, csv, crosscat_column_types):
-    pickle.dump(crosscat_column_types, open('crosscat_column_types.pkl', 'w'))
-
     # Write csv to file, temporarily (do I have to remove first row? test both ways)
     f = open('../postgres/%s.csv' % tablename, 'w')
     csv_abs_path = os.path.abspath(f.name)
@@ -155,13 +136,11 @@ class ExampleServer(ServerEvents):
     t, m_r, m_c, header = du.continuous_or_ignore_from_file_with_colnames(csv_abs_path, cctypes)
 
     colstring = ', '.join([tup[0] + ' ' + tup[1] for tup in zip(colnames, postgres_coltypes)])
-    #print ("CREATE TABLE IF NOT EXISTS %s (%s);" % (tablename, colstring))
     cur.execute("CREATE TABLE IF NOT EXISTS %s (%s);" % (tablename, colstring))
-    
     # Load CSV into Postgres
     #print ("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
     cur.execute("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
-    uploadtime = datetime.datetime.now().strftime()
+    uploadtime = datetime.datetime.now().ctime()
     cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, uploadtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
 
     # Call initialize on backend
@@ -226,7 +205,13 @@ class ExampleServer(ServerEvents):
 
   def guessschema(self, tablename, csv):
     """Guess crosscat types"""
-    
+    conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+    cur = conn.cursor()
+    cur.execute("SELECT cctypes FROM preddb.table_index WHERE tablename='%s';" % tablename)
+    cctypes = cur.fetchone()[0]
+    conn.commit()
+    conn.close()
+    return json.loads(cctypes)
     
 
 # an attempt to change the header access-control-allow-origin: *
