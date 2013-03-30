@@ -212,7 +212,6 @@ class ExampleServer(ServerEvents):
     conn.commit()
     conn.close()
     return json.loads(cctypes)
-    
 
 # an attempt to change the header access-control-allow-origin: *
 class My_JSON_RPC(JSON_RPC):
