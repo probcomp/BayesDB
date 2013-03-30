@@ -49,6 +49,10 @@ engine = Engine()
 import psycopg2
 import os
 import pickle
+import json
+import datetime
+import tabular_predDB.python_utils.api_utils as au
+import tabular_predDB.python_utils.data_utils as du
 
 class ExampleServer(ServerEvents):
   # inherited hooks
@@ -74,15 +78,13 @@ class ExampleServer(ServerEvents):
   methods = set(Engine_methods)
   mymethods = set(['add', 'runsql', 'upload', 'start', 'select', 'infer', 'predict'])
   hostname = 'localhost'
+  backend_hostname = 'localhost'
   URI = 'http://' + hostname + ':8008'
+  BACKEND_URI = 'http://' + backend_hostname + ':8007'
   def _get_msg(self, response):
     print('response', repr(response))
     return ' '.join(str(x) for x in [response.id, response.result or response.error])
-
-  def add(self, a, b):
-    print ('adding %d and %d' % (a, b))
-    return a+b+2
-
+  
   def runsql(self, sql_command):
     conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
     cur = conn.cursor()
@@ -102,7 +104,7 @@ class ExampleServer(ServerEvents):
     #create_table_querystring = ''
     #cur.execute(create_table_querystring)
     #cur.execute("CREATE TABLE dha (id serial PRIMARY KEY, num integer, data varchar);")
-    #cur.execute("INSERT INTO preddb.tableindex (tablename, numsamples, uploadtime) VALUES (%s, %s, %s);" % (tablename, 0, ))
+
     conn.commit()
     conn.close()
     return 'table created'
@@ -117,7 +119,7 @@ class ExampleServer(ServerEvents):
     f.write(csv)
     f.close()
     os.chmod(csv_abs_path, 0755)
-
+    
     # Write csv to a file, with colnames (first row) removed
     clean_csv = csv[csv.index('\n')+1:]
     f = open('../postgres/%s_clean.csv' % tablename, 'w')
@@ -132,31 +134,58 @@ class ExampleServer(ServerEvents):
     csv = csv.replace('\r', '')
     colnames = csv.split('\n')[0].split(',')
     
-    coltypes = []
+    # Complete the given crosscat_column_types, which may have missing data, into cctypes
+    postgres_coltypes = []
+    cctypes = []
     for colname in colnames:
-      cctype = crosscat_column_types[colname]
+      if colname in crosscat_column_types:
+        cctype = crosscat_column_types[colname]
+      else:
+        cctype = 'continuous'
+      cctypes.append(cctype)
       if cctype == 'ignore':
-        coltypes.append('varchar(200)')
+        postgres_coltypes.append('varchar(200)')
       elif cctype == 'continuous':
-        coltypes.append('float8')
+        postgres_coltypes.append('float8')
       elif cctype == 'multinomial':
-        coltypes.append('varchar(200)')
+        postgres_coltypes.append('varchar(200)')
+        
+    # Read T from file, while using appropriate cctypes, e.g. ignoring "ignore"s
+    # TODO: warning: m_r and m_c have 0-indexed indices, but the db has 1-indexed keys
+    t, m_r, m_c, header = du.continuous_or_ignore_from_file_with_colnames(csv_abs_path, cctypes)
 
-    colstring = ', '.join([tup[0] + ' ' + tup[1] for tup in zip(colnames, coltypes)])
-    # TODO: add my own primary key
-    print ("CREATE TABLE IF NOT EXISTS %s (%s);" % (tablename, colstring))
+    colstring = ', '.join([tup[0] + ' ' + tup[1] for tup in zip(colnames, postgres_coltypes)])
+    #print ("CREATE TABLE IF NOT EXISTS %s (%s);" % (tablename, colstring))
     cur.execute("CREATE TABLE IF NOT EXISTS %s (%s);" % (tablename, colstring))
-
+    
     # Load CSV into Postgres
-    print ("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
+    #print ("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
     cur.execute("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
+    uploadtime = datetime.datetime.now().strftime()
+    cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, uploadtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
+
+    # Call initialize on backend
+    """
+    args_dict = dict()
+    args_dict['M_c'] = m_c
+    args_dict['M_r'] = m_r
+    args_dict['T'] = T
+    out, id = au.call('initialize', args_dict, BACKEND_URI)
+    m_c, m_r, x_l_prime, x_d_prime = out
+    
+    cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s' AND uploadtime=%s;" % (tablename, uploadtime))
+    tableid = cur.fetchone()
+    print 'tableid:',tableid
+    modeltime = datetime.datetime.now().strftime()
+    cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime) VALUES (%d, '%s', '%s', '%s');" % (tableid, json.dumps(x_l_prime), json.dumps(x_d_prime), modeltime))
+    """
     conn.commit()
-    conn.close()
+    conn.close()    
     return 0
 
 
-  def createmodel(self, tablename):
-    # Call initialize on backend
+  def createmodel(self, tablename, number=10, iterations=2):
+    # Call analyze on backend
     # Need to get M_c, M_r, and T!!
     """
     args_dict = dict()
@@ -169,12 +198,6 @@ class ExampleServer(ServerEvents):
     # Do I need to save X_L_prime and X_D_prime?
     return 0
 
-  def start(self, tablename):
-    # Call analyze on backend
-    # start inference with some default number of samples
-    #return # return 0 if inference started properly, or error message.
-    return 0
-
   def select(self, querystring):
     # return csv
     conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
@@ -185,9 +208,9 @@ class ExampleServer(ServerEvents):
     # Convert results into csv so they can be returned...
     return ""
   
-  def infer(self, tablename, columnstring, newtablename, confidence, whereclause):
-    # INFER columnstring FROM tablename WHERE whereclause WITH confidence;
-    # INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename;
+  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit):
+    # INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
+    # INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
     # newtablename == null/emptystring if we don't want to do INTO
     
     # cellnumbers: list of row/col pairs [[r,c], [r,c], ...]
@@ -200,6 +223,11 @@ class ExampleServer(ServerEvents):
     # one row per prediction, with all the given and predicted variables
     csv = ""
     return csv
+
+  def guessschema(self, tablename, csv):
+    """Guess crosscat types"""
+    
+    
 
 # an attempt to change the header access-control-allow-origin: *
 class My_JSON_RPC(JSON_RPC):

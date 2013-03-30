@@ -38,19 +38,9 @@ id = args.start_id
 URI = 'http://' + hostname + ':8008'
 print 'URI: ', URI
 
-T, M_r, M_c = du.gen_factorial_data_objects(
-    seed, num_clusters,
-    num_cols, num_rows, num_splits,
-    max_mean=max_mean, max_std=max_std,
-    )
-
-# non-stub functions
-#non_stub = set(['initialize', 'initialize_and_analyze', 'analyze', 'impute',
-#                'simple_predictive_sample'])
-non_stub = set(['runsql', 'upload', 'start', 'select', 'infer', 'predict'])
-
 tablename = 'dhatest'
 table_csv = open('../postgres/%s.csv' % tablename, 'r').read()
+crosscat_column_types = pickle.load(open('dhatest_column_types.pkl', 'r'))
 
 method_name = 'runsql'
 args_dict = dict()
@@ -71,15 +61,17 @@ method_name = 'upload'
 args_dict = dict()
 args_dict['tablename'] = tablename
 args_dict['csv'] = table_csv 
-args_dict['crosscat_column_types'] = ""
+args_dict['crosscat_column_types'] = crosscat_column_types
 out, id = au.call(method_name, args_dict, URI)
 assert (out==0)
 # Test that table was created and data was inserted into table
 time.sleep(1)
 
-method_name = 'start'
+method_name = 'createmodel'
 args_dict = dict()
 args_dict['tablename'] = tablename
+args_dict['number'] = 10
+args_dict['iterations'] = 2
 out, id = au.call(method_name, args_dict, URI)
 assert (out==0)
 # Test that inference was started?

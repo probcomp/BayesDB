@@ -87,6 +87,26 @@ def gen_M_c_from_T(T):
         )
     return M_c
 
+def gen_M_c_from_T_with_colnames(T, colnames):
+    num_rows = len(T)
+    num_cols = len(T[0])
+    #
+    gen_continuous_metadata = lambda: dict(modeltype="normal_inverse_gamma",
+                                           value_to_code=dict(),
+                                           code_to_value=dict())
+    column_metadata = [
+        gen_continuous_metadata()
+        for col_idx in range(num_cols)
+        ]
+    name_to_idx = dict(zip(colnames, range(num_cols)))
+    idx_to_name = dict(zip(map(str, range(num_cols)),colnames))
+    M_c = dict(
+        name_to_idx=name_to_idx,
+        idx_to_name=idx_to_name,
+        column_metadata=column_metadata,
+        )
+    return M_c
+
 def gen_factorial_data_objects(gen_seed, num_clusters,
                                num_cols, num_rows, num_splits,
                                max_mean=10, max_std=1):
@@ -140,4 +160,24 @@ def all_continuous_from_file(filename, max_rows=None, gen_seed=0, has_header=Tru
             T = [T[which_row] for which_row in which_rows]
         M_r = gen_M_r_from_T(T)
         M_c = gen_M_c_from_T(T)
+    return T, M_r, M_c, header
+
+def continuous_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=None, gen_seed=0):
+    header = None
+    T, M_r, M_c = None, None, None
+    colmask = map(lambda x: 1 if x != 'ignore' else 0, cctypes)
+    with open(filename) as fh:
+        csv_reader = csv.reader(fh)
+        header = csv_reader.next()
+        T = numpy.array([
+                [col for col, flag in zip(row, colmask) if flag] for row in csv_reader
+                ], dtype=float).tolist()
+        num_rows = len(T)
+        if (max_rows is not None) and (num_rows > max_rows):
+            random_state = numpy.random.RandomState(gen_seed)
+            which_rows = random_state.permutation(xrange(num_rows))
+            which_rows = which_rows[:max_rows]
+            T = [T[which_row] for which_row in which_rows]
+        M_r = gen_M_r_from_T(T)
+        M_c = gen_M_c_from_T_with_colnames(T, [col for col, flag in zip(header, colmask) if flag])
     return T, M_r, M_c, header
