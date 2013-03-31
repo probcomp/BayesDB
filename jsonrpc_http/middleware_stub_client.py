@@ -46,8 +46,6 @@ method_name = 'runsql'
 args_dict = dict()
 args_dict['sql_command'] = 'CREATE TABLE IF NOT EXISTS bob(id INT PRIMARY KEY, num INT);'
 out, id = au.call(method_name, args_dict, URI)
-print out
-#assert (out==0)
 # TODO: Test that command was executed
 au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
 time.sleep(1)
@@ -58,9 +56,12 @@ args_dict['tablename'] = tablename
 args_dict['csv'] = table_csv 
 args_dict['crosscat_column_types'] = crosscat_column_types
 out, id = au.call(method_name, args_dict, URI)
-assert (out==0)
+assert (out==0 or out=="Error: table with that name already exists.")
 # TODO: Test that table was created and data was inserted into table
-#out, id = au.call('runsql', {'sql_command': 'SELECT...
+# Test that one model was created
+out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
+               + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI)
+assert(out[0][0] == 1)
 time.sleep(1)
 
 method_name = 'createmodel'
@@ -70,9 +71,10 @@ args_dict['number'] = 10
 args_dict['iterations'] = 2
 out, id = au.call(method_name, args_dict, URI)
 assert (out==0)
-# TODO
-# Test that inference was started - there should now be two rows of latent states
-# once analyze is finished running.
+# Test that inference was started - there should now be two rows of latent states once analyze is finished running.
+out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
+               + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI)
+assert(out[0][0] == 2)
 time.sleep(1)
 
 method_name = 'select'

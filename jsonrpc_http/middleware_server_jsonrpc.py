@@ -156,6 +156,9 @@ class ExampleServer(ServerEvents):
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
+      cur.execute("select exists(select * from information_schema.tables where table_name='%s');" % tablename)
+      if cur.fetchone()[0]:
+        return "Error: table with that name already exists."
       cur.execute("CREATE TABLE %s (%s);" % (tablename, colstring))
       cur.execute("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
       curtime = datetime.datetime.now().ctime()
@@ -181,9 +184,11 @@ class ExampleServer(ServerEvents):
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
       tableid = cur.fetchone()[0]
       cur.execute("SELECT m_c, t FROM preddb.table_index WHERE tableid=%d;" % tableid)
-      M_c, T = cur.fetchone()
-      cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND "
-                  + "modeltime=(SELECT MAX(modeltime) FROM preddb.models WHERE tableid=%d);" % (tableid, tableid))
+      M_c_json, T_json = cur.fetchone()
+      M_c = json.loads(M_c_json)
+      T = json.loads(T_json)
+      cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND " % tableid
+                  + "modeltime=(SELECT MAX(modeltime) FROM preddb.models WHERE tableid=%d);" % tableid)
       X_L_prime_json, X_D_prime_json = cur.fetchone()
       X_L_prime = json.loads(X_L_prime_json)
       X_D_prime = json.loads(X_D_prime_json)
