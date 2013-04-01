@@ -11,4 +11,4 @@ fi
 cd /var/lib/jenkins/workspace/C++\ unit\ tests/tabular-predDB
 make tests
 cd tests
-nosetests --with-xunit cpp_unit_tests.py cpp_long_tests.py
+nosetests --with-xunit cpp_unit_tests.py cpp_long_tests.py test_middleware.py
