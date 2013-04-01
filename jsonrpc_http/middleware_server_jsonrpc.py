@@ -105,7 +105,8 @@ class ExampleServer(ServerEvents):
 
   def upload(self, tablename, csv, crosscat_column_types):
     # Write csv to file
-    f = open('../postgres/%s.csv' % tablename, 'w')
+    cur_dir = os.path.dirname(os.path.abspath(__file__))
+    f = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'w')
     csv_abs_path = os.path.abspath(f.name)
     f.write(csv)
     f.close()
@@ -113,7 +114,7 @@ class ExampleServer(ServerEvents):
     
     # Write csv to a file, with colnames (first row) removed
     clean_csv = csv[csv.index('\n')+1:]
-    f = open('../postgres/%s_clean.csv' % tablename, 'w')
+    f = open('%s/../postgres/%s_clean.csv' % (cur_dir, tablename), 'w')
     clean_csv_abs_path = os.path.abspath(f.name)
     f.write(clean_csv)
     f.close()
@@ -253,8 +254,40 @@ class ExampleServer(ServerEvents):
     return csv, cellnumbers 
 
   def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
-    # Call simple predictive sample on backend
     # one row per prediction, with all the given and predicted variables
+    """
+    # Get M_c, X_L, and X_D from database
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      tableid = cur.fetchone()[0]
+      cur.execute("SELECT m_c FROM preddb.table_index WHERE tableid=%d;" % tableid)
+      M_c_json = cur.fetchone()
+      M_c = json.loads(M_c_json)
+      cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND " % tableid
+                  + "modeltime=(SELECT MAX(modeltime) FROM preddb.models WHERE tableid=%d);" % tableid)
+      X_L_prime_json, X_D_prime_json = cur.fetchone()
+      X_L_prime = json.loads(X_L_prime_json)
+      X_D_prime = json.loads(X_D_prime_json)
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()
+
+    args_dict = dict()
+    args_dict['M_c'] = M_c
+    args_dict['X_L'] = X_L_prime
+    args_dict['X_D'] = X_D_prime
+    args_dict['Y'] = None # Y: given values. TODO: extract from whereclause?
+    args_dict['Q'] = [(0,0), (0,1)] # Query row: Q[0][0], cols: [q[1] for q in Q]
+    args_dict['n'] = 1
+    for idx in range(numpredictions):
+      out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
+    """
     csv = ""
     return csv
 
