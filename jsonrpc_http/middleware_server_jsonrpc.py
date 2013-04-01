@@ -87,6 +87,7 @@ class ExampleServer(ServerEvents):
     return ' '.join(str(x) for x in [response.id, response.result or response.error])
   
   def runsql(self, sql_command):
+    """Run an arbitrary sql command. Returns the query results for select; 0 if not select."""
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
@@ -104,6 +105,10 @@ class ExampleServer(ServerEvents):
     return ret
 
   def upload(self, tablename, csv, crosscat_column_types):
+    """Upload a csv table to the predictive db.
+    Crosscat_column_types must be a dictionary mapping column names
+    to either 'ignore', 'continuous', or 'multinomial'. Not every
+    column name must be present in the dictionary: default is continuous."""
     # Write csv to file
     cur_dir = os.path.dirname(os.path.abspath(__file__))
     f = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'w')
@@ -178,6 +183,7 @@ class ExampleServer(ServerEvents):
 
 
   def createmodel(self, tablename, number=10, iterations=2):
+    """Run analyze for the selected table."""
     # Get M_c, T, X_L, and X_D from database
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
@@ -234,7 +240,8 @@ class ExampleServer(ServerEvents):
     return 0
 
   def select(self, querystring):
-    # return csv
+    """Run a select query, and return the results in csv format, with appropriate header."""
+    # TODO: implement
     conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
     cur = conn.cursor()
     cur.execute(querystring)
@@ -244,17 +251,20 @@ class ExampleServer(ServerEvents):
     return ""
   
   def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit):
-    # INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
-    # INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
-    # newtablename == null/emptystring if we don't want to do INTO
-    
-    # cellnumbers: list of row/col pairs [[r,c], [r,c], ...]
+    """Impute missing values.
+    Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
+    Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
+    Argument newtablename == null/emptystring if we don't want to do INTO
+    """
+    # TODO: implement
     csv = ""
+    #cellnumbers: list of row/col pairs [[r,c], [r,c], ...]
     cellnumbers = []
     return csv, cellnumbers 
 
   def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
-    # one row per prediction, with all the given and predicted variables
+    """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
+    # TODO: FIX
     """
     # Get M_c, X_L, and X_D from database
     try:
@@ -292,13 +302,20 @@ class ExampleServer(ServerEvents):
     return csv
 
   def guessschema(self, tablename, csv):
-    """Guess crosscat types"""
-    conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
-    cur = conn.cursor()
-    cur.execute("SELECT cctypes FROM preddb.table_index WHERE tablename='%s';" % tablename)
-    cctypes = cur.fetchone()[0]
-    conn.commit()
-    conn.close()
+    """Guess crosscat types. Returns a list indicating each columns type: 'ignore',
+    'continuous', or 'multinomial'."""
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute("SELECT cctypes FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cctypes = cur.fetchone()[0]
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()
     return json.loads(cctypes)
 
 root = JSON_RPC().customize(ExampleServer)
