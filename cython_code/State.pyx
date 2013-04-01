@@ -2,7 +2,6 @@ from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libcpp.map cimport map as c_map
-from libcpp.set cimport set as c_set
 from cython.operator import dereference
 cimport numpy as np
 #
@@ -98,7 +97,7 @@ cdef extern from "State.h":
           double get_data_score()
           double get_marginal_logp()
           int get_num_views()
-          c_map[int, c_set[int]] get_column_groups()
+          c_map[int, vector[int]] get_column_groups()
           string to_string(string join_str, bool top_level)
           # API helpers
           vector[c_map[string, double]] get_column_hypers()
