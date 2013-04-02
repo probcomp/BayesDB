@@ -141,7 +141,7 @@
 /* JSON functions*/
 			function JSONRPC_init() {
 			    port = "8008"
-			    hostname = "192.168.1.3"
+			    hostname = "localhost"
 			    JSONRPC_URL = "http://" + hostname + ":" + port
 		 	    JSONRPC_ID = 0				
 			}
