@@ -140,9 +140,10 @@
 			
 /* JSON functions*/
 			function JSONRPC_init() {
-				// "http://ec2-54-235-235-103.compute-1.amazonaws.com:8007"
-	 	 		JSONRPC_URL = "http://ec2-54-235-235-103.compute-1.amazonaws.com:8007" //"http://ec2-54-224-73-22.compute-1.amazonaws.com:8007" //"http://localhost:8007/"
-		 	 	JSONRPC_ID = 0				
+			    port = "8008"
+			    hostname = "192.168.1.3"
+			    JSONRPC_URL = "http://" + hostname + ":" + port
+		 	    JSONRPC_ID = 0				
 			}
 			
 			function JSONRPC_send_method(method_name, parameters, function_to_call) {
