@@ -109,8 +109,8 @@ def names_to_global_indices(column_names, M_c):
 def extract_view_column_info(M_c, X_L, view_idx):
     view_state_i = X_L['view_state'][view_idx]
     column_names = view_state_i['column_names']
+    # view_state_i ordering should match global ordering
     column_component_suffstats = view_state_i['column_component_suffstats']
-    # ensure view_state_i ordering matches global ordering
     global_column_indices = names_to_global_indices(column_names, M_c)
     column_metadata = numpy.array([
         M_c['column_metadata'][col_idx]
