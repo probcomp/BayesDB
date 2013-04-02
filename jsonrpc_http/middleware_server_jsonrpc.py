@@ -36,7 +36,8 @@ from twisted.internet import ssl
 import traceback
 
 from twisted.internet import reactor
-from twisted.web import server
+from twisted.web import server, iweb
+from twisted.web.resource import EncodingResourceWrapper
 
 from jsonrpc.server import ServerEvents, JSON_RPC
 
@@ -318,8 +319,36 @@ class ExampleServer(ServerEvents):
         conn.close()
     return json.loads(cctypes)
 
+
+class CorsEncoderFactory(object):
+  
+  def encoderForRequest(self, request):
+    request.setHeader("Access-Control-Allow-Origin", '*')
+    request.setHeader("Access-Control-Allow-Methods", 'PUT, GET')
+    return _CorsEncoder(request)
+
+  
+class _CorsEncoder(object):
+  """
+  @ivar _request: A reference to the originating request.
+  
+  @since: 12.3
+  """
+    
+  def __init__(self, request):
+    self._request = request
+      
+  def encode(self, data):
+    print(data)
+    return data
+      
+  def finish(self):
+    return ""
+
+
 root = JSON_RPC().customize(ExampleServer)
-site = server.Site(root)
+wrapped = EncodingResourceWrapper(root, [CorsEncoderFactory()])
+site = server.Site(wrapped)
 
 # 8008 is the port you want to run under. Choose something >1024
 PORT = 8008
