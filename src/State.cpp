@@ -286,7 +286,7 @@ vector<map<string, double> > State::get_column_hypers() const {
 
 map<string,double> State::get_column_partition_hypers() const {
   map<string, double> local_hypers;
-  local_hypers["log_alpha"] = log(get_column_crp_alpha());
+  local_hypers["alpha"] = get_column_crp_alpha();
   return local_hypers;
 }
 

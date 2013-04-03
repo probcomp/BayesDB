@@ -266,8 +266,10 @@ def determine_cluster_data_logps(M_c, X_L, X_D, Y, query_row, view_idx):
 
 def determine_cluster_crp_logps(view_state_i):
     counts = view_state_i['row_partition_model']['counts']
-    log_alpha = view_state_i['row_partition_model']['hypers']['log_alpha']
-    alpha = numpy.exp(log_alpha)
+    # FIXME: remove branch after Avinash is done with old saved states 
+    alpha = view_state_i['row_partition_model']['hypers'].get('alpha')
+    if alpha is None:
+        alpha = numpy.exp(view_state_i['row_partition_model']['hypers']['log_alpha'])
     counts_appended = numpy.append(counts, alpha)
     sum_counts_appended = sum(counts_appended)
     logps = numpy.log(counts_appended / float(sum_counts_appended))

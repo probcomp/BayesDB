@@ -353,9 +353,15 @@ def floatify_dict_dict(in_dict):
           in_dict[key] = floatify_dict(in_dict[key])
      return in_dict
 
+def extract_row_partition_alpha(view_state):
+     hypers = view_state['row_partition_model']['hypers']
+     alpha = hypers.get('alpha')
+     if alpha is None:
+          log_alpha = hypers['log_alpha']
+          alpha = numpy.exp(log_alpha)
+     return alpha
+
 def transform_latent_state_to_constructor_args(X_L, X_D):
-     extract_row_partition_alpha = lambda view_state: \
-         view_state['row_partition_model']['hypers']['log_alpha']
      num_rows = len(X_D[0])
      num_cols = len(X_L['column_hypers'])
      #
@@ -366,7 +372,7 @@ def transform_latent_state_to_constructor_args(X_L, X_D):
      column_indicator_list = X_L['column_partition']['assignments']
      column_partition = indicator_list_to_list_of_list(column_indicator_list)
      column_crp_alpha = \
-         numpy.exp(X_L['column_partition']['hypers']['log_alpha'])
+         numpy.exp(X_L['column_partition']['hypers']['alpha'])
      row_partition_v = map(indicator_list_to_list_of_list, X_D)
      row_crp_alpha_v = map(extract_row_partition_alpha, X_L['view_state'])
      n_grid = 31

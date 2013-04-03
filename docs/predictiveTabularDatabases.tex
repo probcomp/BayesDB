@@ -316,7 +316,7 @@ The latent state, $X_L$, is a dict with three keys:
 \texttt{column\_partition} is a dict with three keys: \texttt{hypers}, \texttt{assignments}, and \texttt{counts}.
 \texttt{hypers} is a dict containing a single key, \texttt{alpha}, which maps to a number representing the concentration parameter of the CRP. \texttt{assignments} is an array, where each element is an integer representing the view to which that column is assigned. \texttt{counts} is an array with length equal to the number of views, where each entry is the number of columns in that view. 
 
-\texttt{column\_hypers} is an array where each element is a dict whose structure depends on the \texttt{modeltype} of that column. For instance, for a column with a `asymmetric\_beta\_bernoulli' modeltype, the dict would have three keys: \texttt{log\_strength} and\texttt{balance}. One additional key would apply to all model types. \texttt{fixed} would map to the strings `true' or `false' to indicate whether the parameters were fixed or not.
+\texttt{column\_hypers} is an array where each element is a dict whose structure depends on the \texttt{modeltype} of that column. For instance, for a column with a `asymmetric\_beta\_bernoulli' modeltype, the dict would have two keys: \texttt{strength} and \texttt{balance}. One additional key would apply to all model types. \texttt{fixed} would map to the strings `true' or `false' to indicate whether the parameters were fixed or not.
 
 \texttt{view\_state} is an array where each element is a a dict with three keys: \texttt{column\_names}, \texttt{row\_partition\_model} and \texttt{column\_component\_suffstats}. 
 \texttt{column\_names} is an array of strings where the indices are locally consistent (within the view).
@@ -339,27 +339,27 @@ Then, $X_L$ could be:
 \begin{verbatim}
 X_L: {
   "column_partition": {
-	"hypers": {"log_alpha": 1.1},
+	"hypers": {"alpha": 1.1},
 	"assignments": [0, 0, 1, 2],
 	"counts": [2, 1, 1],
 },
   "column_hypers": [
-	{"fixed": false, "mu": 63.5, "log_kappa": 8.2, "log_alpha": 2.3, "log_beta": 3.4},
-	{"fixed": false, "log_strength": 10, "balance": 1.2}
-	{"fixed": true, "log_alpha": .5, "K": 2},
-	{"fixed": false, "mu": 101.1, "log_kappa": 4, "log_alpha": 10.1, "log_beta": 5}
+	{"fixed": false, "mu": 63.5, "kappa": 8.2, "alpha": 2.3, "beta": 3.4},
+	{"fixed": false, "strength": 10, "balance": 1.2}
+	{"fixed": true, "alpha": .5, "K": 2},
+	{"fixed": false, "mu": 101.1, "kappa": 4, "alpha": 10.1, "beta": 5}
 	],
   "view_state": [
-	{"row_partition_model": {"hypers": {"log_alpha":3.2}, "counts":[2, 1]}, ...
+	{"row_partition_model": {"hypers": {"alpha":3.2}, "counts":[2, 1]}, ...
 		"column_names": ["Height(in)", "Gender"], ...
 		"column_component_suffstats": [[{"sum_x": 66.0, "sum_x_sq": 4356.0, "N": 1},...
 		{"sum_x": 60.0, "sum_x_sq": 3600.0, "N": 1}], [{"0_count": 2, "1_count": 0, "N": 2}, ...
 			{"0_count": 0, "1_count": 1, "N": 1}]]},
-	{"row_partition_model": {"hypers": {"log_alpha":2.2}, "counts":[2, 1]}, ...
+	{"row_partition_model": {"hypers": {"alpha":2.2}, "counts":[2, 1]}, ...
 		"column_names": ["Nationality"], ...
 		"column_component_suffstats": [[{"0_count": 2, "1_count":0, "N": 2},...
 		{"0_count": 2, "1_count":0, "N": 2}]]},
-	{"row_partition_model": {"hypers": {"log_alpha":0.8}, "counts":[3]}, ...
+	{"row_partition_model": {"hypers": {"alpha":0.8}, "counts":[3]}, ...
 		"column_names": ["IQ"], ...
 		"column_component_suffstats": [[{"sum_x": 309.0, "sum_x_sq": 31481.0, "N": 3}]]}
 	]
