@@ -49,7 +49,7 @@
 	
 	
 	
-	<body id="dt_example">
+	<body id="dt_example" onload="promptHost()">
 	
 
 
@@ -63,11 +63,14 @@
 			<div class="table">
 			    <div class="left">
 			    <form id='file_uploader_form'> 
+			    <!-- <font color = "#585858" size = 2pt> Please enter the host:</font>
+			    <input type = "text" id=TextBox />
+			    <br/> -->
 			    <font color = "#585858" size = 2pt> Please select database input files:</font> 
 			    <input id=fileInput type=file multiple onChange="ProcessFiles(this.files); window.file_uploader_form.reset();" /></form><!-- -->
 				</div>
 			    <div class="right">
-			    <font color = "#585858" size = 2pt> Please select a table from input files:</font> 
+			    <font color = "#585858" size = 2pt> Please select a table:</font> 
 			    <br/>
 			      <select id='menu' onChange='menu_select(event);'><option key="nofile">No file</option></select>
 			    </div>
@@ -76,7 +79,7 @@
 			<div class="spacer"></div>
 		    <div id="outer">
 			<center>
-				<div id="term_demo" style="text-align:left;"></div> 
+				  <div id="term_demo" style="text-align:left;" ></div>  
 			</center>
 			</div>
 			

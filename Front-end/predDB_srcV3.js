@@ -141,7 +141,8 @@
 /* JSON functions*/
 			function JSONRPC_init() {
 				// "http://ec2-54-235-235-103.compute-1.amazonaws.com:8007"
-	 	 		JSONRPC_URL = "http://ec2-54-235-235-103.compute-1.amazonaws.com:8007" //"http://ec2-54-224-73-22.compute-1.amazonaws.com:8007" //"http://localhost:8007/"
+//				window.JSONRPC_URL = "http://ec2-54-235-235-103.compute-1.amazonaws.com:8008" //"http://ec2-54-224-73-22.compute-1.amazonaws.com:8007" //"http://localhost:8007/"
+//				window.JSONRPC_URL = document.getElementById("TextBox").value
 		 	 	JSONRPC_ID = 0				
 			}
 			
@@ -153,7 +154,7 @@
 	 	 		     method : method_name,
 	 	 		     params : parameters }
 	 	 		 $.ajax({
-	 	 				url: JSONRPC_URL, 
+	 	 				url: window.JSONRPC_URL, 
 	 	 				type: 'PUT', 
 	 	 				data: JSON.stringify(data_in),
 	 	 				dataType: 'json', 
@@ -164,6 +165,7 @@
 	 	 				},
 	 	 				error: function(httpRequest, textStatus, errorThrown) {
 	 	 					console.log(httpRequest)
+	 	 					console.log(window.JSONRPC_URL)
 	 	 					alert("Sorry, some error has happened.")
 	 	 				},
 	 	 		       		complete: function() {
@@ -178,22 +180,6 @@
 			
 
 /* Parser functions*/
-			function parseCommand(commandString){
-				if (commandString.split(' ')[0]=="INFER"){
-					inferCommandParsed = commandString.split(' ');
-			    	confidence = inferCommandParsed[$.inArray("CONFIDENCE", inferCommandParsed) + 1]
-			    	resolution = inferCommandParsed[$.inArray("RESOLUTION", inferCommandParsed) + 1]
-			    	return {"COMMAND":"INFER", "CONFIDENCE": confidence}
-				}
-				if (commandString.split(' ')[0]=="PREDICT"){
-					inferCommandParsed = commandString.split(' ');
-			    	confidence = inferCommandParsed[$.inArray("CONFIDENCE", inferCommandParsed) + 1]
-			    	resolution = inferCommandParsed[$.inArray("RESOLUTION", inferCommandParsed) + 1]
-			    	return {"COMMAND":"PREDICT", "CONFIDENCE": confidence}
-				}
-			}
-			
-			
 			
 			function parseCreateCommand(commandString){
 				var returnDict = new Object() //the main dict for the tablename and the columns
@@ -221,9 +207,98 @@
 			}
 			
 			
-			function sendBackUploadedFile(csvDataFile){
-				
+			function findColumnsType(csvDataFile){
+				//TODO this is going to be done in the middleware, the user will either specify the types or trust the middleware's guess
+				var aDataSet = $.csv.toArrays(csvDataFile); 
+	     		var colTypeDict = new Object();
+				var counter = 0;
+				for (var c = 0 ; c < aDataSet[0].length ; c++){
+					colTypeDict[aDataSet[0][c]] = "continuous"
+				    	counter += 1
+				}
+				colTypeDict["NAME"] = "ignore"
+				return colTypeDict
 			}
+			
+			
+			function typeDictToTable(typeDict){
+				var aDataSetKeys = Object.keys(typeDict)
+	     		var columns = new Array();
+				var counter = 0;
+				for (var c in aDataSetKeys){
+				    	columns[counter] = { "sTitle": aDataSetKeys[counter] , "sClass": "center"}
+				    	counter += 1
+				}
+				
+				 var out = "";
+				    for (var r = 0; r < aDataSetKeys.length - 1; r++) {
+				        	out += typeDict[aDataSetKeys[r]] + ", ";
+				    }
+				    out += typeDict[aDataSetKeys[aDataSetKeys.length]]
+				
+	     		$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
+				$('#example').dataTable( {
+					"aaSorting": [],
+					"aaData": out,
+					"aoColumns": columns 
+				} );
+			}
+			
+			function parseInferCommand(commandString){
+				var returnDict = new Object() 
+				inferCommandParsed = commandString.split(' ');
+				
+				var tableName;
+				tableName = inferCommandParsed[$.inArray("FROM", inferCommandParsed) + 1]
+				returnDict["tableName"] = tableName
+				
+				var confidence 
+				confidence = inferCommandParsed[$.inArray("CONFIDENCE", inferCommandParsed) + 1]
+				returnDict["confidence"] = confidence
+				
+				columnsToSelectFrom = inferCommandParsed.slice(inferCommandParsed.indexOf("INFER") + 1, inferCommandParsed.indexOf("INTO"))
+				var columnsString = columnsToSelectFrom.join().replace( /,/g, " " )
+				returnDict["columns"] = columnsString
+				
+				whereClause = inferCommandParsed.slice(inferCommandParsed.indexOf("WHERE") + 1, inferCommandParsed.indexOf("WITH"))
+				var whereString = whereClause.join().replace( /,/g, " " )
+				returnDict["whereClause"] =  whereString
+				
+				var newTableName = inferCommandParsed[$.inArray("INTO", inferCommandParsed) + 1]
+				returnDict["newTableName"] = newTableName
+				
+				var limit = inferCommandParsed[$.inArray("LIMIT", inferCommandParsed) + 1]
+				returnDict["LIMIT"] = limit
+				
+				console.log(returnDict)
+				return returnDict
+			}
+			
+			
+			function parsePredictCommand(commandString){
+				var returnDict = new Object() 
+				predictCommandParsed = commandString.split(' ');
+				
+				var tableName;
+				tableName = predictCommandParsed[$.inArray("FROM", predictCommandParsed) + 1]
+				returnDict["tableName"] = tableName
+				
+				var times
+				times = predictCommandParsed[$.inArray("TIMES", predictCommandParsed) + 1]
+				returnDict["times"] = times
+				
+				columnsToSelectFrom = predictCommandParsed.slice(predictCommandParsed.indexOf("PREDICT") + 1, predictCommandParsed.indexOf("FROM"))
+				var columnsString = columnsToSelectFrom.join().replace( /,/g, " " )
+				returnDict["columns"] = columnsString
+				
+				whereClause = predictCommandParsed.slice(predictCommandParsed.indexOf("WHERE") + 1, predictCommandParsed.indexOf("TIMES"))
+				var whereString = whereClause.join().replace( /,/g, " " )
+				returnDict["whereClause"] =  whereString
+				
+				console.log(returnDict)
+				return returnDict
+			}
+			
 			
 /* Loading and jqueries functions*/
 			function LoadToDatabaseTheCSVData(fileName, missingValsArray) {
@@ -231,31 +306,6 @@
  	 			window.masterData = data
  	 			window.currentTable = fileName;
 	        	
-				
-	        	/*JSONRPC_init()
-	            JSONRPC_send_method("upload",
-				            { "csv": data },
-				            function(returnedData) {
-				            	console.log(returnedData)
-				            	alert("Welcome!")
-				            }) */
-			        
-				            
-	 	 		/*JSONRPC_send_method("initialize",
-				            { M_c: "M_c", M_r: "M_r", T: "T", i: "i" },
-				            function(data) {
-				            	console.log(data)
-				            	alert("Welcome!")
-				            }) 	*/
-	            /* 
-	 	 		JSONRPC_send_method("initialize",
-				            { M_c: JSONDict["M_c"], M_r: JSONDict["M_r"], T: JSONDict["T"], i: "i" },
-				            function(data) {
-				            	console.log(data)
-				            	alert("Welcome!")
-				            	STORE THE JSON IN A GLOBAL VAR
-				            }) */
-				            
 	     		var aDataSet = $.csv.toArrays(data); 
 	     		var columns = new Array();
 				var counter = 0;
@@ -286,11 +336,6 @@
 	 	 		window.currentTable = "";
 	 	 		$('body').layout({ north:{size:0.4}, west:{initHidden:	true }, east:{size:0.5}})
 
-	
-               /* $('#range_confidence').rangeinput({progress: true, max: 100})
-                $("#range_confidence").change(function(event, value) {
-                    window.scrollChange = true
-                });*/
                    window.sliders.style.display = 'none';
 			} );  
 			
@@ -329,7 +374,7 @@
 							    	counter += 1
 							  }
 					    	}
-					    if (command.split(' ')[0]=="CREATE") // command is a supported SQL command
+					    if (command.split(' ')[0]=="CREATE" && command.split(' ')[1] == "TABLE") // command is a supported SQL command
 					    	{
 					    		tempString = parseCreateCommand(command)
 					    		JSONRPC_init()
@@ -341,18 +386,76 @@
 								            	alert("Welcome!")
 								            }) 
 					    	}
-					   /* if (command.split(' ')[0]=="INFER") // command is a supported SQL command
+					    if (command.split(' ')[0]=="CREATE" && command.split(' ')[1] == "MODEL")
+					    	{
+					    		tempCommand = command.split(' ')
+					    		var tableName = tempCommand[$.inArray("FOR", tempCommand) + 1]
+					    		//TODO change the dropdown menu to the table for which we have created the model
+					    		JSONRPC_init()
+					            JSONRPC_send_method("create",
+								            { "tablename": tableName},
+								            function(returnedData) {
+								            	term.echo(returnedData);
+								            	console.log(returnedData)
+								            	alert("Welcome!")
+								            }) 
+					    	}
+					    
+					    if (command.split(' ')[0]=="INFER") // command is a supported SQL command
 				    	{
 				    		tempString = parseInferCommand(command)
 				    		JSONRPC_init()
 				            JSONRPC_send_method("infer",
-							            { "tablename": tempString["tableName"],  "columns":
-							            	tempString["columns"]},
+							            { "tablename": tempString["tableName"],  
+				            			"newtablename": tempString["newTableName"],
+				            			"confidence": tempString["confidence"],
+				            			"whereclause": tempString["whereclause"],
+				            				"columnstring": tempString["columns"],
+				            				"limit": tempString["limit"]},
 							            function(returnedData) {
+				            					preloadedDataFiles[tempString["newTableName"]] = returnedData
+				            					jQuery(document.getElementById('menu')).append("<option value='" + tempString["newTableName"] + "'>" + 
+				            							tempString["newTableName"] + "</option>")
+				            					LoadToDatabaseTheCSVData(tempString["newTableName"], [])		
 							            	console.log(returnedData)
 							            	alert("Welcome!")
 							            }) 
-				    	}*/
+							 
+				    	}
+					    
+					    if (command.split(' ')[0]=="PREDICT") // command is a supported SQL command
+				    	{
+				    		tempString = parsePredictCommand(command)
+				    		JSONRPC_init()
+				            JSONRPC_send_method("predict",
+							            { "tablename": tempString["tableName"],  
+				            			"times": tempString["times"],
+				            			"whereclause": tempString["whereclause"],
+				            				"columnstring": tempString["columns"]},
+							            function(returnedData) {
+				            					LoadToDatabaseTheCSVData(returnedData, [])		
+							            	console.log(returnedData)
+							            	alert("Welcome!")
+							            }) 
+							 
+				    	}
+					    
+					    if (command.split(' ')[0]=="GUESS") // command is a supported SQL command
+				    	{
+					    	guessCommandParsed = commandString.split(' ');
+							var tableName;
+							tableName = guessCommandParsed[$.inArray("FOR", inferCommandParsed) + 1]
+				    		JSONRPC_init()
+				            JSONRPC_send_method("guessschema",
+							            { "tablename":tableName},
+							            function(returnedData) {
+				            					typeDictToTable(returnedData)		
+							            	console.log(returnedData)
+							            	alert("Welcome!")
+							            }) 
+							 
+				    	}
+					    
 					    else   //Command is not a supported SQL command; need to parse and send back
 					    	{ 
 					    	
@@ -404,8 +507,6 @@
 				} );
 			} else {
 				LoadToDatabaseTheCSVData(event.target.value, []);
-				
-				//send the file to backend for analysis
 			}
 		}
 		
@@ -420,7 +521,7 @@
 					JSONRPC_init()
 		            JSONRPC_send_method("upload",
 					            { "csv": e.target.result, "crosscat_column_types":
-					            	"", "tablename": reader.file_name},
+					            	findColumnsType(e.target.result), "tablename": reader.file_name},
 					            function(returnedData) {
 					            	console.log(returnedData)
 					            	alert("Welcome!")
@@ -431,12 +532,13 @@
 		}
 		
 		
+		function promptHost()
+		{
+			window.JSONRPC_URL = prompt("Please enter the host","http://ec2-54-235-235-103.compute-1.amazonaws.com:8008");
+		}
 		
-		/*tempFakeDataFiles = new Object()
-		function tempFakeFileLoading(files_input){
-			var reader = new FileReader();
-			reader.file_name = files_input[file_index].name.replace(".csv","");
-		}*/
+		
+		
 		
 		
 		
