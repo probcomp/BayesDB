@@ -187,7 +187,7 @@ map<string, double> View::get_hypers(int local_col_idx) const {
 
 map<string, double> View::get_row_partition_model_hypers() const {
   map<string, double> hypers;
-  hypers["log_alpha"] = log(get_crp_alpha());
+  hypers["alpha"] = get_crp_alpha();
   return hypers;
 }
 
