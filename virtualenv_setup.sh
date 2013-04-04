@@ -1,7 +1,8 @@
 USER=$1
-USER_HOME=/home/${USER}/
-if [[ ! -e /home/${USER}/ ]]; then
-    USER_HOME=/var/lib/jenkins/
+if [[ $# -eq 2 ]]; then
+    USER_HOME=$2
+else
+    USER_HOME=/home/${USER}/
 fi
 WORKON_HOME=${USER_HOME}/.virtualenvs
 # FIXME: should take project_name as an argument passed from settings.py somehow
