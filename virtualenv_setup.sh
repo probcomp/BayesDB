@@ -1,5 +1,8 @@
 USER=$1
 USER_HOME=/home/${USER}/
+if [[ ! -e /home/${USER}/ ]]; then
+    USER_HOME=/var/lib/jenkins/
+fi
 WORKON_HOME=${USER_HOME}/.virtualenvs
 # FIXME: should take project_name as an argument passed from settings.py somehow
 project_name=tabular_predDB
