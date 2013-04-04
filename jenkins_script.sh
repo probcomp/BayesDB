@@ -16,5 +16,6 @@ fi
 export PYTHONPATH=$WORKSPACE
 cd $WORKSPACE/tabular_predDB
 make tests
+make cython
 cd tests
 nosetests --with-xunit cpp_unit_tests.py cpp_long_tests.py test_middleware.py
