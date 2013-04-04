@@ -1,9 +1,10 @@
 USER=$1
 USER_HOME=/home/${USER}/
-WORKON_HOME=${USER_HOME}/.virtualenvs
 if [[ ! -e /home/${USER}/ ]]; then
+    echo "in here"
     USER_HOME=/var/lib/jenkins/
 fi
+WORKON_HOME=${USER_HOME}/.virtualenvs
 # FIXME: should take project_name as an argument passed from settings.py somehow
 project_name=tabular_predDB
 wrapper_script=/usr/local/bin/virtualenvwrapper.sh
