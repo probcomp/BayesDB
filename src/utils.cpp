@@ -109,7 +109,6 @@ vector<double> filter_nans(vector<double> values) {
 }
 
 double calc_sum_sq_deviation(vector<double> values) {
-  values = filter_nans(values);
   double sum = std::accumulate(values.begin(), values.end(), 0.0);
   double mean = sum / values.size();
   double sum_sq_deviation = 0;
@@ -331,6 +330,7 @@ void construct_continuous_specific_hyper_grid(int n_grid,
 				 vector<double> &mu_grid) {
   // construct s grid
   // FIXME: should s_grid be a linspace from min el**2 to max el**2
+  col_data = filter_nans(col_data);
   double sum_sq_deviation = calc_sum_sq_deviation(col_data);
   s_grid = log_linspace(sum_sq_deviation / 100., sum_sq_deviation, n_grid);
   // construct mu grids
