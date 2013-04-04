@@ -656,12 +656,17 @@ map<string, double> State::uniform_sample_hypers(int global_col_idx) {
   string col_datatype = global_col_datatypes[global_col_idx];
   map<string, double> hypers;
   if(col_datatype==CONTINUOUS_DATATYPE) {
-    hypers["r"] = r_grid[draw_rand_i(N_GRID)];
-    hypers["nu"] = nu_grid[draw_rand_i(N_GRID)];
-    hypers["s"] = s_grids[global_col_idx][draw_rand_i(N_GRID)];
-    hypers["mu"] = mu_grids[global_col_idx][draw_rand_i(N_GRID)];
+    int r_draw = draw_rand_i(N_GRID);
+    hypers["r"] = r_grid[r_draw];
+    int nu_draw = draw_rand_i(N_GRID);
+    hypers["nu"] = nu_grid[nu_draw];
+    int s_draw = draw_rand_i(N_GRID);
+    hypers["s"] = s_grids[global_col_idx][s_draw];
+    int mu_draw = draw_rand_i(N_GRID);
+    hypers["mu"] = mu_grids[global_col_idx][mu_draw];
   } else if(col_datatype==MULTINOMIAL_DATATYPE) {
-    hypers["dirichlet_alpha"] = multinomial_alpha_grid[draw_rand_i(N_GRID)];
+    int dirichelt_alpha_draw = draw_rand_i(N_GRID);
+    hypers["dirichlet_alpha"] = multinomial_alpha_grid[dirichelt_alpha_draw];
     hypers["K"] = global_col_multinomial_counts[global_col_idx];
   } else {
     assert(1==0);
