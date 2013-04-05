@@ -54,6 +54,8 @@ $ bash tabular_predDB/virtualenv_setup.sh jenkins /var/lib/jenkins
 as the jenkins user (sudo -su jenkins from root). You may have to delete /var/lib/jenkins/.bashrc if you ran the shell script once without the correct arguments.
 In order to properly set up a virtual environment for the jenkins user.
 
+Now, install numpy separatly. As the jenkins user: $ pip install numpy=1.7.0
+
 6. Try running the build now. This should clone the latest version of the code, build it, and run all tests.
 
 

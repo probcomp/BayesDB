@@ -78,7 +78,7 @@ class ExampleServer(ServerEvents):
 
   # helper methods
   methods = set(Engine_methods)
-  mymethods = set(['add', 'runsql', 'upload', 'select', 'infer', 'predict', 'createmodel', 'guessschema'])
+  mymethods = set(['add', 'runsql', 'upload', 'select', 'infer', 'predict', 'createmodel', 'guessschema','delete'])
   hostname = 'localhost'
   backend_hostname = 'localhost'
   URI = 'http://' + hostname + ':8008'
@@ -104,6 +104,26 @@ class ExampleServer(ServerEvents):
     finally:
       conn.close()
     return ret
+
+  def delete(self, tablename):
+    """Delete table by tablename."""
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute('DROP TABLE %s' % tablename)
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      tableids = cur.fetchall()
+      for tid in tableids:
+        tableid = tid[0]
+        cur.execute("DELETE FROM preddb.models WHERE tableid=%d;" % tableid)
+        cur.execute("DELETE FROM preddb.table_index WHERE tableid=%d;" % tableid)
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)      
+      return e
+    finally:
+      conn.close()
+    return 0
 
   def upload(self, tablename, csv, crosscat_column_types):
     """Upload a csv table to the predictive db.
