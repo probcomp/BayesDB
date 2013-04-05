@@ -101,13 +101,16 @@ def run_test(hostname='localhost', port=8008):
       assert(value == 'ignore' or value == 'continuous' or value == 'multinomial')
   time.sleep(1)
 
+  au.call('delete', {'tablename': tablename}, URI)
   # Clean up: remove test rows from the db
+  """
   au.call('runsql', {'sql_command': 'DROP TABLE %s;' % tablename}, URI)
   out, id = au.call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename}, URI)
   for result in out:
       tableid = result[0]
       au.call('runsql', {'sql_command': "DELETE FROM preddb.models WHERE tableid=%d " % tableid}, URI)
       au.call('runsql', {'sql_command': "DELETE FROM preddb.table_index WHERE tableid=%d;" % tableid}, URI)
+  """
   
 if __name__ == '__main__':
     run_test()
