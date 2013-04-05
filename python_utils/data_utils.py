@@ -202,3 +202,12 @@ def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
     else:
         column_type = 'multinomial'
     return column_type
+
+def read_csv(filename, has_header=True):
+    with open(filename) as fh:
+        csv_reader = csv.reader(fh)
+        header = None
+        if has_header:
+            header = csv_reader.next()
+        values = [row for row in csv_reader]
+    return header, values

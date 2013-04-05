@@ -48,7 +48,6 @@ import datetime
 import pdb
 #
 import psycopg2
-import pandas
 #
 import tabular_predDB.python_utils.api_utils as au
 import tabular_predDB.python_utils.data_utils as du
@@ -173,13 +172,15 @@ class ExampleServer(ServerEvents):
     # Also make the corresponding postgres column types.
     postgres_coltypes = []
     cctypes = []
-    table_F = pandas.from_csv(clean_csv_abs_path)
+    header, values = du.read_csv(clean_csv_abs_path, has_header=True)
+    column_data_lookup = dict(zip(header, numpy.array(values).T))
     for colname in colnames:
       if colname in crosscat_column_types:
         cctype = crosscat_column_types[colname]
       else:
         # cctype = 'continuous'
-        cctype = du.guess_column_type(table_F[colname].values)
+        column_data = column_data_lookup[colname]
+        cctype = du.guess_column_type(column_data)
       cctypes.append(cctype)
       if cctype == 'ignore':
         postgres_coltypes.append('varchar(200)')
