@@ -1,3 +1,5 @@
+window.debug = true
+
 /* Converter functions*/
 function encodeValues(observedValue){
     return observedValue
@@ -315,9 +317,14 @@ $(document).ready(function() {
     window.sliders.style.display = 'none';
 } );  
 
+function alert_if_debug(alert_str) {
+    if(window.debug) {
+	alert(alert_str)
+    }
+}
+
 jQuery(function($, undefined) {
     $('#term_demo').terminal(function(command, term) {
-	
 	mydat = CSVtoSQLFormat(masterData, window.currentTable)
 	if (command !== ''){
 	    commandHistory.push(command)
@@ -329,6 +336,7 @@ jQuery(function($, undefined) {
 		var queryLang = TrimPath.makeQueryLang(columnDefs);
 		if (command.split(' ')[0]=="SELECT") // command is a supported SQL command
 		{
+		    alert_if_debug("SELECT")
 		    var statement = queryLang.parseSQL(command);
 		    var result = statement.filter(tableData);
 		    window.sliders.style.display = 'none';
@@ -351,6 +359,7 @@ jQuery(function($, undefined) {
 		}
 		if (command.split(' ')[0]=="CREATE" && command.split(' ')[1] == "TABLE") // command is a supported SQL command
 		{
+		    alert_if_debug("CREATE TABLE")
 		    tempString = parseCreateCommand(command)
 		    JSONRPC_init()
 		    JSONRPC_send_method("create",
@@ -363,6 +372,7 @@ jQuery(function($, undefined) {
 		}
 		if (command.split(' ')[0]=="CREATE" && command.split(' ')[1] == "MODEL")
 		{
+		    alert_if_debug("CREATE MODEL")
 		    tempCommand = command.split(' ')
 		    var tableName = tempCommand[$.inArray("FOR", tempCommand) + 1]
 		    //TODO change the dropdown menu to the table for which we have created the model
@@ -378,6 +388,7 @@ jQuery(function($, undefined) {
 		
 		if (command.split(' ')[0]=="INFER") // command is a supported SQL command
 		{
+		    alert_if_debug("INFER")
 		    tempString = parseInferCommand(command)
 		    JSONRPC_init()
 		    JSONRPC_send_method("infer",
@@ -400,6 +411,7 @@ jQuery(function($, undefined) {
 		
 		if (command.split(' ')[0]=="PREDICT") // command is a supported SQL command
 		{
+		    alert_if_debug("PREDICT")
 		    tempString = parsePredictCommand(command)
 		    JSONRPC_init()
 		    JSONRPC_send_method("predict",
@@ -417,6 +429,7 @@ jQuery(function($, undefined) {
 		
 		if (command.split(' ')[0]=="GUESS") // command is a supported SQL command
 		{
+		    alert_if_debug("GUESS")
 		    guessCommandParsed = commandString.split(' ');
 		    var tableName;
 		    tableName = guessCommandParsed[$.inArray("FOR", inferCommandParsed) + 1]
@@ -433,9 +446,9 @@ jQuery(function($, undefined) {
 		
 		else   //Command is not a supported SQL command; need to parse and send back
 		{ 
-		    
 		    /* send these two to backend and retrieve new CSVfile */
-		    
+		    alert_if_debug("FALL THROUGH")
+		    // FIXME: why is dha hard coded here
 		    LoadToDatabaseTheCSVData("dha", findNaNValuesInCSV(window.masterData))
 		    var aDataSet = $.csv.toArrays(masterData); 
 		    var columns = new Array();
