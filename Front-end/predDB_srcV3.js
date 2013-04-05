@@ -1,4 +1,12 @@
 window.debug = true
+window.default_hostname = "ec2-50-16-22-81.compute-1.amazonaws.com"
+
+
+function alert_if_debug(alert_str) {
+    if(window.debug) {
+	alert(alert_str)
+    }
+}
 
 /* Converter functions*/
 function encodeValues(observedValue){
@@ -317,15 +325,12 @@ $(document).ready(function() {
     window.sliders.style.display = 'none';
 } );  
 
-function alert_if_debug(alert_str) {
-    if(window.debug) {
-	alert(alert_str)
-    }
-}
-
 jQuery(function($, undefined) {
     $('#term_demo').terminal(function(command, term) {
 	mydat = CSVtoSQLFormat(masterData, window.currentTable)
+	command_split = command.split(' ')
+	first_command_uc = command_split[0].toUpperCase()
+	alert_if_debug("Past CSVtoSQLFormat")
 	if (command !== ''){
 	    commandHistory.push(command)
 	}
@@ -334,7 +339,16 @@ jQuery(function($, undefined) {
 		var tableData = mydat["dataTable"]
 		var columnDefs = mydat["columnDefs"]
 		var queryLang = TrimPath.makeQueryLang(columnDefs);
-		if (command.split(' ')[0]=="SELECT") // command is a supported SQL command
+		if (first_command_uc=="SETHOSTNAME") {
+		    hostname = command.split(' ')[1]
+		    set_url_with_hostname(hostname)
+		    alert_if_debug("JSONRPC_URL = " + window.JSONRPC_URL)
+		}
+		if (first_command_uc=="GETHOSTNAME") {
+		    alert("JSONRPC_URL = " + window.JSONRPC_URL)
+		}
+
+		if (first_command_uc=="SELECT") // command is a supported SQL command
 		{
 		    alert_if_debug("SELECT")
 		    var statement = queryLang.parseSQL(command);
@@ -357,7 +371,7 @@ jQuery(function($, undefined) {
 			counter += 1
 		    }
 		}
-		if (command.split(' ')[0]=="CREATE" && command.split(' ')[1] == "TABLE") // command is a supported SQL command
+		if (first_command_uc=="CREATE" && command_split[1].toUpperCase() == "TABLE") // command is a supported SQL command
 		{
 		    alert_if_debug("CREATE TABLE")
 		    tempString = parseCreateCommand(command)
@@ -370,7 +384,7 @@ jQuery(function($, undefined) {
 					    alert("Welcome!")
 					}) 
 		}
-		if (command.split(' ')[0]=="CREATE" && command.split(' ')[1] == "MODEL")
+		if (first_command_uc=="CREATE" && command_split[1].toUpperCase() == "MODEL")
 		{
 		    alert_if_debug("CREATE MODEL")
 		    tempCommand = command.split(' ')
@@ -386,7 +400,7 @@ jQuery(function($, undefined) {
 					}) 
 		}
 		
-		if (command.split(' ')[0]=="INFER") // command is a supported SQL command
+		if (first_command_uc=="INFER") // command is a supported SQL command
 		{
 		    alert_if_debug("INFER")
 		    tempString = parseInferCommand(command)
@@ -409,7 +423,7 @@ jQuery(function($, undefined) {
 		    
 		}
 		
-		if (command.split(' ')[0]=="PREDICT") // command is a supported SQL command
+		if (first_command_uc=="PREDICT") // command is a supported SQL command
 		{
 		    alert_if_debug("PREDICT")
 		    tempString = parsePredictCommand(command)
@@ -427,7 +441,7 @@ jQuery(function($, undefined) {
 		    
 		}
 		
-		if (command.split(' ')[0]=="GUESS") // command is a supported SQL command
+		if (first_command_uc=="GUESS") // command is a supported SQL command
 		{
 		    alert_if_debug("GUESS")
 		    guessCommandParsed = commandString.split(' ');
@@ -519,9 +533,15 @@ function ProcessFiles(files_input) {
     }
 }
 
-function promptHost()
-{
-    hostname = "ec2-50-16-22-81.compute-1.amazonaws.com"
-    hostname = prompt("Please enter the host", hostname)
+function set_url_with_hostname(hostname) {
+    if(typeof(hostname)==='undefined') {
+	hostname = window.default_hostname
+    }
     window.JSONRPC_URL = "http://" + hostname + ":8008"
+}
+
+function promptHost()
+{    
+    hostname = prompt("Please enter the host", window.default_hostname)
+    set_url_with_hostname(hostname)
 }
