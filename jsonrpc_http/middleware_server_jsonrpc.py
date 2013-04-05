@@ -41,20 +41,20 @@ from twisted.web.resource import EncodingResourceWrapper
 
 from jsonrpc.server import ServerEvents, JSON_RPC
 
-import tabular_predDB.jsonrpc_http.Engine as E
-Engine_methods = E.get_method_names()
-
-from tabular_predDB.jsonrpc_http.Engine import Engine
-engine = Engine()
-
-import psycopg2
 import os
 import pickle
 import json
 import datetime
+import pdb
+#
+import psycopg2
+#
 import tabular_predDB.python_utils.api_utils as au
 import tabular_predDB.python_utils.data_utils as du
-import pdb
+import tabular_predDB.jsonrpc_http.Engine as E
+from tabular_predDB.jsonrpc_http.Engine import Engine
+Engine_methods = E.get_method_names()
+engine = Engine()
 
 class ExampleServer(ServerEvents):
   # inherited hooks
@@ -78,7 +78,8 @@ class ExampleServer(ServerEvents):
 
   # helper methods
   methods = set(Engine_methods)
-  mymethods = set(['add', 'runsql', 'upload', 'select', 'infer', 'predict', 'createmodel', 'guessschema'])
+  mymethods = set(['runsql', 'upload_data_table', 'create_model', 'analyze', 'select', \
+                     'infer', 'predict', 'createmodel', 'guessschema','drop_tablename', 'delete_chain'])
   hostname = 'localhost'
   backend_hostname = 'localhost'
   URI = 'http://' + hostname + ':8008'
@@ -105,11 +106,48 @@ class ExampleServer(ServerEvents):
       conn.close()
     return ret
 
+  def drop_tablename(self, tablename):
+    """Delete table by tablename."""
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute('DROP TABLE %s' % tablename)
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      tableids = cur.fetchall()
+      for tid in tableids:
+        tableid = tid[0]
+        cur.execute("DELETE FROM preddb.models WHERE tableid=%d;" % tableid)
+        cur.execute("DELETE FROM preddb.table_index WHERE tableid=%d;" % tableid)
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)      
+      return e
+    finally:
+      conn.close()
+    return 0
+
+  def delete_chain(self, tablename, chain_index):
+    pass
+
   def upload(self, tablename, csv, crosscat_column_types):
     """Upload a csv table to the predictive db.
     Crosscat_column_types must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
     column name must be present in the dictionary: default is continuous."""
+    # First, test if table with this name already exists, and fail if it does
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute("select exists(select * from information_schema.tables where table_name='%s');" % tablename)
+      if cur.fetchone()[0]:
+        return "Error: table with that name already exists."
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      conn.close()
+
     # Write csv to file
     cur_dir = os.path.dirname(os.path.abspath(__file__))
     f = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'w')
@@ -130,14 +168,19 @@ class ExampleServer(ServerEvents):
     csv = csv.replace('\r', '')
     colnames = csv.split('\n')[0].split(',')
     
-    # Complete the given crosscat_column_types, which may have missing data, into cctypes
+    # Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes
+    # Also make the corresponding postgres column types.
     postgres_coltypes = []
     cctypes = []
+    header, values = du.read_csv(clean_csv_abs_path, has_header=True)
+    column_data_lookup = dict(zip(header, numpy.array(values).T))
     for colname in colnames:
       if colname in crosscat_column_types:
         cctype = crosscat_column_types[colname]
       else:
-        cctype = 'continuous'
+        # cctype = 'continuous'
+        column_data = column_data_lookup[colname]
+        cctype = du.guess_column_type(column_data)
       cctypes.append(cctype)
       if cctype == 'ignore':
         postgres_coltypes.append('varchar(200)')
@@ -151,30 +194,17 @@ class ExampleServer(ServerEvents):
     t, m_r, m_c, header = du.continuous_or_ignore_from_file_with_colnames(csv_abs_path, cctypes)
     colstring = ', '.join([tup[0] + ' ' + tup[1] for tup in zip(colnames, postgres_coltypes)])
 
-    # Call initialize on backend
-    args_dict = dict()
-    args_dict['M_c'] = m_c
-    args_dict['M_r'] = m_r
-    args_dict['T'] = t
-    out, id = au.call('initialize', args_dict, self.BACKEND_URI)
-    m_c, m_r, x_l_prime, x_d_prime = out
+
 
     # Execute queries
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
-      cur.execute("select exists(select * from information_schema.tables where table_name='%s');" % tablename)
-      if cur.fetchone()[0]:
-        return "Error: table with that name already exists."
       cur.execute("CREATE TABLE %s (%s);" % (tablename, colstring))
       with open(clean_csv_abs_path) as fh:
         cur.copy_from(fh, tablename, sep=',')
-      # cur.execute("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
       curtime = datetime.datetime.now().ctime()
       cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s' AND uploadtime='%s';" % (tablename, curtime))
-      tableid = cur.fetchone()[0]
-      cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime) VALUES (%d, '%s', '%s', '%s');" % (tableid, json.dumps(x_l_prime), json.dumps(x_d_prime), curtime))
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
@@ -184,9 +214,55 @@ class ExampleServer(ServerEvents):
         conn.close()    
     return 0
 
+  def create_model(tablename, n_chains):
+    """Call initialize n_chains times."""
+    # Get t, m_c, and m_r, and tableid
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute("SELECT t, m_r, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      t_json, m_r_json, m_c_json = cur.fetchone()
+      t = json.loads(t_json)
+      m_r = json.loads(m_r_json)
+      m_c = json.loads(m_c_json)
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s' AND uploadtime='%s';" % (tablename, curtime))
+      tableid = cur.fetchone()[0]
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()
 
-  def createmodel(self, tablename, number=10, iterations=2):
-    """Run analyze for the selected table."""
+    # Call initialize on backend
+    states_by_chain = list()
+    args_dict = dict()
+    args_dict['M_c'] = m_c
+    args_dict['M_r'] = m_r
+    args_dict['T'] = t
+    for chain_index in range(n_chains):
+      out, id = au.call('initialize', args_dict, self.BACKEND_URI)
+      m_c, m_r, x_l_prime, x_d_prime = out
+      states_by_chain.append((x_l_prime, x_d_prime))
+    
+    # Insert initial states for each chain into the middleware db
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      for chain_index in range(n_chains):
+        cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%d, '%s', '%s', '%s', %d, 0);" % (tableid, json.dumps(x_l_prime), json.dumps(x_d_prime), curtime, chain_index))        
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()
+
+
+  def analyze(self, tablename, chain_index=1, iterations=2):
+    """Run analyze for the selected table. chain_index may be 'all'."""
     # Get M_c, T, X_L, and X_D from database
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
@@ -197,9 +273,29 @@ class ExampleServer(ServerEvents):
       M_c_json, T_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       T = json.loads(T_json)
-      cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND " % tableid
-                  + "modeltime=(SELECT MAX(modeltime) FROM preddb.models WHERE tableid=%d);" % tableid)
-      X_L_prime_json, X_D_prime_json = cur.fetchone()
+      if (chain_index == 'all'):
+        cur.execute("SELECT UNIQUE(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+        chainids = cur.fetchone()
+      else:
+        chain_ids = [chain_index]
+      conn.commit()
+      for chainid in chainids:
+        self.analyze_helper(tablename, M_c, T, chainid, iterations)
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()
+      
+  def analyze_helper(self, tablename, M_c, T, chainid, iterations):
+    """Only for one chain."""
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute("SELECT x_l, x_d, iterations FROM preddb.models WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
+                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d);" % (tableid))
+      X_L_prime_json, X_D_prime_json, prev_iterations = cur.fetchone()
       X_L_prime = json.loads(X_L_prime_json)
       X_D_prime = json.loads(X_D_prime_json)
       conn.commit()
@@ -230,9 +326,9 @@ class ExampleServer(ServerEvents):
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
       curtime = datetime.datetime.now().ctime()
-      cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime) " + \
-                  "VALUES (%d, '%s', '%s', '%s');" % \
-                    (tableid, json.dumps(X_L_prime), json.dumps(X_D_prime), curtime))
+      cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) " + \
+                  "VALUES (%d, '%s', '%s', '%s', %d, %d);" % \
+                    (tableid, json.dumps(X_L_prime), json.dumps(X_D_prime), curtime, chainid, prev_iterations + iterations))
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
@@ -268,7 +364,6 @@ class ExampleServer(ServerEvents):
   def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
     # TODO: FIX
-    """
     # Get M_c, X_L, and X_D from database
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
@@ -291,6 +386,8 @@ class ExampleServer(ServerEvents):
       if conn:
         conn.close()
 
+    # columnstring is 
+
     args_dict = dict()
     args_dict['M_c'] = M_c
     args_dict['X_L'] = X_L_prime
@@ -300,7 +397,6 @@ class ExampleServer(ServerEvents):
     args_dict['n'] = 1
     for idx in range(numpredictions):
       out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
-    """
     csv = ""
     return csv
 
