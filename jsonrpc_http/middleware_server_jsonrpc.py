@@ -167,7 +167,9 @@ class ExampleServer(ServerEvents):
       if cur.fetchone()[0]:
         return "Error: table with that name already exists."
       cur.execute("CREATE TABLE %s (%s);" % (tablename, colstring))
-      cur.execute("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
+      with open(clean_csv_abs_path) as fh:
+        cur.copy_from(fh, tablename, sep=',')
+      # cur.execute("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
       curtime = datetime.datetime.now().ctime()
       cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s' AND uploadtime='%s';" % (tablename, curtime))
