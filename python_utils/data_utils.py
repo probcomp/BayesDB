@@ -181,3 +181,24 @@ def continuous_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=Non
         M_r = gen_M_r_from_T(T)
         M_c = gen_M_c_from_T_with_colnames(T, [col for col, flag in zip(header, colmask) if flag])
     return T, M_r, M_c, header
+
+def get_can_cast_to_float(column_data):
+    can_cast = True
+    try:
+        [float(datum) for datum in column_data]
+    except ValueError, e:
+        can_cast = False
+    return can_cast
+    
+def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
+    num_distinct = len(set(column_data))
+    num_data = len(column_data)
+    distinct_ratio = float(num_distinct) / num_data
+    above_count_cutoff = num_distinct > count_cutoff
+    above_ratio_cutoff = distinct_ratio > ratio_cutoff
+    can_cast = get_can_cast_to_float(column_data)
+    if above_count_cutoff and above_ratio_cutoff and can_cast:
+        column_type = 'continuous'
+    else:
+        column_type = 'multinomial'
+    return column_type

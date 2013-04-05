@@ -41,20 +41,21 @@ from twisted.web.resource import EncodingResourceWrapper
 
 from jsonrpc.server import ServerEvents, JSON_RPC
 
-import tabular_predDB.jsonrpc_http.Engine as E
-Engine_methods = E.get_method_names()
-
-from tabular_predDB.jsonrpc_http.Engine import Engine
-engine = Engine()
-
-import psycopg2
 import os
 import pickle
 import json
 import datetime
+import pdb
+#
+import psycopg2
+import pandas
+#
 import tabular_predDB.python_utils.api_utils as au
 import tabular_predDB.python_utils.data_utils as du
-import pdb
+import tabular_predDB.jsonrpc_http.Engine as E
+from tabular_predDB.jsonrpc_http.Engine import Engine
+Engine_methods = E.get_method_names()
+engine = Engine()
 
 class ExampleServer(ServerEvents):
   # inherited hooks
@@ -172,12 +173,13 @@ class ExampleServer(ServerEvents):
     # Also make the corresponding postgres column types.
     postgres_coltypes = []
     cctypes = []
+    table_F = pandas.from_csv(clean_csv_abs_path)
     for colname in colnames:
       if colname in crosscat_column_types:
         cctype = crosscat_column_types[colname]
       else:
-        # TODO: IF UNSPECIFIED, ALWAYS GUESS CONTINUOUS. ADD SMARTER GUESSING.
-        cctype = 'continuous'
+        # cctype = 'continuous'
+        cctype = du.guess_column_type(table_F[colname].values)
       cctypes.append(cctype)
       if cctype == 'ignore':
         postgres_coltypes.append('varchar(200)')
