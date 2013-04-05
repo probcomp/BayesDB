@@ -521,5 +521,7 @@ function ProcessFiles(files_input) {
 
 function promptHost()
 {
-    window.JSONRPC_URL = prompt("Please enter the host","http://ec2-54-235-235-103.compute-1.amazonaws.com:8008");
+    hostname = "ec2-50-16-22-81.compute-1.amazonaws.com"
+    hostname = prompt("Please enter the host", hostname)
+    window.JSONRPC_URL = "http://" + hostname + ":8008"
 }
