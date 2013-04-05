@@ -43,21 +43,25 @@ SMTP Port 465
 
 7. Hit "Build Now." It will fail but it will create the workspace directory.
 
-8. Put the jenkins script (jenkins-script.sh) in /var/lib/jenkins/workspace/PredictiveDB. /var/lib/jenkins is the home directory for the jenkins users, and PredictiveDB is the Jenkins project name.
+8. Put the jenkins script (jenkins-script.sh) in /var/lib/jenkins/workspace/PredictiveDB. 
+/var/lib/jenkins is the home directory for the jenkins users, and PredictiveDB is the Jenkins project name.
 
 cp /home/sgeadmin/tabular_predDB/jenkins_script.sh /var/lib/jenkins/workspace/PredictiveDB/
+chown -R jenkins:nogroup /var/lib/jenkins
 chmod 777 /var/lib/jenkins/workspace/PredictiveDB
 chmod 777 /var/lib/jenkins/workspace/PredictiveDB/jenkins_script.sh
 
-9. Build again.  This will check out the source. It may also correctly set up the virtual environment for the jenkins user. Check to see if /var/lib/jenkins/.virtualenvs was created. If yes, go to the next step. If no, now run:
-$ bash tabular_predDB/virtualenv_setup.sh jenkins /var/lib/jenkins
-as the jenkins user (sudo -su jenkins from root). You may have to delete /var/lib/jenkins/.bashrc if you ran the shell script once without the correct arguments.
-In order to properly set up a virtual environment for the jenkins user.
+9. Enable ssh login to the machine.
+$ perl -pi.bak -e 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+$ service ssh reload
 
-Now, install numpy separatly. As the jenkins user: $ pip install numpy=1.7.0
+Change the jenkins user password: $ passwd jenkins
 
-6. Try running the build now. This should clone the latest version of the code, build it, and run all tests.
+ssh in as the jenkins user. Then install virtualenv:
+$ cd /var/lib/jenkins/workspace/PredictiveDB/tabular_predDB
+$ bash -i virtualenv_setup.sh jenkins /var/lib/jenkins
 
+10. Build again. It should work!
 
 ****
 
