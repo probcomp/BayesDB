@@ -130,6 +130,20 @@ class ExampleServer(ServerEvents):
     Crosscat_column_types must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
     column name must be present in the dictionary: default is continuous."""
+    # First, test if table with this name already exists, and fail if it does
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute("select exists(select * from information_schema.tables where table_name='%s');" % tablename)
+      if cur.fetchone()[0]:
+        return "Error: table with that name already exists."
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      conn.close()
+
     # Write csv to file
     cur_dir = os.path.dirname(os.path.abspath(__file__))
     f = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'w')
@@ -183,13 +197,9 @@ class ExampleServer(ServerEvents):
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
-      cur.execute("select exists(select * from information_schema.tables where table_name='%s');" % tablename)
-      if cur.fetchone()[0]:
-        return "Error: table with that name already exists."
       cur.execute("CREATE TABLE %s (%s);" % (tablename, colstring))
       with open(clean_csv_abs_path) as fh:
         cur.copy_from(fh, tablename, sep=',')
-      # cur.execute("COPY %s FROM '%s' WITH DELIMITER AS ',' CSV;" % (tablename, clean_csv_abs_path))
       curtime = datetime.datetime.now().ctime()
       cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s' AND uploadtime='%s';" % (tablename, curtime))
