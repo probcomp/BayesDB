@@ -82,7 +82,7 @@ class ExampleServer(ServerEvents):
   methods = set(Middleware_Engine_methods)
   def _get_msg(self, response):
     print('response', repr(response))
-    ret_str = ''
+    ret_str = str(response)
     if hasattr(response, 'id'):
       to_strify = [response.id, response.result or response.error]
       ret_str = ' '.join(map(str, to_strify))
