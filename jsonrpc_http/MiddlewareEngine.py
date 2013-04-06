@@ -262,6 +262,7 @@ class MiddlewareEngine(object):
     args_dict['T'] = T
     args_dict['X_L'] = X_L_prime
     args_dict['X_D'] = X_D_prime
+    # FIXME: allow specification of kernel_list
     args_dict['kernel_list'] = None
     args_dict['n_steps'] = iterations
     args_dict['c'] = 'c' # Currently ignored by analyze
@@ -269,9 +270,7 @@ class MiddlewareEngine(object):
     args_dict['max_iterations'] = 'max_iterations' # Currently ignored by analyze
     args_dict['max_time'] = 'max_time' # Currently ignored by analyze
     out, id = au.call('analyze', args_dict, self.BACKEND_URI)
-    print(out)
     X_L_prime, X_D_prime = out
-    print('unpacked out')
 
     # Store X_L_prime, X_D_prime
     try:
