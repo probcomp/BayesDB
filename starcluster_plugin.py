@@ -52,13 +52,10 @@ def update_remote_repo_working_tree(remote_code_dir, node):
      cmd_str %= remote_code_dir
      node.ssh.execute(cmd_str)
      # set remote origin to tabular_predDB github
-     cmd_str = """sed -i '/url/ c\        url = https://github.com/mit-probabilistic""" \
-               + """-computing-project/tabular-predDB.git' .git/config"""
+     cmd_str = 'git remote set-url origin https://github.com/%s'
+     cmd_str %= S.git.repo_suffix
      node.ssh.execute(cmd_str)
-     # chown
-     cmd_str = 'chown -R %s %s'
-     cmd_str %= (user, remote_code_dir)
-     node.ssh.execute(cmd_str)
+     # FIXME: Where is the update?
 
 # this complains about 
 # fatal: Not a git repository (or any of the parent directories): .git
