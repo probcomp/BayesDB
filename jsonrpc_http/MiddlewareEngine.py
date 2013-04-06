@@ -77,7 +77,7 @@ class MiddlewareEngine(object):
        conn.close()
      return 0
 
-  def upload_data_table(self, tablename, csv, crosscat_column_types=None):
+  def upload_data_table(self, tablename, csv, crosscat_column_types):
     """Upload a csv table to the predictive db.
     Crosscat_column_types must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
@@ -122,8 +122,9 @@ class MiddlewareEngine(object):
     cctypes = []
     header, values = du.read_csv(clean_csv_abs_path, has_header=True)
     column_data_lookup = dict(zip(header, numpy.array(values).T))
+    have_column_tpes = type(crosscat_column_types) == dict
     for colname in colnames:
-      if crosscat_column_types is not None and colname in crosscat_column_types:
+      if have_column_tpes and colname in crosscat_column_types:
         cctype = crosscat_column_types[colname]
       else:
         # cctype = 'continuous'
