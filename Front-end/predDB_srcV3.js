@@ -74,7 +74,6 @@ function get_idx_after(term, str_array) {
 function get_el_after(term, str_array) {
     // case insensitive
     idx = get_idx_after(term, str_array)
-    alert("str_array: " + str_array)
     return str_array[idx]
 }
 
@@ -146,11 +145,11 @@ function parseAnalyzeCommand(commandString){
 
 
 function parseDropCommand(commandString){
-	createCommandParsed = commandString.split(' ');
-	var returnDict = new Object()
-	tableName = createCommandParsed[$.inArray("TABLENAME", createCommandParsed) + 1]
-	returnDict["tableName"] = tableName
-	return returnDict
+    command_split = commandString.split(' ');
+    var returnDict = new Object()
+    tableName = get_el_after("TABLENAME", command_split)
+    returnDict["tableName"] = tableName
+    return returnDict
 }
 
 
@@ -392,28 +391,31 @@ jQuery(function($, undefined) {
 			break
 	    }
 	    
+
 	    case "DROP":
 	    {
 	    	if (command_split[1].toUpperCase() == "TABLENAME")
     		{ 
-	    		tempString = parseDropCommand(command)
-		    	console.log(tempString)
-			    JSONRPC_send_method("drop_tablename",
-						{ "tablename": tempString["tableName"]},
-						function(returnedData) {
-						    term.echo(returnedData);
-						    console.log(returnedData)
-						    alert("Welcome!")
-						}) 
-						
-				delete preloadedDataFiles[tempString["tableName"]]
-		    	var select=document.getElementById('menu');
-		    	for (i=0;i<select.length;  i++) {
-		    		   if (select.options[i].value==tempString["tableName"]) {
-		    		     select.remove(i);
-		    		   }
-		    		}
-			}
+	    	    tempString = parseDropCommand(command)
+		    tablename = tempString["tableName"]
+		    dict_to_send = {"tablename": tablename}
+		    JSONRPC_send_method("drop_tablename",
+					dict_to_send,
+					function(returnedData) {
+					    term.echo(returnedData);
+					    // FIXME: actually verify that return value doesn't indicate error
+					    term.echo("DROPPED TABLENAME " + tablename)
+					    console.log(returnedData)
+					}) 
+		    
+		    delete preloadedDataFiles[tablename]
+		    var select=document.getElementById('menu');
+		    for (i=0;i<select.length;  i++) {
+		    	if (select.options[i].value==tablename) {
+		    	    select.remove(i);
+		    	}
+		    }
+		}
     	
     	else
     		 term.echo('Wrong command format. Please check the HELP command');
