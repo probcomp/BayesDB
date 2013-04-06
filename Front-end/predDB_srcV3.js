@@ -6,7 +6,13 @@ window.wrong_command_format_str = ("Wrong command format."
 
 function alert_if_debug(alert_str) {
     if(window.debug) {
-	alert(alert_str)
+	alert("DEBUG: " + alert_str)
+    }
+}
+
+function echo_if_debug(echo_str, term) {
+    if(window.debug) {
+	term.echo("DEBUG: " + echo_str)
     }
 }
 
@@ -115,30 +121,30 @@ function parseCreateModelCommand(commandString){
 	numberOfChains = command_split[withIndex + 1]
     }
     returnDict["tableName"] = tableName
-    returnDict["numberOfChains"] = numberOfChains
+    returnDict["numberOfChains"] = parseInt(numberOfChains)
     return returnDict
 }
 
 
 
 function parseAnalyzeCommand(commandString){
-	createCommandParsed = commandString.split(' ');
-	var returnDict = new Object()
-	tableName = createCommandParsed[$.inArray("ANALYZE", createCommandParsed) + 1]
-	iterations = 2 //default value
-	forIndex = $.inArray("FOR", createCommandParsed)
-	if (forIndex != 0){
-		iterations = createCommandParsed[forIndex + 1]
-	}
-	onIndex = $.inArray("ON", createCommandParsed)
-	chain_idx = 'ALL' //default value
-	if (onIndex != 0){
-		chain_idx = createCommandParsed[onIndex + 1]
-	}
-	returnDict["tableName"] = tableName
-	returnDict["iterations"] = iterations
-	returnDict["chainIndex"] = chain_idx
-	return returnDict
+    command_split = commandString.split(' ');
+    var returnDict = new Object()
+    tableName = get_el_after("ANALYZE", command_split)
+    iterations = 2 //default value
+    iterations_idx = get_idx_after("FOR", command_split)
+    if(iterations_idx != 0) {
+	iterations = command_split[iterations_idx]
+    }
+    which_chain = 'ALL' //default value
+    which_chain_idx = get_idx_after("ON", command_split)
+    if(which_chain_idx != 0) {
+	which_chain = command_split[which_chain_idx]
+    }
+    returnDict["tableName"] = tableName
+    returnDict["iterations"] = parseInt(iterations)
+    returnDict["chainIndex"] = parseInt(which_chain)
+    return returnDict
 }
 
 
@@ -152,13 +158,13 @@ function parseDropCommand(commandString){
 
 
 function parseDeleteChainCommand(commandString){
-	createCommandParsed = commandString.split(' ');
-	var returnDict = new Object()
-	tableName = createCommandParsed[$.inArray("FOR", createCommandParsed) + 1]
-	chain_idx = createCommandParsed[$.inArray("CHAIN", createCommandParsed) + 1]
-	returnDict["tableName"] = tableName
-	returnDict["chainIndex"] = chain_idx
-	return returnDict
+    createCommandParsed = commandString.split(' ');
+    var returnDict = new Object()
+    tableName = createCommandParsed[$.inArray("FOR", createCommandParsed) + 1]
+    chain_idx = createCommandParsed[$.inArray("CHAIN", createCommandParsed) + 1]
+    returnDict["tableName"] = tableName
+    returnDict["chainIndex"] = parseInt(chain_idx)
+    return returnDict
 }
 
 
@@ -295,7 +301,6 @@ jQuery(function($, undefined) {
     $('#term_demo').terminal(function(command, term) {
 	command_split = command.split(' ')
 	first_command_uc = command_split[0].toUpperCase()
-	/*alert_if_debug("Past CSVtoSQLFormat")*/
 	if (command !== ''){
 	    commandHistory.push(command)
 	}
@@ -307,7 +312,7 @@ jQuery(function($, undefined) {
 	    {
 		    hostname = command.split(' ')[1]
 		    set_url_with_hostname(hostname)
-		    alert_if_debug("JSONRPC_URL = " + window.JSONRPC_URL)
+		echo_if_debug("JSONRPC_URL = " + window.JSONRPC_URL, term)
 		    break
 		}
 	    case "GETHOSTNAME":
@@ -319,7 +324,7 @@ jQuery(function($, undefined) {
 		{
 	    	if (command_split[1].toUpperCase() == "TABLE")
 	    		{ 
-	    		alert_if_debug("CREATE TABLE")
+	    		    echo_if_debug("CREATE TABLE", term)
 			    tempString = parseCreateTableCommand(command)
 			    console.log(tempString)
 			    filename = tempString["fileName"]
@@ -355,7 +360,7 @@ jQuery(function($, undefined) {
 	    	
 	    	else if (command_split[1].toUpperCase() == "MODEL")
 	    	    { 
-	    		alert_if_debug("CREATE MODEL")
+	    		echo_if_debug("CREATE MODEL", term)
 			tempString = parseCreateModelCommand(command)
 			tablename = tempString["tableName"]
 			n_chains = tempString["numberOfChains"]
@@ -384,18 +389,27 @@ jQuery(function($, undefined) {
 		
 	    case "ANALYZE":
 	    {
-	    	alert_if_debug("ANALYZE")
+	    	echo_if_debug("ANALYZE", term)
 	    	tempString = parseAnalyzeCommand(command)
 	    	console.log(tempString)
-		    JSONRPC_send_method("analyze",
-					{ "tablename": tempString["tableName"], "chain_index": tempString["chainIndex"]
-		    , "iterations": tempString["iterations"]},
-					function(returnedData) {
-					    term.echo(returnedData);
-					    console.log(returnedData)
-					    alert("Welcome!")
-					}) 
-			break
+		tablename = tempString["tableName"]
+		chain_index = tempString["chainIndex"]
+		iterations = tempString["iterations"]
+		dict_to_send = {
+ 		    "tablename": tablename,
+		    "chain_index": chain_index,
+		    "iterations": iterations
+		}
+		success_str = ("ANALYZED " + tablename
+			       + " CHAIN INDEX " + chain_index
+			       + " FOR " + iterations + " ITERATIONS")
+		JSONRPC_send_method("analyze", dict_to_send,
+				    function(returnedData) {
+					term.echo(returnedData);
+					term.echo(success_str)
+					console.log(returnedData)
+				    }) 
+		break
 	    }
 	    
 
@@ -447,7 +461,7 @@ jQuery(function($, undefined) {
 	    
 	    case "INFER": 
 		{
-		    alert_if_debug("INFER")
+		    echo_if_debug("INFER", term)
 		    tempString = parseInferCommand(command)
 		    JSONRPC_send_method("infer",
 					{ "tablename": tempString["tableName"],  
@@ -470,7 +484,7 @@ jQuery(function($, undefined) {
 		
 	    case "PREDICT":
 		{
-		    alert_if_debug("PREDICT")
+		    echo_if_debug("PREDICT", term)
 		    tempString = parsePredictCommand(command)
 		    JSONRPC_send_method("predict",
 					{ "tablename": tempString["tableName"],  
@@ -488,7 +502,7 @@ jQuery(function($, undefined) {
 		
 	    case "GUESS": 
 		{
-		    alert_if_debug("GUESS")
+		    echo_if_debug("GUESS", term)
 		    guessCommandParsed = commandString.split(' ');
 		    var tableName;
 		    tableName = guessCommandParsed[$.inArray("FOR", inferCommandParsed) + 1]
@@ -506,7 +520,7 @@ jQuery(function($, undefined) {
 		default:   //Command is not a supported SQL command; need to parse and send back
 		{ 
 		    term.echo(window.wrong_command_format_str)
-		    alert_if_debug("FALL THROUGH")
+		    echo_if_debug("FALL THROUGH", term)
 		    
 		}
 		
