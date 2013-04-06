@@ -182,7 +182,6 @@ class MiddlewareEngine(object):
     finally:
       if conn:
         conn.close()
-    return 0
 
     # Call initialize on backend
     states_by_chain = list()
@@ -199,6 +198,7 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
+      curtime = datetime.datetime.now().ctime()
       for chain_index in range(n_chains):
         cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%d, '%s', '%s', '%s', %d, 0);" % (tableid, json.dumps(x_l_prime), json.dumps(x_d_prime), curtime, chain_index))        
       conn.commit()
