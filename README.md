@@ -7,12 +7,10 @@ This package is configured to be installed as a StarCluster plugin.  Roughly, th
 
 * An [Amazon EC2](http://aws.amazon.com/ec2/) account
     * [EC2 key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/generating-a-keypair.html)
-<!---    * EC2 credentials in a [~/.boto file](https://code.google.com/p/boto/wiki/BotoConfig#Example)  **this will be copied up to EC2** --->
 * [StarCluster](http://star.mit.edu/cluster/) installed on your local machine
     * ~/.starcluster/config file contains the information in [/path/to/tabular_predDB/starcluster.config](https://github.com/mit-probabilistic-computing-project/tabular-predDB/blob/master/starcluster.config) with information filled in
-<!--- * [SSH access](https://help.github.com/articles/generating-ssh-keys) to the [tabular-predDB github repo](https://github.com/mit-probabilistic-computing-project/tabular-predDB) via ssh key pair, ~/.ssh/id_rsa{,.pub} **these will be copied up to EC2** --->
 * tabular_predDB package available on your local machine and available on the PTYHONPATH
-    * The package directory must be renamed to tabular\_predDB from tabular**-**predDB
+    * The package directory must be renamed to tabular\_predDB from tabular-predDB
     * if not on the PYTHONPATH, all starcluster commands must be run one level above the package directory
 
 A starcluster_plugin.py file in included in this repo.  Assuming the above prerequisites are fulfilled,
