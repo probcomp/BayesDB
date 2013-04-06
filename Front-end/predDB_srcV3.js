@@ -1,7 +1,8 @@
 window.debug = true
 window.default_hostname = "ec2-23-22-78-125.compute-1.amazonaws.com"
 window.jsonrpc_id = 0
-
+window.wrong_command_format_str = ("Wrong command format."
+				   + " Please check the HELP command")
 
 function alert_if_debug(alert_str) {
     if(window.debug) {
@@ -79,7 +80,6 @@ function get_el_after(term, str_array) {
 
 /* Parser functions*/
 function parseCreateTableCommand(commandString){
-    var returnDict = new Object()
     var columnsDict = new Object()
     command_split = commandString.split(' ')
     // extract column names
@@ -94,31 +94,29 @@ function parseCreateTableCommand(commandString){
     var tableName;
     tableName = get_el_after("TABLE", command_split)
     fileName = get_el_after("FROM", command_split)
-    if (tableName != "FROM") {
-    	returnDict["tableName"] = tableName
-    } else {
-    	returnDict["tableName"] = fileName
-    }
+    //
+    var returnDict = new Object()
+    returnDict["tableName"] = tableName
     returnDict["fileName"] = fileName
     returnDict["columns"] = columnsDict
-    
     return returnDict
 }
 
 
 
 function parseCreateModelCommand(commandString){
-	createCommandParsed = commandString.split(' ');
-	var returnDict = new Object()
-	tableName = createCommandParsed[$.inArray("FOR", createCommandParsed) + 1]
-	numberOfChains = 10 //default value
-	withIndex = $.inArray("WITH", createCommandParsed)
-	if (withIndex != 0) {
-		numberOfChains = createCommandParsed[withIndex + 1]
-	}
-	returnDict["tableName"] = tableName
-	returnDict["numberOfChains"] = numberOfChains
-	return returnDict
+    command_split = commandString.split(' ')
+    var returnDict = new Object()
+    tableName = get_el_after("FOR", command_split)
+    numberOfChains = 10 //default value
+    withIndex = get_idx_after("WITH", command_split) - 1
+    // FIXME: should this be 'withIndex!=-1' ?
+    if (withIndex != 0 && withIndex != -1) {
+	numberOfChains = command_split[withIndex + 1]
+    }
+    returnDict["tableName"] = tableName
+    returnDict["numberOfChains"] = numberOfChains
+    return returnDict
 }
 
 
@@ -356,20 +354,29 @@ jQuery(function($, undefined) {
 				}
 	    	
 	    	else if (command_split[1].toUpperCase() == "MODEL")
-	    		{ 
+	    	    { 
 	    		alert_if_debug("CREATE MODEL")
-			    tempString = parseCreateTableCommand(command)
-			    //TODO change the dropdown menu to the table for which we have created the model
-			    JSONRPC_send_method("create_model",
-						{ "tablename": tempString["tableName"], "n_chains": tempString["numberOfChains"]},
-						function(returnedData) {
-						    term.echo(returnedData);
-						    console.log(returnedData)
-						    alert("Welcome!")
-						}) 
-						}
-	    	else
-	    		 term.echo('Wrong command format. Please check the HELP command');
+			tempString = parseCreateModelCommand(command)
+			tablename = tempString["tableName"]
+			n_chains = tempString["numberOfChains"]
+			dict_to_send = {
+			    "tablename": tablename,
+			    "n_chains": n_chains,
+			}
+			success_str = ("CREATED MODEL FOR " + tablename
+				       + " WITH " + n_chains + " CHAINS")
+				       
+			//TODO: change the dropdown menu to the table for
+			//      which we have created the model
+			JSONRPC_send_method("create_model", dict_to_send,
+					    function(returnedData) {
+						term.echo(returnedData);
+						term.echo(success_str);
+						console.log(returnedData)
+					    }) 
+		    }
+	    	    else
+	    		term.echo(window.wrong_command_format_str);
 	    	
 	    	break
 		    
@@ -418,7 +425,7 @@ jQuery(function($, undefined) {
 		}
     	
     	else
-    		 term.echo('Wrong command format. Please check the HELP command');
+    	    term.echo(window.wrong_command_format_str)
     	
     	break
 	    }
@@ -498,7 +505,7 @@ jQuery(function($, undefined) {
 		
 		default:   //Command is not a supported SQL command; need to parse and send back
 		{ 
-			term.echo('Wrong command format. Please check the HELP command');
+		    term.echo(window.wrong_command_format_str)
 		    alert_if_debug("FALL THROUGH")
 		    
 		}
