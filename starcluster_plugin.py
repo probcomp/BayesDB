@@ -46,19 +46,16 @@ def push_repo_using_node_key(remote_code_dir, node,
      cmd_str %= (git_ssh_file, node.ip_address, remote_code_dir)
      os.system(cmd_str)
 
-def update_remote_repo_working_tree(remote_code_dir, node):
+def update_remote_repo_working_tree(remote_code_dir, node, user):
      # update remote working tree
      cmd_str = 'cd %s && git reset --hard'
      cmd_str %= remote_code_dir
      node.ssh.execute(cmd_str)
      # set remote origin to tabular_predDB github
-     cmd_str = """sed -i '/url/ c\        url = https://github.com/mit-probabilistic""" \
-               + """-computing-project/tabular-predDB.git' .git/config"""
-     node.ssh.execute(cmd_str)
-     # chown
-     cmd_str = 'chown -R %s %s'
-     cmd_str %= (user, remote_code_dir)
-     node.ssh.execute(cmd_str)
+     cmd_str = 'bash -c "cd %s && git remote set-url origin https://github.com/%s"'
+     cmd_str %= (remote_code_dir, S.git.repo_suffix)
+     run_as_user(node, user, cmd_str)
+     # FIXME: Where is the update?
 
 # this complains about 
 # fatal: Not a git repository (or any of the parent directories): .git
@@ -98,6 +95,7 @@ def copy_this_repo(remote_code_dir, node, user, branch='master',
      cmd_str = 'rm -rf %s %s'
      cmd_str %= (temp_tgz_name, temp_dir_name)
      os.system(cmd_str)
+     update_remote_repo_working_tree(remote_code_dir, node, user)
 
 class tabular_predDBSetup(ClusterSetup):
      def __init__(self):

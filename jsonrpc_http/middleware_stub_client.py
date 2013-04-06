@@ -4,23 +4,27 @@ A python client that simulates the frontend.
 
 import time
 
-import tabular_predDB.jsonrpc_http.Engine as E
+#import tabular_predDB.jsonrpc_http.Engine as E
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.api_utils as au
+from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine
+middleware_engine = MiddlewareEngine()
 
 import psycopg2
 import pickle
 import os
 
 def run_test(hostname='localhost', middleware_port=8008):
-  URI = 'http://' + hostname + ':%d' % port
+  URI = 'http://' + hostname + ':%d' % middleware_port
   
-  # setup
   tablename = 'dhatest'
   cur_dir = os.path.dirname(os.path.abspath(__file__))
   table_csv = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'r').read()
   #crosscat_column_types = pickle.load(open('%s/dhatest_column_types.pkl' % cur_dir, 'r'))
-  crosscat_column_types = {'name':'ignore'}
+  crosscat_column_types = {'NAME':'ignore'}
+
+  # drop tablename
+  au.call('drop_tablename', {'tablename': tablename}, URI)
 
   # test runsql
   method_name = 'runsql'
@@ -30,20 +34,21 @@ def run_test(hostname='localhost', middleware_port=8008):
   au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
   time.sleep(1)
 
-  # test upload
-  method_name = 'upload'
+  # test upload_data_table
+  method_name = 'upload_data_table'
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['csv'] = table_csv 
   args_dict['crosscat_column_types'] = crosscat_column_types
   out, id = au.call(method_name, args_dict, URI)
+  print out
   assert (out==0 or out=="Error: table with that name already exists.")
   # TODO: Test that table was created
   out, id = au.call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s'" % tablename}, URI)
   time.sleep(1)
 
   # test createmodel
-  method_name = 'createmodel'
+  method_name = 'create_model'
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['n_chains'] = 3 # default is 10
@@ -60,7 +65,6 @@ def run_test(hostname='localhost', middleware_port=8008):
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['chain_index'] = 'all'
-  args_dict['iterations'] = 2
   out, id = au.call(method_name, args_dict, URI)
   assert (out==0)
   # Test that inference was started - there should now be two rows of latent states once analyze is finished running.
@@ -108,15 +112,15 @@ def run_test(hostname='localhost', middleware_port=8008):
   # TODO
   # Test that prediction worked properly
   time.sleep(1)
-  
-  # test delete chain
+
+  # test delete_chain
   method_name = 'delete_chain'
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['chain_index'] = 0
   out, id = au.call(method_name, args_dict, URI)
   assert out==0
-  # TODO: Now, test to make sure that there's one less chain
+  # TODO: Test to make sure there's one less chain
   time.sleep(1)
 
   # drop tablename

@@ -43,8 +43,9 @@ SMTP Port 465
 
 7. Hit "Build Now." It will fail but it will create the workspace directory.
 
-8. Put the jenkins script (jenkins-script.sh) in /var/lib/jenkins/workspace/PredictiveDB. 
-/var/lib/jenkins is the home directory for the jenkins users, and PredictiveDB is the Jenkins project name.
+8. Put the jenkins script (jenkins_script.sh) in /var/lib/jenkins/workspace/PredictiveDB (the easiest way is to do this:
+$ cp /home/sgeadmin/tabular_predDB/jenkins_script.sh /var/lib/jenkins/workspace/PredictiveDB/
+ /var/lib/jenkins is the home directory for the jenkins users, and PredictiveDB is the Jenkins project name.
 
 cp /home/sgeadmin/tabular_predDB/jenkins_script.sh /var/lib/jenkins/workspace/PredictiveDB/
 chown -R jenkins:nogroup /var/lib/jenkins
