@@ -58,7 +58,24 @@ class MiddlewareEngine(object):
     return 0
 
   def delete_chain(self, tablename, chain_index):
-    pass
+     """Delete one chain."""
+     try:
+       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+       cur = conn.cursor()
+       cur.execute('DROP TABLE %s' % tablename)
+       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
+       tableids = cur.fetchall()
+       for tid in tableids:
+         tableid = tid[0]
+         cur.execute("DELETE FROM preddb.models WHERE tableid=%d;" % tableid)
+         cur.execute("DELETE FROM preddb.table_index WHERE tableid=%d;" % tableid)
+       conn.commit()
+     except psycopg2.DatabaseError, e:
+       print('Error %s' % e)      
+       return e
+     finally:
+       conn.close()
+     return 0
 
   def upload_data_table(self, tablename, csv, crosscat_column_types):
     """Upload a csv table to the predictive db.
@@ -143,7 +160,7 @@ class MiddlewareEngine(object):
         conn.close()    
     return 0
 
-  def create_model(tablename, n_chains):
+  def create_model(tablename, n_chains=10):
     """Call initialize n_chains times."""
     # Get t, m_c, and m_r, and tableid
     try:
@@ -163,6 +180,7 @@ class MiddlewareEngine(object):
     finally:
       if conn:
         conn.close()
+    return 0
 
     # Call initialize on backend
     states_by_chain = list()
