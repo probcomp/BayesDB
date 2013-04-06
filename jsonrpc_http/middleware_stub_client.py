@@ -21,7 +21,10 @@ def run_test(hostname='localhost', middleware_port=8008):
   cur_dir = os.path.dirname(os.path.abspath(__file__))
   table_csv = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'r').read()
   #crosscat_column_types = pickle.load(open('%s/dhatest_column_types.pkl' % cur_dir, 'r'))
-  crosscat_column_types = {'name':'ignore'}
+  crosscat_column_types = {'NAME':'ignore'}
+
+  # drop tablename
+  au.call('drop_tablename', {'tablename': tablename}, URI)
 
   # test runsql
   method_name = 'runsql'
@@ -37,18 +40,15 @@ def run_test(hostname='localhost', middleware_port=8008):
   args_dict['tablename'] = tablename
   args_dict['csv'] = table_csv 
   args_dict['crosscat_column_types'] = crosscat_column_types
-  middleware_engine.upload_data_table(tablename, table_csv, crosscat_column_types)
-  """
   out, id = au.call(method_name, args_dict, URI)
   print out
   assert (out==0 or out=="Error: table with that name already exists.")
-  """
   # TODO: Test that table was created
   out, id = au.call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s'" % tablename}, URI)
   time.sleep(1)
 
   # test createmodel
-  method_name = 'createmodel'
+  method_name = 'create_model'
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['n_chains'] = 3 # default is 10

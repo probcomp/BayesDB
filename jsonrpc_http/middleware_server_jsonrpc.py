@@ -74,17 +74,12 @@ class ExampleServer(ServerEvents):
 
   def findmethod(self, method, args=None, kwargs=None):
     if method in self.methods:
-      return getattr(engine, method)
-    elif method in self.mymethods:
-      return getattr(self, method)
+      return getattr(middleware_engine, method)
     else:
       return None
 
   # helper methods
   methods = set(Middleware_Engine_methods)
-#  mymethods = set(['runsql', 'upload_data_table', 'create_model', 'analyze', 'select', \
-#                     'infer', 'predict', 'createmodel', 'guessschema','drop_tablename', 'delete_chain'])
-
   def _get_msg(self, response):
     print('response', repr(response))
     return ' '.join(str(x) for x in [response.id, response.result or response.error])

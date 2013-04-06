@@ -127,8 +127,9 @@ class MiddlewareEngine(object):
         cctype = crosscat_column_types[colname]
       else:
         # cctype = 'continuous'
-        column_data = column_data_lookup[colname]
-        cctype = du.guess_column_type(column_data)
+        #column_data = column_data_lookup[colname]
+        #cctype = du.guess_column_type(column_data)
+        cctype = 'continuous'
       cctypes.append(cctype)
       if cctype == 'ignore':
         postgres_coltypes.append('varchar(1000)')
@@ -160,7 +161,7 @@ class MiddlewareEngine(object):
         conn.close()    
     return 0
 
-  def create_model(tablename, n_chains=10):
+  def create_model(self, tablename, n_chains):
     """Call initialize n_chains times."""
     # Get t, m_c, and m_r, and tableid
     try:
@@ -171,7 +172,7 @@ class MiddlewareEngine(object):
       t = json.loads(t_json)
       m_r = json.loads(m_r_json)
       m_c = json.loads(m_c_json)
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s' AND uploadtime='%s';" % (tablename, curtime))
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % (tablename))
       tableid = cur.fetchone()[0]
       conn.commit()
     except psycopg2.DatabaseError, e:
