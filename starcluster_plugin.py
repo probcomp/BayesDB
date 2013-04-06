@@ -52,9 +52,9 @@ def update_remote_repo_working_tree(remote_code_dir, node):
      cmd_str %= remote_code_dir
      node.ssh.execute(cmd_str)
      # set remote origin to tabular_predDB github
-     cmd_str = 'git remote set-url origin https://github.com/%s'
-     cmd_str %= S.git.repo_suffix
-     node.ssh.execute(cmd_str)
+     cmd_str = 'bash -c "cd %s && git remote set-url origin https://github.com/%s"'
+     cmd_str %= (remote_code_dir, S.git.repo_suffix)
+     run_as_user(node, 'sgeadmin', cmd_str)
      # FIXME: Where is the update?
 
 # this complains about 
