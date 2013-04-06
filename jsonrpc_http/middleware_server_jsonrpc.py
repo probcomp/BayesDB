@@ -82,7 +82,11 @@ class ExampleServer(ServerEvents):
   methods = set(Middleware_Engine_methods)
   def _get_msg(self, response):
     print('response', repr(response))
-    return ' '.join(str(x) for x in [response.id, response.result or response.error])
+    ret_str = ''
+    if hasattr(response, 'id'):
+      to_strify = [response.id, response.result or response.error]
+      ret_str = ' '.join(map(str, to_strify))
+    return ret_str
   
   
 
@@ -105,7 +109,6 @@ class _CorsEncoder(object):
     self._request = request
       
   def encode(self, data):
-    print(data)
     return data
       
   def finish(self):
