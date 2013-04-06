@@ -217,7 +217,7 @@ class MiddlewareEngine(object):
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
-      tableid = cur.fetchone()[0]
+      tableid = int(cur.fetchone()[0])
       cur.execute("SELECT m_c, t FROM preddb.table_index WHERE tableid=%d;" % tableid)
       M_c_json, T_json = cur.fetchone()
       M_c = json.loads(M_c_json)
@@ -226,10 +226,11 @@ class MiddlewareEngine(object):
         cur.execute("SELECT UNIQUE(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
         chainids = cur.fetchone()
       else:
-        chain_ids = [chain_index]
+        chainids = [chain_index]
+      chainids = map(int, chainids)
       conn.commit()
       for chainid in chainids:
-        self.analyze_helper(tablename, M_c, T, chainid, iterations)
+        self.analyze_helper(tableid, M_c, T, chainid, iterations)
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
       return e
@@ -237,19 +238,19 @@ class MiddlewareEngine(object):
       if conn:
         conn.close()
       
-  def analyze_helper(self, tablename, M_c, T, chainid, iterations):
+  def analyze_helper(self, tableid, M_c, T, chainid, iterations):
     """Only for one chain."""
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
       cur.execute("SELECT x_l, x_d, iterations FROM preddb.models WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
-                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d);" % (tableid))
+                  + " AND iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d);" % (tableid))
       X_L_prime_json, X_D_prime_json, prev_iterations = cur.fetchone()
       X_L_prime = json.loads(X_L_prime_json)
       X_D_prime = json.loads(X_D_prime_json)
       conn.commit()
     except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
+      print('psycopg2.DatabaseError %s' % e)
       return e
     finally:
       if conn:
@@ -261,14 +262,16 @@ class MiddlewareEngine(object):
     args_dict['T'] = T
     args_dict['X_L'] = X_L_prime
     args_dict['X_D'] = X_D_prime
-    args_dict['kernel_list'] = 'kernel_list'
-    args_dict['n_steps'] = number
+    args_dict['kernel_list'] = None
+    args_dict['n_steps'] = iterations
     args_dict['c'] = 'c' # Currently ignored by analyze
     args_dict['r'] = 'r' # Currently ignored by analyze
     args_dict['max_iterations'] = 'max_iterations' # Currently ignored by analyze
     args_dict['max_time'] = 'max_time' # Currently ignored by analyze
     out, id = au.call('analyze', args_dict, self.BACKEND_URI)
+    print(out)
     X_L_prime, X_D_prime = out
+    print('unpacked out')
 
     # Store X_L_prime, X_D_prime
     try:
