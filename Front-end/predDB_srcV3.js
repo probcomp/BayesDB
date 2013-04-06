@@ -74,8 +74,12 @@ function to_upper_case(str) {
     return str.toUpperCase()
 }
 
+function get_idx_of(term, str_array) {
+    return $.inArray(term.toUpperCase(), str_array.map(to_upper_case))
+}
+
 function get_idx_after(term, str_array) {
-    return $.inArray(term.toUpperCase(), str_array.map(to_upper_case)) + 1
+    return get_idx_of(term, str_array) + 1
 }
 
 function get_el_after(term, str_array) {
