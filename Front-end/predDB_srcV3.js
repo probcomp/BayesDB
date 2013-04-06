@@ -1,6 +1,6 @@
 window.debug = true
 window.default_hostname = "ec2-50-16-22-81.compute-1.amazonaws.com"
-
+window.jsonrpc_id = 0
 
 function alert_if_debug(alert_str) {
     if(window.debug) {
@@ -34,15 +34,10 @@ function findNaNValuesInCSV(csvFile){
     return missingValsList
 }
 
-/* JSON functions*/
-function JSONRPC_init() {
-    JSONRPC_ID = 0				
-}
-
 function JSONRPC_send_method(method_name, parameters, function_to_call) {
-    JSONRPC_ID += 1
+    window.jsonrpc_id += 1
     data_in =
-	{ id : toString(JSONRPC_ID),
+	{ id : toString(window.jsonrpc_id),
 	  jsonrpc : "2.0",
 	  method : method_name,
 	  params : parameters }
@@ -317,7 +312,6 @@ jQuery(function($, undefined) {
 	    		alert_if_debug("CREATE TABLE")
 			    tempString = parseCreateTableCommand(command)
 			    console.log(tempString)
-			    JSONRPC_init()
 			    JSONRPC_send_method("upload_data_table",
 						{ "csv": preloadedDataFiles[tempString["fileName"]], "crosscat_column_types":
 							tempString["columns"], "tablename": tempString["tableName"]},
@@ -346,7 +340,6 @@ jQuery(function($, undefined) {
 	    		alert_if_debug("CREATE MODEL")
 			    tempString = parseCreateTableCommand(command)
 			    //TODO change the dropdown menu to the table for which we have created the model
-			    JSONRPC_init()
 			    JSONRPC_send_method("create_model",
 						{ "tablename": tempString["tableName"], "n_chains": tempString["numberOfChains"]},
 						function(returnedData) {
@@ -367,7 +360,6 @@ jQuery(function($, undefined) {
 	    	alert_if_debug("ANALYZE")
 	    	tempString = parseAnalyzeCommand(command)
 	    	console.log(tempString)
-	    	JSONRPC_init()
 		    JSONRPC_send_method("analyze",
 					{ "tablename": tempString["tableName"], "chain_index": tempString["chainIndex"]
 		    , "iterations": tempString["iterations"]},
@@ -385,7 +377,6 @@ jQuery(function($, undefined) {
     		{ 
 	    		tempString = parseDropCommand(command)
 		    	console.log(tempString)
-		    	JSONRPC_init()
 			    JSONRPC_send_method("drop_tablename",
 						{ "tablename": tempString["tableName"]},
 						function(returnedData) {
@@ -414,7 +405,6 @@ jQuery(function($, undefined) {
 	    	tempString = parseDeleteChainCommand(command)
 	    	tempString = parseDropCommand(command)
 	    	console.log(tempString)
-	    	JSONRPC_init()
 		    JSONRPC_send_method("delete_chain",
 					{ "tablename": tempString["tableName"], "chain_index": tempString["chainIndex"]},
 					function(returnedData) {
@@ -429,7 +419,6 @@ jQuery(function($, undefined) {
 		{
 		    alert_if_debug("INFER")
 		    tempString = parseInferCommand(command)
-		    JSONRPC_init()
 		    JSONRPC_send_method("infer",
 					{ "tablename": tempString["tableName"],  
 				          "newtablename": tempString["newTableName"],
@@ -453,7 +442,6 @@ jQuery(function($, undefined) {
 		{
 		    alert_if_debug("PREDICT")
 		    tempString = parsePredictCommand(command)
-		    JSONRPC_init()
 		    JSONRPC_send_method("predict",
 					{ "tablename": tempString["tableName"],  
 				          "times": tempString["times"],
@@ -474,7 +462,6 @@ jQuery(function($, undefined) {
 		    guessCommandParsed = commandString.split(' ');
 		    var tableName;
 		    tableName = guessCommandParsed[$.inArray("FOR", inferCommandParsed) + 1]
-		    JSONRPC_init()
 		    JSONRPC_send_method("guessschema",
 					{ "tablename":tableName},
 					function(returnedData) {
