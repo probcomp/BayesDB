@@ -354,14 +354,65 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, query_row,
         samples_list.append(this_sample_draws)
     return samples_list
 
+def continuous_imputation(samples, get_next_seed):
+    n_samples = len(samples)
+    mean_sample = sum(samples) / float(n_samples)
+    return mean_sample
+
+def multinomial_imputation(samples, get_next_seed, return_confidence=False):
+    counter = Counter(samples)
+    max_tuple = counter.most_common(1)[0]
+    max_count = max_tuple[1]
+    counter_counter = Counter(counter.values)
+    num_max_count = counter_counter[max_count]
+    mle_sample = max_tuple[0]
+    if num_max_count >= 1:
+        # if there is a tie, draw randomly
+        max_tuples = counter.most_common(num_max_count)
+        values = [max_tuple[0] for max_tuple in max_tuples]
+        random_state = numpy.random.RandomState(get_next_seed())
+        draw = random.state.randint(len(values))
+        mle_sample = values[draw]
+    if return_confidence:
+        confidence = float(max_count) / len(samples)
+        return mle_sample, confidence
+    else:
+        return mle_sample
+
+modeltype_to_imputation_function = {
+    'continuous': continuous_imputation,
+    'multinomial': multinomial_imputation,
+    }
+
 def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     # FIXME: allow more than one cell to be imputed
     assert(len(Q)==1)
+    #
+    col_idx = Q[0][1]
+    modeltype = M_c['column_metadata'][col_idx]['modeltype']
+    assert(modeltype in modeltype_to_imputation_function)
     samples = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
                                        get_next_seed, n)
     samples = numpy.array(samples).T[0]
-    e = sum(samples) / float(n)
+    imputation_function = modeltype_to_imputation_function[modeltype]
+    e = imputation_function(samples, get_next_seed)
     return e
+
+
+def impute_and_confidence(M_c, X_L, X_D, Y, Q, n, get_next_seed):
+    # FIXME: allow more than one cell to be imputed
+    assert(len(Q)==1)
+    #
+    col_idx = Q[0][1]
+    modeltype = M_c['column_metadata'][col_idx]['modeltype']
+    assert(modeltype in modeltype_to_imputation_function)
+    samples = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
+                                       get_next_seed, n)
+    samples = numpy.array(samples).T[0]
+    imputation_function = modeltype_to_imputation_function[modeltype]
+    e, confidence = imputation_function(samples, get_next_seed,
+                                        return_confidence=True)
+    return e, confidence
 
 def determine_replicating_samples_params(X_L, X_D):
     view_assignments_array = X_L['column_partition']['assignments']
