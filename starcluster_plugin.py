@@ -46,7 +46,7 @@ def push_repo_using_node_key(remote_code_dir, node,
      cmd_str %= (git_ssh_file, node.ip_address, remote_code_dir)
      os.system(cmd_str)
 
-def update_remote_repo_working_tree(remote_code_dir, node):
+def update_remote_repo_working_tree(remote_code_dir, node, user):
      # update remote working tree
      cmd_str = 'cd %s && git reset --hard'
      cmd_str %= remote_code_dir
@@ -54,7 +54,7 @@ def update_remote_repo_working_tree(remote_code_dir, node):
      # set remote origin to tabular_predDB github
      cmd_str = 'bash -c "cd %s && git remote set-url origin https://github.com/%s"'
      cmd_str %= (remote_code_dir, S.git.repo_suffix)
-     run_as_user(node, 'sgeadmin', cmd_str)
+     run_as_user(node, user, cmd_str)
      # FIXME: Where is the update?
 
 # this complains about 
@@ -95,6 +95,7 @@ def copy_this_repo(remote_code_dir, node, user, branch='master',
      cmd_str = 'rm -rf %s %s'
      cmd_str %= (temp_tgz_name, temp_dir_name)
      os.system(cmd_str)
+     update_remote_repo_working_tree(remote_code_dir, node, user)
 
 class tabular_predDBSetup(ClusterSetup):
      def __init__(self):
