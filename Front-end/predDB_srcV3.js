@@ -1,6 +1,7 @@
 window.debug = true
-window.default_hostname = "ec2-50-16-22-81.compute-1.amazonaws.com"
+window.default_hostname = "ec2-23-22-78-125.compute-1.amazonaws.com"
 window.jsonrpc_id = 0
+
 
 function alert_if_debug(alert_str) {
     if(window.debug) {
@@ -62,31 +63,43 @@ function JSONRPC_send_method(method_name, parameters, function_to_call) {
     });			    
 }
 
+function to_upper_case(str) {
+    return str.toUpperCase()
+}
+
+function get_idx_after(term, str_array) {
+    return $.inArray(term.toUpperCase(), str_array.map(to_upper_case)) + 1
+}
+
+function get_el_after(term, str_array) {
+    // case insensitive
+    idx = get_idx_after(term, str_array)
+    alert("str_array: " + str_array)
+    return str_array[idx]
+}
+
 /* Parser functions*/
 function parseCreateTableCommand(commandString){
-    var returnDict = new Object() //the main dict for the tablename and the columns
+    var returnDict = new Object()
     var columnsDict = new Object()
-    createCommandParsed = commandString.split(' ');
-    columnNamesIndex =  $.inArray("WITH", createCommandParsed) + 1
-    alert(columnNamesIndex)
-    var tempColProperties = new Object()
+    command_split = commandString.split(' ')
+    // extract column names
+    columnNamesIndex =  get_idx_after("WITH", command_split)
     var i = columnNamesIndex
-    while (i < createCommandParsed.length && i != 0){
-    	/*tempColProperties["name"] = createCommandParsed[i]
-    	tempColProperties["type"] = createCommandParsed[i+2]*/
-    	columnsDict[createCommandParsed[i]] = createCommandParsed[i+2]
+    while (i < command_split.length && i != 0){
+	// FIXME: should verify command_split[i+1] is 'AS'
+    	columnsDict[command_split[i]] = command_split[i+2]
     	i += 3
-    	
     }
-    
+    //
     var tableName;
-    tableName = createCommandParsed[$.inArray("TABLE", createCommandParsed) + 1]
-    fileName = createCommandParsed[$.inArray("FROM", createCommandParsed) + 1]
-    if (tableName != "FROM"){
+    tableName = get_el_after("TABLE", command_split)
+    fileName = get_el_after("FROM", command_split)
+    if (tableName != "FROM") {
     	returnDict["tableName"] = tableName
-    }
-    else
+    } else {
     	returnDict["tableName"] = fileName
+    }
     returnDict["fileName"] = fileName
     returnDict["columns"] = columnsDict
     
@@ -312,9 +325,17 @@ jQuery(function($, undefined) {
 	    		alert_if_debug("CREATE TABLE")
 			    tempString = parseCreateTableCommand(command)
 			    console.log(tempString)
-			    JSONRPC_send_method("upload_data_table",
-						{ "csv": preloadedDataFiles[tempString["fileName"]], "crosscat_column_types":
-							tempString["columns"], "tablename": tempString["tableName"]},
+			    filename = tempString["fileName"]
+			    crosscat_column_types = tempString["columns"]
+			    if(typeof(crosscat_column_types)=="undefined") {
+				crosscat_column_types = "NONE"
+			    }
+			    dict_to_send = {
+				"csv": preloadedDataFiles[filename],
+				"crosscat_column_types": crosscat_column_types,
+				"tablename": tempString["tableName"],
+			    }
+			    JSONRPC_send_method("upload_data_table", dict_to_send,
 						function(returnedData) {
 						    console.log(returnedData)
 						    alert("Welcome!")
@@ -518,7 +539,6 @@ function ProcessFiles(files_input) {
 	reader.onload = function(e) {
 	    preloadedDataFiles[e.target.file_name] = e.target.result;
 	    jQuery(document.getElementById('menu')).append("<option value='" + e.target.file_name + "'>" + e.target.file_name + "</option>")
-	    // LoadToDatabaseTheCSVData(e.target.result)
 	}
 	reader.readAsBinaryString(files_input[file_index])	
     }
