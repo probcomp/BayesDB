@@ -127,24 +127,7 @@ class ExampleServer(ServerEvents):
     return 0
 
   def delete_chain(self, tablename, chain_index):
-    """Delete one chain."""
-    try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
-      cur = conn.cursor()
-      cur.execute('DROP TABLE %s' % tablename)
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
-      tableids = cur.fetchall()
-      for tid in tableids:
-        tableid = tid[0]
-        cur.execute("DELETE FROM preddb.models WHERE tableid=%d;" % tableid)
-        cur.execute("DELETE FROM preddb.table_index WHERE tableid=%d;" % tableid)
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)      
-      return e
-    finally:
-      conn.close()
-    return 0
+    pass
 
   def upload(self, tablename, csv, crosscat_column_types):
     """Upload a csv table to the predictive db.
@@ -211,6 +194,8 @@ class ExampleServer(ServerEvents):
     t, m_r, m_c, header = du.continuous_or_ignore_from_file_with_colnames(csv_abs_path, cctypes)
     colstring = ', '.join([tup[0] + ' ' + tup[1] for tup in zip(colnames, postgres_coltypes)])
 
+
+
     # Execute queries
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
@@ -219,9 +204,7 @@ class ExampleServer(ServerEvents):
       with open(clean_csv_abs_path) as fh:
         cur.copy_from(fh, tablename, sep=',')
       curtime = datetime.datetime.now().ctime()
-      cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) " \
-            "VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" \ 
-             % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
+      cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
@@ -231,7 +214,7 @@ class ExampleServer(ServerEvents):
         conn.close()    
     return 0
 
-  def create_model(tablename, n_chains=10):
+  def create_model(tablename, n_chains):
     """Call initialize n_chains times."""
     # Get t, m_c, and m_r, and tableid
     try:
@@ -276,7 +259,6 @@ class ExampleServer(ServerEvents):
     finally:
       if conn:
         conn.close()
-    return 0
 
 
   def analyze(self, tablename, chain_index=1, iterations=2):
@@ -383,7 +365,6 @@ class ExampleServer(ServerEvents):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
     # TODO: FIX
     # Get M_c, X_L, and X_D from database
-    """
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
@@ -416,7 +397,6 @@ class ExampleServer(ServerEvents):
     args_dict['n'] = 1
     for idx in range(numpredictions):
       out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
-    """
     csv = ""
     return csv
 

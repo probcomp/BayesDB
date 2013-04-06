@@ -12,17 +12,14 @@ import psycopg2
 import pickle
 import os
 
-def run_test(hostname='localhost', middleware_port=8008):
+def run_test(hostname='localhost', port=8008):
   URI = 'http://' + hostname + ':%d' % port
   
-  # setup
   tablename = 'dhatest'
   cur_dir = os.path.dirname(os.path.abspath(__file__))
   table_csv = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'r').read()
-  #crosscat_column_types = pickle.load(open('%s/dhatest_column_types.pkl' % cur_dir, 'r'))
-  crosscat_column_types = {'name':'ignore'}
+  crosscat_column_types = pickle.load(open('%s/dhatest_column_types.pkl' % cur_dir, 'r'))
 
-  # test runsql
   method_name = 'runsql'
   args_dict = dict()
   args_dict['sql_command'] = 'CREATE TABLE IF NOT EXISTS bob(id INT PRIMARY KEY, num INT);'
@@ -30,7 +27,6 @@ def run_test(hostname='localhost', middleware_port=8008):
   au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
   time.sleep(1)
 
-  # test upload
   method_name = 'upload'
   args_dict = dict()
   args_dict['tablename'] = tablename
@@ -38,28 +34,17 @@ def run_test(hostname='localhost', middleware_port=8008):
   args_dict['crosscat_column_types'] = crosscat_column_types
   out, id = au.call(method_name, args_dict, URI)
   assert (out==0 or out=="Error: table with that name already exists.")
-  # TODO: Test that table was created
-  out, id = au.call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s'" % tablename}, URI)
-  time.sleep(1)
-
-  # test createmodel
-  method_name = 'createmodel'
-  args_dict = dict()
-  args_dict['tablename'] = tablename
-  args_dict['n_chains'] = 3 # default is 10
-  out, id = au.call(method_name, args_dict, URI)  
-  assert out==0
+  # TODO: Test that table was created and data was inserted into table
   # Test that one model was created
   out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
                  + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI)
   assert(out[0][0] == 1)
   time.sleep(1)
 
-  # test analyze
-  method_name = 'analyze'
+  method_name = 'createmodel'
   args_dict = dict()
   args_dict['tablename'] = tablename
-  args_dict['chain_index'] = 'all'
+  args_dict['number'] = 10
   args_dict['iterations'] = 2
   out, id = au.call(method_name, args_dict, URI)
   assert (out==0)
@@ -69,7 +54,6 @@ def run_test(hostname='localhost', middleware_port=8008):
   assert(out[0][0] == 2)
   time.sleep(1)
 
-  # test select
   method_name = 'select'
   args_dict = dict()
   args_dict['querystring'] = 'SELECT * FROM %s;' % tablename
@@ -80,7 +64,6 @@ def run_test(hostname='localhost', middleware_port=8008):
   #assert(csv_results == table_csv)
   time.sleep(1)
 
-  # TODO: test infer
   method_name = 'infer'
   args_dict = dict()
   args_dict['tablename'] = tablename
@@ -95,7 +78,6 @@ def run_test(hostname='localhost', middleware_port=8008):
   # Test that missing values are filled in
   time.sleep(1)
 
-  # TODO: test predict
   method_name = 'predict'
   args_dict = dict()
   args_dict['tablename'] = tablename
@@ -108,20 +90,27 @@ def run_test(hostname='localhost', middleware_port=8008):
   # TODO
   # Test that prediction worked properly
   time.sleep(1)
-  
-  # test delete chain
-  method_name = 'delete_chain'
+
+  method_name = 'guessschema'
   args_dict = dict()
   args_dict['tablename'] = tablename
-  args_dict['chain_index'] = 0
+  args_dict['csv'] = table_csv
   out, id = au.call(method_name, args_dict, URI)
-  assert out==0
-  # TODO: Now, test to make sure that there's one less chain
+  cctypes = out
+  for value in cctypes:
+      assert(value == 'ignore' or value == 'continuous' or value == 'multinomial')
   time.sleep(1)
 
-  # drop tablename
-  au.call('drop_tablename', {'tablename': tablename}, URI)
-
+  au.call('delete', {'tablename': tablename}, URI)
+  # Clean up: remove test rows from the db
+  """
+  au.call('runsql', {'sql_command': 'DROP TABLE %s;' % tablename}, URI)
+  out, id = au.call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename}, URI)
+  for result in out:
+      tableid = result[0]
+      au.call('runsql', {'sql_command': "DELETE FROM preddb.models WHERE tableid=%d " % tableid}, URI)
+      au.call('runsql', {'sql_command': "DELETE FROM preddb.table_index WHERE tableid=%d;" % tableid}, URI)
+  """
   
 if __name__ == '__main__':
     run_test()
