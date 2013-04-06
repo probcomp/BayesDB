@@ -4,9 +4,11 @@ A python client that simulates the frontend.
 
 import time
 
-import tabular_predDB.jsonrpc_http.Engine as E
+#import tabular_predDB.jsonrpc_http.Engine as E
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.api_utils as au
+from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine
+middleware_engine = MiddlewareEngine()
 
 import psycopg2
 import pickle
@@ -27,13 +29,17 @@ def run_test(hostname='localhost', port=8008):
   au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
   time.sleep(1)
 
-  method_name = 'upload'
+  method_name = 'upload_data_table'
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['csv'] = table_csv 
   args_dict['crosscat_column_types'] = crosscat_column_types
+  middleware_engine.upload_data_table(tablename, table_csv, crosscat_column_types)
+  """
   out, id = au.call(method_name, args_dict, URI)
+  print out
   assert (out==0 or out=="Error: table with that name already exists.")
+  """
   # TODO: Test that table was created and data was inserted into table
   # Test that one model was created
   out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
