@@ -78,6 +78,10 @@ function get_idx_of(term, str_array) {
     return $.inArray(term.toUpperCase(), str_array.map(to_upper_case))
 }
 
+function in_list(term, str_array) {
+    return get_idx_of(term, str_array) != -1
+}
+
 function get_idx_after(term, str_array) {
     return get_idx_of(term, str_array) + 1
 }
@@ -119,11 +123,9 @@ function parseCreateModelCommand(commandString){
     var returnDict = new Object()
     tableName = get_el_after("FOR", command_split)
     numberOfChains = 10 //default value
-    withIndex = get_idx_after("WITH", command_split) - 1
-    // FIXME: should this be 'withIndex!=-1' ?
-    if (withIndex != 0 && withIndex != -1) {
-	numberOfChains = command_split[withIndex + 1]
-    }
+    if(in_list("WITH", command_split)) {
+	numberOfChains = get_el_after("WITH", command_split)
+    }	
     returnDict["tableName"] = tableName
     returnDict["numberOfChains"] = parseInt(numberOfChains)
     return returnDict
