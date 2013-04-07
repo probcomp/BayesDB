@@ -68,14 +68,14 @@ class ExampleServer(ServerEvents):
 	# helper methods
 	methods = set(Engine_methods)
 	def _get_msg(self, response):
-		print('response', repr(response))
 		ret_str = str(response)
 		if hasattr(response, 'id'):
-			to_strify = [response.id,
-				     response.result or response.error]
-			ret_str = ' '.join(map(str, to_strify))
+			ret_str = str(response.id)
+			if response.result:
+				ret_str += '; result: %s' % response.result
+			else:
+				ret_str += '; error: %s' % response.error
 		return ret_str
-
 
 root = JSON_RPC().customize(ExampleServer)
 site = server.Site(root)
