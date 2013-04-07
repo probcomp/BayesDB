@@ -18,7 +18,7 @@ def run_test(hostname='localhost', middleware_port=8008):
   URI = 'http://' + hostname + ':%d' % middleware_port
   cur_dir = os.path.dirname(os.path.abspath(__file__))  
   #test_tablenames = ['dhatest', 'dha_small', 'dha_small_cont']
-  test_tablenames = ['dha_small_cont']
+  test_tablenames = ['dha_small']
   
   for tablename in test_tablenames:
     table_csv = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'r').read()
@@ -55,11 +55,15 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['n_chains'] = 3 # default is 10
-  out, id = au.call(method_name, args_dict, URI)  
-  assert out==0
+  middleware_engine.create_model(tablename, 3)
+#  out, id = au.call(method_name, args_dict, URI)  
+#  assert out==0
   # Test that one model was created
   out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
                  + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI)
+  assert(out[0][0] == 3)
+  out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
+                 + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s' AND chainid=1;" % tablename}, URI)
   assert(out[0][0] == 1)
   time.sleep(1)
 

@@ -40,6 +40,8 @@ from jsonrpc.server import ServerEvents, JSON_RPC
 #
 import tabular_predDB.jsonrpc_http.Engine as E
 
+import pdb
+
 Engine_methods = E.get_method_names()
 next_seed = 0
 
@@ -72,9 +74,9 @@ class ExampleServer(ServerEvents):
 		if hasattr(response, 'id'):
 			ret_str = str(response.id)
 			if response.result:
-				ret_str += '; result: %s' % response.result
+				ret_str += '; result: %s' % str(response.result)
 			else:
-				ret_str += '; error: %s' % response.error
+				ret_str += '; error: %s' % str(response.error)
 		return ret_str
 
 root = JSON_RPC().customize(ExampleServer)

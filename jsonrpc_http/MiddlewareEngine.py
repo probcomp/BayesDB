@@ -9,9 +9,14 @@ import os
 import pickle
 import json
 import datetime
+import pdb
 
 import tabular_predDB.python_utils.api_utils as au
 import tabular_predDB.python_utils.data_utils as du
+
+# For testing
+from tabular_predDB.jsonrpc_http.Engine import Engine
+engine = Engine()
 
 class MiddlewareEngine(object):
 
@@ -151,7 +156,6 @@ class MiddlewareEngine(object):
       cur = conn.cursor()
       cur.execute("CREATE TABLE %s (%s);" % (tablename, colstring))
       with open(clean_csv_abs_path) as fh:
-        # FIXME: this copy from messes up if there are ignore?
         cur.copy_from(fh, tablename, sep=',')
       curtime = datetime.datetime.now().ctime()
       cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
@@ -192,6 +196,7 @@ class MiddlewareEngine(object):
     args_dict['M_r'] = m_r
     args_dict['T'] = t
     for chain_index in range(n_chains):
+#      out = engine.initialize(m_c, m_r, t)
       out, id = au.call('initialize', args_dict, self.BACKEND_URI)
       m_c, m_r, x_l_prime, x_d_prime = out
       states_by_chain.append((x_l_prime, x_d_prime))
