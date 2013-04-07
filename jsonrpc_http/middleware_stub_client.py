@@ -16,13 +16,16 @@ import os
 
 def run_test(hostname='localhost', middleware_port=8008):
   URI = 'http://' + hostname + ':%d' % middleware_port
+  cur_dir = os.path.dirname(os.path.abspath(__file__))  
+  #test_tablenames = ['dhatest', 'dha_small', 'dha_small_cont']
+  test_tablenames = ['dha_small_cont']
   
-  tablename = 'dhatest'
-  cur_dir = os.path.dirname(os.path.abspath(__file__))
-  table_csv = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'r').read()
-  #crosscat_column_types = pickle.load(open('%s/dhatest_column_types.pkl' % cur_dir, 'r'))
-  crosscat_column_types = {'NAME':'ignore'}
+  for tablename in test_tablenames:
+    table_csv = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'r').read()
+    run_test_with(tablename, table_csv, URI)
 
+
+def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   # drop tablename
   au.call('drop_tablename', {'tablename': tablename}, URI)
 
