@@ -138,18 +138,19 @@ function parseAnalyzeCommand(commandString){
     var returnDict = new Object()
     tableName = get_el_after("ANALYZE", command_split)
     iterations = 2 //default value
-    iterations_idx = get_idx_after("FOR", command_split)
-    if(iterations_idx != 0) {
-	iterations = command_split[iterations_idx]
+    if(in_list("FOR", command_split)) {
+	iterations = get_el_after("FOR", command_split)
+	iterations = parseInt(iterations)
     }
     which_chain = 'ALL' //default value
-    which_chain_idx = get_idx_after("ON", command_split)
-    if(which_chain_idx != 0) {
+    if(in_list("ON", command_split)) {
+	which_chain_idx = get_idx_after("ON", command_split)
 	which_chain = command_split[which_chain_idx]
+	which_chain = parseInt(which_chain)
     }
     returnDict["tableName"] = tableName
-    returnDict["iterations"] = parseInt(iterations)
-    returnDict["chainIndex"] = parseInt(which_chain)
+    returnDict["iterations"] = iterations
+    returnDict["chainIndex"] = which_chain
     return returnDict
 }
 
@@ -316,15 +317,15 @@ jQuery(function($, undefined) {
 	    {
 	    case "SETHOSTNAME":
 	    {
-		    hostname = command.split(' ')[1]
-		    set_url_with_hostname(hostname)
+		hostname = command_split[1]
+		set_url_with_hostname(hostname)
 		echo_if_debug("JSONRPC_URL = " + window.JSONRPC_URL, term)
-		    break
+		break
 		}
 	    case "GETHOSTNAME":
 	    {
-		    alert("JSONRPC_URL = " + window.JSONRPC_URL)
-		    break
+		term.echo("JSONRPC_URL = " + window.JSONRPC_URL)
+		break
 		}
 	    case "CREATE": 
 		{
@@ -334,6 +335,7 @@ jQuery(function($, undefined) {
 			    tempString = parseCreateTableCommand(command)
 			    console.log(tempString)
 			    filename = tempString["fileName"]
+			    tablename = tempString["tableName"]
 			    crosscat_column_types = tempString["columns"]
 			    if(typeof(crosscat_column_types)=="undefined") {
 				crosscat_column_types = "NONE"
@@ -341,12 +343,13 @@ jQuery(function($, undefined) {
 			    dict_to_send = {
 				"csv": preloadedDataFiles[filename],
 				"crosscat_column_types": crosscat_column_types,
-				"tablename": tempString["tableName"],
+				"tablename": tablename,
 			    }
+			    success_str = ("CREATED TABLE " + tablename)
 			    JSONRPC_send_method("upload_data_table", dict_to_send,
 						function(returnedData) {
 						    console.log(returnedData)
-						    alert("Welcome!")
+						    term.echo(success_str)
 						}) 
 				//in case the table name is different than the file name
 			    if (tempString["fileName"] != tempString["tableName"]){
