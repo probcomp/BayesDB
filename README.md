@@ -67,3 +67,10 @@ Note, this will temporarily shut down the instance
 
 
 This will start the process of creating the AMI.  It will print 'IMAGE [AMI-NAME]' to the file 'out'.  Record AMI-NAME and modify ~/.starcluster/config to use that for the tabular_predDB cluster's NODE\_IMAGE\_ID.
+
+Caching HTTPS password
+----------------------
+When a StarCluster machine is spun up, its .git origin is changed to the github https address.  You can perform git operations but github repo operations will require a password.  You can cache the password by performing the following operations (from the related github [help page](https://help.github.com/articles/set-up-git#password-caching))
+
+     sgeadmin> git config --global credential.helper cache
+     sgeadmin> git config --global credential.helper 'cache --timeout=3600'
