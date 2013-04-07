@@ -109,8 +109,8 @@ class tabular_predDBSetup(ClusterSetup):
                log.info("Installing tabular_predDB (part 1) on %s"
                         % node.alias)
                # push code up
-               copy_this_repo(S.path.remote_code_dir, node, user,
-                              S.git.branch)
+               # copy_this_repo(S.path.remote_code_dir, node, user,
+               #                S.git.branch)
           for node in nodes:
                log.info("Installing tabular_predDB (part 2) on %s"
                         % node.alias)
@@ -158,4 +158,7 @@ class tabular_predDBSetup(ClusterSetup):
                                                 S.path.run_server_script)
                cmd_str = 'bash -i %s'
                cmd_str %= (run_server_script) 
+               run_as_user(node, user, cmd_str)
+               #
+               cmd_str = "bash -i /home/sgeadmin/tabular_predDB/run_simplehttpserver.sh"
                run_as_user(node, user, cmd_str)
