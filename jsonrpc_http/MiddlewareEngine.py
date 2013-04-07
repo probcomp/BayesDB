@@ -215,9 +215,9 @@ class MiddlewareEngine(object):
     finally:
       if conn:
         conn.close()
+    return 0
 
-
-  def analyze(self, tablename, chain_index=1, iterations=2):
+  def analyze(self, tablename, chain_index=1, iterations=2, wait=False):
     """Run analyze for the selected table. chain_index may be 'all'."""
     # Get M_c, T, X_L, and X_D from database
     try:
@@ -244,14 +244,16 @@ class MiddlewareEngine(object):
                     args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
         p_list.append(p)
         p.start()
-      # for p in p_list:
-      #   p.join()
+      if wait:
+        for p in p_list:
+          p.join()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
       return e
     finally:
       if conn:
         conn.close()
+    return 0
 
   def select(self, querystring):
     """Run a select query, and return the results in csv format, with appropriate header."""
@@ -273,7 +275,7 @@ class MiddlewareEngine(object):
     # TODO: implement
     csv = ""
     #cellnumbers: list of row/col pairs [[r,c], [r,c], ...]
-    cellnumbers = []
+    cellnumbers = json.dumps([[0,0]])
     return csv, cellnumbers 
 
   def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):

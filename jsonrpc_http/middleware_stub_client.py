@@ -55,9 +55,8 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['n_chains'] = 3 # default is 10
-  middleware_engine.create_model(tablename, 3)
-#  out, id = au.call(method_name, args_dict, URI)  
-#  assert out==0
+  out, id = au.call(method_name, args_dict, URI)  
+  assert out==0
   # Test that one model was created
   out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
                  + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI)
@@ -72,12 +71,13 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['chain_index'] = 'all'
+  args_dict['wait'] = True # wait for analyze to finish
   out, id = au.call(method_name, args_dict, URI)
   assert (out==0)
   # Test that inference was started - there should now be two rows of latent states once analyze is finished running.
   out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
                  + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI)
-  assert(out[0][0] == 2)
+  assert(out[0][0] == 6)
   time.sleep(1)
 
   # test select
@@ -101,6 +101,8 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict['confidence'] = 0
   args_dict['limit'] = ""
   out, id = au.call(method_name, args_dict, URI)
+  print out
+  print len(out)
   csv_results, cellnumbers = out
   # TODO
   # Test that missing values are filled in
