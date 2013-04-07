@@ -67,19 +67,46 @@ def gen_M_r_from_T(T):
     M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
     return M_r
 
-def gen_M_c_from_T(T):
+def gen_continuous_metadata(column_data):
+    return dict(
+        modeltype="normal_inverse_gamma",
+        value_to_code=dict(),
+        code_to_value=dict(),
+        )
+
+def gen_multinomial_metadata(column_data):
+    num_rows = len(column_data)
+    unique_codes = list(set(column_data))
+    values = range(len(unique_codes))
+    value_to_code = dict(zip(values, unique_codes))
+    code_to_value = dict(zip(unique_codes, values))
+    return dict(
+        modeltype="symmetric_dirichlet_discrete",
+        value_to_code=value_to_code,
+        code_to_value=code_to_value,
+        )
+
+metadata_generator_lookup = dict(
+    continuous=gen_continuous_metadata,
+    multinomial=gen_multinomial_metadata,
+)
+
+def gen_M_c_from_T(T, cctypes=None, colnames=None):
     num_rows = len(T)
     num_cols = len(T[0])
+    if cctypes is None:
+        cctypes = ['continuous' for col_idx in range(num_cols)]
+    if colnames is None:
+        colnames = range(num_cols)
     #
-    gen_continuous_metadata = lambda: dict(modeltype="normal_inverse_gamma",
-                                           value_to_code=dict(),
-                                           code_to_value=dict())
-    column_metadata = [
-        gen_continuous_metadata()
-        for col_idx in range(num_cols)
-        ]
-    name_to_idx = dict(zip(map(str, range(num_cols)),range(num_cols)))
-    idx_to_name = dict(zip(map(str, range(num_cols)),range(num_cols)))
+    T_array_transpose = numpy.array(T).T
+    column_metadata = []
+    for cctype, column_data in zip(cctypes, T_array_transpose):
+        metadata_generator = metadata_generator_lookup[cctype]
+        metadata = metadata_generator(column_data)
+        column_metadata.append(metadata)
+    name_to_idx = dict(zip(colnames, range(num_cols)))
+    idx_to_name = dict(zip(map(str, range(num_cols)), colnames))
     M_c = dict(
         name_to_idx=name_to_idx,
         idx_to_name=idx_to_name,
@@ -209,5 +236,5 @@ def read_csv(filename, has_header=True):
         header = None
         if has_header:
             header = csv_reader.next()
-        values = [row for row in csv_reader]
-    return header, values
+        rows = [row for row in csv_reader]
+    return header, rows
