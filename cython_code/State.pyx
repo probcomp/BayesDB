@@ -152,6 +152,7 @@ cdef class p_State:
     cdef vector[string] column_types
     cdef vector[int] event_counts
     cdef np.ndarray T_array
+    cpdef M_c
 
     def __cinit__(self, M_c, T, X_L=None, X_D=None,
                   initialization='from_the_prior', row_initialization=-1,
@@ -170,6 +171,7 @@ cdef class p_State:
          self.event_counts = convert_int_vector_to_cpp(event_counts)
          self.gri = convert_int_vector_to_cpp(global_row_indices)
          self.gci = convert_int_vector_to_cpp(global_col_indices)
+         self.M_c = M_c
          #
          must_initialize = X_L is None
          if must_initialize:
@@ -243,8 +245,18 @@ cdef class p_State:
           row_partition_model_i['counts'] = counts
           return row_partition_model_i
     def get_column_names_i(self, view_idx):
+         idx_to_name = self.M_c['idx_to_name']
          column_groups = self.thisptr.get_column_groups()
-         return column_groups[view_idx]
+         #
+         column_indices_i = column_groups[view_idx]
+         column_indices_i = map(str, column_indices_i)
+         column_names_i = []
+         for idx in column_indices_i:
+              if idx not in idx_to_name:
+                   print "%s not in %s" % (idx, idx_to_name)
+              value = idx_to_name[idx]
+              column_names_i.append(value)
+         return column_names_i
     def get_column_component_suffstats_i(self, view_idx):
           return self.thisptr.get_column_component_suffstats_i(view_idx)
     def get_view_state_i(self, view_idx):
