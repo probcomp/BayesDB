@@ -24,11 +24,12 @@ def call(method_name, args_dict, URI, id=None, print_message=False):
     r = requests.put(URI, data=message)
     r.raise_for_status()
     out = json.loads(r.content)
+    #
     if isinstance(out, dict) and 'result' in out:
-        return out['result'], id
+        out = out['result']
     else:
-        print "call(): ERROR"
-        return out, id
+        print "call(%s, <args_dict>, %s): ERROR" % (method_name, URI)
+    return out, id
 
 def call_and_print(method_name, args_dict, URI, id=0):
     out, id = call(method_name, args_dict, URI, id=id, print_message=True)
