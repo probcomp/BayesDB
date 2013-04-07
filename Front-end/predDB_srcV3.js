@@ -3,6 +3,8 @@ window.default_hostname = "ec2-23-22-78-125.compute-1.amazonaws.com"
 window.jsonrpc_id = 0
 window.wrong_command_format_str = ("Wrong command format."
 				   + " Please check the HELP command")
+window.image_base = "http://" + window.default_hostname + ":8000/"
+
 
 function alert_if_debug(alert_str) {
     if(window.debug) {
@@ -315,6 +317,11 @@ jQuery(function($, undefined) {
 	    try {
 	    switch (first_command_uc)
 	    {
+	    case "SETIMAGE": {
+		img_str = command_split[1]
+		set_kitware(img_str)
+		break
+	    }
 	    case "SETHOSTNAME":
 	    {
 		hostname = command_split[1]
@@ -562,6 +569,17 @@ function menu_select(event) {
     } else {
 	LoadToDatabaseTheCSVData(event.target.value, []);
     }
+}
+
+function set_kitware(img_str) {
+    html_str = 'KITWARE'
+    if(img_str.toUpperCase() != "NONE") {
+	src_str = ' src="' + window.image_base + img_str + '" '
+	width_str = ' width="620" '
+	height_str = ' height="380" '
+	html_str = '<img ' + src_str + width_str + height_str + ' />'
+    }
+    $('#kitware').html(html_str)
 }
 
 function ProcessFiles(files_input) {
