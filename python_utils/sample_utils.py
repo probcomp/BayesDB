@@ -363,7 +363,7 @@ def multinomial_imputation(samples, get_next_seed, return_confidence=False):
     counter = Counter(samples)
     max_tuple = counter.most_common(1)[0]
     max_count = max_tuple[1]
-    counter_counter = Counter(counter.values)
+    counter_counter = Counter(counter.values())
     num_max_count = counter_counter[max_count]
     mle_sample = max_tuple[0]
     if num_max_count >= 1:
@@ -371,7 +371,7 @@ def multinomial_imputation(samples, get_next_seed, return_confidence=False):
         max_tuples = counter.most_common(num_max_count)
         values = [max_tuple[0] for max_tuple in max_tuples]
         random_state = numpy.random.RandomState(get_next_seed())
-        draw = random.state.randint(len(values))
+        draw = random_state.randint(len(values))
         mle_sample = values[draw]
     if return_confidence:
         confidence = float(max_count) / len(samples)
@@ -379,9 +379,10 @@ def multinomial_imputation(samples, get_next_seed, return_confidence=False):
     else:
         return mle_sample
 
+# FIXME: ensure callers aren't passing continuous, multinomial
 modeltype_to_imputation_function = {
-    'continuous': continuous_imputation,
-    'multinomial': multinomial_imputation,
+    'normal_inverse_gamma': continuous_imputation,
+    'symmetric_dirichlet_discrete': multinomial_imputation,
     }
 
 def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed):
