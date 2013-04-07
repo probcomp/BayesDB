@@ -34,19 +34,17 @@ from __future__ import print_function
 
 from twisted.internet import ssl
 import traceback
-
 from twisted.internet import reactor
 from twisted.web import server
-
 from jsonrpc.server import ServerEvents, JSON_RPC
-
+#
 import tabular_predDB.jsonrpc_http.Engine as E
-Engine_methods = E.get_method_names()
 
-from tabular_predDB.jsonrpc_http.Engine import Engine
-engine = Engine()
+Engine_methods = E.get_method_names()
+next_seed = 0
 
 class ExampleServer(ServerEvents):
+	
 	# inherited hooks
 	def log(self, responses, txrequest, error):
 		print(txrequest.code, end=' ')
@@ -59,7 +57,10 @@ class ExampleServer(ServerEvents):
 			print(txrequest, msg)
 
 	def findmethod(self, method, args=None, kwargs=None):
+		global next_seed
 		if method in self.methods:
+			engine = E.Engine(next_seed)
+			next_seed += 1
 			return getattr(engine, method)
 		else:
 			return None
