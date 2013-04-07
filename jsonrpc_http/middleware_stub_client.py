@@ -99,9 +99,9 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   method_name = 'infer'
   args_dict = dict()
   args_dict['tablename'] = tablename
-  args_dict['columnstring'] = ""
-  args_dict['newtablename'] = ""
-  args_dict['whereclause'] = ""
+  args_dict['columnstring'] = "N_DEATH_ILL, MDCR_SPND_INP"
+  args_dict['newtablename'] = "None"
+  args_dict['whereclause'] = {'MDCR_SPND_LTC':6331}
   args_dict['confidence'] = 0
   args_dict['limit'] = ""
   print 'running infer'

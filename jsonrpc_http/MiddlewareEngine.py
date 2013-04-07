@@ -321,6 +321,7 @@ class MiddlewareEngine(object):
     args_dict['Y'] = Y
     args_dict['Q'] = Q
     args_dict['n'] = numpredictions
+    print 'colnames',X_L_list[0]['view_state'][0]['column_names']
     engine.simple_predictive_sample(M_c, X_L_list, X_D_list, Y, Q, numpredictions)
 #    out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
     print 'out',out
