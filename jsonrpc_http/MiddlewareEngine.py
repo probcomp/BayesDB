@@ -138,17 +138,20 @@ class MiddlewareEngine(object):
       elif cctype == 'multinomial':
         postgres_coltypes.append('varchar(1000)')
         
-    # Read T from file, while using appropriate cctypes, e.g. ignoring "ignore"s
-    # TODO: warning: m_r and m_c have 0-indexed indices, but the db has 1-indexed keys
-    t, m_r, m_c, header = du.continuous_or_ignore_from_file_with_colnames(csv_abs_path, cctypes)
-    colstring = ', '.join([tup[0] + ' ' + tup[1] for tup in zip(colnames, postgres_coltypes)])
-
+    # TODO: warning: m_r and m_c have 0-indexed indices
+    #       but the db has 1-indexed keys
+    t, m_r, m_c, header = du.read_data_objects(csv_abs_path, cctypes=cctypes)
+    colstring = ', '.join([
+        '"' + tup[0] + '"' + ' ' + tup[1]
+        for tup in zip(colnames, postgres_coltypes)
+        ])
     # Execute queries
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
       cur.execute("CREATE TABLE %s (%s);" % (tablename, colstring))
       with open(clean_csv_abs_path) as fh:
+        # FIXME: this copy from messes up if there are ignore?
         cur.copy_from(fh, tablename, sep=',')
       curtime = datetime.datetime.now().ctime()
       cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
