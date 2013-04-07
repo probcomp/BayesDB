@@ -38,13 +38,13 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   time.sleep(1)
 
   # test upload_data_table
+  print 'uploading data table %s' % tablename
   method_name = 'upload_data_table'
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['csv'] = table_csv 
   args_dict['crosscat_column_types'] = crosscat_column_types
   out, id = au.call(method_name, args_dict, URI)
-  print out
   assert (out==0 or out=="Error: table with that name already exists.")
   # TODO: Test that table was created
   out, id = au.call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s'" % tablename}, URI)
@@ -55,6 +55,7 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['n_chains'] = 3 # default is 10
+  print 'creating model with %d chains' % args_dict['n_chains']
   out, id = au.call(method_name, args_dict, URI)  
   assert out==0
   # Test that one model was created
@@ -67,11 +68,14 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   time.sleep(1)
 
   # test analyze
+
   method_name = 'analyze'
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['chain_index'] = 'all'
   args_dict['wait'] = True # wait for analyze to finish
+  args_dict['iterations'] = 2
+  print 'running analyze for %d iterations on all chains' % args_dict['iterations']
   out, id = au.call(method_name, args_dict, URI)
   assert (out==0)
   # Test that inference was started - there should now be two rows of latent states once analyze is finished running.
@@ -100,9 +104,8 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict['whereclause'] = ""
   args_dict['confidence'] = 0
   args_dict['limit'] = ""
+  print 'running infer'
   out, id = au.call(method_name, args_dict, URI)
-  print out
-  print len(out)
   csv_results, cellnumbers = out
   # TODO
   # Test that missing values are filled in
@@ -112,11 +115,13 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   method_name = 'predict'
   args_dict = dict()
   args_dict['tablename'] = tablename
-  args_dict['columnstring'] = "n_death_ill, mdcr_spnd_inp"
-  args_dict['newtablename'] = ""
-  args_dict['whereclause'] = {'mdcr_spnd_ltc':6331}
+  args_dict['columnstring'] = "N_DEATH_ILL, MDCR_SPND_INP"
+  args_dict['newtablename'] = "None"
+  args_dict['whereclause'] = {'MDCR_SPND_LTC':6331}
   args_dict['numpredictions'] = 10
-  out, id = au.call(method_name, args_dict, URI)
+  print 'running predict'
+  out = middleware_engine.predict(tablename, "N_DEATH_ILL, MDCR_SPND_INP", "None", {'MDCR_SPND_LTC':6331}, 10)
+#  out, id = au.call(method_name, args_dict, URI)
   csv_results = out
   # TODO
   # Test that prediction worked properly
@@ -127,12 +132,14 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['chain_index'] = 0
+  print 'deleting chain 0'
   out, id = au.call(method_name, args_dict, URI)
   assert out==0
   # TODO: Test to make sure there's one less chain
   time.sleep(1)
 
   # drop tablename
+  print 'dropping tablename'
   au.call('drop_tablename', {'tablename': tablename}, URI)
 
   

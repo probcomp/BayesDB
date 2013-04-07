@@ -285,24 +285,22 @@ class MiddlewareEngine(object):
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
       cur.execute("SELECT tableid, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
-      tableid, M_c_json = cur.fetchone()[0]
+      tableid, M_c_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       cur.execute("SELECT COUNT(*) FROM preddb_data.%s;" % tablename)
       numrows = cur.fetchone()[0]
-      print 'rows',numrows
       cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
-      numrows 
       chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
       chainids = map(int, chainids)
       X_L_list = list()
       X_D_list = list()
       for chainid in chainids:
-        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
+        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d AND " % (tableid, chainid)
                   + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);" % (tableid, chainid))
         X_L_prime_json, X_D_prime_json = cur.fetchone()
         X_L_list.append(json.loads(X_L_prime_json))
         X_D_list.append(json.loads(X_D_prime_json))
-#      conn.commit()
+      conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
       return e
@@ -313,6 +311,8 @@ class MiddlewareEngine(object):
     name_to_idx = M_c['name_to_idx']
     Q = [(numrows+1, name_to_idx[colname]) for colname in map(str.strip, columnstring.split(','))]
     Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in whereclause.iteritems()]
+    print 'Q',Q
+    print 'Y',Y
 
     args_dict = dict()
     args_dict['M_c'] = M_c
@@ -321,9 +321,10 @@ class MiddlewareEngine(object):
     args_dict['Y'] = Y
     args_dict['Q'] = Q
     args_dict['n'] = numpredictions
-    out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
-    print out
-    csv = ""
+    engine.simple_predictive_sample(M_c, X_L_list, X_D_list, Y, Q, numpredictions)
+#    out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
+    print 'out',out
+    csv = out
     return csv
 
   def get_latent_states(self, tablename):
@@ -339,7 +340,7 @@ class MiddlewareEngine(object):
       X_L_list = list()
       X_D_list = list()
       for chainid in chainids:
-        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
+        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d AND " % (tableid, chainid)
                   + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);" % (tableid, chainid))
         X_L_prime_json, X_D_prime_json = cur.fetchone()
         X_L_list.append(json.loads(X_L_prime_json))
@@ -397,7 +398,6 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
                 + " AND iterations=("
                 + " SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
                 + ");" )
-    print('exec_str %s' % exec_str)
     cur.execute(exec_str)
       
     X_L_prime_json, X_D_prime_json, prev_iterations = cur.fetchone()
