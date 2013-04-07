@@ -222,72 +222,29 @@ class MiddlewareEngine(object):
       M_c_json, T_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       T = json.loads(T_json)
-      if (chain_index == 'all'):
-        cur.execute("SELECT UNIQUE(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
-        chainids = cur.fetchone()
+      if (chain_index.upper() == 'ALL'):
+        cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+        chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
+        chainids = map(int, chainids)
+        print('chainids: %s' % chainids)
       else:
         chainids = [chain_index]
-      chainids = map(int, chainids)
       conn.commit()
+      p_list = []
       for chainid in chainids:
-        self.analyze_helper(tableid, M_c, T, chainid, iterations)
+        from multiprocessing import Process
+        p = Process(target=analyze_helper,
+                    args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
+        p_list.append(p)
+        p.start()
+      # for p in p_list:
+      #   p.join()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
       return e
     finally:
       if conn:
         conn.close()
-      
-  def analyze_helper(self, tableid, M_c, T, chainid, iterations):
-    """Only for one chain."""
-    try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
-      cur = conn.cursor()
-      cur.execute("SELECT x_l, x_d, iterations FROM preddb.models WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
-                  + " AND iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d);" % (tableid))
-      X_L_prime_json, X_D_prime_json, prev_iterations = cur.fetchone()
-      X_L_prime = json.loads(X_L_prime_json)
-      X_D_prime = json.loads(X_D_prime_json)
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('psycopg2.DatabaseError %s' % e)
-      return e
-    finally:
-      if conn:
-        conn.close()
-
-    # Call analyze on backend      
-    args_dict = dict()
-    args_dict['M_c'] = M_c
-    args_dict['T'] = T
-    args_dict['X_L'] = X_L_prime
-    args_dict['X_D'] = X_D_prime
-    # FIXME: allow specification of kernel_list
-    args_dict['kernel_list'] = None
-    args_dict['n_steps'] = iterations
-    args_dict['c'] = 'c' # Currently ignored by analyze
-    args_dict['r'] = 'r' # Currently ignored by analyze
-    args_dict['max_iterations'] = 'max_iterations' # Currently ignored by analyze
-    args_dict['max_time'] = 'max_time' # Currently ignored by analyze
-    out, id = au.call('analyze', args_dict, self.BACKEND_URI)
-    X_L_prime, X_D_prime = out
-
-    # Store X_L_prime, X_D_prime
-    try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
-      cur = conn.cursor()
-      curtime = datetime.datetime.now().ctime()
-      cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) " + \
-                  "VALUES (%d, '%s', '%s', '%s', %d, %d);" % \
-                    (tableid, json.dumps(X_L_prime), json.dumps(X_D_prime), curtime, chainid, prev_iterations + iterations))
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return e
-    finally:
-      if conn:
-        conn.close()      
-    return 0
 
   def select(self, querystring):
     """Run a select query, and return the results in csv format, with appropriate header."""
@@ -384,3 +341,60 @@ def get_method_name_to_args():
         arg_str_list = inspect.getargspec(method).args[1:]
         method_name_to_args[method_name] = arg_str_list
     return method_name_to_args
+
+def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
+  """Only for one chain."""
+  try:
+    conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+    cur = conn.cursor()
+    exec_str = ("SELECT x_l, x_d, iterations FROM preddb.models"
+                + " WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
+                + " AND iterations=("
+                + " SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
+                + ");" )
+    print('exec_str %s' % exec_str)
+    cur.execute(exec_str)
+      
+    X_L_prime_json, X_D_prime_json, prev_iterations = cur.fetchone()
+    X_L_prime = json.loads(X_L_prime_json)
+    X_D_prime = json.loads(X_D_prime_json)
+    conn.commit()
+  except psycopg2.DatabaseError, e:
+    print('psycopg2.DatabaseError %s' % e)
+    return e
+  finally:
+    if conn:
+      conn.close()
+
+  # Call analyze on backend      
+  args_dict = dict()
+  args_dict['M_c'] = M_c
+  args_dict['T'] = T
+  args_dict['X_L'] = X_L_prime
+  args_dict['X_D'] = X_D_prime
+  # FIXME: allow specification of kernel_list
+  args_dict['kernel_list'] = None
+  args_dict['n_steps'] = iterations
+  args_dict['c'] = 'c' # Currently ignored by analyze
+  args_dict['r'] = 'r' # Currently ignored by analyze
+  args_dict['max_iterations'] = 'max_iterations' # Currently ignored by analyze
+  args_dict['max_time'] = 'max_time' # Currently ignored by analyze
+  out, id = au.call('analyze', args_dict, BACKEND_URI)
+  X_L_prime, X_D_prime = out
+
+  # Store X_L_prime, X_D_prime
+  try:
+    conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+    cur = conn.cursor()
+    curtime = datetime.datetime.now().ctime()
+    cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) " + \
+                "VALUES (%d, '%s', '%s', '%s', %d, %d);" % \
+                  (tableid, json.dumps(X_L_prime), json.dumps(X_D_prime), curtime, chainid, prev_iterations + iterations))
+    conn.commit()
+  except psycopg2.DatabaseError, e:
+    print('Error %s' % e)
+    return e
+  finally:
+    if conn:
+      conn.close()      
+  return 0
