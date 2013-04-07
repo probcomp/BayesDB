@@ -120,17 +120,16 @@ class MiddlewareEngine(object):
     # Also make the corresponding postgres column types.
     postgres_coltypes = []
     cctypes = []
-    header, values = du.read_csv(clean_csv_abs_path, has_header=True)
+    header, values = du.read_csv(csv_abs_path, has_header=True)
     column_data_lookup = dict(zip(header, numpy.array(values).T))
     have_column_tpes = type(crosscat_column_types) == dict
     for colname in colnames:
       if have_column_tpes and colname in crosscat_column_types:
         cctype = crosscat_column_types[colname]
       else:
+        column_data = column_data_lookup[colname]
+        cctype = du.guess_column_type(column_data)
         # cctype = 'continuous'
-        #column_data = column_data_lookup[colname]
-        #cctype = du.guess_column_type(column_data)
-        cctype = 'continuous'
       cctypes.append(cctype)
       if cctype == 'ignore':
         postgres_coltypes.append('varchar(1000)')
