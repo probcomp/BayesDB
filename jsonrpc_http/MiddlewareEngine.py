@@ -47,7 +47,7 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
-      cur.execute('DROP TABLE %s' % tablename)
+      cur.execute('DROP TABLE preddb_data.%s' % tablename)
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
       tableids = cur.fetchall()
       for tid in tableids:
@@ -67,7 +67,6 @@ class MiddlewareEngine(object):
      try:
        conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
        cur = conn.cursor()
-       cur.execute('DROP TABLE %s' % tablename)
        cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
        tableids = cur.fetchall()
        for tid in tableids:
@@ -91,13 +90,13 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
-      cur.execute("select exists(select * from information_schema.tables where table_name='%s');" % tablename)
+      cur.execute("select exists(select * from information_schema.tables where table_name='preddb_data.%s');" % tablename)
       if cur.fetchone()[0]:
         return "Error: table with that name already exists."
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
-      return 'Caught DB Error' + str(e)
+      return 'Caught DB Error: ' + str(e)
     finally:
       conn.close()
 
@@ -154,15 +153,15 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
-      cur.execute("CREATE TABLE %s (%s);" % (tablename, colstring))
+      cur.execute("CREATE TABLE preddb_data.%s (%s);" % (tablename, colstring))
       with open(clean_csv_abs_path) as fh:
-        cur.copy_from(fh, tablename, sep=',')
+        cur.copy_from(fh, 'preddb_data.%s' % tablename, sep=',')
       curtime = datetime.datetime.now().ctime()
       cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
-      return 'Caught DB Error' + str(e)
+      return 'Caught DB Error: ' + str(e)
     finally:
       if conn:
         conn.close()    
@@ -285,17 +284,25 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
-      tableid = cur.fetchone()[0]
-      cur.execute("SELECT m_c FROM preddb.table_index WHERE tableid=%d;" % tableid)
-      M_c_json = cur.fetchone()
+      cur.execute("SELECT tableid, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      tableid, M_c_json = cur.fetchone()[0]
       M_c = json.loads(M_c_json)
-      cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND " % tableid
-                  + "modeltime=(SELECT MAX(modeltime) FROM preddb.models WHERE tableid=%d);" % tableid)
-      X_L_prime_json, X_D_prime_json = cur.fetchone()
-      X_L_prime = json.loads(X_L_prime_json)
-      X_D_prime = json.loads(X_D_prime_json)
-      conn.commit()
+      cur.execute("SELECT COUNT(*) FROM preddb_data.%s;" % tablename)
+      numrows = cur.fetchone()[0]
+      print 'rows',numrows
+      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      numrows 
+      chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
+      chainids = map(int, chainids)
+      X_L_list = list()
+      X_D_list = list()
+      for chainid in chainids:
+        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
+                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);" % (tableid, chainid))
+        X_L_prime_json, X_D_prime_json = cur.fetchone()
+        X_L_list.append(json.loads(X_L_prime_json))
+        X_D_list.append(json.loads(X_D_prime_json))
+#      conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
       return e
@@ -303,19 +310,48 @@ class MiddlewareEngine(object):
       if conn:
         conn.close()
 
-    # columnstring is 
+    name_to_idx = M_c['name_to_idx']
+    Q = [(numrows+1, name_to_idx[colname]) for colname in map(str.strip, columnstring.split(','))]
+    Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in whereclause.iteritems()]
 
     args_dict = dict()
     args_dict['M_c'] = M_c
-    args_dict['X_L'] = X_L_prime
-    args_dict['X_D'] = X_D_prime
-    args_dict['Y'] = None # Y: given values. TODO: extract from whereclause?
-    args_dict['Q'] = [(0,0), (0,1)] # Query row: Q[0][0], cols: [q[1] for q in Q]
-    args_dict['n'] = 1
-    for idx in range(numpredictions):
-      out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
+    args_dict['X_L'] = X_L_list
+    args_dict['X_D'] = X_D_list
+    args_dict['Y'] = Y
+    args_dict['Q'] = Q
+    args_dict['n'] = numpredictions
+    out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
+    print out
     csv = ""
     return csv
+
+  def get_latent_states(self, tablename):
+    """Return x_l_list and x_d_list"""
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      tableid = cur.fetchone()[0]
+      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
+      chainids = map(int, chainids)
+      X_L_list = list()
+      X_D_list = list()
+      for chainid in chainids:
+        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
+                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);" % (tableid, chainid))
+        X_L_prime_json, X_D_prime_json = cur.fetchone()
+        X_L_list.append(json.loads(X_L_prime_json))
+        X_D_list.append(json.loads(X_D_prime_json))
+  #      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()
+    return (X_L_list, X_D_list)
 
   def guessschema(self, tablename, csv):
     """Guess crosscat types. Returns a list indicating each columns type: 'ignore',

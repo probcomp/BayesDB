@@ -31,8 +31,13 @@ class Engine(object):
         return X_L_prime, X_D_prime
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
-        samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
-                                              self.get_next_seed, n)
+        if type(X_L) == list:
+            assert type(X_D) == list
+            samples = su.simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
+                                                             self.get_next_seed, n)
+        else:
+            samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
+                                                  self.get_next_seed, n)
         return samples
 
     def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, n):

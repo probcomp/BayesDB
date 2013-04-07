@@ -83,7 +83,7 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   # test select
   method_name = 'select'
   args_dict = dict()
-  args_dict['querystring'] = 'SELECT * FROM %s;' % tablename
+  args_dict['querystring'] = 'SELECT * FROM preddb_data.%s;' % tablename
   out, id = au.call(method_name, args_dict, URI)
   csv_results = out
   # TODO
@@ -112,9 +112,9 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   method_name = 'predict'
   args_dict = dict()
   args_dict['tablename'] = tablename
-  args_dict['columnstring'] = ""
+  args_dict['columnstring'] = "n_death_ill, mdcr_spnd_inp"
   args_dict['newtablename'] = ""
-  args_dict['whereclause'] = ""
+  args_dict['whereclause'] = {'mdcr_spnd_ltc':6331}
   args_dict['numpredictions'] = 10
   out, id = au.call(method_name, args_dict, URI)
   csv_results = out
