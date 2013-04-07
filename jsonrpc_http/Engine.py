@@ -49,7 +49,7 @@ class Engine(object):
         return e
 
     def impute_and_confidence(self, M_c, X_L, X_D, Y, Q, n):
-        e,confidence = su.impute(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
+        e,confidence = su.impute_and_confidence(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
         return (e,confidence)
 
     def conditional_entropy(M_c, X_L, X_D, d_given, d_target,

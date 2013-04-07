@@ -265,13 +265,56 @@ class MiddlewareEngine(object):
     # Convert results into csv so they can be returned...
     return ""
   
-  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit):
+  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples):
     """Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
     Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
     Argument newtablename == null/emptystring if we don't want to do INTO
     """
-    # TODO: implement
+    # Get M_c, X_L, and X_D from database
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute("SELECT tableid, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      tableid, M_c_json = cur.fetchone()
+      M_c = json.loads(M_c_json)
+      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
+      chainids = map(int, chainids)
+      X_L_list = list()
+      X_D_list = list()
+      for chainid in chainids:
+        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d AND " % (tableid, chainid)
+                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);" % (tableid, chainid))
+        X_L_prime_json, X_D_prime_json = cur.fetchone()
+        X_L_list.append(json.loads(X_L_prime_json))
+        X_D_list.append(json.loads(X_D_prime_json))
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()
+
+    name_to_idx = M_c['name_to_idx']
+    Q = [(numrows+1, name_to_idx[colname]) for colname in map(str.strip, columnstring.split(','))]
+    Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in whereclause.iteritems()]
+
+    args_dict = dict()
+    args_dict['M_c'] = M_c
+    args_dict['X_L'] = X_L_list
+    args_dict['X_D'] = X_D_list
+    args_dict['Y'] = Y # givens
+    args_dict['n'] = numsamples
+    for q in Q:
+      args_dict['q'] = q # querys
+      out, id = au.call('impute_and_confidence', args_dict, self.BACKEND_URI)
+      
+    print 'out',out
+    csv = out
+    return csv
+
     csv = ""
     #cellnumbers: list of row/col pairs [[r,c], [r,c], ...]
     cellnumbers = json.dumps([[0,0]])
@@ -321,10 +364,7 @@ class MiddlewareEngine(object):
     args_dict['Y'] = Y
     args_dict['Q'] = Q
     args_dict['n'] = numpredictions
-    print 'colnames',X_L_list[0]['view_state'][0]['column_names']
-    engine.simple_predictive_sample(M_c, X_L_list, X_D_list, Y, Q, numpredictions)
-#    out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
-    print 'out',out
+    out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
     csv = out
     return csv
 
