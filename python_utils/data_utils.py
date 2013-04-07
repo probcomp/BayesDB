@@ -95,7 +95,7 @@ def gen_M_c_from_T(T, cctypes=None, colnames=None):
     num_rows = len(T)
     num_cols = len(T[0])
     if cctypes is None:
-        cctypes = ['continuous' for col_idx in range(num_cols)]
+        cctypes = ['continuous'] * num_cols
     if colnames is None:
         colnames = range(num_cols)
     #
@@ -207,6 +207,41 @@ def continuous_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=Non
             T = [T[which_row] for which_row in which_rows]
         M_r = gen_M_r_from_T(T)
         M_c = gen_M_c_from_T_with_colnames(T, [col for col, flag in zip(header, colmask) if flag])
+    return T, M_r, M_c, header
+
+cast_func_lookup = dict(
+    continuous=float,
+    multinomial=str,
+    )
+def read_data_objects(filename, max_rows=None, gen_seed=0,
+                      cctypes=None, colnames=None):
+    # FIXME: why both accept colnames argument and read header?
+    header, rows = read_csv(filename, has_header=True)
+    if cctypes is None:
+        cctypes = ['continuous'] * len(header)
+    keep_col_indices = numpy.nonzero(numpy.array(cctypes)!='ignore')[0]
+    # remove ignore columns
+    cctypes = numpy.array(cctypes)[keep_col_indices]
+    header = numpy.array(header)[keep_col_indices]
+    T_uncast_array = numpy.array(rows)[:, keep_col_indices]
+    # remove excess rows
+    num_rows = len(T_uncast_array)
+    if (max_rows is not None) and (num_rows > max_rows):
+        random_state = numpy.random.RandomState(gen_seed)
+        which_rows = random_state.permutation(xrange(num_rows))
+        which_rows = which_rows[:max_rows]
+        T_uncast_array = T_uncast_array[which_rows]
+    # cast to appropriate type
+    T = []
+    for uncast_row in T_uncast_array:
+        cast_row = []
+        for cctype, uncast_element in zip(cctypes, uncast_row):
+            cast_func = cast_func_lookup[cctype]
+            cast_element = cast_func(uncast_element)
+            cast_row.append(cast_element)
+        T.append(cast_row)
+    M_r = gen_M_r_from_T(T)
+    M_c = gen_M_c_from_T(T, cctypes, colnames)
     return T, M_r, M_c, header
 
 def get_can_cast_to_float(column_data):
