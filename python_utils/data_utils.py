@@ -209,39 +209,44 @@ def continuous_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=Non
         M_c = gen_M_c_from_T_with_colnames(T, [col for col, flag in zip(header, colmask) if flag])
     return T, M_r, M_c, header
 
-cast_func_lookup = dict(
-    continuous=float,
-    multinomial=str,
-    )
+# cast_func_lookup = dict(
+#     continuous=float,
+#     multinomial=str,
+#     )
 def read_data_objects(filename, max_rows=None, gen_seed=0,
                       cctypes=None, colnames=None):
     # FIXME: why both accept colnames argument and read header?
-    header, rows = read_csv(filename, has_header=True)
-    if cctypes is None:
-        cctypes = ['continuous'] * len(header)
-    keep_col_indices = numpy.nonzero(numpy.array(cctypes)!='ignore')[0]
-    # remove ignore columns
-    cctypes = numpy.array(cctypes)[keep_col_indices]
-    header = numpy.array(header)[keep_col_indices]
-    T_uncast_array = numpy.array(rows)[:, keep_col_indices]
+    header, raw_T = read_csv(filename, has_header=True)
     # remove excess rows
-    num_rows = len(T_uncast_array)
+    num_rows = len(raw_T)
     if (max_rows is not None) and (num_rows > max_rows):
         random_state = numpy.random.RandomState(gen_seed)
         which_rows = random_state.permutation(xrange(num_rows))
         which_rows = which_rows[:max_rows]
-        T_uncast_array = T_uncast_array[which_rows]
-    # cast to appropriate type
-    T = []
-    for uncast_row in T_uncast_array:
-        cast_row = []
-        for cctype, uncast_element in zip(cctypes, uncast_row):
-            cast_func = cast_func_lookup[cctype]
-            cast_element = cast_func(uncast_element)
-            cast_row.append(cast_element)
-        T.append(cast_row)
-    M_r = gen_M_r_from_T(T)
-    M_c = gen_M_c_from_T(T, cctypes, colnames)
+        raw_T = raw_T[which_rows]
+    # remove ignore columns
+    if cctypes is None:
+        cctypes = ['continuous'] * len(header)
+    keep_col_indices = numpy.nonzero(numpy.array(cctypes)!='ignore')[0]
+    cctypes = numpy.array(cctypes)[keep_col_indices]
+    header = numpy.array(header)[keep_col_indices]
+    T_uncast_array = numpy.array(raw_T)[:, keep_col_indices]
+    # determine value mappings and map T to continuous castable values
+    M_r = gen_M_r_from_T(T_uncast_array)
+    M_c = gen_M_c_from_T(T_uncast_array, cctypes, colnames)
+    for col_idx in range(len(T_uncast_array[0])):
+        mapping = M_c['column_metadata']['code_to_value']
+        mapped_values = [mapping[el] for el in T_uncast_array[:, col_idx]]
+        T_uncast_array[:, col_idx] = mapped_values
+    T = numpy.array(T_uncast_array, dtype=float).tolist()
+    # T = []
+    # for uncast_row in T_uncast_array:
+    #     cast_row = []
+    #     for cctype, uncast_element in zip(cctypes, uncast_row):
+    #         cast_func = cast_func_lookup[cctype]
+    #         cast_element = cast_func(uncast_element)
+    #         cast_row.append(cast_element)
+    #     T.append(cast_row)
     return T, M_r, M_c, header
 
 def get_can_cast_to_float(column_data):
