@@ -6,8 +6,8 @@ import tabular_predDB.python_utils.sample_utils as su
 
 class Engine(object):
 
-    def __init__(self):
-        self.seed = 0
+    def __init__(self, seed=0):
+        self.seed = seed
 
     def get_next_seed(self):
         SEED = self.seed
