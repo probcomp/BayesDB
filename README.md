@@ -79,5 +79,5 @@ When a StarCluster machine is spun up, its .git origin is changed to the github 
 This requires git 1.7.10 or higher.  To get on ubuntu, do
 sudo add-apt-repository ppa:git-core/ppa
 sudo apt-get update
-sudo apt-get install git
+sudo apt-get install -y git
 --->
