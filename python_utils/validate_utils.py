@@ -18,7 +18,6 @@ def strify_M_r(M_r):
     return M_r
 
 def strify_M_c(M_c):
-    M_c = parsed_sample["M_c"]
     M_c['name_to_idx'] = strify_dict(M_c['name_to_idx'])
     M_c['idx_to_name'] = strify_dict(M_c['idx_to_name'])
     for column_metadata_i in M_c['column_metadata']:
