@@ -68,7 +68,6 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   time.sleep(1)
 
   # test analyze
-
   method_name = 'analyze'
   args_dict = dict()
   args_dict['tablename'] = tablename
@@ -99,15 +98,16 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   method_name = 'infer'
   args_dict = dict()
   args_dict['tablename'] = tablename
-  args_dict['columnstring'] = "MDCR_SPND_INP"
-  args_dict['newtablename'] = "None"
+  args_dict['columnstring'] = "N_DEATH_ILL, MDCR_SPND_INP"
+  args_dict['newtablename'] = ""
   args_dict['whereclause'] = {'MDCR_SPND_LTC':6331}
   args_dict['confidence'] = 0
-  args_dict['limit'] = ""
-  args_dict['numsamples'] = 100
+  args_dict['limit'] = 8
+  args_dict['numsamples'] = 10 # should do 10 or 100
   print 'running infer'
-  out, id = au.call(method_name, args_dict, URI)
-  csv_results, cellnumbers = out
+  out = middleware_engine.infer(tablename, "N_DEATH_ILL, MDCR_SPND_INP", "", 0, {'MDCR_SPND_LTC':6331}, 8, 10)
+#  out, id = au.call(method_name, args_dict, URI)
+  print 'infer out:', out
   # TODO
   # Test that missing values are filled in
   time.sleep(1)
@@ -117,15 +117,20 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict = dict()
   args_dict['tablename'] = tablename
   args_dict['columnstring'] = "N_DEATH_ILL, MDCR_SPND_INP"
-  args_dict['newtablename'] = "None"
+  args_dict['newtablename'] = ""
   args_dict['whereclause'] = {'MDCR_SPND_LTC':6331}
   args_dict['numpredictions'] = 10
   print 'running predict'
-  out = middleware_engine.predict(tablename, "N_DEATH_ILL, MDCR_SPND_INP", "None", {'MDCR_SPND_LTC':6331}, 10)
-#  out, id = au.call(method_name, args_dict, URI)
+  out, id = au.call(method_name, args_dict, URI)
   csv_results = out
+  rows = csv_results.split('\n')
+  row = rows[1].split(',')
+  assert len(rows) == args_dict['numpredictions']+1
+  assert len(row) == len(args_dict['columnstring'])
+  # FAILS assert rows[0][:-2] == args_dict['columnstring']
   # TODO
   # Test that prediction worked properly
+  
   time.sleep(1)
 
   # test delete_chain

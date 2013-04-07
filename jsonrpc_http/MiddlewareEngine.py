@@ -271,58 +271,8 @@ class MiddlewareEngine(object):
     Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
     Argument newtablename == null/emptystring if we don't want to do INTO
     """
-    # Get M_c, X_L, and X_D from database
-    try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
-      cur = conn.cursor()
-      cur.execute("SELECT tableid, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
-      tableid, M_c_json = cur.fetchone()
-      M_c = json.loads(M_c_json)
-      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
-      chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
-      chainids = map(int, chainids)
-      X_L_list = list()
-      X_D_list = list()
-      for chainid in chainids:
-        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d AND " % (tableid, chainid)
-                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);" % (tableid, chainid))
-        X_L_prime_json, X_D_prime_json = cur.fetchone()
-        X_L_list.append(json.loads(X_L_prime_json))
-        X_D_list.append(json.loads(X_D_prime_json))
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return e
-    finally:
-      if conn:
-        conn.close()
-
-    name_to_idx = M_c['name_to_idx']
-    Q = [(numrows+1, name_to_idx[colname]) for colname in map(str.strip, columnstring.split(','))]
-    Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in whereclause.iteritems()]
-
-    args_dict = dict()
-    args_dict['M_c'] = M_c
-    args_dict['X_L'] = X_L_list
-    args_dict['X_D'] = X_D_list
-    args_dict['Y'] = Y # givens
-    args_dict['n'] = numsamples
-    for q in Q:
-      args_dict['q'] = q # querys
-      out, id = au.call('impute_and_confidence', args_dict, self.BACKEND_URI)
-      
-    print 'out',out
-    csv = out
-    return csv
-
-    csv = ""
-    #cellnumbers: list of row/col pairs [[r,c], [r,c], ...]
-    cellnumbers = json.dumps([[0,0]])
-    return csv, cellnumbers 
-
-  def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
-    """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
-    # TODO: FIX
+    # TODO: actually read newtablename.
+    # TODO: actually impute only missing values, instead of all values.
     # Get M_c, X_L, and X_D from database
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
@@ -352,7 +302,74 @@ class MiddlewareEngine(object):
         conn.close()
 
     name_to_idx = M_c['name_to_idx']
-    Q = [(numrows+1, name_to_idx[colname]) for colname in map(str.strip, columnstring.split(','))]
+    colnames = [colname.strip() for colname in columnstring.split(',')]
+    Q = [(row, name_to_idx[colname]) for row in range(numrows) for colname in colnames]
+    # TODO: Filter Q so that it only contains the ones with missing values!!!!
+    Y = [(row, name_to_idx[colname], colval) for row in range(numrows) for colname, colval in whereclause.iteritems()]
+    # Y = [] Should we just ignore Y / where clause?
+
+    args_dict = dict()
+    args_dict['M_c'] = M_c
+    args_dict['X_L'] = X_L_list
+    args_dict['X_D'] = X_D_list
+    args_dict['Y'] = Y # givens
+    args_dict['n'] = numsamples
+    counter = 0
+    ret = []
+    for q in Q:
+      args_dict['Q'] = q # querys
+#      out, id = au.call('impute_and_confidence', args_dict, self.BACKEND_URI)
+      # TODO: call with whole X_L_list and X_D_list once multistate impute implemented
+      out = engine.impute_and_confidence(M_c, X_L_list[0], X_D_list[0], Y, [q], numsamples)
+      print 'out',out
+      value, conf = out
+      if conf >= confidence:
+        ret.append((q[0], q[1], value))
+        counter += 1
+        if counter >= limit:
+          break
+    return ret
+
+    csv = ""
+    #cellnumbers: list of row/col pairs [[r,c], [r,c], ...]
+    cellnumbers = json.dumps([[0,0]])
+    # return in the format of y
+    return csv, cellnumbers 
+
+  def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
+    """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
+    # TODO: Actually read newtablename.
+    # Get M_c, X_L, and X_D from database
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute("SELECT tableid, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      tableid, M_c_json = cur.fetchone()
+      M_c = json.loads(M_c_json)
+      cur.execute("SELECT COUNT(*) FROM preddb_data.%s;" % tablename)
+      numrows = cur.fetchone()[0]
+      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
+      chainids = map(int, chainids)
+      X_L_list = list()
+      X_D_list = list()
+      for chainid in chainids:
+        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d AND " % (tableid, chainid)
+                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);" % (tableid, chainid))
+        X_L_prime_json, X_D_prime_json = cur.fetchone()
+        X_L_list.append(json.loads(X_L_prime_json))
+        X_D_list.append(json.loads(X_D_prime_json))
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()
+
+    name_to_idx = M_c['name_to_idx']
+    colnames = [colname.strip() for colname in columnstring.split(',')]
+    Q = [(numrows+1, name_to_idx[colname]) for colname in colnames]
     Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in whereclause.iteritems()]
     print 'Q',Q
     print 'Y',Y
@@ -365,7 +382,9 @@ class MiddlewareEngine(object):
     args_dict['Q'] = Q
     args_dict['n'] = numpredictions
     out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
-    csv = out
+    csv = ', '.join(colnames) + '\n'
+    for row in out:
+      csv += ', '.join(map(str, row)) + '\n'
     return csv
 
   def get_latent_states(self, tablename):
