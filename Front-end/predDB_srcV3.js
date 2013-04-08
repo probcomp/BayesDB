@@ -44,6 +44,13 @@ function findNaNValuesInCSV(csvFile){
     return missingValsList
 }
 
+function set_menu_option(option_value) {
+    jQuery(document.getElementById('menu')).append(
+	"<option value='" + option_value + "'>" + 
+	    option_value + "</option>"
+    )
+}
+
 function JSONRPC_send_method(method_name, parameters, function_to_call) {
     window.jsonrpc_id += 1
     data_in =
@@ -445,8 +452,7 @@ jQuery(function($, undefined) {
 			    		     select.remove(i);
 			    		   }
 			    		}
-			    	jQuery(document.getElementById('menu')).append("<option value='" + tempString["tableName"] + "'>" + 
-			    			tempString["tableName"] + "</option>")
+				set_menu_option(tempString['tableName'])
 			    	}
 				}
 	    	
@@ -579,20 +585,19 @@ jQuery(function($, undefined) {
 		    term.echo("We do not support WHERE clauses at this point.");
 		    break
 		}
-		success_str = ("INFERENCE DONE WITH CONFIDENCE" + confidence )
-		JSONRPC_send_method("infer",
-		    		    dict_to_send,
-				    function(returnedData) {
-		    			if(!newtablename){
-		    			    newtablename = tablename
-		    			}
-				        preloadedDataFiles[newtablename] = returnedData
-				        jQuery(document.getElementById('menu')).append("<option value='" + newtablename + "'>" + 
-				            					       newtablename + "</option>")
-				        LoadToDatabaseTheCSVData(newtablename, [])		
-					console.log(returnedData)
-					term.echo(success_str)
-				    }) 
+		success_str = ("INFERENCE DONE WITH CONFIDENCE: " + confidence )
+		callback_func = function(returnedData) {
+		    if(!newtablename){
+		    	newtablename = tablename
+		    }
+		    console.log(returnedData)
+		    term.echo(success_str)
+		    term.echo(returnedData)
+		    preloadedDataFiles[newtablename] = returnedData
+		    set_menu_option(newtablename)
+		    LoadToDatabaseTheCSVData(newtablename, [])		
+		}
+		JSONRPC_send_method("infer", dict_to_send, callback_func)
 		break
 		    
 		}
@@ -697,7 +702,7 @@ function ProcessFiles(files_input) {
 	reader.file_name = files_input[file_index].name.replace(".csv","");
 	reader.onload = function(e) {
 	    preloadedDataFiles[e.target.file_name] = e.target.result;
-	    jQuery(document.getElementById('menu')).append("<option value='" + e.target.file_name + "'>" + e.target.file_name + "</option>")
+	    set_menu_option(e.target.file_name)
 	}
 	reader.readAsBinaryString(files_input[file_index])	
     }
