@@ -269,7 +269,7 @@ function parseInferCommand(commandString){
 	end_idx = get_idx_of("FROM", command_split)
     }
     columnsToSelectFrom = command_split.slice(start_idx, end_idx) 
-    columnsString = columnsToSelectFrom.join() //.replace( /,/g, " " )
+    columnsString = columnsToSelectFrom.join("")
     //
     if (in_list("INTO", command_split)) {
 	newtablename = get_el_after("INTO", command_split) 
