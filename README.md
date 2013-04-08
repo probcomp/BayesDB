@@ -81,3 +81,17 @@ sudo add-apt-repository ppa:git-core/ppa
 sudo apt-get update
 sudo apt-get install -y git
 --->
+
+[Saving the database state](http://www.postgresql.org/docs/9.1/static/backup-dump.html)
+-----------------------
+Saving the state
+
+    sgeadmin> pg_dump <DBNAME> | gzip > <FILENAME>.gz
+
+Restoring the state
+
+    sgeadmin> gunzip -c <FILENAME>.gz | psql <NEW_DBNAME>
+
+Creating a new database, specifying owner as sgeadmin
+
+    root> sudo -u postgres createdb <DBNAME> -O sgeadmin
