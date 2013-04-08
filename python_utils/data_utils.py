@@ -236,8 +236,8 @@ def remove_ignore_cols(T, cctypes, header):
     T_arr = numpy.array(T)
     #
     keep_cols_bool = cctypes_arr!='ignore'
-    cctypes = cctypes_arr[keep_cols_bool]
-    header = header_arr[keep_cols_bool]
+    cctypes_arr = cctypes_arr[keep_cols_bool]
+    header_arr = header_arr[keep_cols_bool]
     T_arr = T_arr[:, keep_cols_bool]
     #
     return T_arr, cctypes_arr, header_arr
