@@ -295,7 +295,7 @@ function parseInferCommand(commandString){
     returnDict["confidence"] = parseFloat(confidence)
     returnDict["whereclause"] =  whereclause
     returnDict["limit"] = parseInt(limit)
-    // FIXME: take this as an argumetn
+    // FIXME: take this as an argument
     returnDict['numsamples'] = 100
     
     console.log(returnDict)
@@ -303,26 +303,39 @@ function parseInferCommand(commandString){
 }
 
 function parsePredictCommand(commandString){
+    // PREDICT col0, [col1, ...] FROM tablename WHERE conditions TIMES times
     var returnDict = new Object() 
     command_split = commandString.split(' ');
-    if (!in_list("WHERE", command_split) || !in_list("FROM", command_split) || !in_list("TIMES", command_split)){
+    missing_from = !in_list("FROM", command_split)
+    missing_where = !in_list("WHERE", command_split)
+    missing_times = !in_list("TIMES", command_split)
+    if ( missing_where || missing_from || missing_times) {
     	return window.syntax_error_value
     }
-    var tableName;
-    tableName = get_el_after("FROM", command_split)  
-    returnDict["tableName"] = tableName
-    
-    var times
-    times = get_el_after("TIMES", command_split) 
-    returnDict["times"] = times
-    
-    columnsToSelectFrom = command_split.slice(get_idx_after("PREDICT", command_split), get_idx_of("FROM", command_split))
-    var columnsString = columnsToSelectFrom.join().replace( /,/g, " " )
-    returnDict["columns"] = columnsString
-    
-    whereClause = command_split.slice(get_idx_after("WHERE", command_split), get_idx_of("TIMES", command_split))
-    var whereString = whereClause.join().replace( /,/g, " " )
-    returnDict["whereClause"] =  whereString
+    // FIXME: is WHERE optional?
+
+    start_idx = get_idx_after("PREDICT", command_split)
+    end_idx = get_idx_of("FROM", command_split)
+    columnsToSelectFrom = command_split.slice(start_idx, end_idx)
+    columnsstring = columnsToSelectFrom.join('')
+    //
+    tablename = get_el_after("FROM", command_split)  
+    //
+    // FIXME: consider 'FOR' instead of 'TIMES'
+    //        then it makes sense for the number to come after
+    start_idx = get_idx_after("WHERE", command_split)
+    end_idx = get_idx_of("TIMES", command_split)
+    whereclause = command_split.slice(start_idx, end_idx).join('')
+    //
+    times = parseInt(get_el_after("TIMES", command_split))
+    // FIXME: take as an argument
+    newtablename = tablename + '_predict'
+
+    returnDict["columnstring"] = columnsstring
+    returnDict["newtablename"] = newtablename
+    returnDict["tablename"] = tablename
+    returnDict["whereclause"] =  whereclause
+    returnDict["numpredictions"] = times
     
     console.log(returnDict)
     return returnDict
@@ -639,32 +652,31 @@ jQuery(function($, undefined) {
 		    
 		}
 		
-	    case "PREDICT":
-		{
-		    echo_if_debug("PREDICT", term)
-		    tempString = parsePredictCommand(command)
-		    tablename = tempString["tableName"]  
-			times = tempString["times"]
-			whereclause = tempString["whereclause"]
-		    columnstring = tempString["columns"]
-		    dict_to_send = {
-	 		    "tablename": tablename,
-	 		 "whereclause" : whereclause,
-	 		"columnstring" : columnstring,
-	 				"times": times
-			}
-		    success_str = ("PREDICTION DONE " + times + " TIMES FOR TABLE " +  tablename)
-		    JSONRPC_send_method("predict",
-		    		dict_to_send,
-					function(returnedData) {
-				            LoadToDatabaseTheCSVData(returnedData, [])		
-					    console.log(returnedData)
-					    term.echo(success_str)
-					    alert("Welcome!")
-					}) 
-			break
-		    
+	    case "PREDICT": {
+		echo_if_debug("PREDICT", term)
+		dict_to_send = parsePredictCommand(command)
+		success_str = ("PREDICTION DONE " + times 
+			       + " TIMES FOR TABLE " +  tablename)
+		callback_func = function(returnedData) {
+		    if('result' in returnedData) {
+			console.log(returnedData)
+			term.echo(success_str)
+			predict_result = returnedData['result']
+			// FIXME: implement parse_predict_result
+			parsed_predict_result = parse_predict_result(predict_result)
+			term.echo(parsed_predict_result)
+			LoadToDatabaseTheCSVData(returnedData, [])
+		    } else {
+			error = returnedData['error']
+			error_str = "error message: " + error['message']
+			term.echo('PREDICT COMMAND FAILED')
+			term.echo(error_str)
+			console.log(returnedData['error'])
+		    }
 		}
+		JSONRPC_send_method("predict", dict_to_send, callback_func)
+		break		    
+	    }
 		
 	    case "GUESS": 
 		{
