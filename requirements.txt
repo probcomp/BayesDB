@@ -19,3 +19,4 @@ freetype-py==0.4.1
 matplotlib==1.2.0
 # for middleware
 psycopg2==2.4.6
+hcluster==0.2.0
