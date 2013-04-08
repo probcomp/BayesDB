@@ -360,6 +360,27 @@ jQuery(function($, undefined) {
 		term.echo("JSONRPC_URL = " + window.JSONRPC_URL)
 		break
 		}
+	    case "VIEW": {
+		if(command_split[1].toUpperCase()=='ZMATRIX') {
+		    tablename = command_split[2]
+		    filename = tablename + '_feature_z.png'
+		    success_str = ("GENERATED FEATURE Z-MATRIX FOR "
+				   + tablename)
+		    dict_to_send = {
+			"tablename":tablename,
+			"filename":filename,
+		    }
+		    JSONRPC_send_method("gen_feature_z", dict_to_send,
+					function(returnedData) {
+					    console.log(returnedData)
+					    set_kitware(filename)
+					    term.echo(success_str)
+					}) 
+		} else {
+	    	    term.echo(window.wrong_command_format_str);
+		}
+		break
+	    }
 	    case "CREATE": 
 		{
 	    	if (command_split[1].toUpperCase() == "TABLE")
@@ -644,6 +665,17 @@ function menu_select(event) {
     } else {
 	LoadToDatabaseTheCSVData(event.target.value, []);
     }
+}
+
+function set_kitware(img_str) {
+    html_str = 'KITWARE'
+    if(img_str.toUpperCase() != "NONE") {
+	src_str = ' src="' + window.image_base + img_str + '" '
+	width_str = ' width="620" '
+	height_str = ' height="380" '
+	html_str = '<img ' + src_str + width_str + height_str + ' />'
+    }
+    $('#kitware').html(html_str)
 }
 
 function ProcessFiles(files_input) {
