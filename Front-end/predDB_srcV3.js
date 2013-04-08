@@ -1,5 +1,5 @@
 window.debug = true
-window.default_hostname = "ec2-23-22-78-125.compute-1.amazonaws.com"
+window.default_hostname = "ec2-50-19-35-247.compute-1.amazonaws.com"
 window.jsonrpc_id = 0
 window.wrong_command_format_str = ("Wrong command format."
 				   + " Please check the HELP command")
@@ -320,14 +320,17 @@ jQuery(function($, undefined) {
 	    case "VIEW": {
 		if(command_split[1].toUpperCase()=='ZMATRIX') {
 		    tablename = command_split[2]
-		    img_str = command_split[1]
+		    filename = tablename + '_feature_z.png'
 		    success_str = ("GENERATED FEATURE Z-MATRIX FOR "
 				   + tablename)
-		    dict_to_send = {"tablename":tablename}
+		    dict_to_send = {
+			"tablename":tablename,
+			"filename":filename,
+		    }
 		    JSONRPC_send_method("gen_feature_z", dict_to_send,
 					function(returnedData) {
 					    console.log(returnedData)
-					    set_kitware(img_str)
+					    set_kitware(filename)
 					    term.echo(success_str)
 					}) 
 		} else {
