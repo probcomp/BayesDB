@@ -11,8 +11,14 @@ class path():
                                            'virtualenv_setup.sh')
     server_script = os.path.join('jsonrpc_http', 'server_jsonrpc.py')
     run_server_script = 'run_server.sh'
+    run_webserver_script = os.path.join(remote_code_dir, 
+                                        'run_simplehttpserver.sh')
     postgres_setup_script = 'postgres_setup.sh'
-    image_dir = os.path.join(remote_code_dir, 'images')
+    web_resources_dir = os.path.join(remote_code_dir, 'web_resources')
+    try:
+        os.makedirs(web_resources_dir)
+    except Exception, e:
+        pass
 
 class s3():
     bucket_str = 'mitpcp-tabular-predDB'

@@ -160,5 +160,6 @@ class tabular_predDBSetup(ClusterSetup):
                cmd_str %= (run_server_script) 
                run_as_user(node, user, cmd_str)
                #
-               cmd_str = "bash -i /home/sgeadmin/tabular_predDB/run_simplehttpserver.sh"
+               cmd_str = "bash -i %s %s" % (S.path.run_webserver_script,
+                                            S.path.web_resources_dir)
                run_as_user(node, user, cmd_str)

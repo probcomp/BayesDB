@@ -1,11 +1,11 @@
 window.debug = true
-window.default_hostname = "ec2-23-22-78-125.compute-1.amazonaws.com"
+window.default_hostname = "ec2-107-22-7-95.compute-1.amazonaws.com"
+window.web_resource_base = "http://" + window.default_hostname + ":8000/"
 window.jsonrpc_id = 0
 window.wrong_command_format_str = ("Wrong command format."
 				   + " Please check the HELP command")
 window.sentinel_value = "" 
 window.syntax_error_value = -1
-
 function alert_if_debug(alert_str) {
     if(window.debug) {
 	alert("DEBUG: " + alert_str)
@@ -360,6 +360,20 @@ jQuery(function($, undefined) {
 		term.echo("JSONRPC_URL = " + window.JSONRPC_URL)
 		break
 		}
+	    case "DUMP": {
+		filename = 'postgres_dump.gz'
+		linkname = window.web_resource_base + filename
+		success_str = ("DUMPED DATABASE: " + linkname)
+		dict_to_send = {
+		    "filename":filename
+		}
+		JSONRPC_send_method("dump_db", dict_to_send,
+				    function(returnedData) {
+					console.log(returnedData)
+					term.echo(success_str)
+				    }) 
+		break
+	    }
 	    case "VIEW": {
 		if(command_split[1].toUpperCase()=='ZMATRIX') {
 		    tablename = command_split[2]
@@ -670,7 +684,7 @@ function menu_select(event) {
 function set_kitware(img_str) {
     html_str = 'KITWARE'
     if(img_str.toUpperCase() != "NONE") {
-	src_str = ' src="' + window.image_base + img_str + '" '
+	src_str = ' src="' + window.web_resource_base + img_str + '" '
 	width_str = ' width="620" '
 	height_str = ' height="380" '
 	html_str = '<img ' + src_str + width_str + height_str + ' />'
@@ -695,6 +709,7 @@ function set_url_with_hostname(hostname) {
 	hostname = window.default_hostname
     }
     window.JSONRPC_URL = "http://" + hostname + ":8008"
+    window.web_resource_base = "http://" + hostname + ":8000/"
 }
 
 function promptHost()
