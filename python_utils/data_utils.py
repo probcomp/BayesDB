@@ -213,7 +213,7 @@ def continuous_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=Non
         M_c = gen_M_c_from_T_with_colnames(T, [col for col, flag in zip(header, colmask) if flag])
     return T, M_r, M_c, header
 
-def map_T_with_M_c(T_uncast_array, M_c):
+def map_to_T_with_M_c(T_uncast_array, M_c):
     # WARNING: array argument is mutated
     for col_idx in range(T_uncast_array.shape[1]):
         modeltype = M_c['column_metadata'][col_idx]['modeltype']
@@ -267,7 +267,7 @@ def read_data_objects(filename, max_rows=None, gen_seed=0,
     # determine value mappings and map T to continuous castable values
     M_r = gen_M_r_from_T(T_uncast_arr)
     M_c = gen_M_c_from_T(T_uncast_arr, cctypes, colnames)
-    T = map_T_with_M_c(T_uncast_arr, M_c)
+    T = map_to_T_with_M_c(T_uncast_arr, M_c)
     #
     return T, M_r, M_c, header
 
