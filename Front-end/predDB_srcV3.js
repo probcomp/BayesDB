@@ -3,6 +3,8 @@ window.default_hostname = "ec2-23-22-78-125.compute-1.amazonaws.com"
 window.jsonrpc_id = 0
 window.wrong_command_format_str = ("Wrong command format."
 				   + " Please check the HELP command")
+window.sentinel_value = "" 
+window.syntax_error_value = -1
 
 function alert_if_debug(alert_str) {
     if(window.debug) {
@@ -96,11 +98,17 @@ function get_el_after(term, str_array) {
 function parseCreateTableCommand(commandString){
     var columnsDict = new Object()
     command_split = commandString.split(' ')
+    if (!in_list("FROM", command_split)){ // check if we have the right syntax
+    	return window.syntax_error_value
+    }
     // extract column names
     columnNamesIndex =  get_idx_after("WITH", command_split)
     var i = columnNamesIndex
     while (i < command_split.length && i != 0){
 	// FIXME: should verify command_split[i+1] is 'AS'
+    	if (command_split[i+1] != "AS"){
+    		return window.syntax_error_value //wrong syntax 
+    	}
     	columnsDict[command_split[i]] = command_split[i+2]
     	i += 3
     }
@@ -121,6 +129,9 @@ function parseCreateTableCommand(commandString){
 function parseCreateModelCommand(commandString){
     command_split = commandString.split(' ')
     var returnDict = new Object()
+    if (!in_list("FOR", command_split)){ // check if we have the right syntax
+    	return window.syntax_error_value
+    }
     tableName = get_el_after("FOR", command_split)
     numberOfChains = 10 //default value
     if(in_list("WITH", command_split)) {
@@ -165,10 +176,13 @@ function parseDropCommand(commandString){
 
 
 function parseDeleteChainCommand(commandString){
-    createCommandParsed = commandString.split(' ');
+	command_split = commandString.split(' ');
+    if (!in_list("FOR", command_split)){ // check if we have the right syntax
+    	return window.syntax_error_value
+    }
     var returnDict = new Object()
-    tableName = createCommandParsed[$.inArray("FOR", createCommandParsed) + 1]
-    chain_idx = createCommandParsed[$.inArray("CHAIN", createCommandParsed) + 1]
+    tableName = get_el_after("FOR", command_split) 
+    chain_idx = get_el_after("CHAIN", command_split)  
     returnDict["tableName"] = tableName
     returnDict["chainIndex"] = parseInt(chain_idx)
     return returnDict
@@ -214,29 +228,46 @@ function typeDictToTable(typeDict){
 
 function parseInferCommand(commandString){
     var returnDict = new Object() 
-    inferCommandParsed = commandString.split(' ');
-    
+    command_split = commandString.split(' ');
+    if (!in_list("CONFIDENCE", command_split) || !in_list("FROM", command_split) || !in_list("WITH", command_split)){
+    	return window.syntax_error_value
+    }
     var tableName;
-    tableName = inferCommandParsed[$.inArray("FROM", inferCommandParsed) + 1]
+    tableName = get_el_after("FROM", command_split) 
     returnDict["tableName"] = tableName
     
     var confidence 
-    confidence = inferCommandParsed[$.inArray("CONFIDENCE", inferCommandParsed) + 1]
+    confidence = get_el_after("CONFIDENCE", command_split)  
     returnDict["confidence"] = confidence
-    
-    columnsToSelectFrom = inferCommandParsed.slice(inferCommandParsed.indexOf("INFER") + 1, inferCommandParsed.indexOf("INTO"))
+    if (in_list("INTO", command_split)){
+    	columnsToSelectFrom = command_split.slice(get_idx_after("INFER", command_split), get_idx_of("INTO", command_split))
+    }else{
+    	columnsToSelectFrom = command_split.slice(get_idx_after("INFER", command_split), get_idx_of("FROM", command_split))
+    }
     var columnsString = columnsToSelectFrom.join().replace( /,/g, " " )
     returnDict["columns"] = columnsString
     
-    whereClause = inferCommandParsed.slice(inferCommandParsed.indexOf("WHERE") + 1, inferCommandParsed.indexOf("WITH"))
-    var whereString = whereClause.join().replace( /,/g, " " )
-    returnDict["whereClause"] =  whereString
+    if (in_list("WHERE", command_split)){
+	    whereClause = command_split.slice(get_idx_after("WHERE", command_split), get_idx_of("WITH", command_split))
+	    var whereString = whereClause.join().replace( /,/g, " " )
+	    returnDict["whereClause"] =  whereString
+    }else{
+    	returnDict["whereClause"] = window.sentinel_value
+    	
+    }
     
-    var newTableName = inferCommandParsed[$.inArray("INTO", inferCommandParsed) + 1]
-    returnDict["newTableName"] = newTableName
+    if (in_list("INTO", command_split)){
+	    newTableName = get_el_after("INTO", command_split) 
+	    returnDict["newTableName"] = newTableName
+    }else{
+    	returnDict["newTableName"] = window.sentinel_value
+    }
     
-    var limit = inferCommandParsed[$.inArray("LIMIT", inferCommandParsed) + 1]
-    returnDict["LIMIT"] = limit
+    if (in_list("LIMIT", command_split)){
+    	limit = get_el_after("LIMIT", command_split) 
+        returnDict["LIMIT"] = limit
+    }
+    returnDict["LIMIT"] = window.sentinel_value
     
     console.log(returnDict)
     return returnDict
@@ -244,21 +275,23 @@ function parseInferCommand(commandString){
 
 function parsePredictCommand(commandString){
     var returnDict = new Object() 
-    predictCommandParsed = commandString.split(' ');
-    
+    command_split = commandString.split(' ');
+    if (!in_list("WHERE", command_split) || !in_list("FROM", command_split) || !in_list("TIMES", command_split)){
+    	return window.syntax_error_value
+    }
     var tableName;
-    tableName = predictCommandParsed[$.inArray("FROM", predictCommandParsed) + 1]
+    tableName = get_el_after("FROM", command_split)  
     returnDict["tableName"] = tableName
     
     var times
-    times = predictCommandParsed[$.inArray("TIMES", predictCommandParsed) + 1]
+    times = get_el_after("TIMES", command_split) 
     returnDict["times"] = times
     
-    columnsToSelectFrom = predictCommandParsed.slice(predictCommandParsed.indexOf("PREDICT") + 1, predictCommandParsed.indexOf("FROM"))
+    columnsToSelectFrom = command_split.slice(get_idx_after("PREDICT", command_split), get_idx_of("FROM", command_split))
     var columnsString = columnsToSelectFrom.join().replace( /,/g, " " )
     returnDict["columns"] = columnsString
     
-    whereClause = predictCommandParsed.slice(predictCommandParsed.indexOf("WHERE") + 1, predictCommandParsed.indexOf("TIMES"))
+    whereClause = command_split.slice(get_idx_after("WHERE", command_split), get_idx_of("TIMES", command_split))
     var whereString = whereClause.join().replace( /,/g, " " )
     returnDict["whereClause"] =  whereString
     
@@ -333,6 +366,10 @@ jQuery(function($, undefined) {
 	    		{ 
 	    		    echo_if_debug("CREATE TABLE", term)
 			    tempString = parseCreateTableCommand(command)
+			    if (tempString == window.syntax_error_value){
+			    	term.echo(window.wrong_command_format_str);
+			    	break
+			    }
 			    console.log(tempString)
 			    filename = tempString["fileName"]
 			    tablename = tempString["tableName"]
@@ -371,6 +408,10 @@ jQuery(function($, undefined) {
 	    	    { 
 	    		echo_if_debug("CREATE MODEL", term)
 			tempString = parseCreateModelCommand(command)
+			 if (tempString == window.syntax_error_value){
+			    	term.echo(window.wrong_command_format_str);
+			    	break
+			    }
 			tablename = tempString["tableName"]
 			n_chains = tempString["numberOfChains"]
 			dict_to_send = {
@@ -447,8 +488,8 @@ jQuery(function($, undefined) {
 		    }
 		}
     	
-    	else
-    	    term.echo(window.wrong_command_format_str)
+    	/*else
+    	    term.echo(window.wrong_command_format_str)*/
     	
     	break
 	    }
@@ -456,35 +497,68 @@ jQuery(function($, undefined) {
 	    case "DELETE":
 	    {
 	    	tempString = parseDeleteChainCommand(command)
-	    	tempString = parseDropCommand(command)
+	    	/*tempString = parseDropCommand(command)*/
+	    	 if (tempString == window.syntax_error_value){
+			    	term.echo(window.wrong_command_format_str);
+			    	break
+			    }
 	    	console.log(tempString)
+	    	tablename = tempString["tableName"]
+			chain_index = tempString["chainIndex"]
+			dict_to_send = {
+	 		    "tablename": tablename,
+			    "chain_index": chain_index
+			}
+	    	success_str = ("DELETED CHAIN " + tablename + " FOR " + chain_index)
 		    JSONRPC_send_method("delete_chain",
-					{ "tablename": tempString["tableName"], "chain_index": tempString["chainIndex"]},
+		    		dict_to_send,
 					function(returnedData) {
 					    term.echo(returnedData);
+					    term.echo(success_str)
 					    console.log(returnedData)
 					    alert("Welcome!")
 					}) 
-					
+			break	
 	    }
 	    
 	    case "INFER": 
 		{
 		    echo_if_debug("INFER", term)
 		    tempString = parseInferCommand(command)
+		    tablename = tempString["tableName"] 
+	        newtablename = tempString["newTableName"]
+	        confidence = tempString["confidence"]
+	        whereclause = tempString["whereclause"]
+	        columnstring = tempString["columns"]
+	        limit = tempString["limit"]
+		    dict_to_send = {
+	 		    "tablename": tablename,
+	 		 "newTableName": newtablename,
+	 		  "confidence" : confidence,
+	 		 "whereclause" : whereclause,
+	 		"columnstring" : columnstring,
+	 				"limit": limit
+			}
+		    if (tempString == window.syntax_error_value){
+		    	term.echo(window.wrong_command_format_str);
+		    	break
+		    }else if (whereclause){
+		    	term.echo("We do not support WHERE clauses at this point.");
+		    	break
+		    }
+		    success_str = ("INFERENCE DONE WITH CONFIDENCE" + confidence )
 		    JSONRPC_send_method("infer",
-					{ "tablename": tempString["tableName"],  
-				          "newtablename": tempString["newTableName"],
-				          "confidence": tempString["confidence"],
-				          "whereclause": tempString["whereclause"],
-				          "columnstring": tempString["columns"],
-				          "limit": tempString["limit"]},
+		    		dict_to_send,
 					function(returnedData) {
-				            preloadedDataFiles[tempString["newTableName"]] = returnedData
-				            jQuery(document.getElementById('menu')).append("<option value='" + tempString["newTableName"] + "'>" + 
-				            						   tempString["newTableName"] + "</option>")
-				            LoadToDatabaseTheCSVData(tempString["newTableName"], [])		
+		    				if(!newtablename){
+		    					newtablename = tablename
+		    				}
+				            preloadedDataFiles[newtablename] = returnedData
+				            jQuery(document.getElementById('menu')).append("<option value='" + newtablename + "'>" + 
+				            		newtablename + "</option>")
+				            LoadToDatabaseTheCSVData(newtablename, [])		
 					    console.log(returnedData)
+					    term.echo(success_str)
 					    alert("Welcome!")
 					}) 
 			break
@@ -495,14 +569,23 @@ jQuery(function($, undefined) {
 		{
 		    echo_if_debug("PREDICT", term)
 		    tempString = parsePredictCommand(command)
+		    tablename = tempString["tableName"]  
+			times = tempString["times"]
+			whereclause = tempString["whereclause"]
+		    columnstring = tempString["columns"]
+		    dict_to_send = {
+	 		    "tablename": tablename,
+	 		 "whereclause" : whereclause,
+	 		"columnstring" : columnstring,
+	 				"times": times
+			}
+		    success_str = ("PREDICTION DONE " + times + " TIMES FOR TABLE " +  tablename)
 		    JSONRPC_send_method("predict",
-					{ "tablename": tempString["tableName"],  
-				          "times": tempString["times"],
-				          "whereclause": tempString["whereclause"],
-				          "columnstring": tempString["columns"]},
+		    		dict_to_send,
 					function(returnedData) {
 				            LoadToDatabaseTheCSVData(returnedData, [])		
 					    console.log(returnedData)
+					    term.echo(success_str)
 					    alert("Welcome!")
 					}) 
 			break
@@ -512,9 +595,8 @@ jQuery(function($, undefined) {
 	    case "GUESS": 
 		{
 		    echo_if_debug("GUESS", term)
-		    guessCommandParsed = commandString.split(' ');
-		    var tableName;
-		    tableName = guessCommandParsed[$.inArray("FOR", inferCommandParsed) + 1]
+		    command_split = commandString.split(' ');
+		    tableName = get_el_after("FOR", command_split)
 		    JSONRPC_send_method("guessschema",
 					{ "tablename":tableName},
 					function(returnedData) {
