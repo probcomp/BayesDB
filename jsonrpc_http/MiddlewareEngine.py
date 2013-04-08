@@ -416,7 +416,8 @@ class MiddlewareEngine(object):
         conn.close()
     return (X_L_list, X_D_list)
 
-  def gen_feature_z(self, tablename, filename=None, dir=S.path.image_dir):
+  def gen_feature_z(self, tablename, filename=None,
+                    dir=S.path.web_resources_dir):
     if filename is None:
       filename = tablename + '_feature_z'
     full_filename = os.path.join(dir, filename)
@@ -446,6 +447,15 @@ class MiddlewareEngine(object):
     pylab.imshow(z_matrix_reordered, interpolation='none')
     pylab.title('feature_z matrix for table: %s' % tablename)
     pylab.savefig(full_filename)
+
+  def dump_db(self, filename, dir=S.path.web_resources_dir):
+    full_filename = os.path.join(dir, filename)
+    if filename.endswith('.gz'):
+      cmd_str = 'pg_dump sgeadmin | gzip > %s' % full_filename
+    else:
+      cmd_str = 'pg_dump sgeadmin > %s' % full_filename
+    os.system(cmd_str)
+    return 0
 
   def guessschema(self, tablename, csv):
     """Guess crosscat types. Returns a list indicating each columns type: 'ignore',
