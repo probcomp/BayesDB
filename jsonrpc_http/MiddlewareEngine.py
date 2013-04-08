@@ -335,7 +335,15 @@ class MiddlewareEngine(object):
       out = engine.impute_and_confidence(M_c, X_L_list[0], X_D_list[0], Y, [q], numsamples)
       value, conf = out
       if conf >= confidence:
-        ret.append((q[0], q[1], value))
+        row_idx = q[0]
+        col_idx = q[1]
+        column_metadata_i = M_c['column_metadata'][col_idx]
+        datatype = column_metadata_i['modeltype']
+        # FIXME: make this robust to different datatypes
+        if datatype == 'symmetric_dirichlet_discrete':
+          # FIXME: casting key to str is a hack
+          value = column_metadata_i['value_to_code'][str(int(value))]
+        ret.append((row_idx, col_idx, value))
         counter += 1
         if counter >= limit:
           break
