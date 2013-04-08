@@ -227,23 +227,22 @@ function typeDictToTable(typeDict){
 }
 
 function parseInferCommand(commandString){
+    // INFER col0, [col1,...] [INTO into_table] FROM [from_table] WHERE whereclause WITH CONFIDENCE confidence_level [LIMIT limit]
     var returnDict = new Object() 
     command_split = commandString.split(' ');
-    missing_confidence = !in_list("CONFIDENCE", command_split)
     missing_from = !in_list("FROM", command_split)
     missing_with = !in_list("WITH", command_split)
+    missing_confidence = !in_list("CONFIDENCE", command_split)
     if (missing_confidence || missing_from || missing_with) { 
     	return window.syntax_error_value
     }
 
-    var tableName;
-    tableName = get_el_after("FROM", command_split) 
-    returnDict["tableName"] = tableName
-    
-    var confidence 
-    confidence = get_el_after("CONFIDENCE", command_split)  
-    returnDict["confidence"] = confidence
+    // these arguments are optional
+    newtablename = window.sentinel_value
+    whereclause = window.sentinel_value
+    limit = window.sentinel_value
 
+    // get columns
     start_idx = get_idx_after("INFER", command_split)
     if (in_list("INTO", command_split)){
 	end_idx = get_idx_of("INTO", command_split)
@@ -251,32 +250,34 @@ function parseInferCommand(commandString){
 	end_idx = get_idx_of("FROM", command_split)
     }
     columnsToSelectFrom = command_split.slice(start_idx, end_idx) 
-
-    var columnsString = columnsToSelectFrom.join().replace( /,/g, " " )
-    returnDict["columns"] = columnsString
-    
+    columnsString = columnsToSelectFrom.join().replace( /,/g, " " )
+    //
+    if (in_list("INTO", command_split)) {
+	newtablename = get_el_after("INTO", command_split) 
+    }
+    //
+    tableName = get_el_after("FROM", command_split) 
+    //
     if (in_list("WHERE", command_split)){
 	start_idx = get_idx_after("WHERE", command_split)
 	end_idx = get_idx_of("WITH", command_split)
 	whereClause = command_split.slice(start_idx, end_idx)
-	var whereString = whereClause.join().replace( /,/g, " " )
-	returnDict["whereClause"] =  whereString
-    } else {
-    	returnDict["whereClause"] = window.sentinel_value
-    }
-    
-    if (in_list("INTO", command_split)){
-	    newTableName = get_el_after("INTO", command_split) 
-	    returnDict["newTableName"] = newTableName
-    } else {
-    	returnDict["newTableName"] = window.sentinel_value
-    }
-    
+	var whereclause = whereClause.join().replace( /,/g, " " )
+    }	
+    confidence = get_el_after("CONFIDENCE", command_split)  
+    //
     if (in_list("LIMIT", command_split)){
     	limit = get_el_after("LIMIT", command_split) 
-        returnDict["LIMIT"] = limit
     }
-    returnDict["LIMIT"] = window.sentinel_value
+
+    returnDict["tablename"] = tableName
+    returnDict["columnstring"] = columnsString
+    returnDict["newtablename"] = newtablename
+    returnDict["confidence"] = confidence
+    returnDict["whereclause"] =  whereclause
+    returnDict["limit"] = limit
+    // FIXME: take this as an argumetn
+    returnDict['numsamples'] = 100
     
     console.log(returnDict)
     return returnDict
@@ -567,25 +568,13 @@ jQuery(function($, undefined) {
 	    
 	    case "INFER": {
 		echo_if_debug("INFER", term)
-		tempString = parseInferCommand(command)
-		tablename = tempString["tableName"] 
-	        newtablename = tempString["newTableName"]
-	        confidence = tempString["confidence"]
-	        whereclause = tempString["whereclause"]
-	        columnstring = tempString["columns"]
-	        limit = tempString["limit"]
-		dict_to_send = {
-	 	    "tablename": tablename,
-	 	    "newTableName": newtablename,
-	 	    "confidence" : confidence,
-	 	    "whereclause" : whereclause,
-	 	    "columnstring" : columnstring,
-	 	    "limit": limit
-		}
-		if (tempString == window.syntax_error_value){
+		dict_to_send = parseInferCommand(command)
+		newtablename = dict_to_send["newtablename"]
+		whereclause = dict_to_send["whereclause"]
+		if (dict_to_send == window.syntax_error_value) {
 		    term.echo(window.wrong_command_format_str);
 		    break
-		}else if (whereclause){
+		} else if (dict_to_send["whereclause"] != window.sentinel_value) {
 		    term.echo("We do not support WHERE clauses at this point.");
 		    break
 		}
@@ -602,7 +591,6 @@ jQuery(function($, undefined) {
 				        LoadToDatabaseTheCSVData(newtablename, [])		
 					console.log(returnedData)
 					term.echo(success_str)
-					alert("Welcome!")
 				    }) 
 		break
 		    
