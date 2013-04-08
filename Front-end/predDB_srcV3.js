@@ -12,6 +12,10 @@ function alert_if_debug(alert_str) {
     }
 }
 
+function was_successful_call(returnedData) {
+    return 'result' in returnedData
+}
+
 function parse_infer_result(infer_return) {
     ret_str = ""
     for(var i=0; i<infer_return.length; i++) {
@@ -427,6 +431,25 @@ jQuery(function($, undefined) {
 					console.log(returnedData)
 					term.echo(success_str)
 				    }) 
+		break
+	    }
+	    case "DROPANDLOAD": {
+		filename = command_split[1]
+		dict_to_send = {"filename":filename}
+		success_str = ('DROPPED DB AND LOADED FROM FILENAME: '
+			       + filename)
+		fail_str = ('FAILED TO DROP DB AND LOAD')
+		callback_func = function(returnedData) {
+		    if(was_successful_call(returnedData)) {
+			console.log(returnedData)
+			term.echo(success_str)
+		    } else {
+			console.log(returnedData)
+			term.echo(fail_str)
+		    }
+		}
+		JSONRPC_send_method("drop_and_load_db", dict_to_send,
+				    callback_func)
 		break
 	    }
 	    case "VIEW": {

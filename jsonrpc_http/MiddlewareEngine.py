@@ -44,6 +44,24 @@ class MiddlewareEngine(object):
       conn.close()
     return ret
 
+  def drop_and_load_db(self, filename):
+    if not os.path.isfile(filename):
+      raise_str = 'drop_and_load_db(%s): filename does not exist' % filename
+      raise Exception(raise_str)
+    dbname = 'sgeadmin'
+    # drop
+    cmd_str = 'dropdb %s' % dbname
+    os.system(cmd_str)
+    # create
+    cmd_str = 'createdb %s' % dbname
+    os.system(cmd_str)
+    # load
+    if filename.endswith('.gz'):
+      cmd_str = 'gunzip -c %s | psql sgeadmin' % filename
+    else:
+      cmd_str = 'psql sgeadmin < %s' % filename
+    os.system(cmd_str)
+
   def drop_tablename(self, tablename):
     """Delete table by tablename."""
     try:
