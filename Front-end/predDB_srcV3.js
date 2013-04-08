@@ -643,8 +643,10 @@ jQuery(function($, undefined) {
 		    
 		}
 		
-		default:   //Command is not a supported SQL command; need to parse and send back
+		default:
 		{ 
+		    // FIXME: SHOULD PASS THROUGH TO SQL
+		    //        JSONRPC_send_method("runsql" ,...)
 		    term.echo(window.wrong_command_format_str)
 		    echo_if_debug("FALL THROUGH", term)
 		    
