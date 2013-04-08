@@ -241,7 +241,7 @@ function parseInferCommand(commandString){
     // these arguments are optional
     newtablename = window.sentinel_value
     whereclause = window.sentinel_value
-    limit = window.sentinel_value
+    limit = 100
 
     // get columns
     start_idx = get_idx_after("INFER", command_split)
@@ -274,9 +274,9 @@ function parseInferCommand(commandString){
     returnDict["tablename"] = tableName
     returnDict["columnstring"] = columnsString
     returnDict["newtablename"] = newtablename
-    returnDict["confidence"] = confidence
+    returnDict["confidence"] = parseFloat(confidence)
     returnDict["whereclause"] =  whereclause
-    returnDict["limit"] = limit
+    returnDict["limit"] = parseInt(limit)
     // FIXME: take this as an argumetn
     returnDict['numsamples'] = 100
     
