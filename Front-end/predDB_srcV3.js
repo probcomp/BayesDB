@@ -12,7 +12,7 @@ function alert_if_debug(alert_str) {
     }
 }
 
-function parse_infer_return(infer_return) {
+function parse_infer_result(infer_return) {
     ret_str = ""
     for(var i=0; i<infer_return.length; i++) {
 	infer_return_i = infer_return[i]
@@ -329,7 +329,7 @@ function parsePredictCommand(commandString){
 }
 
 /* Loading and jqueries functions*/
-function LoadToDatabaseTheCSVData(fileName, missingValsArray) {
+function LoadToDatabaseTheCSVData(fileName, highlight_maybe_set) {
     data = preloadedDataFiles[fileName]
     window.masterData = data
     window.currentTable = fileName;
@@ -348,10 +348,18 @@ function LoadToDatabaseTheCSVData(fileName, missingValsArray) {
 	"aaData": aDataSet,
 	"aoColumns": columns 
     } );
-    if (missingValsArray.length != 0){
-	missingCells = missingValsArray;
-	for (var i = 0; i < missingCells.length ; i ++){
-	    jQuery(document.getElementById("example").rows[missingCells[i][0] + 1].cells[missingCells[i][1]+1]).addClass("redText")
+    if (highlight_maybe_set.length != 0){
+	example_element = document.getElementById("example")
+	for (var i = 0; i < highlight_maybe_set.length ; i ++){
+	    // add 1 to row for column names
+	    row_idx = highlight_maybe_set[i][0] + 1
+	    col_idx = highlight_maybe_set[i][1]
+	    cell_element = example_element.rows[row_idx].cells[col_idx]
+	    jQuery(cell_element).addClass("redText")
+	    if(typeof(highlight_maybe_set[i][2])!="undefined") {
+		value = highlight_maybe_set[i][2]
+		jQuery(cell_element).html(value)
+	    }
 	}
     }
 }
@@ -360,7 +368,12 @@ $(document).ready(function() {
     window.commandHistory = [];
     window.scrollChange = false
     window.currentTable = "";
-    $('body').layout({ north:{size:0.4}, west:{initHidden:	true }, east:{size:0.5}})
+    layout_dict = {
+	north:{size:0.4},
+	west:{initHidden:true},
+	east:{size:0.5}
+    }
+    $('body').layout(layout_dict)
     window.sliders.style.display = 'none';
 } );  
 
@@ -587,27 +600,32 @@ jQuery(function($, undefined) {
 	    case "INFER": {
 		echo_if_debug("INFER", term)
 		dict_to_send = parseInferCommand(command)
+		tablename = dict_to_send["tablename"]
 		newtablename = dict_to_send["newtablename"]
 		whereclause = dict_to_send["whereclause"]
 		if (dict_to_send == window.syntax_error_value) {
 		    term.echo(window.wrong_command_format_str);
 		    break
-		} else if (dict_to_send["whereclause"] != window.sentinel_value) {
-		    term.echo("We do not support WHERE clauses at this point.");
+		} else if (whereclause != window.sentinel_value) {
+		    term.echo("We do not support WHERE clauses"
+			      + "at this point.");
 		    break
 		}
-		success_str = ("INFERENCE DONE WITH CONFIDENCE: " + confidence )
+		success_str = ("INFERENCE DONE WITH CONFIDENCE: "
+			       + confidence )
 		callback_func = function(returnedData) {
 		    if('result' in returnedData) {
 			if(!newtablename){
-		    	    newtablename = tablename
+		    	    newtablename = tablename + '_inferred'
 			}
 			console.log(returnedData)
 			term.echo(success_str)
-			term.echo(parse_infer_return(returnedData['result']))
+			infer_result = returnedData['result']
+			parsed_infer_result = parse_infer_result(infer_result)
+			term.echo(parsed_infer_result)
 			preloadedDataFiles[newtablename] = returnedData
 			set_menu_option(newtablename)
-			LoadToDatabaseTheCSVData(newtablename, [])
+			LoadToDatabaseTheCSVData(tablename, infer_result)
 		    } else {
 			error = returnedData['error']
 			error_str = "error message: " + error['message']
