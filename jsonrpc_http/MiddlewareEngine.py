@@ -337,16 +337,11 @@ class MiddlewareEngine(object):
       if conf >= confidence:
         row_idx = q[0]
         col_idx = q[1]
-        column_metadata_i = M_c['column_metadata'][col_idx]
-        datatype = column_metadata_i['modeltype']
-        # FIXME: make this robust to different datatypes
-        if datatype == 'symmetric_dirichlet_discrete':
-          # FIXME: casting key to str is a hack
-          value = column_metadata_i['value_to_code'][str(int(value))]
         ret.append((row_idx, col_idx, value))
         counter += 1
         if counter >= limit:
           break
+    ret = du.map_from_T_with_M_c(ret, M_c)
     return ret
 
     csv = ""

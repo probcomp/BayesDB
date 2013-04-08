@@ -213,6 +213,18 @@ def continuous_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=Non
         M_c = gen_M_c_from_T_with_colnames(T, [col for col, flag in zip(header, colmask) if flag])
     return T, M_r, M_c, header
 
+def map_from_T_with_M_c(coordinate_value_tuples, M_c):
+    coordinate_code_tuples = []
+    column_metadata = M_c['column_metadata']
+    for row_idx, col_idx, value in coordinate_value_tuples:
+        datatype = column_metadata[col_idx]['modeltype']
+        # FIXME: make this robust to different datatypes
+        if datatype == 'symmetric_dirichlet_discrete':
+            # FIXME: casting key to str is a hack
+            value = column_metadata[col_idx]['value_to_code'][str(int(value))]
+        coordinate_code_tuples.append((row_idx, col_idx, value))
+    return coordinate_code_tuples
+
 def map_to_T_with_M_c(T_uncast_array, M_c):
     # WARNING: array argument is mutated
     for col_idx in range(T_uncast_array.shape[1]):
