@@ -12,6 +12,17 @@ function alert_if_debug(alert_str) {
     }
 }
 
+function parse_infer_return(infer_return) {
+    ret_str = ""
+    for(var i=0; i<infer_return.length; i++) {
+	infer_return_i = infer_return[i]
+	coordinates = String([infer_return_i[0], infer_return_i[1]])
+	value = String(infer_return_i[1])
+	ret_str += coordinates + ": " + value + "\n"
+    }
+    return ret_str
+}
+
 function echo_if_debug(echo_str, term) {
     if(window.debug) {
 	term.echo("DEBUG: " + echo_str)
@@ -592,7 +603,7 @@ jQuery(function($, undefined) {
 		    }
 		    console.log(returnedData)
 		    term.echo(success_str)
-		    term.echo(returnedData)
+		    term.echo(parse_infer_return(returnedData['result']))
 		    preloadedDataFiles[newtablename] = returnedData
 		    set_menu_option(newtablename)
 		    LoadToDatabaseTheCSVData(newtablename, [])		
