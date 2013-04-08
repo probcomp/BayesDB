@@ -1,5 +1,5 @@
 window.debug = true
-window.default_hostname = "ec2-107-22-7-95.compute-1.amazonaws.com"
+window.default_hostname = "ec2-23-23-17-116.compute-1.amazonaws.com"
 window.web_resource_base = "http://" + window.default_hostname + ":8000/"
 window.jsonrpc_id = 0
 window.wrong_command_format_str = ("Wrong command format."
@@ -229,9 +229,13 @@ function typeDictToTable(typeDict){
 function parseInferCommand(commandString){
     var returnDict = new Object() 
     command_split = commandString.split(' ');
-    if (!in_list("CONFIDENCE", command_split) || !in_list("FROM", command_split) || !in_list("WITH", command_split)){
+    missing_confidence = !in_list("CONFIDENCE", command_split)
+    missing_from = !in_list("FROM", command_split)
+    missing_with = !in_list("WITH", command_split)
+    if (missing_confidence || missing_from || missing_with) { 
     	return window.syntax_error_value
     }
+
     var tableName;
     tableName = get_el_after("FROM", command_split) 
     returnDict["tableName"] = tableName
@@ -239,27 +243,32 @@ function parseInferCommand(commandString){
     var confidence 
     confidence = get_el_after("CONFIDENCE", command_split)  
     returnDict["confidence"] = confidence
+
+    start_idx = get_idx_after("INFER", command_split)
     if (in_list("INTO", command_split)){
-    	columnsToSelectFrom = command_split.slice(get_idx_after("INFER", command_split), get_idx_of("INTO", command_split))
-    }else{
-    	columnsToSelectFrom = command_split.slice(get_idx_after("INFER", command_split), get_idx_of("FROM", command_split))
+	end_idx = get_idx_of("INTO", command_split)
+    } else {
+	end_idx = get_idx_of("FROM", command_split)
     }
+    columnsToSelectFrom = command_split.slice(start_idx, end_idx) 
+
     var columnsString = columnsToSelectFrom.join().replace( /,/g, " " )
     returnDict["columns"] = columnsString
     
     if (in_list("WHERE", command_split)){
-	    whereClause = command_split.slice(get_idx_after("WHERE", command_split), get_idx_of("WITH", command_split))
-	    var whereString = whereClause.join().replace( /,/g, " " )
-	    returnDict["whereClause"] =  whereString
-    }else{
+	start_idx = get_idx_after("WHERE", command_split)
+	end_idx = get_idx_of("WITH", command_split)
+	whereClause = command_split.slice(start_idx, end_idx)
+	var whereString = whereClause.join().replace( /,/g, " " )
+	returnDict["whereClause"] =  whereString
+    } else {
     	returnDict["whereClause"] = window.sentinel_value
-    	
     }
     
     if (in_list("INTO", command_split)){
 	    newTableName = get_el_after("INTO", command_split) 
 	    returnDict["newTableName"] = newTableName
-    }else{
+    } else {
     	returnDict["newTableName"] = window.sentinel_value
     }
     
@@ -556,47 +565,46 @@ jQuery(function($, undefined) {
 			break	
 	    }
 	    
-	    case "INFER": 
-		{
-		    echo_if_debug("INFER", term)
-		    tempString = parseInferCommand(command)
-		    tablename = tempString["tableName"] 
+	    case "INFER": {
+		echo_if_debug("INFER", term)
+		tempString = parseInferCommand(command)
+		tablename = tempString["tableName"] 
 	        newtablename = tempString["newTableName"]
 	        confidence = tempString["confidence"]
 	        whereclause = tempString["whereclause"]
 	        columnstring = tempString["columns"]
 	        limit = tempString["limit"]
-		    dict_to_send = {
-	 		    "tablename": tablename,
-	 		 "newTableName": newtablename,
-	 		  "confidence" : confidence,
-	 		 "whereclause" : whereclause,
-	 		"columnstring" : columnstring,
-	 				"limit": limit
-			}
-		    if (tempString == window.syntax_error_value){
-		    	term.echo(window.wrong_command_format_str);
-		    	break
-		    }else if (whereclause){
-		    	term.echo("We do not support WHERE clauses at this point.");
-		    	break
-		    }
-		    success_str = ("INFERENCE DONE WITH CONFIDENCE" + confidence )
-		    JSONRPC_send_method("infer",
-		    		dict_to_send,
-					function(returnedData) {
-		    				if(!newtablename){
-		    					newtablename = tablename
-		    				}
-				            preloadedDataFiles[newtablename] = returnedData
-				            jQuery(document.getElementById('menu')).append("<option value='" + newtablename + "'>" + 
-				            		newtablename + "</option>")
-				            LoadToDatabaseTheCSVData(newtablename, [])		
-					    console.log(returnedData)
-					    term.echo(success_str)
-					    alert("Welcome!")
-					}) 
-			break
+		dict_to_send = {
+	 	    "tablename": tablename,
+	 	    "newTableName": newtablename,
+	 	    "confidence" : confidence,
+	 	    "whereclause" : whereclause,
+	 	    "columnstring" : columnstring,
+	 	    "limit": limit
+		}
+		if (tempString == window.syntax_error_value){
+		    term.echo(window.wrong_command_format_str);
+		    break
+		}else if (whereclause){
+		    term.echo("We do not support WHERE clauses at this point.");
+		    break
+		}
+		success_str = ("INFERENCE DONE WITH CONFIDENCE" + confidence )
+		JSONRPC_send_method("infer",
+		    		    dict_to_send,
+				    function(returnedData) {
+		    			if(!newtablename){
+		    			    newtablename = tablename
+		    			}
+				        preloadedDataFiles[newtablename] = returnedData
+				        jQuery(document.getElementById('menu')).append("<option value='" + newtablename + "'>" + 
+				            					       newtablename + "</option>")
+				        LoadToDatabaseTheCSVData(newtablename, [])		
+					console.log(returnedData)
+					term.echo(success_str)
+					alert("Welcome!")
+				    }) 
+		break
 		    
 		}
 		
