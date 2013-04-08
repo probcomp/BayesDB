@@ -678,6 +678,8 @@ jQuery(function($, undefined) {
 	    case "PREDICT": {
 		echo_if_debug("PREDICT", term)
 		dict_to_send = parsePredictCommand(command)
+		tablename = dict_to_send['tablename']
+		times = dict_to_send['times']
 		success_str = ("PREDICTION DONE " + times 
 			       + " TIMES FOR TABLE " +  tablename)
 		callback_func = function(returnedData) {
