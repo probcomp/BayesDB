@@ -227,7 +227,8 @@ function typeDictToTable(typeDict){
 }
 
 function parseInferCommand(commandString){
-    // INFER col0, [col1,...] [INTO into_table] FROM [from_table] WHERE whereclause WITH CONFIDENCE confidence_level [LIMIT limit]
+    // INFER col0, [col1,...] [INTO into_table] FROM [from_table]
+    // WHERE whereclause WITH CONFIDENCE confidence_level [LIMIT limit]
     var returnDict = new Object() 
     command_split = commandString.split(' ');
     missing_from = !in_list("FROM", command_split)
@@ -263,7 +264,7 @@ function parseInferCommand(commandString){
 	end_idx = get_idx_of("WITH", command_split)
 	whereClause = command_split.slice(start_idx, end_idx)
 	var whereclause = whereClause.join().replace( /,/g, " " )
-    }	
+    }
     confidence = get_el_after("CONFIDENCE", command_split)  
     //
     if (in_list("LIMIT", command_split)){
