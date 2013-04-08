@@ -357,11 +357,12 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
-      cur.execute("SELECT tableid, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
-      tableid, M_c_json = cur.fetchone()
+      cur.execute("SELECT tableid, m_c, t FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      tableid, M_c_json, t_json = cur.fetchone()
       M_c = json.loads(M_c_json)
+      t = json.loads(t_json)
       cur.execute("SELECT COUNT(*) FROM preddb_data.%s;" % tablename)
-      numrows = cur.fetchone()[0]
+      numrows = int(cur.fetchone()[0])
       cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
       chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
       chainids = map(int, chainids)
@@ -383,8 +384,11 @@ class MiddlewareEngine(object):
 
     name_to_idx = M_c['name_to_idx']
     colnames = [colname.strip() for colname in columnstring.split(',')]
-    Q = [(numrows+1, name_to_idx[colname]) for colname in colnames]
-    Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in whereclause.iteritems()]
+    col_indices = [name_to_idx[colname] for colname in colnames]
+    Q = [(numrows+1, col_idx) for col_idx in col_indices]
+    # FIXME: actually parse whereclause
+    Y = []
+    # Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in whereclause.iteritems()]
     print 'Q',Q
     print 'Y',Y
 
@@ -396,10 +400,21 @@ class MiddlewareEngine(object):
     args_dict['Q'] = Q
     args_dict['n'] = numpredictions
     out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
-    csv = ', '.join(colnames) + '\n'
-    for row in out:
-      csv += ', '.join(map(str, row)) + '\n'
-    return csv
+    # convert to coordinate format so it can be mapped to original codes
+    new_out = []
+    new_row_indices = range(numrows, numrows + numpredictions)
+    for new_row_idx, row_values in zip(new_row_indices, out):
+      for col_idx, cell_value in zip(col_indices, row_values):
+        new_row = [new_row_idx, col_idx, cell_value]
+        new_out.append(new_row)
+    new_out = du.map_from_T_with_M_c(new_out, M_c)
+    return new_out
+
+    # csv = ', '.join(colnames) + '\n'
+    # print 'out: %s' % str(out)
+    # for row in out:
+    #   csv += ', '.join(map(str, row)) + '\n'
+    # return csv
 
   def get_latent_states(self, tablename):
     """Return x_l_list and x_d_list"""
