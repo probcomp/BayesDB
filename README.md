@@ -92,10 +92,10 @@ Restoring the state
 
     sgeadmin> gunzip -c <FILENAME>.gz | psql <NEW_DBNAME>
 
-Creating a new database, specifying owner as sgeadmin
+Creating a new database, specifying owner as sgeadmin, -O sgeadmin, if not done as sgeadmin
 
-    root> sudo -u postgres createdb <DBNAME> -O sgeadmin
+    sgeadmin> createdb <DBNAME>
 
 To load into sgeadmin, you must first delete the database.  WARNING: you will lose everything in the current database.
 
-    root> sudo -u postgres dropdb sgeadmin
+    sgeadmin> dropdb sgeadmin
