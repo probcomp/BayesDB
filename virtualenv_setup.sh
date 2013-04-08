@@ -32,7 +32,8 @@ if [[ -z $has_project ]] ; then
     deactivate
     workon $project_name
     pip install numpy==1.7.0
-    pip install -r requirements.txt
 fi
+
+pip install -r requirements.txt
 
 chown -R $USER $WORKON_HOME
