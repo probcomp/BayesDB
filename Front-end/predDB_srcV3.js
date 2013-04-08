@@ -269,7 +269,7 @@ function parseInferCommand(commandString){
 	end_idx = get_idx_of("FROM", command_split)
     }
     columnsToSelectFrom = command_split.slice(start_idx, end_idx) 
-    columnsString = columnsToSelectFrom.join().replace( /,/g, " " )
+    columnsString = columnsToSelectFrom.join() //.replace( /,/g, " " )
     //
     if (in_list("INTO", command_split)) {
 	newtablename = get_el_after("INTO", command_split) 
@@ -598,15 +598,23 @@ jQuery(function($, undefined) {
 		}
 		success_str = ("INFERENCE DONE WITH CONFIDENCE: " + confidence )
 		callback_func = function(returnedData) {
-		    if(!newtablename){
-		    	newtablename = tablename
+		    if('result' in returnedData) {
+			if(!newtablename){
+		    	    newtablename = tablename
+			}
+			console.log(returnedData)
+			term.echo(success_str)
+			term.echo(parse_infer_return(returnedData['result']))
+			preloadedDataFiles[newtablename] = returnedData
+			set_menu_option(newtablename)
+			LoadToDatabaseTheCSVData(newtablename, [])
+		    } else {
+			error = returnedData['error']
+			error_str = "error message: " + error['message']
+			term.echo('INFERENCE COMMAND FAILED')
+			term.echo(error_str)
+			console.log(returnedData['error'])
 		    }
-		    console.log(returnedData)
-		    term.echo(success_str)
-		    term.echo(parse_infer_return(returnedData['result']))
-		    preloadedDataFiles[newtablename] = returnedData
-		    set_menu_option(newtablename)
-		    LoadToDatabaseTheCSVData(newtablename, [])		
 		}
 		JSONRPC_send_method("infer", dict_to_send, callback_func)
 		break
