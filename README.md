@@ -95,3 +95,7 @@ Restoring the state
 Creating a new database, specifying owner as sgeadmin
 
     root> sudo -u postgres createdb <DBNAME> -O sgeadmin
+
+To load into sgeadmin, you must first delete the database.  WARNING: you will lose everything in the current database.
+
+    root> sudo -u postgres dropdb sgeadmin
