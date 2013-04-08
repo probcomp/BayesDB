@@ -1,5 +1,6 @@
 import sys
 import csv
+import copy
 #
 import numpy
 
@@ -75,8 +76,11 @@ def gen_continuous_metadata(column_data):
         )
 
 def gen_multinomial_metadata(column_data):
-    num_rows = len(column_data)
+    get_is_not_nan = lambda el: el.upper() != 'NAN'
+    #
     unique_codes = list(set(column_data))
+    unique_codes = filter(get_is_not_nan, unique_codes)
+    #
     values = range(len(unique_codes))
     value_to_code = dict(zip(values, unique_codes))
     code_to_value = dict(zip(unique_codes, values))
@@ -214,8 +218,14 @@ def map_T_with_M_c(T_uncast_array, M_c):
     for col_idx in range(T_uncast_array.shape[1]):
         modeltype = M_c['column_metadata'][col_idx]['modeltype']
         if modeltype != 'symmetric_dirichlet_discrete': continue
-        mapping = M_c['column_metadata'][col_idx]['code_to_value']
+        # copy.copy else you mutate M_c
+        mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
+        mapping['NAN'] = numpy.nan
         col_data = T_uncast_array[:, col_idx]
+        to_upper = lambda el: el.upper()
+        is_nan_str = numpy.array(map(to_upper, col_data))=='NAN'
+        col_data[is_nan_str] = 'NAN'
+        # FIXME: THIS IS WHERE TO PUT NAN HANDLING
         mapped_values = [mapping[el] for el in col_data]
         T_uncast_array[:, col_idx] = mapped_values
     T = numpy.array(T_uncast_array, dtype=float).tolist()
