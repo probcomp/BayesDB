@@ -279,9 +279,10 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
-      cur.execute("SELECT tableid, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
-      tableid, M_c_json = cur.fetchone()
+      cur.execute("SELECT tableid, m_c, t FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      tableid, M_c_json, t_json = cur.fetchone()
       M_c = json.loads(M_c_json)
+      t = json.loads(t_json)
       cur.execute("SELECT COUNT(*) FROM preddb_data.%s;" % tablename)
       numrows = cur.fetchone()[0]
       cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
@@ -303,10 +304,18 @@ class MiddlewareEngine(object):
       if conn:
         conn.close()
 
+    t_array = numpy.array(t, dtype=float)
     name_to_idx = M_c['name_to_idx']
     colnames = [colname.strip() for colname in columnstring.split(',')]
-    Q = [(row, name_to_idx[colname]) for row in range(numrows) for colname in colnames]
-    # TODO: Filter Q so that it only contains the ones with missing values!!!!
+    col_indices = [name_to_idx[colname] for colname in colnames]
+    Q = []
+    for row_idx in range(numrows):
+      for col_idx in col_indices:
+        if numpy.isnan(t_array[row_idx, col_idx]):
+          Q.append([row_idx, col_idx])
+
+    # FIXME: the purpose of the whereclause is to specify 'given'
+    #        p(missing_value | X_L, X_D, whereclause)
     # FIXME: actually parse whereclause
     Y = []
     # Y = [(row, name_to_idx[colname], colval) for row in range(numrows) for colname, colval in whereclause.iteritems()]
@@ -324,7 +333,6 @@ class MiddlewareEngine(object):
 #      out, id = au.call('impute_and_confidence', args_dict, self.BACKEND_URI)
       # TODO: call with whole X_L_list and X_D_list once multistate impute implemented
       out = engine.impute_and_confidence(M_c, X_L_list[0], X_D_list[0], Y, [q], numsamples)
-      print 'out',out
       value, conf = out
       if conf >= confidence:
         ret.append((q[0], q[1], value))
