@@ -21,7 +21,7 @@ function parse_infer_result(infer_return) {
     for(var i=0; i<infer_return.length; i++) {
 	infer_return_i = infer_return[i]
 	coordinates = String([infer_return_i[0], infer_return_i[1]])
-	value = String(infer_return_i[1])
+	value = String(infer_return_i[2])
 	ret_str += coordinates + ": " + value + "\n"
     }
     return ret_str
@@ -688,7 +688,7 @@ jQuery(function($, undefined) {
 			term.echo(success_str)
 			predict_result = returnedData['result']
 			// FIXME: implement parse_predict_result
-			parsed_predict_result = parse_predict_result(predict_result)
+			parsed_predict_result = parse_infer_result(predict_result)
 			term.echo(parsed_predict_result)
 			LoadToDatabaseTheCSVData(returnedData, [])
 		    } else {
