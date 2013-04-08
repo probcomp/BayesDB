@@ -109,8 +109,8 @@ class tabular_predDBSetup(ClusterSetup):
                log.info("Installing tabular_predDB (part 1) on %s"
                         % node.alias)
                # push code up
-               # copy_this_repo(S.path.remote_code_dir, node, user,
-               #                S.git.branch)
+               copy_this_repo(S.path.remote_code_dir, node, user,
+                              S.git.branch)
           for node in nodes:
                log.info("Installing tabular_predDB (part 2) on %s"
                         % node.alias)
