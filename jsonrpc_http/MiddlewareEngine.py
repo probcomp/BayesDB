@@ -307,8 +307,9 @@ class MiddlewareEngine(object):
     colnames = [colname.strip() for colname in columnstring.split(',')]
     Q = [(row, name_to_idx[colname]) for row in range(numrows) for colname in colnames]
     # TODO: Filter Q so that it only contains the ones with missing values!!!!
-    Y = [(row, name_to_idx[colname], colval) for row in range(numrows) for colname, colval in whereclause.iteritems()]
-    # Y = [] Should we just ignore Y / where clause?
+    # FIXME: actually parse whereclause
+    Y = []
+    # Y = [(row, name_to_idx[colname], colval) for row in range(numrows) for colname, colval in whereclause.iteritems()]
 
     args_dict = dict()
     args_dict['M_c'] = M_c
