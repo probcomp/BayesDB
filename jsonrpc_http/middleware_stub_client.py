@@ -83,6 +83,18 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   assert(out[0][0] == 6)
   time.sleep(1)
 
+  # test get_latent_states
+  (X_L_list, X_D_list), id = au.call('get_latent_states', args_dict=dict(tablename=tablename), URI=URI)
+  import json
+  json_states = json.dumps(dict(X_L_list=X_L_list, X_D_list=X_D_list))
+  with open('json_states', 'w') as fh:
+    fh.write(json_states)
+  time.sleep(1)
+
+  # test gen_feature_z
+  out, id = au.call('gen_feature_z', args_dict=dict(tablename=tablename), URI=URI)
+  import pdb; pdb.set_trace()
+
   # test select
   method_name = 'select'
   args_dict = dict()

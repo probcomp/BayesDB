@@ -12,6 +12,7 @@ class path():
     server_script = os.path.join('jsonrpc_http', 'server_jsonrpc.py')
     run_server_script = 'run_server.sh'
     postgres_setup_script = 'postgres_setup.sh'
+    image_dir = os.path.join(remote_code_dir, 'images')
 
 class s3():
     bucket_str = 'mitpcp-tabular-predDB'

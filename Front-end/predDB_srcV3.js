@@ -317,9 +317,22 @@ jQuery(function($, undefined) {
 	    try {
 	    switch (first_command_uc)
 	    {
-	    case "SETIMAGE": {
-		img_str = command_split[1]
-		set_kitware(img_str)
+	    case "VIEW": {
+		if(command_split[1].toUpperCase()=='ZMATRIX') {
+		    tablename = command_split[2]
+		    img_str = command_split[1]
+		    success_str = ("GENERATED FEATURE Z-MATRIX FOR "
+				   + tablename)
+		    dict_to_send = {"tablename":tablename}
+		    JSONRPC_send_method("gen_feature_z", dict_to_send,
+					function(returnedData) {
+					    console.log(returnedData)
+					    set_kitware(img_str)
+					    term.echo(success_str)
+					}) 
+		} else {
+	    	    term.echo(window.wrong_command_format_str);
+		}
 		break
 	    }
 	    case "SETHOSTNAME":

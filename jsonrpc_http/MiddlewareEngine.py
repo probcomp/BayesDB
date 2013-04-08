@@ -1,18 +1,20 @@
 import inspect
-#
-import tabular_predDB.cython_code.State as State
-import tabular_predDB.python_utils.sample_utils as su
-
-import psycopg2
-import numpy
 import os
 import pickle
 import json
 import datetime
 import pdb
-
+#
+import pylab
+import numpy
+import psycopg2
+import hcluster
+#
+import tabular_predDB.cython_code.State as State
+import tabular_predDB.python_utils.sample_utils as su
 import tabular_predDB.python_utils.api_utils as au
 import tabular_predDB.python_utils.data_utils as du
+import tabular_predDB.settings as S
 
 # For testing
 from tabular_predDB.jsonrpc_http.Engine import Engine
@@ -413,6 +415,37 @@ class MiddlewareEngine(object):
       if conn:
         conn.close()
     return (X_L_list, X_D_list)
+
+  def gen_feature_z(self, tablename, filename=None, dir=S.path.image_dir):
+    if filename is None:
+      filename = tablename + '_feature_z'
+    full_filename = os.path.join(dir, filename)
+    X_L_list, X_D_list = self.get_latent_states(tablename)
+    num_cols = len(X_L_list[0]['column_partition']['assignments'])
+    num_latent_states = len(X_L_list)
+    # extract unordered z_matrix
+    z_matrix = numpy.zeros((num_cols, num_cols))
+    for X_L in X_L_list:
+      assignments = X_L['column_partition']['assignments']
+      for i in range(num_cols):
+        for j in range(num_cols):
+          if assignments[i] == assignments[j]:
+            z_matrix[i, j] += 1
+    z_matrix /= float(num_latent_states)
+    # hierachically cluster z_matrix
+    Y = hcluster.pdist(z_matrix)
+    Z = hcluster.linkage(Y)
+    pylab.figure()
+    hcluster.dendrogram(Z)
+    intify = lambda x: int(x.get_text())
+    reorder_indices = map(intify, pylab.gca().get_xticklabels())
+    pylab.close()
+    z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
+    # save figure
+    pylab.figure()
+    pylab.imshow(z_matrix_reordered, interpolation='none')
+    pylab.title('feature_z matrix for table: %s' % tablename)
+    pylab.savefig(full_filename)
 
   def guessschema(self, tablename, csv):
     """Guess crosscat types. Returns a list indicating each columns type: 'ignore',
