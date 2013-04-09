@@ -40,11 +40,23 @@ function if_undefined(variable, default_value) {
     return variable
 }
 
+function nan_to_blank(el) {
+    return el.toUpperCase()=="NAN" ? "" : el
+}   
+
+function map_nan_to_blank(data) {
+    row_mapper = function(row) { return row.map(nan_to_blank) }
+    return data.map(row_mapper)
+}
+
 function load_to_datatable(data, columns, sorting) {
     $('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
     data = if_undefined(data, [])
+    data = map_nan_to_blank(data)
     columns = if_undefined(columns, [])
     sorting = if_undefined(sorting, [])
+
+
     $('#example').dataTable( {
 	"aaData": data,
 	"aoColumns": columns,
