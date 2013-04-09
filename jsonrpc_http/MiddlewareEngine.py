@@ -507,7 +507,7 @@ class MiddlewareEngine(object):
       pylab.gca().set_xticks(range(num_cols)[1::2])
       pylab.gca().set_xticklabels(column_names_reordered[1::2],
                                   rotation=90, size='small')
-    pylab.title('column dependencies for ptable: %s' % tablename)
+    pylab.title('column dependencies for: %s' % tablename)
     pylab.savefig(full_filename)
 
   def dump_db(self, filename, dir=S.path.web_resources_dir):
