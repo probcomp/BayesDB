@@ -541,7 +541,8 @@ jQuery(function($, undefined) {
 			    "n_chains": n_chains,
 			}
 			success_str = ("CREATED MODEL FOR " + tablename
-				       + " WITH " + n_chains + " CHAINS")
+				       + " WITH " + n_chains
+				       + " EXPLANATIONS")
 				       
 			//TODO: change the dropdown menu to the table for
 			//      which we have created the model
