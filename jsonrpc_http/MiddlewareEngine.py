@@ -27,6 +27,9 @@ class MiddlewareEngine(object):
     self.backend_hostname = backend_hostname
     self.BACKEND_URI = 'http://' + backend_hostname + ':' + str(backend_uri)
 
+  def ping(self):
+    return "MIDDLEWARE GOT PING"
+
   def runsql(self, sql_command):
     """Run an arbitrary sql command. Returns the query results for select; 0 if not select."""
     try:

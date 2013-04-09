@@ -1,5 +1,5 @@
 window.debug = false
-window.default_hostname = "ec2-23-23-17-116.compute-1.amazonaws.com"
+window.default_hostname = "ec2-54-224-156-110.compute-1.amazonaws.com"
 window.web_resource_base = "http://" + window.default_hostname + ":8000/"
 window.jsonrpc_id = 0
 window.wrong_command_format_str = ("Wrong command format."
@@ -429,6 +429,25 @@ jQuery(function($, undefined) {
 	    try {
 	    switch (first_command_uc)
 	    {
+	    case "PING": {
+		success_func = function(returnedData) {
+		    term.echo("GOT TO SERVER")		    
+		}
+		fail_func = function(returnedData) {
+		    term.echo("CAN'T FIND SERVER")
+		}
+		JSONRPC_send_method("ping", {},
+				    function(returnedData) {
+					if(was_successful_call(returnedData)) {
+					    success_func(returnedData)
+					} else {
+					    fail_func(returnedData)
+					}
+					console.log(returnedData)
+				    }) 
+		
+		break
+	    }
 	    case "SETHOSTNAME":
 	    {
 		hostname = command_split[1]
