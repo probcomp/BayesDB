@@ -741,8 +741,8 @@ jQuery(function($, undefined) {
 	overflow : 'auto',
 	name: 'SQL_demo',
 	height: 100,
-	width: 1000,
-	prompt: 'SQL Command>'});
+	width: 1200,
+	prompt: 'predictive SQL>'});
 });
 
 preloadedDataFiles = new Object();
