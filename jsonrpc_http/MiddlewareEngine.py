@@ -9,6 +9,7 @@ import pylab
 import numpy
 import psycopg2
 import hcluster
+import matplotlib.cm
 #
 import tabular_predDB.cython_code.State as State
 import tabular_predDB.python_utils.sample_utils as su
@@ -494,7 +495,9 @@ class MiddlewareEngine(object):
     column_names_reordered = column_names[reorder_indices]
     # actually create figure
     pylab.figure()
-    pylab.imshow(z_matrix_reordered, interpolation='none')
+    pylab.imshow(z_matrix_reordered, interpolation='none',
+                 cmap=matplotlib.cm.gray)
+    pylab.colorbar()
     if num_cols < 14:
       pylab.gca().set_yticks(range(num_cols))
       pylab.gca().set_yticklabels(column_names_reordered)
