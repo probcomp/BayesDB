@@ -22,3 +22,8 @@ psycopg2==2.4.6
 # this fails and needs to be done manually
 # don't include in install from scratch, else install will lose progress
 # hcluster==0.2.0
+# manual process is as follows
+# sgeadmin >workon tabular_predDB
+# cd /home/sgeadmin/.virtualenvs/tabular_predDB/build/hcluster
+# python setup.py install
+# choose option 2
