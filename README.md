@@ -52,9 +52,7 @@ Building local binary
 Setting up password login via ssh
 ---------------------------------
     local> starcluster sshmaster [CLUSTER_NAME]
-    root> perl -pi.bak -e 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-    root> service ssh reload
-    root> echo "sgeadmin:[PASSWORD]" | chpasswd
+    root> bash /home/sgeadmin/tabular_predDB/setup_password_login.sh <PASSWORD>
 
 ## [Creating an AMI](http://docs.aws.amazon.com/AWSEC2/latest/CommandLineReference/ApiReference-cmd-CreateImage.html) from booted instance
 
