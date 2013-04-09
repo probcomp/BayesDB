@@ -496,7 +496,7 @@ class MiddlewareEngine(object):
     # actually create figure
     pylab.figure()
     pylab.imshow(z_matrix_reordered, interpolation='none',
-                 cmap=matplotlib.cm.gray)
+                 cmap=matplotlib.cm.gray_r)
     pylab.colorbar()
     if num_cols < 14:
       pylab.gca().set_yticks(range(num_cols))
