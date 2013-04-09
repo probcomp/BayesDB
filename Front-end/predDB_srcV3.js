@@ -1,5 +1,5 @@
 window.debug = false
-window.default_hostname = "ec2-54-224-156-110.compute-1.amazonaws.com"
+window.default_hostname = window.location.hostname
 window.web_resource_base = "http://" + window.default_hostname + ":8000/"
 window.jsonrpc_id = 0
 window.wrong_command_format_str = ("Wrong command format."
