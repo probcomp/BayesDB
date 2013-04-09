@@ -84,7 +84,7 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   time.sleep(1)
 
   # test get_latent_states
-  (X_L_list, X_D_list), id = au.call('get_latent_states', args_dict=dict(tablename=tablename), URI=URI)
+  (X_L_list, X_D_list, M_c), id = au.call('get_latent_states', args_dict=dict(tablename=tablename), URI=URI)
   import json
   json_states = json.dumps(dict(X_L_list=X_L_list, X_D_list=X_D_list))
   with open('json_states', 'w') as fh:
