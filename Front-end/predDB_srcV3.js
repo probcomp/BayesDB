@@ -462,22 +462,30 @@ jQuery(function($, undefined) {
 				    callback_func)
 		break
 	    }
-	    case "VIEW": {
-		if(command_split[1].toUpperCase()=='ZMATRIX') {
-		    tablename = command_split[2]
+	    case "SHOW": {
+		if(command_split[1].toUpperCase()=='COLUMN'
+		  && command_split[2].toUpperCase()=='DEPENDENCIES'
+		  && command_split[3].toUpperCase()=='FOR') {
+		    tablename = command_split[4]
 		    filename = tablename + '_feature_z.png'
-		    success_str = ("GENERATED FEATURE Z-MATRIX FOR "
+		    success_str = ("SHOWING COLUMN DEPENDENCIES FOR "
 				   + tablename)
+		    fail_str = ("FAILED TO GENERATE COLUMN DEPENDENCIES")
 		    dict_to_send = {
 			"tablename":tablename,
 			"filename":filename,
 		    }
+		    callback_func = function(returnedData) {
+			console.log(returnedData)
+			if(was_successful_call(returnedData)) {
+			    set_kitware(filename)
+			    term.echo(success_str)
+			} else {
+			    term.echo(fail_str)
+			}
+		    }
 		    JSONRPC_send_method("gen_feature_z", dict_to_send,
-					function(returnedData) {
-					    console.log(returnedData)
-					    set_kitware(filename)
-					    term.echo(success_str)
-					}) 
+					callback_func)
 		} else {
 	    	    term.echo(window.wrong_command_format_str);
 		}
