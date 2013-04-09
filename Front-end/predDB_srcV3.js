@@ -1,4 +1,4 @@
-window.debug = true
+window.debug = false
 window.default_hostname = "ec2-23-23-17-116.compute-1.amazonaws.com"
 window.web_resource_base = "http://" + window.default_hostname + ":8000/"
 window.jsonrpc_id = 0
