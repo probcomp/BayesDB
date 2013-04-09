@@ -33,6 +33,27 @@ function echo_if_debug(echo_str, term) {
     }
 }
 
+function if_undefined(variable, default_value) {
+    if(typeof(variable)=="undefined") {
+	variable = default_value
+    }
+    return variable
+}
+
+function load_to_datatable(data, columns, sorting) {
+    $('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
+    data = if_undefined(data, [])
+    columns = if_undefined(columns, [])
+    sorting = if_undefined(sorting, [])
+    $('#example').dataTable( {
+	"aaData": data,
+	"aoColumns": columns,
+	"aaSorting": sorting,
+	"aLengthMenu": [100, 200, 1000],
+	"iDisplayLength": 100
+    } );
+}
+
 /* Converter functions*/
 function encodeValues(observedValue){
     return observedValue
@@ -239,13 +260,7 @@ function typeDictToTable(typeDict){
 	out += typeDict[aDataSetKeys[r]] + ", ";
     }
     out += typeDict[aDataSetKeys[aDataSetKeys.length]]
-    
-    $('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
-    $('#example').dataTable( {
-	"aaSorting": [],
-	"aaData": out,
-	"aoColumns": columns 
-    } );
+    load_to_datatable([], columns, sorting)
 }
 
 function parseInferCommand(commandString){
@@ -359,12 +374,7 @@ function LoadToDatabaseTheCSVData(fileName, highlight_maybe_set) {
 	counter += 1
     }
     aDataSet.shift()  
-    $('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
-    $('#example').dataTable( {
-	"aaSorting": [],
-	"aaData": aDataSet,
-	"aoColumns": columns 
-    } );
+    load_to_datatable(aDataSet, columns, [])
     if (highlight_maybe_set.length != 0){
 	example_element = document.getElementById("example")
 	for (var i = 0; i < highlight_maybe_set.length ; i ++){
@@ -749,11 +759,7 @@ preloadedDataFiles = new Object();
 
 function menu_select(event) {
     if (event.target.selectedIndex == 0) {
-	$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
-	$('#example').dataTable( {
-	    "aaData": [],
-	    "aoColumns": []
-	} );
+	load_to_datatable([], [])
     } else {
 	LoadToDatabaseTheCSVData(event.target.value, []);
     }
