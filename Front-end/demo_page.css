@@ -10,6 +10,11 @@
 	background-color: #fff;
 }
 
+input[type='file'] {
+  width:95px;
+  height:22px;
+  /*opacity:0*/
+}
 
 #dt_example #container {
 	width: 800px;
