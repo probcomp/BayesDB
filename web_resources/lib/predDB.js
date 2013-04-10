@@ -41,12 +41,21 @@ function if_undefined(variable, default_value) {
 }
 
 function nan_to_blank(el) {
-    return el.toUpperCase()=="NAN" ? "" : el
+    return String(el).toUpperCase()=="NAN" ? "" : el
 }   
 
 function map_nan_to_blank(data) {
     row_mapper = function(row) { return row.map(nan_to_blank) }
     return data.map(row_mapper)
+}
+
+function convert_column_str_list(columns) {
+    columns_out = []
+    for(column_idx in columns) {
+	column_dict = {"sClass": "center", "sTitle": columns[column_idx]}
+	columns_out.push(column_dict)
+    }
+    return columns_out
 }
 
 function load_to_datatable(data, columns, sorting) {
@@ -55,8 +64,7 @@ function load_to_datatable(data, columns, sorting) {
     data = map_nan_to_blank(data)
     columns = if_undefined(columns, [])
     sorting = if_undefined(sorting, [])
-
-
+    console.log("load_to_datatable columns: " + columns)
     $('#example').dataTable( {
 	"aaData": data,
 	"aoColumns": columns,
@@ -775,15 +783,18 @@ jQuery(function($, undefined) {
 			
 		    }
 		    
-		default:
-		    { 
-			// FIXME: SHOULD PASS THROUGH TO SQL
-			//        JSONRPC_send_method("runsql" ,...)
-			term.echo(window.wrong_command_format_str)
-			echo_if_debug("FALL THROUGH", term)
-			
+		default: {
+		    dict_to_send = {"sql_command": command_split.join(' ')}
+		    callback_func = function(returnedData) {
+			console.log(returnedData)
+			data = returnedData['result']['data']
+			columns = returnedData['result']['columns']
+			columns = convert_column_str_list(columns)
+			alert("default case: " + columns)
+			load_to_datatable(data, columns)
 		    }
-		    
+		    JSONRPC_send_method("runsql", dict_to_send, callback_func)
+		}
 		}
 	    } catch(e) { //catch the error in the terminal
 		term.error(new String(e));
