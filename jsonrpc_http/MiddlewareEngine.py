@@ -421,7 +421,8 @@ class MiddlewareEngine(object):
         conn.close()
 
     name_to_idx = M_c['name_to_idx']
-    colnames = [colname.strip() for colname in columnstring.split(',')]
+    # FIXME: hack to get things working for current tables
+    colnames = [colname.strip().upper() for colname in columnstring.split(',')]
     col_indices = [name_to_idx[colname] for colname in colnames]
     Q = [(numrows+1, col_idx) for col_idx in col_indices]
     # FIXME: actually parse whereclause
@@ -452,7 +453,10 @@ class MiddlewareEngine(object):
 
     # convert to data, columns dict output format
     columns = colnames
-    data = out
+    data = numpy.array(out, dtype=float).reshape((numpredictions, len(colnames)))
+    # FIXME: REMOVE WHEN DONE DEMO
+    data = numpy.round(data, 1)
+    print 'data: %s' % data
     ret = {'columns': columns, 'data': data}
     return ret
 

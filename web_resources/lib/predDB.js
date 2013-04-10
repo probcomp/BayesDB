@@ -756,14 +756,14 @@ jQuery(function($, undefined) {
 		    success_str = ("PREDICTION DONE " + times 
 				   + " TIMES FOR PTABLE " +  tablename)
 		    callback_func = function(returnedData) {
-			if('result' in returnedData) {
+			if(was_successful_call(returnedData)) {
 			    console.log(returnedData)
 			    term.echo(success_str)
 			    predict_result = returnedData['result']
-			    // FIXME: implement parse_predict_result
-			    parsed_predict_result = parse_infer_result(predict_result)
-			    term.echo(parsed_predict_result)
-			    LoadToDatabaseTheCSVData(returnedData, [])
+			    data = predict_result['data']
+			    columns = predict_result['columns']
+			    columns = convert_column_str_list(columns)
+			    load_to_datatable(data, columns)
 			} else {
 			    error = returnedData['error']
 			    error_str = "error message: " + error['message']
