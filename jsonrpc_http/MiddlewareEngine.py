@@ -497,13 +497,16 @@ class MiddlewareEngine(object):
     z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
     column_names_reordered = column_names[reorder_indices]
     # actually create figure
-    pylab.figure()
+    fig = pylab.figure()
+    fig.set_size_inches(16, 12)
     pylab.imshow(z_matrix_reordered, interpolation='none',
                  cmap=matplotlib.cm.gray_r)
     pylab.colorbar()
     if num_cols < 14:
       pylab.gca().set_yticks(range(num_cols))
-      pylab.gca().set_yticklabels(column_names_reordered)
+      pylab.gca().set_yticklabels(column_names_reordered, size='small')
+      pylab.gca().set_xticks(range(num_cols))
+      pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
     else:
       pylab.gca().set_yticks(range(num_cols)[::2])
       pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
