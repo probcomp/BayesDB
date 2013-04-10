@@ -638,7 +638,7 @@ jQuery(function($, undefined) {
 			    "chain_index": chain_index,
 			    "iterations": iterations
 			}
-			success_str = ("ANALYZED " + tablename
+			success_str = ("ANALYZING " + tablename
 				       + " CHAIN INDEX " + chain_index
 				       + " FOR " + iterations + " ITERATIONS")
 			JSONRPC_send_method("analyze", dict_to_send,
