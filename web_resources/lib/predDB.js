@@ -613,7 +613,6 @@ jQuery(function($, undefined) {
 			    //      which we have created the model
 			    JSONRPC_send_method("create_model", dict_to_send,
 						function(returnedData) {
-						    term.echo(returnedData);
 						    term.echo(success_str);
 						    console.log(returnedData)
 						}) 
@@ -644,7 +643,6 @@ jQuery(function($, undefined) {
 				       + " FOR " + iterations + " ITERATIONS")
 			JSONRPC_send_method("analyze", dict_to_send,
 					    function(returnedData) {
-						term.echo(returnedData);
 						term.echo(success_str)
 						console.log(returnedData)
 					    }) 
@@ -662,7 +660,6 @@ jQuery(function($, undefined) {
 			    JSONRPC_send_method("drop_tablename",
 						dict_to_send,
 						function(returnedData) {
-						    term.echo(returnedData);
 						    // FIXME: actually verify that return value doesn't indicate error
 						    term.echo("DROPPED PTABLE " + tablename)
 						    console.log(returnedData)
@@ -675,11 +672,10 @@ jQuery(function($, undefined) {
 		    		    select.remove(i);
 		    		}
 			    }
-			}
-    			
-    			/*else
-    			  term.echo(window.wrong_command_format_str)*/
-    			
+			} else {
+    			    term.echo(window.wrong_command_format_str)
+			    term.echo("Did you mean 'DROP PTABLE <PTALBENAME>?'")
+    			}
     			break
 		    }
 		    
