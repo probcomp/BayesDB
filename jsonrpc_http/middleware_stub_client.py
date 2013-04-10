@@ -49,9 +49,9 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   out, id = au.call(method_name, args_dict, URI)
   assert out==0
   au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
-  args_dict['sql_command'] = 'SELECT N_DEATH_ILL,TTL_MDCR_SPND FROM preddb_data.dha_small;'
+  args_dict['sql_command'] = 'SELECT * FROM preddb_data.dha_small;'
   out, id = au.call(method_name, args_dict, URI)
-  assert out['columns'] == ['N_DEATH_ILL', 'TTL_MDCR_SPND']
+  assert out['columns'] == [u'N_DEATH_ILL', u'TTL_MDCR_SPND', u'MDCR_SPND_INP', u'MDCR_SPND_OUTP', u'MDCR_SPND_LTC']
   assert type(out['data']) == list
   time.sleep(1)
 
@@ -66,10 +66,10 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   # Test that one model was created
   out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
                  + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI)
-  assert(out[0][0] == 3)
+  assert(out['data'][0][0] == 3)
   out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
                  + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s' AND chainid=1;" % tablename}, URI)
-  assert(out[0][0] == 1)
+  assert(out['data'][0][0] == 1)
   time.sleep(1)
 
   # test analyze
@@ -85,7 +85,7 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   # Test that inference was started - there should now be two rows of latent states once analyze is finished running.
   out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
                  + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI)
-  assert(out[0][0] == 6)
+  assert(out['data'][0][0] == 6)
   time.sleep(1)
 
   # test get_latent_states
@@ -98,9 +98,10 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
 
   # test gen_feature_z
   out, id = au.call('gen_feature_z', args_dict=dict(tablename=tablename), URI=URI)
-  import pdb; pdb.set_trace()
+  #import pdb; pdb.set_trace()
 
   # test select
+  """
   method_name = 'select'
   args_dict = dict()
   args_dict['querystring'] = 'SELECT * FROM preddb_data.%s;' % tablename
@@ -110,6 +111,7 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   # Test that correct things were selected
   #assert(csv_results == table_csv)
   time.sleep(1)
+  """
 
   # TODO: test infer
   method_name = 'infer'
