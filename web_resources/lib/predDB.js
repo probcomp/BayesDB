@@ -618,9 +618,10 @@ jQuery(function($, undefined) {
 						    console.log(returnedData)
 						}) 
 			}
-	    		else
+	    		else {
 	    		    term.echo(window.wrong_command_format_str);
-	    		
+	    		    term.echo('Did you mean \'CREATE PTABLE <PTABLENAME> FROM <TABLE>\'?');
+			}
 	    		break
 			
 		    }
