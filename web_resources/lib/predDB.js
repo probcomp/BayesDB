@@ -2,8 +2,7 @@ window.debug = false
 window.default_hostname = window.location.hostname
 window.web_resource_base = "http://" + window.default_hostname + ":8000/"
 window.jsonrpc_id = 0
-window.wrong_command_format_str = ("Wrong command format."
-				   + " Please check the HELP command")
+window.wrong_command_format_str = "Invalid command format"
 window.sentinel_value = "" 
 window.syntax_error_value = -1
 function alert_if_debug(alert_str) {
@@ -177,7 +176,7 @@ function parseCreateTableCommand(commandString){
     }
     //
     var tableName;
-    tableName = get_el_after("TABLE", command_split)
+    tableName = get_el_after("PTABLE", command_split)
     fileName = get_el_after("FROM", command_split)
     //
     var returnDict = new Object()
@@ -232,7 +231,7 @@ function parseAnalyzeCommand(commandString){
 function parseDropCommand(commandString){
     command_split = commandString.split(' ');
     var returnDict = new Object()
-    tableName = get_el_after("TABLENAME", command_split)
+    tableName = get_el_after("PTABLE", command_split)
     returnDict["tableName"] = tableName
     return returnDict
 }
@@ -462,16 +461,26 @@ jQuery(function($, undefined) {
 			break
 		    }
 		case "START": {
-		    dict_to_send = {}
-		    callback_func = function(returnedData) {
-			if(was_successful_call(returnedData)) {
-			    term.echo("STARTED DATABASE FROM SCRATCH")
-			} else {
-			    term.echo("FAILED TO START FROM SCRATCH")
+		    command_split[1] = if_undefined(command_split[1], '')
+		    command_split[2] = if_undefined(command_split[2], '')
+		    has_from = command_split[1].toUpperCase() == 'FROM'
+		    has_scratch = command_split[2].toUpperCase() == 'SCRATCH'
+		    if(has_from && has_scratch) {
+			dict_to_send = {}
+			callback_func = function(returnedData) {
+			    if(was_successful_call(returnedData)) {
+				term.echo("STARTED DATABASE FROM SCRATCH")
+			    } else {
+				term.echo("FAILED TO START FROM SCRATCH")
+			    }
 			}
+			JSONRPC_send_method("start_from_scratch", {}, callback_func)
+		    } else {
+	    		term.echo(window.wrong_command_format_str);
+			term.echo("Did you mean 'START FROM SCRATCH'?")
 		    }
-		    JSONRPC_send_method("start_from_scratch", {}, callback_func)
 		    break
+			
 		}
 		case "DUMP": {
 		    filename = 'postgres_dump.gz'
@@ -507,6 +516,9 @@ jQuery(function($, undefined) {
 		    break
 		}
 		case "SHOW": {
+		    command_split[1] = if_undefined(command_split[1], '')
+		    command_split[2] = if_undefined(command_split[2], '')
+		    command_split[3] = if_undefined(command_split[3], '')
 		    if(command_split[1].toUpperCase()=='COLUMN'
 		       && command_split[2].toUpperCase()=='DEPENDENCIES'
 		       && command_split[3].toUpperCase()=='FOR') {
@@ -532,14 +544,15 @@ jQuery(function($, undefined) {
 					    callback_func)
 		    } else {
 	    		term.echo(window.wrong_command_format_str);
+			term.echo("Did you mean 'SHOW COLUMN DEPENDENCIES FOR <PTABLE>?'")
 		    }
 		    break
 		}
 		case "CREATE": 
 		    {
-	    		if (command_split[1].toUpperCase() == "TABLE")
+	    		if (command_split[1].toUpperCase() == "PTABLE")
 	    		{ 
-	    		    echo_if_debug("CREATE TABLE", term)
+	    		    echo_if_debug("CREATE PTABLE", term)
 			    tempString = parseCreateTableCommand(command)
 			    if (tempString == window.syntax_error_value){
 			    	term.echo(window.wrong_command_format_str);
@@ -557,7 +570,7 @@ jQuery(function($, undefined) {
 				"crosscat_column_types": crosscat_column_types,
 				"tablename": tablename,
 			    }
-			    success_str = ("CREATED TABLE " + tablename)
+			    success_str = ("CREATED PTABLE " + tablename)
 			    JSONRPC_send_method("upload_data_table", dict_to_send,
 						function(returnedData) {
 						    console.log(returnedData)
@@ -640,7 +653,7 @@ jQuery(function($, undefined) {
 
 		case "DROP":
 		    {
-	    		if (command_split[1].toUpperCase() == "TABLENAME")
+	    		if (command_split[1].toUpperCase() == "PTABLE")
     			{ 
 	    		    tempString = parseDropCommand(command)
 			    tablename = tempString["tableName"]
@@ -650,7 +663,7 @@ jQuery(function($, undefined) {
 						function(returnedData) {
 						    term.echo(returnedData);
 						    // FIXME: actually verify that return value doesn't indicate error
-						    term.echo("DROPPED TABLENAME " + tablename)
+						    term.echo("DROPPED PTABLE " + tablename)
 						    console.log(returnedData)
 						}) 
 			    
@@ -744,7 +757,7 @@ jQuery(function($, undefined) {
 		    tablename = dict_to_send['tablename']
 		    times = dict_to_send['times']
 		    success_str = ("PREDICTION DONE " + times 
-				   + " TIMES FOR TABLE " +  tablename)
+				   + " TIMES FOR PTABLE " +  tablename)
 		    callback_func = function(returnedData) {
 			if('result' in returnedData) {
 			    console.log(returnedData)
