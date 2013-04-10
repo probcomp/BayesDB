@@ -163,7 +163,7 @@ function parseCreateTableCommand(commandString){
     while (i < command_split.length && i != 0){
 	// FIXME: should verify command_split[i+1] is 'AS'
     	if (command_split[i+1] != "AS"){
-    		return window.syntax_error_value //wrong syntax 
+    	    return window.syntax_error_value //wrong syntax 
     	}
     	columnsDict[command_split[i]] = command_split[i+2]
     	i += 3
@@ -232,7 +232,7 @@ function parseDropCommand(commandString){
 
 
 function parseDeleteChainCommand(commandString){
-	command_split = commandString.split(' ');
+    command_split = commandString.split(' ');
     if (!in_list("FOR", command_split)){ // check if we have the right syntax
     	return window.syntax_error_value
     }
@@ -428,97 +428,97 @@ jQuery(function($, undefined) {
 	}
 	if (command !== '' || commandHistory.length != 0) {
 	    try {
-	    switch (first_command_uc)
-	    {
-	    case "PING": {
-		function_to_call = function(returnedData) {
-		    if(was_successful_call(returnedData)) {
-			term.echo("GOT TO SERVER")		    
-		    } else {
-			term.echo("CAN'T FIND SERVER AT: " + window.JSONRPC_URL)
-		    }
-		    console.log(returnedData)
-		}
-		JSONRPC_send_method("ping", {}, function_to_call)
-		break
-	    }
-	    case "SETHOSTNAME":
-	    {
-		hostname = command_split[1]
-		set_url_with_hostname(hostname)
-		echo_if_debug("JSONRPC_URL = " + window.JSONRPC_URL, term)
-		break
-		}
-	    case "GETHOSTNAME":
-	    {
-		term.echo("JSONRPC_URL = " + window.JSONRPC_URL)
-		break
-		}
-	    case "DUMP": {
-		filename = 'postgres_dump.gz'
-		linkname = window.web_resource_base + filename
-		success_str = ("DUMPED DATABASE: " + linkname)
-		dict_to_send = {
-		    "filename":filename
-		}
-		JSONRPC_send_method("dump_db", dict_to_send,
-				    function(returnedData) {
-					console.log(returnedData)
-					term.echo(success_str)
-				    }) 
-		break
-	    }
-	    case "DROPANDLOAD": {
-		filename = command_split[1]
-		dict_to_send = {"filename":filename}
-		success_str = ('DROPPED DB AND LOADED FROM FILENAME: '
-			       + filename)
-		fail_str = ('FAILED TO DROP DB AND LOAD')
-		callback_func = function(returnedData) {
-		    if(was_successful_call(returnedData)) {
-			console.log(returnedData)
-			term.echo(success_str)
-		    } else {
-			console.log(returnedData)
-			term.echo(fail_str)
-		    }
-		}
-		JSONRPC_send_method("drop_and_load_db", dict_to_send,
-				    callback_func)
-		break
-	    }
-	    case "SHOW": {
-		if(command_split[1].toUpperCase()=='COLUMN'
-		  && command_split[2].toUpperCase()=='DEPENDENCIES'
-		  && command_split[3].toUpperCase()=='FOR') {
-		    tablename = command_split[4]
-		    filename = tablename + '_feature_z.png'
-		    success_str = ("SHOWING COLUMN DEPENDENCIES FOR "
-				   + tablename)
-		    fail_str = ("FAILED TO GENERATE COLUMN DEPENDENCIES")
-		    dict_to_send = {
-			"tablename":tablename,
-			"filename":filename,
-		    }
-		    callback_func = function(returnedData) {
-			console.log(returnedData)
+		switch (first_command_uc)
+		{
+		case "PING": {
+		    function_to_call = function(returnedData) {
 			if(was_successful_call(returnedData)) {
-			    set_kitware(filename)
+			    term.echo("GOT TO SERVER")		    
+			} else {
+			    term.echo("CAN'T FIND SERVER AT: " + window.JSONRPC_URL)
+			}
+			console.log(returnedData)
+		    }
+		    JSONRPC_send_method("ping", {}, function_to_call)
+		    break
+		}
+		case "SETHOSTNAME":
+		    {
+			hostname = command_split[1]
+			set_url_with_hostname(hostname)
+			echo_if_debug("JSONRPC_URL = " + window.JSONRPC_URL, term)
+			break
+		    }
+		case "GETHOSTNAME":
+		    {
+			term.echo("JSONRPC_URL = " + window.JSONRPC_URL)
+			break
+		    }
+		case "DUMP": {
+		    filename = 'postgres_dump.gz'
+		    linkname = window.web_resource_base + filename
+		    success_str = ("DUMPED DATABASE: " + linkname)
+		    dict_to_send = {
+			"filename":filename
+		    }
+		    JSONRPC_send_method("dump_db", dict_to_send,
+					function(returnedData) {
+					    console.log(returnedData)
+					    term.echo(success_str)
+					}) 
+		    break
+		}
+		case "DROPANDLOAD": {
+		    filename = command_split[1]
+		    dict_to_send = {"filename":filename}
+		    success_str = ('DROPPED DB AND LOADED FROM FILENAME: '
+				   + filename)
+		    fail_str = ('FAILED TO DROP DB AND LOAD')
+		    callback_func = function(returnedData) {
+			if(was_successful_call(returnedData)) {
+			    console.log(returnedData)
 			    term.echo(success_str)
 			} else {
+			    console.log(returnedData)
 			    term.echo(fail_str)
 			}
 		    }
-		    JSONRPC_send_method("gen_feature_z", dict_to_send,
+		    JSONRPC_send_method("drop_and_load_db", dict_to_send,
 					callback_func)
-		} else {
-	    	    term.echo(window.wrong_command_format_str);
+		    break
 		}
-		break
-	    }
-	    case "CREATE": 
-		{
-	    	if (command_split[1].toUpperCase() == "TABLE")
+		case "SHOW": {
+		    if(command_split[1].toUpperCase()=='COLUMN'
+		       && command_split[2].toUpperCase()=='DEPENDENCIES'
+		       && command_split[3].toUpperCase()=='FOR') {
+			tablename = command_split[4]
+			filename = tablename + '_feature_z.png'
+			success_str = ("SHOWING COLUMN DEPENDENCIES FOR "
+				       + tablename)
+			fail_str = ("FAILED TO GENERATE COLUMN DEPENDENCIES")
+			dict_to_send = {
+			    "tablename":tablename,
+			    "filename":filename,
+			}
+			callback_func = function(returnedData) {
+			    console.log(returnedData)
+			    if(was_successful_call(returnedData)) {
+				set_kitware(filename)
+				term.echo(success_str)
+			    } else {
+				term.echo(fail_str)
+			    }
+			}
+			JSONRPC_send_method("gen_feature_z", dict_to_send,
+					    callback_func)
+		    } else {
+	    		term.echo(window.wrong_command_format_str);
+		    }
+		    break
+		}
+		case "CREATE": 
+		    {
+	    		if (command_split[1].toUpperCase() == "TABLE")
 	    		{ 
 	    		    echo_if_debug("CREATE TABLE", term)
 			    tempString = parseCreateTableCommand(command)
@@ -544,235 +544,235 @@ jQuery(function($, undefined) {
 						    console.log(returnedData)
 						    term.echo(success_str)
 						}) 
-				//in case the table name is different than the file name
+			    //in case the table name is different than the file name
 			    if (tempString["fileName"] != tempString["tableName"]){
 			    	var temp = preloadedDataFiles[tempString["fileName"]]
 			    	preloadedDataFiles[tempString["tableName"]] = temp
 			    	delete preloadedDataFiles[tempString["fileName"]]
 			    	var select=document.getElementById('menu');
 			    	for (i=0;i<select.length;  i++) {
-			    		   if (select.options[i].value==tempString["fileName"]) {
-			    		     select.remove(i);
-			    		   }
-			    		}
-				set_menu_option(tempString['tableName'])
+			    	    if (select.options[i].value==tempString["fileName"]) {
+			    		select.remove(i);
+			    	    }
 			    	}
-				}
-	    	
-	    	else if (command_split[1].toUpperCase() == "MODEL")
-	    	    { 
-	    		echo_if_debug("CREATE MODEL", term)
-			tempString = parseCreateModelCommand(command)
-			 if (tempString == window.syntax_error_value){
+				set_menu_option(tempString['tableName'])
+			    }
+			}
+	    		
+	    		else if (command_split[1].toUpperCase() == "MODEL")
+	    		{ 
+	    		    echo_if_debug("CREATE MODEL", term)
+			    tempString = parseCreateModelCommand(command)
+			    if (tempString == window.syntax_error_value){
 			    	term.echo(window.wrong_command_format_str);
 			    	break
 			    }
-			tablename = tempString["tableName"]
-			n_chains = tempString["numberOfChains"]
-			dict_to_send = {
-			    "tablename": tablename,
-			    "n_chains": n_chains,
+			    tablename = tempString["tableName"]
+			    n_chains = tempString["numberOfChains"]
+			    dict_to_send = {
+				"tablename": tablename,
+				"n_chains": n_chains,
+			    }
+			    success_str = ("CREATED MODEL FOR " + tablename
+					   + " WITH " + n_chains
+					   + " EXPLANATIONS")
+			    
+			    //TODO: change the dropdown menu to the table for
+			    //      which we have created the model
+			    JSONRPC_send_method("create_model", dict_to_send,
+						function(returnedData) {
+						    term.echo(returnedData);
+						    term.echo(success_str);
+						    console.log(returnedData)
+						}) 
 			}
-			success_str = ("CREATED MODEL FOR " + tablename
-				       + " WITH " + n_chains
-				       + " EXPLANATIONS")
-				       
-			//TODO: change the dropdown menu to the table for
-			//      which we have created the model
-			JSONRPC_send_method("create_model", dict_to_send,
+	    		else
+	    		    term.echo(window.wrong_command_format_str);
+	    		
+	    		break
+			
+		    }
+		    
+		case "ANALYZE":
+		    {
+	    		echo_if_debug("ANALYZE", term)
+	    		tempString = parseAnalyzeCommand(command)
+	    		console.log(tempString)
+			tablename = tempString["tableName"]
+			chain_index = tempString["chainIndex"]
+			iterations = tempString["iterations"]
+			dict_to_send = {
+ 			    "tablename": tablename,
+			    "chain_index": chain_index,
+			    "iterations": iterations
+			}
+			success_str = ("ANALYZED " + tablename
+				       + " CHAIN INDEX " + chain_index
+				       + " FOR " + iterations + " ITERATIONS")
+			JSONRPC_send_method("analyze", dict_to_send,
 					    function(returnedData) {
 						term.echo(returnedData);
-						term.echo(success_str);
+						term.echo(success_str)
 						console.log(returnedData)
 					    }) 
+			break
 		    }
-	    	    else
-	    		term.echo(window.wrong_command_format_str);
-	    	
-	    	break
 		    
-		}
-		
-	    case "ANALYZE":
-	    {
-	    	echo_if_debug("ANALYZE", term)
-	    	tempString = parseAnalyzeCommand(command)
-	    	console.log(tempString)
-		tablename = tempString["tableName"]
-		chain_index = tempString["chainIndex"]
-		iterations = tempString["iterations"]
-		dict_to_send = {
- 		    "tablename": tablename,
-		    "chain_index": chain_index,
-		    "iterations": iterations
-		}
-		success_str = ("ANALYZED " + tablename
-			       + " CHAIN INDEX " + chain_index
-			       + " FOR " + iterations + " ITERATIONS")
-		JSONRPC_send_method("analyze", dict_to_send,
-				    function(returnedData) {
-					term.echo(returnedData);
-					term.echo(success_str)
-					console.log(returnedData)
-				    }) 
-		break
-	    }
-	    
 
-	    case "DROP":
-	    {
-	    	if (command_split[1].toUpperCase() == "TABLENAME")
-    		{ 
-	    	    tempString = parseDropCommand(command)
-		    tablename = tempString["tableName"]
-		    dict_to_send = {"tablename": tablename}
-		    JSONRPC_send_method("drop_tablename",
-					dict_to_send,
-					function(returnedData) {
-					    term.echo(returnedData);
-					    // FIXME: actually verify that return value doesn't indicate error
-					    term.echo("DROPPED TABLENAME " + tablename)
-					    console.log(returnedData)
-					}) 
-		    
-		    delete preloadedDataFiles[tablename]
-		    var select=document.getElementById('menu');
-		    for (i=0;i<select.length;  i++) {
-		    	if (select.options[i].value==tablename) {
-		    	    select.remove(i);
-		    	}
-		    }
-		}
-    	
-    	/*else
-    	    term.echo(window.wrong_command_format_str)*/
-    	
-    	break
-	    }
-	    
-	    case "DELETE":
-	    {
-	    	tempString = parseDeleteChainCommand(command)
-	    	/*tempString = parseDropCommand(command)*/
-	    	 if (tempString == window.syntax_error_value){
-			    	term.echo(window.wrong_command_format_str);
-			    	break
+		case "DROP":
+		    {
+	    		if (command_split[1].toUpperCase() == "TABLENAME")
+    			{ 
+	    		    tempString = parseDropCommand(command)
+			    tablename = tempString["tableName"]
+			    dict_to_send = {"tablename": tablename}
+			    JSONRPC_send_method("drop_tablename",
+						dict_to_send,
+						function(returnedData) {
+						    term.echo(returnedData);
+						    // FIXME: actually verify that return value doesn't indicate error
+						    term.echo("DROPPED TABLENAME " + tablename)
+						    console.log(returnedData)
+						}) 
+			    
+			    delete preloadedDataFiles[tablename]
+			    var select=document.getElementById('menu');
+			    for (i=0;i<select.length;  i++) {
+		    		if (select.options[i].value==tablename) {
+		    		    select.remove(i);
+		    		}
 			    }
-	    	console.log(tempString)
-	    	tablename = tempString["tableName"]
+			}
+    			
+    			/*else
+    			  term.echo(window.wrong_command_format_str)*/
+    			
+    			break
+		    }
+		    
+		case "DELETE":
+		    {
+	    		tempString = parseDeleteChainCommand(command)
+	    		/*tempString = parseDropCommand(command)*/
+	    		if (tempString == window.syntax_error_value){
+			    term.echo(window.wrong_command_format_str);
+			    break
+			}
+	    		console.log(tempString)
+	    		tablename = tempString["tableName"]
 			chain_index = tempString["chainIndex"]
 			dict_to_send = {
 	 		    "tablename": tablename,
 			    "chain_index": chain_index
 			}
-	    	success_str = ("DELETED CHAIN " + tablename + " FOR " + chain_index)
-		    JSONRPC_send_method("delete_chain",
-		    		dict_to_send,
-					function(returnedData) {
-					    term.echo(returnedData);
-					    term.echo(success_str)
-					    console.log(returnedData)
-					    alert("Welcome!")
-					}) 
+	    		success_str = ("DELETED CHAIN " + tablename + " FOR " + chain_index)
+			JSONRPC_send_method("delete_chain",
+		    			    dict_to_send,
+					    function(returnedData) {
+						term.echo(returnedData);
+						term.echo(success_str)
+						console.log(returnedData)
+						alert("Welcome!")
+					    }) 
 			break	
-	    }
-	    
-	    case "INFER": {
-		echo_if_debug("INFER", term)
-		dict_to_send = parseInferCommand(command)
-		tablename = dict_to_send["tablename"]
-		newtablename = dict_to_send["newtablename"]
-		whereclause = dict_to_send["whereclause"]
-		if (dict_to_send == window.syntax_error_value) {
-		    term.echo(window.wrong_command_format_str);
-		    break
-		} else if (whereclause != window.sentinel_value) {
-		    term.echo("We do not support WHERE clauses"
-			      + "at this point.");
-		    break
-		}
-		success_str = ("INFERENCE DONE WITH CONFIDENCE: "
-			       + confidence )
-		callback_func = function(returnedData) {
-		    if('result' in returnedData) {
-			if(!newtablename){
-		    	    newtablename = tablename + '_inferred'
-			}
-			console.log(returnedData)
-			term.echo(success_str)
-			infer_result = returnedData['result']
-			parsed_infer_result = parse_infer_result(infer_result)
-			term.echo(parsed_infer_result)
-			preloadedDataFiles[newtablename] = returnedData
-			set_menu_option(newtablename)
-			LoadToDatabaseTheCSVData(tablename, infer_result)
-		    } else {
-			error = returnedData['error']
-			error_str = "error message: " + error['message']
-			term.echo('INFERENCE COMMAND FAILED')
-			term.echo(error_str)
-			console.log(returnedData['error'])
 		    }
-		}
-		JSONRPC_send_method("infer", dict_to_send, callback_func)
-		break
 		    
-		}
-		
-	    case "PREDICT": {
-		echo_if_debug("PREDICT", term)
-		dict_to_send = parsePredictCommand(command)
-		tablename = dict_to_send['tablename']
-		times = dict_to_send['times']
-		success_str = ("PREDICTION DONE " + times 
-			       + " TIMES FOR TABLE " +  tablename)
-		callback_func = function(returnedData) {
-		    if('result' in returnedData) {
-			console.log(returnedData)
-			term.echo(success_str)
-			predict_result = returnedData['result']
-			// FIXME: implement parse_predict_result
-			parsed_predict_result = parse_infer_result(predict_result)
-			term.echo(parsed_predict_result)
-			LoadToDatabaseTheCSVData(returnedData, [])
-		    } else {
-			error = returnedData['error']
-			error_str = "error message: " + error['message']
-			term.echo('PREDICT COMMAND FAILED')
-			term.echo(error_str)
-			console.log(returnedData['error'])
-		    }
-		}
-		JSONRPC_send_method("predict", dict_to_send, callback_func)
-		break		    
-	    }
-		
-	    case "GUESS": 
-		{
-		    echo_if_debug("GUESS", term)
-		    command_split = commandString.split(' ');
-		    tableName = get_el_after("FOR", command_split)
-		    JSONRPC_send_method("guessschema",
-					{ "tablename":tableName},
-					function(returnedData) {
-				            typeDictToTable(returnedData)		
-					    console.log(returnedData)
-					    alert("Welcome!")
-					}) 
+		case "INFER": {
+		    echo_if_debug("INFER", term)
+		    dict_to_send = parseInferCommand(command)
+		    tablename = dict_to_send["tablename"]
+		    newtablename = dict_to_send["newtablename"]
+		    whereclause = dict_to_send["whereclause"]
+		    if (dict_to_send == window.syntax_error_value) {
+			term.echo(window.wrong_command_format_str);
 			break
+		    } else if (whereclause != window.sentinel_value) {
+			term.echo("We do not support WHERE clauses"
+				  + "at this point.");
+			break
+		    }
+		    success_str = ("INFERENCE DONE WITH CONFIDENCE: "
+				   + confidence )
+		    callback_func = function(returnedData) {
+			if('result' in returnedData) {
+			    if(!newtablename){
+		    		newtablename = tablename + '_inferred'
+			    }
+			    console.log(returnedData)
+			    term.echo(success_str)
+			    infer_result = returnedData['result']
+			    parsed_infer_result = parse_infer_result(infer_result)
+			    term.echo(parsed_infer_result)
+			    preloadedDataFiles[newtablename] = returnedData
+			    set_menu_option(newtablename)
+			    LoadToDatabaseTheCSVData(tablename, infer_result)
+			} else {
+			    error = returnedData['error']
+			    error_str = "error message: " + error['message']
+			    term.echo('INFERENCE COMMAND FAILED')
+			    term.echo(error_str)
+			    console.log(returnedData['error'])
+			}
+		    }
+		    JSONRPC_send_method("infer", dict_to_send, callback_func)
+		    break
 		    
 		}
-		
+		    
+		case "PREDICT": {
+		    echo_if_debug("PREDICT", term)
+		    dict_to_send = parsePredictCommand(command)
+		    tablename = dict_to_send['tablename']
+		    times = dict_to_send['times']
+		    success_str = ("PREDICTION DONE " + times 
+				   + " TIMES FOR TABLE " +  tablename)
+		    callback_func = function(returnedData) {
+			if('result' in returnedData) {
+			    console.log(returnedData)
+			    term.echo(success_str)
+			    predict_result = returnedData['result']
+			    // FIXME: implement parse_predict_result
+			    parsed_predict_result = parse_infer_result(predict_result)
+			    term.echo(parsed_predict_result)
+			    LoadToDatabaseTheCSVData(returnedData, [])
+			} else {
+			    error = returnedData['error']
+			    error_str = "error message: " + error['message']
+			    term.echo('PREDICT COMMAND FAILED')
+			    term.echo(error_str)
+			    console.log(returnedData['error'])
+			}
+		    }
+		    JSONRPC_send_method("predict", dict_to_send, callback_func)
+		    break		    
+		}
+		    
+		case "GUESS": 
+		    {
+			echo_if_debug("GUESS", term)
+			command_split = commandString.split(' ');
+			tableName = get_el_after("FOR", command_split)
+			JSONRPC_send_method("guessschema",
+					    { "tablename":tableName},
+					    function(returnedData) {
+						typeDictToTable(returnedData)		
+						console.log(returnedData)
+						alert("Welcome!")
+					    }) 
+			break
+			
+		    }
+		    
 		default:
-		{ 
-		    // FIXME: SHOULD PASS THROUGH TO SQL
-		    //        JSONRPC_send_method("runsql" ,...)
-		    term.echo(window.wrong_command_format_str)
-		    echo_if_debug("FALL THROUGH", term)
+		    { 
+			// FIXME: SHOULD PASS THROUGH TO SQL
+			//        JSONRPC_send_method("runsql" ,...)
+			term.echo(window.wrong_command_format_str)
+			echo_if_debug("FALL THROUGH", term)
+			
+		    }
 		    
 		}
-		
-	    }
 	    } catch(e) { //catch the error in the terminal
 		term.error(new String(e));
 	    }
