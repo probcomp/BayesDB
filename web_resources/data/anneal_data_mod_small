@@ -1,4 +1,4 @@
-family,product-type,steel,carbon,hardness,temper_rolling,condition
+family,product_type,steel,carbon,hardness,temper_rolling,condition
 nan,C,A,0,0,nan,S
 nan,C,R,1,0,nan,S
 nan,C,R,2,0,nan,S
