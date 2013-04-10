@@ -124,9 +124,9 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict['limit'] = 8
   args_dict['numsamples'] = 10 # should do 10 or 100
   print 'running infer'
-  out = middleware_engine.infer(tablename, "N_DEATH_ILL, MDCR_SPND_INP", "", 0, {'MDCR_SPND_LTC':6331}, 8, 10)
-#  out, id = au.call(method_name, args_dict, URI)
-  print 'infer out:', out
+#  out = middleware_engine.infer(tablename, "N_DEATH_ILL, MDCR_SPND_INP", "", 0, {'MDCR_SPND_LTC':6331}, 8, 10)
+  out, id = au.call(method_name, args_dict, URI)
+#  print 'infer out:', out
   # TODO
   # Test that missing values are filled in
   time.sleep(1)
@@ -141,11 +141,15 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict['numpredictions'] = 10
   print 'running predict'
   out, id = au.call(method_name, args_dict, URI)
-  csv_results = out
-  rows = csv_results.split('\n')
-  row = rows[1].split(',')
-  assert len(rows) == args_dict['numpredictions']+1
-  assert len(row) == len(args_dict['columnstring'])
+  assert out['columns'] == [u'N_DEATH_ILL', u'MDCR_SPND_INP']
+  assert len(out['data']) == 10
+  assert len(out['data'][0]) == len(out['columns'])
+# old code for csv parsing
+#  csv_results = out
+#  rows = csv_results.split('\n')
+#  row = rows[1].split(',')
+#  assert len(rows) == args_dict['numpredictions']+1
+#  assert len(row) == len(args_dict['columnstring'])
   # FAILS assert rows[0][:-2] == args_dict['columnstring']
   # TODO
   # Test that prediction worked properly

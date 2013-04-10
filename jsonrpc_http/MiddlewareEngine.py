@@ -439,6 +439,8 @@ class MiddlewareEngine(object):
     args_dict['n'] = numpredictions
     out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
     # convert to coordinate format so it can be mapped to original codes
+    # output is [[row1,col1,value1],[row2,col2,value2],...]
+    """
     new_out = []
     new_row_indices = range(numrows, numrows + numpredictions)
     for new_row_idx, row_values in zip(new_row_indices, out):
@@ -446,8 +448,15 @@ class MiddlewareEngine(object):
         new_row = [new_row_idx, col_idx, cell_value]
         new_out.append(new_row)
     new_out = du.map_from_T_with_M_c(new_out, M_c)
-    return new_out
+    """
 
+    # convert to data, columns dict output format
+    columns = colnames
+    data = out
+    ret = {'columns': columns, 'data': data}
+    return ret
+
+    # convert to csv output format
     # csv = ', '.join(colnames) + '\n'
     # print 'out: %s' % str(out)
     # for row in out:
