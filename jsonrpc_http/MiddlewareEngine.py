@@ -48,6 +48,19 @@ class MiddlewareEngine(object):
       conn.close()
     return ret
 
+  def start_from_scratch(self):
+    dbname = 'sgeadmin'
+    # drop
+    cmd_str = 'dropdb %s' % dbname
+    os.system(cmd_str)
+    # create
+    cmd_str = 'createdb %s' % dbname
+    os.system(cmd_str)
+    #
+    cmd_str = 'psql -f %s' % os.path.join(S.path.remote_code_dir, 'table_setup.sql')
+    os.system(cmd_str)
+    return 'STARTED FROM SCRATCH'
+
   def drop_and_load_db(self, filename):
     if not os.path.isfile(filename):
       raise_str = 'drop_and_load_db(%s): filename does not exist' % filename

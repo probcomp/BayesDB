@@ -454,6 +454,18 @@ jQuery(function($, undefined) {
 			term.echo("JSONRPC_URL = " + window.JSONRPC_URL)
 			break
 		    }
+		case "START": {
+		    dict_to_send = {}
+		    callback_func = function(returnedData) {
+			if(was_successful_call(returnedData)) {
+			    term.echo("STARTED DATABASE FROM SCRATCH")
+			} else {
+			    term.echo("FAILED TO START FROM SCRATCH")
+			}
+		    }
+		    JSONRPC_send_method("start_from_scratch", {}, callback_func)
+		    break
+		}
 		case "DUMP": {
 		    filename = 'postgres_dump.gz'
 		    linkname = window.web_resource_base + filename
