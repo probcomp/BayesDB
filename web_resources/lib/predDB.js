@@ -118,7 +118,8 @@ function JSONRPC_send_method(method_name, parameters, function_to_call) {
 	},
 	error: function(httpRequest, textStatus, errorThrown) {
 	    console.log(httpRequest)
-	    console.log(window.JSONRPC_URL)
+	    console.log(textStatus)
+	    console.log(errorThrown)
 	    alert("Sorry, some error has happened.")
 	},
 	complete: function() {
@@ -430,22 +431,15 @@ jQuery(function($, undefined) {
 	    switch (first_command_uc)
 	    {
 	    case "PING": {
-		success_func = function(returnedData) {
-		    term.echo("GOT TO SERVER")		    
+		function_to_call = function(returnedData) {
+		    if(was_successful_call(returnedData)) {
+			term.echo("GOT TO SERVER")		    
+		    } else {
+			term.echo("CAN'T FIND SERVER AT: " + window.JSONRPC_URL)
+		    }
+		    console.log(returnedData)
 		}
-		fail_func = function(returnedData) {
-		    term.echo("CAN'T FIND SERVER")
-		}
-		JSONRPC_send_method("ping", {},
-				    function(returnedData) {
-					if(was_successful_call(returnedData)) {
-					    success_func(returnedData)
-					} else {
-					    fail_func(returnedData)
-					}
-					console.log(returnedData)
-				    }) 
-		
+		JSONRPC_send_method("ping", {}, function_to_call)
 		break
 	    }
 	    case "SETHOSTNAME":
