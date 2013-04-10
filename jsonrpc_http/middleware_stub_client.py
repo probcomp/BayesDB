@@ -29,14 +29,6 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   # drop tablename
   au.call('drop_tablename', {'tablename': tablename}, URI)
 
-  # test runsql
-  method_name = 'runsql'
-  args_dict = dict()
-  args_dict['sql_command'] = 'CREATE TABLE IF NOT EXISTS bob(id INT PRIMARY KEY, num INT);'
-  out, id = au.call(method_name, args_dict, URI)
-  au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
-  time.sleep(1)
-
   # test upload_data_table
   print 'uploading data table %s' % tablename
   method_name = 'upload_data_table'
@@ -48,6 +40,19 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   assert (out==0 or out=="Error: table with that name already exists.")
   # TODO: Test that table was created
   out, id = au.call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s'" % tablename}, URI)
+  time.sleep(1)
+
+  # test runsql
+  method_name = 'runsql'
+  args_dict = dict()
+  args_dict['sql_command'] = 'CREATE TABLE IF NOT EXISTS bob(id INT PRIMARY KEY, num INT);'
+  out, id = au.call(method_name, args_dict, URI)
+  assert out==0
+  au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
+  args_dict['sql_command'] = 'SELECT N_DEATH_ILL,TTL_MDCR_SPND FROM preddb_data.dha_small;'
+  out, id = au.call(method_name, args_dict, URI)
+  assert out['columns'] == ['N_DEATH_ILL', 'TTL_MDCR_SPND']
+  assert type(out['data']) == list
   time.sleep(1)
 
   # test createmodel

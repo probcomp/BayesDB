@@ -36,9 +36,12 @@ class MiddlewareEngine(object):
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
       cur.execute(sql_command)
-      if sql_command.split()[0].lower() == 'select':
-        ret = cur.fetchall()
-      else:
+      try:
+        data = cur.fetchall()
+        col_metadata = cur.description
+        colnames = [coltuple[0] for coltuple in col_metadata]
+        ret = {'data':data, 'columns':colnames}
+      except psycopg2.ProgrammingError:
         ret = 0
       conn.commit()
     except psycopg2.DatabaseError, e:
