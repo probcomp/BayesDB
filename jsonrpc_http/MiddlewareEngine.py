@@ -51,6 +51,19 @@ class MiddlewareEngine(object):
       conn.close()
     return ret
 
+  def start_from_scratch(self):
+    dbname = 'sgeadmin'
+    # drop
+    cmd_str = 'dropdb %s' % dbname
+    os.system(cmd_str)
+    # create
+    cmd_str = 'createdb %s' % dbname
+    os.system(cmd_str)
+    #
+    cmd_str = 'psql -f %s' % os.path.join(S.path.remote_code_dir, 'table_setup.sql')
+    os.system(cmd_str)
+    return 'STARTED FROM SCRATCH'
+
   def drop_and_load_db(self, filename):
     if not os.path.isfile(filename):
       raise_str = 'drop_and_load_db(%s): filename does not exist' % filename
@@ -500,13 +513,16 @@ class MiddlewareEngine(object):
     z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
     column_names_reordered = column_names[reorder_indices]
     # actually create figure
-    pylab.figure()
+    fig = pylab.figure()
+    fig.set_size_inches(16, 12)
     pylab.imshow(z_matrix_reordered, interpolation='none',
                  cmap=matplotlib.cm.gray_r)
     pylab.colorbar()
     if num_cols < 14:
       pylab.gca().set_yticks(range(num_cols))
-      pylab.gca().set_yticklabels(column_names_reordered)
+      pylab.gca().set_yticklabels(column_names_reordered, size='small')
+      pylab.gca().set_xticks(range(num_cols))
+      pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
     else:
       pylab.gca().set_yticks(range(num_cols)[::2])
       pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')

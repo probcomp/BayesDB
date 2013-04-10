@@ -55,6 +55,10 @@ def update_remote_repo_working_tree(remote_code_dir, node, user):
      cmd_str = 'bash -c "cd %s && git remote set-url origin https://github.com/%s"'
      cmd_str %= (remote_code_dir, S.git.repo_suffix)
      run_as_user(node, user, cmd_str)
+     #
+     cmd_str = 'chown -R sgeadmin:sgeadmin %s'
+     cmd_str %= remote_code_dir
+     node.ssh.execute(cmd_str)
      # FIXME: Where is the update?
 
 # this complains about 
