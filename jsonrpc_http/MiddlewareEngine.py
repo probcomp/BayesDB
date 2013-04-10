@@ -186,7 +186,7 @@ class MiddlewareEngine(object):
     #       but the db has 1-indexed keys
     t, m_r, m_c, header = du.read_data_objects(csv_abs_path, cctypes=cctypes)
     colstring = ', '.join([
-        '"' + tup[0] + '"' + ' ' + tup[1]
+        ' '.join(tup)
         for tup in zip(colnames, postgres_coltypes)
         ])
     # Execute queries
