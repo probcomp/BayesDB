@@ -64,7 +64,6 @@ function load_to_datatable(data, columns, sorting) {
     data = map_nan_to_blank(data)
     columns = if_undefined(columns, [])
     sorting = if_undefined(sorting, [])
-    console.log("load_to_datatable columns: " + columns)
     $('#example').dataTable( {
 	"aaData": data,
 	"aoColumns": columns,
@@ -790,7 +789,6 @@ jQuery(function($, undefined) {
 			data = returnedData['result']['data']
 			columns = returnedData['result']['columns']
 			columns = convert_column_str_list(columns)
-			alert("default case: " + columns)
 			load_to_datatable(data, columns)
 		    }
 		    JSONRPC_send_method("runsql", dict_to_send, callback_func)
