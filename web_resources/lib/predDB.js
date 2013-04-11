@@ -298,7 +298,7 @@ function typeDictToTable(typeDict){
 
 function parseInferCommand(commandString){
     // INFER col0, [col1,...] [INTO into_table] FROM [from_table]
-    // WHERE whereclause WITH CONFIDENCE confidence_level [LIMIT limit]
+    // WHERE whereclause WITH CONFIDENCE confidence_level [LIMIT limit] [NUMSAMPLES numsamples]
     var returnDict = new Object() 
     command_split = commandString.split(' ');
     missing_from = !in_list("FROM", command_split)
@@ -312,6 +312,7 @@ function parseInferCommand(commandString){
     newtablename = window.sentinel_value
     whereclause = window.sentinel_value
     limit = 100
+    numsamples = 100
 
     // get columns
     start_idx = get_idx_after("INFER", command_split)
@@ -340,6 +341,10 @@ function parseInferCommand(commandString){
     if (in_list("LIMIT", command_split)){
     	limit = get_el_after("LIMIT", command_split) 
     }
+    //
+    if (in_list("NUMSAMPLES", command_split)){
+    	numsamples = get_el_after("NUMSAMPLES", command_split) 
+    }
 
     returnDict["tablename"] = tableName
     returnDict["columnstring"] = columnsString
@@ -347,8 +352,7 @@ function parseInferCommand(commandString){
     returnDict["confidence"] = parseFloat(confidence)
     returnDict["whereclause"] =  whereclause
     returnDict["limit"] = parseInt(limit)
-    // FIXME: take this as an argument
-    returnDict['numsamples'] = 100
+    returnDict['numsamples'] = parseInt(numsamples)
     
     console.log(returnDict)
     return returnDict
@@ -750,7 +754,7 @@ jQuery(function($, undefined) {
 		    if (dict_to_send == window.syntax_error_value) {
 			term.echo(window.wrong_command_format_str);
 			term.echo("Did you mean 'INFER col0, [col1, ...] FROM <PTABLE> [WHERE <WHERECLAUSE>] ...")
-			term.echo("\t\t\t  WITH CONFIDENCE <CONFIDENCE> [LIMIT limit]'?")
+			term.echo("\t\t\t  WITH CONFIDENCE <CONFIDENCE> [LIMIT limit] [NUMSAMPLES numsamples]'?")
 			break
 		    } 
 		    tablename = dict_to_send["tablename"]
@@ -761,8 +765,9 @@ jQuery(function($, undefined) {
 				  + "at this point.");
 			break
 		    }
-		    success_str = ("INFERENCE DONE WITH CONFIDENCE: "
-				   + confidence )
+		    success_str = ("INFERENCE DONE WITH CONFIDENCE: " + confidence
+				  + " LIMIT " + dict_to_send['limit']
+				  + " NUMSAMPLES " + dict_to_send['numsamples'])
 		    fail_str = 'INFERENCE COMMAND FAILED'
 
 		    callback_func = function(returnedData) {
