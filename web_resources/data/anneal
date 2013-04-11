@@ -1,4 +1,4 @@
-family,product-type,steel,carbon,hardness,temper_rolling,condition,formability,strength,non-ageing,surface-finish,surface-quality,enamelability,bc,bf,bt,bw/me,bl,m,chrom,phos,cbond,marvi,exptl,ferro,corr,blue/bright/varn/clean,lustre,jurofm,s,p,shape,thick,width,len,oil,bore,packing
+family,product_type,steel,carbon,hardness,temper_rolling,condition,formability,strength,non_ageing,surface_finish,surface_quality,enamelability,bc,bf,bt,bw_me,bl,m,chrom,phos,cbond,marvi,exptl,ferro,corr,blue_bright_varn_clean,lustre,jurofm,s,p,shape,thick,width,len,oil,bore,packing
 nan,C,A,8,0,nan,S,nan,0,nan,nan,G,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,COIL,0.7,610,0,nan,0,nan
 nan,C,R,0,0,nan,S,2,0,nan,nan,E,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,Y,nan,nan,nan,COIL,3.2,610,0,nan,0,nan
 nan,C,R,0,0,nan,S,2,0,nan,nan,E,nan,nan,Y,nan,B,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,SHEET,0.7,1300,762,nan,0,nan
