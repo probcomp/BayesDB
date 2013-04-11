@@ -140,14 +140,6 @@ function JSONRPC_send_method(method_name, parameters, function_to_call) {
     });			    
 }
 
-function call_and_save(method_name, parameters) {
-    callback_func = function(returnedData) {
-	window.last_function_return = returnedData
-	console.log(returnedData)
-    }
-    JSONRPC_send_method(method_name, parameters, callback_func)
-}
-
 function to_upper_case(str) {
     return str.toUpperCase()
 }
@@ -426,6 +418,11 @@ function LoadToDatabaseTheCSVData(fileName, highlight_maybe_set) {
 	    }
 	}
     }
+}
+
+function write_json_for_table(tablename) {
+    empty_callback = function(returnedData) {}
+    JSONRPC_send_method("write_json_for_table", {"tablename":tablename}, empty_callback)
 }
 
 $(document).ready(function() {	 
@@ -795,6 +792,12 @@ jQuery(function($, undefined) {
 		case "PREDICT": {
 		    echo_if_debug("PREDICT", term)
 		    dict_to_send = parsePredictCommand(command)
+		    if(dict_to_send==window.syntax_error_value) {
+			term.echo(window.wrong_command_format_str);
+			term.echo("Did you mean 'PREDICT col0, [col1, ...] FROM <PTABLE>"
+				  + " WHERE <WHERECLAUSE> TIMES times")
+			break
+		    }
 		    tablename = dict_to_send['tablename']
 		    times = dict_to_send['times']
 		    success_str = ("PREDICTION DONE " + times 
