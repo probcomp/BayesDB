@@ -575,6 +575,7 @@ jQuery(function($, undefined) {
 			}
 			JSONRPC_send_method("gen_feature_z", dict_to_send,
 					    callback_func)
+			break
 		    } else if(command_split[1].toUpperCase()=='KITWARE'
 			     && command_split[2].toUpperCase()=='FOR') {
 			tablename = command_split[3]
