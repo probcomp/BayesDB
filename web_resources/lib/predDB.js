@@ -822,6 +822,7 @@ jQuery(function($, undefined) {
 			    columns = predict_result['columns']
 			    columns = convert_column_str_list(columns)
 			    load_to_datatable(data, columns)
+			    set_kitware('data/' + tablename + '_histogram.png')
 			} else {
 			    term.echo('PREDICT COMMAND FAILED')
 			    handle_error(returnedData['error'], term)

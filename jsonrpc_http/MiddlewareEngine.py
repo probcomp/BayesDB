@@ -461,7 +461,7 @@ class MiddlewareEngine(object):
     # convert to data, columns dict output format
     columns = colnames
     # map codes to original values
-    self.create_histogram(numpy.array(out), tablename+'_histogram')
+    self.create_histogram(numpy.array(out), columns, tablename+'_histogram')
     data = [[du.convert_code_to_value(M_c, cidx, code) for cidx,code in zip(col_indices,vals)] for vals in out]
     #data = numpy.array(out, dtype=float).reshape((numpredictions, len(colnames)))
     # FIXME: REMOVE WHEN DONE DEMO
@@ -499,7 +499,7 @@ class MiddlewareEngine(object):
     json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
     self.jsonify_and_dump(json_indices_dict, "json_indices")
 
-  def create_histogram(self, data, filename):
+  def create_histogram(self, data, columns, filename):
     dir=S.path.web_resources_data_dir
     full_filename = os.path.join(dir, filename)
     num_rows = data.shape[0]
@@ -508,7 +508,7 @@ class MiddlewareEngine(object):
     pylab.figure()
     for col_idx in range(num_cols):
       data_i = data[:, col_idx]
-      pylab.subplot(1, num_cols, col_idx)
+      pylab.subplot(1, num_cols, col_idx, title=columns[col_idx])
       pylab.hist(data_i, orientation='horizontal')
     pylab.savefig(full_filename)
 
