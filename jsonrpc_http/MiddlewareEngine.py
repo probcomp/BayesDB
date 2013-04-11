@@ -220,10 +220,15 @@ class MiddlewareEngine(object):
       m_c = json.loads(m_c_json)
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % (tablename))
       tableid = cur.fetchone()[0]
+      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      max_chainid = cur.fetchone()[0]
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
       return e
+    except psycopg2.ProgrammingError:
+      max_chainid = 0
+      conn.commit()
     finally:
       if conn:
         conn.close()
@@ -234,7 +239,7 @@ class MiddlewareEngine(object):
     args_dict['M_c'] = m_c
     args_dict['M_r'] = m_r
     args_dict['T'] = t
-    for chain_index in range(n_chains):
+    for chain_index in range(max_chainid, n_chains + max_chainid):
 #      out = engine.initialize(m_c, m_r, t)
       out, id = au.call('initialize', args_dict, self.BACKEND_URI)
       m_c, m_r, x_l_prime, x_d_prime = out
