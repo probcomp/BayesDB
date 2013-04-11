@@ -98,7 +98,6 @@ function visCrossCat(spec) {
     }
 
     function cellOpacity(d) {
-	//var opacity = 0.5 + d / 8.
         var opacity = 1;
         if (d.value === 0) {
             opacity = 0.5;
@@ -200,7 +199,7 @@ function visCrossCat(spec) {
             .on("mouseover", mouseover)
             .on("mouseout", mouseout)
             .append("title")
-            .text(function (d) { return rows[d.i] + " " + columns[d.j] + "? " + (d.value ? "YES" : "NO"); });
+            .text(function (d) { return rows[d.i] + " " + columns[d.j] + "? " + (d.value); });
         cell.transition().duration(transitionDuration)
             .delay(function (d) { return delayFactor * columnPosition(d.j); })
             .attr("x", function (d) { return columnPosition(d.j); })
@@ -288,26 +287,25 @@ function visCrossCat(spec) {
         }
 
         rows = [];
-        for (rowName in rowOrder.name_to_idx) {
-            if (rowOrder.name_to_idx.hasOwnProperty(rowName)) {
-                rows[rowOrder.name_to_idx[rowName] - 1] = rowName.toLowerCase();
+        for (rowName in rowOrder.labelToIndex) {
+            if (rowOrder.labelToIndex.hasOwnProperty(rowName)) {
+                rows[rowOrder.labelToIndex[rowName] - 1] = rowName.toLowerCase();
             }
         }
 
         columns = [];
-        for (columnName in columnOrder.name_to_idx) {
-            if (columnOrder.name_to_idx.hasOwnProperty(columnName)) {
-                columns[columnOrder.name_to_idx[columnName] - 1] = columnName.replace(/_/g, " ");
+        for (columnName in columnOrder.labelToIndex) {
+            if (columnOrder.labelToIndex.hasOwnProperty(columnName)) {
+                columns[columnOrder.labelToIndex[columnName] - 1] = columnName.replace(/_/g, " ");
             }
         }
 
         // Reindex all indices to be zero-based and eliminate empty views/partitions.
-        // views = removeEmpty(columnPartitions.columnPartitionAssignments);
-	views = removeEmpty(columnPartitions.column_partition.assignments);
+        views = removeEmpty(columnPartitions.columnPartitionAssignments);
         partitions = [];
-        for (view = 0; view < rowPartitions.row_partition_assignments.length; view = view + 1) {
-            if (views.remappedIndex[view] !== undefined) {
-                partitions[views.remappedIndex[view]] = removeEmpty(rowPartitions.row_partition_assignments[view]);
+        for (view = 0; view < rowPartitions.rowPartitionAssignments.length; view = view + 1) {
+            if (views.remappedIndex[view + 1] !== undefined) {
+                partitions[views.remappedIndex[view + 1]] = removeEmpty(rowPartitions.rowPartitionAssignments[view]);
             }
         }
 
@@ -408,6 +406,7 @@ function visCrossCat(spec) {
 window.onload = function () {
     "use strict";
 
+    d3.json("data/json_indices", function (indices_data) {
     d3.json("data/T.json", function (data) {
         var i,
             ids,
@@ -417,14 +416,27 @@ window.onload = function () {
             timerId,
             vis;
 
-    d3.json("data/json_indices", function(prefix_data) {
-	ids = prefix_data["ids"];
-
         function updater() {
             var time = d3.select("#time").node();
             time.selectedIndex = (time.selectedIndex + 1) % ids.length;
             vis.update(ids[time.selectedIndex]);
         }
+
+	ids = indices_data["ids"]
+        // ids = [
+        //     "73524567995_00",
+        //     "73524568270_01",
+        //     "73524568278_02",
+        //     "73524568287_03",
+        //     "73524568298_04",
+        //     "73524568305_05",
+        //     "73524568313_06",
+        //     "73524568322_07",
+        //     "73524568328_08",
+        //     "73524568338_09",
+        //     "73524568345_10",
+        //     "73524568352_11"
+        // ];
 
         playing = true;
 
