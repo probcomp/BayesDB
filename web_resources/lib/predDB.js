@@ -355,12 +355,18 @@ function parsePredictCommand(commandString){
     var returnDict = new Object() 
     command_split = commandString.split(' ');
     missing_from = !in_list("FROM", command_split)
-    missing_where = !in_list("WHERE", command_split)
     missing_times = !in_list("TIMES", command_split)
-    if ( missing_where || missing_from || missing_times) {
+    if (missing_from || missing_times) {
     	return window.syntax_error_value
     }
     // FIXME: is WHERE optional?
+    whereclause = window.sentinel_value
+    if (in_list("WHERE", command_split)){
+	start_idx = get_idx_after("WHERE", command_split)
+	end_idx = get_idx_of("WITH", command_split)
+	whereClause = command_split.slice(start_idx, end_idx)
+	var whereclause = whereClause.join().replace( /,/g, " " )
+    }
 
     start_idx = get_idx_after("PREDICT", command_split)
     end_idx = get_idx_of("FROM", command_split)

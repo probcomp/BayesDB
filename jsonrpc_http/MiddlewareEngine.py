@@ -354,10 +354,13 @@ class MiddlewareEngine(object):
 
     # FIXME: the purpose of the whereclause is to specify 'given'
     #        p(missing_value | X_L, X_D, whereclause)
-    varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
-    Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
-    # map values to codes
-    Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
+    if whereclause=="" or '=' not in whereclause:
+      Y = None
+    else:
+      varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
+      Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
+      # map values to codes
+      Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
 
     args_dict = dict()
     args_dict['M_c'] = M_c
@@ -381,7 +384,7 @@ class MiddlewareEngine(object):
         if counter >= limit:
           break
     #ret = du.map_from_T_with_M_c(ret, M_c)
-    ret = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in Y] 
+    ret = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in ret] 
     return ret
 
 
@@ -422,12 +425,13 @@ class MiddlewareEngine(object):
     col_indices = [name_to_idx[colname] for colname in colnames]
     Q = [(numrows+1, col_idx) for col_idx in col_indices]
     # parse whereclause
-    varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
-    Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
-    # map values to codes
-    Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
-    print 'Q',Q
-    print 'Y',Y
+    if whereclause=="" or '=' not in whereclause:
+      Y = None
+    else:
+      varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
+      Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
+      # map values to codes
+      Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
 
     args_dict = dict()
     args_dict['M_c'] = M_c
