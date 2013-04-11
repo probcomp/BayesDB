@@ -363,12 +363,11 @@ function parsePredictCommand(commandString){
     //        then it makes sense for the number to come after
     start_idx = get_idx_after("WHERE", command_split)
     end_idx = get_idx_of("TIMES", command_split)
-    whereclause = command_split.slice(start_idx, end_idx).join('')
+    whereclause = command_split.slice(start_idx, end_idx).join(' ')
     //
     times = parseInt(get_el_after("TIMES", command_split))
     // FIXME: take as an argument
     newtablename = tablename + '_predict'
-
     returnDict["columnstring"] = columnsstring
     returnDict["newtablename"] = newtablename
     returnDict["tablename"] = tablename
@@ -718,11 +717,6 @@ jQuery(function($, undefined) {
 		    tablename = dict_to_send["tablename"]
 		    newtablename = dict_to_send["newtablename"]
 		    whereclause = dict_to_send["whereclause"]
-		    if (whereclause != window.sentinel_value) {
-			term.echo("We do not support WHERE clauses"
-				  + "at this point.");
-			break
-		    }
 		    success_str = ("INFERENCE DONE WITH CONFIDENCE: "
 				   + confidence )
 		    callback_func = function(returnedData) {

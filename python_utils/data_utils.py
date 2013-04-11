@@ -213,6 +213,18 @@ def continuous_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=Non
         M_c = gen_M_c_from_T_with_colnames(T, [col for col, flag in zip(header, colmask) if flag])
     return T, M_r, M_c, header
 
+def convert_code_to_value(M_c, cidx, code):
+    if M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
+        return round(code,1)
+    else:
+        return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))] 
+
+def convert_value_to_code(M_c, cidx, value):
+    if M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
+        return float(value)
+    else:
+        return M_c['column_metadata'][cidx]['code_to_value'][value] 
+
 def map_from_T_with_M_c(coordinate_value_tuples, M_c):
     coordinate_code_tuples = []
     column_metadata = M_c['column_metadata']

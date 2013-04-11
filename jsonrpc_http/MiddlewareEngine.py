@@ -354,9 +354,10 @@ class MiddlewareEngine(object):
 
     # FIXME: the purpose of the whereclause is to specify 'given'
     #        p(missing_value | X_L, X_D, whereclause)
-    # FIXME: actually parse whereclause
-    Y = []
-    # Y = [(row, name_to_idx[colname], colval) for row in range(numrows) for colname, colval in whereclause.iteritems()]
+    varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
+    Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
+    # map values to codes
+    Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
 
     args_dict = dict()
     args_dict['M_c'] = M_c
@@ -379,14 +380,10 @@ class MiddlewareEngine(object):
         counter += 1
         if counter >= limit:
           break
-    ret = du.map_from_T_with_M_c(ret, M_c)
+    #ret = du.map_from_T_with_M_c(ret, M_c)
+    ret = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in Y] 
     return ret
 
-    csv = ""
-    #cellnumbers: list of row/col pairs [[r,c], [r,c], ...]
-    cellnumbers = json.dumps([[0,0]])
-    # return in the format of y
-    return csv, cellnumbers 
 
   def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
@@ -414,7 +411,7 @@ class MiddlewareEngine(object):
         X_D_list.append(json.loads(X_D_prime_json))
       conn.commit()
     except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
+      print('Database Error: %s' % e)
       return e
     finally:
       if conn:
@@ -424,9 +421,11 @@ class MiddlewareEngine(object):
     colnames = [colname.strip() for colname in columnstring.split(',')]
     col_indices = [name_to_idx[colname] for colname in colnames]
     Q = [(numrows+1, col_idx) for col_idx in col_indices]
-    # FIXME: actually parse whereclause
-    Y = []
-    # Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in whereclause.iteritems()]
+    # parse whereclause
+    varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
+    Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
+    # map values to codes
+    Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
     print 'Q',Q
     print 'Y',Y
 
@@ -438,9 +437,10 @@ class MiddlewareEngine(object):
     args_dict['Q'] = Q
     args_dict['n'] = numpredictions
     out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
+
+    """
     # convert to coordinate format so it can be mapped to original codes
     # output is [[row1,col1,value1],[row2,col2,value2],...]
-    """
     new_out = []
     new_row_indices = range(numrows, numrows + numpredictions)
     for new_row_idx, row_values in zip(new_row_indices, out):
@@ -452,19 +452,13 @@ class MiddlewareEngine(object):
 
     # convert to data, columns dict output format
     columns = colnames
-    data = numpy.array(out, dtype=float).reshape((numpredictions, len(colnames)))
+    # map codes to original values
+    data = [[du.convert_code_to_value(M_c, cidx, code) for cidx,code in zip(col_indices,vals)] for vals in out]
+    #data = numpy.array(out, dtype=float).reshape((numpredictions, len(colnames)))
     # FIXME: REMOVE WHEN DONE DEMO
-    data = numpy.round(data, 1)
-    print 'data: %s' % data
+    #data = numpy.round(data, 1)
     ret = {'columns': columns, 'data': data}
     return ret
-
-    # convert to csv output format
-    # csv = ', '.join(colnames) + '\n'
-    # print 'out: %s' % str(out)
-    # for row in out:
-    #   csv += ', '.join(map(str, row)) + '\n'
-    # return csv
 
   def get_latent_states(self, tablename):
     """Return x_l_list and x_d_list"""
