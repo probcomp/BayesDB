@@ -15,6 +15,7 @@ class path():
                                         'run_simplehttpserver.sh')
     postgres_setup_script = 'postgres_setup.sh'
     web_resources_dir = os.path.join(remote_code_dir, 'web_resources')
+    web_resources_data_dir = os.path.join(remote_code_dir, 'web_resources', 'data')
     try:
         os.makedirs(web_resources_dir)
     except Exception, e:

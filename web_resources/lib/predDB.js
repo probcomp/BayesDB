@@ -15,6 +15,12 @@ function was_successful_call(returnedData) {
     return 'result' in returnedData
 }
 
+function handle_error(error, term) {
+    error_str = "error message: " + error['message']
+    term.echo(error_str)
+    console.log(error)
+}
+
 function parse_infer_result(infer_return) {
     ret_str = ""
     for(var i=0; i<infer_return.length; i++) {
@@ -284,7 +290,7 @@ function typeDictToTable(typeDict){
 
 function parseInferCommand(commandString){
     // INFER col0, [col1,...] [INTO into_table] FROM [from_table]
-    // WHERE whereclause WITH CONFIDENCE confidence_level [LIMIT limit]
+    // WHERE whereclause WITH CONFIDENCE confidence_level [LIMIT limit] [NUMSAMPLES numsamples]
     var returnDict = new Object() 
     command_split = commandString.split(' ');
     missing_from = !in_list("FROM", command_split)
@@ -298,6 +304,7 @@ function parseInferCommand(commandString){
     newtablename = window.sentinel_value
     whereclause = window.sentinel_value
     limit = 100
+    numsamples = 100
 
     // get columns
     start_idx = get_idx_after("INFER", command_split)
@@ -326,6 +333,10 @@ function parseInferCommand(commandString){
     if (in_list("LIMIT", command_split)){
     	limit = get_el_after("LIMIT", command_split) 
     }
+    //
+    if (in_list("NUMSAMPLES", command_split)){
+    	numsamples = get_el_after("NUMSAMPLES", command_split) 
+    }
 
     returnDict["tablename"] = tableName
     returnDict["columnstring"] = columnsString
@@ -333,8 +344,7 @@ function parseInferCommand(commandString){
     returnDict["confidence"] = parseFloat(confidence)
     returnDict["whereclause"] =  whereclause
     returnDict["limit"] = parseInt(limit)
-    // FIXME: take this as an argument
-    returnDict['numsamples'] = 100
+    returnDict['numsamples'] = parseInt(numsamples)
     
     console.log(returnDict)
     return returnDict
@@ -409,6 +419,11 @@ function LoadToDatabaseTheCSVData(fileName, highlight_maybe_set) {
     }
 }
 
+function write_json_for_table(tablename) {
+    empty_callback = function(returnedData) {}
+    JSONRPC_send_method("write_json_for_table", {"tablename":tablename}, empty_callback)
+}
+
 $(document).ready(function() {	 
     window.commandHistory = [];
     window.scrollChange = false
@@ -471,6 +486,7 @@ jQuery(function($, undefined) {
 				term.echo("STARTED DATABASE FROM SCRATCH")
 			    } else {
 				term.echo("FAILED TO START FROM SCRATCH")
+				handle_error(returnedData['error'], term)
 			    }
 			}
 			JSONRPC_send_method("start_from_scratch", {}, callback_func)
@@ -482,17 +498,28 @@ jQuery(function($, undefined) {
 			
 		}
 		case "DUMP": {
-		    filename = 'postgres_dump.gz'
+		    filename = command_split[1]
+		    if(typeof(filename)=='undefined') {
+	    		term.echo(window.wrong_command_format_str);
+			term.echo("Did you mean 'DUMP <FILENAME>'?")
+			break
+		    }
 		    linkname = window.web_resource_base + filename
 		    success_str = ("DUMPED DATABASE: " + linkname)
+		    fail_str = ("FAILED TO DUMP DATABASE")
 		    dict_to_send = {
 			"filename":filename
 		    }
-		    JSONRPC_send_method("dump_db", dict_to_send,
-					function(returnedData) {
-					    console.log(returnedData)
-					    term.echo(success_str)
-					}) 
+		    callback_func = function(returnedData) {
+			console.log(returnedData)
+			if(was_successful_call(returnedData)) {
+			    term.echo(success_str)
+			} else {
+			    term.echo(fail_str)
+			    handle_error(returnedData['error'], term)
+			}
+		    }
+		    JSONRPC_send_method("dump_db", dict_to_send, callback_func)
 		    break
 		}
 		case "DROPANDLOAD": {
@@ -502,12 +529,12 @@ jQuery(function($, undefined) {
 				   + filename)
 		    fail_str = ('FAILED TO DROP DB AND LOAD')
 		    callback_func = function(returnedData) {
+			console.log(returnedData)
 			if(was_successful_call(returnedData)) {
-			    console.log(returnedData)
 			    term.echo(success_str)
 			} else {
-			    console.log(returnedData)
 			    term.echo(fail_str)
+			    handle_error(returnedData['error'], term)
 			}
 		    }
 		    JSONRPC_send_method("drop_and_load_db", dict_to_send,
@@ -537,6 +564,7 @@ jQuery(function($, undefined) {
 				term.echo(success_str)
 			    } else {
 				term.echo(fail_str)
+				handle_error(returnedData['error'], term)
 			    }
 			}
 			JSONRPC_send_method("gen_feature_z", dict_to_send,
@@ -570,11 +598,17 @@ jQuery(function($, undefined) {
 				"tablename": tablename,
 			    }
 			    success_str = ("CREATED PTABLE " + tablename)
-			    JSONRPC_send_method("upload_data_table", dict_to_send,
-						function(returnedData) {
-						    console.log(returnedData)
-						    term.echo(success_str)
-						}) 
+			    fail_str = ("FAILED TO CREATE PTABLE " + tablename)
+			    callback_func = function(returnedData) {
+				console.log(returnedData)
+				if(was_successful_call(returnedData)) {
+				    term.echo(success_str)
+				} else {
+				    term.echo(fail_str)
+				    handle_error(returnedData['error'], term)
+				}
+			    }
+			    JSONRPC_send_method("upload_data_table", dict_to_send, callback_func)
 			    //in case the table name is different than the file name
 			    if (tempString["fileName"] != tempString["tableName"]){
 			    	var temp = preloadedDataFiles[tempString["fileName"]]
@@ -607,14 +641,19 @@ jQuery(function($, undefined) {
 			    success_str = ("CREATED MODEL FOR " + tablename
 					   + " WITH " + n_chains
 					   + " EXPLANATIONS")
-			    
+			    fail_str = "FAILED TO CREATE MODEL FOR " + tablename
+			    callback_func = function(returnedData) {
+				console.log(returnedData)
+				if(was_successful_call(returnedData)) {
+				    term.echo(success_str)
+				} else {
+				    term.echo(fail_str)
+				    handle_error(returnedData['error'], term)
+				}
+			    }
 			    //TODO: change the dropdown menu to the table for
 			    //      which we have created the model
-			    JSONRPC_send_method("create_model", dict_to_send,
-						function(returnedData) {
-						    term.echo(success_str);
-						    console.log(returnedData)
-						}) 
+			    JSONRPC_send_method("create_model", dict_to_send, callback_func)
 			}
 	    		else {
 	    		    term.echo(window.wrong_command_format_str);
@@ -711,33 +750,33 @@ jQuery(function($, undefined) {
 		    if (dict_to_send == window.syntax_error_value) {
 			term.echo(window.wrong_command_format_str);
 			term.echo("Did you mean 'INFER col0, [col1, ...] FROM <PTABLE> [WHERE <WHERECLAUSE>] ...")
-			term.echo("\t\t\t  WITH CONFIDENCE <CONFIDENCE> [LIMIT limit]'?")
+			term.echo("\t\t\t  WITH CONFIDENCE <CONFIDENCE> [LIMIT limit] [NUMSAMPLES numsamples]'?")
 			break
 		    } 
 		    tablename = dict_to_send["tablename"]
 		    newtablename = dict_to_send["newtablename"]
 		    whereclause = dict_to_send["whereclause"]
-		    success_str = ("INFERENCE DONE WITH CONFIDENCE: "
-				   + confidence )
+
+		    success_str = ("INFERENCE DONE WITH CONFIDENCE: " + confidence
+				  + " LIMIT " + dict_to_send['limit']
+				  + " NUMSAMPLES " + dict_to_send['numsamples'])
+		    fail_str = 'INFERENCE COMMAND FAILED'
+
 		    callback_func = function(returnedData) {
-			if('result' in returnedData) {
+			console.log(returnedData)
+			if(was_successful_call(returnedData)) {
 			    if(!newtablename){
 		    		newtablename = tablename + '_inferred'
 			    }
-			    console.log(returnedData)
 			    term.echo(success_str)
 			    infer_result = returnedData['result']
 			    parsed_infer_result = parse_infer_result(infer_result)
-			    term.echo(parsed_infer_result)
 			    preloadedDataFiles[newtablename] = returnedData
 			    set_menu_option(newtablename)
 			    LoadToDatabaseTheCSVData(tablename, infer_result)
 			} else {
-			    error = returnedData['error']
-			    error_str = "error message: " + error['message']
-			    term.echo('INFERENCE COMMAND FAILED')
-			    term.echo(error_str)
-			    console.log(returnedData['error'])
+			    term.echo(fail_str)
+			    handle_error(returnedData['error'], term)
 			}
 		    }
 		    JSONRPC_send_method("infer", dict_to_send, callback_func)
@@ -748,6 +787,12 @@ jQuery(function($, undefined) {
 		case "PREDICT": {
 		    echo_if_debug("PREDICT", term)
 		    dict_to_send = parsePredictCommand(command)
+		    if(dict_to_send==window.syntax_error_value) {
+			term.echo(window.wrong_command_format_str);
+			term.echo("Did you mean 'PREDICT col0, [col1, ...] FROM <PTABLE>"
+				  + " WHERE <WHERECLAUSE> TIMES times")
+			break
+		    }
 		    tablename = dict_to_send['tablename']
 		    times = dict_to_send['times']
 		    success_str = ("PREDICTION DONE " + times 
@@ -762,11 +807,8 @@ jQuery(function($, undefined) {
 			    columns = convert_column_str_list(columns)
 			    load_to_datatable(data, columns)
 			} else {
-			    error = returnedData['error']
-			    error_str = "error message: " + error['message']
 			    term.echo('PREDICT COMMAND FAILED')
-			    term.echo(error_str)
-			    console.log(returnedData['error'])
+			    handle_error(returnedData['error'], term)
 			}
 		    }
 		    JSONRPC_send_method("predict", dict_to_send, callback_func)
