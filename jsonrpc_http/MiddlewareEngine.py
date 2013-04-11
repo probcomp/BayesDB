@@ -466,23 +466,61 @@ class MiddlewareEngine(object):
     #   csv += ', '.join(map(str, row)) + '\n'
     # return csv
 
-  def get_metadata(self, tablename):
-    """Return M_c and M_r"""
+  def write_json_for_table(self, tablename):
+    M_c, M_r, t_dict = self.get_metadata_and_table(tablename)
+    X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
+    self.jsonify_and_dump(M_c, 'M_c.json')
+    self.jsonify_and_dump(M_r, 'M_r.json')
+    self.jsonify_and_dump(t_dict, 'T.json')
+    for idx, X_L_i in enumerate(X_L_list):
+      filename = 'X_L_%s.json' % idx
+      self.jsonify_and_dump(X_L_i, filename)
+    for idx, X_D_i in enumerate(X_D_list):
+      filename = 'X_D_%s.json' % idx
+      self.jsonify_and_dump({"row_partition_assignments": X_D_i}, filename)
+    json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
+    self.jsonify_and_dump(json_inidces_dict, "json_indices")
+
+  def jsonify_and_dump(self, to_dump, filename):
+    dir=S.path.web_resources_data_dir
+    full_filename = os.path.join(dir, filename)
+    print full_filename
+    try:
+      with open(full_filename, 'w') as fh:
+        json_str = json.dumps(to_dump)
+        json_str = json_str.replace("NaN", '""')
+        fh.write(json_str)
+    except Exception, e:
+      print e
+    return 0
+
+  def get_metadata_and_table(self, tablename):
+    """Return M_c and M_r and T"""
     try:
       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
       cur = conn.cursor()
-      cur.execute("SELECT m_c, m_r FROM preddb.table_index WHERE tablename='%s';" % tablename)
-      M_c_json, M_r_json = cur.fetchone()
+      cur.execute("SELECT m_c, m_r, t FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      M_c_json, M_r_json, t_json = cur.fetchone()
       conn.commit()
       M_c = json.loads(M_c_json)
       M_r = json.loads(M_r_json)
+      t = json.loads(t_json)
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
       return e
     finally:
       if conn:
         conn.close()
-    return M_c, M_r
+    # map T to json object
+    table = []
+    for row_idx, row in enumerate(t):
+      for col_idx, value in enumerate(row):
+        row_name = M_r['idx_to_name'][str(row_idx)]
+        col_name = M_c['idx_to_name'][str(col_idx)]
+        element = dict(i=row_idx, j=col_idx, value=value, row=row_name, col=col_name)
+        table.append(element)
+    t_dict = dict(table=table)
+    return M_c, M_r, t_dict
 
   def get_latent_states(self, tablename):
     """Return x_l_list and x_d_list"""
