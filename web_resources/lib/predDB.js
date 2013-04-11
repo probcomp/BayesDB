@@ -763,25 +763,23 @@ jQuery(function($, undefined) {
 		    }
 		    success_str = ("INFERENCE DONE WITH CONFIDENCE: "
 				   + confidence )
+		    fail_str = 'INFERENCE COMMAND FAILED'
+
 		    callback_func = function(returnedData) {
-			if('result' in returnedData) {
+			console.log(returnedData)
+			if(was_successful_call(returnedData)) {
 			    if(!newtablename){
 		    		newtablename = tablename + '_inferred'
 			    }
-			    console.log(returnedData)
 			    term.echo(success_str)
 			    infer_result = returnedData['result']
 			    parsed_infer_result = parse_infer_result(infer_result)
-			    term.echo(parsed_infer_result)
 			    preloadedDataFiles[newtablename] = returnedData
 			    set_menu_option(newtablename)
 			    LoadToDatabaseTheCSVData(tablename, infer_result)
 			} else {
-			    error = returnedData['error']
-			    error_str = "error message: " + error['message']
-			    term.echo('INFERENCE COMMAND FAILED')
-			    term.echo(error_str)
-			    console.log(returnedData['error'])
+			    term.echo(fail_str)
+			    handle_error(returnedData['error'], term)
 			}
 		    }
 		    JSONRPC_send_method("infer", dict_to_send, callback_func)
