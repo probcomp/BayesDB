@@ -479,7 +479,7 @@ class MiddlewareEngine(object):
       filename = 'X_D_%s.json' % idx
       self.jsonify_and_dump({"row_partition_assignments": X_D_i}, filename)
     json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
-    self.jsonify_and_dump(json_inidces_dict, "json_indices")
+    self.jsonify_and_dump(json_indices_dict, "json_indices")
 
   def jsonify_and_dump(self, to_dump, filename):
     dir=S.path.web_resources_data_dir

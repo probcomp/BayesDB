@@ -98,6 +98,7 @@ function visCrossCat(spec) {
     }
 
     function cellOpacity(d) {
+	//var opacity = 0.5 + d / 8.
         var opacity = 1;
         if (d.value === 0) {
             opacity = 0.5;
@@ -287,25 +288,26 @@ function visCrossCat(spec) {
         }
 
         rows = [];
-        for (rowName in rowOrder.labelToIndex) {
-            if (rowOrder.labelToIndex.hasOwnProperty(rowName)) {
-                rows[rowOrder.labelToIndex[rowName] - 1] = rowName.toLowerCase();
+        for (rowName in rowOrder.name_to_idx) {
+            if (rowOrder.name_to_idx.hasOwnProperty(rowName)) {
+                rows[rowOrder.name_to_idx[rowName] - 1] = rowName.toLowerCase();
             }
         }
 
         columns = [];
-        for (columnName in columnOrder.labelToIndex) {
-            if (columnOrder.labelToIndex.hasOwnProperty(columnName)) {
-                columns[columnOrder.labelToIndex[columnName] - 1] = columnName.replace(/_/g, " ");
+        for (columnName in columnOrder.name_to_idx) {
+            if (columnOrder.name_to_idx.hasOwnProperty(columnName)) {
+                columns[columnOrder.name_to_idx[columnName] - 1] = columnName.replace(/_/g, " ");
             }
         }
 
         // Reindex all indices to be zero-based and eliminate empty views/partitions.
-        views = removeEmpty(columnPartitions.columnPartitionAssignments);
+        // views = removeEmpty(columnPartitions.columnPartitionAssignments);
+	views = removeEmpty(columnPartitions.column_partition.assignments);
         partitions = [];
-        for (view = 0; view < rowPartitions.rowPartitionAssignments.length; view = view + 1) {
-            if (views.remappedIndex[view + 1] !== undefined) {
-                partitions[views.remappedIndex[view + 1]] = removeEmpty(rowPartitions.rowPartitionAssignments[view]);
+        for (view = 0; view < rowPartitions.row_partition_assignments.length; view = view + 1) {
+            if (views.remappedIndex[view] !== undefined) {
+                partitions[views.remappedIndex[view]] = removeEmpty(rowPartitions.row_partition_assignments[view]);
             }
         }
 
@@ -354,10 +356,10 @@ function visCrossCat(spec) {
     that = {};
 
     that.update = function (id) {
-        d3.json("data/Cc.json", function (columnOrder) {
-            d3.json("data/Cr.json", function (rowOrder) {
-                d3.json("data/XL_" + id + ".json", function (columnPartitions) {
-                    d3.json("data/XD_" + id + ".json", function (rowPartitions) {
+        d3.json("data/M_c.json", function (columnOrder) {
+            d3.json("data/M_r.json", function (rowOrder) {
+                d3.json("data/X_L_" + id + ".json", function (columnPartitions) {
+                    d3.json("data/X_D_" + id + ".json", function (rowPartitions) {
                         updateData(columnOrder, rowOrder, columnPartitions, rowPartitions);
                     });
                 });
@@ -406,7 +408,7 @@ function visCrossCat(spec) {
 window.onload = function () {
     "use strict";
 
-    d3.json("data/animals_data.json", function (data) {
+    d3.json("data/T.json", function (data) {
         var i,
             ids,
             j,
@@ -415,7 +417,7 @@ window.onload = function () {
             timerId,
             vis;
 
-    d3.json("data/json_prefixes", function(prefix_data) {
+    d3.json("data/json_indices", function(prefix_data) {
 	ids = prefix_data["ids"];
 
         function updater() {
