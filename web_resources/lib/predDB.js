@@ -585,6 +585,8 @@ jQuery(function($, undefined) {
 		    } else {
 	    		term.echo(window.wrong_command_format_str);
 			term.echo("Did you mean 'SHOW COLUMN DEPENDENCIES FOR <PTABLE>?'")
+			term.echo("or")
+			term.echo("             'SHOW KITWARE FOR <PTABLE>?'")
 			break
 		    }
 		}
