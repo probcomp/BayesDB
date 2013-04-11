@@ -474,7 +474,7 @@ class MiddlewareEngine(object):
 
     for name in M_r['name_to_idx']:
       M_r['name_to_idx'][name] += 1
-      M_r['name_to_idx'][name]  = str(M_r['name_to_idx'][name])
+      M_r['name_to_idx'][name]  = M_r['name_to_idx'][name]
     M_r = dict(labelToIndex=M_r['name_to_idx'])
 
     self.jsonify_and_dump(M_c, 'M_c.json')
