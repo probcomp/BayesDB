@@ -466,6 +466,24 @@ class MiddlewareEngine(object):
     #   csv += ', '.join(map(str, row)) + '\n'
     # return csv
 
+  def get_metadata(self, tablename):
+    """Return M_c and M_r"""
+    try:
+      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      cur = conn.cursor()
+      cur.execute("SELECT m_c, m_r FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      M_c_json, M_r_json = cur.fetchone()
+      conn.commit()
+      M_c = json.loads(M_c_json)
+      M_r = json.loads(M_r_json)
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()
+    return M_c, M_r
+
   def get_latent_states(self, tablename):
     """Return x_l_list and x_d_list"""
     try:
