@@ -355,12 +355,18 @@ function parsePredictCommand(commandString){
     var returnDict = new Object() 
     command_split = commandString.split(' ');
     missing_from = !in_list("FROM", command_split)
-    missing_where = !in_list("WHERE", command_split)
     missing_times = !in_list("TIMES", command_split)
-    if ( missing_where || missing_from || missing_times) {
+    if (missing_from || missing_times) {
     	return window.syntax_error_value
     }
     // FIXME: is WHERE optional?
+    whereclause = window.sentinel_value
+    if (in_list("WHERE", command_split)){
+	start_idx = get_idx_after("WHERE", command_split)
+	end_idx = get_idx_of("WITH", command_split)
+	whereClause = command_split.slice(start_idx, end_idx)
+	var whereclause = whereClause.join().replace( /,/g, " " )
+    }
 
     start_idx = get_idx_after("PREDICT", command_split)
     end_idx = get_idx_of("FROM", command_split)
@@ -373,12 +379,11 @@ function parsePredictCommand(commandString){
     //        then it makes sense for the number to come after
     start_idx = get_idx_after("WHERE", command_split)
     end_idx = get_idx_of("TIMES", command_split)
-    whereclause = command_split.slice(start_idx, end_idx).join('')
+    whereclause = command_split.slice(start_idx, end_idx).join(' ')
     //
     times = parseInt(get_el_after("TIMES", command_split))
     // FIXME: take as an argument
     newtablename = tablename + '_predict'
-
     returnDict["columnstring"] = columnsstring
     returnDict["newtablename"] = newtablename
     returnDict["tablename"] = tablename
@@ -757,11 +762,7 @@ jQuery(function($, undefined) {
 		    tablename = dict_to_send["tablename"]
 		    newtablename = dict_to_send["newtablename"]
 		    whereclause = dict_to_send["whereclause"]
-		    if (whereclause != window.sentinel_value) {
-			term.echo("We do not support WHERE clauses"
-				  + "at this point.");
-			break
-		    }
+
 		    success_str = ("INFERENCE DONE WITH CONFIDENCE: " + confidence
 				  + " LIMIT " + dict_to_send['limit']
 				  + " NUMSAMPLES " + dict_to_send['numsamples'])

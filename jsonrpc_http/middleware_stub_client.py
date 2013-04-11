@@ -18,14 +18,15 @@ def run_test(hostname='localhost', middleware_port=8008):
   URI = 'http://' + hostname + ':%d' % middleware_port
   cur_dir = os.path.dirname(os.path.abspath(__file__))  
   #test_tablenames = ['dhatest', 'dha_small', 'dha_small_cont']
-  test_tablenames = ['dha_small']
+  test_tablenames = ['dha_small', 'anneal_small']
   
   for tablename in test_tablenames:
     table_csv = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'r').read()
     run_test_with(tablename, table_csv, URI)
 
-
 def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
+  au.call('start_from_scratch', {}, URI)
+
   # drop tablename
   au.call('drop_tablename', {'tablename': tablename}, URI)
 
@@ -42,18 +43,19 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   out, id = au.call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s'" % tablename}, URI)
   time.sleep(1)
 
-  # test runsql
-  method_name = 'runsql'
-  args_dict = dict()
-  args_dict['sql_command'] = 'CREATE TABLE IF NOT EXISTS bob(id INT PRIMARY KEY, num INT);'
-  out, id = au.call(method_name, args_dict, URI)
-  assert out==0
-  au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
-  args_dict['sql_command'] = 'SELECT * FROM preddb_data.dha_small;'
-  out, id = au.call(method_name, args_dict, URI)
-  assert out['columns'] == [u'N_DEATH_ILL', u'TTL_MDCR_SPND', u'MDCR_SPND_INP', u'MDCR_SPND_OUTP', u'MDCR_SPND_LTC']
-  assert type(out['data']) == list
-  time.sleep(1)
+  if 'dha' in tablename:
+    # test runsql
+    method_name = 'runsql'
+    args_dict = dict()
+    args_dict['sql_command'] = 'CREATE TABLE IF NOT EXISTS bob(id INT PRIMARY KEY, num INT);'
+    out, id = au.call(method_name, args_dict, URI)
+    assert out==0
+    au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
+    args_dict['sql_command'] = 'SELECT * FROM preddb_data.dha_small;'
+    out, id = au.call(method_name, args_dict, URI)
+    assert out['columns'] == [u'n_death_ill', u'ttl_mdcr_spnd', u'mdcr_spnd_inp', u'mdcr_spnd_outp', u'mdcr_spnd_ltc']
+    assert type(out['data']) == list
+    time.sleep(1)
 
   # test createmodel
   method_name = 'create_model'
@@ -100,61 +102,86 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   out, id = au.call('gen_feature_z', args_dict=dict(tablename=tablename), URI=URI)
   #import pdb; pdb.set_trace()
 
-  # test select
-  """
-  method_name = 'select'
-  args_dict = dict()
-  args_dict['querystring'] = 'SELECT * FROM preddb_data.%s;' % tablename
-  out, id = au.call(method_name, args_dict, URI)
-  csv_results = out
-  # TODO
-  # Test that correct things were selected
-  #assert(csv_results == table_csv)
-  time.sleep(1)
-  """
+  if 'anneal' in tablename:
+    # TODO: test infer
+    method_name = 'infer'
+    args_dict = dict()
+    args_dict['tablename'] = tablename
+    args_dict['columnstring'] = "temper_rolling, condition"
+    args_dict['newtablename'] = "anneal_predict"
+    args_dict['whereclause'] = "steel=A"
+    args_dict['confidence'] = 0
+    args_dict['limit'] = 8
+    args_dict['numsamples'] = 10 # should do 10 or 100
+    print 'running infer'
+    out = middleware_engine.infer(tablename, 'temper_rolling, condition', 'anneal_predict', 0, 'steel=A AND product_type=C', 8, 10)
+  #  out, id = au.call(method_name, args_dict, URI)
+    print 'infer out:', out
+    # TODO
+    # Test that missing values are filled in
+    time.sleep(1)
 
-  # TODO: test infer
-  method_name = 'infer'
-  args_dict = dict()
-  args_dict['tablename'] = tablename
-  args_dict['columnstring'] = "N_DEATH_ILL, MDCR_SPND_INP"
-  args_dict['newtablename'] = ""
-  args_dict['whereclause'] = {'MDCR_SPND_LTC':6331}
-  args_dict['confidence'] = 0
-  args_dict['limit'] = 8
-  args_dict['numsamples'] = 10 # should do 10 or 100
-  print 'running infer'
-#  out = middleware_engine.infer(tablename, "N_DEATH_ILL, MDCR_SPND_INP", "", 0, {'MDCR_SPND_LTC':6331}, 8, 10)
-  out, id = au.call(method_name, args_dict, URI)
-#  print 'infer out:', out
-  # TODO
-  # Test that missing values are filled in
-  time.sleep(1)
+    # TODO: test predict
+    method_name = 'predict'
+    args_dict = dict()
+    args_dict['tablename'] = tablename
+    args_dict['columnstring'] = "temper_rolling, condition"
+    args_dict['newtablename'] = "anneal_predict"
+    args_dict['whereclause'] = "steel=A AND product_type=C"
+    args_dict['numpredictions'] = 10
+    print 'running predict'
+    out = middleware_engine.predict(tablename, 'temper_rolling, condition', 'anneal_predict', 'steel=A AND product_type=C', 10)
+    #out, id = au.call(method_name, args_dict, URI)
+    print 'predict out:\n',out
+    assert out['columns'] == [u'temper_rolling', u'condition']
+    assert len(out['data']) == 10
+    assert len(out['data'][0]) == len(out['columns'])    
+    time.sleep(1)
 
-  # TODO: test predict
-  method_name = 'predict'
-  args_dict = dict()
-  args_dict['tablename'] = tablename
-  args_dict['columnstring'] = "N_DEATH_ILL, MDCR_SPND_INP"
-  args_dict['newtablename'] = ""
-  args_dict['whereclause'] = {'MDCR_SPND_LTC':6331}
-  args_dict['numpredictions'] = 10
-  print 'running predict'
-  out, id = au.call(method_name, args_dict, URI)
-  assert out['columns'] == [u'N_DEATH_ILL', u'MDCR_SPND_INP']
-  assert len(out['data']) == 10
-  assert len(out['data'][0]) == len(out['columns'])
-# old code for csv parsing
-#  csv_results = out
-#  rows = csv_results.split('\n')
-#  row = rows[1].split(',')
-#  assert len(rows) == args_dict['numpredictions']+1
-#  assert len(row) == len(args_dict['columnstring'])
-  # FAILS assert rows[0][:-2] == args_dict['columnstring']
-  # TODO
-  # Test that prediction worked properly
-  
-  time.sleep(1)
+  if 'dha' in tablename:
+    # TODO: test infer
+    method_name = 'infer'
+    args_dict = dict()
+    args_dict['tablename'] = tablename
+    args_dict['columnstring'] = "N_DEATH_ILL, MDCR_SPND_INP"
+    args_dict['newtablename'] = ""
+    args_dict['whereclause'] = 'MDCR_SPND_LTC=6331'
+    args_dict['confidence'] = 0
+    args_dict['limit'] = 8
+    args_dict['numsamples'] = 10 # should do 10 or 100
+    print 'running infer'
+    out = middleware_engine.infer(tablename, "N_DEATH_ILL, MDCR_SPND_INP", "", 0, 'MDCR_SPND_LTC=6331', 8, 10)
+  #  out, id = au.call(method_name, args_dict, URI)
+  #  print 'infer out:', out
+    # TODO
+    # Test that missing values are filled in
+    time.sleep(1)
+
+    # TODO: test predict
+    method_name = 'predict'
+    args_dict = dict()
+    args_dict['tablename'] = tablename
+    args_dict['columnstring'] = "N_DEATH_ILL, MDCR_SPND_INP"
+    args_dict['newtablename'] = ""
+    args_dict['whereclause'] = 'MDCR_SPND_LTC=6331'
+    args_dict['numpredictions'] = 10
+    print 'running predict'
+    out, id = au.call(method_name, args_dict, URI)
+    print out
+    assert out['columns'] == [u'N_DEATH_ILL', u'MDCR_SPND_INP']
+    assert len(out['data']) == 10
+    assert len(out['data'][0]) == len(out['columns'])
+  # old code for csv parsing
+  #  csv_results = out
+  #  rows = csv_results.split('\n')
+  #  row = rows[1].split(',')
+  #  assert len(rows) == args_dict['numpredictions']+1
+  #  assert len(row) == len(args_dict['columnstring'])
+    # FAILS assert rows[0][:-2] == args_dict['columnstring']
+    # TODO
+    # Test that prediction worked properly
+
+    time.sleep(1)
 
   # test delete_chain
   method_name = 'delete_chain'
