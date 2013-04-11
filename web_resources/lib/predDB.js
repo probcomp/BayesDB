@@ -140,6 +140,14 @@ function JSONRPC_send_method(method_name, parameters, function_to_call) {
     });			    
 }
 
+function call_and_save(method_name, parameters) {
+    callback_func = function(returnedData) {
+	window.last_function_return = returnedData
+	console.log(returnedData)
+    }
+    JSONRPC_send_method(method_name, parameters, callback_func)
+}
+
 function to_upper_case(str) {
     return str.toUpperCase()
 }
