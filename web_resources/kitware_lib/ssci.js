@@ -406,6 +406,8 @@ function visCrossCat(spec) {
 window.onload = function () {
     "use strict";
 
+    d3.json("data/json_prefixes", function(prefix_data) {
+	ids = prefix_data["ids"];
     d3.json("data/animals_data.json", function (data) {
         var i,
             ids,
@@ -420,21 +422,6 @@ window.onload = function () {
             time.selectedIndex = (time.selectedIndex + 1) % ids.length;
             vis.update(ids[time.selectedIndex]);
         }
-
-        ids = [
-            "73524567995_00",
-            "73524568270_01",
-            "73524568278_02",
-            "73524568287_03",
-            "73524568298_04",
-            "73524568305_05",
-            "73524568313_06",
-            "73524568322_07",
-            "73524568328_08",
-            "73524568338_09",
-            "73524568345_10",
-            "73524568352_11"
-        ];
 
         playing = true;
 
@@ -497,5 +484,6 @@ window.onload = function () {
         if (playing) {
             timerId = setInterval(updater, 4000);
         }
+    });
     });
 };
