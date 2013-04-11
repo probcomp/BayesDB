@@ -498,17 +498,28 @@ jQuery(function($, undefined) {
 			
 		}
 		case "DUMP": {
-		    filename = 'postgres_dump.gz'
+		    filename = command_split[1]
+		    if(typeof(filename)=='undefined') {
+	    		term.echo(window.wrong_command_format_str);
+			term.echo("Did you mean 'DUMP <FILENAME>'?")
+			break
+		    }
 		    linkname = window.web_resource_base + filename
 		    success_str = ("DUMPED DATABASE: " + linkname)
+		    fail_str = ("FAILED TO DUMP DATABASE")
 		    dict_to_send = {
 			"filename":filename
 		    }
-		    JSONRPC_send_method("dump_db", dict_to_send,
-					function(returnedData) {
-					    console.log(returnedData)
-					    term.echo(success_str)
-					}) 
+		    callback_func = function(returnedData) {
+			console.log(returnedData)
+			if(was_successful_call(returnedData)) {
+			    term.echo(success_str)
+			} else {
+			    term.echo(fail_str)
+			    handle_error(returnedData['error'], term)
+			}
+		    }
+		    JSONRPC_send_method("dump_db", dict_to_send, callback_func)
 		    break
 		}
 		case "DROPANDLOAD": {
