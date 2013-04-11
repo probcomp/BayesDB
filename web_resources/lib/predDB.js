@@ -575,11 +575,20 @@ jQuery(function($, undefined) {
 			}
 			JSONRPC_send_method("gen_feature_z", dict_to_send,
 					    callback_func)
+		    } else if(command_split[1].toUpperCase()=='KITWARE'
+			     && command_split[2].toUpperCase()=='FOR') {
+			tablename = command_split[3]
+			write_json_for_table(tablename)
+			term.echo("CREATED DATA FOR KITWARE VIZ")
+			term.echo("http://"+window.default_hostname+":8000/kitware.html")
+			break
 		    } else {
 	    		term.echo(window.wrong_command_format_str);
 			term.echo("Did you mean 'SHOW COLUMN DEPENDENCIES FOR <PTABLE>?'")
+			term.echo("or")
+			term.echo("             'SHOW KITWARE FOR <PTABLE>?'")
+			break
 		    }
-		    break
 		}
 		case "CREATE": 
 		    {
@@ -800,7 +809,7 @@ jQuery(function($, undefined) {
 			break
 		    }
 		    tablename = dict_to_send['tablename']
-		    times = dict_to_send['times']
+		    times = dict_to_send['numpredictions']
 		    success_str = ("PREDICTION DONE " + times 
 				   + " TIMES FOR PTABLE " +  tablename)
 		    callback_func = function(returnedData) {
