@@ -461,7 +461,7 @@ class MiddlewareEngine(object):
     # convert to data, columns dict output format
     columns = colnames
     # map codes to original values
-    self.create_histogram(numpy.array(out), columns, tablename+'_histogram')
+    self.create_histogram(M_c, numpy.array(out), columns, col_indices, tablename+'_histogram')
     data = [[du.convert_code_to_value(M_c, cidx, code) for cidx,code in zip(col_indices,vals)] for vals in out]
     #data = numpy.array(out, dtype=float).reshape((numpredictions, len(colnames)))
     # FIXME: REMOVE WHEN DONE DEMO
@@ -499,17 +499,33 @@ class MiddlewareEngine(object):
     json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
     self.jsonify_and_dump(json_indices_dict, "json_indices")
 
-  def create_histogram(self, data, columns, filename):
+  def create_histogram(self, M_c, data, columns, mc_col_indices, filename):
     dir=S.path.web_resources_data_dir
     full_filename = os.path.join(dir, filename)
     num_rows = data.shape[0]
     num_cols = data.shape[1]
     #
     pylab.figure()
-    for col_idx in range(num_cols):
-      data_i = data[:, col_idx]
-      pylab.subplot(1, num_cols, col_idx, title=columns[col_idx])
-      pylab.hist(data_i, orientation='horizontal')
+    # col_i goes from 0 to number of predicted columns
+    # mc_col_idx is the original column's index in M_c
+    for col_i in range(num_cols):
+      mc_col_idx = mc_col_indices[col_i]
+      data_i = data[:, col_i]
+      ax = pylab.subplot(1, num_cols, col_i, title=columns[col_i])
+      if M_c['column_metadata'][mc_col_idx]['modeltype'] == 'normal_inverse_gamma':
+        pylab.hist(data_i, orientation='horizontal')
+      else:
+        str_data = [du.convert_code_to_value(M_c, mc_col_idx, code) for code in data_i]
+        unique_labels = list(set(str_data))
+        np_str_data = numpy.array(str_data)
+        counts = []
+        for label in unique_labels:
+          counts.append(sum(np_str_data==label))
+        num_vals = len(M_c['column_metadata'][mc_col_idx]['code_to_value'])
+        rects = pylab.barh(range(num_vals), counts)
+        heights = numpy.array([rect.get_height() for rect in rects])
+        ax.set_yticks(numpy.arange(num_vals) + heights/2)
+        ax.set_yticklabels(unique_labels)
     pylab.tight_layout()
     pylab.savefig(full_filename)
 
