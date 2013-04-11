@@ -354,8 +354,8 @@ function visCrossCat(spec) {
     that = {};
 
     that.update = function (id) {
-        d3.json("data/Cc_" + id + ".json", function (columnOrder) {
-            d3.json("data/Cr_" + id + ".json", function (rowOrder) {
+        d3.json("data/Cc.json", function (columnOrder) {
+            d3.json("data/Cr.json", function (rowOrder) {
                 d3.json("data/XL_" + id + ".json", function (columnPartitions) {
                     d3.json("data/XD_" + id + ".json", function (rowPartitions) {
                         updateData(columnOrder, rowOrder, columnPartitions, rowPartitions);
@@ -406,8 +406,6 @@ function visCrossCat(spec) {
 window.onload = function () {
     "use strict";
 
-    d3.json("data/json_prefixes", function(prefix_data) {
-	ids = prefix_data["ids"];
     d3.json("data/animals_data.json", function (data) {
         var i,
             ids,
@@ -416,6 +414,9 @@ window.onload = function () {
             playing,
             timerId,
             vis;
+
+    d3.json("data/json_prefixes", function(prefix_data) {
+	ids = prefix_data["ids"];
 
         function updater() {
             var time = d3.select("#time").node();
