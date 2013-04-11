@@ -510,6 +510,7 @@ class MiddlewareEngine(object):
       data_i = data[:, col_idx]
       pylab.subplot(1, num_cols, col_idx, title=columns[col_idx])
       pylab.hist(data_i, orientation='horizontal')
+    pylab.tight_layout()
     pylab.savefig(full_filename)
 
   def jsonify_and_dump(self, to_dump, filename):
