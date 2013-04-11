@@ -469,15 +469,30 @@ class MiddlewareEngine(object):
   def write_json_for_table(self, tablename):
     M_c, M_r, t_dict = self.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
+
+    for name in M_c['name_to_idx']:
+      M_c['name_to_idx'][name] += 1
+    M_c = dict(labelToIndex=M_c['name_to_idx'])
+
+    for name in M_r['name_to_idx']:
+      M_r['name_to_idx'][name] += 1
+      M_r['name_to_idx'][name]  = str(M_r['name_to_idx'][name])
+    M_r = dict(labelToIndex=M_r['name_to_idx'])
+
     self.jsonify_and_dump(M_c, 'M_c.json')
     self.jsonify_and_dump(M_r, 'M_r.json')
     self.jsonify_and_dump(t_dict, 'T.json')
+
     for idx, X_L_i in enumerate(X_L_list):
       filename = 'X_L_%s.json' % idx
+      X_L_i = (numpy.array(X_L_i['column_partition']['assignments'])+1).tolist()
+      X_L_i = dict(columnPartitionAssignments=X_L_i)
       self.jsonify_and_dump(X_L_i, filename)
     for idx, X_D_i in enumerate(X_D_list):
       filename = 'X_D_%s.json' % idx
-      self.jsonify_and_dump({"row_partition_assignments": X_D_i}, filename)
+      X_D_i = (numpy.array(X_D_i)+1).tolist()
+      X_D_i = dict(rowPartitionAssignments=X_D_i)
+      self.jsonify_and_dump(X_D_i, filename)
     json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
     self.jsonify_and_dump(json_indices_dict, "json_indices")
 
@@ -488,7 +503,7 @@ class MiddlewareEngine(object):
     try:
       with open(full_filename, 'w') as fh:
         json_str = json.dumps(to_dump)
-        json_str = json_str.replace("NaN", '""')
+        json_str = json_str.replace("NaN", "0")
         fh.write(json_str)
     except Exception, e:
       print e
@@ -511,16 +526,16 @@ class MiddlewareEngine(object):
     finally:
       if conn:
         conn.close()
-    # map T to json object
-    table = []
-    for row_idx, row in enumerate(t):
-      for col_idx, value in enumerate(row):
-        row_name = M_r['idx_to_name'][str(row_idx)]
-        col_name = M_c['idx_to_name'][str(col_idx)]
-        element = dict(i=row_idx, j=col_idx, value=value, row=row_name, col=col_name)
-        table.append(element)
-    t_dict = dict(table=table)
-    return M_c, M_r, t_dict
+    # # map T to json object
+    # table = []
+    # for row_idx, row in enumerate(t):
+    #   for col_idx, value in enumerate(row):
+    #     row_name = M_r['idx_to_name'][str(row_idx)]
+    #     col_name = M_c['idx_to_name'][str(col_idx)]
+    #     element = dict(i=row_idx, j=col_idx, value=int(value!=0), row=row_name, col=col_name)
+    #     table.append(element)
+    # # t_dict = dict(table=table)
+    return M_c, M_r, t
 
   def get_latent_states(self, tablename):
     """Return x_l_list and x_d_list"""
