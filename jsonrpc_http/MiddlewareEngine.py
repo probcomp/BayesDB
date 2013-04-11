@@ -421,8 +421,7 @@ class MiddlewareEngine(object):
         conn.close()
 
     name_to_idx = M_c['name_to_idx']
-    # FIXME: hack to get things working for current tables
-    colnames = [colname.strip().upper() for colname in columnstring.split(',')]
+    colnames = [colname.strip() for colname in columnstring.split(',')]
     col_indices = [name_to_idx[colname] for colname in colnames]
     Q = [(numrows+1, col_idx) for col_idx in col_indices]
     # FIXME: actually parse whereclause
