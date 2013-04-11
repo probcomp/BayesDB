@@ -15,6 +15,12 @@ function was_successful_call(returnedData) {
     return 'result' in returnedData
 }
 
+function handle_error(error, term) {
+    error_str = "error message: " + error['message']
+    term.echo(error_str)
+    console.log(error)
+}
+
 function parse_infer_result(infer_return) {
     ret_str = ""
     for(var i=0; i<infer_return.length; i++) {
@@ -472,6 +478,7 @@ jQuery(function($, undefined) {
 				term.echo("STARTED DATABASE FROM SCRATCH")
 			    } else {
 				term.echo("FAILED TO START FROM SCRATCH")
+				handle_error(returnedData['error'], term)
 			    }
 			}
 			JSONRPC_send_method("start_from_scratch", {}, callback_func)
@@ -503,12 +510,12 @@ jQuery(function($, undefined) {
 				   + filename)
 		    fail_str = ('FAILED TO DROP DB AND LOAD')
 		    callback_func = function(returnedData) {
+			console.log(returnedData)
 			if(was_successful_call(returnedData)) {
-			    console.log(returnedData)
 			    term.echo(success_str)
 			} else {
-			    console.log(returnedData)
 			    term.echo(fail_str)
+			    handle_error(returnedData['error'], term)
 			}
 		    }
 		    JSONRPC_send_method("drop_and_load_db", dict_to_send,
@@ -538,6 +545,7 @@ jQuery(function($, undefined) {
 				term.echo(success_str)
 			    } else {
 				term.echo(fail_str)
+				handle_error(returnedData['error'], term)
 			    }
 			}
 			JSONRPC_send_method("gen_feature_z", dict_to_send,
@@ -571,11 +579,17 @@ jQuery(function($, undefined) {
 				"tablename": tablename,
 			    }
 			    success_str = ("CREATED PTABLE " + tablename)
-			    JSONRPC_send_method("upload_data_table", dict_to_send,
-						function(returnedData) {
-						    console.log(returnedData)
-						    term.echo(success_str)
-						}) 
+			    fail_str = ("FAILED TO CREATE PTABLE " + tablename)
+			    callback_func = function(returnedData) {
+				console.log(returnedData)
+				if(was_successful_call(returnedData)) {
+				    term.echo(success_str)
+				} else {
+				    term.echo(fail_str)
+				    handle_error(returnedData['error'], term)
+				}
+			    }
+			    JSONRPC_send_method("upload_data_table", dict_to_send, callback_func)
 			    //in case the table name is different than the file name
 			    if (tempString["fileName"] != tempString["tableName"]){
 			    	var temp = preloadedDataFiles[tempString["fileName"]]
@@ -608,14 +622,19 @@ jQuery(function($, undefined) {
 			    success_str = ("CREATED MODEL FOR " + tablename
 					   + " WITH " + n_chains
 					   + " EXPLANATIONS")
-			    
+			    fail_str = "FAILED TO CREATE MODEL FOR " + tablename
+			    callback_func = function(returnedData) {
+				console.log(returnedData)
+				if(was_successful_call(returnedData)) {
+				    term.echo(success_str)
+				} else {
+				    term.echo(fail_str)
+				    handle_error(returnedData['error'], term)
+				}
+			    }
 			    //TODO: change the dropdown menu to the table for
 			    //      which we have created the model
-			    JSONRPC_send_method("create_model", dict_to_send,
-						function(returnedData) {
-						    term.echo(success_str);
-						    console.log(returnedData)
-						}) 
+			    JSONRPC_send_method("create_model", dict_to_send, callback_func)
 			}
 	    		else {
 	    		    term.echo(window.wrong_command_format_str);
@@ -768,11 +787,8 @@ jQuery(function($, undefined) {
 			    columns = convert_column_str_list(columns)
 			    load_to_datatable(data, columns)
 			} else {
-			    error = returnedData['error']
-			    error_str = "error message: " + error['message']
 			    term.echo('PREDICT COMMAND FAILED')
-			    term.echo(error_str)
-			    console.log(returnedData['error'])
+			    handle_error(returnedData['error'], term)
 			}
 		    }
 		    JSONRPC_send_method("predict", dict_to_send, callback_func)
