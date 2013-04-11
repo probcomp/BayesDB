@@ -800,7 +800,7 @@ jQuery(function($, undefined) {
 			break
 		    }
 		    tablename = dict_to_send['tablename']
-		    times = dict_to_send['times']
+		    times = dict_to_send['numpredictions']
 		    success_str = ("PREDICTION DONE " + times 
 				   + " TIMES FOR PTABLE " +  tablename)
 		    callback_func = function(returnedData) {
