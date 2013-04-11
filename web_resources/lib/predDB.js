@@ -796,6 +796,7 @@ jQuery(function($, undefined) {
 		    }
 		    
 		default: {
+		    if(command=='') { break }
 		    dict_to_send = {"sql_command": command_split.join(' ')}
 		    callback_func = function(returnedData) {
 			console.log(returnedData)
