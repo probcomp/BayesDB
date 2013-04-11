@@ -709,13 +709,16 @@ jQuery(function($, undefined) {
 		case "INFER": {
 		    echo_if_debug("INFER", term)
 		    dict_to_send = parseInferCommand(command)
+		    if (dict_to_send == window.syntax_error_value) {
+			term.echo(window.wrong_command_format_str);
+			term.echo("Did you mean 'INFER col0, [col1, ...] FROM <PTABLE> [WHERE <WHERECLAUSE>] ...")
+			term.echo("\t\t\t  WITH CONFIDENCE <CONFIDENCE> [LIMIT limit]'?")
+			break
+		    } 
 		    tablename = dict_to_send["tablename"]
 		    newtablename = dict_to_send["newtablename"]
 		    whereclause = dict_to_send["whereclause"]
-		    if (dict_to_send == window.syntax_error_value) {
-			term.echo(window.wrong_command_format_str);
-			break
-		    } else if (whereclause != window.sentinel_value) {
+		    if (whereclause != window.sentinel_value) {
 			term.echo("We do not support WHERE clauses"
 				  + "at this point.");
 			break
