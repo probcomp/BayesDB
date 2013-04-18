@@ -62,6 +62,14 @@ ssh in as the jenkins user. Then install virtualenv:
 $ cd /var/lib/jenkins/workspace/PredictiveDB/tabular_predDB
 $ bash -i virtualenv_setup.sh jenkins /var/lib/jenkins
 
+9.5. If it isn't already installed, install hcluster as follows:
+
+# sgeadmin >workon tabular_predDB
+# pip install hcluster (once downloaded, cancel - it will fail eventually).
+# cd /home/sgeadmin/.virtualenvs/tabular_predDB/build/hcluster
+# python setup.py install
+# choose option 2
+
 10. Build again. It should work!
 
 ****
