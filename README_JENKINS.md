@@ -9,24 +9,22 @@ Instructions to setup a Jenkins server
   Follow the directions here: http://pkg.jenkins-ci.org/debian-stable/
   Essentially, just run these commands:
 
-  root> wget -q -O - http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key | sudo apt-key add -
-  root> sudo echo "deb http://pkg.jenkins-ci.org/debian-stable binary/" >> /etc/apt/sources.list
-  root> sudo apt-get update
-  root> sudo apt-get install jenkins
-  root> sudo apt-get update
+        root> wget -q -O - http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key | sudo apt-key add -
+        root> sudo echo "deb http://pkg.jenkins-ci.org/debian-stable binary/" >> /etc/apt/sources.list
+        root> sudo apt-get update
+        root> sudo apt-get install jenkins
+        root> sudo apt-get update
 
 * Open port 8080 for http (by default, it's not open!! You can do this by editing your ec2 security group). Access the Jenkins web interface, and create a new job, called PredictiveDB, as a freestyle software project.
 
 * Configure the project.
    Go to the configure menu under PredictiveDB on the Jenkins web UI.
    Under build: 
-   
-      Add an "execute shell" build step, and add the line: "sh jenkins_script.sh"
+   * Add an "execute shell" build step, and add the line: "sh jenkins_script.sh"
    Under post-build actions: 
-
-      Add "archive the artifacts", and type "**/*.*".
-      Add "Publish JUnit test result report", with text "**/nosetests.xml".
-      Add "email" to preddb-dev@mit.edu
+    * Add "archive the artifacts", and type "**/*.*".
+    * Add "Publish JUnit test result report", with text "**/nosetests.xml".
+    * Add "email" to preddb-dev@mit.edu
    Then save your configuration.
 
 * Configure email
@@ -45,21 +43,21 @@ Instructions to setup a Jenkins server
 * Hit "Build Now." It will fail but it will create the workspace directory.
 
 * Put the jenkins script (jenkins_script.sh) in /var/lib/jenkins/workspace/PredictiveDB (the easiest way is to do this:
-   root> cp /home/sgeadmin/tabular_predDB/jenkins_script.sh /var/lib/jenkins/workspace/PredictiveDB/
-   root> chown -R jenkins:nogroup /var/lib/jenkins
-   root> chmod 777 /var/lib/jenkins/workspace/PredictiveDB
-   root> chmod 777 /var/lib/jenkins/workspace/PredictiveDB/jenkins_script.sh
+        root> cp /home/sgeadmin/tabular_predDB/jenkins_script.sh /var/lib/jenkins/workspace/PredictiveDB/
+        root> chown -R jenkins:nogroup /var/lib/jenkins
+        root> chmod 777 /var/lib/jenkins/workspace/PredictiveDB
+        root> chmod 777 /var/lib/jenkins/workspace/PredictiveDB/jenkins_script.sh
 
 * Enable ssh login to the machine.
-  root> perl -pi.bak -e 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-  root> service ssh reload
+        root> perl -pi.bak -e 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        root> service ssh reload
 
   Change the jenkins user password: 
-  root> passwd jenkins
+        root> passwd jenkins
 
   ssh in as the jenkins user. Then install virtualenv:
-  root> cd /var/lib/jenkins/workspace/PredictiveDB/tabular_predDB
-  root> bash -i virtualenv_setup.sh jenkins /var/lib/jenkins
+        root> cd /var/lib/jenkins/workspace/PredictiveDB/tabular_predDB
+        root> bash -i virtualenv_setup.sh jenkins /var/lib/jenkins
 
 * Build again. It should work!
 
@@ -67,15 +65,15 @@ Instructions to setup a Jenkins server
 
 * If it isn't already installed, install hcluster as follows (as user jenkins):
 
-  jenkins> sgeadmin >workon tabular_predDB
-  jenkins> pip install hcluster (once downloaded, cancel - it will fail eventually).
-  jenkins> cd /home/sgeadmin/.virtualenvs/tabular_predDB/build/hcluster
-  jenkins> python setup.py install
-  jenkins> choose option 2
+        jenkins> sgeadmin >workon tabular_predDB
+        jenkins> pip install hcluster (once downloaded, cancel - it will fail eventually).
+        jenkins> cd /home/sgeadmin/.virtualenvs/tabular_predDB/build/hcluster
+        jenkins> python setup.py install
+        jenkins> choose option 2
 
 * Run table_setup, if you haven't already. As sgeadmin, drop the existing database and tables (if you already had some and the schema could have changed), then:
 
-  sgeadmin> psql -f /var/lib/jenkins/workspace/PredictiveDB/tabular_predDB/table_setup.sql
+        sgeadmin> psql -f /var/lib/jenkins/workspace/PredictiveDB/tabular_predDB/table_setup.sql
 
 
 
