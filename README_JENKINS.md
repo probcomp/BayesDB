@@ -5,9 +5,8 @@ Instructions to setup a Jenkins server
 
 * Install Jenkins
 
-  Ssh in as root.
-  Follow the directions here: http://pkg.jenkins-ci.org/debian-stable/
-  Essentially, just run these commands:
+  * Ssh in as root.
+  * Follow the directions here: http://pkg.jenkins-ci.org/debian-stable/, or follow the commands below.
 
         root> wget -q -O - http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key | sudo apt-key add -
         root> sudo echo "deb http://pkg.jenkins-ci.org/debian-stable binary/" >> /etc/apt/sources.list
@@ -71,7 +70,7 @@ Instructions to setup a Jenkins server
 
         python> import matplotlib
         python> matplotlib.matplotlib_fname()
-	# Will print out a file location. Use vim/emacs/nano to edit that file, and change "backend" to "Agg".
+        # Will print out a file location. Use vim/emacs/nano to edit that file, and change "backend" to "Agg".
 
 * If it isn't already installed, install hcluster as follows (as user jenkins):
 
@@ -81,13 +80,19 @@ Instructions to setup a Jenkins server
         jenkins> python setup.py install
         jenkins> choose option 2
 
-* Run table_setup, if you haven't already. As sgeadmin, drop the existing database and tables (if you already had some and the schema could have changed), then:
+* Add the jenkins postgres user. (This shouldn't be necessary...)
 
+        root> su postgres
+        postgres> createuser -s jenkins
+
+* Run table_setup, if you haven't already. (This shouldn't be necessary, but maybe it's worth a try?)
+
+        root> su sgeadmin
         sgeadmin> psql -f /var/lib/jenkins/workspace/PredictiveDB/tabular_predDB/table_setup.sql
 
 
+#TODO/Needed features: 
 
-TODO/Needed features: 
---------------
 * Using ssh keys instead of plaintext password in source (probcomp-reserve's password)
+
 * Integration with Git plugin
