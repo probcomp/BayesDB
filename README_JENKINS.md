@@ -80,11 +80,6 @@ Instructions to setup a Jenkins server
         jenkins> python setup.py install
         jenkins> choose option 2
 
-* Add the jenkins postgres user. (This shouldn't be necessary...)
-
-        root> su postgres
-        postgres> createuser -s jenkins
-
 * Run table_setup, if you haven't already. (This shouldn't be necessary, but maybe it's worth a try?)
 
         root> su sgeadmin
