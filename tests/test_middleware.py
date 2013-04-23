@@ -7,7 +7,7 @@ def test_middleware():
     os.system('pkill -f server_jsonrpc')
     os.system('nohup python -u ../jsonrpc_http/server_jsonrpc.py >server_jsonrpc.out 2>server_jsonrpc.err &')
     os.system('nohup python -u ../jsonrpc_http/middleware_server_jsonrpc.py >middleware_server_jsonrpc.out 2>middleware_server_jsonrpc.err &')
-    time.sleep(1)
+    time.sleep(3)
     msc.run_test()
     os.system('pkill -f server_jsonrpc')
 
