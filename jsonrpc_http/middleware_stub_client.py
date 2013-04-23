@@ -3,18 +3,17 @@ A python client that simulates the frontend.
 """
 
 import time
+import inspect
+import psycopg2
+import pickle
+import os
 
-#import tabular_predDB.jsonrpc_http.Engine as E
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.api_utils as au
 from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine
 middleware_engine = MiddlewareEngine()
 
-import psycopg2
-import pickle
-import os
-
-def run_test(hostname='localhost', middleware_port=8008):
+def run_test(hostname='localhost', middleware_port=8008, online=False):
   URI = 'http://' + hostname + ':%d' % middleware_port
   cur_dir = os.path.dirname(os.path.abspath(__file__))  
   #test_tablenames = ['dhatest', 'dha_small', 'dha_small_cont']
@@ -22,13 +21,23 @@ def run_test(hostname='localhost', middleware_port=8008):
   
   for tablename in test_tablenames:
     table_csv = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'r').read()
-    run_test_with(tablename, table_csv, URI)
+    run_test_with(tablename, table_csv, URI, online)
 
-def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
-  au.call('start_from_scratch', {}, URI)
+def call(method_name, args_dict, URI, online):
+  if online:
+    out, id = au.call(method_name, args_dict, URI)
+  else:
+    method = getattr(middleware_engine, method_name)
+    argnames = inspect.getargspec(method)[0]
+    args = [args_dict[argname] for argname in argnames if argname in args_dict]
+    out = method(*args)
+  return out
+
+def run_test_with(tablename, table_csv, URI, crosscat_column_types="None", online=False):
+  call('start_from_scratch', {}, URI, online)
 
   # drop tablename
-  au.call('drop_tablename', {'tablename': tablename}, URI)
+  call('drop_tablename', {'tablename': tablename}, URI, online)
 
   # test upload_data_table
   print 'uploading data table %s' % tablename
@@ -37,10 +46,10 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict['tablename'] = tablename
   args_dict['csv'] = table_csv 
   args_dict['crosscat_column_types'] = crosscat_column_types
-  out, id = au.call(method_name, args_dict, URI)
+  out = call(method_name, args_dict, URI, online)
   assert (out==0 or out=="Error: table with that name already exists.")
   # TODO: Test that table was created
-  out, id = au.call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s'" % tablename}, URI)
+  out = call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s'" % tablename}, URI, online)
   time.sleep(1)
 
   if 'dha' in tablename:
@@ -48,11 +57,12 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
     method_name = 'runsql'
     args_dict = dict()
     args_dict['sql_command'] = 'CREATE TABLE IF NOT EXISTS bob(id INT PRIMARY KEY, num INT);'
-    out, id = au.call(method_name, args_dict, URI)
+    out = call(method_name, args_dict, URI, online)
     assert out==0
-    au.call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI)
+    call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI, online)
     args_dict['sql_command'] = 'SELECT * FROM preddb_data.dha_small;'
-    out, id = au.call(method_name, args_dict, URI)
+    
+    out = call(method_name, args_dict, URI, online)
     assert out['columns'] == [u'n_death_ill', u'ttl_mdcr_spnd', u'mdcr_spnd_inp', u'mdcr_spnd_outp', u'mdcr_spnd_ltc']
     assert type(out['data']) == list
     time.sleep(1)
@@ -63,14 +73,14 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict['tablename'] = tablename
   args_dict['n_chains'] = 3 # default is 10
   print 'creating model with %d chains' % args_dict['n_chains']
-  out, id = au.call(method_name, args_dict, URI)  
+  out = call(method_name, args_dict, URI, online)  
   assert out==0
   # Test that one model was created
-  out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
-                 + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI)
+  out = call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
+                 + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI, online)
   assert(out['data'][0][0] == 3)
-  out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
-                 + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s' AND chainid=1;" % tablename}, URI)
+  out = call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
+                 + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s' AND chainid=1;" % tablename}, URI, online)
   assert(out['data'][0][0] == 1)
   time.sleep(1)
 
@@ -82,16 +92,16 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict['wait'] = True # wait for analyze to finish
   args_dict['iterations'] = 2
   print 'running analyze for %d iterations on all chains' % args_dict['iterations']
-  out, id = au.call(method_name, args_dict, URI)
+  out = call(method_name, args_dict, URI, online)
   assert (out==0)
   # Test that inference was started - there should now be two rows of latent states once analyze is finished running.
-  out, id = au.call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
-                 + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI)
+  out = call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
+                 + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI, online)
   assert(out['data'][0][0] == 6)
   time.sleep(1)
 
   # test get_latent_states
-  (X_L_list, X_D_list, M_c), id = au.call('get_latent_states', args_dict=dict(tablename=tablename), URI=URI)
+  (X_L_list, X_D_list, M_c) = call('get_latent_states', dict(tablename=tablename), URI, online)
   import json
   json_states = json.dumps(dict(X_L_list=X_L_list, X_D_list=X_D_list))
   with open('json_states', 'w') as fh:
@@ -99,8 +109,7 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   time.sleep(1)
 
   # test gen_feature_z
-  out, id = au.call('gen_feature_z', args_dict=dict(tablename=tablename), URI=URI)
-  #import pdb; pdb.set_trace()
+  out = call('gen_feature_z', dict(tablename=tablename), URI, online)
 
   if 'anneal' in tablename:
     # TODO: test infer
@@ -114,8 +123,7 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
     args_dict['limit'] = 8
     args_dict['numsamples'] = 10 # should do 10 or 100
     print 'running infer'
-    out = middleware_engine.infer(tablename, 'temper_rolling, condition', 'anneal_predict', 0, 'steel=A AND product_type=C', 8, 10)
-  #  out, id = au.call(method_name, args_dict, URI)
+    out = call(method_name, args_dict, URI, online)
     print 'infer out:', out
     # TODO
     # Test that missing values are filled in
@@ -130,8 +138,7 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
     args_dict['whereclause'] = "steel=A AND product_type=C"
     args_dict['numpredictions'] = 10
     print 'running predict'
-    out = middleware_engine.predict(tablename, 'temper_rolling, condition', 'anneal_predict', 'steel=A AND product_type=C', 10)
-    #out, id = au.call(method_name, args_dict, URI)
+    out = call(method_name, args_dict, URI, online)
     print 'predict out:\n',out
     assert out['columns'] == [u'temper_rolling', u'condition']
     assert len(out['data']) == 10
@@ -150,11 +157,9 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
     args_dict['limit'] = 8
     args_dict['numsamples'] = 10 # should do 10 or 100
     print 'running infer'
-    out = middleware_engine.infer(tablename, "N_DEATH_ILL, MDCR_SPND_INP", "", 0, 'MDCR_SPND_LTC=6331', 8, 10)
-  #  out, id = au.call(method_name, args_dict, URI)
-  #  print 'infer out:', out
-    # TODO
-    # Test that missing values are filled in
+    #out = middleware_engine.infer(tablename, "N_DEATH_ILL, MDCR_SPND_INP", "", 0, 'MDCR_SPND_LTC=6331', 8, 10)
+    out = call(method_name, args_dict, URI, online)
+    # TODO: Test that missing values are filled in
     time.sleep(1)
 
     # TODO: test predict
@@ -166,21 +171,11 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
     args_dict['whereclause'] = 'MDCR_SPND_LTC=6331'
     args_dict['numpredictions'] = 10
     print 'running predict'
-    out, id = au.call(method_name, args_dict, URI)
+    out = call(method_name, args_dict, URI, online)
     print out
     assert out['columns'] == [u'N_DEATH_ILL', u'MDCR_SPND_INP']
     assert len(out['data']) == 10
     assert len(out['data'][0]) == len(out['columns'])
-  # old code for csv parsing
-  #  csv_results = out
-  #  rows = csv_results.split('\n')
-  #  row = rows[1].split(',')
-  #  assert len(rows) == args_dict['numpredictions']+1
-  #  assert len(row) == len(args_dict['columnstring'])
-    # FAILS assert rows[0][:-2] == args_dict['columnstring']
-    # TODO
-    # Test that prediction worked properly
-
     time.sleep(1)
 
   # test delete_chain
@@ -189,14 +184,14 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None"):
   args_dict['tablename'] = tablename
   args_dict['chain_index'] = 0
   print 'deleting chain 0'
-  out, id = au.call(method_name, args_dict, URI)
+  out = call(method_name, args_dict, URI, online)
   assert out==0
   # TODO: Test to make sure there's one less chain
   time.sleep(1)
 
   # drop tablename
   print 'dropping tablename'
-  au.call('drop_tablename', {'tablename': tablename}, URI)
+  call('drop_tablename', {'tablename': tablename}, URI, online)
 
   
 if __name__ == '__main__':

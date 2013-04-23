@@ -60,7 +60,7 @@ class MiddlewareEngine(object):
     cmd_str = 'createdb %s' % dbname
     os.system(cmd_str)
     #
-    cmd_str = 'psql -f %s' % os.path.join(S.path.remote_code_dir, 'table_setup.sql')
+    cmd_str = 'psql sgeadmin -f %s' % os.path.join(S.path.remote_code_dir, 'table_setup.sql')
     os.system(cmd_str)
     return 'STARTED FROM SCRATCH'
 
