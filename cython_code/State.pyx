@@ -102,6 +102,8 @@ cdef extern from "State.h":
           int get_num_views()
           c_map[int, vector[int]] get_column_groups()
           string to_string(string join_str, bool top_level)
+          double draw_rand_u()
+          int draw_rand_i()
           # API helpers
           vector[c_map[string, double]] get_column_hypers()
           c_map[string, double] get_column_partition_hypers()
@@ -147,6 +149,13 @@ def extract_column_types_counts(M_c):
         ]
     return column_types, event_counts
 
+def get_args_dict(args_list, vars_dict):
+     args_dict = dict([
+               (arg, vars_dict[arg])
+               for arg in args_list
+               ])
+     return args_dict
+
 cdef class p_State:
     cdef State *thisptr
     cdef matrix[double] *dataptr
@@ -160,9 +169,6 @@ cdef class p_State:
     def __cinit__(self, M_c, T, X_L=None, X_D=None,
                   initialization='from_the_prior', row_initialization=-1,
                   N_GRID=31, SEED=0):
-         # FIXME: actually use initialization 
-         # modify State.pyx to accept column_types, event_counts
-         # modify State.{h,cpp} to accept column_types, event_counts
          column_types, event_counts = extract_column_types_counts(M_c)
          global_row_indices = range(len(T))
          global_col_indices = range(len(T[0]))
@@ -294,24 +300,27 @@ cdef class p_State:
     # mutators
     def transition(self, which_transitions=None, n_steps=1,
                    c=(), r=(), max_iterations=-1, max_time=-1):
-         transition_lookup = dict(
-              column_partition_hyperparameter=self.transition_column_crp_alpha,
-              column_partition_assignments=self.transition_features,
-              column_hyperparameters=self.transition_column_hyperparameters,
+         transition_and_args_lookup = dict(
+              column_partition_hyperparameter=(self.transition_column_crp_alpha, []),
+              column_partition_assignments=(self.transition_features, ['c']),
+              column_hyperparameters=(self.transition_column_hyperparameters, ['c']),
               row_partition_hyperparameters= \
-                   self.transition_row_partition_hyperparameters,
-              row_partition_assignments=self.row_partition_assignments,
+                   (self.transition_row_partition_hyperparameters, ['c']),
+              row_partition_assignments=(self.transition_row_partition_assignments, ['r']),
               )
          if which_transitions is None:
-              # FIXME: should permute the order
-              which_transitions = transition_lookup.keys()
+              which_transitions = transition_and_args_lookup.keys()
+              seed = self.thisptr.draw_rand_i()
+              random_state = numpy.random.RandomState(seed)
+              which_transitions = random_state.permutation(which_transitions)
          score_delta = 0
          for step_idx in range(n_steps):
               for which_transition in which_transitions:
-                   which_method=transition_lookup.get(which_transition)
+                   which_method, args_list = transition_and_args_lookup.get(which_transition)
                    if which_method is not None:
-                        # FIXME: need to pass through appropriate arguments
-                        score_delta += which_method()
+                        args_dict = get_args_dict(args_list, locals())
+                        print 'passing args_dict: %s' % args_dict
+                        score_delta += which_method(**args_dict)
                    else:
                         print_str = 'INVALID TRANSITION TYPE TO' \
                             'State.transition: %s' % which_method
