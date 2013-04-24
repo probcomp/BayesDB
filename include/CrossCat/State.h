@@ -70,7 +70,7 @@ class State {
   double remove_feature(int feature_idx, std::vector<double> feature_data,
 			View* &p_singleton_view);
   double transition_feature(int feature_idx, std::vector<double> feature_data);
-  double transition_features(const MatrixD &data);
+  double transition_features(const MatrixD &data, std::vector<int> which_features);
   View& get_new_view();
   View& get_view(int view_idx);
   void remove_if_empty(View& which_view);

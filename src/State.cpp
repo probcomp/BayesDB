@@ -166,11 +166,16 @@ double State::transition_feature(int feature_idx, vector<double> feature_data) {
   return score_delta;
 }
 
-double State::transition_features(const MatrixD &data) {
+double State::transition_features(const MatrixD &data, vector<int> which_features) {
   double score_delta = 0;
-  vector<int> feature_indices = create_sequence(data.size2());
+  int num_features = which_features.size();
+  if(num_features==0) {
+    which_features = create_sequence(data.size2());
+    // FIXME: use seed to shuffle
+    std::random_shuffle(which_features.begin(), which_features.end());
+  }
   vector<int>::iterator it;
-  for(it=feature_indices.begin(); it!=feature_indices.end(); it++) {
+  for(it=which_features.begin(); it!=which_features.end(); it++) {
     int feature_idx = *it;
     vector<double> feature_data = extract_col(data, feature_idx);
     score_delta += transition_feature(feature_idx, feature_data);
@@ -611,7 +616,8 @@ double State::transition(const MatrixD &data) {
     if(which_transition==0) {
       score_delta += transition_views(data);
     } else if(which_transition==1) {
-      score_delta += transition_features(data);
+      vector<int> which_features;
+      score_delta += transition_features(data, which_features);
     } else if(which_transition==2) {
       score_delta += transition_column_crp_alpha();
     }

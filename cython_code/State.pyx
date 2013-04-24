@@ -84,7 +84,7 @@ cdef extern from "State.h":
      cdef cppclass State:
           # mutators
           double transition(matrix[double] data)
-          double transition_features(matrix[double] data)
+          double transition_features(matrix[double] data, vector[int])
           double transition_views(matrix[double] data)
           double transition_view_i(int i, matrix[double] data)
           double transition_column_crp_alpha()
@@ -289,10 +289,10 @@ cdef class p_State:
             view_state.append(view_state_i)
         return view_state
     # mutators
-    def transition(self, which_transitions=None, n_steps=1):
+    def transition(self, which_transitions=None, n_steps=1,
+                   c=(), r=(), max_iterations=-1, max_time=-1):
          transition_lookup = dict(
-              column_partition_hyperparameter= \
-                   self.transition_column_crp_alpha,
+              column_partition_hyperparameter= self.transition_column_crp_alpha,
               column_partition_assignments=self.transition_features,
               component_hyperparameters=self.transition_views_col_hypers,
               row_partition_hyperparameters= \
@@ -300,6 +300,7 @@ cdef class p_State:
               row_partition_assignments=self.transition_views_zs,
               )
          if which_transitions is None:
+              # FIXME: should permute the order
               which_transitions = transition_lookup.keys()
          score_delta = 0
          for step_idx in range(n_steps):
@@ -312,8 +313,8 @@ cdef class p_State:
                             'State.transition: %s' % which_method
                         print print_str
          return score_delta
-    def transition_features(self):
-        return self.thisptr.transition_features(dereference(self.dataptr))
+    def transition_features(self, c=()):
+        return self.thisptr.transition_features(dereference(self.dataptr), c)
     def transition_views(self):
         return self.thisptr.transition_views(dereference(self.dataptr))
     def transition_view_i(self, i):
