@@ -51,6 +51,8 @@ class State {
   double get_data_score() const;
   double get_marginal_logp() const;
   std::map<int, std::vector<int> > get_column_groups() const;
+  double draw_rand_u();
+  int draw_rand_i(int max=MAX_INT);
   // helpers for API
   std::map<std::string, double> get_row_partition_model_hypers_i(int view_idx) const;
   std::vector<int> get_row_partition_model_counts_i(int view_idx) const;
@@ -129,8 +131,6 @@ class State {
   // sub-objects
   RandomNumberGenerator rng;
   // resources
-  double draw_rand_u();
-  int draw_rand_i(int max=MAX_INT);
   void construct_base_hyper_grids(int num_rows, int num_cols, int N_GRID);
   void construct_column_hyper_grids(boost::numeric::ublas::matrix<double> data,
 				    std::vector<int> global_col_indices,
