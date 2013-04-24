@@ -396,6 +396,27 @@ double State::transition_views_row_partition_hyper() {
   return score_delta;
 }
 
+double State::transition_column_hyperparameters(vector<int> which_cols) {
+  double score_delta = 0;
+  //
+  int num_cols = which_cols.size();
+  if(num_cols!=0) {
+    num_cols = view_lookup.size();
+    which_cols = create_sequence(num_cols);
+    //FIXME: use own shuffle so seed control is in effect
+    std::random_shuffle(which_cols.begin(), which_cols.end());
+  }
+  vector<int>::iterator it;
+  for(it=which_cols.begin(); it!=which_cols.end(); it++) {
+    View &which_view = *view_lookup[*it];
+    // FIXME: this is a hack, global_to_local should be private and a getter should be used instead
+    int local_col_idx = which_view.global_to_local[*it];
+    score_delta += which_view.transition_hypers_i(local_col_idx);
+  }
+  data_score += score_delta;
+  return score_delta;
+}
+
 double State::transition_views_col_hypers() {
   double score_delta = 0;
   for(int view_idx=0; view_idx<get_num_views(); view_idx++) {

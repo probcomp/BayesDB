@@ -89,6 +89,7 @@ cdef extern from "State.h":
           double transition_view_i(int i, matrix[double] data)
           double transition_column_crp_alpha()
           double transition_views_row_partition_hyper()
+          double transition_column_hyperparameters(vector[int] which_cols)
           double transition_views_col_hypers()
           double transition_views_zs(matrix[double] data)
           # getters
@@ -292,9 +293,9 @@ cdef class p_State:
     def transition(self, which_transitions=None, n_steps=1,
                    c=(), r=(), max_iterations=-1, max_time=-1):
          transition_lookup = dict(
-              column_partition_hyperparameter= self.transition_column_crp_alpha,
+              column_partition_hyperparameter=self.transition_column_crp_alpha,
               column_partition_assignments=self.transition_features,
-              component_hyperparameters=self.transition_views_col_hypers,
+              column_hyperparameters=self.transition_column_hyperparameters,
               row_partition_hyperparameters= \
                    self.transition_views_row_partition_hyper,
               row_partition_assignments=self.transition_views_zs,
@@ -323,6 +324,8 @@ cdef class p_State:
          return self.thisptr.transition_column_crp_alpha()
     def transition_views_col_hypers(self):
          return self.thisptr.transition_views_col_hypers()
+    def transition_column_hyperparameters(self, c=()):
+         return self.thisptr.transition_column_hyperparameters(c)
     def transition_views_row_partition_hyper(self):
          return self.thisptr.transition_views_row_partition_hyper()
     def transition_views_zs(self):

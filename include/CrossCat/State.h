@@ -81,6 +81,7 @@ class State {
   double transition_views(const MatrixD &data);
   //
   double transition_views_row_partition_hyper();
+  double transition_column_hyperparameters(std::vector<int> which_cols);
   double transition_views_col_hypers();
   double transition_views_zs(const MatrixD &data);
   double transition_column_crp_alpha();  
