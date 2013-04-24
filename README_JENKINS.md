@@ -64,6 +64,12 @@ Instructions to setup a Jenkins server
 
 * Build again. It should work!
 
+#Setting up Git Commit Hook
+
+* Install Github plugin. Enter the URL for the repository, and ensure that the jenkins users' ssh keys are added on github.
+
+* On Github, click on the repository settings, and add a post-receive hook. Click the github plugin page, and add the url for the jenkins server, appended with "/github-webhook/".
+
 #Troubleshooting
 
 * You may need to edit the matplotlib backend. To do this:
