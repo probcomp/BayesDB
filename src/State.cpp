@@ -368,6 +368,36 @@ double State::transition_views(const MatrixD &data) {
   return score_delta;
 }
 
+double State::transition_row_partition_assignments(const MatrixD &data, vector<int> which_rows) {
+  vector<int> global_column_indices = create_sequence(data.size2());
+  double score_delta = 0;
+  //
+  int num_rows = which_rows.size();
+  if(num_rows==0) {
+    num_rows = data.size1();
+    which_rows = create_sequence(num_rows);
+    //FIXME: use own shuffle so seed control is in effect
+    std::random_shuffle(which_rows.begin(), which_rows.end());
+  }
+  set<View*>::iterator svp_it;
+  for(svp_it=views.begin(); svp_it!=views.end(); svp_it++) {
+    // for each view
+    View &v = **svp_it;
+    vector<int> view_cols = get_indices_to_reorder(global_column_indices,
+						   v.global_to_local);
+    const MatrixD data_subset = extract_columns(data, view_cols);
+    map<int, vector<double> > row_data_map = construct_data_map(data_subset);
+    vector<int>::iterator vi_it;
+    for(vi_it=which_rows.begin(); vi_it!=which_rows.end(); vi_it++) {
+      // for each SPECIFIED row 
+      int row_idx = *vi_it;
+      vector<double> vd = row_data_map[row_idx];
+      score_delta += v.transition_z(vd, row_idx);
+    }
+  }
+  data_score += score_delta;
+  return score_delta;
+}
 
 double State::transition_views_zs(const MatrixD &data) {
   vector<int> global_column_indices = create_sequence(data.size2());
@@ -391,6 +421,27 @@ double State::transition_views_row_partition_hyper() {
   for(int view_idx=0; view_idx<get_num_views(); view_idx++) {
     View &v = get_view(view_idx);
     score_delta += v.transition_crp_alpha();
+  }
+  data_score += score_delta;
+  return score_delta;
+}
+
+double State::transition_row_partition_hyperparameters(vector<int> which_cols) {
+  double score_delta = 0;
+  set<View*> which_views;
+  int num_cols = which_cols.size();
+  if(num_cols!=0) {
+    vector<int>::iterator it;
+    for(it=which_cols.begin(); it!=which_cols.end(); it++) {
+      View *v_p = view_lookup[*it];
+      which_views.insert(v_p);
+    }
+  } else {
+    which_views = views;
+  }
+  set<View*>::iterator it;
+  for(it=which_views.begin(); it!=which_views.end(); it++) {
+    score_delta += (*it)->transition_crp_alpha();
   }
   data_score += score_delta;
   return score_delta;

@@ -70,7 +70,6 @@ class State {
   double remove_feature(int feature_idx, std::vector<double> feature_data,
 			View* &p_singleton_view);
   double transition_feature(int feature_idx, std::vector<double> feature_data);
-  double transition_features(const MatrixD &data, std::vector<int> which_features);
   View& get_new_view();
   View& get_view(int view_idx);
   void remove_if_empty(View& which_view);
@@ -79,12 +78,16 @@ class State {
 			 std::map<int, std::vector<double> > row_data_map);
   double transition_view_i(int which_view, const MatrixD &data);
   double transition_views(const MatrixD &data);
-  //
   double transition_views_row_partition_hyper();
+  //
+  double transition_column_crp_alpha();  
+  double transition_features(const MatrixD &data, std::vector<int> which_features);
   double transition_column_hyperparameters(std::vector<int> which_cols);
+  double transition_row_partition_hyperparameters(std::vector<int> which_cols);
+  double transition_row_partition_assignments(const MatrixD &data, std::vector<int> which_rows);
+  //
   double transition_views_col_hypers();
   double transition_views_zs(const MatrixD &data);
-  double transition_column_crp_alpha();  
   //
   double transition(const MatrixD &data);
   //

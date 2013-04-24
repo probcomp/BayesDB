@@ -84,12 +84,14 @@ cdef extern from "State.h":
      cdef cppclass State:
           # mutators
           double transition(matrix[double] data)
-          double transition_features(matrix[double] data, vector[int])
+          double transition_column_crp_alpha()
+          double transition_features(matrix[double] data, vector[int] which_cols)
+          double transition_column_hyperparameters(vector[int] which_cols)
+          double transition_row_partition_hyperparameters(vector[int] which_cols)
+          double transition_row_partition_assignments(matrix[double] data, vector[int] which_rows)
           double transition_views(matrix[double] data)
           double transition_view_i(int i, matrix[double] data)
-          double transition_column_crp_alpha()
           double transition_views_row_partition_hyper()
-          double transition_column_hyperparameters(vector[int] which_cols)
           double transition_views_col_hypers()
           double transition_views_zs(matrix[double] data)
           # getters
@@ -297,8 +299,8 @@ cdef class p_State:
               column_partition_assignments=self.transition_features,
               column_hyperparameters=self.transition_column_hyperparameters,
               row_partition_hyperparameters= \
-                   self.transition_views_row_partition_hyper,
-              row_partition_assignments=self.transition_views_zs,
+                   self.transition_row_partition_hyperparameters,
+              row_partition_assignments=self.row_partition_assignments,
               )
          if which_transitions is None:
               # FIXME: should permute the order
@@ -308,24 +310,29 @@ cdef class p_State:
               for which_transition in which_transitions:
                    which_method=transition_lookup.get(which_transition)
                    if which_method is not None:
+                        # FIXME: need to pass through appropriate arguments
                         score_delta += which_method()
                    else:
                         print_str = 'INVALID TRANSITION TYPE TO' \
                             'State.transition: %s' % which_method
                         print print_str
          return score_delta
+    def transition_column_crp_alpha(self):
+         return self.thisptr.transition_column_crp_alpha()
     def transition_features(self, c=()):
         return self.thisptr.transition_features(dereference(self.dataptr), c)
+    def transition_column_hyperparameters(self, c=()):
+         return self.thisptr.transition_column_hyperparameters(c)
+    def transition_row_partition_hyperparameters(self, c=()):
+         return self.thisptr.transition_row_partition_hyperparameters(c)
+    def transition_row_partition_assignments(self, r=()):
+         return self.thisptr.transition_row_partition_assignments(dereference(self.dataptr), r)
     def transition_views(self):
         return self.thisptr.transition_views(dereference(self.dataptr))
     def transition_view_i(self, i):
         return self.thisptr.transition_view_i(i, dereference(self.dataptr))
-    def transition_column_crp_alpha(self):
-         return self.thisptr.transition_column_crp_alpha()
     def transition_views_col_hypers(self):
          return self.thisptr.transition_views_col_hypers()
-    def transition_column_hyperparameters(self, c=()):
-         return self.thisptr.transition_column_hyperparameters(c)
     def transition_views_row_partition_hyper(self):
          return self.thisptr.transition_views_row_partition_hyper()
     def transition_views_zs(self):
