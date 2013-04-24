@@ -300,6 +300,7 @@ cdef class p_State:
     # mutators
     def transition(self, which_transitions=None, n_steps=1,
                    c=(), r=(), max_iterations=-1, max_time=-1):
+         # FIXME: respect max time
          transition_and_args_lookup = dict(
               column_partition_hyperparameter=(self.transition_column_crp_alpha, []),
               column_partition_assignments=(self.transition_features, ['c']),
