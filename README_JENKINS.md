@@ -1,5 +1,5 @@
 Instructions to setup a Jenkins server
-=================
+==================
 
 * Boot up a new starcluster instance with tabular_predDB plugin. Preferably use on-demand m1.small to save money (needs to be on-demand so CI works).
 
