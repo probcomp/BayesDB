@@ -14,7 +14,7 @@ parser.add_argument('--gen_seed', default=0, type=int)
 parser.add_argument('--inf_seed', default=0, type=int)
 parser.add_argument('--num_clusters', default=10, type=int)
 parser.add_argument('--num_cols', default=12, type=int)
-parser.add_argument('--num_rows', default=200, type=int)
+parser.add_argument('--num_rows', default=800, type=int)
 parser.add_argument('--num_splits', default=4, type=int)
 parser.add_argument('--max_mean', default=10, type=float)
 parser.add_argument('--max_std', default=0.3, type=float)
@@ -47,6 +47,8 @@ T, M_r, M_c = du.gen_factorial_data_objects(
     max_mean=max_mean, max_std=max_std,
     )
 
+num_views_list_dict = dict()
+seconds_since_start_list_dict = dict()
 valid_initializers = set(["together", "from_the_prior", "apart"])
 for initialization in valid_initializers:
     # include state creation time in first iter
@@ -62,10 +64,29 @@ for initialization in valid_initializers:
         p_State.transition()
         num_views_list.append(get_num_views(p_State))
         seconds_since_start_list.append(get_seconds_since(start_dt))
-    pylab.plot(seconds_since_start_list, num_views_list)
+    num_views_list_dict[initialization] = num_views_list
+    seconds_since_start_list_dict[initialization] = seconds_since_start_list
 
-pylab.ion()
-pylab.show()
+fh = pylab.figure()
+#
+pylab.subplot(211)
+for initialization in valid_initializers:
+    seconds_since_start_list = seconds_since_start_list_dict[initialization]
+    iter_idx = range(len(seconds_since_start_list))
+    num_views_list = num_views_list_dict[initialization]
+    pylab.plot(iter_idx, num_views_list)
+pylab.xlabel('iteration #')
+pylab.ylabel('num_views')
+pylab.legend(list(valid_initializers))
+#
+pylab.subplot(212)
+for initialization in valid_initializers:
+    seconds_since_start_list = seconds_since_start_list_dict[initialization]
+    num_views_list = num_views_list_dict[initialization]
+    pylab.plot(seconds_since_start_list, num_views_list)
 pylab.xlabel('cumulative run time (seconds)')
 pylab.ylabel('num_views')
 pylab.legend(list(valid_initializers))
+
+pylab.ion()
+pylab.show()
