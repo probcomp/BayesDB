@@ -192,9 +192,9 @@ double MultinomialComponentModel::get_draw_constrained(int random_seed, vector<d
   for(int constraint_idx=0; constraint_idx<constraints.size(); constraint_idx++) {
     double constraint = constraints[constraint_idx];
     string constraint_str = stringify(constraint);
-    int constraint_idx = index_lookup[constraint_str];
-    double log_count = log_counts_for_draw[constraint_idx];
-    log_counts_for_draw[constraint_idx] = log(exp(log_count) + 1);
+    int count_idx = index_lookup[constraint_str];
+    double log_count = log_counts_for_draw[count_idx];
+    log_counts_for_draw[count_idx] = log(exp(log_count) + 1);
   }
   //
   int key_idx = numerics::draw_sample_unnormalized(log_counts_for_draw,
