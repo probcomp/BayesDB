@@ -451,7 +451,7 @@ double State::transition_column_hyperparameters(vector<int> which_cols) {
   double score_delta = 0;
   //
   int num_cols = which_cols.size();
-  if(num_cols!=0) {
+  if(num_cols==0) {
     num_cols = view_lookup.size();
     which_cols = create_sequence(num_cols);
     //FIXME: use own shuffle so seed control is in effect
