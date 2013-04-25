@@ -62,6 +62,7 @@ runs_2_times = base_times * 1.2 \
 # plot the data
 pylab.figure()
 pylab.subplot(211)
+pylab.title('FAKE DATA')
 pylab.plot(runs_0, color='red')
 pylab.plot(runs_1, color='blue')
 pylab.plot(runs_2, color='black')
@@ -98,6 +99,7 @@ runs_2_times = base_times * 1.2 \
 # plot the data
 pylab.figure()
 pylab.subplot(211)
+pylab.title('FAKE DATA')
 pylab.plot(runs_0, color='red')
 pylab.plot(runs_1, color='blue')
 pylab.plot(runs_2, color='black')
