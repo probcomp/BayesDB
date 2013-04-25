@@ -25,7 +25,8 @@ class Engine(object):
                 max_iterations, max_time):
         p_State = State.p_State(M_c, T, X_L, X_D)
         # FIXME: actually pay attention to c, r, max_time
-        p_State.transition(kernel_list, n_steps)
+        p_State.transition(kernel_list, n_steps, c, r,
+                           max_iterations, max_time)
         X_L_prime = p_State.get_X_L()
         X_D_prime = p_State.get_X_D()
         return X_L_prime, X_D_prime

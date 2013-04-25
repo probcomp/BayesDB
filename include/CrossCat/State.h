@@ -51,6 +51,8 @@ class State {
   double get_data_score() const;
   double get_marginal_logp() const;
   std::map<int, std::vector<int> > get_column_groups() const;
+  double draw_rand_u();
+  int draw_rand_i(int max=MAX_INT);
   // helpers for API
   std::map<std::string, double> get_row_partition_model_hypers_i(int view_idx) const;
   std::vector<int> get_row_partition_model_counts_i(int view_idx) const;
@@ -70,7 +72,6 @@ class State {
   double remove_feature(int feature_idx, std::vector<double> feature_data,
 			View* &p_singleton_view);
   double transition_feature(int feature_idx, std::vector<double> feature_data);
-  double transition_features(const MatrixD &data);
   View& get_new_view();
   View& get_view(int view_idx);
   void remove_if_empty(View& which_view);
@@ -79,11 +80,16 @@ class State {
 			 std::map<int, std::vector<double> > row_data_map);
   double transition_view_i(int which_view, const MatrixD &data);
   double transition_views(const MatrixD &data);
-  //
   double transition_views_row_partition_hyper();
+  //
+  double transition_column_crp_alpha();  
+  double transition_features(const MatrixD &data, std::vector<int> which_features);
+  double transition_column_hyperparameters(std::vector<int> which_cols);
+  double transition_row_partition_hyperparameters(std::vector<int> which_cols);
+  double transition_row_partition_assignments(const MatrixD &data, std::vector<int> which_rows);
+  //
   double transition_views_col_hypers();
   double transition_views_zs(const MatrixD &data);
-  double transition_column_crp_alpha();  
   //
   double transition(const MatrixD &data);
   //
@@ -101,7 +107,6 @@ class State {
   double calc_column_crp_marginal() const;
   std::vector<double> calc_column_crp_marginals(std::vector<double> alphas_to_score) const;
   std::vector<double> calc_row_crp_marginals(std::vector<double> alphas_to_score) const;
-  void SaveResult(std::string filename, int iter_idx=-1);
   friend std::ostream& operator<<(std::ostream& os, const State& s);
   std::string to_string(std::string join_str="\n", bool top_level=false) const;
  private:
@@ -126,8 +131,6 @@ class State {
   // sub-objects
   RandomNumberGenerator rng;
   // resources
-  double draw_rand_u();
-  int draw_rand_i(int max=MAX_INT);
   void construct_base_hyper_grids(int num_rows, int num_cols, int N_GRID);
   void construct_column_hyper_grids(boost::numeric::ublas::matrix<double> data,
 				    std::vector<int> global_col_indices,

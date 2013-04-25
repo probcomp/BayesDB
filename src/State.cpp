@@ -166,11 +166,16 @@ double State::transition_feature(int feature_idx, vector<double> feature_data) {
   return score_delta;
 }
 
-double State::transition_features(const MatrixD &data) {
+double State::transition_features(const MatrixD &data, vector<int> which_features) {
   double score_delta = 0;
-  vector<int> feature_indices = create_sequence(data.size2());
+  int num_features = which_features.size();
+  if(num_features==0) {
+    which_features = create_sequence(data.size2());
+    // FIXME: use seed to shuffle
+    std::random_shuffle(which_features.begin(), which_features.end());
+  }
   vector<int>::iterator it;
-  for(it=feature_indices.begin(); it!=feature_indices.end(); it++) {
+  for(it=which_features.begin(); it!=which_features.end(); it++) {
     int feature_idx = *it;
     vector<double> feature_data = extract_col(data, feature_idx);
     score_delta += transition_feature(feature_idx, feature_data);
@@ -363,6 +368,36 @@ double State::transition_views(const MatrixD &data) {
   return score_delta;
 }
 
+double State::transition_row_partition_assignments(const MatrixD &data, vector<int> which_rows) {
+  vector<int> global_column_indices = create_sequence(data.size2());
+  double score_delta = 0;
+  //
+  int num_rows = which_rows.size();
+  if(num_rows==0) {
+    num_rows = data.size1();
+    which_rows = create_sequence(num_rows);
+    //FIXME: use own shuffle so seed control is in effect
+    std::random_shuffle(which_rows.begin(), which_rows.end());
+  }
+  set<View*>::iterator svp_it;
+  for(svp_it=views.begin(); svp_it!=views.end(); svp_it++) {
+    // for each view
+    View &v = **svp_it;
+    vector<int> view_cols = get_indices_to_reorder(global_column_indices,
+						   v.global_to_local);
+    const MatrixD data_subset = extract_columns(data, view_cols);
+    map<int, vector<double> > row_data_map = construct_data_map(data_subset);
+    vector<int>::iterator vi_it;
+    for(vi_it=which_rows.begin(); vi_it!=which_rows.end(); vi_it++) {
+      // for each SPECIFIED row 
+      int row_idx = *vi_it;
+      vector<double> vd = row_data_map[row_idx];
+      score_delta += v.transition_z(vd, row_idx);
+    }
+  }
+  data_score += score_delta;
+  return score_delta;
+}
 
 double State::transition_views_zs(const MatrixD &data) {
   vector<int> global_column_indices = create_sequence(data.size2());
@@ -386,6 +421,48 @@ double State::transition_views_row_partition_hyper() {
   for(int view_idx=0; view_idx<get_num_views(); view_idx++) {
     View &v = get_view(view_idx);
     score_delta += v.transition_crp_alpha();
+  }
+  data_score += score_delta;
+  return score_delta;
+}
+
+double State::transition_row_partition_hyperparameters(vector<int> which_cols) {
+  double score_delta = 0;
+  set<View*> which_views;
+  int num_cols = which_cols.size();
+  if(num_cols!=0) {
+    vector<int>::iterator it;
+    for(it=which_cols.begin(); it!=which_cols.end(); it++) {
+      View *v_p = view_lookup[*it];
+      which_views.insert(v_p);
+    }
+  } else {
+    which_views = views;
+  }
+  set<View*>::iterator it;
+  for(it=which_views.begin(); it!=which_views.end(); it++) {
+    score_delta += (*it)->transition_crp_alpha();
+  }
+  data_score += score_delta;
+  return score_delta;
+}
+
+double State::transition_column_hyperparameters(vector<int> which_cols) {
+  double score_delta = 0;
+  //
+  int num_cols = which_cols.size();
+  if(num_cols==0) {
+    num_cols = view_lookup.size();
+    which_cols = create_sequence(num_cols);
+    //FIXME: use own shuffle so seed control is in effect
+    std::random_shuffle(which_cols.begin(), which_cols.end());
+  }
+  vector<int>::iterator it;
+  for(it=which_cols.begin(); it!=which_cols.end(); it++) {
+    View &which_view = *view_lookup[*it];
+    // FIXME: this is a hack, global_to_local should be private and a getter should be used instead
+    int local_col_idx = which_view.global_to_local[*it];
+    score_delta += which_view.transition_hypers_i(local_col_idx);
   }
   data_score += score_delta;
   return score_delta;
@@ -464,129 +541,6 @@ vector<double> State::calc_column_crp_marginals(vector<double> alphas_to_score) 
   return crp_scores;
 }
 
-void State::SaveResult(string filename, int iter_idx) {
-  ofstream out(filename.c_str(), ios_base::app);
-  if(!out) {
-    cout << "Cannot open file: " << filename << endl;
-    return;
-  }
-
-  if(iter_idx!=-1) {
-    out << "State" << iter_idx << endl;
-  }
-  View &first_view = **views.begin();
-  int num_rows = first_view.get_num_vectors();
-  int num_cols = view_lookup.size();
-  map<View*, int> view_to_int = set_to_map(views);
-  int n_grid = column_crp_alpha_grid.size();
-
-  out << "F = " << num_cols << endl;
-  out << "O = " << num_rows << endl;
- 
-  matrix<int> f(1, num_cols, NaN);
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    View* p_v = view_lookup[col_idx];
-    f(0,col_idx) = view_to_int[p_v];
-  }
-  out << "f = " << f << endl;
-
-  matrix<int> o(num_cols, num_rows, NaN); // transposed!
-  set<View*>::iterator views_it = views.begin();
-  for(; views_it!=views.end(); views_it++) {
-    View* v_p = *views_it;
-    int matrix_row_idx = view_to_int[v_p];
-    vector<vector<int> > cluster_groupings = v_p->get_cluster_groupings();
-    int num_clusters = cluster_groupings.size();
-    for(int cluster_idx=0; cluster_idx<num_clusters; cluster_idx++) {
-      vector<int> cluster_indices = cluster_groupings[cluster_idx];
-      int num_elements = cluster_indices.size();
-      for(int element_idx=0; element_idx<num_elements; element_idx++) {
-	int row_idx = cluster_indices[element_idx];
-	o(matrix_row_idx, row_idx) = cluster_idx;
-      }
-    }
-  }
-  out << "o = " << o << endl;
-
-  matrix<double> paramPrior(1, n_grid, 1./n_grid);
-  out << "paramPrior = " << paramPrior << endl;
-
-  matrix<double> cumParamPrior(1, n_grid, 1./n_grid);
-  for(unsigned int i=0; i<cumParamPrior.size2(); i++) {
-    cumParamPrior(0,i) *= (i+1); 
-  }
-  out << "cumParamPrior = " << cumParamPrior << endl;
-
-  matrix<double> paramRange(1, n_grid, NaN);
-  out << "paramRange = " << paramRange << endl;
-
-  
-  matrix<double> crpKRange = vector_to_matrix(column_crp_alpha_grid);
-  out << "crpKRange = " << crpKRange << endl;
-
-  matrix<double> crpCRange = vector_to_matrix(row_crp_alpha_grid);
-  out << "crpCRange = " << crpCRange << endl;
-
-  matrix<double> kRange = vector_to_matrix(r_grid);
-  out << "kRange = " << kRange << endl;
-
-  matrix<double> aRange = vector_to_matrix(nu_grid);
-  out << "aRange = " << aRange << endl;
-
-  // FIXME: grids don't seem to be homogenous, so this is broken
-  matrix<double> muRange(num_cols, n_grid, NaN);
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    matrix<double> this_hyper_grid_m = vector_to_matrix(mu_grids[col_idx]);
-    project(muRange, range(col_idx, col_idx+1), range(0, n_grid-1)) = \
-      project(this_hyper_grid_m, range(0, 1), range(0, n_grid-1));
-  }
-  out << "muRange = " << muRange << endl;
-
-  matrix<double> bRange(num_cols, n_grid, NaN);
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    matrix<double> this_hyper_grid_m = vector_to_matrix(s_grids[col_idx]);
-    project(bRange, range(col_idx, col_idx+1), range(0, n_grid-1)) =	\
-      project(this_hyper_grid_m, range(0, 1), range(0, n_grid-1));
-  }
-  out << "bRange = " << bRange << endl;
-
-  out << "crpK = " << column_crp_alpha << endl;
-
-  matrix<double> crpC(1, num_cols, NaN);
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    View &v = *view_lookup[col_idx];
-    crpC(0, col_idx) = v.get_crp_alpha();
-  }
-  out << "crpC = " << crpC << endl;
-
-  matrix<double> NG_a(1, num_cols, NaN);
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    NG_a(0, col_idx) = hypers_m[col_idx]["nu"];
-  }
-  out << "NG_a = " << NG_a << endl;
-
-  matrix<double> NG_k(1, num_cols, NaN);
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    NG_k(0, col_idx) = hypers_m[col_idx]["r"];
-  }
-  out << "NG_k = " << NG_k << endl;
-
-  matrix<double> NG_b(1, num_cols, NaN);
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    NG_b(0, col_idx) = hypers_m[col_idx]["s"];
-  }
-  out << "NG_b = " << NG_b << endl;
-
-
-  matrix<double> NG_mu(1, num_cols, NaN);
-  for(int col_idx=0; col_idx<num_cols; col_idx++) {
-    NG_mu(0, col_idx) = hypers_m[col_idx]["mu"];
-  }
-  out << "NG_mu = " << NG_mu << endl;
-
-  out << endl;
-}
-
 double State::transition_column_crp_alpha() {
   // to make score_crp not calculate absolute, need to track score deltas
   // and apply delta to crp_score
@@ -611,7 +565,8 @@ double State::transition(const MatrixD &data) {
     if(which_transition==0) {
       score_delta += transition_views(data);
     } else if(which_transition==1) {
-      score_delta += transition_features(data);
+      vector<int> which_features;
+      score_delta += transition_features(data, which_features);
     } else if(which_transition==2) {
       score_delta += transition_column_crp_alpha();
     }

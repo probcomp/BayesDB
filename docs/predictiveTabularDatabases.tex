@@ -54,10 +54,10 @@ Consists of a language for interfacing with domain-general multidimensional dens
 \item \texttt{initialize($M_c, M_r, T, i$)} $\rightarrow \{ M_c, M_r, X_L, X_D \}$. \\
 $M_c$ is the metadata for columns including bidirectional mappings between labels and indices, the modeltype---`asymmetric\_beta\_bernoulli' for binary data, `symmetric\_dirichlet\_discrete' for closed categorical data, `pitmanyor\_atom' for open categorical data, `poisson\_gamma' for frequency data, and `normal\_inverse\_gamma' for numeric data. $M_r$ is the metadata for rows including bidirectional mappings between labels and indices. $T$ is a table indicating the values for a collection of variables, and $i$ is an initialization (together, apart, or from\_the\_prior). It returns $X_L$ and $X_D$. $X_L$ is the latent state, including all information necessary for prediction. $X_D$ is a mapping between the latent state and the table $T$. 
 
-\item \texttt{analyze($M_c, T, X_L, X_D, kernel\_list, n\_steps, c, r, max\_iterations, max\_time$)} $\rightarrow \{X'_L, X'_D\}$. \\
-$kernel\_list$ contains a list of the kernels to be run. This list may contain one or more of the following: `column\_partition\_hyperparameter', `column\_partition\_assignments', `component\_hyperparameters', `row\_partition\_hyperparameters', and/or `row\_partition\_assignments'.
+\item \texttt{analyze($M_c, T, X_L, X_D, kernel\_list, n\_steps, c, r$)} $\rightarrow \{X'_L, X'_D\}$. \\
+$kernel\_list$ contains a list of the kernels to be run. This list may contain one or more of the following: `column\_partition\_hyperparameter', `column\_partition\_assignments', `column\_hyperparameters', `row\_partition\_hyperparameters', and/or `row\_partition\_assignments'.
 $n\_steps$ is the number of times the $kernel\_list$ will be run. $c$ is an array that specifies which columns on which to run the kernels, by indices or `all'. This applies only to column kernels. $r$ is an array that specifies which rows on which to run the kernels and applies only to row kernels.
-$max\_iterations$ is the maximum number of desired iterations and $max\_time$ is the maximum wall clock time before returning a state. \texttt{analyze} returns a new latent state, $X'_L$, and a corresponding mapping between the state and the table, $X'_D$, based on the $min(max\_iterations, max\_time)$. 
+\texttt{analyze} returns a new latent state, $X'_L$, and a corresponding mapping between the state and the table, $X'_D$.
 
 \end{itemize}
 
@@ -74,13 +74,6 @@ $$
 x \sim Pr[T_{r, D}|X_L,Y].
 $$
 \hl{NOTE:} even if a queried value, $T_{r,d}$, is observed, it will be sampled from the model specified by $X_L, Y$
-
-% SimplePredictiveProbability
-\item \texttt{simple\_predictive\_probability($M_c, X_L,X_D,Y_{cond},Y_{query},n$)} $\rightarrow p$. \\
-$Y_{cond}$ is a list of conditioning conditions, while $Y_{query}$ is a list of queried conditions to be simultaneously satisfied given the conditioning conditions are true.  $n$ is the number of samples used to approximate the predictive probability.  The output, $p$, is the marginal predictive probability of $Y_{query}$ given $Y_{cond}$, assuming the model in $X_L$,
-$$
-p = Pr[Y_{query} | X_L,Y_{cond}].
-$$
 
 % Impute
 \item \texttt{impute($M_c, X_L,X_D,Y,q,n$) } $\rightarrow e$. \\
@@ -146,81 +139,6 @@ $views_{sampling} \leftarrow \{get\_view(X_L, d)\}_{d \in D}$ \;
 \caption{\texttt{simple\_predictive\_sample}}
 \end{algorithm}
 
-
-%%%%%%%%%%%%%%%%%%%%%
-% Begin SimplePredictiveProbability
-%%%%%%%%%%%%%%%%%%%%%
-
-% CONTINUOUS VERSION
-\begin{algorithm}[ht]
-\DontPrintSemicolon
-\LinesNumbered
-\Indp
-
-\SetKwInOut{Input}{input}
-\SetKwInOut{Output}{output}
-\SetKwInOut{Initialize}{initialize}
-
-\Input{$M_c, X_L, X_D, Y, Q, n$.}
-\Output{A list of marginal probabilities $p$.}
-\BlankLine
-
-\ForEach{$i \in Q$}{
-
-Extract the queried row, column and hypothesized value:\\
-$r,c,h \leftarrow Q_i$
-
-Find all elements of $Y$ that apply to the same column:
-\[Y' \leftarrow Y s.t. \; Y_{*,2}=c\]
-
-$p_i \leftarrow 0$
-
-\For{i in 1..n}{
-Sample a view and category, allowing the possibility of choosing a new view and/or category: \[
-Pr(v', y'| X_L, Y') \propto Pr(Y'|v', y',X_L)Pr(v',y'|X_L)
-\] 
-%The assignment of views is deterministic in the case where $d$ is previously observed,
-%$v' \leftarrow z_d$. The assignment of categories is deterministic when $v'$ and $r$ are previously observed, 
-%$y' \leftarrow y^{v'}_r$.
-
-Assess probability based on the appropriate posterior predictive (PP) distribution: \[ 
-p_i =  p_i + PP(Q_i | \vec{\tau^{f}_{category}}) 
-\] 
-}
-
-$p_i \leftarrow \frac{p_i}{n}$
-
-}
-
-% DISCRETE APPROXIMATION VERSION
-%\begin{algorithm}[ht]
-%\DontPrintSemicolon
-%\LinesNumbered
-%\Indp
-%
-%\SetKwInOut{Input}{input}
-%\SetKwInOut{Output}{output}
-%\SetKwInOut{Initialize}{initialize}
-%
-%\Input{$X_L$, $X_D$, $Y$, $Q$, $n$.}
-%\Output{A list of marginal probabilities $p$.}
-%\BlankLine
-%
-%\For{n iterations}{
-%Sample from posterior predictive distribution: \\
-%$x_i \leftarrow$ \texttt{simple\_predictive\_sample($M_c, X_L,X_D,Y',Q$)}.
-%}
-%
-% NOTE: law of the iterated relevant for choosing the number of bins? sqrt(n*log(log(n)))
-%            : typically sqrt(n) is used (per wiki page on histograms)
-%Bin values of $x$, identifying the sets that are within $\epsilon$ of the queried values $u$: \\
-%$A = \{ x | u - \epsilon < x < u + \epsilon \}$
-%
-%Approximate probability via histogram: \\
-%$p \approx \frac{\sum_{x_i} \mathcal{I_A}}{n}$
-
-\caption{\texttt{simple\_predictive\_probability}}
-\end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%
 % Begin Impute
