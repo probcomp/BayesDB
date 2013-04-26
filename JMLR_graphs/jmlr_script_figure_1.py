@@ -75,6 +75,7 @@ for initialization in valid_initializers:
     seconds_since_start_list_dict[initialization] = seconds_since_start_list
 
 to_pickle = dict(
+    args=args,
     num_views_list_dict=num_views_list_dict,
     seconds_since_start_list_dict=seconds_since_start_list_dict,
     )
