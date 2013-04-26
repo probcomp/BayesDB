@@ -320,7 +320,6 @@ cdef class p_State:
                    which_method, args_list = transition_and_args_lookup.get(which_transition)
                    if which_method is not None:
                         args_dict = get_args_dict(args_list, locals())
-                        print 'passing args_dict: %s' % args_dict
                         score_delta += which_method(**args_dict)
                    else:
                         print_str = 'INVALID TRANSITION TYPE TO' \
