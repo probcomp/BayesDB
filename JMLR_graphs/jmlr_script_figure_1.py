@@ -6,6 +6,7 @@ import numpy
 #
 import tabular_predDB.cython_code.State as State
 import tabular_predDB.python_utils.data_utils as du
+import tabular_predDB.python_utils.file_utils as fu
 
 
 # parse input
@@ -13,9 +14,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--gen_seed', default=0, type=int)
 parser.add_argument('--inf_seed', default=0, type=int)
 parser.add_argument('--num_clusters', default=10, type=int)
-parser.add_argument('--num_cols', default=12, type=int)
-parser.add_argument('--num_rows', default=800, type=int)
-parser.add_argument('--num_splits', default=4, type=int)
+parser.add_argument('--num_cols', default=100, type=int)
+parser.add_argument('--num_rows', default=1000, type=int)
+parser.add_argument('--num_views', default=1, type=int)
+parser.add_argument('--num_iters', default=100, type=int)
 parser.add_argument('--max_mean', default=10, type=float)
 parser.add_argument('--max_std', default=0.3, type=float)
 parser.add_argument('--N_GRID', default=31, type=int)
@@ -26,10 +28,15 @@ inf_seed = args.inf_seed
 num_clusters = args.num_clusters
 num_cols = args.num_cols
 num_rows = args.num_rows
-num_splits = args.num_splits
+num_views = args.num_views
+num_iters = args.num_iters
 max_mean = args.max_mean
 max_std = args.max_std
 N_GRID = args.N_GRID
+
+
+str_args = (num_views, gen_seed, inf_seed)
+save_filename_prefix = 'num_views_%s_gen_seed_%s_inf_seed_%s' % str_args
 
 
 # helper functions
@@ -43,7 +50,7 @@ def get_seconds_since(dt):
 # create the data
 T, M_r, M_c = du.gen_factorial_data_objects(
     gen_seed, num_clusters,
-    num_cols, num_rows, num_splits,
+    num_cols, num_rows, num_views,
     max_mean=max_mean, max_std=max_std,
     )
 
@@ -60,12 +67,19 @@ for initialization in valid_initializers:
     #p_State.plot(filename='X_D_000')
     num_views_list = [get_num_views(p_State)]
     seconds_since_start_list = [0.]
-    for iter_idx in range(10):
+    for iter_idx in range(num_iters):
         p_State.transition()
         num_views_list.append(get_num_views(p_State))
         seconds_since_start_list.append(get_seconds_since(start_dt))
     num_views_list_dict[initialization] = num_views_list
     seconds_since_start_list_dict[initialization] = seconds_since_start_list
+
+to_pickle = dict(
+    num_views_list_dict=num_views_list_dict,
+    seconds_since_start_list_dict=seconds_since_start_list_dict,
+    )
+fu.pickle(to_pickle, save_filename_prefix + '.pkl.gz')
+
 
 fh = pylab.figure()
 #
@@ -87,6 +101,4 @@ for initialization in valid_initializers:
 pylab.xlabel('cumulative run time (seconds)')
 pylab.ylabel('num_views')
 pylab.legend(list(valid_initializers))
-
-pylab.ion()
-pylab.show()
+pylab.savefig(save_filename_prefix)
