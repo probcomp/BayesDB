@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('num_views', type=int)
 parser.add_argument('gen_seed', type=int)
 parser.add_argument('directory', default='.', type=str)
-args = parser.parse_args(['1', '0', 'Figure1_5iters'])
+args = parser.parse_args()
 num_views = args.num_views
 gen_seed = args.gen_seed
 directory = args.directory
