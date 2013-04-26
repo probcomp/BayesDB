@@ -7,6 +7,7 @@ import numpy
 import tabular_predDB.cython_code.State as State
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.file_utils as fu
+import tabular_predDB.python_utils.general_utils as gu
 
 
 # parse input
@@ -42,10 +43,47 @@ save_filename_prefix = 'num_views_%s_gen_seed_%s_inf_seed_%s' % str_args
 # helper functions
 def get_num_views(p_State):
     return len(p_State.get_X_D())
+#
+def append_accumulated(in_list, to_append):
+    last = 0.
+    if len(in_list)!=0:
+        last = in_list[-1]
+    in_list.append(last + to_append)
+    return in_list
+#
+def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
+    fh = pylab.figure()
+    keys = num_views_list_dict.keys()
+    #
+    pylab.subplot(211)
+    for initialization in keys:
+        seconds_since_start_list = seconds_since_start_list_dict[initialization]
+        iter_idx = range(len(seconds_since_start_list))
+        num_views_list = num_views_list_dict[initialization]
+        pylab.plot(iter_idx, num_views_list)
+    pylab.xlabel('iteration #')
+    pylab.ylabel('num_views')
+    pylab.legend(keys)
+    #
+    pylab.subplot(212)
+    for initialization in keys:
+        seconds_since_start_list = seconds_since_start_list_dict[initialization]
+        num_views_list = num_views_list_dict[initialization]
+        pylab.plot(seconds_since_start_list, num_views_list)
+    pylab.xlabel('cumulative run time (seconds)')
+    pylab.ylabel('num_views')
+    pylab.legend(keys)
+    if filename is not None:
+        pylab.savefig(save_filename_prefix)
+#
+def create_pickle_dict():
+    to_pickle = dict(
+        args=args,
+        num_views_list_dict=num_views_list_dict,
+        seconds_since_start_list_dict=seconds_since_start_list_dict,
+        )
+    return to_pickle
 
-def get_seconds_since(dt):
-    delta = datetime.datetime.now() - dt
-    return delta.total_seconds()
 
 # create the data
 T, M_r, M_c = du.gen_factorial_data_objects(
@@ -58,48 +96,22 @@ num_views_list_dict = dict()
 seconds_since_start_list_dict = dict()
 valid_initializers = set(["together", "from_the_prior", "apart"])
 for initialization in valid_initializers:
-    # include state creation time in first iter
-    start_dt = datetime.datetime.now()
     # create the state
     p_State = State.p_State(M_c, T, N_GRID=N_GRID, SEED=inf_seed,
                             initialization=initialization)
-    #p_State.plot_T(filename='T')
-    #p_State.plot(filename='X_D_000')
     num_views_list = [get_num_views(p_State)]
     seconds_since_start_list = [0.]
     for iter_idx in range(num_iters):
-        p_State.transition()
+        timer_str = '%s: iter_idx=%s' % (initialization, iter_idx)
+        with gu.Timer(timer_str) as t:
+            p_State.transition()
         num_views_list.append(get_num_views(p_State))
-        seconds_since_start_list.append(get_seconds_since(start_dt))
-    num_views_list_dict[initialization] = num_views_list
-    seconds_since_start_list_dict[initialization] = seconds_since_start_list
-
-to_pickle = dict(
-    args=args,
-    num_views_list_dict=num_views_list_dict,
-    seconds_since_start_list_dict=seconds_since_start_list_dict,
-    )
-fu.pickle(to_pickle, save_filename_prefix + '.pkl.gz')
-
-
-fh = pylab.figure()
-#
-pylab.subplot(211)
-for initialization in valid_initializers:
-    seconds_since_start_list = seconds_since_start_list_dict[initialization]
-    iter_idx = range(len(seconds_since_start_list))
-    num_views_list = num_views_list_dict[initialization]
-    pylab.plot(iter_idx, num_views_list)
-pylab.xlabel('iteration #')
-pylab.ylabel('num_views')
-pylab.legend(list(valid_initializers))
-#
-pylab.subplot(212)
-for initialization in valid_initializers:
-    seconds_since_start_list = seconds_since_start_list_dict[initialization]
-    num_views_list = num_views_list_dict[initialization]
-    pylab.plot(seconds_since_start_list, num_views_list)
-pylab.xlabel('cumulative run time (seconds)')
-pylab.ylabel('num_views')
-pylab.legend(list(valid_initializers))
-pylab.savefig(save_filename_prefix)
+        append_accumulated(seconds_since_start_list, t.elapsed_secs)
+        #
+        num_views_list_dict[initialization] = num_views_list
+        seconds_since_start_list_dict[initialization] = seconds_since_start_list
+        if iter_idx % 10 == 0:
+            to_pickle = create_pickle_dict()
+            fu.pickle(to_pickle, save_filename_prefix + '.pkl.gz')
+            plot(num_views_list_dict, seconds_since_start_list_dict,
+                 filename=save_filename_prefix)
