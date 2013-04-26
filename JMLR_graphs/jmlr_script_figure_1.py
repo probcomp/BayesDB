@@ -115,3 +115,8 @@ for initialization in valid_initializers:
             fu.pickle(to_pickle, save_filename_prefix + '.pkl.gz')
             plot(num_views_list_dict, seconds_since_start_list_dict,
                  filename=save_filename_prefix)
+
+to_pickle = create_pickle_dict()
+fu.pickle(to_pickle, save_filename_prefix + '.pkl.gz')
+plot(num_views_list_dict, seconds_since_start_list_dict,
+     filename=save_filename_prefix)
