@@ -20,6 +20,48 @@ directory = args.directory
 str_args = (num_views, gen_seed)
 save_filename_prefix = 'num_views_%s_gen_seed_%s' % str_args
 
+
+def get_unique_handles_labels(handles, labels):
+    handles_lookup = dict()
+    for handle, label in zip(handles, labels):
+        if label not in handles_lookup:
+            handles_lookup[label] = handle
+    unique_labels = handles_lookup.keys()
+    unique_handles = handles_lookup.values()
+    return unique_handles, unique_labels
+
+def legend_outside(ax=None, bbox_to_anchor=(0.5, -.25), loc='upper center',
+                   ncol=None, unique=True, cmp_func=cmp):
+    # labels must be set in original plot call: plot(..., label=label)
+    if ax is None:
+        ax = pylab.gca()
+    handles, labels = ax.get_legend_handles_labels()
+    if unique:
+        handles, labels = get_unique_handles_labels(handles, labels)
+    zipped = zip(handles, labels)
+    cmp_func_mod = lambda x, y: cmp_func(x[-1], y[-1])
+    sorted_zipped = sorted(zipped, cmp=cmp_func_mod)[::-1]
+    handles, labels = zip(*sorted_zipped)
+    handles = pylab.array(handles)
+    labels = pylab.array(labels)
+    if ncol is None:
+        ncol = min(len(labels), 3)
+    # lgd = ax.legend(handles, labels, loc=loc, ncol=ncol,
+    # 	            bbox_to_anchor=bbox_to_anchor, prop={"size":14})
+    lgd = pylab.legend(handles, labels, loc=loc, ncol=ncol,
+                       bbox_to_anchor=bbox_to_anchor, prop={"size":14})
+
+def savefig_legend_outside(namestr, ax=None, bbox_inches='tight'):
+    if ax is None:
+        ax = pylab.gca()
+    lgd = ax.get_legend()
+    try:
+        pylab.savefig(
+            namestr, bbox_extra_artists=(lgd,), bbox_inches=bbox_inches)
+    except Exception, e:
+        print e
+        pylab.savefig(namestr)
+
 def set_lim(ax, xmin=None, xmax=None, ymin=None, ymax=None):
     if xmin is not None or xmax is not None:
         if xmin is None:
@@ -44,7 +86,6 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
     fig = pylab.figure()
     keys = num_views_list_dict.keys()
     # #views vs iterations, zoomed out
-    line_lookup = dict()
     ax = pylab.subplot(221)
     for initialization in keys:
         seconds_since_start_list = seconds_since_start_list_dict[initialization]
@@ -54,14 +95,10 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         lines = pylab.plot(numpy.array(iter_idx).T,
                            numpy.array(num_views_list).T,
                            label=initialization, color=color)
-        line_lookup[initialization] = lines[0]
     set_lim(ax, xmax=3600)
     pylab.xlabel('iteration #')
     pylab.ylabel('num_views')
-    lines = [line_lookup[initialization] for initialization in keys]
-    pylab.legend(lines, keys)
     # #views vs iterations, zoomed in
-    line_lookup = dict()
     ax = pylab.subplot(222)
     for initialization in keys:
         seconds_since_start_list = seconds_since_start_list_dict[initialization]
@@ -71,14 +108,10 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         lines = pylab.plot(numpy.array(iter_idx).T,
                            numpy.array(num_views_list).T,
                            label=initialization, color=color)
-        line_lookup[initialization] = lines[0]
     set_lim(ax, xmax=3600, ymax=15)
     pylab.xlabel('iteration #')
     pylab.ylabel('num_views')
-    lines = [line_lookup[initialization] for initialization in keys]
-    pylab.legend(lines, keys)
     # #views vs seconds, zoomed out
-    line_lookup = dict()
     ax = pylab.subplot(223)
     for initialization in keys:
         seconds_since_start_list = seconds_since_start_list_dict[initialization]
@@ -87,14 +120,10 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         lines = pylab.plot(numpy.array(seconds_since_start_list).T,
                            numpy.array(num_views_list).T,
                            label=initialization, color=color)
-        line_lookup[initialization] = lines[0]
     set_lim(ax, xmax=3600)
     pylab.xlabel('cumulative run time (seconds)')
     pylab.ylabel('num_views')
-    lines = [line_lookup[initialization] for initialization in keys]
-    pylab.legend(lines, keys)
     # #views vs seconds, zoomed in
-    line_lookup = dict()
     ax = pylab.subplot(224)
     for initialization in keys:
         seconds_since_start_list = seconds_since_start_list_dict[initialization]
@@ -103,14 +132,15 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         lines = pylab.plot(numpy.array(seconds_since_start_list).T,
                            numpy.array(num_views_list).T,
                            label=initialization, color=color)
-        line_lookup[initialization] = lines[0]
     set_lim(ax, xmax=3600, ymax=15)
     pylab.xlabel('cumulative run time (seconds)')
     pylab.ylabel('num_views')
-    lines = [line_lookup[initialization] for initialization in keys]
-    pylab.legend(lines, keys)
+    legend_outside(bbox_to_anchor=(-.15, -.25))
     #
-    if filename is not None:
+    title_str = 'TITLE'
+    pylab.figtext(0.5, 0.965, title_str,
+                  ha='center', color='black', weight='bold', size='large')
+    if filename is not None:        
         pylab.savefig(save_filename_prefix)
 
 all_files = os.listdir(directory)
@@ -130,3 +160,6 @@ for this_file in these_files:
         num_views_list_dict[initialization].append(num_views_list)
 
 plot(num_views_list_dict, seconds_since_start_list_dict)
+savefig_legend_outside('temp')
+pylab.ion()
+pylab.show()
