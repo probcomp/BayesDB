@@ -101,20 +101,23 @@ for initialization in valid_initializers:
                             initialization=initialization)
     num_views_list = [get_num_views(p_State)]
     seconds_since_start_list = [0.]
-    for iter_idx in range(num_iters):
-        timer_str = '%s: iter_idx=%s' % (initialization, iter_idx)
-        with gu.Timer(timer_str) as t:
-            p_State.transition()
-        num_views_list.append(get_num_views(p_State))
-        append_accumulated(seconds_since_start_list, t.elapsed_secs)
-        #
-        num_views_list_dict[initialization] = num_views_list
-        seconds_since_start_list_dict[initialization] = seconds_since_start_list
-        if iter_idx % 10 == 0:
-            to_pickle = create_pickle_dict()
-            fu.pickle(to_pickle, save_filename_prefix + '.pkl.gz')
-            plot(num_views_list_dict, seconds_since_start_list_dict,
-                 filename=save_filename_prefix)
+    with gu.Timer('iterations') as t_iterations:
+        for iter_idx in range(num_iters):
+            timer_str = '%s: iter_idx=%s' % (initialization, iter_idx)
+            with gu.Timer(timer_str) as t_iteration:
+                p_State.transition()
+            num_views_list.append(get_num_views(p_State))
+            append_accumulated(seconds_since_start_list, t_iteration.elapsed_secs)
+            #
+            num_views_list_dict[initialization] = num_views_list
+            seconds_since_start_list_dict[initialization] = seconds_since_start_list
+            if iter_idx % 10 == 0:
+                to_pickle = create_pickle_dict()
+                fu.pickle(to_pickle, save_filename_prefix + '.pkl.gz')
+                plot(num_views_list_dict, seconds_since_start_list_dict,
+                     filename=save_filename_prefix)
+            if t_iterations.timer() - t_iterations.start > 3600:
+                break
 
 to_pickle = create_pickle_dict()
 fu.pickle(to_pickle, save_filename_prefix + '.pkl.gz')
