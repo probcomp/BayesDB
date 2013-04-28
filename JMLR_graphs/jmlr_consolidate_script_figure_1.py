@@ -1,4 +1,5 @@
 import os
+import copy
 import argparse
 from collections import defaultdict
 #
@@ -43,12 +44,15 @@ def legend_outside(ax=None, bbox_to_anchor=(0.5, -.25), loc='upper center',
     sorted_zipped = sorted(zipped, cmp=cmp_func_mod)[::-1]
     handles, labels = zip(*sorted_zipped)
     handles = pylab.array(handles)
+    handle_copies = [copy.copy(handle) for handle in handles]
+    for handle in handle_copies:
+        handle.set_alpha(1.0)
     labels = pylab.array(labels)
     if ncol is None:
         ncol = min(len(labels), 3)
     # lgd = ax.legend(handles, labels, loc=loc, ncol=ncol,
     # 	            bbox_to_anchor=bbox_to_anchor, prop={"size":14})
-    lgd = pylab.legend(handles, labels, loc=loc, ncol=ncol,
+    lgd = pylab.legend(handle_copies, labels, loc=loc, ncol=ncol,
                        bbox_to_anchor=bbox_to_anchor, prop={"size":14})
 
 def savefig_legend_outside(namestr, ax=None, bbox_inches='tight', bbox_extra_artists=()):
@@ -99,7 +103,7 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         color = color_lookup[initialization]
         lines = pylab.plot(numpy.array(iter_idx).T,
                            numpy.array(num_views_list).T,
-                           label=initialization, color=color)
+                           label=initialization, color=color, alpha=0.3)
     set_lim(ax, xmax=3600)
     pylab.xlabel('iteration #')
     pylab.ylabel('num_views')
@@ -112,7 +116,7 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         color = color_lookup[initialization]
         lines = pylab.plot(numpy.array(iter_idx).T,
                            numpy.array(num_views_list).T,
-                           label=initialization, color=color)
+                           label=initialization, color=color, alpha=0.3)
     set_lim(ax, xmax=3600, ymax=15)
     pylab.xlabel('iteration #')
     pylab.ylabel('num_views')
@@ -124,7 +128,7 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         color = color_lookup[initialization]
         lines = pylab.plot(numpy.array(seconds_since_start_list).T,
                            numpy.array(num_views_list).T,
-                           label=initialization, color=color)
+                           label=initialization, color=color, alpha=0.3)
     set_lim(ax, xmax=3600)
     pylab.xlabel('cumulative run time (seconds)')
     pylab.ylabel('num_views')
@@ -136,7 +140,7 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         color = color_lookup[initialization]
         lines = pylab.plot(numpy.array(seconds_since_start_list).T,
                            numpy.array(num_views_list).T,
-                           label=initialization, color=color)
+                           label=initialization, color=color, alpha=0.3)
     set_lim(ax, xmax=3600, ymax=15)
     pylab.xlabel('cumulative run time (seconds)')
     pylab.ylabel('num_views')
