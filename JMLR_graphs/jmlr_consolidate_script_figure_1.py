@@ -104,9 +104,9 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         lines = pylab.plot(numpy.array(iter_idx).T,
                            numpy.array(num_views_list).T,
                            label=initialization, color=color, alpha=0.3)
-    set_lim(ax, xmax=3600)
+    # set_lim(ax, xmax=3600)
     pylab.xlabel('iteration #')
-    pylab.ylabel('num_views')
+    pylab.ylabel('# views')
     # #views vs iterations, zoomed in
     ax = pylab.subplot(222)
     for initialization in keys:
@@ -117,9 +117,9 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         lines = pylab.plot(numpy.array(iter_idx).T,
                            numpy.array(num_views_list).T,
                            label=initialization, color=color, alpha=0.3)
-    set_lim(ax, xmax=3600, ymax=15)
+    set_lim(ax, ymax=15)
     pylab.xlabel('iteration #')
-    pylab.ylabel('num_views')
+    pylab.ylabel('# views')
     # #views vs seconds, zoomed out
     ax = pylab.subplot(223)
     for initialization in keys:
@@ -129,9 +129,10 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         lines = pylab.plot(numpy.array(seconds_since_start_list).T,
                            numpy.array(num_views_list).T,
                            label=initialization, color=color, alpha=0.3)
-    set_lim(ax, xmax=3600)
+    # set_lim(ax, xmax=3600)
+    ax.set_xticks([0, 1000, 2000, 3000])
     pylab.xlabel('cumulative run time (seconds)')
-    pylab.ylabel('num_views')
+    pylab.ylabel('# views')
     # #views vs seconds, zoomed in
     ax = pylab.subplot(224)
     for initialization in keys:
@@ -141,9 +142,10 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         lines = pylab.plot(numpy.array(seconds_since_start_list).T,
                            numpy.array(num_views_list).T,
                            label=initialization, color=color, alpha=0.3)
-    set_lim(ax, xmax=3600, ymax=15)
+    set_lim(ax, ymax=15)
+    ax.set_xticks([0, 1000, 2000, 3000])
     pylab.xlabel('cumulative run time (seconds)')
-    pylab.ylabel('num_views')
+    pylab.ylabel('# views')
     legend_outside(bbox_to_anchor=(-.15, -.25))
     #
     title_str = 'TITLE'
