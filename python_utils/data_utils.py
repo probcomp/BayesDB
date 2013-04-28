@@ -51,7 +51,7 @@ def gen_factorial_data(gen_seed, num_clusters,
             max_mean=max_mean,
             max_std=max_std,
             )
-        permutation_indices = numpy.random.permutation(xrange(num_rows))
+        permutation_indices = random_state.permutation(xrange(num_rows))
         # permutation_indices = get_ith_ordering(range(num_rows), data_idx)
         inverse_permutation_indices = numpy.argsort(permutation_indices)
         inverse_permutation_indices_list.append(inverse_permutation_indices)
