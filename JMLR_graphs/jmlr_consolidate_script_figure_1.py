@@ -148,9 +148,9 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
     pylab.ylabel('# views')
     legend_outside(bbox_to_anchor=(-.15, -.25))
     #
-    title_str = 'TITLE'
-    ft = pylab.figtext(0.5, 0.965, title_str,
-                  ha='center', color='black', weight='bold', size='large')
+    title_str = 'Initializing the sampler from the prior ensures reliable convergence in a reasonable amount of time.'
+    ft = pylab.figtext(0.5, 0.94, title_str,
+                  ha='center', color='black', weight='bold', size='small')
     if filename is not None:        
         pylab.savefig(save_filename_prefix)
     return ft
