@@ -129,7 +129,7 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         lines = pylab.plot(numpy.array(seconds_since_start_list).T,
                            numpy.array(num_views_list).T,
                            label=initialization, color=color, alpha=0.3)
-    # set_lim(ax, xmax=3600)
+    set_lim(ax, xmax=3600)
     ax.set_xticks([0, 1000, 2000, 3000])
     pylab.xlabel('cumulative run time (seconds)')
     pylab.ylabel('# views')
@@ -142,13 +142,13 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         lines = pylab.plot(numpy.array(seconds_since_start_list).T,
                            numpy.array(num_views_list).T,
                            label=initialization, color=color, alpha=0.3)
-    set_lim(ax, ymax=15)
+    set_lim(ax, xmax=3600, ymax=15)
     ax.set_xticks([0, 1000, 2000, 3000])
     pylab.xlabel('cumulative run time (seconds)')
     pylab.ylabel('# views')
     legend_outside(bbox_to_anchor=(-.15, -.25))
     #
-    title_str = 'Initializing the sampler from the prior ensures reliable convergence in a reasonable amount of time.'
+    title_str = 'Initializing the sampler from the prior ensures reliable convergence in a reasonable amount of time.\nGround truth #views is %d' % num_views
     ft = pylab.figtext(0.5, 0.94, title_str,
                   ha='center', color='black', weight='bold', size='small')
     if filename is not None:        
@@ -172,6 +172,7 @@ for this_file in these_files:
         num_views_list_dict[initialization].append(num_views_list)
 
 ft = plot(num_views_list_dict, seconds_since_start_list_dict)
-savefig_legend_outside('temp',bbox_extra_artists=[ft])
+plot_filename = 'num_views_%d' % num_views
+savefig_legend_outside(plot_filename, bbox_extra_artists=[ft])
 pylab.ion()
 pylab.show()
