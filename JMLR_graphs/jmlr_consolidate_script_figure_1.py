@@ -51,13 +51,18 @@ def legend_outside(ax=None, bbox_to_anchor=(0.5, -.25), loc='upper center',
     lgd = pylab.legend(handles, labels, loc=loc, ncol=ncol,
                        bbox_to_anchor=bbox_to_anchor, prop={"size":14})
 
-def savefig_legend_outside(namestr, ax=None, bbox_inches='tight'):
+def savefig_legend_outside(namestr, ax=None, bbox_inches='tight', bbox_extra_artists=()):
     if ax is None:
         ax = pylab.gca()
     lgd = ax.get_legend()
+    if bbox_extra_artists is None:
+        bbox_extra_artists = (lgd,)
+    else:
+        bbox_extra_artists = list(bbox_extra_artists)
+        bbox_extra_artists.append(lgd)
     try:
-        pylab.savefig(
-            namestr, bbox_extra_artists=(lgd,), bbox_inches=bbox_inches)
+        pylab.savefig(namestr, bbox_extra_artists=bbox_extra_artists,
+                      bbox_inches=bbox_inches)
     except Exception, e:
         print e
         pylab.savefig(namestr)
@@ -138,10 +143,11 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
     legend_outside(bbox_to_anchor=(-.15, -.25))
     #
     title_str = 'TITLE'
-    pylab.figtext(0.5, 0.965, title_str,
+    ft = pylab.figtext(0.5, 0.965, title_str,
                   ha='center', color='black', weight='bold', size='large')
     if filename is not None:        
         pylab.savefig(save_filename_prefix)
+    return ft
 
 all_files = os.listdir(directory)
 is_this_config = lambda filename: filename.startswith(save_filename_prefix)
@@ -159,7 +165,7 @@ for this_file in these_files:
             in unpickled['num_views_list_dict'].iteritems():
         num_views_list_dict[initialization].append(num_views_list)
 
-plot(num_views_list_dict, seconds_since_start_list_dict)
-savefig_legend_outside('temp')
+ft = plot(num_views_list_dict, seconds_since_start_list_dict)
+savefig_legend_outside('temp',bbox_extra_artists=[ft])
 pylab.ion()
 pylab.show()
