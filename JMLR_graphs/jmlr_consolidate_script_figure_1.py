@@ -21,6 +21,16 @@ directory = args.directory
 str_args = (num_views, gen_seed)
 save_filename_prefix = 'num_views_%s_gen_seed_%s' % str_args
 
+def rectangularize_with_nans(ragged):
+    num_rows = len(ragged)
+    num_cols = max(map(len, ragged))
+    shape = (num_rows, num_cols)
+    arr = numpy.ones(shape) * numpy.nan
+    #
+    for row_idx, row in enumerate(ragged):
+        row_len = len(row)
+        arr[row_idx, range(row_len)] = row
+    return arr
 
 def get_unique_handles_labels(handles, labels):
     handles_lookup = dict()
@@ -101,8 +111,8 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         iter_idx = map(lambda x: range(len(x)), seconds_since_start_list)
         num_views_list = num_views_list_dict[initialization]
         color = color_lookup[initialization]
-        lines = pylab.plot(numpy.array(iter_idx).T,
-                           numpy.array(num_views_list).T,
+        lines = pylab.plot(rectangularize_with_nans(iter_idx).T,
+                           rectangularize_with_nans(num_views_list).T,
                            label=initialization, color=color, alpha=0.3)
     # set_lim(ax, xmax=3600)
     pylab.xlabel('iteration #')
@@ -114,8 +124,8 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         iter_idx = map(lambda x: range(len(x)), seconds_since_start_list)
         num_views_list = num_views_list_dict[initialization]
         color = color_lookup[initialization]
-        lines = pylab.plot(numpy.array(iter_idx).T,
-                           numpy.array(num_views_list).T,
+        lines = pylab.plot(rectangularize_with_nans(iter_idx).T,
+                           rectangularize_with_nans(num_views_list).T,
                            label=initialization, color=color, alpha=0.3)
     set_lim(ax, ymax=15)
     pylab.xlabel('iteration #')
@@ -126,8 +136,8 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         seconds_since_start_list = seconds_since_start_list_dict[initialization]
         num_views_list = num_views_list_dict[initialization]
         color = color_lookup[initialization]
-        lines = pylab.plot(numpy.array(seconds_since_start_list).T,
-                           numpy.array(num_views_list).T,
+        lines = pylab.plot(rectangularize_with_nans(seconds_since_start_list).T,
+                           rectangularize_with_nans(num_views_list).T,
                            label=initialization, color=color, alpha=0.3)
     set_lim(ax, xmax=3600)
     ax.set_xticks([0, 1000, 2000, 3000])
@@ -139,8 +149,8 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
         seconds_since_start_list = seconds_since_start_list_dict[initialization]
         num_views_list = num_views_list_dict[initialization]
         color = color_lookup[initialization]
-        lines = pylab.plot(numpy.array(seconds_since_start_list).T,
-                           numpy.array(num_views_list).T,
+        lines = pylab.plot(rectangularize_with_nans(seconds_since_start_list).T,
+                           rectangularize_with_nans(num_views_list).T,
                            label=initialization, color=color, alpha=0.3)
     set_lim(ax, xmax=3600, ymax=15)
     ax.set_xticks([0, 1000, 2000, 3000])
