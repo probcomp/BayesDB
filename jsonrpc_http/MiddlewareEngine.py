@@ -282,6 +282,7 @@ class MiddlewareEngine(object):
       conn.commit()
       p_list = []
       for chainid in chainids:
+        # analyze_helper(tableid, M_c, T, chainid, iterations, self.BACKEND_URI)
         from multiprocessing import Process
         p = Process(target=analyze_helper,
                     args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
@@ -723,10 +724,10 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
   # FIXME: allow specification of kernel_list
   args_dict['kernel_list'] = None
   args_dict['n_steps'] = iterations
-  args_dict['c'] = 'c' # Currently ignored by analyze
-  args_dict['r'] = 'r' # Currently ignored by analyze
-  args_dict['max_iterations'] = 'max_iterations' # Currently ignored by analyze
-  args_dict['max_time'] = 'max_time' # Currently ignored by analyze
+  args_dict['c'] = () # Currently ignored by analyze
+  args_dict['r'] = () # Currently ignored by analyze
+  args_dict['max_iterations'] = -1 # Currently ignored by analyze
+  args_dict['max_time'] = -1 # Currently ignored by analyze
   out, id = au.call('analyze', args_dict, BACKEND_URI)
   X_L_prime, X_D_prime = out
 
