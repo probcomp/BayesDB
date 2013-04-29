@@ -282,15 +282,15 @@ class MiddlewareEngine(object):
       conn.commit()
       p_list = []
       for chainid in chainids:
-        # analyze_helper(tableid, M_c, T, chainid, iterations, self.BACKEND_URI)
-        from multiprocessing import Process
-        p = Process(target=analyze_helper,
-                    args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
-        p_list.append(p)
-        p.start()
-      if wait:
-        for p in p_list:
-          p.join()
+        analyze_helper(tableid, M_c, T, chainid, iterations, self.BACKEND_URI)
+      #   from multiprocessing import Process
+      #   p = Process(target=analyze_helper,
+      #               args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
+      #   p_list.append(p)
+      #   p.start()
+      # if wait:
+      #   for p in p_list:
+      #     p.join()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
       return e
