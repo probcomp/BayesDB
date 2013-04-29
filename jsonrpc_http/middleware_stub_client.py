@@ -36,9 +36,6 @@ def call(method_name, args_dict, URI, online):
 def run_test_with(tablename, table_csv, URI, crosscat_column_types="None", online=False):
   call('start_from_scratch', {}, URI, online)
 
-  # drop tablename
-  call('drop_tablename', {'tablename': tablename}, URI, online)
-
   # test upload_data_table
   print 'uploading data table %s' % tablename
   method_name = 'upload_data_table'
