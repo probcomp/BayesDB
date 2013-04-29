@@ -299,17 +299,6 @@ class MiddlewareEngine(object):
         conn.close()
     return 0
 
-  def select(self, querystring):
-    """Run a select query, and return the results in csv format, with appropriate header."""
-    # TODO: implement
-    conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
-    cur = conn.cursor()
-    cur.execute(querystring)
-    conn.commit()
-    conn.close()
-    # Convert results into csv so they can be returned...
-    return ""
-  
   def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples):
     """Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
