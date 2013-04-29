@@ -272,7 +272,7 @@ class MiddlewareEngine(object):
       M_c_json, T_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       T = json.loads(T_json)
-      if (chain_index.upper() == 'ALL'):
+      if (str(chain_index).upper() == 'ALL'):
         cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
         chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
         chainids = map(int, chainids)
