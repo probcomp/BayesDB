@@ -314,9 +314,9 @@ def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
     return column_type
 
 def guess_column_types(T, count_cutoff=20, ratio_cutoff=0.02):
-    T_array = numpy.array(T)
+    T_array_transposed = numpy.array(T).T
     column_types = []
-    for column_data in T_array.T:
-        column_type = guess_column_types(column_data, count_cutoff, ratio_cutoff)
+    for column_data in T_array_transposed:
+        column_type = guess_column_type(column_data, count_cutoff, ratio_cutoff)
         column_types.append(column_type)
     return column_types
