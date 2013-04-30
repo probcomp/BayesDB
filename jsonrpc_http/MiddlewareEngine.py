@@ -594,49 +594,7 @@ class MiddlewareEngine(object):
       filename = tablename + '_feature_z'
     full_filename = os.path.join(dir, filename)
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-    num_cols = len(X_L_list[0]['column_partition']['assignments'])
-    column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
-    column_names = numpy.array(column_names)
-    # extract unordered z_matrix
-    num_latent_states = len(X_L_list)
-    z_matrix = numpy.zeros((num_cols, num_cols))
-    for X_L in X_L_list:
-      assignments = X_L['column_partition']['assignments']
-      for i in range(num_cols):
-        for j in range(num_cols):
-          if assignments[i] == assignments[j]:
-            z_matrix[i, j] += 1
-    z_matrix /= float(num_latent_states)
-    # hierachically cluster z_matrix
-    Y = hcluster.pdist(z_matrix)
-    Z = hcluster.linkage(Y)
-    pylab.figure()
-    hcluster.dendrogram(Z)
-    intify = lambda x: int(x.get_text())
-    reorder_indices = map(intify, pylab.gca().get_xticklabels())
-    pylab.close()
-    # REORDER! 
-    z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
-    column_names_reordered = column_names[reorder_indices]
-    # actually create figure
-    fig = pylab.figure()
-    fig.set_size_inches(16, 12)
-    pylab.imshow(z_matrix_reordered, interpolation='none',
-                 cmap=matplotlib.cm.gray_r)
-    pylab.colorbar()
-    if num_cols < 14:
-      pylab.gca().set_yticks(range(num_cols))
-      pylab.gca().set_yticklabels(column_names_reordered, size='small')
-      pylab.gca().set_xticks(range(num_cols))
-      pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
-    else:
-      pylab.gca().set_yticks(range(num_cols)[::2])
-      pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
-      pylab.gca().set_xticks(range(num_cols)[1::2])
-      pylab.gca().set_xticklabels(column_names_reordered[1::2],
-                                  rotation=90, size='small')
-    pylab.title('column dependencies for: %s' % tablename)
-    pylab.savefig(full_filename)
+    do_gen_feature_z(X_L_list, X_D_list, M_c, full_filename, tablename)
 
   def dump_db(self, filename, dir=S.path.web_resources_dir):
     full_filename = os.path.join(dir, filename)
@@ -736,3 +694,48 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
     if conn:
       conn.close()      
   return 0
+
+def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
+    num_cols = len(X_L_list[0]['column_partition']['assignments'])
+    column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
+    column_names = numpy.array(column_names)
+    # extract unordered z_matrix
+    num_latent_states = len(X_L_list)
+    z_matrix = numpy.zeros((num_cols, num_cols))
+    for X_L in X_L_list:
+      assignments = X_L['column_partition']['assignments']
+      for i in range(num_cols):
+        for j in range(num_cols):
+          if assignments[i] == assignments[j]:
+            z_matrix[i, j] += 1
+    z_matrix /= float(num_latent_states)
+    # hierachically cluster z_matrix
+    Y = hcluster.pdist(z_matrix)
+    Z = hcluster.linkage(Y)
+    pylab.figure()
+    hcluster.dendrogram(Z)
+    intify = lambda x: int(x.get_text())
+    reorder_indices = map(intify, pylab.gca().get_xticklabels())
+    pylab.close()
+    # REORDER! 
+    z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
+    column_names_reordered = column_names[reorder_indices]
+    # actually create figure
+    fig = pylab.figure()
+    fig.set_size_inches(16, 12)
+    pylab.imshow(z_matrix_reordered, interpolation='none',
+                 cmap=matplotlib.cm.gray_r)
+    pylab.colorbar()
+    if num_cols < 14:
+      pylab.gca().set_yticks(range(num_cols))
+      pylab.gca().set_yticklabels(column_names_reordered, size='small')
+      pylab.gca().set_xticks(range(num_cols))
+      pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
+    else:
+      pylab.gca().set_yticks(range(num_cols)[::2])
+      pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
+      pylab.gca().set_xticks(range(num_cols)[1::2])
+      pylab.gca().set_xticklabels(column_names_reordered[1::2],
+                                  rotation=90, size='small')
+    pylab.title('column dependencies for: %s' % tablename)
+    pylab.savefig(filename)
