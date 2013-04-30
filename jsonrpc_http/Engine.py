@@ -30,7 +30,7 @@ class Engine(object):
                 max_iterations, max_time):
         SEED = self.get_next_seed()
         p_State = State.p_State(M_c, T, X_L, X_D, SEED=SEED)
-        # FIXME: actually pay attention to c, r, max_time
+        # FIXME: actually pay attention to max_iterations, max_time
         p_State.transition(kernel_list, n_steps, c, r,
                            max_iterations, max_time)
         X_L_prime = p_State.get_X_L()
