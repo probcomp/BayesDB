@@ -22,6 +22,7 @@ parser.add_argument('--num_iters', default=500, type=int)
 parser.add_argument('--max_mean', default=10, type=float)
 parser.add_argument('--max_std', default=0.3, type=float)
 parser.add_argument('--N_GRID', default=31, type=int)
+parser.add_argument('--max_seconds', default=3600, type=int)
 args = parser.parse_args()
 #
 gen_seed = args.gen_seed
@@ -34,6 +35,7 @@ num_iters = args.num_iters
 max_mean = args.max_mean
 max_std = args.max_std
 N_GRID = args.N_GRID
+max_seconds = args.max_seconds
 
 
 str_args = (num_views, gen_seed, inf_seed)
@@ -116,7 +118,7 @@ for initialization in valid_initializers:
                 fu.pickle(to_pickle, save_filename_prefix + '.pkl.gz')
                 plot(num_views_list_dict, seconds_since_start_list_dict,
                      filename=save_filename_prefix)
-            if t_iterations.timer() - t_iterations.start > 3600:
+            if t_iterations.timer() - t_iterations.start > max_seconds:
                 break
 
 to_pickle = create_pickle_dict()
