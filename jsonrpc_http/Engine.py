@@ -26,8 +26,8 @@ class Engine(object):
         X_D = p_State.get_X_D()
         return M_c, M_r, X_L, X_D
 
-    def analyze(self, M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
-                max_iterations, max_time):
+    def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
+                max_iterations=-1, max_time=-1):
         SEED = self.get_next_seed()
         p_State = State.p_State(M_c, T, X_L, X_D, SEED=SEED)
         # FIXME: actually pay attention to max_iterations, max_time
