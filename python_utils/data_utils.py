@@ -173,6 +173,24 @@ def convert_columns_to_multinomial(T, M_c, multinomial_indices):
         multinomial_column_metadata['value_to_code'] = value_to_code
     return T, M_c
 
+def at_most_N_rows(T, N, gen_seed=0):
+    num_rows = len(T)
+    if (N is not None) and (num_rows > N):
+        random_state = numpy.random.RandomState(gen_seed)
+        which_rows = random_state.permutation(xrange(num_rows))
+        which_rows = which_rows[:N]
+        T = [T[which_row] for which_row in which_rows]
+    return T
+
+def read_csv(filename, has_header=True):
+    with open(filename) as fh:
+        csv_reader = csv.reader(fh)
+        header = None
+        if has_header:
+            header = csv_reader.next()
+        rows = [row for row in csv_reader]
+    return header, rows
+
 def all_continuous_from_file(filename, max_rows=None, gen_seed=0, has_header=True):
     header, T = read_csv(filename, has_header=has_header)
     T = numpy.array(T, dtype=float).tolist()
@@ -243,15 +261,6 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
     T = numpy.array(T_uncast_array, dtype=float).tolist()
     return T
 
-def at_most_N_rows(T, N, gen_seed=0):
-    num_rows = len(T)
-    if (N is not None) and (num_rows > N):
-        random_state = numpy.random.RandomState(gen_seed)
-        which_rows = random_state.permutation(xrange(num_rows))
-        which_rows = which_rows[:N]
-        T = [T[which_row] for which_row in which_rows]
-    return T
-
 def remove_ignore_cols(T, cctypes, header):
     cctypes_arr = numpy.array(cctypes)
     header_arr = numpy.array(header)
@@ -311,12 +320,3 @@ def guess_column_types(T, count_cutoff=20, ratio_cutoff=0.02):
         column_type = guess_column_types(column_data, count_cutoff, ratio_cutoff)
         column_types.append(column_type)
     return column_types
-
-def read_csv(filename, has_header=True):
-    with open(filename) as fh:
-        csv_reader = csv.reader(fh)
-        header = None
-        if has_header:
-            header = csv_reader.next()
-        rows = [row for row in csv_reader]
-    return header, rows
