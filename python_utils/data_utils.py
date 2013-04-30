@@ -320,3 +320,11 @@ def guess_column_types(T, count_cutoff=20, ratio_cutoff=0.02):
         column_type = guess_column_type(column_data, count_cutoff, ratio_cutoff)
         column_types.append(column_type)
     return column_types
+
+def read_model_data_from_csv(filename, max_rows=None, gen_seed=0, has_header=True):
+    colnames, T = read_csv(filename)
+    T = at_most_N_rows(T, max_rows, gen_seed)
+    cctypes = guess_column_types(T)
+    M_r = gen_M_r_from_T(T)
+    M_c = gen_M_c_from_T(T, cctypes, colnames)
+    return T, M_r, M_c
