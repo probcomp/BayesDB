@@ -126,6 +126,3 @@ for impute_row in [10, 20, 30, 40, 50, 60, 70, 80]:
         #
         imputed = engine.impute(M_c, X_L_list, X_D_list, Y, Q, 1000)
         imputed_list.append(imputed)
-    print
-    print actual_values
-    print map(round_1, imputed_list)
