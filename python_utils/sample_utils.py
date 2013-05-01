@@ -392,8 +392,13 @@ def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     col_idx = Q[0][1]
     modeltype = M_c['column_metadata'][col_idx]['modeltype']
     assert(modeltype in modeltype_to_imputation_function)
-    samples = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
-                                       get_next_seed, n)
+    if isinstance(X_L, (list, tuple)):
+        assert isinstance(X_D, (list, tuple))
+        samples = simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
+                                           get_next_seed, n)
+    else:
+        samples = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
+                                           get_next_seed, n)
     samples = numpy.array(samples).T[0]
     imputation_function = modeltype_to_imputation_function[modeltype]
     e = imputation_function(samples, get_next_seed)
