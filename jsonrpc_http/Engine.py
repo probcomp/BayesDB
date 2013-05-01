@@ -38,8 +38,8 @@ class Engine(object):
         return X_L_prime, X_D_prime
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
-        if type(X_L) == list:
-            assert type(X_D) == list
+        if isinstance(X_L, (list, tuple)):
+            assert isinstance(X_D, (list, tuple))
             samples = su.simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
                                                              self.get_next_seed, n)
         else:
@@ -56,8 +56,8 @@ class Engine(object):
         return e
 
     def impute_and_confidence(self, M_c, X_L, X_D, Y, Q, n):
-        if type(X_L) == list:
-            assert type(X_D) == list
+        if isinstance(X_L, (list, tuple)):
+            assert isinstance(X_D, (list, tuple))
             # TODO: multistate impute doesn't exist yet
             e,confidence = su.impute_and_confidence_multistate(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
         else:
