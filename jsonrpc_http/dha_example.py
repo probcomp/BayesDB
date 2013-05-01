@@ -61,40 +61,39 @@ num_cols = len(T[0])
 col_names = numpy.array([M_c['idx_to_name'][str(col_idx)] for col_idx in range(num_cols)])
 engine = E.Engine(inf_seed)
 
-if False:
-    # initialize the chains    
-    q = Queue()
-    p_list = []
-    for chain_idx in range(num_chains):
-        p = Process(target=do_initialize, args=(engine, M_c, M_r, T, q))
-        p.start()
-        p_list.append(p)
-    chain_tuples = [q.get() for idx in range(num_chains)]
-    for p in p_list:
-        p.join()
+# initialize the chains    
+q = Queue()
+p_list = []
+for chain_idx in range(num_chains):
+    p = Process(target=do_initialize, args=(engine, M_c, M_r, T, q))
+    p.start()
+    p_list.append(p)
+chain_tuples = [q.get() for idx in range(num_chains)]
+for p in p_list:
+    p.join()
 
-    # transition the chains 
-    q = Queue()
-    p_list = []
-    for chain_idx, (X_L, X_D) in enumerate(chain_tuples):
-        p = Process(target=do_analyze, args=(engine, M_c, T, X_L, X_D, q))
-        p.start()
-        p_list.append(p)
-    chain_tuples = [q.get() for idx in range(num_chains)]
-    for p in p_list:
-        p.join()
+# transition the chains 
+q = Queue()
+p_list = []
+for chain_idx, (X_L, X_D) in enumerate(chain_tuples):
+    p = Process(target=do_analyze, args=(engine, M_c, T, X_L, X_D, q))
+    p.start()
+    p_list.append(p)
+chain_tuples = [q.get() for idx in range(num_chains)]
+for p in p_list:
+    p.join()
 
-    # visualize the column cooccurence matrix    
-    X_L_list, X_D_list = map(list, zip(*chain_tuples))
-    MiddlewareEngine.do_gen_feature_z(X_L_list, X_D_list, M_c, 'feature_z')
+# visualize the column cooccurence matrix    
+X_L_list, X_D_list = map(list, zip(*chain_tuples))
+MiddlewareEngine.do_gen_feature_z(X_L_list, X_D_list, M_c, 'feature_z')
 
-    # save the progress
-    to_pickle = dict(X_L_list=X_L_list, X_D_list=X_D_list)
-    fu.pickle(to_pickle, pkl_filename)
-else:
-    to_pickle = fu.unpickle(pkl_filename)
-    X_L_list = to_pickle['X_L_list']
-    X_D_list = to_pickle['X_D_list']
+# save the progress
+to_pickle = dict(X_L_list=X_L_list, X_D_list=X_D_list)
+fu.pickle(to_pickle, pkl_filename)
+
+# to_pickle = fu.unpickle(pkl_filename)
+# X_L_list = to_pickle['X_L_list']
+# X_D_list = to_pickle['X_D_list']
 
 # can we recreate a row given some of its values?
 query_cols = [2, 6, 9]
