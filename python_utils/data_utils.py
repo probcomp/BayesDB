@@ -155,14 +155,18 @@ def gen_M_c_from_T_with_colnames(T, colnames):
 
 def gen_factorial_data_objects(gen_seed, num_clusters,
                                num_cols, num_rows, num_splits,
-                               max_mean=10, max_std=1):
+                               max_mean=10, max_std=1,
+                               send_data_inverse_permutation_indices=False):
     T, data_inverse_permutation_indices = gen_factorial_data(
         gen_seed, num_clusters,
         num_cols, num_rows, num_splits, max_mean, max_std)
     T  = T.tolist()
     M_r = gen_M_r_from_T(T)
     M_c = gen_M_c_from_T(T)
-    return T, M_r, M_c
+    if not send_data_inverse_permutation_indices:
+        return T, M_r, M_c
+    else:
+        return T, M_r, M_c, data_inverse_permutation_indices
 
 def discretize_data(T, discretize_indices):
     T_array = numpy.array(T)
