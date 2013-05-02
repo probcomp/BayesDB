@@ -104,3 +104,6 @@ for iter_idx in range(num_iters):
                        c=range(1, num_cols))
     # do all other transition types
     p_State.transition(which_transitions=non_column_partition_assignments)
+
+# FIXME: will want to keep longitudinal records of column hypers for column 0
+#        to say where in its range it was when transition occurred
