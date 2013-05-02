@@ -332,13 +332,14 @@ cdef class p_State:
          score_delta = 0
          for step_idx in range(n_steps):
               for which_transition in which_transitions:
-                   which_method, args_list = transition_and_args_lookup.get(which_transition)
-                   if which_method is not None:
+                   transition_and_args = transition_and_args_lookup.get(which_transition)
+                   if transition_and_args is not None:
+                        which_method, args_list = transition_and_args
                         args_dict = get_args_dict(args_list, locals())
                         score_delta += which_method(**args_dict)
                    else:
                         print_str = 'INVALID TRANSITION TYPE TO' \
-                            'State.transition: %s' % which_method
+                            'State.transition: %s' % which_transition
                         print print_str
          return score_delta
     def transition_column_crp_alpha(self):
