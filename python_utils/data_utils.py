@@ -1,3 +1,18 @@
+#
+# Copyright 2013 Baxter, Lovell, Mangsingkha, Saeedi
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
 import sys
 import csv
 import copy
@@ -173,24 +188,30 @@ def convert_columns_to_multinomial(T, M_c, multinomial_indices):
         multinomial_column_metadata['value_to_code'] = value_to_code
     return T, M_c
 
-def all_continuous_from_file(filename, max_rows=None, gen_seed=0, has_header=True):
-    header = None
-    T, M_r, M_c = None, None, None
+def at_most_N_rows(T, N, gen_seed=0):
+    num_rows = len(T)
+    if (N is not None) and (num_rows > N):
+        random_state = numpy.random.RandomState(gen_seed)
+        which_rows = random_state.permutation(xrange(num_rows))
+        which_rows = which_rows[:N]
+        T = [T[which_row] for which_row in which_rows]
+    return T
+
+def read_csv(filename, has_header=True):
     with open(filename) as fh:
         csv_reader = csv.reader(fh)
+        header = None
         if has_header:
             header = csv_reader.next()
-        T = numpy.array([
-                row for row in csv_reader
-                ], dtype=float).tolist()
-        num_rows = len(T)
-        if (max_rows is not None) and (num_rows > max_rows):
-            random_state = numpy.random.RandomState(gen_seed)
-            which_rows = random_state.permutation(xrange(num_rows))
-            which_rows = which_rows[:max_rows]
-            T = [T[which_row] for which_row in which_rows]
-        M_r = gen_M_r_from_T(T)
-        M_c = gen_M_c_from_T(T)
+        rows = [row for row in csv_reader]
+    return header, rows
+
+def all_continuous_from_file(filename, max_rows=None, gen_seed=0, has_header=True):
+    header, T = read_csv(filename, has_header=has_header)
+    T = numpy.array(T, dtype=float).tolist()
+    T = at_most_N_rows(T, N=max_rows, gen_seed=gen_seed)
+    M_r = gen_M_r_from_T(T)
+    M_c = gen_M_c_from_T(T)
     return T, M_r, M_c, header
 
 def continuous_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=None, gen_seed=0):
@@ -255,15 +276,6 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
     T = numpy.array(T_uncast_array, dtype=float).tolist()
     return T
 
-def at_most_N_rows(T, N, gen_seed=0):
-    num_rows = len(T)
-    if (N is not None) and (num_rows > N):
-        random_state = numpy.random.RandomState(gen_seed)
-        which_rows = random_state.permutation(xrange(num_rows))
-        which_rows = which_rows[:N]
-        T = [T[which_row] for which_row in which_rows]
-    return T
-
 def remove_ignore_cols(T, cctypes, header):
     cctypes_arr = numpy.array(cctypes)
     header_arr = numpy.array(header)
@@ -316,11 +328,20 @@ def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
         column_type = 'multinomial'
     return column_type
 
-def read_csv(filename, has_header=True):
-    with open(filename) as fh:
-        csv_reader = csv.reader(fh)
-        header = None
-        if has_header:
-            header = csv_reader.next()
-        rows = [row for row in csv_reader]
-    return header, rows
+def guess_column_types(T, count_cutoff=20, ratio_cutoff=0.02):
+    T_array_transposed = numpy.array(T).T
+    column_types = []
+    for column_data in T_array_transposed:
+        column_type = guess_column_type(column_data, count_cutoff, ratio_cutoff)
+        column_types.append(column_type)
+    return column_types
+        
+def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
+                             has_header=True):
+    colnames, T = read_csv(filename)
+    T = at_most_N_rows(T, max_rows, gen_seed)
+    cctypes = guess_column_types(T)
+    M_c = gen_M_c_from_T(T, cctypes, colnames)
+    T = map_to_T_with_M_c(numpy.array(T), M_c)
+    M_r = gen_M_r_from_T(T)
+    return T, M_r, M_c

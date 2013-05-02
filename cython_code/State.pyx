@@ -1,3 +1,18 @@
+#
+# Copyright 2013 Baxter, Lovell, Mangsingkha, Saeedi
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
 from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
@@ -298,7 +313,7 @@ cdef class p_State:
             view_state.append(view_state_i)
         return view_state
     # mutators
-    def transition(self, which_transitions=None, n_steps=1,
+    def transition(self, which_transitions=(), n_steps=1,
                    c=(), r=(), max_iterations=-1, max_time=-1):
          # FIXME: respect max time
          transition_and_args_lookup = dict(
@@ -309,7 +324,7 @@ cdef class p_State:
                    (self.transition_row_partition_hyperparameters, ['c']),
               row_partition_assignments=(self.transition_row_partition_assignments, ['r']),
               )
-         if which_transitions is None:
+         if len(which_transitions) == 0:
               which_transitions = transition_and_args_lookup.keys()
               seed = self.thisptr.draw_rand_i()
               random_state = numpy.random.RandomState(seed)

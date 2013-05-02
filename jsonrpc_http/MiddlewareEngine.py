@@ -1,3 +1,18 @@
+#
+# Copyright 2013 Baxter, Lovell, Mangsingkha, Saeedi
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
 import inspect
 import os
 import pickle
@@ -272,7 +287,7 @@ class MiddlewareEngine(object):
       M_c_json, T_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       T = json.loads(T_json)
-      if (chain_index.upper() == 'ALL'):
+      if (str(chain_index).upper() == 'ALL'):
         cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
         chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
         chainids = map(int, chainids)
@@ -282,14 +297,15 @@ class MiddlewareEngine(object):
       conn.commit()
       p_list = []
       for chainid in chainids:
-        from multiprocessing import Process
-        p = Process(target=analyze_helper,
-                    args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
-        p_list.append(p)
-        p.start()
-      if wait:
-        for p in p_list:
-          p.join()
+        analyze_helper(tableid, M_c, T, chainid, iterations, self.BACKEND_URI)
+      #   from multiprocessing import Process
+      #   p = Process(target=analyze_helper,
+      #               args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
+      #   p_list.append(p)
+      #   p.start()
+      # if wait:
+      #   for p in p_list:
+      #     p.join()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
       return e
@@ -298,17 +314,6 @@ class MiddlewareEngine(object):
         conn.close()
     return 0
 
-  def select(self, querystring):
-    """Run a select query, and return the results in csv format, with appropriate header."""
-    # TODO: implement
-    conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
-    cur = conn.cursor()
-    cur.execute(querystring)
-    conn.commit()
-    conn.close()
-    # Convert results into csv so they can be returned...
-    return ""
-  
   def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples):
     """Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
@@ -604,49 +609,7 @@ class MiddlewareEngine(object):
       filename = tablename + '_feature_z'
     full_filename = os.path.join(dir, filename)
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-    num_cols = len(X_L_list[0]['column_partition']['assignments'])
-    column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
-    column_names = numpy.array(column_names)
-    # extract unordered z_matrix
-    num_latent_states = len(X_L_list)
-    z_matrix = numpy.zeros((num_cols, num_cols))
-    for X_L in X_L_list:
-      assignments = X_L['column_partition']['assignments']
-      for i in range(num_cols):
-        for j in range(num_cols):
-          if assignments[i] == assignments[j]:
-            z_matrix[i, j] += 1
-    z_matrix /= float(num_latent_states)
-    # hierachically cluster z_matrix
-    Y = hcluster.pdist(z_matrix)
-    Z = hcluster.linkage(Y)
-    pylab.figure()
-    hcluster.dendrogram(Z)
-    intify = lambda x: int(x.get_text())
-    reorder_indices = map(intify, pylab.gca().get_xticklabels())
-    pylab.close()
-    # REORDER! 
-    z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
-    column_names_reordered = column_names[reorder_indices]
-    # actually create figure
-    fig = pylab.figure()
-    fig.set_size_inches(16, 12)
-    pylab.imshow(z_matrix_reordered, interpolation='none',
-                 cmap=matplotlib.cm.gray_r)
-    pylab.colorbar()
-    if num_cols < 14:
-      pylab.gca().set_yticks(range(num_cols))
-      pylab.gca().set_yticklabels(column_names_reordered, size='small')
-      pylab.gca().set_xticks(range(num_cols))
-      pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
-    else:
-      pylab.gca().set_yticks(range(num_cols)[::2])
-      pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
-      pylab.gca().set_xticks(range(num_cols)[1::2])
-      pylab.gca().set_xticklabels(column_names_reordered[1::2],
-                                  rotation=90, size='small')
-    pylab.title('column dependencies for: %s' % tablename)
-    pylab.savefig(full_filename)
+    do_gen_feature_z(X_L_list, X_D_list, M_c, full_filename, tablename)
 
   def dump_db(self, filename, dir=S.path.web_resources_dir):
     full_filename = os.path.join(dir, filename)
@@ -723,10 +686,10 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
   # FIXME: allow specification of kernel_list
   args_dict['kernel_list'] = None
   args_dict['n_steps'] = iterations
-  args_dict['c'] = 'c' # Currently ignored by analyze
-  args_dict['r'] = 'r' # Currently ignored by analyze
-  args_dict['max_iterations'] = 'max_iterations' # Currently ignored by analyze
-  args_dict['max_time'] = 'max_time' # Currently ignored by analyze
+  args_dict['c'] = () # Currently ignored by analyze
+  args_dict['r'] = () # Currently ignored by analyze
+  args_dict['max_iterations'] = -1 # Currently ignored by analyze
+  args_dict['max_time'] = -1 # Currently ignored by analyze
   out, id = au.call('analyze', args_dict, BACKEND_URI)
   X_L_prime, X_D_prime = out
 
@@ -746,3 +709,48 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
     if conn:
       conn.close()      
   return 0
+
+def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
+    num_cols = len(X_L_list[0]['column_partition']['assignments'])
+    column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
+    column_names = numpy.array(column_names)
+    # extract unordered z_matrix
+    num_latent_states = len(X_L_list)
+    z_matrix = numpy.zeros((num_cols, num_cols))
+    for X_L in X_L_list:
+      assignments = X_L['column_partition']['assignments']
+      for i in range(num_cols):
+        for j in range(num_cols):
+          if assignments[i] == assignments[j]:
+            z_matrix[i, j] += 1
+    z_matrix /= float(num_latent_states)
+    # hierachically cluster z_matrix
+    Y = hcluster.pdist(z_matrix)
+    Z = hcluster.linkage(Y)
+    pylab.figure()
+    hcluster.dendrogram(Z)
+    intify = lambda x: int(x.get_text())
+    reorder_indices = map(intify, pylab.gca().get_xticklabels())
+    pylab.close()
+    # REORDER! 
+    z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
+    column_names_reordered = column_names[reorder_indices]
+    # actually create figure
+    fig = pylab.figure()
+    fig.set_size_inches(16, 12)
+    pylab.imshow(z_matrix_reordered, interpolation='none',
+                 cmap=matplotlib.cm.gray_r)
+    pylab.colorbar()
+    if num_cols < 14:
+      pylab.gca().set_yticks(range(num_cols))
+      pylab.gca().set_yticklabels(column_names_reordered, size='small')
+      pylab.gca().set_xticks(range(num_cols))
+      pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
+    else:
+      pylab.gca().set_yticks(range(num_cols)[::2])
+      pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
+      pylab.gca().set_xticks(range(num_cols)[1::2])
+      pylab.gca().set_xticklabels(column_names_reordered[1::2],
+                                  rotation=90, size='small')
+    pylab.title('column dependencies for: %s' % tablename)
+    pylab.savefig(filename)

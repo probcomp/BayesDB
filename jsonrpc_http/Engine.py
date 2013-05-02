@@ -1,30 +1,51 @@
+#
+# Copyright 2013 Baxter, Lovell, Mangsingkha, Saeedi
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
 import inspect
 #
 import tabular_predDB.cython_code.State as State
 import tabular_predDB.python_utils.sample_utils as su
 
 
+def int_generator(start=0):
+    next_i = start
+    while True:
+        yield next_i
+        next_i += 1
+
 class Engine(object):
 
     def __init__(self, seed=0):
-        self.seed = seed
+        self.seed_generator = int_generator(seed)
 
     def get_next_seed(self):
-        SEED = self.seed
-        self.seed += 1
-        return SEED
+        return self.seed_generator.next()
 
     def initialize(self, M_c, M_r, T, initialization='from_the_prior'):
         # FIXME: why is M_r passed?
-        p_State = State.p_State(M_c, T, initialization=initialization)
+        SEED = self.get_next_seed()
+        p_State = State.p_State(M_c, T, initialization=initialization, SEED=SEED)
         X_L = p_State.get_X_L()
         X_D = p_State.get_X_D()
         return M_c, M_r, X_L, X_D
 
-    def analyze(self, M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
-                max_iterations, max_time):
-        p_State = State.p_State(M_c, T, X_L, X_D)
-        # FIXME: actually pay attention to c, r, max_time
+    def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
+                max_iterations=-1, max_time=-1):
+        SEED = self.get_next_seed()
+        p_State = State.p_State(M_c, T, X_L, X_D, SEED=SEED)
+        # FIXME: actually pay attention to max_iterations, max_time
         p_State.transition(kernel_list, n_steps, c, r,
                            max_iterations, max_time)
         X_L_prime = p_State.get_X_L()
@@ -32,8 +53,8 @@ class Engine(object):
         return X_L_prime, X_D_prime
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
-        if type(X_L) == list:
-            assert type(X_D) == list
+        if isinstance(X_L, (list, tuple)):
+            assert isinstance(X_D, (list, tuple))
             samples = su.simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
                                                              self.get_next_seed, n)
         else:
@@ -50,8 +71,8 @@ class Engine(object):
         return e
 
     def impute_and_confidence(self, M_c, X_L, X_D, Y, Q, n):
-        if type(X_L) == list:
-            assert type(X_D) == list
+        if isinstance(X_L, (list, tuple)):
+            assert isinstance(X_D, (list, tuple))
             # TODO: multistate impute doesn't exist yet
             e,confidence = su.impute_and_confidence_multistate(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
         else:

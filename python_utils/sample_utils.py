@@ -1,3 +1,18 @@
+#
+# Copyright 2013 Baxter, Lovell, Mangsingkha, Saeedi
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
 import sys
 import copy
 from collections import Counter
@@ -392,8 +407,13 @@ def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     col_idx = Q[0][1]
     modeltype = M_c['column_metadata'][col_idx]['modeltype']
     assert(modeltype in modeltype_to_imputation_function)
-    samples = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
-                                       get_next_seed, n)
+    if isinstance(X_L, (list, tuple)):
+        assert isinstance(X_D, (list, tuple))
+        samples = simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
+                                           get_next_seed, n)
+    else:
+        samples = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
+                                           get_next_seed, n)
     samples = numpy.array(samples).T[0]
     imputation_function = modeltype_to_imputation_function[modeltype]
     e = imputation_function(samples, get_next_seed)
