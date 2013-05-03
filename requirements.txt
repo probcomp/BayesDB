@@ -27,3 +27,7 @@ psycopg2==2.4.6
 # cd /home/sgeadmin/.virtualenvs/tabular_predDB/build/hcluster
 # python setup.py install
 # choose option 2
+
+# freeze for creating binaries to run with hadoop streaming
+# must manually install per https://github.com/pypa/pip/issues/537
+# cx_freeze==4.3.1
