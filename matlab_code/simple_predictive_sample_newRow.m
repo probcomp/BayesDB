@@ -37,6 +37,9 @@ function sample = simple_predictive_sample_newRow(state, Y, q)
                 % assess probability of conditions given category
                 % this depends on the modeltype
                 
+                theseData = state.data(theseRows, theseConditions(iii));
+                theseData = theseData(~isnan(theseData));
+                        
                 switch state.dataTypes{theseConditions(iii)}
 
                     case 'asymmetric_beta_bernoulli'
@@ -53,8 +56,6 @@ function sample = simple_predictive_sample_newRow(state, Y, q)
                         % FIXME
 
                     case 'normal_inverse_gamma'
-                        theseData = state.data(theseRows, theseConditions(iii));
-                        theseData = theseData(~isnan(theseData));
                         logProb(ii) = logProb(ii) + ...
                             NG_cat(theseData, newRow(theseConditions(iii)), ...
                             state.NG_mu(theseConditions(iii)), state.NG_k(theseConditions(iii)), ...
