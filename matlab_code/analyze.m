@@ -60,7 +60,7 @@ function state = drawSample(state, kernelList, c, r)
                         case 'dirichlet_multinomial '
                             % FIXME!
                             disp('FIXME');
-                        case 'asymmetric_beta_bernoulli '
+                        case 'asymmetric_beta_bernoulli'
                             state = sampleComponentHyperparameters_asymmetric_beta_bernoulli(state, c(ii));
                         otherwise
                             disp([state.dataTypes{ii}, ' is not a valid data type']);
@@ -386,7 +386,7 @@ function logP = scoreFeature(state,f)
             case 'dirichlet_multinomial '
                 % FIXME
                 disp('FIXME!');
-            case 'asymmetric_beta_bernoulli '
+            case 'asymmetric_beta_bernoulli'
                 logP = logP + betaBern(state.data(theseData,f), ...
                                         state.betaBern_s(f), ...
                                         state.betaBern_b(f));

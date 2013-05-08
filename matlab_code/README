@@ -30,8 +30,8 @@ state_to_json takes four arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Here is an example of each of the calls:
 state = initialize_from_json('animals.json');
-state = initialize_csv('Data/animals_data', 'Data/animals_dataTypes', 'together');
-state = analyze(state, {'columnPartitionHyperparameter', 'columnPartitionAssignments', 'componentHyperparameters', 'rowPartitionHyperparameters', 'rowPartitionAssignments'}, 1, 'all', 'all',[],[]);
+state = initialize_from_csv('Data/animals_data', 'Data/animals_dataTypes', 'together');
+state = analyze(state, {'columnPartitionHyperparameter', 'columnPartitionAssignments', 'componentHyperparameters', 'rowPartitionHyperparameters', 'rowPartitionAssignments'}, 1, 'all', 'all',[],[], []);
 state_to_json(state, 'Data/animals_rowLabels', 'Data/animals_columnLabels', 'Data/animals_valueConverter');
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
