@@ -123,7 +123,7 @@ def get_is_multistate(X_L, X_D):
     else:
         return False
 
-def do_simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n, get_next_seed):
+def do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     is_multistate = get_is_multistate(X_L, X_D)
     if is_multistate:
         samples = su.simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
