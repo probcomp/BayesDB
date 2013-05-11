@@ -30,8 +30,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--filename', default=default_filename, type=str)
 parser.add_argument('--inf_seed', default=0, type=int)
 parser.add_argument('--gen_seed', default=0, type=int)
-parser.add_argument('--num_chains', default=6, type=int)
-parser.add_argument('--num_transitions', default=10, type=int)
+parser.add_argument('--num_chains', default=25, type=int)
+parser.add_argument('--num_transitions', default=200, type=int)
 args = parser.parse_args()
 #
 filename = args.filename
@@ -77,27 +77,48 @@ num_cols = len(T[0])
 col_names = numpy.array([M_c['idx_to_name'][str(col_idx)] for col_idx in range(num_cols)])
 engine = E.Engine(inf_seed)
 
-# initialize the chains    
-q = Queue()
-p_list = []
-for chain_idx in range(num_chains):
-    p = Process(target=do_initialize, args=(engine, M_c, M_r, T, q))
-    p.start()
-    p_list.append(p)
-chain_tuples = [q.get() for idx in range(num_chains)]
-for p in p_list:
-    p.join()
 
-# transition the chains 
-q = Queue()
-p_list = []
-for chain_idx, (X_L, X_D) in enumerate(chain_tuples):
-    p = Process(target=do_analyze, args=(engine, M_c, T, X_L, X_D, q))
-    p.start()
-    p_list.append(p)
-chain_tuples = [q.get() for idx in range(num_chains)]
-for p in p_list:
-    p.join()
+do_remote = True
+if do_remote:
+    ## set up parallel
+    from IPython.parallel import Client
+    c = Client(profile='ssh', sshserver='dlovell@secretasiandan.dyndns.org')
+    dview = c[:]
+    dview.execute('import sys')
+    dview.apply_sync(lambda: sys.path.append('/usr/local/'))
+    #
+    with dview.sync_imports(): 
+        import tabular_predDB.jsonrpc_http.Engine as E
+    dview.push(dict(
+            M_c=M_c,
+            M_r=M_r,
+            T=T))
+    async_result = dview.map_async(lambda SEED: E.do_initialize(M_c, M_r, T, 'from_the_prior', SEED), range(8))
+    initialized_states = async_result.get()
+    #
+    async_result = dview.map_async(lambda (SEED, state_tuple): E.do_analyze(M_c, T, state_tuple[0], state_tuple[1], (), 10, (), (), -1, -1, SEED), zip(range(len(initialized_states)), initialized_states))
+    chain_tuples = async_result.get()
+else:
+    # initialize the chains    
+    q = Queue()
+    p_list = []
+    for chain_idx in range(num_chains):
+        p = Process(target=do_initialize, args=(engine, M_c, M_r, T, q))
+        p.start()
+        p_list.append(p)
+    chain_tuples = [q.get() for idx in range(num_chains)]
+    for p in p_list:
+        p.join()
+    # transition the chains 
+    q = Queue()
+    p_list = []
+    for chain_idx, (X_L, X_D) in enumerate(chain_tuples):
+        p = Process(target=do_analyze, args=(engine, M_c, T, X_L, X_D, q))
+        p.start()
+        p_list.append(p)
+    chain_tuples = [q.get() for idx in range(num_chains)]
+    for p in p_list:
+        p.join()
 
 # visualize the column cooccurence matrix    
 X_L_list, X_D_list = map(list, zip(*chain_tuples))
