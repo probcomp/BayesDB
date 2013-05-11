@@ -119,7 +119,7 @@ def do_analyze(M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
 def get_is_multistate(X_L, X_D):
     if isinstance(X_L, (list, tuple)):
         assert isinstance(X_D, (list, tuple))
-        return True:
+        return True
     else:
         return False
 
