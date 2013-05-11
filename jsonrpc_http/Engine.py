@@ -36,30 +36,21 @@ class Engine(object):
     def initialize(self, M_c, M_r, T, initialization='from_the_prior'):
         # FIXME: why is M_r passed?
         SEED = self.get_next_seed()
-        p_State = State.p_State(M_c, T, initialization=initialization, SEED=SEED)
-        X_L = p_State.get_X_L()
-        X_D = p_State.get_X_D()
+        X_L, X_D = do_initialize(M_c, M_r, T, initialization, SEED)
         return M_c, M_r, X_L, X_D
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1):
         SEED = self.get_next_seed()
-        p_State = State.p_State(M_c, T, X_L, X_D, SEED=SEED)
-        # FIXME: actually pay attention to max_iterations, max_time
-        p_State.transition(kernel_list, n_steps, c, r,
-                           max_iterations, max_time)
-        X_L_prime = p_State.get_X_L()
-        X_D_prime = p_State.get_X_D()
+        X_L_prime, X_D_prime = do_analyze(M_c, T, X_L, X_D,
+                                           kernel_list, n_steps, c, r,
+                                           max_iterations, max_time,
+                                           SEED)
         return X_L_prime, X_D_prime
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
-        if isinstance(X_L, (list, tuple)):
-            assert isinstance(X_D, (list, tuple))
-            samples = su.simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
-                                                             self.get_next_seed, n)
-        else:
-            samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
-                                                  self.get_next_seed, n)
+        get_next_seed = self.get_next_seed
+        samples = do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed)
         return samples
 
     def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, n):
@@ -108,6 +99,39 @@ class Engine(object):
     def predictive_anomalousness(self, M_c, X_L, X_D, T, q, n):
         a = []
         return a
+
+def do_initialize(M_c, M_r, T, initialization, SEED):
+    p_State = State.p_State(M_c, T, initialization=initialization, SEED=SEED)
+    X_L = p_State.get_X_L()
+    X_D = p_State.get_X_D()
+    return X_L, X_D
+
+def do_analyze(M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
+               max_iterations, max_time, SEED):
+    p_State = State.p_State(M_c, T, X_L, X_D, SEED=SEED)
+    # FIXME: actually pay attention to max_iterations, max_time
+    p_State.transition(kernel_list, n_steps, c, r,
+                       max_iterations, max_time)
+    X_L_prime = p_State.get_X_L()
+    X_D_prime = p_State.get_X_D()
+    return X_L_prime, X_D_prime
+
+def get_is_multistate(X_L, X_D):
+    if isinstance(X_L, (list, tuple)):
+        assert isinstance(X_D, (list, tuple))
+        return True:
+    else:
+        return False
+
+def do_simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n, get_next_seed):
+    is_multistate = get_is_multistate(X_L, X_D)
+    if is_multistate:
+        samples = su.simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
+                                                         get_next_seed, n)
+    else:
+        samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q,
+                                              get_next_seed, n)
+    return samples
 
 # helper functions
 get_name = lambda x: getattr(x, '__name__')
