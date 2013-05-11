@@ -31,7 +31,7 @@ parser.add_argument('--filename', default=default_filename, type=str)
 parser.add_argument('--inf_seed', default=0, type=int)
 parser.add_argument('--gen_seed', default=0, type=int)
 parser.add_argument('--num_chains', default=6, type=int)
-parser.add_argument('--num_transitions', default=100, type=int)
+parser.add_argument('--num_transitions', default=10, type=int)
 args = parser.parse_args()
 #
 filename = args.filename
@@ -52,10 +52,11 @@ def do_analyze(engine, M_c, T, X_L, X_D, q):
                                           n_steps=num_transitions)
     q.put([X_L_prime, X_D_prime])
 
-def determine_Q(M_c, query_names, num_rows):
+def determine_Q(M_c, query_names, num_rows, impute_row=None):
     name_to_idx = M_c['name_to_idx']
     query_col_indices = [name_to_idx[colname] for colname in query_names]
-    Q = [(num_rows+1, col_idx) for col_idx in query_col_indices]
+    row_idx = num_rows + 1 if impute_row is None else impute_row
+    Q = [(row_idx, col_idx) for col_idx in query_col_indices]
     return Q
 
 def determine_unobserved_Y(num_rows, M_c, condition_tuples):
@@ -137,7 +138,10 @@ for impute_row in [10, 20, 30, 40, 50, 60, 70, 80]:
     imputed_list = []
     for impute_col in impute_cols:
         impute_names = [col_names[impute_col]]
-        Q = determine_Q(M_c, impute_names, num_rows)
+        Q = determine_Q(M_c, impute_names, num_rows, impute_row=impute_row)
         #
         imputed = engine.impute(M_c, X_L_list, X_D_list, Y, Q, 1000)
         imputed_list.append(imputed)
+    print
+    print actual_values
+    print map(round_1, imputed_list)
