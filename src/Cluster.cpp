@@ -67,7 +67,7 @@ vector<int> Cluster::get_row_indices_vector() const {
 
 std::vector<double> Cluster::calc_marginal_logps() const {
   std::vector<double> logps;
-  typename std::vector<ComponentModel*>::const_iterator it;
+  std::vector<ComponentModel*>::const_iterator it;
   for(it=p_model_v.begin(); it!=p_model_v.end(); it++) {
     double logp = (**it).calc_marginal_logp();
     logps.push_back(logp);
