@@ -19,7 +19,8 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-virtual_env_dir = "~/.virtualenvs/tabular_predDB/"
+user = os.environ.get('USER')
+virtual_env_dir = "/opt/anaconda/" if user == 'bigdata' else "~/.virtualenvs/tabular_predDB/"
 numpy_rel_dir = "lib/python2.7/site-packages/numpy/core/include/"
 numpy_include_full_dir = os.path.join(virtual_env_dir, numpy_rel_dir)
 numpy_include_full_dir = os.path.expanduser(numpy_include_full_dir)
