@@ -19,13 +19,10 @@ includes = [
     'pylab',
     'matplotlib.backends.backend_qt4agg',
     ]
-path = list(sys.path)
-path.append('/home/bigdata/single_map/')
 
 buildOptions = dict(
         excludes = excludes,
         includes = includes,
-        path = path,
         compressed = True,
 )
 
