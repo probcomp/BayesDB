@@ -54,9 +54,7 @@ def analyze_helper(hadoop_input, SEED):
     r = hadoop_input['r']
     engine = E.Engine(SEED)
     X_L_prime, X_D_prime = engine.analyze(M_c, T, X_L, X_D, kernel_list=(),
-                                          n_steps=n_steps, c=c, r=r,
-                                          SEED=SEED,
-                                          )
+                                          n_steps=n_steps, c=c, r=r)
     #
     ret_dict = dict(X_L=X_L, X_D=X_D)
     return ret_dict
@@ -71,7 +69,7 @@ method_lookup = dict(
 hadoop_input = fu.unpickle(filename)
 command = hadoop_input['command']
 method = method_lookup[command]
-ret_dict = method(hadoop_input)
+ret_dict = method(hadoop_input, SEED)
 
 # output for hadoop to write to file
 print ret_dict
