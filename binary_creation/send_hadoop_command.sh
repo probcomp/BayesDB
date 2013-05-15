@@ -22,7 +22,8 @@ python setup.py build
 
 # prep local FS
 rm -rf myOutputDir
-echo "1\n2" > seed_list.txt
+printf "1\n2" > seed_list.txt
+cp ../web_resources/data/dha.csv .
 # prep HDFS
 hadoop fs -fs "$HDFS_URI" -rm -r -f "${HDFS_DIR}"myOutputDir
 hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"single_map.jar
