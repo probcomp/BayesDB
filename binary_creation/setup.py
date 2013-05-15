@@ -1,8 +1,3 @@
-# A simple setup script to create an executable using matplotlib.
-#
-# test_matplotlib.py is a very simple matplotlib application that demonstrates
-# its use.
-#
 # Run the build process by running the command 'python setup.py build'
 #
 # If everything works well you should find a subdirectory in the build
