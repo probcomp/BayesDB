@@ -5,25 +5,26 @@ with_libraries=program_options
 which_gz=${which_boost}.tar.gz
 
 do_compile=
+ 
+if [ ! -d ${install_prefix}include/boost ]; then 
+  # boost isn't installed
+  echo $which_boost isnt installed, INSTALLING
 
-if [ -z $do_compile ]; then
   if [ ! -f $which_gz ]; then
+    # boost isn't downloaded
+    echo $which_boost isnt downloaded, DOWNLOADING
     wget http://downloads.sourceforge.net/project/boost/boost/1.48.0/$which_gz
+    tar xfz $which_gz
   fi
-  tar xfz $which_gz
-  mv $which_boost/boost /usr/local/include
-  exit
-fi
-
-# if [ ! -d ${install_prefix}/include/boost ]; then
-#     exit
-# fi
-
-cd
-if [ ! -f $which_gz ]; then
-    wget http://downloads.sourceforge.net/project/boost/boost/1.48.0/$which_gz
-    tar xvfz $which_gz
+  
+  if [ -z $do_compile ]; then
+    echo Just copying to include dir
+    mv $which_boost/boost /usr/local/include
+    exit
+  else
+    echo COMPILING boost
     cd $which_boost
     ./bootstrap.sh --with-libraries=$with_libraries --prefix=$install_prefix
     ./b2 install
+  fi
 fi
