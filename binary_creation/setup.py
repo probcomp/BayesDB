@@ -14,6 +14,7 @@ includes = [
     'tabular_predDB.python_utils.data_utils',
     'tabular_predDB.python_utils.plot_utils',
     'tabular_predDB.python_utils.file_utils',
+    'tabular_predDB.jsonrpc_http.Engine',
     'tabular_predDB.cython_code.State',
     'numpy',
     'pylab',
@@ -27,11 +28,11 @@ buildOptions = dict(
 )
 
 executables = [
-        cx_Freeze.Executable("single_map.py", base = None)
+        cx_Freeze.Executable("hadoop_engine_helper.py", base = None)
 ]
 
 cx_Freeze.setup(
-        name = "single_map",
+        name = "hadoop_engine_helper",
         version = "0.1",
         description = "initialize and transition a single markov chain",
         executables = executables,
