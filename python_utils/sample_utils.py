@@ -119,7 +119,9 @@ def simple_predictive_sample_observed(M_c, X_L, X_D, Y, which_row,
 def names_to_global_indices(column_names, M_c):
     name_to_idx = M_c['name_to_idx']
     # FIXME: str(column_name) is hack
-    return [name_to_idx[str(column_name)] for column_name in column_names]
+    if type(name_to_idx.keys()[0]) == str:
+        column_names = map(str, column_names)
+    return [name_to_idx[column_name] for column_name in column_names]
 
 def extract_view_column_info(M_c, X_L, view_idx):
     view_state_i = X_L['view_state'][view_idx]
@@ -400,7 +402,7 @@ modeltype_to_imputation_function = {
     'symmetric_dirichlet_discrete': multinomial_imputation,
     }
 
-def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed):
+def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed, return_samples=False):
     # FIXME: allow more than one cell to be imputed
     assert(len(Q)==1)
     #
