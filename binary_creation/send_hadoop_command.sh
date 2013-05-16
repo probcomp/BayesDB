@@ -24,7 +24,7 @@ JOBTRACKER_URI="xd-jobtracker.xdata.data-tactics-corp.com:8021"
 HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 WHICH_HADOOP_JAR="/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.2.jar"
 
-# FIXME: should check for ${WHICH_BINARY}.jar existence on HDFS
+# FIXME: should check for ${WHICH_BINARY} existence on HDFS
 
 # prep local FS
 rm -rf myOutputDir
@@ -38,7 +38,7 @@ hadoop fs -fs "$HDFS_URI" -put seed_list.txt "${HDFS_DIR}"
 
 # run
 $HADOOP_HOME/bin/hadoop jar "$WHICH_HADOOP_JAR" \
-  -archives "${HDFS_URI}${HDFS_DIR}"${WHICH_BINARY}.jar#${WHICH_BINARY} \
+  -archives "${HDFS_URI}${HDFS_DIR}"${WHICH_BINARY} \
   -fs "$HDFS_URI" -jt "$JOBTRACKER_URI" \
   -D mapred.reduce.tasks=0 \
   -input "${HDFS_URI}${HDFS_DIR}seed_list.txt" \
