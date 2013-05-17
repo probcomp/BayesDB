@@ -31,8 +31,8 @@ WHICH_HADOOP_JAR="/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-stream
 rm -rf myOutputDir
 # prep HDFS
 # assume jar already on HDFS
-hadoop fs -fs "$HDFS_URI" -rm -r -f "${HDFS_DIR}"myOutputDir
-hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"hadoop_input
+hadoop fs -fs "$HDFS_URI" -rm -r -f "${HDFS_DIR}"myOutputDir 2>/dev/null
+hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"hadoop_input 2>/dev/null
 # hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"table_data.pkl.gz
 hadoop fs -fs "$HDFS_URI" -put hadoop_input "${HDFS_DIR}"
 # hadoop fs -fs "$HDFS_URI" -put table_data.pkl.gz "${HDFS_DIR}"
