@@ -26,7 +26,7 @@ xu.run_script_local(initialize_input_filename, script_name,
                     initialize_output_filename)
 
 # read initialization output, write analyze input
-analyze_args_dict = xu.defautl_analyze_args_dict
+analyze_args_dict = xu.default_analyze_args_dict
 xu.link_initialize_to_analyze(initialize_output_filename,
                               analyze_input_filename,
                               analyze_args_dict)
