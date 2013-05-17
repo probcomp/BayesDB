@@ -29,7 +29,6 @@ HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 cd $CODE_LOC/tabular_predDB/binary_creation
 rm -rf build
 python setup.py build >build.out 2>build.err
-find build/ -name library.zip | xargs rm
 (cd build/exe.linux-x86_64-2.7 && jar cvf ../../${WHICH_BINARY}.jar *)
 
 # prep HDFS
