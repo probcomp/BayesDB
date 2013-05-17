@@ -2,6 +2,9 @@ import tabular_predDB.binary_creation.xnet_utils as xu
 
 
 # settings
+n_chains = 20
+n_steps = 20
+#
 filename = '../web_resources/data/dha.csv'
 script_name = 'hadoop_line_processor.py'
 #
@@ -15,11 +18,7 @@ analyze_output_filename = 'analyze_output'
 table_data = xu.pickle_table_data(filename, table_data_filename)
 
 # create initialize input
-with open(initialize_input_filename, 'w') as in_fh:
-    for SEED in range(5):
-        out_dict = xu.default_initialize_args_dict.copy()
-        out_dict['SEED'] = SEED
-        xu.write_hadoop_line(in_fh, SEED, out_dict)
+xu.write_initialization_files(initialize_input_filename, n_chains)
 
 # initialize
 xu.run_script_local(initialize_input_filename, script_name,
@@ -27,6 +26,7 @@ xu.run_script_local(initialize_input_filename, script_name,
 
 # read initialization output, write analyze input
 analyze_args_dict = xu.default_analyze_args_dict
+analyze_args_dict['n_steps'] = n_steps
 xu.link_initialize_to_analyze(initialize_output_filename,
                               analyze_input_filename,
                               analyze_args_dict)
