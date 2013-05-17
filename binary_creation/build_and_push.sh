@@ -11,22 +11,25 @@ if [[ -z $(ifconfig | grep tun) ]]; then
   # sudo vpnc-connect
 fi
 
-if [[ -z $1 ]]; then
-  echo "USAGE: bash build_and_push.sh WHICH_BINARY"
-  echo "EXITING without sending!!!"
-  exit
+# make sure you know what to call the jar file
+WHICH_BINARY=$1
+if [[ -z $WHICH_BINARY ]]; then
+    echo "USAGE: bash build_and_push.sh WHICH_BINARY"
+    echo "EXITING without sending!!!"
+    exit
 fi
 
 # setup
 CODE_LOC=~/
 export PYTHONPATH=$CODE_LOC:$PYTHONPATH
-WHICH_BINARY=$1
 HDFS_DIR="/user/bigdata/SSCI/test_remote_streaming/"
 HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 
 # create binary
 cd $CODE_LOC/tabular_predDB/binary_creation
-python setup.py build
+rm -rf build
+python setup.py build >build.out 2>build.err
+find build/ -name library.zip | xargs rm
 (cd build/exe.linux-x86_64-2.7 && jar cvf ../../${WHICH_BINARY}.jar *)
 
 # prep HDFS
