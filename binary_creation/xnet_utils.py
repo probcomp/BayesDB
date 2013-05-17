@@ -64,6 +64,7 @@ def link_initialize_to_analyze(initialize_output_filename,
                 write_hadoop_line(out_fh, key, dict_in)
     return
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--initialize_output_filename',
