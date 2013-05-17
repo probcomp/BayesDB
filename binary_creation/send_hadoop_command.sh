@@ -11,6 +11,12 @@ if [[ -z $(ifconfig | grep tun) ]]; then
   # sudo vpnc-connect
 fi
 
+num_map_tasks=$1
+if [[ -z $num_map_tasks ]]; then
+    num_lines=$(wc -l hadoop_input | awk '{print $1}')
+    num_map_tasks=$(( $num_lines / 2 ))
+fi
+
 # setup
 WHICH_BINARY="hadoop_line_processor"
 HDFS_DIR="/user/bigdata/SSCI/test_remote_streaming/"
@@ -27,12 +33,13 @@ rm -rf myOutputDir
 # assume jar already on HDFS
 hadoop fs -fs "$HDFS_URI" -rm -r -f "${HDFS_DIR}"myOutputDir
 hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"hadoop_input
-hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"table_data.pkl.gz
+# hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"table_data.pkl.gz
 hadoop fs -fs "$HDFS_URI" -put hadoop_input "${HDFS_DIR}"
-hadoop fs -fs "$HDFS_URI" -put table_data.pkl.gz "${HDFS_DIR}"
+# hadoop fs -fs "$HDFS_URI" -put table_data.pkl.gz "${HDFS_DIR}"
 
 # run
 $HADOOP_HOME/bin/hadoop jar "$WHICH_HADOOP_JAR" \
+    -D mapred.map.tasks="$num_map_tasks" \
     -archives "${HDFS_URI}${HDFS_DIR}${WHICH_BINARY}.jar" \
     -fs "$HDFS_URI" -jt "$JOBTRACKER_URI" \
     -input "${HDFS_URI}${HDFS_DIR}hadoop_input" \
