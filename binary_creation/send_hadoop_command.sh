@@ -11,41 +11,40 @@ if [[ -z $(ifconfig | grep tun) ]]; then
   # sudo vpnc-connect
 fi
 
-if [[ -z $1 ]]; then
-  echo "USAGE: bash build_and_push.sh WHICH_BINARY"
-  echo "EXITING without sending!!!"
-  exit
-fi
-
 # setup
-WHICH_BINARY=$1
+WHICH_BINARY="hadoop_line_processor"
 HDFS_DIR="/user/bigdata/SSCI/test_remote_streaming/"
 JOBTRACKER_URI="xd-jobtracker.xdata.data-tactics-corp.com:8021"
 HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 WHICH_HADOOP_JAR="/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.2.jar"
 
 # FIXME: should check for ${WHICH_BINARY} existence on HDFS
+# FIXME: should check for hadoop_input, table_data.pkl.gz existence on local FS
 
 # prep local FS
 rm -rf myOutputDir
-> seed_list.txt
-for SEED in $(seq 0 1); do echo $SEED >> seed_list.txt; done
 # prep HDFS
 # assume jar already on HDFS
 hadoop fs -fs "$HDFS_URI" -rm -r -f "${HDFS_DIR}"myOutputDir
-hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"seed_list.txt
-hadoop fs -fs "$HDFS_URI" -put seed_list.txt "${HDFS_DIR}"
+hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"hadoop_input
+hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"table_data.pkl.gz
+hadoop fs -fs "$HDFS_URI" -put hadoop_input "${HDFS_DIR}"
+hadoop fs -fs "$HDFS_URI" -put table_data.pkl.gz "${HDFS_DIR}"
 
 # run
 $HADOOP_HOME/bin/hadoop jar "$WHICH_HADOOP_JAR" \
-  -archives "${HDFS_URI}${HDFS_DIR}"${WHICH_BINARY} \
-  -fs "$HDFS_URI" -jt "$JOBTRACKER_URI" \
-  -D mapred.reduce.tasks=0 \
-  -input "${HDFS_URI}${HDFS_DIR}seed_list.txt" \
-  -output "${HDFS_URI}${HDFS_DIR}myOutputDir/" \
-  -mapper ${WHICH_BINARY}/hadoop_engine_helper \
-  -file hadoop_input.pkl.gz \
-  -cmdenv LD_LIBRARY_PATH=./${WHICH_BINARY}/:$LD_LIBRARY_PATH
+    -archives "${HDFS_URI}${HDFS_DIR}${WHICH_BINARY}.jar" \
+    -fs "$HDFS_URI" -jt "$JOBTRACKER_URI" \
+    -input "${HDFS_URI}${HDFS_DIR}hadoop_input" \
+    -output "${HDFS_URI}${HDFS_DIR}myOutputDir/" \
+    -mapper ${WHICH_BINARY}.jar/${WHICH_BINARY} \
+    -reducer /bin/cat \
+    -file hadoop_input \
+    -file table_data.pkl.gz \
+    -cmdenv LD_LIBRARY_PATH=./${WHICH_BINARY}.jar/:$LD_LIBRARY_PATH
+
+#  -D mapred.reduce.tasks=0 \
+#    -reducer /bin/cat \
 
 # get results
 hadoop fs -fs "$HDFS_URI" -get "${HDFS_DIR}"myOutputDir
