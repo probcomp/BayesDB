@@ -16,25 +16,11 @@
 #   limitations under the License.
 #
 import sys
-import re
 #
 import tabular_predDB.python_utils.file_utils as fu
+import tabular_predDB.binary_creation.xnet_utils as xu
 import tabular_predDB.jsonrpc_http.Engine as E
 
-
-# settings
-filename = 'table_data.pkl.gz'
-line_re = '(\d+)\s+(.*)'
-
-pattern = re.compile(line_re)
-def parse_line(line):
-    line = line.strip()
-    match = pattern.match(line)
-    key, dict_in = None, None
-    if match:
-        key, dict_in_str = match.groups()
-        dict_in = eval(dict_in_str)
-    return key, dict_in
 
 def initialize_helper(table_data, dict_in):
     M_c = table_data['M_c']
@@ -73,10 +59,11 @@ method_lookup = dict(
 
 
 if __name__ == '__main__':
-    table_data = fu.unpickle(filename)
+    table_data_filename = xu.default_table_data_filename
+    table_data = fu.unpickle(table_data_filename)
     #
     for line in sys.stdin:
-        key, dict_in = parse_line(line)
+        key, dict_in = xu.parse_hadoop_line(line)
         if dict_in is None:
             continue
         command = dict_in['command']
