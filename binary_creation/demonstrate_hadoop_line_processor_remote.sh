@@ -3,7 +3,7 @@
 #Set the default values
 n_chains=5
 n_steps=2
-task_timeout=6
+task_timeout_in_ms=600000
 
 # print script usage
 usage() {
@@ -14,7 +14,7 @@ usage: $0 options
     
     OPTIONS:
     -h      Show this message
-    -t      task_timeout=$task_timeout
+    -t      task_timeout_in_ms=$task_timeout_in_ms
     -c      n_chains=$n_chains
     -s      n_steps=$n_steps
 EOF
@@ -48,7 +48,7 @@ while getopts ht:n:s:v opt
 do
     case "$opt" in
         h) usage;;
-        t) task_timeout=$OPTARG;;
+        t) task_timeout_in_ms=$OPTARG;;
         n) n_chains=$OPTARG;;
         s) n_steps=$OPTARG;;
         v) verbose="True";;
@@ -57,15 +57,15 @@ done
 
 echo "n_chains=$n_chains"
 echo "n_steps=$n_steps"
-echo "task_timeout=$task_timeout"
+echo "task_timeout_in_ms=$task_timeout_in_ms"
 exit
 
 python xnet_utils.py pickle_table_data
 python xnet_utils.py write_initialization_files --n_chains $n_chains
 cp initialize_input hadoop_input
-bash send_hadoop_command.sh
+bash send_hadoop_command.sh -t $task_timeout_in_ms
 cp myOutputDir/part-00000 initialize_output
 python xnet_utils.py link_initialize_to_analyze --initialize_output_filename myOutputDir/part-00000 --n_steps $n_steps
 cp analyze_input hadoop_input
-bash send_hadoop_command.sh
+bash send_hadoop_command.sh -t $task_timeout_in_ms
 cp myOutputDir/part-00000 analyze_output
