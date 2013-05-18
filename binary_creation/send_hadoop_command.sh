@@ -95,7 +95,8 @@ hadoop fs -fs "$HDFS_URI" -put hadoop_input "${HDFS_DIR}"
 
 # run
 $HADOOP_HOME/bin/hadoop jar "$WHICH_HADOOP_JAR" \
-    -D mapred.map.tasks="$num_map_tasks" \
+    -D mapred.task.timeout="${task_timeout}" \
+    -D mapred.map.tasks="${num_map_tasks}" \
     -archives "${HDFS_URI}${HDFS_DIR}${WHICH_BINARY}.jar" \
     -fs "$HDFS_URI" -jt "$JOBTRACKER_URI" \
     -input "${HDFS_URI}${HDFS_DIR}hadoop_input" \
