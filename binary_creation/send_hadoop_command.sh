@@ -1,21 +1,77 @@
-#log into VM, must use -X or cx_freeze complains
-# vm_ip=192.168.1.10
-# ssh -X bigdata@$vm_ip
+#!/bin/bash
+
+
+#Set the default values
+num_map_tasks=
+task_timeout=6
+input_filename=hadoop_input
+verbose=
+
+# print script usage
+usage() {
+    cat <<EOF
+usage: $0 options
+    
+    Send jobs to hadoop
+    
+    OPTIONS:
+    -h      Show this message
+    -t      task_timeout=$task_timeout
+    -n      num_map_tasks=$num_map_tasks
+    -i      input_filename=$input_filename
+    -v      verbose=False
+EOF
+exit
+}
+
+get_num_lines() {
+    filename=$1
+    num_lines=$(wc -l $filename | awk '{print $1}')
+    echo $num_lines
+}
+
+# determine if VPN exists
+get_vpn_status() {
+    echo "$(ifconfig | grep tun)"
+}
 
 # make sure you can get to XNET
-if [[ -z $(ifconfig | grep tun) ]]; then
-  echo "Can't detect VPN connection: '-z \$(ifconfig | grep tun)' is True"
-  echo "Connect to VPN with: sudo vpnc-connect"
-  echo "EXITING without sending!!!"
-  exit
-  # sudo vpnc-connect
+assert_vpn_status() {
+    vpn_status=$(get_vpn_status)
+    if [[ -z $(get_vpn_status) ]]; then
+        echo "!!!!!!!"
+        echo "Can't detect VPN connection"
+        echo "Connect to VPN with: sudo vpnc-connect"
+        echo "EXITING without sending!!!"
+        echo "!!!!!!!"
+        exit
+    fi
+}
+
+#Process the arguments
+while getopts ht:n:i:v opt
+do
+    case "$opt" in
+        h) usage;;
+        t) task_timeout=$OPTARG;;
+        n) num_map_tasks=$OPTARG;;
+        i) input_filename=$OPTARG;;
+        v) verbose="True";;
+    esac
+done
+
+# num_map_tasks is one per line unless set on command line
+if [[ -z $num_map_tasks ]]; then
+    num_map_tasks=$(get_num_lines $input_filename)
 fi
 
-num_map_tasks=$1
-if [[ -z $num_map_tasks ]]; then
-    num_lines=$(wc -l hadoop_input | awk '{print $1}')
-    num_map_tasks=$(( $num_lines / 2 ))
-fi
+echo "task_timeout=$task_timeout"
+echo "num_map_tasks=$num_map_tasks"
+echo "input_filename=$input_filename"
+echo "verbose=$verbose"
+
+# make sure you can get to XNET
+assert_vpn_status
 
 # setup
 WHICH_BINARY="hadoop_line_processor"
