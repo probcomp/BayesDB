@@ -3,7 +3,7 @@
 
 #Set the default values
 num_map_tasks=
-task_timeout=6
+task_timeout_in_ms=600000
 input_filename=hadoop_input
 verbose=
 
@@ -16,7 +16,7 @@ usage: $0 options
     
     OPTIONS:
     -h      Show this message
-    -t      task_timeout=$task_timeout
+    -t      task_timeout_in_ms=$task_timeout_in_ms
     -n      num_map_tasks=$num_map_tasks
     -i      input_filename=$input_filename
     -v      verbose=False
@@ -53,7 +53,7 @@ while getopts ht:n:i:v opt
 do
     case "$opt" in
         h) usage;;
-        t) task_timeout=$OPTARG;;
+        t) task_timeout_in_ms=$OPTARG;;
         n) num_map_tasks=$OPTARG;;
         i) input_filename=$OPTARG;;
         v) verbose="True";;
@@ -65,7 +65,7 @@ if [[ -z $num_map_tasks ]]; then
     num_map_tasks=$(get_num_lines $input_filename)
 fi
 
-echo "task_timeout=$task_timeout"
+echo "task_timeout_in_ms=$task_timeout_in_ms"
 echo "num_map_tasks=$num_map_tasks"
 echo "input_filename=$input_filename"
 echo "verbose=$verbose"
@@ -95,7 +95,7 @@ hadoop fs -fs "$HDFS_URI" -put hadoop_input "${HDFS_DIR}"
 
 # run
 $HADOOP_HOME/bin/hadoop jar "$WHICH_HADOOP_JAR" \
-    -D mapred.task.timeout="${task_timeout}" \
+    -D mapred.task.timeout="${task_timeout_in_ms}" \
     -D mapred.map.tasks="${num_map_tasks}" \
     -archives "${HDFS_URI}${HDFS_DIR}${WHICH_BINARY}.jar" \
     -fs "$HDFS_URI" -jt "$JOBTRACKER_URI" \
