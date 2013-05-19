@@ -157,7 +157,7 @@ class MiddlewareEngine(object):
 
     # Write csv to file
     cur_dir = os.path.dirname(os.path.abspath(__file__))
-    f = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'w')
+    f = open('%s/../../www/data/%s.csv' % (cur_dir, tablename), 'w')
     csv_abs_path = os.path.abspath(f.name)
     f.write(csv)
     f.close()
@@ -165,7 +165,7 @@ class MiddlewareEngine(object):
     
     # Write csv to a file, with colnames (first row) removed
     clean_csv = csv[csv.index('\n')+1:]
-    f = open('%s/../postgres/%s_clean.csv' % (cur_dir, tablename), 'w')
+    f = open('%s/../../www/data/%s_clean.csv' % (cur_dir, tablename), 'w')
     clean_csv_abs_path = os.path.abspath(f.name)
     f.write(clean_csv)
     f.close()
