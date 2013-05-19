@@ -31,11 +31,10 @@ middleware_engine = MiddlewareEngine()
 def run_test(hostname='localhost', middleware_port=8008, online=False):
   URI = 'http://' + hostname + ':%d' % middleware_port
   cur_dir = os.path.dirname(os.path.abspath(__file__))  
-  #test_tablenames = ['dhatest', 'dha_small', 'dha_small_cont']
   test_tablenames = ['dha_small', 'anneal_small']
   
   for tablename in test_tablenames:
-    table_csv = open('%s/../postgres/%s.csv' % (cur_dir, tablename), 'r').read()
+    table_csv = open('%s/../../www/data/%s.csv' % (cur_dir, tablename), 'r').read()
     run_test_with(tablename, table_csv, URI, online)
 
 def call(method_name, args_dict, URI, online):
