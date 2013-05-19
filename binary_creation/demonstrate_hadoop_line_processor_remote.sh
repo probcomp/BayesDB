@@ -58,7 +58,6 @@ done
 echo "n_chains=$n_chains"
 echo "n_steps=$n_steps"
 echo "task_timeout_in_ms=$task_timeout_in_ms"
-exit
 
 python xnet_utils.py pickle_table_data
 python xnet_utils.py write_initialization_files --n_chains $n_chains
