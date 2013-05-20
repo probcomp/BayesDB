@@ -18,7 +18,7 @@ import os
 
 
 class path():
-    user_home_dir = '/home/sgeadmin/'
+    user_home_dir = os.environ['HOME']
     if 'WORKSPACE' in os.environ:
         user_home_dir = os.environ['WORKSPACE']
     remote_code_dir = os.path.join(user_home_dir, 'tabular_predDB')
