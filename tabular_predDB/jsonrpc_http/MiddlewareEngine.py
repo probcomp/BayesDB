@@ -23,7 +23,6 @@ import pdb
 import pylab
 import numpy
 import psycopg2
-import hcluster
 import matplotlib.cm
 #
 import tabular_predDB.cython_code.State as State
@@ -725,6 +724,7 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
             z_matrix[i, j] += 1
     z_matrix /= float(num_latent_states)
     # hierachically cluster z_matrix
+    import hcluster
     Y = hcluster.pdist(z_matrix)
     Z = hcluster.linkage(Y)
     pylab.figure()
