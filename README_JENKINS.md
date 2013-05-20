@@ -46,7 +46,7 @@ Instructions to setup a Jenkins server
 * Configure email.
 
   * Go to \<EC2-HOSTNAME\>:8080/configure. Fill out the forms under the 'E-mail Notification' section
-  * To use your own gmail account:
+  * To use your own gmail account (only works with 2-factor authentication):
        * Sender E-mail Address: your address FIXME: is this 'System Admin e-mail address' under Jenkins Location?
        * SMTP server: smtp.gmail.com
        * Click "Advanced"
