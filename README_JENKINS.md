@@ -9,11 +9,11 @@ Instructions to setup a Jenkins server
   * Follow the directions here: http://pkg.jenkins-ci.org/debian-stable/, or follow the commands below.
 
 
-        root> wget -q -O - http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key | sudo apt-key add -
-        root> sudo echo "deb http://pkg.jenkins-ci.org/debian-stable binary/" >> /etc/apt/sources.list
-        root> sudo apt-get update
-        root> sudo apt-get install jenkins
-        root> sudo apt-get update
+    root> wget -q -O - http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key | sudo apt-key add -
+    root> sudo echo "deb http://pkg.jenkins-ci.org/debian-stable binary/" >> /etc/apt/sources.list
+    root> sudo apt-get update
+    root> sudo apt-get install jenkins
+    root> sudo apt-get update
 
 
 * Open port 8080 for http (by default, it's not open!! You can do this by editing your ec2 security group).
@@ -82,9 +82,8 @@ Instructions to setup a Jenkins server
 
   ssh in as the jenkins user. Then install virtualenv:
 
+        root> # this didn't seem to work, perhaps because 'sh jenkins_script.sh' didn't run above?
         root> cd /var/lib/jenkins/workspace/PredictiveDB/
-        root> git clone https://github.com/mit-probabilistic-computing-project/tabular-predDB.git tabular_predDB
-	root> cd tabular_predDB
         root> # FIXME: this is broken because of the absolute path to requirements.txt in virtualenv_setup.sh
         root> bash -i install_scripts/virtualenv_setup.sh jenkins /var/lib/jenkins
 
