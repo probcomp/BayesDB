@@ -25,7 +25,7 @@ def int_generator(start=0):
         yield next_i
         next_i += 1
 
-class Engine(object):
+class LocalEngine(object):
 
     def __init__(self, seed=0):
         self.seed_generator = int_generator(seed)
