@@ -419,8 +419,7 @@ def transform_latent_state_to_constructor_args(X_L, X_D):
      hypers_m = floatify_dict_dict(hypers_m)
      column_indicator_list = X_L['column_partition']['assignments']
      column_partition = indicator_list_to_list_of_list(column_indicator_list)
-     column_crp_alpha = \
-         numpy.exp(X_L['column_partition']['hypers']['alpha'])
+     column_crp_alpha = X_L['column_partition']['hypers']['alpha']
      row_partition_v = map(indicator_list_to_list_of_list, X_D)
      row_crp_alpha_v = map(extract_row_partition_alpha, X_L['view_state'])
      n_grid = 31
