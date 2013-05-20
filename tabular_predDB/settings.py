@@ -21,7 +21,7 @@ class path():
     user_home_dir = os.environ['HOME']
     if 'WORKSPACE' in os.environ:
         user_home_dir = os.environ['WORKSPACE']
-    remote_code_dir = os.path.join(user_home_dir, 'tabular_predDB')
+    remote_code_dir = os.path.join('/home/sgeadmin', 'tabular_predDB')
     install_ubuntu_script = os.path.join(remote_code_dir,
                                          'install_ubuntu_packages.sh')
     install_boost_script = os.path.join(remote_code_dir, 'install_boost.sh')
