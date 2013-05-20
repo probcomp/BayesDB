@@ -463,6 +463,13 @@ def determine_replicating_samples_params(X_L, X_D):
         views_replicating_samples.append(this_view_replicating_samples)
     return views_replicating_samples
 
+def get_is_multistate(X_L, X_D):
+    if isinstance(X_L, (list, tuple)):
+        assert isinstance(X_D, (list, tuple))
+        return True
+    else:
+        return False
+
 # def determine_cluster_view_logps(M_c, X_L, X_D, Y):
 #     get_which_view = lambda which_column: \
 #         X_L['column_partition']['assignments'][which_column]
