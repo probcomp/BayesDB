@@ -1,68 +1,33 @@
-OPTIMIZED = 
-ifdef OPTIMIZED
-CXXOPTS := -O2 -g $(CXXOPTS)
-else
-CXXOPTS := -g $(CXXOPTS) 
-endif
-
-CC = gcc
-CXX = g++
-CXXOPTS :=  $(CXXOPTS) -lm -lboost_program_options -L$(BOOST_ROOT)/lib -I$(BOOST_ROOT)/include
-
-INC=include/CrossCat
-SRC=src
-OBJ=obj
+CPP_DIR=cpp_code
+CYT=tabular_predDB/cython_code
 DOC=docs
-TEST=tests
-CYT=cython_code
-# Assume BOOST_ROOT set as environment variable.
-# /usr/local/boost
-BIN = model
-MAIN = main
-NAMES = ContinuousComponentModel MultinomialComponentModel ComponentModel \
-	Cluster View State \
-	utils numerics RandomNumberGenerator DateTime
-TEST_NAMES = test_component_model \
-	test_continuous_component_model test_multinomial_component_model \
-	test_cluster test_view test_view_speed test_state
-CYTHON_NAMES = Makefile setup.py State.pyx
-HEADERS = $(foreach name, $(NAMES), $(INC)/$(name).h)
-SOURCES = $(foreach name, $(NAMES), $(SRC)/$(name).cpp)
-OBJECTS = $(foreach name, $(NAMES), $(OBJ)/$(name).o)
-TESTS = $(foreach test, $(TEST_NAMES), $(TEST)/$(test))
-CYTHON = $(foreach name, $(CYTHON_NAMES), $(CYT)/$(name))
+TEST=tabular_predDB/tests
+XNET=tabular_predDB/binary_creation
+
 
 all: cython doc
 
-cython: $(CYT)/State.so
+clean:
+	cd $(CPP_DIR) && make clean
+	cd $(CYT) && make clean
+	cd $(DOC) && make clean
+	cd $(TEST) && make clean
+	cd $(XNET) && make clean
 
-bin: $(OBJECTS) $(BIN)
-	./$(BIN)
+cpp:
+	cd $(CPP_DIR) && make
 
-obj: $(OBJECTS)
-
-tests: $(TESTS)
-
-# run each test
-runtests: $(TESTS)
-	@echo tests are: $(TESTS) $(foreach test, $(TESTS), && ./$(test))
+cython:
+	cd $(CYT) && make
 
 doc:
 	cd $(DOC) && make
 
-clean:
-	rm -f $(BIN) $(OBJECTS) core *.stackdump *.gch $(TESTS)
-	cd $(CYT) && make clean
-	cd $(DOC) && make clean
+runtests:
+	cd $(TEST) && make runtests
 
-$(CYT)/State.so: $(HEADERS) $(SOURCES) $(CYTHON)
-	cd $(CYT) && make
+tests:
+	cd $(TEST) && make tests
 
-$(OBJ)/%.o: $(SRC)/%.cpp $(INC)/%.h $(HEADERS)
-	$(CXX) -c $< -o $@ $(CXXOPTS) -I$(INC)
-
-$(BIN): $(MAIN) $(OBJECTS)
-	$(CXX) -o $(BIN) $(MAIN) $(OBJECTS) $(CXXOPTS) -I$(INC)
-
-$(TEST)/%: $(TEST)/%.cpp $(HEADERS) $(OBJECTS)
-	$(CXX) $< -o $@ $(CXXOPTS) -I$(INC) $(OBJECTS)
+xnet:
+	cd $(XNET) && make
