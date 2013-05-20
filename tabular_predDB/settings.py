@@ -22,18 +22,20 @@ class path():
     if 'WORKSPACE' in os.environ:
         user_home_dir = os.environ['WORKSPACE']
     remote_code_dir = os.path.join('/home/sgeadmin', 'tabular_predDB')
-    install_ubuntu_script = os.path.join(remote_code_dir,
-                                         'install_ubuntu_packages.sh')
-    install_boost_script = os.path.join(remote_code_dir, 'install_boost.sh')
-    virtualenv_setup_script = os.path.join(remote_code_dir,
-                                           'virtualenv_setup.sh')
-    server_script = os.path.join('jsonrpc_http', 'server_jsonrpc.py')
-    run_server_script = 'run_server.sh'
-    run_webserver_script = os.path.join(remote_code_dir, 
-                                        'run_simplehttpserver.sh')
-    postgres_setup_script = 'postgres_setup.sh'
+    install_script_dir = os.path.join(remote_code_dir, 'install_scripts')
     web_resources_dir = os.path.join(remote_code_dir, 'www')
     web_resources_data_dir = os.path.join(web_resources_dir, 'data')
+    #
+    install_ubuntu_script = os.path.join(install_script_dir,
+                                         'install_ubuntu_packages.sh')
+    install_boost_script = os.path.join(install_script_dir, 'install_boost.sh')
+    postgres_setup_script = os.path.join(install_script_dir, 'postgres_setup.sh')
+    virtualenv_setup_script = os.path.join(install_script_dir,
+                                           'virtualenv_setup.sh')
+    run_server_script = os.path.join(remote_code_dir, 'run_server.sh')
+    run_webserver_script = os.path.join(remote_code_dir, 
+                                        'run_simplehttpserver.sh')
+    # server_script = os.path.join('jsonrpc_http', 'server_jsonrpc.py')
     try:
         os.makedirs(web_resources_dir)
         os.makedirs(web_resources_data_dir)
