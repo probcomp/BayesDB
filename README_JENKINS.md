@@ -21,12 +21,12 @@ Instructions to setup a Jenkins server
   * click the 'Add Rule' button
   * click the 'Apply Rule Changes' button
 
-* Access the Jenkins web interface at <EC2-HOSTNAME>:8080
+* Access the Jenkins web interface at \<EC2-HOSTNAME\>:8080
   * you can determine your EC2-HOSTNAME with 'starcluster listclusters' from the machine you spun up the cluster
 * click 'New Job' at the top left
 * add 'PredictiveDB' to the text box labelled 'Job name'
 * click the 'Build a free-style software project' radio button
-* click the 'OK' button, a new window will open up to <EC2-HOSTNAME>:8080/job/PredictiveDB/configure
+* click the 'OK' button, a new window will open up to \<EC2-HOSTNAME\>:8080/job/PredictiveDB/configure
    * Under the 'Build' section: 
       * Click 'Add build step'
       * select 'Execute shell' from the drop down
@@ -45,7 +45,7 @@ Instructions to setup a Jenkins server
 
 * Configure email.
 
-  * Go to <EC2-HOSTNAME>:8080/configure. Fill out the forms under the 'E-mail Notification' section
+  * Go to \<EC2-HOSTNAME\>:8080/configure. Fill out the forms under the 'E-mail Notification' section
   * To use your own gmail account:
        * Sender E-mail Address: your address FIXME: is this 'System Admin e-mail address' under Jenkins Location?
        * SMTP server: smtp.gmail.com
