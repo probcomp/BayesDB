@@ -1,4 +1,4 @@
-import tabular_predDB.binary_creation.xnet_utils as xu
+import tabular_predDB.python_utils.xnet_utils as xu
 
 
 # settings

@@ -18,7 +18,7 @@
 import sys
 #
 import tabular_predDB.python_utils.file_utils as fu
-import tabular_predDB.binary_creation.xnet_utils as xu
+import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.jsonrpc_http.Engine as E
 
 
