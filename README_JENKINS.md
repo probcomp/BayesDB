@@ -6,14 +6,14 @@ Instructions to setup a Jenkins server
 * Install Jenkins
 
   * Ssh in as root.
-  * Follow the directions here: http://pkg.jenkins-ci.org/debian-stable/, or follow the commands below.
+  * Follow the directions here: http://pkg.jenkins-ci.org/debian-stable/, or execute the commands below:
 
 
-    root> wget -q -O - http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key | sudo apt-key add -
-    root> sudo echo "deb http://pkg.jenkins-ci.org/debian-stable binary/" >> /etc/apt/sources.list
-    root> sudo apt-get update
-    root> sudo apt-get install jenkins
-    root> sudo apt-get update
+        root> wget -q -O - http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key | sudo apt-key add -
+        root> sudo echo "deb http://pkg.jenkins-ci.org/debian-stable binary/" >> /etc/apt/sources.list
+        root> sudo apt-get update
+        root> sudo apt-get install jenkins
+        root> sudo apt-get update
 
 
 * Open port 8080 for http (by default, it's not open!! You can do this by editing your ec2 security group).
