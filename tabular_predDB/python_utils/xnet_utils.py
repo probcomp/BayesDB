@@ -2,11 +2,14 @@ import os
 import re
 import argparse
 #
+import tabular_predDB.settings as S
 import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.data_utils as du
 
 
 default_table_data_filename = 'table_data.pkl.gz'
+default_table_filename = os.path.join(S.path.web_resources_data_dir,
+  'dha.csv')
 
 default_initialize_args_dict = dict(
     command='initialize',
@@ -77,7 +80,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('do_what', type=str)
     parser.add_argument('--table_filename',
-                        default='../web_resources/data/dha.csv', type=str)
+        default=default_table_filename, type=str)
     parser.add_argument('--pkl_filename',
                         default=default_table_data_filename, type=str)
     parser.add_argument('--initialize_input_filename',

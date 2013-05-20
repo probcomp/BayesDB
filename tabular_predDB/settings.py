@@ -32,10 +32,11 @@ class path():
     run_webserver_script = os.path.join(remote_code_dir, 
                                         'run_simplehttpserver.sh')
     postgres_setup_script = 'postgres_setup.sh'
-    web_resources_dir = os.path.join(remote_code_dir, 'web_resources')
-    web_resources_data_dir = os.path.join(remote_code_dir, 'web_resources', 'data')
+    web_resources_dir = os.path.join(remote_code_dir, 'www')
+    web_resources_data_dir = os.path.join(web_resources_dir, 'data')
     try:
         os.makedirs(web_resources_dir)
+        os.makedirs(web_resources_data_dir)
     except Exception, e:
         pass
 

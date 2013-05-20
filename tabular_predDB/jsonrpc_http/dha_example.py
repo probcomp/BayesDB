@@ -18,16 +18,18 @@ from multiprocessing import Process, Queue
 #
 import numpy
 #
+import tabular_predDB.settings as S
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.jsonrpc_http.Engine as E
 import tabular_predDB.jsonrpc_http.MiddlewareEngine as MiddlewareEngine 
 
 
-default_filename = '../web_resources/data/dha.csv'
+default_table_filename = os.path.join(S.path.web_resources_data_dir,
+  'dha.csv')
 # parse input
 parser = argparse.ArgumentParser()
-parser.add_argument('--filename', default=default_filename, type=str)
+parser.add_argument('--filename', default=default_table_filename, type=str)
 parser.add_argument('--inf_seed', default=0, type=int)
 parser.add_argument('--gen_seed', default=0, type=int)
 parser.add_argument('--num_chains', default=25, type=int)
