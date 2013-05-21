@@ -34,13 +34,25 @@ class CrossCatClient(object):
             attr = object.__getattribute__(self, name)
         return attr
 
+def get_CrossCatClient(client_type, **kwargs):
+    client = None
+    if client_type == 'local':
+        import tabular_predDB.LocalEngine as LocalEngine
+        le = LocalEngine.LocalEngine(**kwargs)
+        client = CrossCatClient(le)
+    elif client_type == 'hadoop':
+        import tabular_predDB.HadoopEngine as HadoopEngine
+        he = HadoopEngine.HadoopEngine(**kwargs)
+        client = CrossCatClient(he)
+    else:
+        raise Exception('unknown client_type: %s' % client_type)
+    return client
+
 
 if __name__ == '__main__':
     import tabular_predDB.python_utils.data_utils as du
-    import tabular_predDB.LocalEngine as LocalEngine
-    le = LocalEngine.LocalEngine(0)
-    ccc = CrossCatClient(le)
-
+    ccc = get_CrossCatClient('local', seed=0)
+    #
     gen_seed = 0
     num_clusters = 4
     num_cols = 8
@@ -53,4 +65,7 @@ if __name__ == '__main__':
         num_cols, num_rows, num_splits,
         max_mean=max_mean, max_std=max_std,
         )
+    #
     M_c_prime, M_r_prime, X_L, X_D, = ccc.initialize(M_c, M_r, T)
+    X_L_prime, X_D_prime = ccc.analyze(M_c, T, X_L, X_D)
+    X_L_prime, X_D_prime = ccc.analyze(M_c, T, X_L_prime, X_D_prime)
