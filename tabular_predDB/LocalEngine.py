@@ -17,18 +17,13 @@ import inspect
 #
 import tabular_predDB.cython_code.State as State
 import tabular_predDB.python_utils.sample_utils as su
+import tabular_predDB.python_utils.general_utils as gu
 
-
-def int_generator(start=0):
-    next_i = start
-    while True:
-        yield next_i
-        next_i += 1
 
 class LocalEngine(object):
 
     def __init__(self, seed=0):
-        self.seed_generator = int_generator(seed)
+        self.seed_generator = gu.int_generator(seed)
 
     def get_next_seed(self):
         return self.seed_generator.next()
@@ -116,15 +111,8 @@ def do_analyze(M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
     X_D_prime = p_State.get_X_D()
     return X_L_prime, X_D_prime
 
-def get_is_multistate(X_L, X_D):
-    if isinstance(X_L, (list, tuple)):
-        assert isinstance(X_D, (list, tuple))
-        return True
-    else:
-        return False
-
 def do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed):
-    is_multistate = get_is_multistate(X_L, X_D)
+    is_multistate = su.get_is_multistate(X_L, X_D)
     if is_multistate:
         samples = su.simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
                                                          get_next_seed, n)

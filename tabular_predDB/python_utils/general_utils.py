@@ -15,3 +15,9 @@ class Timer(object):
         self.elapsed = self.elapsed_secs * 1000 # millisecs
         if self.verbose:
             print '%s took:\t% 7d ms' % (self.task, self.elapsed)
+
+def int_generator(start=0):
+    next_i = start
+    while True:
+        yield next_i
+        next_i += 1
