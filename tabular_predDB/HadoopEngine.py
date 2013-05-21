@@ -26,7 +26,7 @@ default_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 default_which_hadoop_jar = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.2.jar"
 
 
-class HadoopEngine(EngineTemplate):
+class HadoopEngine(object):
 
     def __init__(self, seed=0,
                  which_binary=default_which_binary,
