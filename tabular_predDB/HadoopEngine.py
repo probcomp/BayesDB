@@ -117,10 +117,8 @@ def put_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     return
 
 def create_hadoop_cmd_str(hadoop_engine, task_timeout, n_chains):
-    hdfs_path = os.path.join(hadoop_engine.hdfs_uri,
-                             hadoop_engine.hdfs_dir)
-    archive_path = os.path.join(hadoop_engine.hdfs_uri,
-                                hadoop_engine.hdfs_dir,
+    hdfs_path = hadoop_engine.hdfs_uri + hadoop_engine.hdfs_dir
+    archive_path = os.path.join(hdfs_path, 
                                 hadoop_engine.which_engine_binary + '.jar')
     ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
     ld_library_path = './%s.jar:%s' % (hadoop_engine.which_engine_binary,
@@ -158,8 +156,7 @@ def write_hadoop_input():
 def read_hadoop_output():
     pass
 
-
-
+# comamnd creation logic from send_hadoop_command.sh
 # $HADOOP_HOME/bin/hadoop jar "$WHICH_HADOOP_JAR" \
 #     -D mapred.task.timeout="${task_timeout_in_ms}" \
 #     -D mapred.map.tasks="${num_map_tasks}" \
@@ -172,3 +169,16 @@ def read_hadoop_output():
 #     -file hadoop_input \
 #     -file table_data.pkl.gz \
 #     -cmdenv LD_LIBRARY_PATH=./${WHICH_ENGINE_BINARY}.jar/:$LD_LIBRARY_PATH
+
+# actual command from send_hadoop_command.sh
+#
+# /bin/hadoop jar /usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.2.jar -D mapred.task.timeout=600000 -D mapred.map.tasks= -archives hdfs://xd-namenode.xdata.data-tactics-corp.com:8020//user/bigdata/SSCI/test_remote_streaming/hadoop_line_processor.jar -fs hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/ -jt xd-jobtracker.xdata.data-tactics-corp.com:8021 -input hdfs://xd-namenode.xdata.data-tactics-corp.com:8020//user/bigdata/SSCI/test_remote_streaming/hadoop_input -output hdfs://xd-namenode.xdata.data-tactics-corp.com:8020//user/bigdata/SSCI/test_remote_streaming/myOutputDir/ -mapper hadoop_line_processor.jar/hadoop_line_processor -reducer /bin/cat -file hadoop_input -file table_data.pkl.gz -cmdenv LD_LIBRARY_PATH=./hadoop_line_processor.jar/:
+
+
+# command created from create_hadoop_cmd_str
+#
+# 'bin/hadoop jar /usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.2.jar -D mapred.task.timeout=1 -D mapred.map.tasks=2 -archives "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020//user/bigdata/SSCI/test_remote_streaming/hadoop_line_processor.jar" -fs "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/" -jt "xd-jobtracker.xdata.data-tactics-corp.com:8021" -input "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020//user/bigdata/SSCI/test_remote_streaming/hadoop_input" -output "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020//user/bigdata/SSCI/test_remote_streaming/myOutputDir" -mapper "hadoop_line_processor.jar/hadoop_line_processor" -reducer /bin/cat -file hadoop_input -file table_data.pkl.gz -cmdenv LD_LIBRARY_PATH=./hadoop_line_processor.jar:'
+
+if __name__ == '__main__':
+    he = HadoopEngine()
+    print create_hadoop_cmd_str(he, 1, 2)
