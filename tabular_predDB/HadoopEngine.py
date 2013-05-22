@@ -37,6 +37,7 @@ DEBUG = False
 
 class HadoopEngine(object):
 
+    # FIXME: where is binary created/sent?
     def __init__(self, seed=0,
                  which_engine_binary=default_which_engine_binary,
                  hdfs_dir=default_hdfs_dir,
@@ -58,23 +59,19 @@ class HadoopEngine(object):
 
     def initialize(self, M_c, M_r, T, initialization='from_the_prior',
                    n_chains=1):
+        assert_vpn_is_connected()
         #
         table_data = dict(M_c=M_c, M_r=M_r, T=T)
         xu.pickle_table_data(table_data, table_data_filename)
         xu.write_initialization_files(input_filename, n_chains)
-        put_hdfs(self.hdfs_uri, input_filename, hdfs_base_dir=self.hdfs_dir)
-        put_hdfs(self.hdfs_uri, table_data_filename,
-                 hdfs_base_dir=self.hdfs_dir)
-
-        rm_hdfs(self.hdfs_uri, output_path, hdfs_base_dir=self.hdfs_dir)
-        hadoop_cmd_str = create_hadoop_cmd_str(self, n_tasks=n_chains)
-        if DEBUG:
-            print hadoop_cmd_str
-        else:
-            os.system(hadoop_cmd_str + ' >out 2>err')
-        get_hdfs(self.hdfs_uri, output_path, hdfs_base_dir=self.hdfs_dir)
-        # FIXME: still need to read the result to return
-        return
+        was_successful = send_hadoop_command(self,
+                                            table_data_filename,
+                                            input_filename, output_path,
+                                            n_tasks=n_chains)
+        hadoop_output = None
+        if was_successful:
+            hadoop_output = read_hadoop_output(output_path)
+        return hadoop_output
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1):
@@ -178,21 +175,43 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=600000, n_tasks=1):
             ])
     return hadoop_cmd_str
 
-def send_hadoop_command():
-    pass
+def get_was_successful(output_path):
+    success_file = os.path.join(output_path, '_SUCCESS')
+    was_successful = os.path.isfile(success_file)
+    return was_successful
+
+def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
+                        output_path, n_tasks):
+    # set up files
+    put_hdfs(hadoop_engine.hdfs_uri, input_filename, hdfs_base_dir=hadoop_engine.hdfs_dir)
+    put_hdfs(hadoop_engine.hdfs_uri, table_data_filename,
+             hdfs_base_dir=hadoop_engine.hdfs_dir)
+    rm_hdfs(hadoop_engine.hdfs_uri, output_path, hdfs_base_dir=hadoop_engine.hdfs_dir)
+    # actually send
+    hadoop_cmd_str = create_hadoop_cmd_str(hadoop_engine, n_tasks=n_tasks)
+    if DEBUG:
+        print hadoop_cmd_str
+    else:
+        os.system(hadoop_cmd_str + ' >out 2>err')
+    # retrieve resutls
+    get_hdfs(hadoop_engine.hdfs_uri, output_path, hdfs_base_dir=hadoop_engine.hdfs_dir)
+    #
+    was_successful = get_was_successful(output_path)
+    return was_successful
 
 def write_hadoop_input():
     pass
 
-def read_hadoop_output():
-    pass
-
+def read_hadoop_output(output_path):
+    hadoop_output_filename = os.path.join(output_path, 'part-00000')
+    with open(hadoop_output_filename) as fh:
+        ret_dict = dict([xu.parse_hadoop_line(line) for line in fh])
+    return ret_dict
 
 if __name__ == '__main__':
     import tabular_predDB.python_utils.data_utils as du
     T, M_r, M_c = du.read_model_data_from_csv('../www/data/dha_small.csv', gen_seed=0)
     #
     he = HadoopEngine()
-    he.initialize(M_c, M_r, T, initialization='from_the_prior',
-                  n_chains=4
-                  )
+    hadoop_output = he.initialize(M_c, M_r, T, initialization='from_the_prior',
+                                  n_chains=4)
