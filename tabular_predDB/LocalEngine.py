@@ -13,20 +13,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-import inspect
-#
 import tabular_predDB.cython_code.State as State
+import tabular_predDB.EngineTemplate as EngineTemplate
 import tabular_predDB.python_utils.sample_utils as su
-import tabular_predDB.python_utils.general_utils as gu
 
 
-class LocalEngine(object):
+class LocalEngine(EngineTemplate.EngineTemplate):
 
     def __init__(self, seed=0):
-        self.seed_generator = gu.int_generator(seed)
-
-    def get_next_seed(self):
-        return self.seed_generator.next()
+        super(LocalEngine, self).__init__(seed=seed)
 
     def initialize(self, M_c, M_r, T, initialization='from_the_prior'):
         # FIXME: why is M_r passed?
@@ -48,10 +43,6 @@ class LocalEngine(object):
         samples = do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed)
         return samples
 
-    def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, n):
-        p = None
-        return p
-
     def impute(self, M_c, X_L, X_D, Y, Q, n):
         e = su.impute(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
         return e
@@ -65,35 +56,6 @@ class LocalEngine(object):
             e,confidence = su.impute_and_confidence(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
         return (e,confidence)
 
-    def conditional_entropy(M_c, X_L, X_D, d_given, d_target,
-                            n=None, max_time=None):
-        e = None
-        return e
-
-    def predictively_related(self, M_c, X_L, X_D, d,
-                                           n=None, max_time=None):
-        m = []
-        return m
-
-    def contextual_structural_similarity(self, X_D, r, d):
-        s = []
-        return s
-
-    def structural_similarity(self, X_D, r):
-        s = []
-        return s
-
-    def structural_anomalousness_columns(self, X_D):
-        a = []
-        return a
-
-    def structural_anomalousness_rows(self, X_D):
-        a = []
-        return a
-
-    def predictive_anomalousness(self, M_c, X_L, X_D, T, q, n):
-        a = []
-        return a
 
 def do_initialize(M_c, M_r, T, initialization, SEED):
     p_State = State.p_State(M_c, T, initialization=initialization, SEED=SEED)
@@ -121,19 +83,12 @@ def do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed):
                                               get_next_seed, n)
     return samples
 
-# helper functions
-get_name = lambda x: getattr(x, '__name__')
-get_Engine_attr = lambda x: getattr(Engine, x)
-is_Engine_method_name = lambda x: inspect.ismethod(get_Engine_attr(x))
-#
-def get_method_names():
-    return filter(is_Engine_method_name, dir(Engine))
-#
-def get_method_name_to_args():
-    method_names = get_method_names()
-    method_name_to_args = dict()
-    for method_name in method_names:
-        method = Engine.__dict__[method_name]
-        arg_str_list = inspect.getargspec(method).args[1:]
-        method_name_to_args[method_name] = arg_str_list
-    return method_name_to_args
+
+get_method_names = EngineTemplate.get_method_names
+get_method_name_to_args = EngineTemplate.get_method_name_to_args
+
+
+if __name__ == '__main__':
+    le = LocalEngine(seed=10)
+    
+    pass

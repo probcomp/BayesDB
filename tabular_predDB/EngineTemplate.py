@@ -27,46 +27,59 @@ class EngineTemplate(object):
         return self.seed_generator.next()
 
     def initialize(self, M_c, M_r, T, initialization='from_the_prior'):
-        pass
+        M_c, M_r, X_L, X_D = dict(), dict(), dict(), []
+        return M_c, M_r, X_L, X_D
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1):
-        pass
+        X_L_prime, X_D_prime = dict(), []
+        return X_L_prime, X_D_prime
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
-        pass
+        samples = []
+        return samples
 
     def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, n):
-        pass
+        p = None
+        return p
 
     def impute(self, M_c, X_L, X_D, Y, Q, n):
-        pass
+        e = None
+        return e
 
     def impute_and_confidence(self, M_c, X_L, X_D, Y, Q, n):
-        pass
+        e, confidence = None, None
+        return e, confidence
 
     def conditional_entropy(M_c, X_L, X_D, d_given, d_target,
                             n=None, max_time=None):
-        pass
+        e = None
+        return e
 
     def predictively_related(self, M_c, X_L, X_D, d,
                                            n=None, max_time=None):
-        pass
+        m = []
+        return m
 
     def contextual_structural_similarity(self, X_D, r, d):
-        pass
+        s = []
+        return s
 
     def structural_similarity(self, X_D, r):
-        pass
+        s = []
+        return s
 
     def structural_anomalousness_columns(self, X_D):
-        pass
+        a = []
+        return a
 
     def structural_anomalousness_rows(self, X_D):
-        pass
+        a = []
+        return a
 
     def predictive_anomalousness(self, M_c, X_L, X_D, T, q, n):
-        pass
+        a = []
+        return a
 
 
 # helper functions
