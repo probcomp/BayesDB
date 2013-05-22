@@ -58,10 +58,10 @@ def parse_hadoop_line(line):
         dict_in = eval(dict_in_str)
     return key, dict_in
 
-def write_initialization_files(initialize_input_filename, n_chains):
+def write_initialization_files(initialize_input_filename, initialize_args_dict, n_chains):
     with open(initialize_input_filename, 'w') as out_fh:
         for SEED in range(n_chains):
-            out_dict = default_initialize_args_dict.copy()
+            out_dict = initialize_args_dict.copy()
             out_dict['SEED'] = SEED
             write_hadoop_line(out_fh, SEED, out_dict)
     return
@@ -78,6 +78,13 @@ def link_initialize_to_analyze(initialize_output_filename,
                 dict_in['SEED'] = int(key)
                 write_hadoop_line(out_fh, key, dict_in)
     return
+
+def get_is_multistate(X_L, X_D):
+    if isinstance(X_L, (list, tuple)):
+        assert isinstance(X_D, (list, tuple))
+        return True
+    else:
+        return False
 
 
 if __name__ == '__main__':
