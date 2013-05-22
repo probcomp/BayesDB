@@ -54,7 +54,7 @@ T, M_r, M_c = du.gen_factorial_data_objects(
 
 # non-stub functions
 non_stub = set(['initialize', 'initialize_and_analyze', 'analyze', 'impute',
-                'simple_predictive_sample'])
+                'impute_and_confidence', 'simple_predictive_sample'])
 
 method_name = 'initialize'
 args_dict = dict()
@@ -95,6 +95,17 @@ print values
 time.sleep(1)
 
 method_name = 'impute'
+args_dict = dict()
+args_dict['M_c'] = M_c
+args_dict['X_L'] = X_L_prime
+args_dict['X_D'] = X_D_prime
+args_dict['Y'] = None
+args_dict['Q'] = [(0, 0)]
+args_dict['n'] = 10
+out, id = au.call(method_name, args_dict, URI)
+time.sleep(1)
+
+method_name = 'impute_and_confidence'
 args_dict = dict()
 args_dict['M_c'] = M_c
 args_dict['X_L'] = X_L_prime
