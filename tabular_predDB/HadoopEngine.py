@@ -60,10 +60,12 @@ class HadoopEngine(object):
     def initialize(self, M_c, M_r, T, initialization='from_the_prior',
                    n_chains=1):
         assert_vpn_is_connected()
+        initialize_args_dict = dict(command='initialize', initialization=initialization)
         #
         table_data = dict(M_c=M_c, M_r=M_r, T=T)
         xu.pickle_table_data(table_data, table_data_filename)
-        xu.write_initialization_files(input_filename, n_chains)
+        xu.write_initialization_files(input_filename, initialize_args_dict, n_chains)
+        os.system('cp %s initialize_input' % input_filename)
         was_successful = send_hadoop_command(self,
                                             table_data_filename,
                                             input_filename, output_path,
@@ -71,11 +73,36 @@ class HadoopEngine(object):
         hadoop_output = None
         if was_successful:
             hadoop_output = read_hadoop_output(output_path)
+            hadoop_output_filename = get_hadoop_output_filename(output_path)
+            os.system('cp %s initialize_output' % hadoop_output_filename)
         return hadoop_output
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1):
-        pass
+        assert_vpn_is_connected()
+        analyze_args_dict = dict(command='analyze', kernel_list=kernel_list, n_steps=n_steps, c=c, r=r)
+        if not xu.get_is_multistate(X_L, X_D):
+            X_L = [X_L]
+            X_D = [X_D]
+        #
+        table_data = dict(M_c=M_c, M_r=M_r, T=T)
+        xu.pickle_table_data(table_data, table_data_filename)
+        with open(input_filename, 'w') as fh:
+            for SEED, (X_L_i, X_D_i) in enumerate(zip(X_L, X_D)):
+                dict_out = dict(X_L=X_L_i, X_D=X_D_i, SEED=SEED)
+                dict_out.update(analyze_args_dict)
+                xu.write_hadoop_line(fh, SEED, dict_out)
+        os.system('cp %s analyze_input' % input_filename)
+        was_successful = send_hadoop_command(self,
+                                            table_data_filename,
+                                            input_filename, output_path,
+                                            n_tasks=len(X_L))
+        hadoop_output = None
+        if was_successful:
+            hadoop_output = read_hadoop_output(output_path)
+            hadoop_output_filename = get_hadoop_output_filename(output_path)
+            os.system('cp %s analyze_output' % hadoop_output_filename)
+        return hadoop_output
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
         pass
@@ -202,8 +229,11 @@ def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
 def write_hadoop_input():
     pass
 
-def read_hadoop_output(output_path):
+def get_hadoop_output_filename(output_path):
     hadoop_output_filename = os.path.join(output_path, 'part-00000')
+    return hadoop_output_filename
+def read_hadoop_output(output_path):
+    hadoop_output_filename = get_hadoop_output_filename(output_path)
     with open(hadoop_output_filename) as fh:
         ret_dict = dict([xu.parse_hadoop_line(line) for line in fh])
     return ret_dict
@@ -215,3 +245,6 @@ if __name__ == '__main__':
     he = HadoopEngine()
     hadoop_output = he.initialize(M_c, M_r, T, initialization='from_the_prior',
                                   n_chains=4)
+    X_L_list = [el['X_L'] for el in hadoop_output.values()]
+    X_D_list = [el['X_D'] for el in hadoop_output.values()]
+    hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list)
