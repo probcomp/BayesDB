@@ -372,10 +372,15 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, query_row,
         samples_list.append(this_sample_draws)
     return samples_list
 
-def continuous_imputation(samples, get_next_seed):
+def continuous_imputation(samples, get_next_seed, return_confidence=False):
     n_samples = len(samples)
     mean_sample = sum(samples) / float(n_samples)
-    return mean_sample
+    if return_confidence:
+        print "sample_utils.continuous_imputation: return_confidence not yet implemented"
+        condience = None
+        return mean_sample, None
+    else:
+        return mean_sample
 
 def multinomial_imputation(samples, get_next_seed, return_confidence=False):
     counter = Counter(samples)
