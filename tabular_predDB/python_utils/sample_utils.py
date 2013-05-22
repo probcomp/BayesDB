@@ -118,8 +118,9 @@ def simple_predictive_sample_observed(M_c, X_L, X_D, Y, which_row,
 
 def names_to_global_indices(column_names, M_c):
     name_to_idx = M_c['name_to_idx']
+    first_key = name_to_idx.keys()[0]
     # FIXME: str(column_name) is hack
-    if type(name_to_idx.keys()[0]) == str:
+    if isinstance(first_key, (unicode, str)):
         column_names = map(str, column_names)
     return [name_to_idx[column_name] for column_name in column_names]
 
