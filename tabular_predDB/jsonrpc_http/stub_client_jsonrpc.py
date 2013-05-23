@@ -54,7 +54,7 @@ T, M_r, M_c = du.gen_factorial_data_objects(
 
 # non-stub functions
 non_stub = set(['initialize', 'initialize_and_analyze', 'analyze', 'impute',
-                'simple_predictive_sample'])
+                'impute_and_confidence', 'simple_predictive_sample'])
 
 method_name = 'initialize'
 args_dict = dict()
@@ -70,10 +70,10 @@ args_dict['M_c'] = M_c
 args_dict['T'] = T
 args_dict['X_L'] = X_L_prime
 args_dict['X_D'] = X_D_prime
-args_dict['kernel_list'] = 'kernel_list'
+args_dict['kernel_list'] = ()
 args_dict['n_steps'] = 10
-args_dict['c'] = 'c'
-args_dict['r'] = 'r'
+args_dict['c'] = ()
+args_dict['r'] = ()
 args_dict['max_iterations'] = 'max_iterations'
 args_dict['max_time'] = 'max_time'
 out, id = au.call(method_name, args_dict, URI)
@@ -96,12 +96,23 @@ time.sleep(1)
 
 method_name = 'impute'
 args_dict = dict()
-args_dict['M_c'] = 'M_c'
-args_dict['X_L'] = 'X_L'
-args_dict['X_D'] = 'X_D'
-args_dict['Y'] = 'Y'
-args_dict['q'] = range(3)
-args_dict['n'] = 'n'
+args_dict['M_c'] = M_c
+args_dict['X_L'] = X_L_prime
+args_dict['X_D'] = X_D_prime
+args_dict['Y'] = None
+args_dict['Q'] = [(0, 0)]
+args_dict['n'] = 10
+out, id = au.call(method_name, args_dict, URI)
+time.sleep(1)
+
+method_name = 'impute_and_confidence'
+args_dict = dict()
+args_dict['M_c'] = M_c
+args_dict['X_L'] = X_L_prime
+args_dict['X_D'] = X_D_prime
+args_dict['Y'] = None
+args_dict['Q'] = [(0, 0)]
+args_dict['n'] = 10
 out, id = au.call(method_name, args_dict, URI)
 time.sleep(1)
 

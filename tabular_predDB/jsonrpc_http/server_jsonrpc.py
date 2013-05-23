@@ -53,15 +53,15 @@ from twisted.internet import reactor
 from twisted.web import server
 from jsonrpc.server import ServerEvents, JSON_RPC
 #
-import tabular_predDB.jsonrpc_http.Engine as E
+import tabular_predDB.LocalEngine as LE
+import tabular_predDB.python_utils.general_utils as gu
 
-import pdb
-
-Engine_methods = E.get_method_names()
-next_seed = 0
 
 class ExampleServer(ServerEvents):
-	
+
+	get_next_seed = gu.int_generator(start=0)
+	methods = set(LE.get_method_names())
+
 	# inherited hooks
 	def log(self, responses, txrequest, error):
 		print(txrequest.code, end=' ')
@@ -74,16 +74,14 @@ class ExampleServer(ServerEvents):
 			print(txrequest, msg)
 
 	def findmethod(self, method, args=None, kwargs=None):
-		global next_seed
 		if method in self.methods:
-			engine = E.Engine(next_seed)
-			next_seed += 1
+			next_seed = self.get_next_seed.next()
+			engine = LE.LocalEngine(next_seed)
 			return getattr(engine, method)
 		else:
 			return None
 
 	# helper methods
-	methods = set(Engine_methods)
 	def _get_msg(self, response):
 		ret_str = str(response)
 		if hasattr(response, 'id'):
