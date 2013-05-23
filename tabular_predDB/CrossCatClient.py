@@ -44,6 +44,10 @@ def get_CrossCatClient(client_type, **kwargs):
         import tabular_predDB.HadoopEngine as HadoopEngine
         he = HadoopEngine.HadoopEngine(**kwargs)
         client = CrossCatClient(he)
+    elif client_type == 'jsonrpc':
+        import tabular_predDB.JSONRPCEngine as JSONRPCEngine
+        je = JSONRPCEngine.JSONRPCEngine(**kwargs)
+        client = CrossCatClient(je)
     else:
         raise Exception('unknown client_type: %s' % client_type)
     return client
@@ -69,3 +73,10 @@ if __name__ == '__main__':
     M_c_prime, M_r_prime, X_L, X_D, = ccc.initialize(M_c, M_r, T)
     X_L_prime, X_D_prime = ccc.analyze(M_c, T, X_L, X_D)
     X_L_prime, X_D_prime = ccc.analyze(M_c, T, X_L_prime, X_D_prime)
+    #
+    ccc = get_CrossCatClient('jsonrpc', seed=0, URI='http://localhost:8007')
+    # M_c_prime, M_r_prime, X_L, X_D, = ccc.initialize(M_c=M_c, M_r=M_r, T=T)
+    M_c_prime, M_r_prime, X_L, X_D, = ccc.initialize(M_c, M_r, T)
+    X_L_prime, X_D_prime = ccc.analyze(M_c, T, X_L, X_D)
+    X_L_prime, X_D_prime = ccc.analyze(M_c, T, X_L_prime, X_D_prime)
+    
