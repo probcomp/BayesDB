@@ -78,13 +78,11 @@ Instructions to setup a Jenkins server
 
         passwd jenkins
 
-  ssh in as the jenkins user. Then install virtualenv:
-
-        # this didn't seem to work, perhaps because 'sh jenkins_script.sh' didn't run above?
-        cd /var/lib/jenkins/workspace/PredictiveDB/tabular_predDB/
-        # FIXME: this is broken because of the absolute path to requirements.txt in virtualenv_setup.sh
-        bash -i install_scripts/virtualenv_setup.sh jenkins /var/lib/jenkins
+  Make sure everything in /var/lib/jenkins is owned by jenkins user
+  
         chown -R jenkins /var/lib/jenkins
+
+  Build again. It should **fail**!  This build will take a while because the python packages are being installed in the virtualenv.
 
 * Build again. It should work!
 
