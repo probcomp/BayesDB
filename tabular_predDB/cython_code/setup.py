@@ -23,7 +23,7 @@ user = os.environ.get('USER')
 if user == 'bigdata':
 	virtual_env_dir = "/opt/anaconda/"  
 elif user == 'jenkins':
-	virtual_env_dir = "/var/lib/jenkins/"
+	virtual_env_dir = "/var/lib/jenkins/.virtualenvs/tabular_predDB/"
 else:
 	virtual_env_dir = "~/.virtualenvs/tabular_predDB/"
 
