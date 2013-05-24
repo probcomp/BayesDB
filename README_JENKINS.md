@@ -83,6 +83,7 @@ Instructions to setup a Jenkins server
         cd /var/lib/jenkins/workspace/PredictiveDB/tabular_predDB/
         # FIXME: this is broken because of the absolute path to requirements.txt in virtualenv_setup.sh
         bash -i install_scripts/virtualenv_setup.sh jenkins /var/lib/jenkins
+        chown -R jenkins /var/lib/jenkins
 
 * Build again. It should work!
 
