@@ -3,7 +3,9 @@ Instructions to setup a Jenkins server
 
 * Boot up a new starcluster instance with tabular_predDB plugin. Preferably use on-demand m1.small to save money (needs to be on-demand so CI works).
 
-* Ssh in as root.  Follow the directions here: http://pkg.jenkins-ci.org/debian-stable/, or execute the commands below as ***root***:
+* Ssh in as root.  **All the rest of the commands in this section (Instructions to setup a Jenkins server) will be run as root**
+
+* Follow the directions here: http://pkg.jenkins-ci.org/debian-stable/, or execute the commands below:
 
         wget -q -O - http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key | sudo apt-key add -
         sudo echo "deb http://pkg.jenkins-ci.org/debian-stable binary/" >> /etc/apt/sources.list
@@ -61,26 +63,26 @@ Instructions to setup a Jenkins server
 
 * Put the jenkins script (jenkins_script.sh) in /var/lib/jenkins/workspace/PredictiveDB. The easiest way is to do this:
 
-        root> cp /home/sgeadmin/tabular_predDB/jenkins_script.sh /var/lib/jenkins/workspace/PredictiveDB/
-        root> chown -R jenkins:nogroup /var/lib/jenkins
-        root> chmod 777 /var/lib/jenkins/workspace/PredictiveDB
-        root> chmod 777 /var/lib/jenkins/workspace/PredictiveDB/jenkins_script.sh
+        cp /home/sgeadmin/tabular_predDB/jenkins_script.sh /var/lib/jenkins/workspace/PredictiveDB/
+        chown -R jenkins:nogroup /var/lib/jenkins
+        chmod 777 /var/lib/jenkins/workspace/PredictiveDB
+        chmod 777 /var/lib/jenkins/workspace/PredictiveDB/jenkins_script.sh
 
 * Enable ssh login to the machine.
 
-        root> perl -pi.bak -e 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-        root> service ssh reload
+        perl -pi.bak -e 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        service ssh reload
 
   Change the jenkins user password: 
 
-        root> passwd jenkins
+        passwd jenkins
 
   ssh in as the jenkins user. Then install virtualenv:
 
-        root> # this didn't seem to work, perhaps because 'sh jenkins_script.sh' didn't run above?
-        root> cd /var/lib/jenkins/workspace/PredictiveDB/
-        root> # FIXME: this is broken because of the absolute path to requirements.txt in virtualenv_setup.sh
-        root> bash -i install_scripts/virtualenv_setup.sh jenkins /var/lib/jenkins
+        # this didn't seem to work, perhaps because 'sh jenkins_script.sh' didn't run above?
+        cd /var/lib/jenkins/workspace/PredictiveDB/tabular_predDB/
+        # FIXME: this is broken because of the absolute path to requirements.txt in virtualenv_setup.sh
+        bash -i install_scripts/virtualenv_setup.sh jenkins /var/lib/jenkins
 
 * Build again. It should work!
 
