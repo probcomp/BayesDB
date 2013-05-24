@@ -3,13 +3,13 @@ Instructions to setup a Jenkins server
 
 * Boot up a new starcluster instance with tabular_predDB plugin. Preferably use on-demand m1.small to save money (needs to be on-demand so CI works).
 
-* Ssh in as root.  Follow the directions here: http://pkg.jenkins-ci.org/debian-stable/, or execute the commands below:
+* Ssh in as root.  Follow the directions here: http://pkg.jenkins-ci.org/debian-stable/, or execute the commands below as ***root***:
 
-        root> wget -q -O - http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key | sudo apt-key add -
-        root> sudo echo "deb http://pkg.jenkins-ci.org/debian-stable binary/" >> /etc/apt/sources.list
-        root> sudo apt-get update
-        root> sudo apt-get install jenkins
-        root> sudo apt-get update
+        wget -q -O - http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key | sudo apt-key add -
+        sudo echo "deb http://pkg.jenkins-ci.org/debian-stable binary/" >> /etc/apt/sources.list
+        sudo apt-get update
+        sudo apt-get install -y jenkins
+        sudo apt-get update
 
 * Open port 8080 for http (by default, it's not open!! You can do this by editing your ec2 security group).
   * go to https://console.aws.amazon.com/ec2/
