@@ -32,7 +32,8 @@ Instructions to setup a Jenkins server
    * Under the 'Build' section: 
       * Click 'Add build step'
       * select 'Execute shell' from the drop down
-      * add 'sh jenkins_script.sh' to the text box labelled 'Command'
+      * add 'bash jenkins_script.sh' to the text box labelled 'Command'
+        * a branch named \<BRANCH_NAME\> can be tested by appending '-b \<BRANCH_NAME\>'
    * Under the 'Post-build Actions' section:
       * Click 'Add post-build action'
       * select 'Archive the artifacts' from the drop down
