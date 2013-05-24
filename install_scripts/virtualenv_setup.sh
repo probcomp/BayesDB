@@ -34,6 +34,6 @@ if [[ -z $has_project ]] ; then
     pip install numpy==1.7.0
 fi
 
-pip install -r ${USER_HOME}/${project_name}/requirements.txt
+pip install -r requirements.txt
 
 chown -R $USER $WORKON_HOME

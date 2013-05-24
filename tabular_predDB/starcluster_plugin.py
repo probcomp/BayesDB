@@ -86,7 +86,7 @@ def push_local_repo_to_new_remote(remote_code_dir, node, user):
 
 def copy_this_repo(remote_code_dir, node, user, branch='master',
                    temp_base_dir='/tmp/'):
-     local_dir = os.path.split(__file__)[0]
+     local_dir = os.path.join(os.path.split(__file__)[0], '..')
      # generate temporary resources
      temp_dir_name = tempfile.mkdtemp(dir=temp_base_dir)
      temp_tgz_name = tempfile.mktemp(dir=temp_base_dir)
