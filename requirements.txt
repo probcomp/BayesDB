@@ -31,3 +31,13 @@ psycopg2==2.4.6
 # freeze for creating binaries to run with hadoop streaming
 # must manually install per https://github.com/pypa/pip/issues/537
 # cx_freeze==4.3.1
+
+# starcluster, only necessary on local computer spinning up a cluster
+# Jinja2==2.6
+# StarCluster==0.93.3
+# boto==2.3.0
+# decorator==3.3.1
+# pyasn1==0.0.13b
+# pycrypto==2.6
+# ssh==1.7.13
+# workerpool==0.9.2
