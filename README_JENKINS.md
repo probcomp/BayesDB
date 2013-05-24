@@ -82,7 +82,9 @@ Instructions to setup a Jenkins server
   
         chown -R jenkins /var/lib/jenkins
 
-* Build again. It should work!  The first build will take a while because the python packages are being installed in the virtualenv
+  Build again. It should **fail**!  This build will take a while because the python packages are being installed in the virtualenv.
+
+* Build again. It should work!
 
 #Setting up Git Commit Hook
 
