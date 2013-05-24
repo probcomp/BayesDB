@@ -12,7 +12,8 @@ wrapper_script=/usr/local/bin/virtualenvwrapper.sh
 # ensure virtualenvwrapper is loaded
 if [[ -z $(grep WORKON_HOME ${USER_HOME}/.bashrc) ]]; then
     cat -- >> ${USER_HOME}/.bashrc <<EOF
-export PYTHONPATH=${PYTHONPATH}:${USER_HOME}/${project_name}
+# export PYTHONPATH=${PYTHONPATH}:${USER_HOME}/${project_name}
+export PYTHONPATH=${PYTHONPATH}:${USER_HOME}/workspace/PredictiveDB/${project_name}
 export WORKON_HOME=$WORKON_HOME
 source $wrapper_script
 EOF
