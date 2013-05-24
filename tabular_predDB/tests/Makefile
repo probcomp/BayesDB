@@ -7,7 +7,7 @@ endif
 
 CC = gcc
 CXX = g++
-CXXOPTS :=  $(CXXOPTS) -lm -lboost_program_options -L$(BOOST_ROOT)/lib -I$(BOOST_ROOT)/include
+CXXOPTS :=  $(CXXOPTS) -lm -L$(BOOST_ROOT)/lib -I$(BOOST_ROOT)/include
 
 TEST=./
 CPP_DIR=../../cpp_code/
