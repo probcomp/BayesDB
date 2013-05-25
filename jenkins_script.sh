@@ -52,7 +52,7 @@ fi
 workon tabular_predDB
 
 # Build and run tests. WORKSPACE is set by jenkins to /var/
-export PYTHONPATH=$WORKSPACE
+export PYTHONPATH=$PYTHONPATH:$WORKSPACE
 cd $WORKSPACE/tabular_predDB
 make tests
 make cython
