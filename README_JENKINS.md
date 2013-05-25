@@ -95,6 +95,10 @@ Instructions to setup a Jenkins server
 
   Build again. It should **fail**!  This build will take a while because the python packages are being installed in the virtualenv.
 
+  Kill the server scripts so jenkins can start them up
+
+        pkill -f python\.\*server_jsonrpc.py
+        
   Install hcluster, which requires manual intervention and must occur after virtualenv setup (per commented part of requirements.txt)
   
         su jenkins
@@ -105,10 +109,6 @@ Instructions to setup a Jenkins server
         cd hcluster-0.2.0
         python setup.py install
         # MANUAL: choose option 2
-
-  Kill the server scripts so jenkins can start them up
-
-        pkill -f python\.\*server_jsonrpc.py
 
 * Build again. It should work!
   * It works this time but not last time because the last build modifies .bashrc but doesn't read the changes into the environment
