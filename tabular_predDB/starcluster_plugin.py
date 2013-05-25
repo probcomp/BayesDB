@@ -168,13 +168,13 @@ class tabular_predDBSetup(ClusterSetup):
                run_as_user(node, user, cmd_str)
                # set up postgres user, database
                cmd_str = 'bash %s'
-               cmd_str %= S.path.postgres_setup_script
+               cmd_str %= S.path.postgres_setup_script.replace(S.path.this_repo_dir, S.path.remote_code_dir)
                node.ssh.execute(cmd_str)
                # run server
                cmd_str = 'bash -i %s'
-               cmd_str %= S.path.run_server_script
+               cmd_str %= S.path.run_server_script.replace(S.path.this_repo_dir, S.path.remote_code_dir)
                run_as_user(node, user, cmd_str)
                #
-               cmd_str = "bash -i %s %s" % (S.path.run_webserver_script,
-                                            S.path.web_resources_dir)
+               cmd_str = "bash -i %s %s" % (S.path.run_webserver_script.replace(S.path.this_repo_dir, S.path.remote_code_dir),
+                                            S.path.web_resources_dir.replace(S.path.this_repo_dir, S.path.remote_code_dir))
                run_as_user(node, user, cmd_str)
