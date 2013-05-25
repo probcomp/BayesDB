@@ -87,12 +87,6 @@ Instructions to setup a Jenkins server
         perl -i.bak -pe 's/peer/trust/' /etc/postgresql/9.1/main/pg_hba.conf
         /etc/init.d/postgresql reload
 
-  Make sure to use matplotlib\'s headless backend
-
-        mkdir -p ~/.matplotlib
-        echo backend: Agg > ~/.matplotlib/matplotlibrc
-        chown -R jenkins ~/.matplotlib/
-
   Build again. It should **fail**!  This build will take a while because the python packages are being installed in the virtualenv.
 
   Kill the server scripts so jenkins can start them up
@@ -109,6 +103,11 @@ Instructions to setup a Jenkins server
         cd hcluster-0.2.0
         python setup.py install
         # MANUAL: choose option 2
+
+  Make sure to use matplotlib\'s headless backend.  **su jenkins** should still be in effect
+
+        mkdir -p ~/.matplotlib
+        echo backend: Agg > ~/.matplotlib/matplotlibrc
 
 * Build again. It should work!
   * It works this time but not last time because the last build modifies .bashrc but doesn't read the changes into the environment
