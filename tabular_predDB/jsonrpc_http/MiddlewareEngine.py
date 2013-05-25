@@ -35,6 +35,10 @@ import tabular_predDB.settings as S
 from tabular_predDB.LocalEngine import LocalEngine as Engine
 engine = Engine()
 
+dbname = 'sgeadmin'
+user = 'sgeadmin'
+psycopg_connect_str = 'dbname=%s user=%s' % (dbname, user)
+
 class MiddlewareEngine(object):
 
   def __init__(self, backend_hostname='localhost', backend_uri=8007):
@@ -47,7 +51,7 @@ class MiddlewareEngine(object):
   def runsql(self, sql_command):
     """Run an arbitrary sql command. Returns the query results for select; 0 if not select."""
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute(sql_command)
       try:
@@ -66,15 +70,16 @@ class MiddlewareEngine(object):
     return ret
 
   def start_from_scratch(self):
-    dbname = 'sgeadmin'
     # drop
-    cmd_str = 'dropdb -U sgeadmin %s' % dbname
+    cmd_str = 'dropdb -U %s %s' % (user, dbname)
     os.system(cmd_str)
     # create
-    cmd_str = 'createdb -U sgeadmin %s' % dbname
+    cmd_str = 'createdb -U %s %s' % (user, dbname)
     os.system(cmd_str)
     #
-    cmd_str = 'psql sgeadmin sgeadmin -f %s' % os.path.join(S.path.this_repo_dir, 'install_scripts/table_setup.sql')
+    script_filename = os.path.join(S.path.this_repo_dir,
+                                   'install_scripts/table_setup.sql')
+    cmd_str = 'psql %s %s -f %s' % (dbname, user, script_filename)
     os.system(cmd_str)
     return 'STARTED FROM SCRATCH'
 
@@ -82,7 +87,6 @@ class MiddlewareEngine(object):
     if not os.path.isfile(filename):
       raise_str = 'drop_and_load_db(%s): filename does not exist' % filename
       raise Exception(raise_str)
-    dbname = 'sgeadmin'
     # drop
     cmd_str = 'dropdb %s' % dbname
     os.system(cmd_str)
@@ -91,15 +95,15 @@ class MiddlewareEngine(object):
     os.system(cmd_str)
     # load
     if filename.endswith('.gz'):
-      cmd_str = 'gunzip -c %s | psql sgeadmin sgeadmin' % filename
+      cmd_str = 'gunzip -c %s | psql %s %s' % (filename, dbname, user)
     else:
-      cmd_str = 'psql sgeadmin sgeadmin < %s' % filename
+      cmd_str = 'psql %s %s < %s' % (dbname, user, filename)
     os.system(cmd_str)
 
   def drop_tablename(self, tablename):
     """Delete table by tablename."""
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute('DROP TABLE preddb_data.%s' % tablename)
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
@@ -119,7 +123,7 @@ class MiddlewareEngine(object):
   def delete_chain(self, tablename, chain_index):
      """Delete one chain."""
      try:
-       conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+       conn = psycopg2.connect(psycopg_connect_str)
        cur = conn.cursor()
        cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
        tableids = cur.fetchall()
@@ -142,7 +146,7 @@ class MiddlewareEngine(object):
     column name must be present in the dictionary: default is continuous."""
     # First, test if table with this name already exists, and fail if it does
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute("select exists(select * from information_schema.tables where table_name='preddb_data.%s');" % tablename)
       if cur.fetchone()[0]:
@@ -205,7 +209,7 @@ class MiddlewareEngine(object):
         ])
     # Execute queries
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute("CREATE TABLE preddb_data.%s (%s);" % (tablename, colstring))
       with open(clean_csv_abs_path) as fh:
@@ -225,7 +229,7 @@ class MiddlewareEngine(object):
     """Call initialize n_chains times."""
     # Get t, m_c, and m_r, and tableid
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute("SELECT t, m_r, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
       t_json, m_r_json, m_c_json = cur.fetchone()
@@ -260,7 +264,7 @@ class MiddlewareEngine(object):
     
     # Insert initial states for each chain into the middleware db
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       curtime = datetime.datetime.now().ctime()
       for chain_index in range(n_chains):
@@ -278,7 +282,7 @@ class MiddlewareEngine(object):
     """Run analyze for the selected table. chain_index may be 'all'."""
     # Get M_c, T, X_L, and X_D from database
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
       tableid = int(cur.fetchone()[0])
@@ -323,7 +327,7 @@ class MiddlewareEngine(object):
     # TODO: actually impute only missing values, instead of all values.
     # Get M_c, X_L, and X_D from database
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute("SELECT tableid, m_c, t FROM preddb.table_index WHERE tablename='%s';" % tablename)
       tableid, M_c_json, t_json = cur.fetchone()
@@ -401,7 +405,7 @@ class MiddlewareEngine(object):
     # TODO: Actually read newtablename.
     # Get M_c, X_L, and X_D from database
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute("SELECT tableid, m_c, t FROM preddb.table_index WHERE tablename='%s';" % tablename)
       tableid, M_c_json, t_json = cur.fetchone()
@@ -549,7 +553,7 @@ class MiddlewareEngine(object):
   def get_metadata_and_table(self, tablename):
     """Return M_c and M_r and T"""
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute("SELECT m_c, m_r, t FROM preddb.table_index WHERE tablename='%s';" % tablename)
       M_c_json, M_r_json, t_json = cur.fetchone()
@@ -577,7 +581,7 @@ class MiddlewareEngine(object):
   def get_latent_states(self, tablename):
     """Return x_l_list and x_d_list"""
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute("SELECT tableid, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
       tableid, M_c_json = cur.fetchone()
@@ -613,9 +617,9 @@ class MiddlewareEngine(object):
   def dump_db(self, filename, dir=S.path.web_resources_dir):
     full_filename = os.path.join(dir, filename)
     if filename.endswith('.gz'):
-      cmd_str = 'pg_dump sgeadmin | gzip > %s' % full_filename
+      cmd_str = 'pg_dump %s | gzip > %s' % (dbname, full_filename)
     else:
-      cmd_str = 'pg_dump sgeadmin > %s' % full_filename
+      cmd_str = 'pg_dump %s > %s' % (dbname, full_filename)
     os.system(cmd_str)
     return 0
 
@@ -623,7 +627,7 @@ class MiddlewareEngine(object):
     """Guess crosscat types. Returns a list indicating each columns type: 'ignore',
     'continuous', or 'multinomial'."""
     try:
-      conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+      conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute("SELECT cctypes FROM preddb.table_index WHERE tablename='%s';" % tablename)
       cctypes = cur.fetchone()[0]
@@ -656,7 +660,7 @@ def get_method_name_to_args():
 def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
   """Only for one chain."""
   try:
-    conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+    conn = psycopg2.connect(psycopg_connect_str)
     cur = conn.cursor()
     exec_str = ("SELECT x_l, x_d, iterations FROM preddb.models"
                 + " WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
@@ -694,7 +698,7 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
 
   # Store X_L_prime, X_D_prime
   try:
-    conn = psycopg2.connect('dbname=sgeadmin user=sgeadmin')
+    conn = psycopg2.connect(psycopg_connect_str)
     cur = conn.cursor()
     curtime = datetime.datetime.now().ctime()
     cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) " + \
