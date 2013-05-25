@@ -50,48 +50,48 @@ done
 
 
 install_vmware_components() {
-    vmware_player=$1
-    vmware_vix=$2
+    vmware_player="$1"
+    vmware_vix="$2"
     #
     sudo apt-get install build-essential linux-headers-$(uname -r)
-    sudo bash $vmware_player
-    sudo bash $vmware_vix
+    sudo bash "$vmware_player"
+    sudo bash "$vmware_vix"
 }
 
 start_vm() {
-    vmx=$1
+    vmx="$1"
     vmrun -T player start "$vmx" nogui
 }
 
 terminate_vm() {
-    vmx=$1
+    vmx="$1"
     vmrun -T player stop "$vmx"
 }
 
 print_vm_ip_address() {
     # note: the vmware pdf is slightly wrong about syntax here
-    vmx=$1
+    vmx="$1"
     vm_cmd="info-set guestinfo.ip \$(ifconfig eth0 | perl -ne 'print \$1 if m/inet.addr:(\S+)/')"
     vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" /usr/sbin/vmware-rpctool "$vm_cmd"
     VM_IP=$(vmrun -T player readVariable "$vmx" guestVar ip)
-    echo $VM_IP
+    echo "$VM_IP"
 }
 
 set_up_password_login() {
-    vmx=$1
-    vmrun -T player -gu root -gp bigdata runProgramInGuest $vmx \
+    vmx="$1"
+    vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" \
 	/usr/bin/perl -i.bak -pe 's/^#\s+(Password.*)/\$1/' /etc/ssh/ssh_config
-    vmrun -T player -gu root -gp bigdata runProgramInGuest $vmx \
+    vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" \
 	/usr/sbin/invoke-rc.d ssh restart
 }
 
 set_up_ssh_keys() {
     # enable passwordless login
-    vmx=$1
-    vmrun -T player -gu root -gp bigdata runProgramInGuest $vmx \
+    vmx="$1"
+    vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" \
 	/bin/bash -c 'echo \$@ >> /home/bigdata/.ssh/authorized_keys' -- $(cat ~/.ssh/id_rsa.pub)
-    vmrun -T player -gu root -gp bigdata runProgramInGuest $vmx /bin/mkdir /root/.ssh
-    vmrun -T player -gu root -gp bigdata runProgramInGuest $vmx \
+    vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" /bin/mkdir /root/.ssh
+    vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" \
 	/bin/bash -c 'echo \$@ >> /root/.ssh/authorized_keys' -- $(cat ~/.ssh/id_rsa.pub)
 }
     
@@ -100,11 +100,11 @@ if [[ ! -z $install_only ]]; then
     install_vmware_components $VMwarePlayer $VMwareVIX
     exit
 elif [[ ! -z $start_only ]]; then
-    echo only starting $VM
+    echo only starting "$VM"
     start_vm "$VM"
     exit
 elif [[ ! -z $terminate_only ]]; then
-    echo only terminating $VM
+    echo only terminating "$VM"
     terminate_vm "$VM"
     exit
 elif [[ ! -z $address_only ]]; then
@@ -118,11 +118,12 @@ if [[ -z $(which vmrun) ]]; then
     install_vmware_components $VMwarePlayer $VMwareVIX
 fi
 
-unzip $ZIPPED_VM
+# -f prevents prompting if already unzipped
+unzip -f $ZIPPED_VM
 start_vm "$VM"
 set_up_password_login "$VM"
 print_vm_ip_address "$VM"
-set_up_ssh_keys $"VM" 
+set_up_ssh_keys "$VM"
  
 # enable bigdata user to install python pacakges
 VM_IP=$(print_vm_ip_address "$VM")
