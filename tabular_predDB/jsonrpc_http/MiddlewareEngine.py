@@ -32,7 +32,7 @@ import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.settings as S
 
 # For testing
-from tabular_predDB.jsonrpc_http.Engine import Engine
+from tabular_predDB.LocalEngine import LocalEngine as Engine
 engine = Engine()
 
 class MiddlewareEngine(object):
