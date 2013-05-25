@@ -90,6 +90,7 @@ Instructions to setup a Jenkins server
   Build again. It should **fail**!  This build will take a while because the python packages are being installed in the virtualenv.
 
 * Build again. It should work!
+  * It works this time but not last time because the last build modifies .bashrc but doesn't read the changes into the environment
 
 #Setting up Git Commit Hook
 
