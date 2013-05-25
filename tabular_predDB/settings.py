@@ -22,6 +22,8 @@ class path():
     if 'WORKSPACE' in os.environ:
         user_home_dir = os.environ['WORKSPACE']
     remote_code_dir = os.path.join('/home/sgeadmin', 'tabular_predDB')
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    this_repo_dir = os.path.abspath(os.path.join(this_dir, '..'))
     install_script_dir = os.path.join(remote_code_dir, 'install_scripts')
     web_resources_dir = os.path.join(remote_code_dir, 'www')
     web_resources_data_dir = os.path.join(web_resources_dir, 'data')
