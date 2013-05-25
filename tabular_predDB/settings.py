@@ -21,11 +21,13 @@ class path():
     user_home_dir = os.environ['HOME']
     if 'WORKSPACE' in os.environ:
         user_home_dir = os.environ['WORKSPACE']
+    # target installation for deployment
     remote_code_dir = os.path.join('/home/sgeadmin', 'tabular_predDB')
+    # where we actually are right now
     this_dir = os.path.dirname(os.path.abspath(__file__))
     this_repo_dir = os.path.abspath(os.path.join(this_dir, '..'))
-    install_script_dir = os.path.join(remote_code_dir, 'install_scripts')
-    web_resources_dir = os.path.join(remote_code_dir, 'www')
+    install_script_dir = os.path.join(this_repo_dir, 'install_scripts')
+    web_resources_dir = os.path.join(this_repo_dir, 'www')
     web_resources_data_dir = os.path.join(web_resources_dir, 'data')
     #
     install_ubuntu_script = os.path.join(install_script_dir,
@@ -34,8 +36,8 @@ class path():
     postgres_setup_script = os.path.join(install_script_dir, 'postgres_setup.sh')
     virtualenv_setup_script = os.path.join(install_script_dir,
                                            'virtualenv_setup.sh')
-    run_server_script = os.path.join(remote_code_dir, 'run_server.sh')
-    run_webserver_script = os.path.join(remote_code_dir, 
+    run_server_script = os.path.join(this_repo_dir, 'run_server.sh')
+    run_webserver_script = os.path.join(this_repo_dir, 
                                         'run_simplehttpserver.sh')
     # server_script = os.path.join('jsonrpc_http', 'server_jsonrpc.py')
     try:
