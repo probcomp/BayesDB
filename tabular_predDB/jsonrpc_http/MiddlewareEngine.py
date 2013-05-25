@@ -683,7 +683,7 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
   args_dict['X_L'] = X_L_prime
   args_dict['X_D'] = X_D_prime
   # FIXME: allow specification of kernel_list
-  args_dict['kernel_list'] = None
+  args_dict['kernel_list'] = ()
   args_dict['n_steps'] = iterations
   args_dict['c'] = () # Currently ignored by analyze
   args_dict['r'] = () # Currently ignored by analyze
