@@ -106,6 +106,10 @@ Instructions to setup a Jenkins server
         python setup.py install
         # MANUAL: choose option 2
 
+  Kill the server scripts so jenkins can start them up
+
+        pkill -f python\.\*server_jsonrpc.py
+
 * Build again. It should work!
   * It works this time but not last time because the last build modifies .bashrc but doesn't read the changes into the environment
 
