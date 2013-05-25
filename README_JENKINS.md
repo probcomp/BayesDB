@@ -87,6 +87,12 @@ Instructions to setup a Jenkins server
         perl -i.bak -pe 's/peer/trust/' /etc/postgresql/9.1/main/pg_hba.conf
         /etc/init.d/postgresql reload
 
+  Make sure to use matplotlib\'s headless backend
+
+    mkdir -p ~/.matplotlib
+    echo backend: Agg > ~/.matplotlib/matplotlibrc
+    chown -R jenkins ~/.matplotlib/
+
   Build again. It should **fail**!  This build will take a while because the python packages are being installed in the virtualenv.
 
 * Build again. It should work!
