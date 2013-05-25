@@ -29,7 +29,7 @@ def is_obj_method_name(obj, method_name):
     is_method = inspect.ismethod(attr)
     return is_method
 #
-def get_method_names(obj=EngineTemplate):
+def get_method_names(obj):
     is_this_obj_method_name = lambda method_name: \
         is_obj_method_name(obj, method_name)
     #
@@ -37,11 +37,11 @@ def get_method_names(obj=EngineTemplate):
     this_obj_method_names = filter(is_this_obj_method_name, this_obj_attrs)
     return this_obj_method_names
 #
-def get_method_name_to_args():
-    method_names = get_method_names()
+def get_method_name_to_args(obj):
+    method_names = get_method_names(obj)
     method_name_to_args = dict()
     for method_name in method_names:
-        method = EngineTemplate.__dict__[method_name]
+        method = obj.__dict__[method_name]
         arg_str_list = inspect.getargspec(method).args[1:]
         method_name_to_args[method_name] = arg_str_list
     return method_name_to_args

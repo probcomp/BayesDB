@@ -18,18 +18,17 @@ from functools import partial
 import tabular_predDB.EngineTemplate as EngineTemplate
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.api_utils as au
+import tabular_predDB.python_utils.general_utils as gu
 
 
-get_method_names = EngineTemplate.get_method_names
-get_method_name_to_args = EngineTemplate.get_method_name_to_args
-method_name_to_args = get_method_name_to_args()
+method_name_to_args = get_method_name_to_args(EngineTemplate.EngineTemplate)
+method_names_set = set(get_method_names(EngineTemplate.EngineTemplate))
 
 
 class JSONRPCEngine(EngineTemplate.EngineTemplate):
 
     def __init__(self, seed=0, URI=None):
         super(JSONRPCEngine, self).__init__(seed=seed)
-        self.method_names_set = set(get_method_names())
         self.URI = URI
         return
 
@@ -44,7 +43,6 @@ class JSONRPCEngine(EngineTemplate.EngineTemplate):
 
     def __getattribute__(self, name):
         attr = None
-        method_names_set = object.__getattribute__(self, 'method_names_set')
         if name in method_names_set:
             partial_dispatch = partial(self.dispatch, name)
             attr = partial_dispatch

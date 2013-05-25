@@ -84,11 +84,5 @@ def do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     return samples
 
 
-get_method_names = EngineTemplate.get_method_names
-get_method_name_to_args = EngineTemplate.get_method_name_to_args
-
-
 if __name__ == '__main__':
     le = LocalEngine(seed=10)
-    
-    pass

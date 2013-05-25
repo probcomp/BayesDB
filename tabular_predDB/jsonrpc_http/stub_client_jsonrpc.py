@@ -16,9 +16,11 @@
 import argparse
 import time
 #
-import tabular_predDB.jsonrpc_http.Engine as E
+import tabular_predDB.LocalEngine as LE
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.api_utils as au
+import tabular_predDB.python_utils.general_utils as gu
+
 
 # parse some arguments
 parser = argparse.ArgumentParser()
@@ -117,7 +119,7 @@ out, id = au.call(method_name, args_dict, URI)
 time.sleep(1)
 
 # programmatically call all the other method calls
-method_name_to_args = E.get_method_name_to_args()
+method_name_to_args = gu.get_method_name_to_args(LE.LocalEngine)
 for method_name, arg_str_list in method_name_to_args.iteritems():
     if method_name in non_stub:
         print 'skipping non-stub method:', method_name
