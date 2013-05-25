@@ -82,6 +82,11 @@ Instructions to setup a Jenkins server
   
         chown -R jenkins /var/lib/jenkins
 
+  Make it easier for all users to access the db
+        
+        perl -i.bak -pe 's/peer/trust/' /etc/postgresql/9.1/main/pg_hba.conf
+        /etc/init.d/postgresql reload
+
   Build again. It should **fail**!  This build will take a while because the python packages are being installed in the virtualenv.
 
 * Build again. It should work!
