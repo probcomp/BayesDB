@@ -68,13 +68,13 @@ class MiddlewareEngine(object):
   def start_from_scratch(self):
     dbname = 'sgeadmin'
     # drop
-    cmd_str = 'dropdb %s' % dbname
+    cmd_str = 'dropdb -U sgeadmin %s' % dbname
     os.system(cmd_str)
     # create
-    cmd_str = 'createdb %s' % dbname
+    cmd_str = 'createdb -U sgeadmin %s' % dbname
     os.system(cmd_str)
     #
-    cmd_str = 'psql sgeadmin -f %s' % os.path.join(S.path.remote_code_dir, 'install_scripts/table_setup.sql')
+    cmd_str = 'psql sgeadmin sgeadmin -f %s' % os.path.join(S.path.this_repo_dir, 'install_scripts/table_setup.sql')
     os.system(cmd_str)
     return 'STARTED FROM SCRATCH'
 
@@ -91,9 +91,9 @@ class MiddlewareEngine(object):
     os.system(cmd_str)
     # load
     if filename.endswith('.gz'):
-      cmd_str = 'gunzip -c %s | psql sgeadmin' % filename
+      cmd_str = 'gunzip -c %s | psql sgeadmin sgeadmin' % filename
     else:
-      cmd_str = 'psql sgeadmin < %s' % filename
+      cmd_str = 'psql sgeadmin sgeadmin < %s' % filename
     os.system(cmd_str)
 
   def drop_tablename(self, tablename):
