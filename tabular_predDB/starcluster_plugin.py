@@ -140,17 +140,17 @@ class tabular_predDBSetup(ClusterSetup):
                node.ssh.execute(cmd_str)
                # install ubuntu packages
                cmd_str = 'bash %s >ubuntu.out 2>ubuntu.err'
-               cmd_str %= S.path.install_ubuntu_script
+               cmd_str %= S.path.install_ubuntu_script.replace(S.path.this_repo_dir, S.path.remote_code_dir)
                node.ssh.execute(cmd_str)
                # install boost
                log.info("Installing boost on %s" % node.alias)
                cmd_str = 'bash %s >boost.out 2>boost.err'
-               cmd_str %= S.path.install_boost_script
+               cmd_str %= S.path.install_boost_script.replace(S.path.this_repo_dir, S.path.remote_code_dir)
                node.ssh.execute(cmd_str)
                # install python packages in a virtual env
                log.info("Installing python packages on %s" % node.alias)
                cmd_str = 'bash -i %s %s >virtualenv.out 2>virtualenv.err'
-               cmd_str %= (S.path.virtualenv_setup_script, user)
+               cmd_str %= (S.path.virtualenv_setup_script.replace(S.path.this_repo_dir, S.path.remote_code_dir), user)
                node.ssh.execute(cmd_str)
                # make sure agg backend is used
                cmd_str = ' && '.join([
