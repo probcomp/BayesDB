@@ -60,7 +60,7 @@ import tabular_predDB.python_utils.general_utils as gu
 class ExampleServer(ServerEvents):
 
 	get_next_seed = gu.int_generator(start=0)
-	methods = set(LE.get_method_names())
+	methods = set(gu.get_method_names())
 
 	# inherited hooks
 	def log(self, responses, txrequest, error):

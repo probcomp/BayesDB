@@ -1,3 +1,4 @@
+import inspect
 from timeit import default_timer
 
 
@@ -21,3 +22,26 @@ def int_generator(start=0):
     while True:
         yield next_i
         next_i += 1
+
+# introspection helpers
+def is_obj_method_name(obj, method_name):
+    attr = getattr(obj, method_name)
+    is_method = inspect.ismethod(attr)
+    return is_method
+#
+def get_method_names(obj=EngineTemplate):
+    is_this_obj_method_name = lambda method_name: \
+        is_obj_method_name(obj, method_name)
+    #
+    this_obj_attrs = dir(obj)
+    this_obj_method_names = filter(is_this_obj_method_name, this_obj_attrs)
+    return this_obj_method_names
+#
+def get_method_name_to_args():
+    method_names = get_method_names()
+    method_name_to_args = dict()
+    for method_name in method_names:
+        method = EngineTemplate.__dict__[method_name]
+        arg_str_list = inspect.getargspec(method).args[1:]
+        method_name_to_args[method_name] = arg_str_list
+    return method_name_to_args
