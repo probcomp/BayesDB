@@ -58,7 +58,12 @@ def run_test_with(tablename, table_csv, URI, crosscat_column_types="None", onlin
   args_dict['csv'] = table_csv 
   args_dict['crosscat_column_types'] = crosscat_column_types
   out = call(method_name, args_dict, URI, online)
-  assert (out==0 or out=="Error: table with that name already exists.")
+  acceptable_out = set([
+      0,
+      "Error: table with that name already exists.",
+      'Caught DB Error: relation "dha_small" already exists\n',
+      ])
+  assert (out in acceptable_out)
   # TODO: Test that table was created
   out = call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s'" % tablename}, URI, online)
   time.sleep(1)
