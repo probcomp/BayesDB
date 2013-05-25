@@ -118,8 +118,9 @@ if [[ -z $(which vmrun) ]]; then
     install_vmware_components $VMwarePlayer $VMwareVIX
 fi
 
-# -f prevents prompting if already unzipped
-unzip -f $ZIPPED_VM
+if [[ ! -f "$VM" ]]; then
+    unzip $ZIPPED_VM
+fi
 start_vm "$VM"
 set_up_password_login "$VM"
 print_vm_ip_address "$VM"
