@@ -36,7 +36,7 @@ from tabular_predDB.LocalEngine import LocalEngine as Engine
 engine = Engine()
 
 dbname = 'sgeadmin'
-user = 'sgeadmin'
+user = os.environ['USER']
 psycopg_connect_str = 'dbname=%s user=%s' % (dbname, user)
 
 class MiddlewareEngine(object):
