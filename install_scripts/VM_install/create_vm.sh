@@ -129,3 +129,5 @@ set_up_ssh_keys "$VM"
 # enable bigdata user to install python pacakges
 VM_IP=$(print_vm_ip_address "$VM")
 ssh root@$VM_IP chown -R bigdata /opt/anaconda
+ssh root@$VM_IP perl -pi.bak -e "'s/^bigdata ALL=\(ALL\) ALL.*/bigdata ALL=\(ALL:ALL\) NOPASSWD: ALL/'" /etc/sudoers
+
