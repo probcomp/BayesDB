@@ -39,4 +39,4 @@ done
 sudo -u postgres createuser -s jenkins
 sudo -u postgres createuser -s $user
 sudo -u postgres createdb $database -O $user
-sudo -u $user psql -f $script
+sudo -u $user psql $database $user -f $script
