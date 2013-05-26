@@ -23,7 +23,7 @@ exit
 
 
 #Process command line arguments
-while getopts hb:u:d: opt
+while getopts hu:p: opt
 do
     case "$opt" in
         h) usage;;
