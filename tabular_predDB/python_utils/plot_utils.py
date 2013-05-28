@@ -106,7 +106,7 @@ def plot_views(T_array, X_D, X_L, M_c, filename=None, dir='', close=True):
         if view_idx!=0: pylab.gca().set_yticklabels([])
     my_savefig(filename, dir, close)
 
-def plotImputedValue(value, samples, modelType, filename='imputed_value_hist.png', plotcolor='red', truth=None, x_axis_lim=None):
+def plot_predicted_value(value, samples, modelType, filename='imputed_value_hist.png', plotcolor='red', truth=None, x_axis_lim=None):
 
     fig = pylab.figure()
     # Find 50% bounds
