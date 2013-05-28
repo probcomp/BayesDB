@@ -19,24 +19,34 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-user = os.environ.get('USER')
-if user == 'bigdata':
-	virtual_env_dir = "/opt/anaconda/"  
-elif user == 'jenkins':
-	virtual_env_dir = "/var/lib/jenkins/.virtualenvs/tabular_predDB/"
-else:
-	virtual_env_dir = "~/.virtualenvs/tabular_predDB/"
 
+virtual_env_dirs = [
+	'/opt/anaconda/',
+	'/var/lib/jenkins/.virtualenvs/tabular_predDB/',
+	'~/.virtualenvs/tabular_predDB/',
+	]
 numpy_rel_dir = "lib/python2.7/site-packages/numpy/core/include/"
-numpy_include_full_dir = os.path.join(virtual_env_dir, numpy_rel_dir)
-numpy_include_full_dir = os.path.expanduser(numpy_include_full_dir)
-if not os.path.isdir(numpy_include_full_dir):
-    error_message = 'numpy_include_full_dir doesn\'t exist: %s\n' \
-        % numpy_include_full_dir
+numpy_include_full_dirs = [
+	os.path.join(virtual_env_dir, numpy_rel_dir)
+	for virtual_env_dir in virtual_env_dirs
+	]
+numpy_include_full_dirs = [
+	os.path.expanduser(numpy_include_full_dir)
+	for numpy_include_full_dir in numpy_include_full_dirs
+	]
+valid_dirs = filter(os.path.isdir, numpy_include_full_dirs)
+if len(valid_dirs) == 0:
+    error_message = 'none of numpy_include_full_dirs exist: %s\n' \
+        % ', '.join(numpy_include_full_dirs)
     sys.stderr.write(error_message)
     sys.exit()
 
 rel_dir = '../../cpp_code/'
+include_dirs = [
+	os.path.join(rel_dir, 'include/CrossCat'),
+	os.environ.get('BOOST_ROOT', '.'),
+        ]
+include_dirs.extend(valid_dirs)
 
 setup(
     name = 'Demos',
@@ -49,10 +59,7 @@ setup(
                            os.path.join(rel_dir, "src/ComponentModel.cpp"),
                            os.path.join(rel_dir, "src/ContinuousComponentModel.cpp"),
                            ],
-                  include_dirs=[os.path.join(rel_dir, 'include/CrossCat'),
-                                numpy_include_full_dir,
-                                os.environ.get('BOOST_ROOT', '.'),
-                                ],
+                  include_dirs=include_dirs,
                   language="c++"),
         Extension("MultinomialComponentModel",
                   sources=["MultinomialComponentModel.pyx",
@@ -62,10 +69,7 @@ setup(
                            os.path.join(rel_dir, "src/ComponentModel.cpp"),
                            os.path.join(rel_dir, "src/MultinomialComponentModel.cpp"),
                            ],
-                  include_dirs=[os.path.join(rel_dir, 'include/CrossCat'),
-                                numpy_include_full_dir,
-                                os.environ.get('BOOST_ROOT', '.'),
-                                ],
+                  include_dirs=include_dirs,
                   language="c++"),
         Extension("State",
                   sources=["State.pyx",
@@ -80,10 +84,7 @@ setup(
                            os.path.join(rel_dir, "src/MultinomialComponentModel.cpp"),
                            os.path.join(rel_dir, "src/ContinuousComponentModel.cpp"),
                            ],
-                  include_dirs=[os.path.join(rel_dir, 'include/CrossCat'),
-                                numpy_include_full_dir,
-                                os.environ.get('BOOST_ROOT', '.'),
-                                ],
+                  include_dirs=include_dirs,
                   language="c++",
                   ),
         ],
