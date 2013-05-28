@@ -1,13 +1,42 @@
 #!/bin/bash
 
 
-# default settings
+# set default values
 jenkins_home=/var/lib/jenkins/
-jenkins_project=${jenkins_home}/workspace/PredictiveDB
-source_dir=/home/bigdata/tabular_predDB/
+user=sgeadmin
 
+
+# print script usage
+usage() {
+	cat <<EOF
+useage: $0 options
+
+	Set up jenkins
+
+	OPTIONS:
+	-h	Show this message
+	-u	user=$user
+	-j	jenkins_home=$jenkins_home
+EOF
+exit
+}
+
+# Process the arguments
+while getopts hu:j: opt
+do
+	case "$opt" in
+		h) usage;;
+		u) user=$OPTARG;;
+		j) jenkins_home=$OPTARG;;
+	esac
+done
+
+# set derived variables
+jenkins_project=${jenkins_home}/workspace/PredictiveDB
+source_dir=/home/$user/tabular_predDB/
 
 # install jenkins
+#   per http://pkg.jenkins-ci.org/debian-stable/
 wget -q -O - http://pkg.jenkins-ci.org/debian-stable/jenkins-ci.org.key | sudo apt-key add -
 sudo echo "deb http://pkg.jenkins-ci.org/debian-stable binary/" >> /etc/apt/sources.list
 sudo apt-get update
@@ -28,6 +57,9 @@ mkdir -p ${jenkins_home}/.matplotlib
 echo backend: Agg > ${jenkins_home}/.matplotlib/matplotlibrc
 # set up password login, set password for jenkins user
 bash ${source_dir}/setup_password_login.sh -u jenkins -p jenkins
+# make sure jenkins api available for job setup automation
+pip install jenkinsapi==0.1.13
+
 
 # make sure jenkins owns everythin
 chown -R jenkins $jenkins_home
