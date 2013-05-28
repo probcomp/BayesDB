@@ -7,6 +7,8 @@ There are three steps to VM setup.
 1. In the `guest` OS, we'll install tabular\_predDB.
 1. In the `guest` OS, we'll run tests to verify functionality
 
+Afterwards, you can install Jenkins to the VM if desired by following the steps in Installing Jenkins in this README
+
 Installing the VM
 ==================
 
@@ -51,3 +53,18 @@ To test the install, we'll run tabular\_predDB/tests/test\_middleware.py which t
     make cython
     cd tabular_predDB/tabular_predDB/tests
     python test_middleware.py
+
+Installing Jenkins
+==================
+
+Assuming you have
+1. tabular_predDB installed to ~/
+2. Your desired Jenkins job configuration in config.xml with shell variable $jenkins_config pointing to it 
+
+You can install jenkins with the following commands inside the `guest` OS
+
+    cd ~/tabualr_predDB/install_scripts/
+    sudo bash setup_jenkins.sh -u bigdata
+    python create_jenkins_job_from_config.py --config_filename $jenkins_config
+
+FIXME: still missing setup\_jenkins\_modifications.sh
