@@ -10,7 +10,6 @@ def impute_table(T, M_c, X_L_list, X_D_list, numDraws, get_next_seed):
     col_names = numpy.array([M_c['idx_to_name'][str(col_idx)] for col_idx in range(num_cols)])
     coltype = []
     for colindx in range(len(col_names)):
-        print 'Attribute: {!s}   Model:{!s}'.format(col_names[colindx],M_c['column_metadata'][colindx]['modeltype'])
         if M_c['column_metadata'][colindx]['modeltype'] == 'normal_inverse_gamma':
             coltype.append('continuous')
         else:
@@ -30,34 +29,25 @@ def impute_table(T, M_c, X_L_list, X_D_list, numDraws, get_next_seed):
     numImputations = len(missingRowIndices)
     Q = []
     for i in range(numImputations):
-        print missingRowIndices[i],missingColIndices[i], len(T), len(T[0])
+        #print missingRowIndices[i],missingColIndices[i], len(T), len(T[0])
         Q.append([missingRowIndices[i],missingColIndices[i]])
 
     # Impute missing values in table
-    samples_list = []
     values_list = []
     for queryindx in range(len(Q)):
-        values, samples = su.impute(M_c, X_L_list, X_D_list, [], [Q[queryindx]], numDraws, get_next_seed)
+        values = su.impute(M_c, X_L_list, X_D_list, [], [Q[queryindx]], numDraws, get_next_seed)
         values_list.append(values)
-        samples_list.append(samples)
 
     # Put the samples back into the data table
     T_imputed = T
    
-    # for imputeindx in range(numImputations):
-    #     if coltype[missingColIndices[imputeindx]] == 'continuous':
-    #         T_imputed[missingRowIndices[imputeindx]][missingColIndices[imputeindx]] = values_list[imputeindx]
-    #     else:
-    #         T_imputed[missingRowIndices[imputeindx]][missingColIndices[imputeindx]] = M_c['column_metadata'][missingColIndices[imputeindx]]['value_to_code'][values_list[imputeindx]]
-
     for imputeindx in range(numImputations):
         T_imputed[missingRowIndices[imputeindx]][missingColIndices[imputeindx]] = values_list[imputeindx]
     for colindx in range(len(T[0])):
         if coltype[colindx] == 'multinomial':
             for rowindx in range(len(T)):
                 T_imputed[rowindx][colindx] =  M_c['column_metadata'][colindx]['value_to_code'][T_imputed[rowindx][colindx]]
-       
-  
+
     return T_imputed
 
 def predict(M_c, X_L, X_D, Y, Q, n, get_next_seed):
@@ -95,7 +85,6 @@ def predict_in_table(T_test, T, M_c, X_L, X_D, numDraws, get_next_seed):
         else:
             coltype.append('multinomial')
 
-   
     # Find missing values            
     rowsWithNans = [rowsWithNans for rowsWithNans in range(len(T_test)) if any(numpy.isnan(T_test[rowsWithNans]))]
     Q = []

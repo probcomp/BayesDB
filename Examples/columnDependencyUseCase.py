@@ -1,27 +1,28 @@
 # Using CrossCat to Examine Column Dependencies
 # 1. Import packages/modules needed
-import numpy, csv,  tmp_utils, pylab
+import numpy 
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.sample_utils as su
 import tabular_predDB.python_utils.plot_utils as pu
-from tabular_predDB.jsonrpc_http.Engine import Engine
+import CrossCatClient as ccc
 
 # 2. Load a data table from csv file. In this example, we use synthetic data
 filename = 'flight_data_subset.csv'
 filebase = 'flight_data_subset'
 T, M_r, M_c = du.read_model_data_from_csv(filename, gen_seed=0)
-T = numpy.asarray(T)
+T_array = numpy.asarray(T)
 num_rows = len(T)
 num_cols = len(T[0])
 col_names = numpy.array([M_c['idx_to_name'][str(col_idx)] for col_idx in range(num_cols)])
 dataplot_filename = '{!s}_data'.format(filebase)
-tmp_utils.plot_T(T, M_c, filename = dataplot_filename)
+
+pu.plot_T(T_array, M_c, filename = dataplot_filename)
 
 for colindx in range(len(col_names)):
-    print 'Attribute: {!s}   Model:{!s}'.format(col_names[colindx],M_c['column_metadata'][colindx]['modeltype'])
+    print 'Attribute: {0:30}   Model:{1}'.format(col_names[colindx],M_c['column_metadata'][colindx]['modeltype'])
 
 # 3. Initialize CrossCat Engine and Build Model
-engine = Engine( )
+engine = ccc.get_CrossCatClient('local', seed = 0)
 X_L_list = []
 X_D_list = []
 numChains = 10
@@ -37,8 +38,8 @@ for chain_idx in range(numChains):
 
 # 4. Visualize clusters in one sample drawn from the model 
 viewplot_filename = '{!s}_view'.format(filebase)
-tmp_utils.plot_views(T, X_D_list[4], X_L_list[4], M_c, filename= viewplot_filename)
+pu.plot_views(T_array, X_D_list[4], X_L_list[4], M_c, filename= viewplot_filename)
 
 zplot_filename = '{!s}_feature_z'.format(filebase)
 # 5. Construct and plot column dependency matrix
-tmp_utils.do_gen_feature_z(X_L_list, X_D_list, M_c, zplot_filename, filename)
+su.do_gen_feature_z(X_L_list, X_D_list, M_c, zplot_filename, filename)
