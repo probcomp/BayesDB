@@ -50,14 +50,17 @@ def impute_table(T, M_c, X_L_list, X_D_list, numDraws, get_next_seed):
 
     return T_imputed
 
-def predict(M_c, X_L, X_D, Y, Q, n, get_next_seed):
+def predict(M_c, X_L, X_D, Y, Q, n, get_next_seed, return_samples=False):
     # Predict is currently the same as impute except that the row Id in the query must lie outside the 
     # length of the table used to generate the model
     # For now, we will just call "impute" and leave it to the user to generate the query correctly 
     
     # FIXME: allow more than one cell to be predicted
     assert(len(Q)==1)
-    e, samples = su.impute(M_c, X_L, X_D, Y, Q, n, get_next_seed)
+    if return_samples:
+        e, samples = su.impute(M_c, X_L, X_D, Y, Q, n, get_next_seed, return_samples=True)
+    else:
+        e = su.impute(M_c, X_L, X_D, Y, Q, n, get_next_seed)
     return e
 
 def predict_and_confidence(M_c, X_L, X_D, Y, Q, n, get_next_seed):
@@ -79,7 +82,6 @@ def predict_in_table(T_test, T, M_c, X_L, X_D, numDraws, get_next_seed):
     col_names = numpy.array([M_c['idx_to_name'][str(col_idx)] for col_idx in range(num_cols)])
     coltype = []
     for colindx in range(len(col_names)):
-        print 'Attribute: {!s}   Model:{!s}'.format(col_names[colindx],M_c['column_metadata'][colindx]['modeltype'])
         if M_c['column_metadata'][colindx]['modeltype'] == 'normal_inverse_gamma':
             coltype.append('continuous')
         else:
@@ -106,7 +108,7 @@ def predict_in_table(T_test, T, M_c, X_L, X_D, numDraws, get_next_seed):
         Y = []
         for indx_col in range(len(condition_fields[0])):
             Y.append([num_rows+indx_row, condition_fields[0][indx_col], T_test[indx_row][condition_fields[0][indx_col]]])
-        print [Q[queryindx]], Y
+        #print [Q[queryindx]], Y
        
         values = predict(M_c, X_L, X_D, Y, [Q[queryindx]], numDraws, get_next_seed)
         values_list.append(values)

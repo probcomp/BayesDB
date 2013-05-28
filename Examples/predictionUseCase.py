@@ -1,29 +1,31 @@
 # Using CrossCat to Examine Column Dependencies
 # 1. Import packages/modules needed
-import numpy, csv, tmp_utils, pylab, pdb
+import numpy
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.sample_utils as su
 import tabular_predDB.python_utils.plot_utils as pu
-from tabular_predDB.jsonrpc_http.Engine import Engine
+import tabular_predDB.CrossCatClient as ccc
+import tabular_predDB.python_utils.useCase_utils as uc_utils
+
 
 # 2. Load a data table from csv file. In this example, we use synthetic data
 filename = 'flight_data_subset.csv'
 filebase = 'flight_data_subset'
 T, M_r, M_c = du.read_model_data_from_csv(filename, gen_seed=0)
-T = numpy.asarray(T)
+T_array = numpy.asarray(T)
 num_rows = len(T)
 num_cols = len(T[0])
 col_names = numpy.array([M_c['idx_to_name'][str(col_idx)] for col_idx in range(num_cols)])
 
 for colindx in range(len(col_names)):
-    print 'Attribute: {!s}   Model:{!s}'.format(col_names[colindx],M_c['column_metadata'][colindx]['modeltype'])
+    print 'Attribute: {0:30}   Model:{1}'.format(col_names[colindx],M_c['column_metadata'][colindx]['modeltype'])
 
 # 3. Split the data table into a training and test set
-T_train = T[0:(num_rows/2 - 1)]
-T_test =  T[num_rows/2 : num_rows]
+T_train = T_array[0:(num_rows/2 - 1)]
+T_test =  T_array[num_rows/2 : num_rows]
 
 # 4. Initialize CrossCat Engine and Build Model using only the training data
-engine = Engine( )
+engine = ccc.get_CrossCatClient('local', seed = 0)
 X_L_list = []
 X_D_list = []
 numChains = 10
@@ -55,7 +57,7 @@ for indx_row in range(len(test_row)):
         for indx_col in range(len(condition_fields)):
             Y.append([len(T_train)+indx_row+1, condition_fields[indx_col], test_row[indx_row][condition_fields[indx_col]]])
 
-        value = tmp_utils.predict(M_c, X_L_list, X_D_list, Y, [Q], numDraws, engine.get_next_seed)
+        value = uc_utils.predict(M_c, X_L_list, X_D_list, Y, [Q], numDraws, engine.get_next_seed)
         predicted_values.append(value)
 
 
@@ -66,4 +68,4 @@ test_rows = (T_test[0:3,:])
 missing_fields = [0, 4, 9]
 test_rows[:,missing_fields] = numpy.nan
 print test_rows
-T_predicted = tmp_utils.predict_in_table(test_rows, T, M_c, X_L, X_D, numDraws, engine.get_next_seed)
+T_predicted = uc_utils.predict_in_table(test_rows, T, M_c, X_L, X_D, numDraws, engine.get_next_seed)
