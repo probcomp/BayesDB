@@ -32,29 +32,120 @@ def get_aspect_ratio(T_array):
     aspect_ratio = float(num_cols)/num_rows
     return aspect_ratio
 
-def plot_T(T_array, filename=None, dir='', close=True):
+def plot_T(T_array, M_c, filename=None, dir='', close=True):
+    num_cols = len(T_array[0])
+    column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
+    column_names = numpy.array(column_names)
+
     aspect_ratio = get_aspect_ratio(T_array)
     pylab.figure()
-    pylab.imshow(T_array, aspect=aspect_ratio, interpolation='none')
+    pylab.imshow(T_array, aspect=aspect_ratio, interpolation='none',
+                 cmap=pylab.matplotlib.cm.Greens)
+    pylab.gca().set_xticks(range(num_cols))
+    pylab.gca().set_xticklabels(column_names, rotation=90, size='x-small')
+
+    pylab.show()
+    
     my_savefig(filename, dir, close)
 
-def plot_views(T_array, X_D, X_L, filename=None, dir='', close=True):
-     pylab.figure()
-     view_assignments = X_L['column_partition']['assignments']
-     view_assignments = numpy.array(view_assignments)
-     num_views = len(set(view_assignments))
-     for view_idx in range(num_views):
-          X_D_i = X_D[view_idx]
-          argsorted = numpy.argsort(X_D_i)
-          is_this_view = view_assignments==view_idx
-          xticklabels = numpy.nonzero(is_this_view)[0]
-          num_cols_i = sum(is_this_view)
-          T_array_sub = T_array[:,is_this_view][argsorted]
-          aspect_ratio = get_aspect_ratio(T_array_sub)
-          pylab.subplot(1, num_views, view_idx + 1)
-          pylab.imshow(T_array_sub, aspect=aspect_ratio,
-                       interpolation='none')
-          pylab.gca().set_xticks(range(num_cols_i))
-          pylab.gca().set_xticklabels(map(str, xticklabels))
-          if view_idx!=0: pylab.gca().set_yticklabels([])
-     my_savefig(filename, dir, close)
+def plot_views(T_array, X_D, X_L, M_c, filename=None, dir='', close=True):
+
+    num_cols = len(X_L['column_partition']['assignments'])
+    column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
+    column_names = numpy.array(column_names)
+
+    fig = pylab.figure()
+    view_assignments = X_L['column_partition']['assignments']
+    view_assignments = numpy.array(view_assignments)
+    num_features = len(view_assignments)
+    num_views = len(set(view_assignments))
+    
+    disLeft = 0.1
+    disRight = 0.1
+    viewSpacing = 0.1/(max(2,num_views)-1)
+    nxtAxDisLeft = disLeft
+    axpos2 = 0.2
+    axpos4 = 0.75
+    
+    for view_idx in range(num_views):
+        X_D_i = X_D[view_idx]
+        argsorted = numpy.argsort(X_D_i)
+        is_this_view = view_assignments==view_idx
+        xticklabels = numpy.nonzero(is_this_view)[0]
+        num_cols_i = sum(is_this_view)
+        T_array_sub = T_array[:,is_this_view][argsorted]
+        nxtAxWidth = (float(num_cols_i)/num_features)*(1-viewSpacing*(num_views-1.)-disLeft-disRight)
+        axes_pos = nxtAxDisLeft, axpos2, nxtAxWidth, axpos4
+        currax = fig.add_axes(axes_pos)
+        nxtAxDisLeft = nxtAxDisLeft+nxtAxWidth+viewSpacing
+        aspect_ratio = get_aspect_ratio(T_array)
+        
+        # Normalize each column to display
+        mincols = T_array_sub.min(axis=0)
+        maxcols = T_array_sub.max(axis=0)
+        T_norm = (T_array_sub-mincols[numpy.newaxis,:])/(maxcols[numpy.newaxis,:]-mincols[numpy.newaxis,:])
+        pylab.imshow(T_norm, aspect = 'auto',
+                     interpolation='none',cmap=pylab.matplotlib.cm.Greens)
+        old_tmp = 0
+        
+        for y in range(max(X_D_i)):
+            tmp = numpy.sum([X_D_i[x] == y for x in range(len(X_D_i))])
+            if tmp > 5:
+                pylab.plot(numpy.arange(num_cols_i+1)-0.5, [old_tmp+tmp]*(num_cols_i+1),color='red',linewidth=2,hold='true')
+            old_tmp = old_tmp+tmp
+               
+        pylab.gca().set_xticks(range(num_cols_i))
+        #pylab.gca().set_xticklabels(map(str, xticklabels))
+        #pdb.set_trace()
+        pylab.gca().set_xticklabels(column_names[is_this_view], rotation=90, size='x-small')
+        pylab.gca().set_yticklabels([])
+        pylab.xlim([-0.5, num_cols_i-0.5])
+        pylab.ylim([0, len(T_array_sub)])
+
+        pylab.show()
+        if view_idx!=0: pylab.gca().set_yticklabels([])
+    my_savefig(filename, dir, close)
+
+def plotImputedValue(value, samples, modelType, filename='imputed_value_hist.png', plotcolor='red', truth=None, x_axis_lim=None):
+
+    fig = pylab.figure()
+    # Find 50% bounds
+    curr_std = numpy.std(samples)
+    curr_delta = 2*curr_std/100;
+    ndraws = len(samples)
+    
+    for thresh in numpy.arange(curr_delta, 2*curr_std, curr_delta):
+        withinbounds = len([i for i in range(len(samples)) if samples[i] < (value+thresh) and samples[i] > (value-thresh)])
+        if float(withinbounds)/ndraws > 0.5:
+            break
+
+    bounds = [value-thresh, value+thresh]
+    
+    # Plot histogram
+    # 'normal_inverse_gamma': continuous_imputation,
+    # 'symmetric_dirichlet_discrete': multinomial_imputation,
+    
+    if modelType == 'normal_inverse_gamma':
+        nx, xbins, rectangles = pylab.hist(samples,bins=40,normed=0,color=plotcolor)
+    elif modelType == 'symmetric_dirichlet_discrete':
+        bin_edges = numpy.arange(numpy.min(samples)-0.5, numpy.max(samples)-0.5, 1)  
+        nx, xbins, rectangles = pylab.hist(samples,bin_edges,normed=0,color=plotcolor)
+    else:
+        print 'Unsupported model type'
+
+    pylab.clf()
+
+    nx_frac = nx/float(sum(nx))
+    x_width = [(xbins[i+1]-xbins[i]) for i in range(len(xbins)-1)]
+    pylab.bar(xbins[0:len(xbins)-1],nx_frac,x_width,color=plotcolor)
+    pylab.plot([value, value],[0,1], color=plotcolor, hold=True,linewidth=2)                      
+    pylab.plot([bounds[0], bounds[0]],[0,1], color=plotcolor, hold=True, linestyle='--',linewidth=2)
+    pylab.plot([bounds[1], bounds[1]],[0,1], color=plotcolor, hold=True, linestyle='--',linewidth=2)
+    if truth != None:
+        pylab.plot([truth, truth],[0,1], color='green', hold=True, linestyle='--',linewidth=2)
+    pylab.show()
+
+    if x_axis_lim != None:
+        pylab.xlim(x_axis_lim)
+    my_savefig(filename, '', False)
+    return pylab.gca().get_xlim()
