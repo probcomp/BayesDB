@@ -425,8 +425,10 @@ def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed, return_samples=False):
     samples = numpy.array(samples).T[0]
     imputation_function = modeltype_to_imputation_function[modeltype]
     e = imputation_function(samples, get_next_seed)
-    return e
-
+    if return_samples:
+        return e, samples
+    else:
+        return e
 
 def impute_and_confidence(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     # FIXME: allow more than one cell to be imputed
