@@ -1,71 +1,5 @@
-import numpy, hcluster, pylab, os, pdb, csv
-from collections import Counter
+import numpy, pylab, os, pdb, csv
 import tabular_predDB.python_utils.sample_utils as su
-
-def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
-    num_cols = len(X_L_list[0]['column_partition']['assignments'])
-    column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
-    column_names = numpy.array(column_names)
-    # extract unordered z_matrix
-    num_latent_states = len(X_L_list)
-    z_matrix = numpy.zeros((num_cols, num_cols))
-    for X_L in X_L_list:
-      assignments = X_L['column_partition']['assignments']
-      for i in range(num_cols):
-        for j in range(num_cols):
-          if assignments[i] == assignments[j]:
-            z_matrix[i, j] += 1
-    z_matrix /= float(num_latent_states)
-    # hierachically cluster z_matrix
-    Y = hcluster.pdist(z_matrix)
-    Z = hcluster.linkage(Y)
-    pylab.figure()
-    hcluster.dendrogram(Z)
-    intify = lambda x: int(x.get_text())
-    reorder_indices = map(intify, pylab.gca().get_xticklabels())
-    pylab.close()
-    # REORDER! 
-    z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
-    column_names_reordered = column_names[reorder_indices]
-    # actually create figure
-    fig = pylab.figure()
-    fig.set_size_inches(16, 12)
-    pylab.imshow(z_matrix_reordered, interpolation='none',
-                 cmap=pylab.matplotlib.cm.Greens)
-    pylab.colorbar()
-    if num_cols < 14:
-      pylab.gca().set_yticks(range(num_cols))
-      pylab.gca().set_yticklabels(column_names_reordered, size='x-small')
-      pylab.gca().set_xticks(range(num_cols))
-      pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='x-small')
-    else:
-      pylab.gca().set_yticks(range(num_cols)[::2])
-      pylab.gca().set_yticklabels(column_names_reordered[::2], size='x-small')
-      pylab.gca().set_xticks(range(num_cols)[1::2])
-      pylab.gca().set_xticklabels(column_names_reordered[1::2],
-                                  rotation=90, size='small')
-    pylab.title('column dependencies for: %s' % tablename)
-    pylab.savefig(filename)
-
-def get_aspect_ratio(T_array):
-    num_rows = len(T_array)
-    num_cols = len(T_array[0])
-    aspect_ratio = float(num_cols)/num_rows
-    return aspect_ratio
-
-def my_savefig(filename, dir='', close=True):
-    if filename is not None:
-        full_filename = os.path.join(dir, filename)
-        pylab.savefig(full_filename)
-        if close:
-            pylab.close()
-
-def write_csv(filename, T, header = None):
-    with open(filename,'w') as fh:
-        csv_writer = csv.writer(fh, delimiter=',')
-        if header != None:
-            csv_writer.writerow(header)
-        [csv_writer.writerow(T[i]) for i in range(len(T))]
 
 
 def impute_table(T, M_c, X_L_list, X_D_list, numDraws, get_next_seed):
@@ -81,6 +15,9 @@ def impute_table(T, M_c, X_L_list, X_D_list, numDraws, get_next_seed):
             coltype.append('continuous')
         else:
             coltype.append('multinomial')
+
+    # FIXME: This code currently works if there is one missing value in a table
+    #        Predict table below implements this correctly        
 
     # Find missing values            
     missingRowIndices = [missingRowIndices for missingRowIndices in range(len(T)) if any(numpy.isnan(T[missingRowIndices]))]
@@ -122,7 +59,6 @@ def impute_table(T, M_c, X_L_list, X_D_list, numDraws, get_next_seed):
        
   
     return T_imputed
- 
 
 def predict(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     # Predict is currently the same as impute except that the row Id in the query must lie outside the 
@@ -159,6 +95,7 @@ def predict_in_table(T_test, T, M_c, X_L, X_D, numDraws, get_next_seed):
         else:
             coltype.append('multinomial')
 
+   
     # Find missing values            
     rowsWithNans = [rowsWithNans for rowsWithNans in range(len(T_test)) if any(numpy.isnan(T_test[rowsWithNans]))]
     Q = []

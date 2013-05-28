@@ -17,7 +17,7 @@ import sys
 import copy
 from collections import Counter
 #
-import numpy
+import numpy, hcluster, pylab
 #
 import tabular_predDB.cython_code.ContinuousComponentModel as CCM
 import tabular_predDB.cython_code.MultinomialComponentModel as MCM
