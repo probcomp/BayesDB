@@ -51,7 +51,7 @@ To install tabular\_predDB we have bash scripts rather than the starcluster\_plu
 Verifying functionality
 =======================
 
-To test the install, we'll run tabular\_predDB/tests/test\_middleware.py which tests the C++ engine, the Cython wrapping and the Database layer.  NOTE: you must have X forwarding enabled to run test_middleware.py: ssh -X bigdata@$VM\_IP
+To test the install, we'll run tabular\_predDB/tests/test\_middleware.py which tests the C++ engine, the Cython wrapping and the Database layer.
 
     # from the `guest` OS
     export PYTHONPATH=~/tabular_predDB/:$PYTHONPATH
@@ -77,5 +77,4 @@ You can install jenkins with the following commands
     python create_jenkins_job_from_config.py --config_filename $jenkins_config
     bash VM_install/setup_jenkins_modifications.sh
 
-FIXME:: this first build, this will fail because it doesn't have the correct PYTHONPATH until after the first run of jenkins\_script.sh
 Note: for the build step 'Execute Shell', the command should be: zsh -i jenkins_script.sh
