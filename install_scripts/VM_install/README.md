@@ -21,6 +21,7 @@ We'll assume you have
 
 Executing the following commands will create the VM files in your home directory, spin it up, and set $VM\_IP
 
+    # from the `host` OS
     cd
     git clone $REPO tabular_predDB
     create_vm_script=tabular_predDB/install_scripts/VM_install/create_vm.sh
@@ -34,8 +35,9 @@ You can now ssh into the `guest` OS with
 Installing tabular\_predDB
 ==========================
 
-To install tabular\_predDB in the `guest` OS, we have bash scripts rather than the starcluster\_plugin.py script
+To install tabular\_predDB we have bash scripts rather than the starcluster\_plugin.py script
 
+    # from the `guest` OS
     cd
     git clone $REPO tabular_predDB
     cd tabular_predDB/install_scripts/VM_install
@@ -47,6 +49,7 @@ Verifying functionality
 
 To test the install, we'll run tabular\_predDB/tests/test\_middleware.py which tests the C++ engine, the Cython wrapping and the Database layer.
 
+    # from the `guest` OS
     export PYTHONPATH=~/tabular_predDB/:$PYTHONPATH
     cd ~/tabular_predDB/
     make tests
@@ -58,11 +61,13 @@ Installing Jenkins
 ==================
 
 Assuming you have
+
 1. tabular_predDB installed to ~/
 2. Your desired Jenkins job configuration in config.xml with shell variable $jenkins_config pointing to it 
 
-You can install jenkins with the following commands inside the `guest` OS
+You can install jenkins with the following commands
 
+    # from the `guest` OS
     cd ~/tabualr_predDB/install_scripts/
     sudo bash setup_jenkins.sh -u bigdata
     python create_jenkins_job_from_config.py --config_filename $jenkins_config
