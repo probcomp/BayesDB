@@ -19,6 +19,10 @@ We'll assume you have
 * VMware VIX API installed
 * The zipped VM image downloaded and shell variable $ZIPPED\_VM pointing to it
 
+You'll probably want to set $REPO like this
+
+    REPO=https://github.com/mit-probabilistic-computing-project/tabular-predDB.git
+
 Executing the following commands will create the VM files in your home directory, spin it up, and set $VM\_IP
 
     # from the `host` OS
