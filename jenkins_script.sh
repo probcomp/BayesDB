@@ -48,6 +48,7 @@ cd tabular_predDB
 if [ ! -e /var/lib/jenkins/.virtualenvs ]
 then
   bash -i install_scripts/virtualenv_setup.sh $user $home_dir >virtualenv.out 2>virtualenv.err
+  source /var/lib/jenkins/.bashrc
 fi
 workon tabular_predDB
 
