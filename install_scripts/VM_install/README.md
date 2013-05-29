@@ -73,4 +73,5 @@ You can install jenkins with the following commands
     python create_jenkins_job_from_config.py --config_filename $jenkins_config
     bash VM_install/setup_jenkins_modifications.sh
 
+FIXME:: this first build, this will fail because it doesn't have the correct PYTHONPATH until after the first run of jenkins\_script.sh
 Note: for the build step 'Execute Shell', the command should be: zsh -i jenkins_script.sh
