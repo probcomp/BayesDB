@@ -58,7 +58,7 @@ echo backend: Agg > ${jenkins_home}/.matplotlib/matplotlibrc
 # set up password login, set password for jenkins user
 bash ${source_dir}/setup_password_login.sh -u jenkins -p jenkins
 # make sure jenkins api available for job setup automation
-pip install jenkinsapi==0.1.13
+sudo -u $user zsh -c -i 'pip install jenkinsapi==0.1.13'
 
 
 # make sure jenkins owns everythin
