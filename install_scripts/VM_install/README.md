@@ -54,7 +54,7 @@ To test the install, we'll run tabular\_predDB/tests/test\_middleware.py which t
     cd ~/tabular_predDB/
     make tests
     make cython
-    cd tabular_predDB/tabular_predDB/tests
+    cd tabular_predDB/tests
     python test_middleware.py
 
 Installing Jenkins
