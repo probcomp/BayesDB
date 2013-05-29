@@ -71,5 +71,5 @@ You can install jenkins with the following commands
     cd ~/tabular_predDB/install_scripts/
     sudo bash setup_jenkins.sh -u bigdata
     python create_jenkins_job_from_config.py --config_filename $jenkins_config
+    bash VM_install/setup_jenkins_modifications.sh
 
-FIXME: still missing setup\_jenkins\_modifications.sh
