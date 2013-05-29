@@ -7,8 +7,8 @@ sudo cp /home/bigdata/.zshrc /var/lib/jenkins
 sudo chown jenkins /var/lib/jenkins/.zshrc
 sudo chsh -s /usr/bin/zsh jenkins
 #
-# or do chmod 777?
-sudo chown -R jenkins /opt/anaconda
+# give everyone rwx access, else jenkins fails; perhaps this is not necesary if we use /usr/local/bin/nosetests instead of /opt/anacaonda/bin/nosetests
+sudo chmod -R 777 /opt/anaconda
 # is this even necessary?
-sudo ln -s /usr/local/bin/nosetests /usr/bin/nosetest
+sudo ln -s /usr/local/bin/nosetests /usr/bin/nosetests
 
