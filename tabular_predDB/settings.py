@@ -61,4 +61,4 @@ class git():
     repo_prefix = 'git@github.com:'
     repo_suffix = 'mit-probabilistic-computing-project/tabular-predDB.git'
     repo = repo_prefix + repo_suffix
-    branch = 'sdl_client_work'
+    branch = 'master'
