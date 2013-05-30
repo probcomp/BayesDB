@@ -78,3 +78,5 @@ You can install jenkins with the following commands
     bash VM_install/setup_jenkins_modifications.sh
 
 Note: for the build step 'Execute Shell', the command should be: zsh -i jenkins_script.sh
+
+FIXME: show use of jenkins_utils.py on the command line to create and invoke a job
