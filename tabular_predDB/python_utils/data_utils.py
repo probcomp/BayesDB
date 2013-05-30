@@ -210,6 +210,13 @@ def read_csv(filename, has_header=True):
         rows = [row for row in csv_reader]
     return header, rows
 
+def write_csv(filename, T, header = None):
+    with open(filename,'w') as fh:
+        csv_writer = csv.writer(fh, delimiter=',')
+        if header != None:
+            csv_writer.writerow(header)
+        [csv_writer.writerow(T[i]) for i in range(len(T))]
+
 def all_continuous_from_file(filename, max_rows=None, gen_seed=0, has_header=True):
     header, T = read_csv(filename, has_header=has_header)
     T = numpy.array(T, dtype=float).tolist()
