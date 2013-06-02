@@ -1,7 +1,9 @@
 tabular-predDB
 ==============
 
-tabular predictive database
+This README primarily describes StarCluster/EC2 spin up and is superseded by the [this wiki](http://probcomp.csail.mit.edu/preddb/index.php?title=BayesDB)
+
+-----
 
 This package is configured to be installed as a StarCluster plugin.  Roughly, the following are prerequisites.
 
