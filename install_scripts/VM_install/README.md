@@ -14,23 +14,26 @@ Installing the VM
 
 We'll assume you have
 
-* Access to the tabular\_predDB repo and shell variable $REPO pointing to it
+* Access to the tabular\_predDB repo
 * VMware Player installed
 * VMware VIX API installed
 * The zipped VM image downloaded and shell variable $ZIPPED\_VM pointing to it
 
-You'll probably want to set $REPO like this
-
-    REPO=https://github.com/mit-probabilistic-computing-project/tabular-predDB.git
-
-Executing the following commands will create the VM files in your home directory, spin it up, and set $VM\_IP
+Executing the following commands
 
     # from the `host` OS
     cd
+    REPO=https://github.com/mit-probabilistic-computing-project/tabular-predDB.git
     git clone $REPO tabular_predDB
-    create_vm_script=tabular_predDB/install_scripts/VM_install/create_vm.sh
-    bash $create_vm_script -z $ZIPPED_VM
-    VM_IP=$(bash $create_vm_script -a)
+    cd tabular_predDB/install_scripts/VM_install/
+    bash create_vm.sh -z $ZIPPED_VM
+    VM_IP=$(bash create_vm.sh -a)
+
+Will
+
+1. unzip the VM files into your home directory
+2. spin up the VM
+3. set $VM\_IP to the VM's network address for SSH'ing in
 
 You can now ssh into the `guest` OS with
 
@@ -43,6 +46,7 @@ To install tabular\_predDB we have bash scripts rather than the starcluster\_plu
 
     # from the `guest` OS
     cd
+    REPO=https://github.com/mit-probabilistic-computing-project/tabular-predDB.git
     git clone $REPO tabular_predDB
     cd tabular_predDB/install_scripts/VM_install
     sudo bash install_to_vm_root.sh
