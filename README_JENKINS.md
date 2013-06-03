@@ -1,7 +1,9 @@
 Instructions to setup a Jenkins server
 ==================
 
-This README describes the manual process to start a Jenkins server.  [https://github.com/mit-probabilistic-computing-project/tabular-predDB/blob/master/install_scripts/VM_install/README.md#installing-jenkins](Scripts) have since been generated to mostly automate the process.
+This README describes the manual process to start a Jenkins server.
+
+[**Scripts**](https://github.com/mit-probabilistic-computing-project/tabular-predDB/blob/master/install_scripts/VM_install/README.md#installing-jenkins) have since been generated to mostly automate the process.
 
 -----
 
