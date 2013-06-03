@@ -187,7 +187,7 @@ fi
 
 
 echo -ne "Installing cython. "
-sudo pip install cython==0.17.11>> /dev/null 2>> $ERR_FILE
+sudo pip install cython==0.17.1 1>> /dev/null 2>> $ERR_FILE
 if [ $? = 1 ]
 then
 	echo Failed.
