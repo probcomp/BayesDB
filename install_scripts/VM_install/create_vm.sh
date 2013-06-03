@@ -6,8 +6,6 @@ VMwarePlayer=VMware-Player-3.1.4-385536.i386.bundle
 VMwareVIX=VMware-VIX-1.12.2-1031769.i386.txt
 ZIPPED_VM=debian_6_cdh4_baseline-20130506.zip
 VM="Debian 6 64-bit (baseline)/Debian 6 64-bit.vmx"
-start_only=
-addres_only=
 
 
 # print script usage
@@ -25,7 +23,8 @@ usage: $0 options
     -i      VM=$VM
     -n      only install the vmware components
     -s      only start the VM and print its ip address
-    -t      only termiante the VM
+    -t      only terminate the VM
+    -k      only set up ssh key login
     -a      only print vm ip address
 EOF
 exit
@@ -33,7 +32,7 @@ exit
 
 
 #Process the arguments
-while getopts hp:v:z:i:nsta opt
+while getopts hp:v:z:i:nstka opt
 do
     case "$opt" in
         h) usage;;
@@ -44,6 +43,7 @@ do
 	n) install_only="True";;
         s) start_only="True";;
         t) terminate_only="True";;
+        k) ssh_keys_only="True";;
         a) address_only="True";;
     esac
 done
@@ -93,6 +93,8 @@ set_up_ssh_keys() {
     vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" /bin/mkdir /root/.ssh
     vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" \
 	/bin/bash -c 'echo \$@ >> /root/.ssh/authorized_keys' -- $(cat ~/.ssh/id_rsa.pub)
+    vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" \
+	/usr/sbin/invoke-rc.d ssh restart
 }
     
 if [[ ! -z $install_only ]]; then
@@ -106,6 +108,10 @@ elif [[ ! -z $start_only ]]; then
 elif [[ ! -z $terminate_only ]]; then
     echo only terminating "$VM"
     terminate_vm "$VM"
+    exit
+elif [[ ! -z $ssh_keys_only ]]; then
+    echo only setting up ssh keys on "$VM"
+    set_up_ssh_keys "$VM"
     exit
 elif [[ ! -z $address_only ]]; then
     print_vm_ip_address "$VM"
