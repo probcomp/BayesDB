@@ -1,13 +1,14 @@
 tabular-predDB
 ==============
 
-[http://probcomp.csail.mit.edu/preddb/index.php?title=Installation_overview](Installation)
+[Installation](http://probcomp.csail.mit.edu/preddb/index.php?title=Installation_overview)
+==============
+
+["Hello, World"/Use Cases](http://probcomp.csail.mit.edu/preddb/index.php?title=Use_Case_Examples_(Local_CrossCat_Engine\))
 ============
 
-[http://probcomp.csail.mit.edu/preddb/index.php?title=Use_Case_Examples_(Local_CrossCat_Engine)]("Hello, World"/Use Cases)
+[Docs/API](http://probcomp.csail.mit.edu/preddb/index.php?title=API)
 ============
 
-[http://probcomp.csail.mit.edu/preddb/index.php?title=API](Docs/API)
-============
-
-[http://probcomp.csail.mit.edu/preddb/index.php?title=PredictiveDB#Tests](Platform-specific unit and integration tests)
+[Platform-specific unit and integration tests](http://probcomp.csail.mit.edu/preddb/index.php?title=PredictiveDB#Tests)
+==============
