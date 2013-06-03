@@ -242,15 +242,7 @@ else
 	echo "done."
 fi
 
-chown -R $USER $WORKON_HOME
 
-mkdir -p $USER_HOME/.matplotlib && echo backend: Agg > $USER_HOME/.matplotlib/matplotlibrc && chown -R $USER:$USER $USER_HOME/.matplotlib
 
-if [ $? = 1 ]
-then
-	echo "Something went wrong (see above?)." 
-	exit
-else
-	echo "Installation of dependencies complete."
-	#TODO: Follow up messages about next steps
-fi
+echo "Installation of dependencies complete."
+#TODO: Follow up messages about next steps
