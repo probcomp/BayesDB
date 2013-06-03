@@ -1,6 +1,10 @@
 tabular-predDB
 ==============
 
+The [wiki](http://probcomp.csail.mit.edu/preddb/index.php?title=BayesDB) is the primary source of documentation.
+
+Below are the links to the wiki corresponding to commons README sections.
+
 [Installation](http://probcomp.csail.mit.edu/preddb/index.php?title=Installation_overview)
 ==============
 
