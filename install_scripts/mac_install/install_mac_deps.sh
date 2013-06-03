@@ -79,21 +79,21 @@ else
 	echo "done."
 fi
 
-# Python requirements
-pip_dir=`which pip`
-if [[ -z "$pip_dir" ]]
-then
-	echo -ne "Installing pip."
-	sudo easy_install pip 1>> /dev/null 2>> $ERR_FILE
-	if [ $? = 1 ]
-	then
-		echo Failed.
-		echo Installation of pip failed. Check $ERR_FILE.
-		exit
-	else
-		echo "done."
-	fi
-fi
+# # Python requirements
+# pip_dir=`which pip`
+# if [[ -z "$pip_dir" ]]
+# then
+# 	echo -ne "Installing pip."
+# 	sudo easy_install pip 1>> /dev/null 2>> $ERR_FILE
+# 	if [ $? = 1 ]
+# 	then
+# 		echo Failed.
+# 		echo Installation of pip failed. Check $ERR_FILE.
+# 		exit
+# 	else
+# 		echo "done."
+# 	fi
+# fi
 
 # set up the virtual environment
 echo 
@@ -151,9 +151,9 @@ fi
 
 if [[ -z $(grep WORKON_HOME ${USER_HOME}/.bashrc) ]]; then
     cat -- >> ${USER_HOME}/.bashrc <<EOF
-	export PYTHONPATH=${PYTHONPATH}:${USER_HOME}:$PYTHONDIR
-	export WORKON_HOME=$WORKING
-	source $wrapper_script
+export PYTHONPATH=${PYTHONPATH}:${USER_HOME}:$PYTHONDIR
+export WORKON_HOME=$WORKING
+source $wrapper_script
 EOF
 fi
 
@@ -171,20 +171,7 @@ if [[ -z $has_project ]] ; then
     echo "cd $project_location" >> bin/postactivate
     deactivate
     workon $project_name
-    sudo pip install numpy==1.7.0 
 fi
-
-# echo -ne "Installing front end requirements. "
-# sudo pip install -r requirements.txt 1>> /dev/null 2>> $ERR_FILE
-# if [ $? = 1 ]
-# then
-# 	echo Failed.
-# 	echo "Installation of front end requirements failed. Check $ERR_FILE."
-# 	exit
-# else
-# 	echo "done."
-# fi
-
 
 echo -ne "Installing cython. "
 sudo pip install cython==0.17.1 1>> /dev/null 2>> $ERR_FILE
