@@ -1,6 +1,10 @@
 Instructions to setup a Jenkins server
 ==================
 
+This README describes the manual process to start a Jenkins server.  [https://github.com/mit-probabilistic-computing-project/tabular-predDB/blob/master/install_scripts/VM_install/README.md#installing-jenkins](Scripts) have since been generated to mostly automate the process.
+
+-----
+
 * Boot up a new starcluster instance with tabular_predDB plugin. Preferably use on-demand m1.small to save money (needs to be on-demand so CI works).
 
 * Ssh in as root.  **All the rest of the commands in this section (Instructions to setup a Jenkins server) will be run as root**
