@@ -54,15 +54,15 @@ fi
 
 cd cython_code
 
-sudo python setup.py build_ext -i -I$BOOST_DIR #1>> /dev/null 2>> $ERR_FILE
+sudo make -f makefile.mac 1>> /dev/null 2>> $ERR_FILE
 
-# if [ $? = 1 ]
-# then
-# 	echo Failed.
-# 	echo "Compile failed. Check $ERR_FILE."
-# 	exit
-# else
-# 	echo "done."
-# 	# echo "Run Test (y/n)?"
-# 	# read run_test
-# fi
+if [ $? = 1 ]
+then
+	echo Failed.
+	echo "Compile failed. Check $ERR_FILE."
+	exit
+else
+	echo "done."
+	# echo "Run Test (y/n)?"
+	# read run_test
+fi
