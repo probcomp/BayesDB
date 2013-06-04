@@ -217,6 +217,17 @@ else
 	echo "done."
 fi
 
+echo -ne "Installing hcluster. "
+sudo pip install hcluster 1>> /dev/null 2>> $ERR_FILE
+if [ $? = 1 ]
+then
+	echo Failed.
+	echo "Installation of hcluster failed. Check $ERR_FILE."
+	exit
+else
+	echo "done."
+fi
+
 # needed for enum_test
 echo -ne "Installing scipy. "
 sudo pip install scipy 1>> /dev/null 2>> $ERR_FILE
