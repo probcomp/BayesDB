@@ -54,7 +54,7 @@ fi
 
 cd cython_code
 
-sudo make -f makefile.mac 1>> /dev/null 2>> $ERR_FILE
+sudo make -f Makefile.mac 1>> /dev/null 2>> $ERR_FILE
 
 if [ $? = 1 ]
 then
