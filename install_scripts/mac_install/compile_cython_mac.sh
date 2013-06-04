@@ -45,14 +45,14 @@ echo -ne "Compiling..."
 
 workon tabular_predDB
 
-cd cython_code
-
 if [ $? = 1 ]
 then
 	echo "workon command failed."
 	echo "Compile failed. Check $ERR_FILE."
 	exit
 fi
+
+cd cython_code
 
 sudo python setup.py build_ext -i -I$BOOST_DIR #1>> /dev/null 2>> $ERR_FILE
 
