@@ -12,11 +12,9 @@
 
 Make the installation script executable
 
-
      chmod +x mac_install.sh
 
 Run the script
-
 
      ./mac_install.sh
 
@@ -26,6 +24,10 @@ This will install all necessary libraries, create a virtual environment, and upd
 Once this has completed, run the script again and select 2 to compile the code.
 Any time you wish to compile the code, simply run the script and select 2.
 
+There is also the makefile in the `tabular_predDB/cython_code` directory which can be run with
+
+	make -f Makefile.mac
+
 ## Running code
 
 **At this time all code must be run from bash.**
@@ -33,4 +35,3 @@ Any time you wish to compile the code, simply run the script and select 2.
 1. Enter a bash session by entering `bash` in terminal.
 2. To access the virtual environment enter `workon tabular_predDB`
 3. You are now in the `tabular-predDB` directory and ready to run code!
-
