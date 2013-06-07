@@ -2,8 +2,6 @@
 
 
 #Set the default values
-VMwarePlayer=VMware-Player-3.1.4-385536.i386.bundle
-VMwareVIX=VMware-VIX-1.12.2-1031769.i386.txt
 ZIPPED_VM=debian_6_cdh4_baseline-20130506.zip
 VM="Debian 6 64-bit (baseline)/Debian 6 64-bit.vmx"
 
@@ -17,8 +15,6 @@ usage: $0 options
     
     OPTIONS:
     -h      Show this message
-    -p      VMwarePlayer=$VMwarePlayer
-    -v      VMwareVIX=$VMwareVIX
     -z      ZIPPED_VM=$ZIPPED_VM
     -i      VM=$VM
     -n      only install the vmware components
@@ -36,8 +32,6 @@ while getopts hp:v:z:i:nstka opt
 do
     case "$opt" in
         h) usage;;
-        p) VMwarePlayer=$OPTARG;;
-        v) VMwareVIX=$OPTARG;;
         z) ZIPPED_VM=$OPTARG;;
         i) VM=$OPTARG;;
 	n) install_only="True";;
@@ -96,12 +90,16 @@ set_up_ssh_keys() {
     vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" \
 	/usr/sbin/invoke-rc.d ssh restart
 }
-    
-if [[ ! -z $install_only ]]; then
-    echo only installing VMware components
-    install_vmware_components $VMwarePlayer $VMwareVIX
+
+
+# ensure vmware components present
+if [[ -z $(which vmrun) ]]; then
+    echo "VMware Player and VIX API must be installed"
     exit
-elif [[ ! -z $start_only ]]; then
+fi
+
+    
+if [[ ! -z $start_only ]]; then
     echo only starting "$VM"
     start_vm "$VM"
     exit
@@ -119,18 +117,18 @@ elif [[ ! -z $address_only ]]; then
 fi
 
 
-# install vmware components only if not already present
-if [[ -z $(which vmrun) ]]; then
-    install_vmware_components $VMwarePlayer $VMwareVIX
-fi
-
 if [[ ! -f "$VM" ]]; then
+    this_dir=$(pwd)
+    zipped_dir=$(basename $ZIPPED_VM)
+    cd $zipped_dir
     unzip $ZIPPED_VM
+    VM="${zipped_dir}/$VM"
+    cd $this_dir
 fi
 start_vm "$VM"
-set_up_password_login "$VM"
-print_vm_ip_address "$VM"
+# set_up_password_login "$VM"
 set_up_ssh_keys "$VM"
+print_vm_ip_address "$VM"
  
 # enable bigdata user to install python pacakges
 VM_IP=$(print_vm_ip_address "$VM")
