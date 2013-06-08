@@ -23,7 +23,7 @@ usage: $0 options
     -i      VM=$VM
     -n      only install the vmware components
     -s      only start the VM and print its ip address
-    -t      only terminate the VM
+    -t      only suspend the VM
     -k      only set up ssh key login
     -a      only print vm ip address
 EOF
@@ -42,7 +42,7 @@ do
         i) VM=$OPTARG;;
 	n) install_only="True";;
         s) start_only="True";;
-        t) terminate_only="True";;
+        t) suspend_only="True";;
         k) ssh_keys_only="True";;
         a) address_only="True";;
     esac
@@ -63,9 +63,10 @@ start_vm() {
     vmrun -T player start "$vmx" nogui
 }
 
-terminate_vm() {
+suspend_vm() {
     vmx="$1"
-    vmrun -T player stop "$vmx"
+    # vmrun -T player stop "$vmx"
+    vmrun -T player suspend "$vmx"
 }
 
 print_vm_ip_address() {
@@ -105,9 +106,9 @@ elif [[ ! -z $start_only ]]; then
     echo only starting "$VM"
     start_vm "$VM"
     exit
-elif [[ ! -z $terminate_only ]]; then
-    echo only terminating "$VM"
-    terminate_vm "$VM"
+elif [[ ! -z $suspend_only ]]; then
+    echo only suspending "$VM"
+    suspend_vm "$VM"
     exit
 elif [[ ! -z $ssh_keys_only ]]; then
     echo only setting up ssh keys on "$VM"
@@ -131,9 +132,10 @@ start_vm "$VM"
 set_up_password_login "$VM"
 print_vm_ip_address "$VM"
 set_up_ssh_keys "$VM"
- 
-# enable bigdata user to install python pacakges
+
+# give VM extra time to get an IP address
+sleep 5
 VM_IP=$(print_vm_ip_address "$VM")
+# enable bigdata user to install python pacakges
 ssh -o StrictHostKeyChecking=no root@$VM_IP chown -R bigdata /opt/anaconda
 ssh root@$VM_IP perl -pi.bak -e "'s/^bigdata ALL=\(ALL\) ALL.*/bigdata ALL=\(ALL:ALL\) NOPASSWD: ALL/'" /etc/sudoers
-
