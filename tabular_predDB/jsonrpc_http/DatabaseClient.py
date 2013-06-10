@@ -18,12 +18,16 @@ import tabular_predDB.python_utils.api_utils as au
 from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine
 middleware_engine = MiddlewareEngine()
 
-class Client(object):
+class DatabaseClient(object):
     def __init__(self, hostname='localhost', port=8008):
         if hostname == None:
             self.online = False
         else:
             self.URI = 'http://' + hostname + ':%d' % port
+
+    #def execute(self, sql_string):
+        # parse sql_string, then dispatch to the appropriate method
+        # TODO
 
     def call(self, method_name, args_dict):
       if self.online:
