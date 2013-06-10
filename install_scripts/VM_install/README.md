@@ -1,56 +1,42 @@
 VM setup
 ========
 
-There are three steps to VM setup.
+There are two steps to VM setup.
 
-1. In the `host` OS, we'll install the VM
-1. In the `guest` OS, we'll install tabular\_predDB.
+1. In the `host` OS, we'll set up the VM
 1. In the `guest` OS, we'll run tests to verify functionality
 
 Afterwards, you can install Jenkins to the VM if desired by following the steps in Installing Jenkins in this README
 
-Installing the VM
+Setting up the VM
 ==================
 
 We'll assume you have
 
-* Access to the tabular\_predDB repo
+* A local copy of the tabular\_predDB repo with shell variable $LOCAL\_REPO\_LOCATION pointing to it.
 * VMware Player installed
 * VMware VIX API installed
-* The zipped VM image downloaded and shell variable $ZIPPED\_VM pointing to it
+* Unzipped the VM image with shell variable $IMAGE\_LOCATION pointing to it
+* Started the VM via the 'vmplayer' GUI at least once to verify VM settings are appropriate for your host OS
 
 Executing the following commands
 
     # from the `host` OS
-    cd
-    REPO=https://github.com/mit-probabilistic-computing-project/tabular-predDB.git
-    git clone $REPO tabular_predDB
-    cd tabular_predDB/install_scripts/VM_install/
-    bash create_vm.sh -z $ZIPPED_VM
+    cd $LOCAL_REPO_LOCATION/install_scripts/VM_install
+    bash create_vm.sh -i $IMAGE_LOCATION
     VM_IP=$(bash create_vm.sh -a)
 
 Will
 
-1. unzip the VM files into your home directory
-2. spin up the VM
-3. set $VM\_IP to the VM's network address for SSH'ing in
+1. Spin up the VM
+2. Set up ssh key login for the current VM
+3. Allow the bigdata user in the `guest` OS to sudo without a password
+4. Install tabular-predDB requirements to the `guest` OS using /path/to/tabular\_predDB/install\_scripts/programmatic\_install.sh
+5. set $VM\_IP to the VM's network address for SSH'ing in
 
 You can now ssh into the `guest` OS with
 
     ssh bigdata@$VM_IP
-
-Installing tabular\_predDB
-==========================
-
-To install tabular\_predDB we have bash scripts rather than the starcluster\_plugin.py script
-
-    # from the `guest` OS
-    cd
-    REPO=https://github.com/mit-probabilistic-computing-project/tabular-predDB.git
-    git clone $REPO tabular_predDB
-    cd tabular_predDB/install_scripts/VM_install
-    sudo bash install_to_vm_root.sh
-    bash install_to_vm_user.sh
 
 Verifying functionality
 =======================
