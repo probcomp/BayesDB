@@ -1,13 +1,6 @@
 #!/bin/bash
 
 
-#Set the default values
-VMwarePlayer=VMware-Player-3.1.4-385536.i386.bundle
-VMwareVIX=VMware-VIX-1.12.2-1031769.i386.txt
-ZIPPED_VM=debian_6_cdh4_baseline-20130506.zip
-VM="Debian 6 64-bit (baseline)/Debian 6 64-bit.vmx"
-
-
 # print script usage
 usage() {
     cat <<EOF
@@ -17,9 +10,6 @@ usage: $0 options
     
     OPTIONS:
     -h      Show this message
-    -p      VMwarePlayer=$VMwarePlayer
-    -v      VMwareVIX=$VMwareVIX
-    -z      ZIPPED_VM=$ZIPPED_VM
     -i      VM=$VM
     -n      only install the vmware components
     -s      only start the VM and print its ip address
@@ -36,9 +26,6 @@ while getopts hp:v:z:i:nstka opt
 do
     case "$opt" in
         h) usage;;
-        p) VMwarePlayer=$OPTARG;;
-        v) VMwareVIX=$OPTARG;;
-        z) ZIPPED_VM=$OPTARG;;
         i) VM=$OPTARG;;
 	n) install_only="True";;
         s) start_only="True";;
@@ -97,12 +84,29 @@ set_up_ssh_keys() {
     vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" \
 	/usr/sbin/invoke-rc.d ssh restart
 }
-    
-if [[ ! -z $install_only ]]; then
-    echo only installing VMware components
-    install_vmware_components $VMwarePlayer $VMwareVIX
+
+
+# Ensure VM was set
+if [[ -z $VM ]]; then
+    echo "'-i <VM>' must be passed"
+    echo "not setting up VM!!!!"
     exit
-elif [[ ! -z $start_only ]]; then
+fi
+
+# Ensure VM exists
+if [[ ! -f "$VM" ]]; then
+    echo "VM doesn't exist: $VM"
+    echo "not setting up VM !!!!"
+    exit
+fi
+
+# Ensure vmware components present
+if [[ -z $(which vmrun) ]]; then
+    echo "VMware Player and VIX API must be installed"
+    exit
+fi
+
+if [[ ! -z $start_only ]]; then
     echo only starting "$VM"
     start_vm "$VM"
     exit
@@ -120,22 +124,16 @@ elif [[ ! -z $address_only ]]; then
 fi
 
 
-# install vmware components only if not already present
-if [[ -z $(which vmrun) ]]; then
-    install_vmware_components $VMwarePlayer $VMwareVIX
-fi
-
-if [[ ! -f "$VM" ]]; then
-    unzip $ZIPPED_VM
-fi
 start_vm "$VM"
-set_up_password_login "$VM"
-print_vm_ip_address "$VM"
+# set_up_password_login "$VM"
 set_up_ssh_keys "$VM"
-
 # give VM extra time to get an IP address
 sleep 5
-VM_IP=$(print_vm_ip_address "$VM")
+
 # enable bigdata user to install python pacakges
+VM_IP=$(print_vm_ip_address "$VM")
 ssh -o StrictHostKeyChecking=no root@$VM_IP chown -R bigdata /opt/anaconda
 ssh root@$VM_IP perl -pi.bak -e "'s/^bigdata ALL=\(ALL\) ALL.*/bigdata ALL=\(ALL:ALL\) NOPASSWD: ALL/'" /etc/sudoers
+
+# install local repo of tabular-predDB to VM
+bash programmatic_install.sh -i "$VM" -a "$VM_IP"
