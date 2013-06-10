@@ -23,8 +23,8 @@ Executing the following commands
 
     # from the `host` OS
     cd $LOCAL_REPO_LOCATION/install_scripts/VM_install
-    bash create_vm.sh -i $IMAGE_LOCATION
-    VM_IP=$(bash create_vm.sh -a)
+    bash setup_vm.sh -i $IMAGE_LOCATION
+    VM_IP=$(bash setup_vm.sh -a)
 
 Will
 
