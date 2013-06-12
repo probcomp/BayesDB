@@ -26,6 +26,9 @@ default_which_hadoop_jar = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/had
 default_which_engine_binary = "hadoop_line_processor"
 default_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 default_jobtracker_uri = "xd-jobtracker.xdata.data-tactics-corp.com:8021"
+# default_hdfs_uri = "hdfs://xd-hm-nn.xdata.data-tactics-corp.com:8020/"
+# default_jobtracker_uri = "xd-hm-jt.xdata.data-tactics-corp.com:8021"
+
 default_hdfs_dir = "/user/bigdata/SSCI/test_remote_streaming/"
 #
 input_filename = 'hadoop_input'
@@ -114,7 +117,8 @@ class HadoopEngine(object):
         pass
 
 def get_is_vpn_connected():
-    cmd_str = 'ifconfig | grep tun'
+    # cmd_str = 'ifconfig | grep tun'
+    cmd_str = 'ping -W 2 -c 1 10.1.90.10'
     lines = [line for line in os.popen(cmd_str)]
     is_vpn_connected = False
     if len(lines) != 0:
