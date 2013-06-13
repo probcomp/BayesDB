@@ -19,7 +19,7 @@ import sys
 #
 import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.xnet_utils as xu
-import tabular_predDB.jsonrpc_http.Engine as E
+import tabular_predDB.LocalEngine as LE
 
 
 def initialize_helper(table_data, dict_in):
@@ -28,7 +28,7 @@ def initialize_helper(table_data, dict_in):
     T = table_data['T']
     initialization = dict_in['initialization']
     SEED = dict_in['SEED']
-    engine = E.Engine(SEED)
+    engine = LE.LocalEngine(SEED)
     M_c_prime, M_r_prime, X_L, X_D = \
                engine.initialize(M_c, M_r, T, initialization=initialization)
     #
@@ -45,7 +45,7 @@ def analyze_helper(table_data, dict_in):
     c = dict_in['c']
     r = dict_in['r']
     SEED = dict_in['SEED']
-    engine = E.Engine(SEED)
+    engine = LE.LocalEngine(SEED)
     X_L_prime, X_D_prime = engine.analyze(M_c, T, X_L, X_D, kernel_list=(),
                                           n_steps=n_steps, c=c, r=r)
     #
