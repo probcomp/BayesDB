@@ -14,7 +14,7 @@ excludes = [
 includes = [
     'tabular_predDB.python_utils.data_utils',
     'tabular_predDB.python_utils.file_utils',
-    'tabular_predDB.jsonrpc_http.Engine',
+    'tabular_predDB.LocalEngine',
     'tabular_predDB.cython_code.State',
     'numpy',
     # 'tabular_predDB.python_utils.plot_utils',
@@ -38,4 +38,3 @@ cx_Freeze.setup(
         description = "process arbitrary engine commands on hadoop",
         executables = executables,
         options = dict(build_exe = buildOptions))
-
