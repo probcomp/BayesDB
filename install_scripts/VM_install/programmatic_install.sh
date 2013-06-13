@@ -59,7 +59,7 @@ echo "LOCAL_TMP_DIR: $LOCAL_TMP_DIR"
 git clone --depth=1 "${GIT_LOCATION}" $LOCAL_TMP_DIR
 rm -rf $LOCAL_TMP_DIR/.git
 echo "about to rm -rf"
-ssh bigdata@$VM_IP "rm -rf ~/tabular_predDB"
+ssh bigdata@$VM_IP "sudo rm -rf ~/tabular_predDB"
 scp -r $LOCAL_TMP_DIR bigdata@$VM_IP:~/tabular_predDB
 ssh bigdata@$VM_IP "cd $VM_install_path && sudo bash install_to_vm_root.sh >install_to_vm_root.out 2>install_to_vm_root.err"
 ssh bigdata@$VM_IP "cd $VM_install_path && source /home/bigdata/.zshrc && bash install_to_vm_user.sh >install_to_vm_user.out 2>install_to_vm_user.err"
