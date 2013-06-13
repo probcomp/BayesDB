@@ -86,6 +86,20 @@ def get_is_multistate(X_L, X_D):
     else:
         return False
 
+def get_is_vpn_connected():
+    # cmd_str = 'ifconfig | grep tun'
+    cmd_str = 'ping -W 2 -c 1 10.1.90.10'
+    lines = [line for line in os.popen(cmd_str)]
+    is_vpn_connected = False
+    if len(lines) != 0:
+        is_vpn_connected = True
+    return is_vpn_connected
+
+def assert_vpn_is_connected():
+    is_vpn_connected = get_is_vpn_connected()
+    assert is_vpn_connected
+    return
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -124,5 +138,7 @@ if __name__ == '__main__':
         link_initialize_to_analyze(initialize_output_filename,
                                    analyze_input_filename,
                                    analyze_args_dict)
+    elif do_what == 'assert_vpn_is_connected':
+        assert_vpn_is_connected()
     else:
         print 'uknown do_what: %s' % do_what
