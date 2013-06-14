@@ -54,6 +54,8 @@ X_L = state.get_X_L()
 X_D = state.get_X_D()
 # state.plot(M_c)
 
+# NOTE: its important to do hyperparamters first
+#       else random initial values may cause configuration to change
 all_kernels = ('row_partition_hyperparameters',
                'column_hyperparameters',
                'column_partition_hyperparameter',
