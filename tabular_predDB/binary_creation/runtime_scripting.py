@@ -31,13 +31,17 @@ num_splits = 1
 
 # helper functions
 extract_view_count = lambda X_L: len(X_L['view_state'])
-extract_ith_cluster_count = lambda view_idx, X_L: len(X_L['view_state'][0]['row_partition_model']['counts'])
+extract_ith_cluster_count = lambda view_idx, X_L: \
+    len(X_L['view_state'][0]['row_partition_model']['counts'])
 extract_0th_cluster_count = lambda X_L: extract_ith_cluster_count(0, X_L)
-get_0th_view_dims = lambda X_L: (extract_0th_cluster_count(X_L), extract_view_count(X_L))
+get_0th_view_dims = lambda X_L: \
+    (extract_0th_cluster_count(X_L), extract_view_count(X_L))
 #
-def get_generative_clustering(M_c, M_r, T, data_inverse_permutation_indices, gen_X_D):
+def get_generative_clustering(M_c, M_r, T, data_inverse_permutation_indices,
+                              gen_X_D):
     # assumes 1 view
-    assert len(data_inverse_permutation_indices) == 1, "Can only work with 1 View"
+    is_one_view = len(data_inverse_permutation_indices) == 1
+    assert is_one_view, "Can only work with 1 View"
     local_engine = LE.LocalEngine()
     #
     # initialize to generate an X_L to manipulate
@@ -82,7 +86,8 @@ for which_kernel in all_kernels:
     start_dims = get_0th_view_dims(X_L)
     timer_message = 'n_steps=%s of %s kernel' % (n_steps, which_kernel)
     with gu.Timer(timer_message) as timer:
-        X_L, X_D = local_engine.analyze(M_c, T, X_L, X_D, n_steps=n_steps, kernel_list=kernel_list)
+        X_L, X_D = local_engine.analyze(M_c, T, X_L, X_D, n_steps=n_steps,
+                                        kernel_list=kernel_list)
     end_dims = get_0th_view_dims(X_L)
     print 'start_dims, end_dims: %s, %s' % (start_dims, end_dims)
     # pu.plot_views(T_array, X_D, X_L, M_c)
