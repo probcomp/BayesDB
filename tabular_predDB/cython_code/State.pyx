@@ -171,6 +171,14 @@ def get_args_dict(args_list, vars_dict):
                ])
      return args_dict
 
+transition_name_to_method_name_and_args = dict(
+     column_partition_hyperparameter=('transition_column_crp_alpha', []),
+     column_partition_assignments=('transition_features', ['c']),
+     column_hyperparameters=('transition_column_hyperparameters', ['c']),
+     row_partition_hyperparameters= ('transition_row_partition_hyperparameters', ['c']),
+     row_partition_assignments=('transition_row_partition_assignments', ['r']),
+     )
+
 cdef class p_State:
     cdef State *thisptr
     cdef matrix[double] *dataptr
@@ -316,25 +324,20 @@ cdef class p_State:
     def transition(self, which_transitions=(), n_steps=1,
                    c=(), r=(), max_iterations=-1, max_time=-1):
          # FIXME: respect max time
-         transition_and_args_lookup = dict(
-              column_partition_hyperparameter=(self.transition_column_crp_alpha, []),
-              column_partition_assignments=(self.transition_features, ['c']),
-              column_hyperparameters=(self.transition_column_hyperparameters, ['c']),
-              row_partition_hyperparameters= \
-                   (self.transition_row_partition_hyperparameters, ['c']),
-              row_partition_assignments=(self.transition_row_partition_assignments, ['r']),
-              )
+         transition_name_to_method_name_and_args         
+
          if len(which_transitions) == 0:
-              which_transitions = transition_and_args_lookup.keys()
+              which_transitions = transition_name_to_method_name_and_args.keys()
               seed = self.thisptr.draw_rand_i()
               random_state = numpy.random.RandomState(seed)
               which_transitions = random_state.permutation(which_transitions)
          score_delta = 0
          for step_idx in range(n_steps):
               for which_transition in which_transitions:
-                   transition_and_args = transition_and_args_lookup.get(which_transition)
-                   if transition_and_args is not None:
-                        which_method, args_list = transition_and_args
+                   method_name_and_args = transition_name_to_method_name_and_args.get(which_transition)
+                   if method_name_and_args is not None:
+                        method_name, args_list = method_name_and_args
+                        which_method = getattr(self, method_name)
                         args_dict = get_args_dict(args_list, locals())
                         score_delta += which_method(**args_dict)
                    else:
