@@ -1,32 +1,73 @@
-#log into VM, must use -X or cx_freeze complains
-# vm_ip=192.168.1.10
-# ssh -X bigdata@$vm_ip
+#!/bin/bash
+
+
+HDFS_DIR="/user/bigdata/SSCI/test_remote_streaming/"
+HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
+
+# print script usage
+usage() {
+    cat <<EOF
+usage: $0 options
+    
+    VMware automation functions
+    
+    OPTIONS:
+    -h      Show this message
+    -b      WHICH_BINARY=$WHICH_BINARY
+    -d      HDFS_DIR=$HDFS_DIR
+    -u      HDFS_URI=$HDFS_URI
+EOF
+exit
+}
+
+
+#Process the arguments
+while getopts hb:d:u: opt
+do
+    case "$opt" in
+        h) usage;;
+        b) WHICH_BINARY=$OPTARG;;
+	d) HDFS_DIR=$OPTARG;;
+        u) HDFS_URI=$OPTARG;;
+    esac
+done
+
+
+# determine if VPN exists
+get_vpn_status() {
+    this_dir="$(dirname $0)"
+    rel_dir="$this_dir/../python_utils/"
+    echo "$(python ${rel_dir}/xnet_utils.py assert_vpn_is_connected)"
+}
 
 # make sure you can get to XNET
-if [[ -z $(ifconfig | grep tun) ]]; then
-  echo "Can't detect VPN connection: '-z \$(ifconfig | grep tun)' is True"
-  echo "Connect to VPN with: sudo vpnc-connect"
-  echo "EXITING without sending!!!"
-  exit
-  # sudo vpnc-connect
-fi
+assert_vpn_status() {
+    vpn_status=$(get_vpn_status)
+    if [[ ! -z $(get_vpn_status) ]]; then
+        echo "!!!!!!!"
+        echo "Can't detect VPN connection"
+        echo "Connect to VPN with: sudo vpnc-connect"
+        echo "EXITING without sending!!!"
+        echo "!!!!!!!"
+        exit
+    fi
+}
 
 # make sure you know what to call the jar file
-WHICH_BINARY=$1
 if [[ -z $WHICH_BINARY ]]; then
-    echo "USAGE: bash build_and_push.sh WHICH_BINARY"
+    echo "USAGE: bash build_and_push.sh -b <WHICH_BINARY>"
+    echo "WHICH_BINARY is a required argument!!!"
     echo "EXITING without sending!!!"
     exit
 fi
 
 # setup
-CODE_LOC=~/
-export PYTHONPATH=$CODE_LOC:$PYTHONPATH
-HDFS_DIR="/user/bigdata/SSCI/test_remote_streaming/"
-HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
+this_dir="$(dirname $(readlink -f $0))"
+CODE_REL_DIR="$this_dir/../.."
+export PYTHONPATH=$CODE_REL_DIR:$PYTHONPATH
 
 # create binary
-cd $CODE_LOC/tabular_predDB/binary_creation
+cd $CODE_REL_DIR/tabular_predDB/binary_creation
 rm -rf build
 python setup.py build >build.out 2>build.err
 (cd build/exe.linux-x86_64-2.7 && jar cvf ../../${WHICH_BINARY}.jar *)
