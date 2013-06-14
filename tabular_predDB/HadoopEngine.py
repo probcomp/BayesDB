@@ -22,7 +22,7 @@ import tabular_predDB.python_utils.xnet_utils as xu
 hadoop_home = os.environ.get('HADOOP_HOME', '')
 #
 default_which_hadoop_binary = os.path.join(hadoop_home, 'bin/hadoop')
-default_which_hadoop_jar = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.2.jar"
+default_which_hadoop_jar = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
 default_which_engine_binary = "hadoop_line_processor"
 default_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 default_jobtracker_uri = "xd-jobtracker.xdata.data-tactics-corp.com:8021"
@@ -48,7 +48,7 @@ class HadoopEngine(object):
                  hdfs_uri=default_hdfs_uri,
                  which_hadoop_jar=default_which_hadoop_jar,
                  ):
-        assert_vpn_is_connected()
+        xu.assert_vpn_is_connected()
         #
         self.which_hadoop_binary = default_which_hadoop_binary
         #
@@ -62,7 +62,7 @@ class HadoopEngine(object):
 
     def initialize(self, M_c, M_r, T, initialization='from_the_prior',
                    n_chains=1):
-        assert_vpn_is_connected()
+        xu.assert_vpn_is_connected()
         initialize_args_dict = dict(command='initialize', initialization=initialization)
         #
         table_data = dict(M_c=M_c, M_r=M_r, T=T)
@@ -82,7 +82,7 @@ class HadoopEngine(object):
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1):
-        assert_vpn_is_connected()
+        xu.assert_vpn_is_connected()
         analyze_args_dict = dict(command='analyze', kernel_list=kernel_list, n_steps=n_steps, c=c, r=r)
         if not xu.get_is_multistate(X_L, X_D):
             X_L = [X_L]
@@ -115,20 +115,6 @@ class HadoopEngine(object):
 
     def impute_and_confidence(self, M_c, X_L, X_D, Y, Q, n):
         pass
-
-def get_is_vpn_connected():
-    # cmd_str = 'ifconfig | grep tun'
-    cmd_str = 'ping -W 2 -c 1 10.1.90.10'
-    lines = [line for line in os.popen(cmd_str)]
-    is_vpn_connected = False
-    if len(lines) != 0:
-        is_vpn_connected = True
-    return is_vpn_connected
-
-def assert_vpn_is_connected():
-    is_vpn_connected = get_is_vpn_connected()
-    assert is_vpn_connected
-    return
 
 def rm_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     hdfs_path = os.path.join(hdfs_base_dir, path)
@@ -242,11 +228,39 @@ def read_hadoop_output(output_path):
         ret_dict = dict([xu.parse_hadoop_line(line) for line in fh])
     return ret_dict
 
+def get_uris(base_uri, hdfs_uri, jobtracker_uri):
+    if base_uri is not None:
+        hdfs_uri = 'hdfs://%s:8020/' % base_uri
+        jobtracker_uri = '%s:8021/' % base_uri
+    return hdfs_uri, jobtracker_uri
+        
 if __name__ == '__main__':
+    import argparse
+    #
     import tabular_predDB.python_utils.data_utils as du
+    #
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--base_uri', type=str, default=None)
+    parser.add_argument('--hdfs_uri', type=str, default=default_hdfs_uri)
+    parser.add_argument('--jobtracker_uri', type=str,
+                        default=default_jobtracker_uri)
+    parser.add_argument('--hdfs_dir', type=str, default=default_hdfs_dir)
+    parser.add_argument('-DEBUG', action='store_true')
+    #
+    args = parser.parse_args()
+    base_uri = args.base_uri
+    hdfs_uri = args.hdfs_uri
+    jobtracker_uri = args.jobtracker_uri
+    hdfs_dir = args.hdfs_dir
+    DEBUG = args.DEBUG
+
+
+    hdfs_uri, jobtracker_uri = get_uris(base_uri, hdfs_uri, jobtracker_uri)
     T, M_r, M_c = du.read_model_data_from_csv('../www/data/dha_small.csv', gen_seed=0)
     #
-    he = HadoopEngine()
+    he = HadoopEngine(hdfs_dir=hdfs_dir, hdfs_uri=hdfs_uri,
+                      jobtracker_uri=jobtracker_uri)
+
     hadoop_output = he.initialize(M_c, M_r, T, initialization='from_the_prior',
                                   n_chains=4)
     X_L_list = [el['X_L'] for el in hadoop_output.values()]
