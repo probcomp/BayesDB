@@ -17,6 +17,7 @@
 #
 import sys
 #
+import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
@@ -53,10 +54,10 @@ def analyze_helper(table_data, dict_in):
     return ret_dict
 
 def time_analyze_helper(table_data, dict_in):
-    start_dims = get_state_shape(dict_in['X_L'])
+    start_dims = du.get_state_shape(dict_in['X_L'])
     with gu.Timer('time_analyze_helper', verbose=False) as timer:
         inner_ret_dict = analyze_helper(table_data, dict_in)
-    end_dims = get_state_shape(inner_ret_dict['X_L'])
+    end_dims = du.get_state_shape(inner_ret_dict['X_L'])
     table_shape = (len(table_data), len(table_data[0]))
     ret_dict = dict(
         table_shape=table_shape,
