@@ -20,6 +20,7 @@ import sys
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.xnet_utils as xu
+import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.LocalEngine as LE
 
 
@@ -47,7 +48,7 @@ def analyze_helper(table_data, dict_in):
     r = dict_in['r']
     SEED = dict_in['SEED']
     engine = LE.LocalEngine(SEED)
-    X_L_prime, X_D_prime = engine.analyze(M_c, T, X_L, X_D, kernel_list=(),
+    X_L_prime, X_D_prime = engine.analyze(M_c, T, X_L, X_D, kernel_list=kernel_list,
                                           n_steps=n_steps, c=c, r=r)
     #
     ret_dict = dict(X_L=X_L, X_D=X_D)
@@ -58,7 +59,8 @@ def time_analyze_helper(table_data, dict_in):
     with gu.Timer('time_analyze_helper', verbose=False) as timer:
         inner_ret_dict = analyze_helper(table_data, dict_in)
     end_dims = du.get_state_shape(inner_ret_dict['X_L'])
-    table_shape = (len(table_data), len(table_data[0]))
+    T = table_data['T']
+    table_shape = (len(T), len(T[0]))
     ret_dict = dict(
         table_shape=table_shape,
         start_dims=start_dims,
