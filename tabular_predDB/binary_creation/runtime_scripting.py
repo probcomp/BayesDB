@@ -1,3 +1,4 @@
+import os
 import argparse
 #
 import numpy
@@ -133,8 +134,8 @@ if __name__ == '__main__':
                                                 input_filename,
                                                 output_path, n_tasks=2)
         if was_successful:
-            hadoop_output = read_hadoop_output(output_path)
-            hadoop_output_filename = get_hadoop_output_filename(output_path)
+            hadoop_output = HE.read_hadoop_output(output_path)
+            hadoop_output_filename = HE.get_hadoop_output_filename(output_path)
             os.system('cp %s %s' % (hadoop_output_filename, output_filename))
         else:
             print 'remote hadoop job NOT successful'
