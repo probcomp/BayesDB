@@ -356,3 +356,8 @@ def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
     T = map_to_T_with_M_c(numpy.array(T), M_c)
     M_r = gen_M_r_from_T(T)
     return T, M_r, M_c
+
+extract_view_count = lambda X_L: len(X_L['view_state'])
+extract_cluster_count = lambda view_state_i: view_state_i['row_partition_model']['counts']
+extract_cluster_counts = lambda X_L: map(extract_cluster_count, X_L['view_state'])
+get_state_shape = lambda X_L: (extract_view_count(X_L), extract_cluster_counts(X_L))
