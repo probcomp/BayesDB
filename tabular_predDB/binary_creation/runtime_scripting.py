@@ -8,6 +8,7 @@ pylab.show()
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.python_utils.plot_utils as pu
+import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.cython_code.State as State
 
@@ -91,19 +92,32 @@ if __name__ == '__main__':
                                                  num_splits,
                                                  max_mean=10, max_std=1)
 
-    # run some transitions
+    # some hadoop processing related settings
+    table_data_filename = 'table_data.pkl.gz'
+    hadoop_input_filename = 'hadoop_input'
+    script_filename = 'hadoop_line_processor.py'
+    hadoop_output_filename = 'hadoop_output'
+    SEED = 0
+
+    # prep settings dictionary
+    time_analyze_args_dict = xu.default_analyze_args_dict
+    time_analyze_args_dict['SEED'] = SEED
+    time_analyze_args_dict['command'] = 'time_analyze'
+    time_analyze_args_dict['n_steps'] = n_steps
+
+    # write table_data and hadoop input
+    table_data = dict(M_c=M_c, M_r=M_r, T=T)
+    xu.pickle_table_data(table_data, table_data_filename)
+    # one kernel per line
     all_kernels = State.transition_name_to_method_name_and_args.keys()
-    local_engine = LE.LocalEngine()
-    for which_kernel in all_kernels:
-        # set alphas to something unlikely to split out elements
-        X_L['view_state'][0]['row_partition_model']['hypers']['alpha'] = 0.01
-        X_L['column_partition']['hypers']['alpha'] = 0.01
-        kernel_list = (which_kernel,)
-        start_dims = du.get_state_shape(X_L)
-        timer_message = 'n_steps=%s of %s kernel' % (n_steps, which_kernel)
-        with gu.Timer(timer_message) as timer:
-            X_L, X_D = local_engine.analyze(M_c, T, X_L, X_D, n_steps=n_steps,
-                                            kernel_list=kernel_list)
-        end_dims = du.get_state_shape(X_L)
-        print 'start_dims, end_dims: %s, %s' % (start_dims, end_dims)
-        # pu.plot_views(T_array, X_D, X_L, M_c)
+    with open(hadoop_input_filename, 'w') as out_fh:
+        for which_kernel in all_kernels:
+            kernel_list = (which_kernel, )
+            dict_to_write = dict(X_L=X_L, X_D=X_D)
+            dict_to_write.update(time_analyze_args_dict)
+            # must write kernel_list after update
+            dict_to_write['kernel_list'] = kernel_list
+            xu.write_hadoop_line(out_fh, key=dict_to_write['SEED'], dict_to_write=dict_to_write)
+
+    # actually run
+    xu.run_script_local(hadoop_input_filename, script_filename, hadoop_output_filename)
