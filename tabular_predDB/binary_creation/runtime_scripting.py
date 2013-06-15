@@ -10,6 +10,7 @@ import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.python_utils.plot_utils as pu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
+import tabular_predDB.HadoopEngine as HE
 import tabular_predDB.cython_code.State as State
 
 
@@ -75,6 +76,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_splits', type=int, default=2)
     parser.add_argument('--max_std', type=float, default=.001)
     parser.add_argument('--n_steps', type=int, default=10)
+    parser.add_argument('-do_local', action='store_true')
     #
     args = parser.parse_args()
     gen_seed = args.gen_seed
@@ -84,6 +86,7 @@ if __name__ == '__main__':
     num_splits = args.num_splits
     max_std = args.max_std
     n_steps = args.n_steps
+    do_local = args.do_local
 
     # generate data
     T, M_c, M_r, X_L, X_D = generate_clean_state(gen_seed,
@@ -94,9 +97,9 @@ if __name__ == '__main__':
 
     # some hadoop processing related settings
     table_data_filename = 'table_data.pkl.gz'
-    hadoop_input_filename = 'hadoop_input'
+    input_filename = 'hadoop_input'
     script_filename = 'hadoop_line_processor.py'
-    hadoop_output_filename = 'hadoop_output'
+    output_filename = 'hadoop_output'
     SEED = 0
 
     # prep settings dictionary
@@ -110,7 +113,7 @@ if __name__ == '__main__':
     xu.pickle_table_data(table_data, table_data_filename)
     # one kernel per line
     all_kernels = State.transition_name_to_method_name_and_args.keys()
-    with open(hadoop_input_filename, 'w') as out_fh:
+    with open(input_filename, 'w') as out_fh:
         for which_kernel in all_kernels:
             kernel_list = (which_kernel, )
             dict_to_write = dict(X_L=X_L, X_D=X_D)
@@ -120,4 +123,18 @@ if __name__ == '__main__':
             xu.write_hadoop_line(out_fh, key=dict_to_write['SEED'], dict_to_write=dict_to_write)
 
     # actually run
-    xu.run_script_local(hadoop_input_filename, script_filename, hadoop_output_filename)
+    if do_local:
+        xu.run_script_local(input_filename, script_filename, output_filename)
+    else:
+        output_path = HE.output_path
+        hadoop_engine = HE.HadoopEngine()
+        was_successful = HE.send_hadoop_command(hadoop_engine,
+                                                table_data_filename,
+                                                input_filename,
+                                                output_path, n_tasks=2)
+        if was_successful:
+            hadoop_output = read_hadoop_output(output_path)
+            hadoop_output_filename = get_hadoop_output_filename(output_path)
+            os.system('cp %s %s' % (hadoop_output_filename, output_filename))
+        else:
+            print 'remote hadoop job NOT successful'
