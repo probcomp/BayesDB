@@ -52,11 +52,27 @@ def analyze_helper(table_data, dict_in):
     ret_dict = dict(X_L=X_L, X_D=X_D)
     return ret_dict
 
+def time_analyze_helper(table_data, dict_in):
+    start_dims = get_state_shape(dict_in['X_L'])
+    with gu.Timer('time_analyze_helper', verbose=False) as timer:
+        inner_ret_dict = analyze_helper(table_data, dict_in)
+    end_dims = get_state_shape(inner_ret_dict['X_L'])
+    table_shape = (len(table_data), len(table_data[0]))
+    ret_dict = dict(
+        table_shape=table_shape,
+        start_dims=start_dims,
+        end_dims=end_dims,
+        elapsed_secs=timer.elapsed_secs,
+        kernel_list=dict_in['kernel_list'],
+        n_steps=dict_in['n_steps'],
+        )
+    return ret_dict
+
 method_lookup = dict(
     initialize=initialize_helper,
     analyze=analyze_helper,
+    time_analyze=time_analyze_helper,
     )
-
 
 if __name__ == '__main__':
     table_data_filename = xu.default_table_data_filename
