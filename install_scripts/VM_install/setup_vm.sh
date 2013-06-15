@@ -16,13 +16,14 @@ usage: $0 options
     -t      only suspend the VM
     -k      only set up ssh key login
     -a      only print vm ip address
+    -e      only toggle eth0 on VM
 EOF
 exit
 }
 
 
 #Process the arguments
-while getopts hp:v:z:i:nstka opt
+while getopts hp:v:z:i:nstkae opt
 do
     case "$opt" in
         h) usage;;
@@ -32,6 +33,7 @@ do
         t) suspend_only="True";;
         k) ssh_keys_only="True";;
         a) address_only="True";;
+        e) toggle_eth0_only="True";;
     esac
 done
 
@@ -85,6 +87,12 @@ set_up_ssh_keys() {
 	/usr/sbin/invoke-rc.d ssh restart
 }
 
+toggle_eth0() {
+    vmx="$1"
+    vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" /sbin/ifconfig eth0 down
+    sleep 1
+    vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" /sbin/ifconfig eth0 up
+}
 
 # Ensure VM was set
 if [[ -z $VM ]]; then
@@ -120,6 +128,9 @@ elif [[ ! -z $ssh_keys_only ]]; then
     exit
 elif [[ ! -z $address_only ]]; then
     print_vm_ip_address "$VM"
+    exit
+elif [[ ! -z $toggle_eth0_only ]]; then
+    toggle_eth0 "$VM"
     exit
 fi
 
