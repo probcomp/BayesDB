@@ -12,11 +12,6 @@ import tabular_predDB.LocalEngine as LE
 import tabular_predDB.cython_code.State as State
 
 
-extract_view_count = lambda X_L: len(X_L['view_state'])
-extract_cluster_count = lambda view_state_i: view_state_i['row_partition_model']['counts']
-extract_cluster_counts = lambda X_L: map(extract_cluster_count, X_L['view_state'])
-get_state_shape = lambda X_L: (extract_view_count(X_L), extract_cluster_counts(X_L))
-
 def get_generative_clustering(M_c, M_r, T,
                               data_inverse_permutation_indices,
                               num_clusters, num_views):
@@ -57,9 +52,9 @@ def generate_clean_state(gen_seed, num_clusters,
     # generate the data
     T, M_r, M_c, data_inverse_permutation_indices = \
         du.gen_factorial_data_objects(gen_seed, num_clusters,
-                                   num_cols, num_rows, num_splits,
-                                   max_mean=10, max_std=1,
-                                   send_data_inverse_permutation_indices=True)
+                                      num_cols, num_rows, num_splits,
+                                      max_mean=10, max_std=1,
+                                      send_data_inverse_permutation_indices=True)
     # recover generative clustering
     X_L, X_D = get_generative_clustering(M_c, M_r, T,
                                          data_inverse_permutation_indices,
@@ -89,8 +84,11 @@ if __name__ == '__main__':
     max_std = args.max_std
     n_steps = args.n_steps
 
-    T, M_c, M_r, X_L, X_D = generate_clean_state(gen_seed, num_clusters,
-                                                 num_cols, num_rows, num_splits,
+    # generate data
+    T, M_c, M_r, X_L, X_D = generate_clean_state(gen_seed,
+                                                 num_clusters,
+                                                 num_cols, num_rows,
+                                                 num_splits,
                                                  max_mean=10, max_std=1)
 
     # run some transitions
@@ -101,11 +99,11 @@ if __name__ == '__main__':
         X_L['view_state'][0]['row_partition_model']['hypers']['alpha'] = 0.01
         X_L['column_partition']['hypers']['alpha'] = 0.01
         kernel_list = (which_kernel,)
-        start_dims = get_state_shape(X_L)
+        start_dims = du.get_state_shape(X_L)
         timer_message = 'n_steps=%s of %s kernel' % (n_steps, which_kernel)
         with gu.Timer(timer_message) as timer:
             X_L, X_D = local_engine.analyze(M_c, T, X_L, X_D, n_steps=n_steps,
                                             kernel_list=kernel_list)
-        end_dims = get_state_shape(X_L)
+        end_dims = du.get_state_shape(X_L)
         print 'start_dims, end_dims: %s, %s' % (start_dims, end_dims)
         # pu.plot_views(T_array, X_D, X_L, M_c)
