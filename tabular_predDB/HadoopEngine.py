@@ -23,7 +23,7 @@ hadoop_home = os.environ.get('HADOOP_HOME', '')
 #
 default_which_hadoop_binary = os.path.join(hadoop_home, 'bin/hadoop')
 default_which_hadoop_jar = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
-default_which_engine_binary = "hadoop_line_processor"
+default_engine_binary = "hadoop_line_processor"
 default_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 default_jobtracker_uri = "xd-jobtracker.xdata.data-tactics-corp.com:8021"
 # default_hdfs_uri = "hdfs://xd-hm-nn.xdata.data-tactics-corp.com:8020/"
@@ -42,7 +42,7 @@ class HadoopEngine(object):
 
     # FIXME: where is binary created/sent?
     def __init__(self, seed=0,
-                 which_engine_binary=default_which_engine_binary,
+                 which_engine_binary=default_engine_binary,
                  hdfs_dir=default_hdfs_dir,
                  jobtracker_uri=default_jobtracker_uri,
                  hdfs_uri=default_hdfs_uri,
@@ -231,7 +231,7 @@ def read_hadoop_output(output_path):
 def get_uris(base_uri, hdfs_uri, jobtracker_uri):
     if base_uri is not None:
         hdfs_uri = 'hdfs://%s:8020/' % base_uri
-        jobtracker_uri = '%s:8021/' % base_uri
+        jobtracker_uri = '%s:8021' % base_uri
     return hdfs_uri, jobtracker_uri
         
 if __name__ == '__main__':
@@ -246,6 +246,8 @@ if __name__ == '__main__':
                         default=default_jobtracker_uri)
     parser.add_argument('--hdfs_dir', type=str, default=default_hdfs_dir)
     parser.add_argument('-DEBUG', action='store_true')
+    parser.add_argument('--which_engine_binary', type=str, default=default_engine_binary)
+    parser.add_argument('--n_chains', type=int, default=4)
     #
     args = parser.parse_args()
     base_uri = args.base_uri
@@ -253,16 +255,19 @@ if __name__ == '__main__':
     jobtracker_uri = args.jobtracker_uri
     hdfs_dir = args.hdfs_dir
     DEBUG = args.DEBUG
+    which_engine_binary = args.which_engine_binary
+    n_chains = args.n_chains
 
 
     hdfs_uri, jobtracker_uri = get_uris(base_uri, hdfs_uri, jobtracker_uri)
     T, M_r, M_c = du.read_model_data_from_csv('../www/data/dha_small.csv', gen_seed=0)
     #
-    he = HadoopEngine(hdfs_dir=hdfs_dir, hdfs_uri=hdfs_uri,
+    he = HadoopEngine(which_engine_binary=which_engine_binary,
+                      hdfs_dir=hdfs_dir, hdfs_uri=hdfs_uri,
                       jobtracker_uri=jobtracker_uri)
 
     hadoop_output = he.initialize(M_c, M_r, T, initialization='from_the_prior',
-                                  n_chains=4)
+                                  n_chains=n_chains)
     X_L_list = [el['X_L'] for el in hadoop_output.values()]
     X_D_list = [el['X_D'] for el in hadoop_output.values()]
     hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list)
