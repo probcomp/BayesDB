@@ -17,9 +17,9 @@ includes = [
     'tabular_predDB.LocalEngine',
     'tabular_predDB.cython_code.State',
     'numpy',
-    # 'tabular_predDB.python_utils.plot_utils',
-    # 'pylab',
-    # 'matplotlib.backends.backend_qt4agg',
+    'tabular_predDB.python_utils.plot_utils',
+    'pylab',
+    'matplotlib.backends.backend_qt4agg',
     ]
 
 buildOptions = dict(
