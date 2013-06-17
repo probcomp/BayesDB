@@ -21,8 +21,9 @@ import tabular_predDB.python_utils.xnet_utils as xu
 
 hadoop_home = os.environ.get('HADOOP_HOME', '')
 #
-default_which_hadoop_binary = os.path.join(hadoop_home, 'bin/hadoop')
-default_which_hadoop_jar = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
+default_hadoop_binary = os.path.join(hadoop_home, 'bin/hadoop')
+default_hadoop_jar = "/usr/lib/hadoop-0.20/contrib/streaming/hadoop-streaming-0.20.2-cdh3u2.jar"
+# default_hadoop_jar = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
 default_engine_binary = "hadoop_line_processor"
 default_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 default_jobtracker_uri = "xd-jobtracker.xdata.data-tactics-corp.com:8021"
@@ -46,11 +47,12 @@ class HadoopEngine(object):
                  hdfs_dir=default_hdfs_dir,
                  jobtracker_uri=default_jobtracker_uri,
                  hdfs_uri=default_hdfs_uri,
-                 which_hadoop_jar=default_which_hadoop_jar,
+                 which_hadoop_jar=default_hadoop_jar,
+		 which_hadoop_binary=default_hadoop_binary,
                  ):
         xu.assert_vpn_is_connected()
         #
-        self.which_hadoop_binary = default_which_hadoop_binary
+        self.which_hadoop_binary = which_hadoop_binary
         #
         self.seed_generator = gu.int_generator(seed)
         self.which_engine_binary = which_engine_binary
@@ -118,7 +120,8 @@ class HadoopEngine(object):
 
 def rm_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     hdfs_path = os.path.join(hdfs_base_dir, path)
-    cmd_str = 'hadoop fs -fs "%s" -rm -r -f %s'
+    # cmd_str = 'hadoop fs -fs "%s" -rm -r -f %s'
+    cmd_str = 'hadoop fs -fs "%s" -rm %s'
     cmd_str %= (hdfs_uri, hdfs_path)
     if DEBUG:
         print cmd_str
@@ -190,6 +193,7 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=600000, n_tasks=1):
             '-file %s' % table_data_filename,
             cmd_env_str,
             ])
+    print hadoop_cmd_str
     return hadoop_cmd_str
 
 def get_was_successful(output_path):
@@ -247,6 +251,8 @@ if __name__ == '__main__':
     parser.add_argument('--hdfs_dir', type=str, default=default_hdfs_dir)
     parser.add_argument('-DEBUG', action='store_true')
     parser.add_argument('--which_engine_binary', type=str, default=default_engine_binary)
+    parser.add_argument('--which_hadoop_binary', type=str, default=default_hadoop_binary)
+    parser.add_argument('--which_hadoop_jar', type=str, default=default_hadoop_jar)
     parser.add_argument('--n_chains', type=int, default=4)
     #
     args = parser.parse_args()
@@ -256,6 +262,8 @@ if __name__ == '__main__':
     hdfs_dir = args.hdfs_dir
     DEBUG = args.DEBUG
     which_engine_binary = args.which_engine_binary
+    which_hadoop_binary = args.which_hadoop_binary
+    which_hadoop_jar= args.which_hadoop_jar
     n_chains = args.n_chains
 
 
@@ -263,6 +271,8 @@ if __name__ == '__main__':
     T, M_r, M_c = du.read_model_data_from_csv('../www/data/dha_small.csv', gen_seed=0)
     #
     he = HadoopEngine(which_engine_binary=which_engine_binary,
+		      which_hadoop_binary=which_hadoop_binary,
+		      which_hadoop_jar=which_hadoop_jar,
                       hdfs_dir=hdfs_dir, hdfs_uri=hdfs_uri,
                       jobtracker_uri=jobtracker_uri)
 
