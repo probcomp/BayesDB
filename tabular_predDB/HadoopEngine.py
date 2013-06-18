@@ -191,8 +191,8 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=600000, n_tasks=1):
     archive_str = '-archives "%s"' % archive_path
     cmd_env_str = '-cmdenv LD_LIBRARY_PATH=%s' % ld_library_path
     #
-    fs_str = '-fs "%s"' % hadoop_engine.hdfs_uri if hadoop_engine.hdfs_uri is None else ''
-    jt_str = '-jt "%s"' % hadoop_engine.jobtracker_uri if hadoop_engine.jobtracker_uri is None else ''
+    fs_str = '-fs "%s"' % hadoop_engine.hdfs_uri if hadoop_engine.hdfs_uri is not None else ''
+    jt_str = '-jt "%s"' % hadoop_engine.jobtracker_uri if hadoop_engine.jobtracker_uri is not None else ''
     hadoop_cmd_str = ' '.join([
             jar_str,
             '-D mapred.task.timeout=%s' % task_timeout,
