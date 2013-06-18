@@ -127,11 +127,11 @@ class HadoopEngine(object):
         pass
 
 def rm_hdfs(hdfs_uri, path, hdfs_base_dir=''):
-    rm_infix_args = ''
-    # rm_infix_args = '-r -f'
+    rm_infix_args = '-rmr'
+    # rm_infix_args = '-rm -r -f'
     hdfs_path = os.path.join(hdfs_base_dir, path)
     fs_str = ('-fs "%s"' % hdfs_uri) if hdfs_uri is not None else ''
-    cmd_str = 'hadoop fs %s -rm %s %s'
+    cmd_str = 'hadoop fs %s %s %s'
     cmd_str %= (fs_str, rm_infix_args, hdfs_path)
     if DEBUG:
         print cmd_str
@@ -177,7 +177,11 @@ def put_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     return
 
 def create_hadoop_cmd_str(hadoop_engine, task_timeout=600000, n_tasks=1):
-    hdfs_path = hadoop_engine.hdfs_dir if hadoop_engine.hdfs_uri is None else hadoop_engine.hdfs_uri + hadoop_engine.hdfs_dir
+    hdfs_path = None
+    if hadoop_engine.hdfs_uri is None:
+    	hdfs_path = "hdfs://" + hadoop_engine.hdfs_dir
+    else:
+	 hadoop_engine.hdfs_uri + hadoop_engine.hdfs_dir
     archive_path = os.path.join(hdfs_path, 
                                 hadoop_engine.which_engine_binary + '.jar')
     ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
