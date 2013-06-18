@@ -305,8 +305,5 @@ if __name__ == '__main__':
                       hdfs_dir=hdfs_dir, hdfs_uri=hdfs_uri,
                       jobtracker_uri=jobtracker_uri)
 
-    hadoop_output = he.initialize(M_c, M_r, T, initialization='from_the_prior',
-                                  n_chains=n_chains)
-    X_L_list = [el['X_L'] for el in hadoop_output.values()]
-    X_D_list = [el['X_D'] for el in hadoop_output.values()]
-    hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list, n_steps=n_steps)
+    M_c, M_r, X_L_list, X_D_list = he.initialize(M_c, M_r, T, initialization='from_the_prior', n_chains=n_chains)
+    X_L_list, X_D_list = he.analyze(M_c, T, X_L_list, X_D_list, n_steps=n_steps)
