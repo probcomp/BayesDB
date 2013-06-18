@@ -192,6 +192,20 @@ def convert_columns_to_multinomial(T, M_c, multinomial_indices):
         multinomial_column_metadata['value_to_code'] = value_to_code
     return T, M_c
 
+# UNTESTED
+def convert_columns_to_continuous(T, M_c, continuous_indices):
+    continuous_indices = numpy.array(continuous_indices)
+    modeltype = 'normal_inverse_gamma'
+    T_array = numpy.array(T)
+    for continuous_idx in continuous_indices:
+        code_to_value = dict()
+        value_to_code = dict()
+        continuous_column_metadata = M_c['column_metadata'][continuous_idx]
+        continuous_column_metadata['modeltype'] = modeltype
+        continuous_column_metadata['code_to_value'] = code_to_value
+        continuous_column_metadata['value_to_code'] = value_to_code
+    return T, M_c
+
 def at_most_N_rows(T, N, gen_seed=0):
     num_rows = len(T)
     if (N is not None) and (num_rows > N):
@@ -348,10 +362,11 @@ def guess_column_types(T, count_cutoff=20, ratio_cutoff=0.02):
     return column_types
         
 def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
-                             has_header=True):
+                             cctypes=None):
     colnames, T = read_csv(filename)
     T = at_most_N_rows(T, max_rows, gen_seed)
-    cctypes = guess_column_types(T)
+    if cctypes is None:
+        cctypes = guess_column_types(T)
     M_c = gen_M_c_from_T(T, cctypes, colnames)
     T = map_to_T_with_M_c(numpy.array(T), M_c)
     M_r = gen_M_r_from_T(T)
