@@ -88,6 +88,10 @@ class HadoopEngine(object):
             hadoop_output = read_hadoop_output(output_path)
             hadoop_output_filename = get_hadoop_output_filename(output_path)
             os.system('cp %s initialize_output' % hadoop_output_filename)
+            X_L_list = [el['X_L'] for el in hadoop_output.values()]
+            X_D_list = [el['X_D'] for el in hadoop_output.values()]
+            # make output format match LocalEngine
+            hadoop_output = M_c, M_r, X_L_list, X_D_list
         return hadoop_output
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
@@ -115,6 +119,10 @@ class HadoopEngine(object):
             hadoop_output = read_hadoop_output(output_path)
             hadoop_output_filename = get_hadoop_output_filename(output_path)
             os.system('cp %s analyze_output' % hadoop_output_filename)
+            X_L_list = [el['X_L'] for el in hadoop_output.values()]
+            X_D_list = [el['X_D'] for el in hadoop_output.values()]
+            # make output format match LocalEngine
+            hadoop_output = X_L_list, X_D_list
         return hadoop_output
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
