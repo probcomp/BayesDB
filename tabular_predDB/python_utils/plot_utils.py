@@ -17,6 +17,7 @@ import os
 #
 import numpy
 import pylab
+pylab.ion()
 import hcluster
 
 

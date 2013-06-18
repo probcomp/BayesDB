@@ -1,9 +1,6 @@
 # Using CrossCat to Examine Column Dependencies
 # 1. Import packages/modules needed
 import numpy 
-import pylab
-pylab.ion()
-pylab.show()
 #
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.plot_utils as pu
