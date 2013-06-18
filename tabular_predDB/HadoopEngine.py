@@ -273,6 +273,7 @@ if __name__ == '__main__':
     parser.add_argument('--which_hadoop_binary', type=str, default=default_hadoop_binary)
     parser.add_argument('--which_hadoop_jar', type=str, default=default_hadoop_jar)
     parser.add_argument('--n_chains', type=int, default=4)
+    parser.add_argument('--n_steps', type=int, default=1)
     #
     args = parser.parse_args()
     base_uri = args.base_uri
@@ -284,6 +285,7 @@ if __name__ == '__main__':
     which_hadoop_binary = args.which_hadoop_binary
     which_hadoop_jar= args.which_hadoop_jar
     n_chains = args.n_chains
+    n_steps = args.n_steps
 
 
     hdfs_uri, jobtracker_uri = get_uris(base_uri, hdfs_uri, jobtracker_uri)
@@ -299,4 +301,4 @@ if __name__ == '__main__':
                                   n_chains=n_chains)
     X_L_list = [el['X_L'] for el in hadoop_output.values()]
     X_D_list = [el['X_D'] for el in hadoop_output.values()]
-    hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list)
+    hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list, n_steps=n_steps)
