@@ -49,7 +49,11 @@ install_vmware_components() {
 
 start_vm() {
     vmx="$1"
-    vmrun -T player start "$vmx" nogui
+    is_running=$(vmrun -T player list | grep "$vmx")
+    if [[ -z $is_running ]]; then
+	vmrun -T player start "$vmx" nogui
+	# vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" /usr/bin/env bash bin/reset-hadoop.sh
+    fi
 }
 
 suspend_vm() {
