@@ -1,10 +1,14 @@
 # Using CrossCat to Examine Column Dependencies
 # 1. Import packages/modules needed
 import numpy 
+import pylab
+pylab.ion()
+pylab.show()
+#
 import tabular_predDB.python_utils.data_utils as du
-import tabular_predDB.python_utils.sample_utils as su
 import tabular_predDB.python_utils.plot_utils as pu
 import tabular_predDB.CrossCatClient as ccc
+
 
 # 2. Load a data table from csv file. In this example, we use synthetic data
 filename = 'flight_data_subset.csv'
@@ -42,4 +46,4 @@ pu.plot_views(T_array, X_D_list[4], X_L_list[4], M_c, filename= viewplot_filenam
 
 zplot_filename = '{!s}_feature_z'.format(filebase)
 # 5. Construct and plot column dependency matrix
-su.do_gen_feature_z(X_L_list, X_D_list, M_c, zplot_filename, filename)
+pu.do_gen_feature_z(X_L_list, X_D_list, M_c, zplot_filename, filename)
