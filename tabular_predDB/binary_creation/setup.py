@@ -10,6 +10,9 @@ import cx_Freeze
 
 
 excludes = [
+    'FixTk',
+    'Tkconstants',
+    'Tkinter',
     ]
 includes = [
     'tabular_predDB.python_utils.data_utils',
