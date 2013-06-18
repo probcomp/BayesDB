@@ -15,13 +15,14 @@
 #
 import argparse
 from multiprocessing import Process, Queue
+import os
 #
 import numpy
 #
 import tabular_predDB.settings as S
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.file_utils as fu
-import tabular_predDB.jsonrpc_http.Engine as E
+import tabular_predDB.LocalEngine as LE
 import tabular_predDB.jsonrpc_http.MiddlewareEngine as MiddlewareEngine 
 
 
@@ -77,10 +78,10 @@ T, M_r, M_c = du.read_model_data_from_csv(filename, gen_seed=gen_seed)
 num_rows = len(T)
 num_cols = len(T[0])
 col_names = numpy.array([M_c['idx_to_name'][str(col_idx)] for col_idx in range(num_cols)])
-engine = E.Engine(inf_seed)
+engine = LE.LocalEngine(inf_seed)
 
 
-do_remote = True
+do_remote = False
 if do_remote:
     ## set up parallel
     from IPython.parallel import Client
@@ -95,10 +96,10 @@ if do_remote:
             M_c=M_c,
             M_r=M_r,
             T=T))
-    async_result = dview.map_async(lambda SEED: E.do_initialize(M_c, M_r, T, 'from_the_prior', SEED), range(8))
+    async_result = dview.map_async(lambda SEED: LE.do_initialize(M_c, M_r, T, 'from_the_prior', SEED), range(8))
     initialized_states = async_result.get()
     #
-    async_result = dview.map_async(lambda (SEED, state_tuple): E.do_analyze(M_c, T, state_tuple[0], state_tuple[1], (), 10, (), (), -1, -1, SEED), zip(range(len(initialized_states)), initialized_states))
+    async_result = dview.map_async(lambda (SEED, state_tuple): LE.do_analyze(M_c, T, state_tuple[0], state_tuple[1], (), 10, (), (), -1, -1, SEED), zip(range(len(initialized_states)), initialized_states))
     chain_tuples = async_result.get()
 else:
     # initialize the chains    
