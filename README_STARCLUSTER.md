@@ -55,12 +55,14 @@ Setting up password login via ssh
 ## [Creating an AMI](http://docs.aws.amazon.com/AWSEC2/latest/CommandLineReference/ApiReference-cmd-CreateImage.html) from booted instance
 
 * Determine the instance id of the instance you want to create an AMI from.
-** You can list all instances with
-
+   * You can list all instances with
+    
     starcluster listinstances
+    
 * make sure you have your private key and X.509 certificate
-** your private key file, PRIVATE_KEY_FILE below, usually looks like pk-<NUMBERS_AND_LETTERS>.pem
-** your X.509 certificate file, CERT_FILE below, usually looks like cert-<NUMBERS_AND_LETTERS>.pem
+   * your private key file, PRIVATE_KEY_FILE below, usually looks like pk-\<NUMBERS\_AND\_LETTERS\>.pem
+   * your X.509 certificate file, CERT_FILE below, usually looks like cert-\<NUMBERS\_AND\_LETTERS\>.pem
+
 Note, this will temporarily shut down the instance
 
     local> nohup ec2cim <instance-id> [--name <NAME>] [-d <DESCRIPTION>] -K ~/.ssh/<PRIVATE_KEY_FILE> -C ~/.ssh/<CERT_FILE> >out 2> err
