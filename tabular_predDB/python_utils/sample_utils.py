@@ -17,7 +17,7 @@ import sys
 import copy
 from collections import Counter
 #
-import numpy, hcluster, pylab
+import numpy, hcluster
 #
 import tabular_predDB.cython_code.ContinuousComponentModel as CCM
 import tabular_predDB.cython_code.MultinomialComponentModel as MCM
@@ -479,6 +479,8 @@ def get_is_multistate(X_L, X_D):
         return False
 
 def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
+    # FIXME: move this function to plot_utils
+    import pylab
     num_cols = len(X_L_list[0]['column_partition']['assignments'])
     column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
     column_names = numpy.array(column_names)

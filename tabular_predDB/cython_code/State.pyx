@@ -23,7 +23,7 @@ cimport numpy as np
 import numpy
 #
 import tabular_predDB.python_utils.file_utils as fu
-import tabular_predDB.python_utils.plot_utils as pu
+# import tabular_predDB.python_utils.plot_utils as pu
 
 
 cdef double set_double(double& to_set, double value):
@@ -245,14 +245,14 @@ cdef class p_State:
          return "State[%s, %s]:\n%s" % print_tuple
     def to_string(self, join_str='\n', top_level=False):
          return self.thisptr.to_string(join_str, top_level)
-    def plot(self, M_c, filename=None, dir=''):
-         T_array = self.T_array
-         X_D = self.get_X_D()
-         X_L = self.get_X_L()
-         pu.plot_views(T_array, X_D, X_L, M_c, filename, dir)
-    def plot_T(self, M_c, filename=None, dir=''):
-         T_array = self.T_array
-         pu.plot_T(T_array, M_c, filename, dir)
+    # def plot(self, M_c, filename=None, dir=''):
+    #      T_array = self.T_array
+    #      X_D = self.get_X_D()
+    #      X_L = self.get_X_L()
+    #      pu.plot_views(T_array, X_D, X_L, M_c, filename, dir)
+    # def plot_T(self, M_c, filename=None, dir=''):
+    #      T_array = self.T_array
+    #      pu.plot_T(T_array, M_c, filename, dir)
     #
     # getters
     def get_column_groups(self):
