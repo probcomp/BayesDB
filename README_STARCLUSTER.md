@@ -54,12 +54,16 @@ Setting up password login via ssh
 
 ## [Creating an AMI](http://docs.aws.amazon.com/AWSEC2/latest/CommandLineReference/ApiReference-cmd-CreateImage.html) from booted instance
 
-* Determine the instance id of the instance you want to create an AMI from.  You can list all instances with 'starcluster listinstances'
-* make sure you have your private key and X.509 certificate
+* Determine the instance id of the instance you want to create an AMI from.
+** You can list all instances with
 
+    starcluster listinstances
+* make sure you have your private key and X.509 certificate
+** your private key file, PRIVATE_KEY_FILE below, usually looks like pk-<NUMBERS_AND_LETTERS>.pem
+** your X.509 certificate file, CERT_FILE below, usually looks like cert-<NUMBERS_AND_LETTERS>.pem
 Note, this will temporarily shut down the instance
 
-    local> nohup ec2cim [instance-id] --name [NAME] -d [DESCRIPTION] -K ~/.ssh/PRIVATE_KEY_FILE -C ~/.ssh/CERT_FILE >out 2> err
+    local> nohup ec2cim <instance-id> [--name <NAME>] [-d <DESCRIPTION>] -K ~/.ssh/<PRIVATE_KEY_FILE> -C ~/.ssh/<CERT_FILE> >out 2> err
 
 
 This will start the process of creating the AMI.  It will print 'IMAGE [AMI-NAME]' to the file 'out'.  Record AMI-NAME and modify ~/.starcluster/config to use that for the tabular_predDB cluster's NODE\_IMAGE\_ID.
