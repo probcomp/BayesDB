@@ -21,14 +21,23 @@ import tabular_predDB.python_utils.xnet_utils as xu
 
 hadoop_home = os.environ.get('HADOOP_HOME', '')
 #
-default_which_hadoop_binary = os.path.join(hadoop_home, 'bin/hadoop')
-default_which_hadoop_jar = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
+default_xdata_hadoop_binary = os.path.join(hadoop_home, 'bin/hadoop')
+default_xdata_hadoop_jar = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
+default_xdata_compute_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
+default_xdata_compute_jobtracker_uri = "xd-jobtracker.xdata.data-tactics-corp.com:8021"
+default_xdata_highmem_hdfs_uri = "hdfs://xd-hm-nn.xdata.data-tactics-corp.com:8020/"
+default_xdata_highmem_jobtracker_uri = "xd-hm-jt.xdata.data-tactics-corp.com:8021"
+#
+default_starcluster_hadoop_binary = "/usr/bin/hadoop"
+default_starcluster_hadoop_jar = "/usr/lib/hadoop-0.20/contrib/streaming/hadoop-streaming-0.20.2-cdh3u2.jar"
+default_starcluster_hdfs_uri = None
+default_starcluster_jobtracker_uri = None
+#
+default_hadoop_jar = default_starcluster_hadoop_jar
+default_hdfs_uri = default_starcluster_hdfs_uri
+default_jobtracker_uri = default_starcluster_jobtracker_uri
+default_hadoop_binary = default_starcluster_hadoop_binary
 default_engine_binary = "hadoop_line_processor"
-default_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
-default_jobtracker_uri = "xd-jobtracker.xdata.data-tactics-corp.com:8021"
-# default_hdfs_uri = "hdfs://xd-hm-nn.xdata.data-tactics-corp.com:8020/"
-# default_jobtracker_uri = "xd-hm-jt.xdata.data-tactics-corp.com:8021"
-
 default_hdfs_dir = "/user/bigdata/SSCI/test_remote_streaming/"
 #
 input_filename = 'hadoop_input'
@@ -46,11 +55,12 @@ class HadoopEngine(object):
                  hdfs_dir=default_hdfs_dir,
                  jobtracker_uri=default_jobtracker_uri,
                  hdfs_uri=default_hdfs_uri,
-                 which_hadoop_jar=default_which_hadoop_jar,
+                 which_hadoop_jar=default_hadoop_jar,
+		 which_hadoop_binary=default_hadoop_binary,
                  ):
         xu.assert_vpn_is_connected()
         #
-        self.which_hadoop_binary = default_which_hadoop_binary
+        self.which_hadoop_binary = which_hadoop_binary
         #
         self.seed_generator = gu.int_generator(seed)
         self.which_engine_binary = which_engine_binary
@@ -117,9 +127,12 @@ class HadoopEngine(object):
         pass
 
 def rm_hdfs(hdfs_uri, path, hdfs_base_dir=''):
+    rm_infix_args = '-rmr'
+    # rm_infix_args = '-rm -r -f'
     hdfs_path = os.path.join(hdfs_base_dir, path)
-    cmd_str = 'hadoop fs -fs "%s" -rm -r -f %s'
-    cmd_str %= (hdfs_uri, hdfs_path)
+    fs_str = ('-fs "%s"' % hdfs_uri) if hdfs_uri is not None else ''
+    cmd_str = 'hadoop fs %s %s %s'
+    cmd_str %= (fs_str, rm_infix_args, hdfs_path)
     if DEBUG:
         print cmd_str
     else:
@@ -140,8 +153,9 @@ def get_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     # clear local path
     rm_local(path)
     # get from hdfs
-    cmd_str = 'hadoop fs -fs "%s" -get %s %s'
-    cmd_str %= (hdfs_uri, hdfs_path, path)
+    fs_str = ('-fs "%s"' % hdfs_uri) if hdfs_uri is not None else ''
+    cmd_str = 'hadoop fs %s -get %s %s'
+    cmd_str %= (fs_str, hdfs_path, path)
     if DEBUG:
         print cmd_str
     else:
@@ -153,8 +167,9 @@ def put_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     # clear hdfs path
     rm_hdfs(hdfs_uri, path, hdfs_base_dir)
     # put to hdfs
-    cmd_str = 'hadoop fs -fs "%s" -put %s %s'
-    cmd_str %= (hdfs_uri, path, hdfs_path)
+    fs_str = ('-fs "%s"' % hdfs_uri) if hdfs_uri is not None else ''
+    cmd_str = 'hadoop fs %s -put %s %s'
+    cmd_str %= (fs_str, path, hdfs_path)
     if DEBUG:
         print cmd_str
     else:
@@ -162,7 +177,11 @@ def put_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     return
 
 def create_hadoop_cmd_str(hadoop_engine, task_timeout=600000, n_tasks=1):
-    hdfs_path = hadoop_engine.hdfs_uri + hadoop_engine.hdfs_dir
+    hdfs_path = None
+    if hadoop_engine.hdfs_uri is None:
+    	hdfs_path = "hdfs://" + hadoop_engine.hdfs_dir
+    else:
+	 hadoop_engine.hdfs_uri + hadoop_engine.hdfs_dir
     archive_path = os.path.join(hdfs_path, 
                                 hadoop_engine.which_engine_binary + '.jar')
     ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
@@ -175,13 +194,16 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=600000, n_tasks=1):
                              hadoop_engine.which_hadoop_jar)
     archive_str = '-archives "%s"' % archive_path
     cmd_env_str = '-cmdenv LD_LIBRARY_PATH=%s' % ld_library_path
+    #
+    fs_str = '-fs "%s"' % hadoop_engine.hdfs_uri if hadoop_engine.hdfs_uri is not None else ''
+    jt_str = '-jt "%s"' % hadoop_engine.jobtracker_uri if hadoop_engine.jobtracker_uri is not None else ''
     hadoop_cmd_str = ' '.join([
             jar_str,
             '-D mapred.task.timeout=%s' % task_timeout,
             '-D mapred.map.tasks=%s' % n_tasks,
             archive_str,
-            '-fs "%s"' % hadoop_engine.hdfs_uri,
-            '-jt "%s"' % hadoop_engine.jobtracker_uri,
+            fs_str,
+	    jt_str,
             '-input "%s"' % os.path.join(hdfs_path, input_filename),
             '-output "%s"' % os.path.join(hdfs_path, output_path),
             '-mapper "%s"' % mapper_path,
@@ -190,6 +212,7 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=600000, n_tasks=1):
             '-file %s' % table_data_filename,
             cmd_env_str,
             ])
+    print hadoop_cmd_str
     return hadoop_cmd_str
 
 def get_was_successful(output_path):
@@ -247,7 +270,10 @@ if __name__ == '__main__':
     parser.add_argument('--hdfs_dir', type=str, default=default_hdfs_dir)
     parser.add_argument('-DEBUG', action='store_true')
     parser.add_argument('--which_engine_binary', type=str, default=default_engine_binary)
+    parser.add_argument('--which_hadoop_binary', type=str, default=default_hadoop_binary)
+    parser.add_argument('--which_hadoop_jar', type=str, default=default_hadoop_jar)
     parser.add_argument('--n_chains', type=int, default=4)
+    parser.add_argument('--n_steps', type=int, default=1)
     #
     args = parser.parse_args()
     base_uri = args.base_uri
@@ -256,13 +282,18 @@ if __name__ == '__main__':
     hdfs_dir = args.hdfs_dir
     DEBUG = args.DEBUG
     which_engine_binary = args.which_engine_binary
+    which_hadoop_binary = args.which_hadoop_binary
+    which_hadoop_jar= args.which_hadoop_jar
     n_chains = args.n_chains
+    n_steps = args.n_steps
 
 
     hdfs_uri, jobtracker_uri = get_uris(base_uri, hdfs_uri, jobtracker_uri)
     T, M_r, M_c = du.read_model_data_from_csv('../www/data/dha_small.csv', gen_seed=0)
     #
     he = HadoopEngine(which_engine_binary=which_engine_binary,
+		      which_hadoop_binary=which_hadoop_binary,
+		      which_hadoop_jar=which_hadoop_jar,
                       hdfs_dir=hdfs_dir, hdfs_uri=hdfs_uri,
                       jobtracker_uri=jobtracker_uri)
 
@@ -270,4 +301,4 @@ if __name__ == '__main__':
                                   n_chains=n_chains)
     X_L_list = [el['X_L'] for el in hadoop_output.values()]
     X_D_list = [el['X_D'] for el in hadoop_output.values()]
-    hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list)
+    hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list, n_steps=n_steps)

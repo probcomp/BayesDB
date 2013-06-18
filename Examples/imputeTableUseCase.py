@@ -1,6 +1,7 @@
 # Using CrossCat to Examine Column Dependencies
 # 1. Import packages/modules needed
 import numpy
+#
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.sample_utils as su
 import tabular_predDB.python_utils.plot_utils as pu
