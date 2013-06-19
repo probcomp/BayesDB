@@ -186,7 +186,7 @@ def put_hdfs(hdfs_uri, path, hdfs_base_dir=''):
         os.system(cmd_str)
     return
 
-def create_hadoop_cmd_str(hadoop_engine, task_timeout=600000, n_tasks=1):
+def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
     hdfs_path = None
     if hadoop_engine.hdfs_uri is None:
     	hdfs_path = "hdfs://" + hadoop_engine.hdfs_dir
