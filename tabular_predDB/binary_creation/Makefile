@@ -8,4 +8,4 @@ $(BIN):
 	python setup.py build
 
 clean:
-	rm -rf build
+	rm -rf build build.err build.out
