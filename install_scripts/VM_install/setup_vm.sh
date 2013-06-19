@@ -93,9 +93,7 @@ set_up_ssh_keys() {
 
 toggle_eth0() {
     vmx="$1"
-    vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" /sbin/ifconfig eth0 down
-    sleep 1
-    vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" /sbin/ifconfig eth0 up
+    vmrun -T player -gu root -gp bigdata runProgramInGuest "$vmx" /usr/sbin/service network-manager restart
 }
 
 # Ensure VM was set
