@@ -16,8 +16,10 @@
 import os
 import inspect
 #
+import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.python_utils.xnet_utils as xu
+
 
 hadoop_home = os.environ.get('HADOOP_HOME', '')
 #
@@ -282,6 +284,8 @@ if __name__ == '__main__':
     parser.add_argument('--which_hadoop_jar', type=str, default=default_hadoop_jar)
     parser.add_argument('--n_chains', type=int, default=4)
     parser.add_argument('--n_steps', type=int, default=1)
+    parser.add_argument('--csv_filename', type=str, default='../www/data/dha_small.csv')
+    parser.add_argument('--pkl_filename', type=str, default=None)
     #
     args = parser.parse_args()
     base_uri = args.base_uri
@@ -294,10 +298,11 @@ if __name__ == '__main__':
     which_hadoop_jar= args.which_hadoop_jar
     n_chains = args.n_chains
     n_steps = args.n_steps
-
+    csv_filename = args.csv_filename
+    pkl_filename = args.pkl_filename
 
     hdfs_uri, jobtracker_uri = get_uris(base_uri, hdfs_uri, jobtracker_uri)
-    T, M_r, M_c = du.read_model_data_from_csv('../www/data/dha_small.csv', gen_seed=0)
+    T, M_r, M_c = du.read_model_data_from_csv(csv_filename, gen_seed=0)
     #
     he = HadoopEngine(which_engine_binary=which_engine_binary,
 		      which_hadoop_binary=which_hadoop_binary,
@@ -307,3 +312,12 @@ if __name__ == '__main__':
 
     M_c, M_r, X_L_list, X_D_list = he.initialize(M_c, M_r, T, initialization='from_the_prior', n_chains=n_chains)
     X_L_list, X_D_list = he.analyze(M_c, T, X_L_list, X_D_list, n_steps=n_steps)
+    if pkl_filename is not None:
+      to_pkl_dict = dict(
+            T=T,
+            M_c=M_c,
+            M_r=M_r,
+            X_L_list=X_L_list,
+            X_D_list=X_D_list,
+            )
+      fu.pickle(to_pkl_dict, filename=pkl_filename)
