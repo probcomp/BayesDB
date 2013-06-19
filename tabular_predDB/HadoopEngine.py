@@ -102,7 +102,7 @@ class HadoopEngine(object):
             X_L = [X_L]
             X_D = [X_D]
         #
-        table_data = dict(M_c=M_c, M_r=M_r, T=T)
+        table_data = dict(M_c=M_c, T=T)
         xu.pickle_table_data(table_data, table_data_filename)
         with open(input_filename, 'w') as fh:
             for SEED, (X_L_i, X_D_i) in enumerate(zip(X_L, X_D)):
