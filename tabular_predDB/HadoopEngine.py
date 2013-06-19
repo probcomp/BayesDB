@@ -99,7 +99,8 @@ class HadoopEngine(object):
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1):
         xu.assert_vpn_is_connected()
-        analyze_args_dict = dict(command='analyze', kernel_list=kernel_list, n_steps=n_steps, c=c, r=r)
+        analyze_args_dict = dict(command='analyze', kernel_list=kernel_list,
+                                 n_steps=n_steps, c=c, r=r)
         if not xu.get_is_multistate(X_L, X_D):
             X_L = [X_L]
             X_D = [X_D]
@@ -239,14 +240,15 @@ def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
     rm_hdfs(hadoop_engine.hdfs_uri, output_path, hdfs_base_dir=hadoop_engine.hdfs_dir)
     # actually send
     hadoop_cmd_str = create_hadoop_cmd_str(hadoop_engine, n_tasks=n_tasks)
+    was_successful = None
     if DEBUG:
         print hadoop_cmd_str
     else:
         os.system(hadoop_cmd_str + ' >out 2>err')
-    # retrieve resutls
-    get_hdfs(hadoop_engine.hdfs_uri, output_path, hdfs_base_dir=hadoop_engine.hdfs_dir)
-    #
-    was_successful = get_was_successful(output_path)
+        # retrieve results
+        get_hdfs(hadoop_engine.hdfs_uri, output_path,
+                 hdfs_base_dir=hadoop_engine.hdfs_dir)
+        was_successful = get_was_successful(output_path)
     return was_successful
 
 def write_hadoop_input():
@@ -273,6 +275,7 @@ if __name__ == '__main__':
     import tabular_predDB.python_utils.data_utils as du
     #
     parser = argparse.ArgumentParser()
+    parser.add_argument('command', type=str)
     parser.add_argument('--base_uri', type=str, default=None)
     parser.add_argument('--hdfs_uri', type=str, default=default_hdfs_uri)
     parser.add_argument('--jobtracker_uri', type=str,
@@ -284,7 +287,8 @@ if __name__ == '__main__':
     parser.add_argument('--which_hadoop_jar', type=str, default=default_hadoop_jar)
     parser.add_argument('--n_chains', type=int, default=4)
     parser.add_argument('--n_steps', type=int, default=1)
-    parser.add_argument('--csv_filename', type=str, default='../www/data/dha_small.csv')
+    parser.add_argument('--table_filename', type=str, default='../www/data/dha_small.csv')
+    parser.add_argument('--resume_filename', type=str, default=None)
     parser.add_argument('--pkl_filename', type=str, default=None)
     #
     args = parser.parse_args()
@@ -298,20 +302,40 @@ if __name__ == '__main__':
     which_hadoop_jar= args.which_hadoop_jar
     n_chains = args.n_chains
     n_steps = args.n_steps
-    csv_filename = args.csv_filename
+    table_filename = args.table_filename
+    resume_filename = args.resume_filename
     pkl_filename = args.pkl_filename
+    command = args.command
+    assert command in set(gu.get_method_names(HadoopEngine))
 
     hdfs_uri, jobtracker_uri = get_uris(base_uri, hdfs_uri, jobtracker_uri)
-    T, M_r, M_c = du.read_model_data_from_csv(csv_filename, gen_seed=0)
-    #
+    T, M_r, M_c = du.read_model_data_from_csv(table_filename, gen_seed=0)
     he = HadoopEngine(which_engine_binary=which_engine_binary,
 		      which_hadoop_binary=which_hadoop_binary,
 		      which_hadoop_jar=which_hadoop_jar,
                       hdfs_dir=hdfs_dir, hdfs_uri=hdfs_uri,
                       jobtracker_uri=jobtracker_uri)
-
-    M_c, M_r, X_L_list, X_D_list = he.initialize(M_c, M_r, T, initialization='from_the_prior', n_chains=n_chains)
-    X_L_list, X_D_list = he.analyze(M_c, T, X_L_list, X_D_list, n_steps=n_steps)
+    
+    X_L_list, X_D_list = None, None
+    if command == 'initialize':
+        hadoop_output = he.initialize(M_c, M_r, T,
+                                      initialization='from_the_prior',
+                                      n_chains=n_chains)
+        if hadoop_output is not None:
+            M_c, M_r, X_L_list, X_D_list = hadoop_output
+    elif command == 'analyze':
+        assert resume_filename is not None
+        resume_dict = fu.unpickle(resume_filename)
+        X_L_list = resume_dict['X_L_list']
+        X_D_list = resume_dict['X_D_list']
+        hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list,
+                                   n_steps=n_steps)
+        if hadoop_output is not None:
+            X_L_list, X_D_list = hadoop_output
+    else:
+        print 'Unknown command: %s' % command
+        sys.exit()
+        
     if pkl_filename is not None:
       to_pkl_dict = dict(
             T=T,
