@@ -1,9 +1,8 @@
-import numpy, pylab, os, pdb, csv
+import numpy, pylab, os, csv
 import tabular_predDB.python_utils.sample_utils as su
 
 
 def impute_table(T, M_c, X_L_list, X_D_list, numDraws, get_next_seed):
-
     num_rows = len(T)
     num_cols = len(T[0])
     # Identify column types
@@ -124,3 +123,44 @@ def predict_in_table(T_test, T, M_c, X_L, X_D, numDraws, get_next_seed):
 
     return T_predicted
 
+def row_similarity(row_index, column_indices, X_D_list, X_L_list, num_returns = 10):
+
+    # Finds rows most similar to row_index (index into the table) conditioned on
+    # attributes represented by the column_indices based on the mappings into
+    # categories, X_D_list, generated in each chain.
+
+    # Create a list of scores for each row in the table
+    score = numpy.zeros(len(X_D_list[0][0]))
+
+    # For one chain
+    for chain_indx in range(len(X_D_list)):
+        X_D = X_D_list[chain_indx]
+        X_L = X_L_list[chain_indx]
+
+        # Find the number of views and view assignments from X_L
+        view_assignments = X_L['column_partition']['assignments']
+        view_assignments = numpy.array(view_assignments)
+        num_features = len(view_assignments) # i.e, number of attributes
+        num_views = len(set(view_assignments))
+
+        # Find which view each conditional attribute (column_indices) belongs to 
+        views_for_cols = view_assignments[column_indices]
+        print views_for_cols
+        for viewindx in views_for_cols:
+            # Find which cluster the target row is in 
+            tgt_cluster = X_D[viewindx][row_index]
+    
+            # Find every row in this cluster and give them all a point
+            match_rows = [i for i in range(len(X_D[viewindx])) if X_D[viewindx][i] == tgt_cluster]
+            score[match_rows] = score[match_rows] + 1
+            
+    
+    # Normalize between 0 and 1
+    normfactor = len(column_indices)*len(X_D_list)
+    normscore = numpy.asarray([float(a)/normfactor for a in score])
+
+    # Sort in descending order
+    argsorted = numpy.argsort(normscore)[::-1]     
+    sortedscore = normscore[argsorted]
+
+    return argsorted[0:num_returns], sortedscore[0:num_returns]
