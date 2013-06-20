@@ -21,7 +21,7 @@ pu.do_gen_feature_z(X_L_list, X_D_list, M_c, zplot_filename)
 X_L_list_new = []
 X_D_list_new = []
 num_transitions = 10
-numChains = 10
+numChains = len(X_L_list)
 engine = ccc.get_CrossCatClient('local', seed = 0)
 
 for chain_idx in range(numChains):
