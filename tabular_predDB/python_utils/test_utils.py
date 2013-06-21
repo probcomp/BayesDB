@@ -518,5 +518,17 @@ def CCML(ccpart,ccmat,mu,r,nu,s,row_alpha,col_alpha):
 	# return the normalized probabilities
 	return lp-sp.misc.logsumexp(lp)
 
-part = GenerateRandomPartition(4,5);
-print(part)
+# Fixes the prior
+def FixPriors(X_L,alpha,mu,s,r,nu):
+	X_L['column_partition']['hypers']['alpha'] = alpha
+	# print(new_X_L)
+	for i in range(len(X_L['view_state'])):
+		X_L['view_state'][i]['row_partition_model']['hypers']['alpha'] = alpha
+	for i in range(num_cols):
+		X_L['column_hypers'][i]['alpha'] = alpha
+		X_L['column_hypers'][i]['mu']    = mu
+		X_L['column_hypers'][i]['s']     = s
+		X_L['column_hypers'][i]['r']     = r
+		X_L['column_hypers'][i]['nu']    = nu
+
+	return X_L
