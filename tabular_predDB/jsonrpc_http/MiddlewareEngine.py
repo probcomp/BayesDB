@@ -732,9 +732,16 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
     pylab.title('column dependencies for: %s' % tablename)
     pylab.savefig(filename)
 
-def write_json_for_table(M_c, M_r, t_dict, X_L_list, X_D_list):
+def write_json_for_table(t_dict, M_c, X_L_list, X_D_list, M_r=None):
     dir=S.path.web_resources_data_dir
     os.system('rm %s/*.json' % dir)
+    if M_r is None:
+      num_rows = len(X_D_list[0][0])
+      row_indices = range(num_rows)
+      row_names = map(str, row_indices)
+      name_to_idx = dict(zip(row_names, row_indices))
+      idx_to_name = dict(zip(row_indices, row_names))
+      M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
     #
     for name in M_c['name_to_idx']:
       M_c['name_to_idx'][name] += 1
