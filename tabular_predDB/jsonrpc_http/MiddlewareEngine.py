@@ -733,6 +733,9 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
     pylab.savefig(filename)
 
 def write_json_for_table(M_c, M_r, t_dict, X_L_list, X_D_list):
+    dir=S.path.web_resources_data_dir
+    os.system('rm %s/*.json' % dir)
+    #
     for name in M_c['name_to_idx']:
       M_c['name_to_idx'][name] += 1
     M_c = dict(labelToIndex=M_c['name_to_idx'])
