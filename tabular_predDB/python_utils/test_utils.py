@@ -21,7 +21,7 @@ import math
 import random as rand
 import numpy as np
 import scipy as sp
-
+import itertools
 import pdb
 
 
@@ -150,14 +150,14 @@ def GenDataFromPartitions(col_part,row_parts,mean_gen,std_gen,std_data):
 	seed = int(time()*100)
 	np.random.seed(seed)
 
-	T = array(zeros((n_rows,n_cols)))
+	T = np.zeros((n_rows,n_cols))
 
 	for col in range(n_cols):
 		view = col_part[col]-1
 		row_part = row_parts[view,:]
 		cats = max(row_part)
 		for cat in range(cats):
-			row_dex = nonzero(row_part==cat+1)[0]
+			row_dex = np.nonzero(row_part==cat+1)[0]
 			n_rows_cat = len(row_dex)
 			mean = np.random.normal(mean_gen,std_gen)
 			X = np.random.normal(mean,std_data,(n_rows_cat,1))
@@ -220,7 +220,7 @@ class CrossCatPartitions(object):
 
 			# generate the permutations with replacement
 			perms = [];
-			for t in product(r, repeat = K):
+			for t in itertools.product(r, repeat = K):
 				perms.append(t)
 
 			self.row_perms.append(perms)
@@ -241,10 +241,10 @@ class CrossCatPartitions(object):
 				temp_state['idx'] = state_idx
 				temp_state['col_parts'] = self.col_partition[col_part]
 				this_row_partition = self.row_perms[n_views-1][rprt][0]-1
-				temp_row_parts = array([self.row_partition[this_row_partition]])
+				temp_row_parts = np.array([self.row_partition[this_row_partition]])
 				for view in range(1,n_views):
 					this_row_partition = self.row_perms[n_views-1][rprt][view]-1
-					temp_row_parts = vstack((temp_row_parts,self.row_partition[this_row_partition]))
+					temp_row_parts = np.vstack((temp_row_parts,self.row_partition[this_row_partition]))
 				temp_state['row_parts'] = temp_row_parts
 				self.states.append(temp_state)
 				
@@ -270,14 +270,14 @@ class CrossCatPartitions(object):
 			if max(this_col_part) != n_views:
 				continue
 
-			if not all(col_part_cm == vectorToCHMat(this_col_part)):
+			if not np.all(col_part_cm == vectorToCHMat(this_col_part)):
 				continue
 
 			for view in range(n_views):
 
 				this_row_part = self.states[state]['row_parts'][view]
 
-				if all(vectorToCHMat(row_parts[view])==vectorToCHMat(this_row_part)):
+				if np.all(vectorToCHMat(row_parts[view])==vectorToCHMat(this_row_part)):
 					if view == n_views-1:
 						return self.states[state]['idx']
 				else:
@@ -343,8 +343,8 @@ class Partition(object):
 	def __init__(self, N):
 		self.N = N
 		self.proceed = True
-		self.s = array(ones(N),dtype=int8)
-		self.m = array(ones(N),dtype=int8)
+		self.s = np.ones(N, dtype=int)
+		self.m = np.ones(N, dtype=int)
 		
 	# Enumerates the set of all partitionings of N points
 	@staticmethod
@@ -354,12 +354,12 @@ class Partition(object):
 		expectedPartitions = Bell(N)
 		currentPartition = 2
 
-		C = copy(p.s)
+		C = np.copy(p.s)
 	    
 		while p.proceed:
 			p.Next()
 			if p.proceed:
-				C = vstack([C,p.s]);
+				C = np.vstack([C,p.s]);
 				currentPartition += 1
 			else:
 				break
@@ -418,14 +418,14 @@ def Stirling2nd(n,k):
 def lcrp(prt,alpha):
 	# generate a histogram of prt
 	k = max(prt)
-	ns = zeros(k)
+	ns = np.zeros(k)
 	n = len(prt)
 	for i in range(n):
 		ns[prt[i]-1] += 1.0
 
-	lp = sum(sp.special.gammaln(ns))+k*log(alpha)+sp.special.gammaln(alpha)-sp.special.gammaln(n+alpha)
+	lp = sum(sp.special.gammaln(ns))+k*math.log(alpha)+sp.special.gammaln(alpha)-sp.special.gammaln(n+alpha)
 
-	if any(np.isnan(lp)) or any(np.isinf(lp)):
+	if np.any(np.isnan(lp)) or np.any(np.isinf(lp)):
 		print("prt: ")
 		print(prt)
 		print("ns: ")
@@ -446,20 +446,20 @@ def NIX2ML(X,mu,r,nu,s):
 	X = np.array(X.flatten(1))
 
 	# constant
-	LOGPI = log(pi)
+	LOGPI = math.log(math.pi)
 
-	n = double(len(X)) 	# number of data points
+	n = float(len(X)) 	# number of data points
 	xbar = np.mean(X)	
 
 	# update parameters
-	k_n  = double(k+n)
+	k_n  = float(k+n)
 	nu_n = nu + n
 	mu_n = (k*mu+n*xbar)/k_n
 	s_n  = (1.0/nu_n)*(nu*s+sum((X-xbar)**2.0)+((n*k)/(k+n))*(mu-xbar)**2.0)
 
 	# the log answer
-	lp1 = sp.special.gammaln(nu_n/2.0)+(.5)*log(k)+(nu/2.0)*log(nu*s)
-	lp2 = sp.special.gammaln(nu/2.0)+(.5)*log(k_n)+(nu_n/2.0)*log(nu_n*s_n)+(n/2.0)*LOGPI
+	lp1 = sp.special.gammaln(nu_n/2.0)+(.5)*math.log(k)+(nu/2.0)*math.log(nu*s)
+	lp2 = sp.special.gammaln(nu/2.0)+(.5)*math.log(k_n)+(nu_n/2.0)*math.log(nu_n*s_n)+(n/2.0)*LOGPI
 	lp = lp1-lp2
 
 	if np.isnan(lp):
@@ -510,7 +510,7 @@ def CCML(ccpart,ccmat,mu,r,nu,s,row_alpha,col_alpha):
 
 			for col in cols_view:
 				for cat in range(row_part.max()):
-					X = ccmat[nonzero(row_part==cat+1)[0],col]
+					X = ccmat[np.nonzero(row_part==cat+1)[0],col]
 					lp_temp += NIX2ML(X,mu,r,nu,s)
 
 		lp.append(lp_temp);
@@ -520,6 +520,7 @@ def CCML(ccpart,ccmat,mu,r,nu,s,row_alpha,col_alpha):
 
 # Fixes the prior
 def FixPriors(X_L,alpha,mu,s,r,nu):
+	num_cols = len(X_L)
 	X_L['column_partition']['hypers']['alpha'] = alpha
 	# print(new_X_L)
 	for i in range(len(X_L['view_state'])):
@@ -532,3 +533,18 @@ def FixPriors(X_L,alpha,mu,s,r,nu):
 		X_L['column_hypers'][i]['nu']    = nu
 
 	return X_L
+
+# Convert assignment vector to cohabitation matrix. A cohabitation matrix is an 
+# N-by-N matrix where entry [i,j] = 1 is data points i and j belong to the same
+# category and 0 otherwise. This function is used to match sampled states with
+# enumerated states to compare the sampler with the enumerated answers.
+def vectorToCHMat(col_partition):
+	# print(col_partition)
+	N = len(col_partition)
+	
+	chmat = np.zeros((N,N))
+	for i in range(N):
+		for j in range(N):
+			if col_partition[i] == col_partition[j]:
+				chmat[i,j] = 1
+	return chmat
