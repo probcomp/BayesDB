@@ -373,14 +373,15 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, query_row,
     return samples_list
 
 def continuous_imputation(samples, get_next_seed, return_confidence=False):
-    n_samples = len(samples)
-    mean_sample = sum(samples) / float(n_samples)
+    # n_samples = len(samples)
+    # mean_sample = sum(samples) / float(n_samples)
+    median_sample = numpy.median(samples)
     if return_confidence:
-        print "sample_utils.continuous_imputation: return_confidence not yet implemented"
-        condience = None
-        return mean_sample, None
+        print "sample_utils.continuous_imputation: return_confidence should be done by caller using samples and known sigma"
+        confidence = None
+        return median_sample, confidence
     else:
-        return mean_sample
+        return median_sample
 
 def multinomial_imputation(samples, get_next_seed, return_confidence=False):
     counter = Counter(samples)
@@ -446,9 +447,17 @@ def impute_and_confidence(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     samples = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
                                        get_next_seed, n)
     samples = numpy.array(samples).T[0]
+    # extract [mle] column sigma
+    col_sigma = X_L['column_hypers'][col_idx]['s']
+    # determine what fraction of samples are within
     imputation_function = modeltype_to_imputation_function[modeltype]
     e, confidence = imputation_function(samples, get_next_seed,
                                         return_confidence=True)
+    # FIXME: push this override into imputation_function
+    if modeltype == 'normal_inverse_gamma':
+        # override confidence
+        delta = .1 * col_sigma
+        confidence = get_continuous_mass_within_delta(samples, e, delta)
     return e, confidence
 
 def determine_replicating_samples_params(X_L, X_D):
