@@ -430,6 +430,12 @@ def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed, return_samples=False):
     else:
         return e
 
+def get_continuous_mass_within_delta(samples, center, delta):
+    num_samples = len(samples)
+    num_within_delta = sum(numpy.abs(samples - center) < delta)
+    mass_fraction = float(num_within_delta) / num_samples
+    return mass_fraction
+
 def impute_and_confidence(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     # FIXME: allow more than one cell to be imputed
     assert(len(Q)==1)
