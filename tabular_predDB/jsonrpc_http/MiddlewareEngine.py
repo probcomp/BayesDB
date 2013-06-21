@@ -477,7 +477,7 @@ class MiddlewareEngine(object):
   def write_json_for_table(self, tablename):
     M_c, M_r, t_dict = self.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-    write_json_for_table(M_c, M_r, t_dict, X_L_list, X_D_list)
+    write_json_for_table(t_dict, M_c, X_L_list, X_D_list, M_r)
 
   def create_histogram(self, M_c, data, columns, mc_col_indices, filename):
     dir=S.path.web_resources_data_dir
