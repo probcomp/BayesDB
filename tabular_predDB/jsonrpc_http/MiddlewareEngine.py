@@ -477,32 +477,7 @@ class MiddlewareEngine(object):
   def write_json_for_table(self, tablename):
     M_c, M_r, t_dict = self.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-
-    for name in M_c['name_to_idx']:
-      M_c['name_to_idx'][name] += 1
-    M_c = dict(labelToIndex=M_c['name_to_idx'])
-
-    for name in M_r['name_to_idx']:
-      M_r['name_to_idx'][name] += 1
-      M_r['name_to_idx'][name]  = M_r['name_to_idx'][name]
-    M_r = dict(labelToIndex=M_r['name_to_idx'])
-
-    self.jsonify_and_dump(M_c, 'M_c.json')
-    self.jsonify_and_dump(M_r, 'M_r.json')
-    self.jsonify_and_dump(t_dict, 'T.json')
-
-    for idx, X_L_i in enumerate(X_L_list):
-      filename = 'X_L_%s.json' % idx
-      X_L_i = (numpy.array(X_L_i['column_partition']['assignments'])+1).tolist()
-      X_L_i = dict(columnPartitionAssignments=X_L_i)
-      self.jsonify_and_dump(X_L_i, filename)
-    for idx, X_D_i in enumerate(X_D_list):
-      filename = 'X_D_%s.json' % idx
-      X_D_i = (numpy.array(X_D_i)+1).tolist()
-      X_D_i = dict(rowPartitionAssignments=X_D_i)
-      self.jsonify_and_dump(X_D_i, filename)
-    json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
-    self.jsonify_and_dump(json_indices_dict, "json_indices")
+    write_json_for_table(M_c, M_r, t_dict, X_L_list, X_D_list)
 
   def create_histogram(self, M_c, data, columns, mc_col_indices, filename):
     dir=S.path.web_resources_data_dir
@@ -533,19 +508,6 @@ class MiddlewareEngine(object):
         ax.set_yticklabels(unique_labels)
     pylab.tight_layout()
     pylab.savefig(full_filename)
-
-  def jsonify_and_dump(self, to_dump, filename):
-    dir=S.path.web_resources_data_dir
-    full_filename = os.path.join(dir, filename)
-    print full_filename
-    try:
-      with open(full_filename, 'w') as fh:
-        json_str = json.dumps(to_dump)
-        json_str = json_str.replace("NaN", "0")
-        fh.write(json_str)
-    except Exception, e:
-      print e
-    return 0
 
   def get_metadata_and_table(self, tablename):
     """Return M_c and M_r and T"""
@@ -710,6 +672,20 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
       conn.close()      
   return 0
 
+
+def jsonify_and_dump(to_dump, filename):
+  dir=S.path.web_resources_data_dir
+  full_filename = os.path.join(dir, filename)
+  print full_filename
+  try:
+    with open(full_filename, 'w') as fh:
+      json_str = json.dumps(to_dump)
+      json_str = json_str.replace("NaN", "0")
+      fh.write(json_str)
+  except Exception, e:
+    print e
+  return 0
+
 def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
     num_cols = len(X_L_list[0]['column_partition']['assignments'])
     column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
@@ -755,3 +731,29 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
                                   rotation=90, size='small')
     pylab.title('column dependencies for: %s' % tablename)
     pylab.savefig(filename)
+
+def write_json_for_table(M_c, M_r, t_dict, X_L_list, X_D_list):
+    for name in M_c['name_to_idx']:
+      M_c['name_to_idx'][name] += 1
+    M_c = dict(labelToIndex=M_c['name_to_idx'])
+    for name in M_r['name_to_idx']:
+      M_r['name_to_idx'][name] += 1
+      M_r['name_to_idx'][name]  = M_r['name_to_idx'][name]
+    M_r = dict(labelToIndex=M_r['name_to_idx'])
+    #
+    jsonify_and_dump(M_c, 'M_c.json')
+    jsonify_and_dump(M_r, 'M_r.json')
+    jsonify_and_dump(t_dict, 'T.json')
+    #
+    for idx, X_L_i in enumerate(X_L_list):
+      filename = 'X_L_%s.json' % idx
+      X_L_i = (numpy.array(X_L_i['column_partition']['assignments'])+1).tolist()
+      X_L_i = dict(columnPartitionAssignments=X_L_i)
+      jsonify_and_dump(X_L_i, filename)
+    for idx, X_D_i in enumerate(X_D_list):
+      filename = 'X_D_%s.json' % idx
+      X_D_i = (numpy.array(X_D_i)+1).tolist()
+      X_D_i = dict(rowPartitionAssignments=X_D_i)
+      jsonify_and_dump(X_D_i, filename)
+    json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
+    jsonify_and_dump(json_indices_dict, "json_indices")
