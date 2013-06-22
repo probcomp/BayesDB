@@ -2,13 +2,9 @@ import os
 import argparse
 #
 import numpy
-import pylab
-pylab.ion()
-pylab.show()
 #
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.general_utils as gu
-import tabular_predDB.python_utils.plot_utils as pu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
@@ -62,9 +58,6 @@ def generate_clean_state(gen_seed, num_clusters,
     X_L, X_D = get_generative_clustering(M_c, M_r, T,
                                          data_inverse_permutation_indices,
                                          num_clusters, num_splits)
-    if plot:
-        T_array = numpy.array(T)
-        pu.plot_views(T_array, X_D, X_L, M_c)
     return T, M_c, M_r, X_L, X_D
 
 
