@@ -134,3 +134,7 @@ if __name__ == '__main__':
             os.system('cp %s %s' % (hadoop_output_filename, output_filename))
         else:
             print 'remote hadoop job NOT successful'
+    else:
+        hadoop_engine = HE.HadoopEngine()
+        # print what the command would be
+        print HE.create_hadoop_cmd_str(hadoop_engine)
