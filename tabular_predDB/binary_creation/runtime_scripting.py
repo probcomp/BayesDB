@@ -71,6 +71,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_std', type=float, default=.001)
     parser.add_argument('--n_steps', type=int, default=10)
     parser.add_argument('-do_local', action='store_true')
+    parser.add_argument('-do_remote', action='store_true')
     #
     args = parser.parse_args()
     gen_seed = args.gen_seed
@@ -81,6 +82,7 @@ if __name__ == '__main__':
     max_std = args.max_std
     n_steps = args.n_steps
     do_local = args.do_local
+    do_remote = args.do_remote
 
     # generate data
     T, M_c, M_r, X_L, X_D = generate_clean_state(gen_seed,
@@ -119,7 +121,7 @@ if __name__ == '__main__':
     # actually run
     if do_local:
         xu.run_script_local(input_filename, script_filename, output_filename)
-    else:
+    elif do_remote:
         output_path = HE.output_path
         hadoop_engine = HE.HadoopEngine()
         was_successful = HE.send_hadoop_command(hadoop_engine,
