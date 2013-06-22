@@ -234,7 +234,6 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
             '-file %s' % table_data_filename,
             cmd_env_str,
             ])
-    print hadoop_cmd_str
     return hadoop_cmd_str
 
 def get_was_successful(output_path):
@@ -268,11 +267,13 @@ def write_hadoop_input():
 def get_hadoop_output_filename(output_path):
     hadoop_output_filename = os.path.join(output_path, 'part-00000')
     return hadoop_output_filename
-def read_hadoop_output(output_path):
-    hadoop_output_filename = get_hadoop_output_filename(output_path)
+def read_hadoop_output_file(hadoop_output_filename):
     with open(hadoop_output_filename) as fh:
         ret_dict = dict([xu.parse_hadoop_line(line) for line in fh])
     return ret_dict
+def read_hadoop_output(output_path):
+    hadoop_output_filename = get_hadoop_output_filename(output_path)
+    return read_hadoop_output_file(hadoop_output_filename)
 
 def get_uris(base_uri, hdfs_uri, jobtracker_uri):
     if base_uri is not None:
@@ -336,7 +337,11 @@ if __name__ == '__main__':
             M_c, M_r, X_L_list, X_D_list = hadoop_output
     elif command == 'analyze':
         assert resume_filename is not None
-        resume_dict = fu.unpickle(resume_filename)
+        if fu.is_pkl(resume_filename):
+          resume_dict = fu.unpickle(resume_filename)
+        else:
+          resume_dict = read_hadoop_output_file(resume_filename)
+        import pdb; pdb.set_trace()
         X_L_list = resume_dict['X_L_list']
         X_D_list = resume_dict['X_D_list']
         hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list,
