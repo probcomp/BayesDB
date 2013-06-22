@@ -21,8 +21,11 @@ import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.python_utils.xnet_utils as xu
 
 
+DEFAULT_CLUSTER = 'xdata_highmem'
+DEBUG = False
+
+
 hadoop_home = os.environ.get('HADOOP_HOME', '')
-#
 default_xdata_hadoop_binary = os.path.join(hadoop_home, 'bin/hadoop')
 default_xdata_hadoop_jar = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
 default_xdata_compute_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
@@ -35,19 +38,27 @@ default_starcluster_hadoop_jar = "/usr/lib/hadoop-0.20/contrib/streaming/hadoop-
 default_starcluster_hdfs_uri = None
 default_starcluster_jobtracker_uri = None
 #
-default_hadoop_jar = default_starcluster_hadoop_jar
-default_hdfs_uri = default_starcluster_hdfs_uri
-default_jobtracker_uri = default_starcluster_jobtracker_uri
-default_hadoop_binary = default_starcluster_hadoop_binary
+if DEFAULT_CLUSTER == 'starcluster':
+  default_hadoop_jar = default_starcluster_hadoop_jar
+  default_hadoop_binary = default_starcluster_hadoop_binary
+  default_hdfs_uri = default_starcluster_hdfs_uri
+  default_jobtracker_uri = default_starcluster_jobtracker_uri
+else:
+  default_hadoop_jar = default_xdata_hadoop_jar
+  default_hadoop_binary = default_xdata_hadoop_binary
+  if DEFAULT_CLUSTER == 'xdata_compute':
+    default_hdfs_uri = default_xdata_compute_hdfs_uri
+    default_jobtracker_uri = default_xdata_compute_jobtracker_uri
+  else:
+    default_hdfs_uri = default_xdata_highmem_hdfs_uri
+    default_jobtracker_uri = default_xdata_highmem_jobtracker_uri
+#
 default_engine_binary = "hadoop_line_processor"
 default_hdfs_dir = "/user/bigdata/SSCI/test_remote_streaming/"
-#
 input_filename = 'hadoop_input'
 table_data_filename = xu.default_table_data_filename
 output_path = 'myOutputDir'
 
-
-DEBUG = False
 
 class HadoopEngine(object):
 
