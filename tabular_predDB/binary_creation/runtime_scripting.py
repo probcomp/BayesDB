@@ -137,4 +137,5 @@ if __name__ == '__main__':
     else:
         hadoop_engine = HE.HadoopEngine()
         # print what the command would be
-        print HE.create_hadoop_cmd_str(hadoop_engine)
+        n_tasks = len(all_kernels)
+        print HE.create_hadoop_cmd_str(hadoop_engine, n_tasks=n_tasks)
