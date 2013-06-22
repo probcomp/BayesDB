@@ -447,14 +447,14 @@ def impute_and_confidence(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     samples = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
                                        get_next_seed, n)
     samples = numpy.array(samples).T[0]
-    # extract [mle] column sigma
-    col_sigma = X_L['column_hypers'][col_idx]['s']
     # determine what fraction of samples are within
     imputation_function = modeltype_to_imputation_function[modeltype]
     e, confidence = imputation_function(samples, get_next_seed,
                                         return_confidence=True)
     # FIXME: push this override into imputation_function
     if modeltype == 'normal_inverse_gamma':
+        # extract [mle] column sigma
+        col_sigma = X_L['column_hypers'][col_idx]['s']
         # override confidence
         delta = .1 * col_sigma
         confidence = get_continuous_mass_within_delta(samples, e, delta)
