@@ -24,28 +24,25 @@ import tabular_predDB.python_utils.xnet_utils as xu
 DEFAULT_CLUSTER = 'xdata_highmem'
 DEBUG = False
 
+xdata_hadoop_jar_420 = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
+xdata_hadoop_jar_412 = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.2.jar"
 
-hadoop_home = os.environ.get('HADOOP_HOME', '')
-default_xdata_hadoop_binary = os.path.join(hadoop_home, 'bin/hadoop')
-default_xdata_hadoop_jar = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
+default_xdata_hadoop_jar = xdata_hadoop_jar_420 if os.path.exists(xdata_hadoop_jar_420) else xdata_hadoop_jar_412
 default_xdata_compute_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 default_xdata_compute_jobtracker_uri = "xd-jobtracker.xdata.data-tactics-corp.com:8021"
 default_xdata_highmem_hdfs_uri = "hdfs://xd-hm-nn.xdata.data-tactics-corp.com:8020/"
 default_xdata_highmem_jobtracker_uri = "xd-hm-jt.xdata.data-tactics-corp.com:8021"
 #
-default_starcluster_hadoop_binary = "/usr/bin/hadoop"
 default_starcluster_hadoop_jar = "/usr/lib/hadoop-0.20/contrib/streaming/hadoop-streaming-0.20.2-cdh3u2.jar"
 default_starcluster_hdfs_uri = None
 default_starcluster_jobtracker_uri = None
 #
 if DEFAULT_CLUSTER == 'starcluster':
   default_hadoop_jar = default_starcluster_hadoop_jar
-  default_hadoop_binary = default_starcluster_hadoop_binary
   default_hdfs_uri = default_starcluster_hdfs_uri
   default_jobtracker_uri = default_starcluster_jobtracker_uri
 else:
   default_hadoop_jar = default_xdata_hadoop_jar
-  default_hadoop_binary = default_xdata_hadoop_binary
   if DEFAULT_CLUSTER == 'xdata_compute':
     default_hdfs_uri = default_xdata_compute_hdfs_uri
     default_jobtracker_uri = default_xdata_compute_jobtracker_uri
@@ -53,6 +50,7 @@ else:
     default_hdfs_uri = default_xdata_highmem_hdfs_uri
     default_jobtracker_uri = default_xdata_highmem_jobtracker_uri
 #
+default_hadoop_binary = 'hadoop'
 default_engine_binary = "hadoop_line_processor"
 default_hdfs_dir = "/user/bigdata/SSCI/test_remote_streaming/"
 input_filename = 'hadoop_input'
@@ -245,8 +243,6 @@ def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
                         output_path, n_tasks):
     # set up files
     put_hdfs(hadoop_engine.hdfs_uri, input_filename, hdfs_base_dir=hadoop_engine.hdfs_dir)
-    put_hdfs(hadoop_engine.hdfs_uri, table_data_filename,
-             hdfs_base_dir=hadoop_engine.hdfs_dir)
     rm_hdfs(hadoop_engine.hdfs_uri, output_path, hdfs_base_dir=hadoop_engine.hdfs_dir)
     # actually send
     hadoop_cmd_str = create_hadoop_cmd_str(hadoop_engine, n_tasks=n_tasks)
@@ -341,7 +337,6 @@ if __name__ == '__main__':
           resume_dict = fu.unpickle(resume_filename)
         else:
           resume_dict = read_hadoop_output_file(resume_filename)
-        import pdb; pdb.set_trace()
         X_L_list = resume_dict['X_L_list']
         X_D_list = resume_dict['X_D_list']
         hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list,
