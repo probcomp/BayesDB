@@ -52,7 +52,7 @@ else:
 #
 default_hadoop_binary = 'hadoop'
 default_engine_binary = "/user/bigdata/SSCI/hadoop_line_processor"
-default_hdfs_dir = "/user/bigdata/SSCI/test_remote_streaming/"
+default_hdfs_dir = "/user/bigdata/SSCI/"
 input_filename = 'hadoop_input'
 table_data_filename = xu.default_table_data_filename
 output_path = 'myOutputDir'
@@ -224,10 +224,6 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
             '-output "%s"' % os.path.join(hdfs_path, output_path),
             '-mapper "%s"' % mapper_path,
             '-reducer /bin/cat',
-
-            # FIXME: remove?  input must already be on hdfs
-            '-file %s' % input_filename,
-
             '-file %s' % table_data_filename,
             cmd_env_str,
             ])
@@ -241,22 +237,21 @@ def get_was_successful(output_path):
 
 def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
                         output_path, n_tasks):
-    # set up files
-    put_hdfs(hadoop_engine.hdfs_uri, input_filename, hdfs_base_dir=hadoop_engine.hdfs_dir)
-    rm_hdfs(hadoop_engine.hdfs_uri, output_path, hdfs_base_dir=hadoop_engine.hdfs_dir)
-    # actually send
-    hadoop_cmd_str = create_hadoop_cmd_str(hadoop_engine, n_tasks=n_tasks)
-    was_successful = None
-    if DEBUG:
-        print hadoop_cmd_str
-    else:
-        os.system(hadoop_cmd_str + ' >out 2>err')
-        # retrieve results
-        get_hdfs(hadoop_engine.hdfs_uri, output_path,
-                 hdfs_base_dir=hadoop_engine.hdfs_dir)
-        was_successful = get_was_successful(output_path)
-    return was_successful
-
+  # make sure output_path doesn't exist
+  rm_hdfs(hadoop_engine.hdfs_uri, output_path, hdfs_base_dir=hadoop_engine.hdfs_dir)
+  # actually send
+  hadoop_cmd_str = create_hadoop_cmd_str(hadoop_engine, n_tasks=n_tasks)
+  was_successful = None
+  if DEBUG:
+    print hadoop_cmd_str
+  else:
+    os.system(hadoop_cmd_str + ' >out 2>err')
+    # retrieve results
+    get_hdfs(hadoop_engine.hdfs_uri, output_path,
+             hdfs_base_dir=hadoop_engine.hdfs_dir)
+    was_successful = get_was_successful(output_path)
+  return was_successful
+  
 def write_hadoop_input():
     pass
 
