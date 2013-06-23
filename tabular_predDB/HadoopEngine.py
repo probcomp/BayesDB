@@ -51,7 +51,7 @@ else:
     default_jobtracker_uri = default_xdata_highmem_jobtracker_uri
 #
 default_hadoop_binary = 'hadoop'
-default_engine_binary = "hadoop_line_processor"
+default_engine_binary = "/user/bigdata/SSCI/hadoop_line_processor"
 default_hdfs_dir = "/user/bigdata/SSCI/test_remote_streaming/"
 input_filename = 'hadoop_input'
 table_data_filename = xu.default_table_data_filename
@@ -197,18 +197,14 @@ def put_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     return
 
 def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
-    hdfs_path = None
-    if hadoop_engine.hdfs_uri is None:
-    	hdfs_path = "hdfs://" + hadoop_engine.hdfs_dir
-    else:
-	hdfs_path = hadoop_engine.hdfs_uri + hadoop_engine.hdfs_dir
-    archive_path = os.path.join(hdfs_path, 
-                                hadoop_engine.which_engine_binary + '.jar')
+    hdfs_uri = hadoop_engine.hdfs_uri if hadoop_engine.hdfs_uri is not None else "hdfs://"
+    hdfs_path = os.path.join(hdfs_uri, hadoop_engine.hdfs_dir)
+    # note: hdfs_path is hadoop_engine.hdfs_dir is omitted
+    archive_path = hdfs_uri + hadoop_engine.which_engine_binary + '.jar'
+    engine_binary_infix = os.path.splitext(os.path.split(hadoop_engine.which_engine_binary)[-1])[0]
     ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
-    ld_library_path = './%s.jar:%s' % (hadoop_engine.which_engine_binary,
-                                       ld_library_path)
-    mapper_path = '%s.jar/%s' % (hadoop_engine.which_engine_binary,
-                                 hadoop_engine.which_engine_binary)
+    ld_library_path = './%s.jar:%s' % (engine_binary_infix, ld_library_path)
+    mapper_path = '%s.jar/%s' % (engine_binary_infix, engine_binary_infix)
     #
     jar_str = '%s jar %s' % (hadoop_engine.which_hadoop_binary,
                              hadoop_engine.which_hadoop_jar)
@@ -228,10 +224,14 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
             '-output "%s"' % os.path.join(hdfs_path, output_path),
             '-mapper "%s"' % mapper_path,
             '-reducer /bin/cat',
+
+            # FIXME: remove?  input must already be on hdfs
             '-file %s' % input_filename,
+
             '-file %s' % table_data_filename,
             cmd_env_str,
             ])
+    print hadoop_cmd_str
     return hadoop_cmd_str
 
 def get_was_successful(output_path):
