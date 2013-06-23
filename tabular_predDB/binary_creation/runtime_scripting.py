@@ -64,10 +64,27 @@ def generate_hadoop_dicts(which_kernels, X_L, X_D, args_dict):
     for which_kernel in which_kernels:
         kernel_list = (which_kernel, )
         dict_to_write = dict(X_L=X_L, X_D=X_D)
-        dict_to_write.update(time_analyze_args_dict)
+        dict_to_write.update(args_dict)
         # must write kernel_list after update
         dict_to_write['kernel_list'] = kernel_list
         yield dict_to_write
+
+def write_hadoop_input(input_filename, X_L, X_D, n_steps, SEED):
+    # prep settings dictionary
+    time_analyze_args_dict = xu.default_analyze_args_dict
+    time_analyze_args_dict['command'] = 'time_analyze'
+    time_analyze_args_dict['SEED'] = SEED
+    time_analyze_args_dict['n_steps'] = n_steps
+    # one kernel per line
+    all_kernels = State.transition_name_to_method_name_and_args.keys()
+    n_tasks = 0
+    with open(input_filename, 'w') as out_fh:
+        dict_generator = generate_hadoop_dicts(all_kernels, X_L, X_D, time_analyze_args_dict)
+        for dict_to_write in dict_generator:
+            xu.write_hadoop_line(out_fh, key=dict_to_write['SEED'], dict_to_write=dict_to_write)
+            n_tasks += 1
+    return n_tasks
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -90,6 +107,12 @@ if __name__ == '__main__':
     do_local = args.do_local
     do_remote = args.do_remote
 
+    # some hadoop processing related settings
+    table_data_filename = 'table_data.pkl.gz'
+    input_filename = 'hadoop_input'
+    script_filename = 'hadoop_line_processor.py'
+    output_filename = 'hadoop_output'
+
     # generate data
     T, M_c, M_r, X_L, X_D = generate_clean_state(gen_seed,
                                                  num_clusters,
@@ -97,28 +120,11 @@ if __name__ == '__main__':
                                                  num_splits,
                                                  max_mean=10, max_std=1)
 
-    # some hadoop processing related settings
-    table_data_filename = 'table_data.pkl.gz'
-    input_filename = 'hadoop_input'
-    script_filename = 'hadoop_line_processor.py'
-    output_filename = 'hadoop_output'
-    SEED = gen_seed
-
-    # prep settings dictionary
-    time_analyze_args_dict = xu.default_analyze_args_dict
-    time_analyze_args_dict['SEED'] = SEED
-    time_analyze_args_dict['command'] = 'time_analyze'
-    time_analyze_args_dict['n_steps'] = n_steps
-
-    # write table_data and hadoop input
+    # write table_data
     table_data = dict(M_c=M_c, M_r=M_r, T=T)
     xu.pickle_table_data(table_data, table_data_filename)
-    # one kernel per line
-    all_kernels = State.transition_name_to_method_name_and_args.keys()
-    with open(input_filename, 'w') as out_fh:
-        dict_generator = generate_hadoop_dicts(all_kernels, X_L, X_D, time_analyze_args_dict)
-        for dict_to_write in dict_generator:
-            xu.write_hadoop_line(out_fh, key=dict_to_write['SEED'], dict_to_write=dict_to_write)
+    # write hadoop input
+    n_tasks = write_hadoop_input(input_filename, X_L, X_D, n_steps, SEED=gen_seed)
 
     # actually run
     if do_local:
@@ -129,7 +135,7 @@ if __name__ == '__main__':
         was_successful = HE.send_hadoop_command(hadoop_engine,
                                                 table_data_filename,
                                                 input_filename,
-                                                output_path, n_tasks=2)
+                                                output_path, n_tasks=n_tasks)
         if was_successful:
             hadoop_output = HE.read_hadoop_output(output_path)
             hadoop_output_filename = HE.get_hadoop_output_filename(output_path)
@@ -139,5 +145,4 @@ if __name__ == '__main__':
     else:
         hadoop_engine = HE.HadoopEngine()
         # print what the command would be
-        n_tasks = len(all_kernels)
         print HE.create_hadoop_cmd_str(hadoop_engine, n_tasks=n_tasks)
