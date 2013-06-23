@@ -60,6 +60,14 @@ def generate_clean_state(gen_seed, num_clusters,
                                          num_clusters, num_splits)
     return T, M_c, M_r, X_L, X_D
 
+def generate_hadoop_dicts(which_kernels, X_L, X_D, args_dict):
+    for which_kernel in which_kernels:
+        kernel_list = (which_kernel, )
+        dict_to_write = dict(X_L=X_L, X_D=X_D)
+        dict_to_write.update(time_analyze_args_dict)
+        # must write kernel_list after update
+        dict_to_write['kernel_list'] = kernel_list
+        yield dict_to_write
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -96,7 +104,7 @@ if __name__ == '__main__':
     input_filename = 'hadoop_input'
     script_filename = 'hadoop_line_processor.py'
     output_filename = 'hadoop_output'
-    SEED = 0
+    SEED = gen_seed
 
     # prep settings dictionary
     time_analyze_args_dict = xu.default_analyze_args_dict
@@ -110,12 +118,8 @@ if __name__ == '__main__':
     # one kernel per line
     all_kernels = State.transition_name_to_method_name_and_args.keys()
     with open(input_filename, 'w') as out_fh:
-        for which_kernel in all_kernels:
-            kernel_list = (which_kernel, )
-            dict_to_write = dict(X_L=X_L, X_D=X_D)
-            dict_to_write.update(time_analyze_args_dict)
-            # must write kernel_list after update
-            dict_to_write['kernel_list'] = kernel_list
+        dict_generator = generate_hadoop_dicts(all_kernels, X_L, X_D, time_analyze_args_dict)
+        for dict_to_write in dict_generator:
             xu.write_hadoop_line(out_fh, key=dict_to_write['SEED'], dict_to_write=dict_to_write)
 
     # actually run
