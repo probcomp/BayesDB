@@ -76,7 +76,6 @@ if __name__ == '__main__':
     parser.add_argument('--num_rows', type=int, default=1000)
     parser.add_argument('--num_cols', type=int, default=20)
     parser.add_argument('--num_splits', type=int, default=2)
-    parser.add_argument('--max_std', type=float, default=.001)
     parser.add_argument('--n_steps', type=int, default=10)
     parser.add_argument('-do_local', action='store_true')
     parser.add_argument('-do_remote', action='store_true')
@@ -87,7 +86,6 @@ if __name__ == '__main__':
     num_cols = args.num_cols
     num_rows = args.num_rows
     num_splits = args.num_splits
-    max_std = args.max_std
     n_steps = args.n_steps
     do_local = args.do_local
     do_remote = args.do_remote
