@@ -264,6 +264,13 @@ def get_was_successful(output_path):
     was_successful = os.path.isfile(success_file)
     return was_successful
 
+def ensure_dir(dir):
+  try:
+    os.makedirs(dir)
+  except:
+    pass
+  return
+
 def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
                         output_path, n_tasks):
   # make sure output_path doesn't exist
@@ -276,8 +283,10 @@ def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
   if DEBUG:
     print hadoop_cmd_str
   else:
-    out_filename = os.path.join(output_path, 'out')
-    err_filename = os.path.join(output_path, 'err')
+    ensure_dir(output_path)
+    output_path_dotdot = os.path.split(output_path)[0]
+    out_filename = os.path.join(output_path_dotdot, 'out')
+    err_filename = os.path.join(output_path_dotdot, 'err')
     redirect_str = ' >>%s 2>>%s'
     redirect_str %= (out_filename, err_filename)
     os.system(hadoop_cmd_str + redirect_str)
