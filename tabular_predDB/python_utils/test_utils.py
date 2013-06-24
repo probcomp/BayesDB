@@ -4,15 +4,17 @@
 #  1.GenerateRandomState(): Generates a random state and fills with gaussian data
 #  2.GenerateRandomPartition(): Generates a random state (partitions only)
 #  3.CRP(): Generates an assignment vector according to the CRP
-#  4.pflip(): flips an n-dimensional hyper-coin
+#  4.pflip(): flips an n-dimensional hypercoin
 #  5.GenDataFromPartitions(): generates data adhearing to a partitioning scheme
 #  6.Bell(): Returns the Bell number
 #  7.Stirling2nd(): Returns the Stirling number of the 2nd kind, s(n,k)
 #  8.lcrp(): returns the log probability of a partition under the CRP
-#  9.NIX2ML(): calcultes the Normal Inverse-Chi Squre marginal likelihood
-# 10.CCML(): Calculates the marginal likelihood of a data array under CrossCat
-# 11.CrossCatPartitions: Partition object. Enumerates all states.
-# 12.Partition: Used to enumerate partitions for CrossCatPartitions
+#  9.NGML(): calculates the Normal-Gamma marginal likelihood
+# 10.CCML(): Calculates the marginal likelihood of a continuous data array under CrossCat
+# 11.FixPriors(): Changes the priors in X_L
+# 12.vectorToCHMat(): converts Assignment vector to cohabitation matrix (for state matching)
+# 13.(class) CrossCatPartitions: Partition object. Enumerates all states.
+# 14.(class) Partition: Used to enumerate partitions for CrossCatPartitions
 
 from time import time
 
@@ -437,30 +439,30 @@ def lcrp(prt,alpha):
 
 	return lp
 
-# Normal-Chi-Square marginal likelihood 
-# Taken from Ken Murphy's "Conjugate Bayesian analysis of the Gaussian 
-# distribution" (2007) @ http://www.cs.ubc.ca/~murphyk/Papers/bayesGauss.pdf
-def NIX2ML(X,mu,r,nu,s):
-	k = r
+# Normal-Gamma marginal likelihood 
+# Taken from Yee Whye Teh's "The Normal Exponential Family with 
+# Normal-Inverse-Gamma Prior"
+# http://www.stats.ox.ac.uk/~teh/research/notes/GaussianInverseGamma.pdf
+def NGML(X,mu,r,nu,s):
 
 	X = np.array(X.flatten(1))
 
 	# constant
-	LOGPI = math.log(math.pi)
+	LOGPI = np.log(math.pi)
 
 	n = float(len(X)) 	# number of data points
 	xbar = np.mean(X)	
 
 	# update parameters
-	k_n  = float(k+n)
-	nu_n = nu + n
-	mu_n = (k*mu+n*xbar)/k_n
-	s_n  = (1.0/nu_n)*(nu*s+sum((X-xbar)**2.0)+((n*k)/(k+n))*(mu-xbar)**2.0)
+	rp  = r + n;
+	nup = nu + n;
+	mup = (r*mu+sum(X))/(r+n);
+	spr = s + sum(X**2)+r*mu**2-rp*mup**2
 
 	# the log answer
-	lp1 = sp.special.gammaln(nu_n/2.0)+(.5)*math.log(k)+(nu/2.0)*math.log(nu*s)
-	lp2 = sp.special.gammaln(nu/2.0)+(.5)*math.log(k_n)+(nu_n/2.0)*math.log(nu_n*s_n)+(n/2.0)*LOGPI
-	lp = lp1-lp2
+	lp1 = (-n/2)*LOGPI - (1/2)*np.log(rp)-(nup/2)*np.log(spr)+sp.special.gammaln(nup/2);
+	lp2 = -(1/2)*np.log(r)-(nu/2)*np.log(s)+sp.special.gammaln(nu/2);
+	lp = lp1-lp2;
 
 	if np.isnan(lp):
 		# print "X"
@@ -511,7 +513,7 @@ def CCML(ccpart,ccmat,mu,r,nu,s,row_alpha,col_alpha):
 			for col in cols_view:
 				for cat in range(row_part.max()):
 					X = ccmat[np.nonzero(row_part==cat+1)[0],col]
-					lp_temp += NIX2ML(X,mu,r,nu,s)
+					lp_temp += NGML(X,mu,r,nu,s)
 
 		lp.append(lp_temp);
 
