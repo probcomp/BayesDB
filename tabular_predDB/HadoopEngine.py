@@ -53,9 +53,9 @@ else:
 default_hadoop_binary = 'hadoop'
 default_engine_binary = "/user/bigdata/SSCI/hadoop_line_processor"
 default_hdfs_dir = "/user/bigdata/SSCI/"
-input_filename = 'hadoop_input'
-table_data_filename = xu.default_table_data_filename
-output_path = 'myOutputDir'
+default_output_path = 'myOutputDir'
+default_input_filename = 'hadoop_input'
+default_table_data_filename = xu.default_table_data_filename
 
 
 class HadoopEngine(object):
@@ -68,6 +68,9 @@ class HadoopEngine(object):
                  hdfs_uri=default_hdfs_uri,
                  which_hadoop_jar=default_hadoop_jar,
 		 which_hadoop_binary=default_hadoop_binary,
+                 output_path=default_output_path,
+                 input_filename=default_input_filename,
+                 table_data_filename=default_table_data_filename,
                  ):
         xu.assert_vpn_is_connected()
         #
@@ -79,35 +82,47 @@ class HadoopEngine(object):
         self.jobtracker_uri = jobtracker_uri
         self.hdfs_uri = hdfs_uri
         self.which_hadoop_jar = which_hadoop_jar
+        self.output_path = output_path
+        self.input_filename = input_filename
+        self.table_data_filename = table_data_filename
         return
 
     def initialize(self, M_c, M_r, T, initialization='from_the_prior',
                    n_chains=1):
-        xu.assert_vpn_is_connected()
-        initialize_args_dict = dict(command='initialize', initialization=initialization)
-        #
-        table_data = dict(M_c=M_c, M_r=M_r, T=T)
-        xu.pickle_table_data(table_data, table_data_filename)
-        xu.write_initialization_files(input_filename, initialize_args_dict, n_chains)
-        os.system('cp %s initialize_input' % input_filename)
-        was_successful = send_hadoop_command(self,
-                                            table_data_filename,
-                                            input_filename, output_path,
-                                            n_tasks=n_chains)
-        hadoop_output = None
-        if was_successful:
-            hadoop_output = read_hadoop_output(output_path)
-            hadoop_output_filename = get_hadoop_output_filename(output_path)
-            os.system('cp %s initialize_output' % hadoop_output_filename)
-            X_L_list = [el['X_L'] for el in hadoop_output.values()]
-            X_D_list = [el['X_D'] for el in hadoop_output.values()]
-            # make output format match LocalEngine
-            hadoop_output = M_c, M_r, X_L_list, X_D_list
-        return hadoop_output
+      output_path = self.output_path
+      input_filename = self.input_filename
+      table_data_filename = self.table_data_filename
+      xu.assert_vpn_is_connected()
+      #
+      initialize_args_dict = dict(command='initialize', initialization=initialization)
+      #
+      table_data = dict(M_c=M_c, M_r=M_r, T=T)
+      xu.pickle_table_data(table_data, table_data_filename)
+      # fixme: need to prepend output_path to input_filename
+      xu.write_initialization_files(input_filename, initialize_args_dict, n_chains)
+      # os.system('cp %s initialize_input' % input_filename)
+      was_successful = send_hadoop_command(self,
+                                           table_data_filename,
+                                           input_filename, output_path,
+                                           n_tasks=n_chains)
+      hadoop_output = None
+      if was_successful:
+        hadoop_output = read_hadoop_output(output_path)
+        hadoop_output_filename = get_hadoop_output_filename(output_path)
+        os.system('cp %s initialize_output' % hadoop_output_filename)
+        X_L_list = [el['X_L'] for el in hadoop_output.values()]
+        X_D_list = [el['X_D'] for el in hadoop_output.values()]
+        # make output format match LocalEngine
+        hadoop_output = M_c, M_r, X_L_list, X_D_list
+      return hadoop_output
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1):
+        output_path = self.output_path
+        input_filename = self.input_filename
+        table_data_filename = self.table_data_filename
         xu.assert_vpn_is_connected()
+        #
         analyze_args_dict = dict(command='analyze', kernel_list=kernel_list,
                                  n_steps=n_steps, c=c, r=r)
         if not xu.get_is_multistate(X_L, X_D):
@@ -115,7 +130,9 @@ class HadoopEngine(object):
             X_D = [X_D]
         #
         table_data = dict(M_c=M_c, T=T)
+        # fixme: need to prepend output_path to table_data_filename
         xu.pickle_table_data(table_data, table_data_filename)
+        # fixme: need to prepend output_path to input_filename
         with open(input_filename, 'w') as fh:
             for SEED, (X_L_i, X_D_i) in enumerate(zip(X_L, X_D)):
                 dict_out = dict(X_L=X_L_i, X_D=X_D_i, SEED=SEED)
@@ -182,12 +199,23 @@ def get_hdfs(hdfs_uri, path, hdfs_base_dir=''):
         os.system(cmd_str)
     return
 
+def ensure_dir_hdfs(fs_str, hdfs_path):
+  dirname = os.path.split(hdfs_path)[0]
+  cmd_str = 'hadoop fs %s -mkdir %s'
+  cmd_str %= (fs_str, dirname)
+  if DEBUG:
+    print cmd_str
+  else:
+    os.system(cmd_str)
+  return
+
 def put_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     hdfs_path = os.path.join(hdfs_base_dir, path)
     # clear hdfs path
     rm_hdfs(hdfs_uri, path, hdfs_base_dir)
     # put to hdfs
     fs_str = ('-fs "%s"' % hdfs_uri) if hdfs_uri is not None else ''
+    ensure_dir_hdfs(fs_str, hdfs_path)
     cmd_str = 'hadoop fs %s -put %s %s'
     cmd_str %= (fs_str, path, hdfs_path)
     if DEBUG:
@@ -220,11 +248,12 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
             archive_str,
             fs_str,
 	    jt_str,
-            '-input "%s"' % os.path.join(hdfs_path, input_filename),
-            '-output "%s"' % os.path.join(hdfs_path, output_path),
+            # fixme: need to prepend output_path to input_filename
+            '-input "%s"' % os.path.join(hdfs_path, hadoop_engine.input_filename),
+            '-output "%s"' % os.path.join(hdfs_path, hadoop_engine.output_path),
             '-mapper "%s"' % mapper_path,
             '-reducer /bin/cat',
-            '-file %s' % table_data_filename,
+            '-file %s' % hadoop_engine.table_data_filename,
             cmd_env_str,
             ])
     print hadoop_cmd_str
@@ -239,6 +268,8 @@ def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
                         output_path, n_tasks):
   # make sure output_path doesn't exist
   rm_hdfs(hadoop_engine.hdfs_uri, output_path, hdfs_base_dir=hadoop_engine.hdfs_dir)
+  # send up input
+  put_hdfs(hadoop_engine.hdfs_uri, input_filename, hdfs_base_dir=hadoop_engine.hdfs_dir)
   # actually send
   hadoop_cmd_str = create_hadoop_cmd_str(hadoop_engine, n_tasks=n_tasks)
   was_successful = None
