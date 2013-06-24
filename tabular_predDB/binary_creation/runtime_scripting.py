@@ -1,5 +1,6 @@
 import os
 import argparse
+import tempfile
 #
 import numpy
 #
@@ -107,11 +108,17 @@ if __name__ == '__main__':
     do_local = args.do_local
     do_remote = args.do_remote
 
-    # some hadoop processing related settings
-    table_data_filename = 'table_data.pkl.gz'
-    input_filename = 'hadoop_input'
+
     script_filename = 'hadoop_line_processor.py'
-    output_filename = 'hadoop_output'
+    # some hadoop processing related settings
+    temp_dir = tempfile.mkdtemp(prefix='runtime_analysis_',
+                                dir='runtime_analysis')
+    print 'using dir: %s' % temp_dir
+    #
+    table_data_filename = os.path.join(temp_dir, 'table_data.pkl.gz')
+    input_filename = os.path.join(temp_dir, 'hadoop_input')
+    output_filename = os.path.join(temp_dir, 'hadoop_output')
+    output_path = os.path.join(temp_dir, 'output')
 
     # generate data
     T, M_c, M_r, X_L, X_D = generate_clean_state(gen_seed,
@@ -130,8 +137,10 @@ if __name__ == '__main__':
     if do_local:
         xu.run_script_local(input_filename, script_filename, output_filename)
     elif do_remote:
-        output_path = HE.output_path
-        hadoop_engine = HE.HadoopEngine()
+        hadoop_engine = HE.HadoopEngine(output_path=output_path,
+                                        input_filename=input_filename,
+                                        table_data_filename=table_data_filename,
+                                        )
         was_successful = HE.send_hadoop_command(hadoop_engine,
                                                 table_data_filename,
                                                 input_filename,
