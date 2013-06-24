@@ -276,7 +276,11 @@ def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
   if DEBUG:
     print hadoop_cmd_str
   else:
-    os.system(hadoop_cmd_str + ' >out 2>err')
+    out_filename = os.path.join(output_path, 'out')
+    err_filename = os.path.join(output_path, 'err')
+    redirect_str = ' >>%s 2>>%s'
+    redirect_str %= (out_filename, err_filename)
+    os.system(hadoop_cmd_str + redirect_str)
     # retrieve results
     get_hdfs(hadoop_engine.hdfs_uri, output_path,
              hdfs_base_dir=hadoop_engine.hdfs_dir)
