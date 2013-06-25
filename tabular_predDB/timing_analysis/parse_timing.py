@@ -1,3 +1,5 @@
+import sys
+#
 import numpy
 #
 import tabular_predDB.python_utils.xnet_utils as xu
@@ -41,16 +43,22 @@ def parse_reduced_line(reduced_line):
     return num_rows, num_cols, num_clusters, num_views, \
         time_per_step, which_kernel
 
-filename = '/usr/local/tabular_predDB/tabular_predDB/' + 'hadoop_output_cat'
-with open(filename) as fh:
-    lines = [
-        xu.parse_hadoop_line(line)
-        for line in fh
-        ]
 
-header = 'num_rows, num_cols, num_clusters, num_views, time_per_step, which_kernel'
-print header
-reduced_lines = map(lambda x: x[1], lines)
-for reduced_line in reduced_lines:
-    parsed_line = parse_reduced_line(reduced_line)
-    print ', '.join(map(str, parsed_line))
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', type=str)
+    args = parser.parse_args()
+    filename = args.filename
+
+    with open(filename) as fh:
+        lines = []
+        for line in fh:
+            lines.append(xu.parse_hadoop_line(line))
+
+    header = 'num_rows, num_cols, num_clusters, num_views, time_per_step, which_kernel'
+    print header
+    reduced_lines = map(lambda x: x[1], lines)
+    for reduced_line in reduced_lines:
+        parsed_line = parse_reduced_line(reduced_line)
+        print ', '.join(map(str, parsed_line))
