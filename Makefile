@@ -1,49 +1,33 @@
-OPTIMIZED = 
-ifdef OPTIMIZED
-CXXOPTS := -O2 -g $(CXXOPTS)
-else
-CXXOPTS := -g $(CXXOPTS)	
-endif
-
-CC = gcc
-CXX = g++
-CXXOPTS :=  $(CXXOPTS) -lm -lboost_program_options
-
-INC=include/CrossCat
-SRC=src
-OBJ=obj
-TEST=tests
-#
-BIN = model
-MAIN = main.cpp
-NAMES = ContinuousComponentModel MultinomialComponentModel ComponentModel \
-	Cluster View State \
-	utils numerics RandomNumberGenerator DateTime
-TEST_NAMES = test_continuous_component_model test_multinomial_component_model \
-	test_cluster test_view test_view_speed test_state
-HEADERS = $(foreach name, $(NAMES), $(INC)/$(name).h)
-SOURCES = $(foreach name, $(NAMES) $(MAIN), $(SRC)/$(name).cpp)
-OBJECTS = $(foreach name, $(NAMES), $(OBJ)/$(name).o)
-TESTS = $(foreach test, $(TEST_NAMES), $(TEST)/$(test))
+CPP_DIR=cpp_code
+CYT=tabular_predDB/cython_code
+DOC=docs
+TEST=tabular_predDB/tests
+XNET=tabular_predDB/binary_creation
 
 
-all: $(OBJECTS)
-
-bin: $(BIN)
-	./$(BIN)
-
-# run each test
-tests: $(TESTS)
-	@echo tests are: $(TESTS) $(foreach test, $(TESTS), && ./$(test))
-
-$(BIN): $(MAIN) $(OBJECTS)
-	$(CXX) -o $(BIN) $(MAIN) $(OBJECTS) $(CXXOPTS) -I$(INC)
-
-$(OBJ)/%.o: $(SRC)/%.cpp $(INC)/%.h $(HEADERS)
-	$(CXX) -c $< -o $@ $(CXXOPTS) -I$(INC)
-
-$(TEST)/%: $(TEST)/%.cpp $(HEADERS) $(OBJECTS)
-	$(CXX) $< -o $@ $(CXXOPTS) -I$(INC) $(OBJECTS)
+all: cython doc
 
 clean:
-	rm -f $(BIN) $(OBJECTS) core *.stackdump *.gch $(TESTS)
+	cd $(CPP_DIR) && make clean
+	cd $(CYT) && make clean
+	cd $(DOC) && make clean
+	cd $(TEST) && make clean
+	cd $(XNET) && make clean
+
+cpp:
+	cd $(CPP_DIR) && make
+
+cython:
+	cd $(CYT) && make
+
+doc:
+	cd $(DOC) && make
+
+runtests:
+	cd $(TEST) && make runtests
+
+tests:
+	cd $(TEST) && make tests
+
+xnet:
+	cd $(XNET) && make

@@ -1,15 +1,18 @@
 tabular-predDB
 ==============
 
-tabular predictive database
+The [wiki](http://probcomp.csail.mit.edu/preddb/index.php?title=BayesDB) is the primary source of documentation.
 
-Instructions for building
--------------------------------------------------
-    > cd /path/to/tabular-predDB
-    > make
+Below are the links to the wiki corresponding to commons README sections.
 
-Running tests
----------------------------
-    > # capture stdout, stderr separately
-    > cd /path/to/tabular-predDB
-    > make tests >tests.out 2>tests.err
+[Installation](http://probcomp.csail.mit.edu/preddb/index.php?title=Installation_overview)
+==============
+
+["Hello, World"/Use Cases](http://probcomp.csail.mit.edu/preddb/index.php?title=Use_Case_Examples_(Local_CrossCat_Engine\))
+============
+
+[Docs/API](http://probcomp.csail.mit.edu/preddb/index.php?title=API)
+============
+
+[Platform-specific unit and integration tests](http://probcomp.csail.mit.edu/preddb/index.php?title=PredictiveDB#Tests)
+==============

@@ -1,0 +1,44 @@
+# yolk is for looking at python packages available
+yolk==0.4.3
+#
+# for api server
+jsonrpc==1.2
+requests==1.0.3
+Twisted==12.3.0
+pyOpenSSL==0.13
+#
+# for engine
+cython==0.17.1
+# sudo apt-get install -y python-dev
+numpy==1.7.0
+# for engine for matplotlib
+# sudo apt-get install -y tk-dev
+# sudo apt-get install -y libfreetype6-dev
+# sudo apt-get install -y libpng12-dev
+freetype-py==0.4.1
+matplotlib==1.2.0
+# for middleware
+psycopg2==2.4.6
+# this fails and needs to be done manually
+# don't include in install from scratch, else install will lose progress
+# hcluster==0.2.0
+# manual process is as follows
+# pip install --download ./ hcluster==0.2.0
+# tar xvfz hcluster-0.2.0.tar.gz 
+# cd hcluster-0.2.0
+# python setup.py install
+# choose option 2
+
+# freeze for creating binaries to run with hadoop streaming
+# must manually install per https://github.com/pypa/pip/issues/537
+# cx_freeze==4.3.1
+
+# starcluster, only necessary on local computer spinning up a cluster
+# Jinja2==2.6
+# StarCluster==0.93.3
+# boto==2.3.0
+# decorator==3.3.1
+# pyasn1==0.0.13b
+# pycrypto==2.6
+# ssh==1.7.13
+# workerpool==0.9.2
