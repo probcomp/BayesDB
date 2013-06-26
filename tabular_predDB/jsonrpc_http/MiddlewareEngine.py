@@ -571,7 +571,8 @@ class MiddlewareEngine(object):
       filename = tablename + '_feature_z'
     full_filename = os.path.join(dir, filename)
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-    do_gen_feature_z(X_L_list, X_D_list, M_c, full_filename, tablename)
+    return do_gen_feature_z(X_L_list, X_D_list, M_c,
+                            full_filename, tablename)
 
   def dump_db(self, filename, dir=S.path.web_resources_dir):
     full_filename = os.path.join(dir, filename)
@@ -731,6 +732,12 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
                                   rotation=90, size='small')
     pylab.title('column dependencies for: %s' % tablename)
     pylab.savefig(filename)
+    #
+    ret_dict = dict(
+      z_matrix_reordered=z_matrix_reordered,
+      column_names_reordered=column_names_reordered,
+      )
+    return ret_dict
 
 def write_json_for_table(t_dict, M_c, X_L_list, X_D_list, M_r=None):
     dir=S.path.web_resources_data_dir
