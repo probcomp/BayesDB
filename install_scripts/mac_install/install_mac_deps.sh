@@ -218,7 +218,19 @@ else
 fi
 
 echo -ne "Installing hcluster. "
-sudo pip install hcluster 1>> /dev/null 2>> $ERR_FILE
+sudo pip install -d . --no-install hcluster 1>> /dev/null 2>> $ERR_FILE
+if [ $? = 1 ]
+then
+	echo Failed.
+	echo "hcluster failed to download. Check $ERR_FILE."
+	exit
+else
+	echo "done."
+fi
+tar xvfz hcluster-0.2.0.tar.gz 
+cd hcluster-0.2.0
+perl -pi.bak -e "s/input('Selection [default=1]:')/2/" setup.py
+sudo python setup.py install 1>> /dev/null 2>> $ERR_FILE
 if [ $? = 1 ]
 then
 	echo Failed.
