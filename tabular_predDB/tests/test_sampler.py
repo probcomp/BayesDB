@@ -1,19 +1,14 @@
 import numpy as np
 import random
-import pdb
-
-# FIXME: this is a hack and should be fixed to inclue test utils as a module:
-# import tabular_predDB.python_utils.test_utils as tu
 import sys
-sys.path.insert(0, '../python_utils/')
 
-import test_utils as tu
+import tabular_predDB.python_utils.enumerate_utils as eu
 import tabular_predDB.cython_code.State as State
 import pylab
 from scipy.stats import pearsonr as pearsonr
 
 # Do we want to plot the results?
-do_plot = True
+do_plot = False
 
 if do_plot:
 	pylab.ion()
@@ -41,7 +36,7 @@ burns = 20	# burn in before collection
 n_highest = 20
 
 # enumerate all state partitions
-state_partitions = tu.CrossCatPartitions(n_rows, n_cols)
+state_partitions = eu.CrossCatPartitions(n_rows, n_cols)
 NS = state_partitions.N;
 
 # the number of states to run the test on (randomly seelected)
@@ -49,16 +44,16 @@ n_states = 10;
 
 print "Testing the sampler against enumerated answer for data generated from \n%i random states." % n_states
 
-# for state in random.sample(state_partitions.states, n_states):
-for state in state_partitions.states:
+for state in random.sample(state_partitions.states, n_states):
+# for state in state_partitions.states:
 
 	progress = "[State %i] Collecting samples..." % (state['idx'])
 	sys.stdout.write(progress)
 
 	# Generate data from this state partition
-	T, M_r, M_c = tu.GenDataFromPartitions(state['col_parts'], state['row_parts'], 0, 10, .5)
+	T, M_r, M_c = eu.GenDataFromPartitions(state['col_parts'], state['row_parts'], 0, 10, .5)
 	# calculate the probability of the data under each state
-	P = np.exp(tu.CCML(state_partitions, T, mu, r, nu, s, alpha, alpha))
+	P = np.exp(eu.CCML(state_partitions, T, mu, r, nu, s, alpha, alpha))
 	# print "done."
 	
 	# initialize state samples counter
@@ -68,7 +63,7 @@ for state in state_partitions.states:
 	# start collecting samples
 	# initalize the sampler
 	p_State = State.p_State(M_c, T, N_GRID=100)
-	X_L = tu.FixPriors(p_State.get_X_L(), alpha, mu, s, r, nu)
+	X_L = eu.FixPriors(p_State.get_X_L(), alpha, mu, s, r, nu)
 	X_D = p_State.get_X_D()
 	p_State = State.p_State(M_c, T, N_GRID=100, X_L=X_L, X_D=X_D)
 
