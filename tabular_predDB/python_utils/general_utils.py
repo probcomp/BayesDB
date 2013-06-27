@@ -45,3 +45,6 @@ def get_method_name_to_args(obj):
         arg_str_list = inspect.getargspec(method).args[1:]
         method_name_to_args[method_name] = arg_str_list
     return method_name_to_args
+
+def get_getname(name):
+    return lambda in_dict: in_dict[name]
