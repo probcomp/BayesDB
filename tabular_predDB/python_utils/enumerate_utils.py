@@ -59,10 +59,9 @@ def GenerateRandomState(n_rows, n_cols, mean_gen=0.0, std_gen=1.0, std_data=0.1,
 
 	# generate the partitioning
 	part = CrossCatPartitions(n_rows, n_cols, alpha_col, alpha_rows)
+	# fill it with data
 	T, M_r, M_c = GenDataFromPartitions(part['col_parts'], part['row_parts'], mean_gen, std_gen, std_data)
 
-
-	# fill it with data
 	return T, M_r, M_c
 
 # generates a random partitioning of n_rows rows and n_cols columns based on the
