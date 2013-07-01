@@ -58,8 +58,8 @@ def GenerateRandomState(n_rows, n_cols, mean_gen=0.0, std_gen=1.0, std_data=0.1,
 	assert(alpha_row > 0.0)
 
 	# generate the partitioning
-	part = su_CrossCatPartitions(n_rows, n_cols, alpha_col, alpha_rows)
-	T, M_r, M_c = su_GenDataFromPartitions(part['col_parts'], part['row_parts'], mean_gen, std_gen, std_data)
+	part = CrossCatPartitions(n_rows, n_cols, alpha_col, alpha_rows)
+	T, M_r, M_c = GenDataFromPartitions(part['col_parts'], part['row_parts'], mean_gen, std_gen, std_data)
 
 
 	# fill it with data
@@ -67,7 +67,7 @@ def GenerateRandomState(n_rows, n_cols, mean_gen=0.0, std_gen=1.0, std_data=0.1,
 
 # generates a random partitioning of n_rows rows and n_cols columns based on the
 # CRP. The resulting partition is a dict with two entries: ['col_parts'] and
-# ['row_parts']. See su_CrossCatPartitions for details on these.
+# ['row_parts']. See CrossCatPartitions for details on these.
 def GenerateRandomPartition(n_rows, n_cols, alpha_col=1.0, alpha_rows=1.0):
 	assert(type(n_rows) is int)
 	assert(type(n_cols) is int)
@@ -131,7 +131,7 @@ def pflip(P):
 	rand.seed(None)
 	if type(P) is float:
 		if P > 1 or P < 0:
-			print "Error: su_pflip: P is a single value not in [0,1]. P=" + str(P)
+			print "Error: pflip: P is a single value not in [0,1]. P=" + str(P)
 		else:
 			return 1 if rand.random() > .5 else 0
 	elif type(P) is np.ndarray:
@@ -142,7 +142,7 @@ def pflip(P):
 		# return the first entry greater than rdex	
 		return np.nonzero(P>rdex)[0][0]
 	else:
-		print "Error: su_pflip: P is an invalid type."
+		print "Error: pflip: P is an invalid type."
 
 # Generates T, M_c, and M_r fitting the state defined by col_part and row_part.
 # Generates only continuous data.
@@ -175,7 +175,7 @@ def GenDataFromPartitions(col_part,row_parts,mean_gen,std_gen,std_data):
 
 	return T, M_r, M_c
 
-# su_CrossCatPartitions 
+# CrossCatPartitions 
 # enumerates all states with n_rows rows and n_cols columns. This should not be 
 # used for anything bigger than 4-by-4. If you want to generate large states, 
 # generate them randomly using GenerateRandomPartition
@@ -488,7 +488,7 @@ def NGML(X,mu,r,nu,s):
 # Computes the marginal likelihood of the array of data in ccmat given all 
 # possible partitionings of columns and rows of ccmat into views and categories.
 # Goes through each partitioning, divides the data up and sequentially sends 
-# that data and the priors to NIX2ML, then sums these answers (they're log).
+# that data and the priors to NGML, then sums these answers (they're log).
 # 	Takes the data array ccmat; the prior mean, M0; the prior variance, V0; the 
 # inverse-gamma hyperparameters A0 and B0; and the CRP concentration parameter, 
 # alpha.
