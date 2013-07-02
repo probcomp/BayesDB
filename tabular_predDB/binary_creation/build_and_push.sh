@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-HDFS_DIR="/user/bigdata/SSCI/test_remote_streaming/"
+HDFS_DIR="/user/bigdata/SSCI/test_streaming"
 HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 
 # print script usage
