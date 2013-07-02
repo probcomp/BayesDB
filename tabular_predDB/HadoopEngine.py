@@ -245,6 +245,7 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
             jar_str,
             '-D mapred.task.timeout=%s' % task_timeout,
             '-D mapred.map.tasks=%s' % n_tasks,
+            '-D mapred.child.java.opts=-Xmx8G',
             archive_str,
             fs_str,
 	    jt_str,
