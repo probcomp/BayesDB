@@ -81,6 +81,8 @@ if __name__ == '__main__':
     table_data_filename = xu.default_table_data_filename
     table_data = fu.unpickle(table_data_filename)
     #
+    from signal import signal, SIGPIPE, SIG_DFL 
+    signal(SIGPIPE,SIG_DFL) 
     for line in sys.stdin:
         key, dict_in = xu.parse_hadoop_line(line)
         if dict_in is None:
@@ -89,3 +91,4 @@ if __name__ == '__main__':
         method = method_lookup[command]
         ret_dict = method(table_data, dict_in)
         print key, ret_dict
+
