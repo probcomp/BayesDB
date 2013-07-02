@@ -51,7 +51,7 @@ def analyze_helper(table_data, dict_in):
     X_L_prime, X_D_prime = engine.analyze(M_c, T, X_L, X_D, kernel_list=kernel_list,
                                           n_steps=n_steps, c=c, r=r)
     #
-    ret_dict = dict(X_L=X_L, X_D=X_D)
+    ret_dict = dict(X_L=X_L_prime, X_D=X_D_prime)
     return ret_dict
 
 def time_analyze_helper(table_data, dict_in):
