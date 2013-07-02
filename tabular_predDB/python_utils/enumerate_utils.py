@@ -80,7 +80,7 @@ def GenerateRandomPartition(n_rows, n_cols, alpha_col=1.0, alpha_rows=1.0):
 	column_partition = CRP(n_cols, alpha_col)
 	n_views = max(column_partition)+1;	
 
-	row_partition = np.zeros(shape=(n_views,n_rows))
+	row_partition = np.zeros(shape=(n_views,n_rows),dtype=int)
 
 	for i in range(n_views):
 		row_partition_tmp = CRP(n_rows, alpha_rows)
