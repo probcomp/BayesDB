@@ -1,18 +1,3 @@
-#
-# Copyright 2013 Baxter, Lovell, Mangsingkha, Saeedi
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
 import random
 import argparse
 import sys
@@ -64,11 +49,11 @@ p = su.simple_predictive_probability(M_c, X_L, X_D, Y, Q, get_next_seed,n=100)
 n = 1000;
 samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed,n=n)
 
-# X_diff = [x-sample[0] for sample in samples]
-X_diff = [sample[0] for sample in samples]
+X = [sample[0] for sample in samples]
 
-pylab.hist(X_diff,50,normed=1, histtype='bar')
-pylab.show()
+pylab.figure(facecolor='white')
+pylab.hist(X,50,normed=1, histtype='bar',label='samples',edgecolor='none')
+# pylab.show()
 
 Qs = [];
 for i in range(n):
@@ -80,8 +65,11 @@ Ps,e = su.simple_predictive_probability(M_c, X_L, X_D, Y, Qs, get_next_seed,n=10
 Ps = numpy.exp(Ps)
 
 # make a scatterplot
-pylab.errorbar(X_diff,P_diff, yerr=e, fmt='ro', alpha=.8)
+pylab.errorbar(X,Ps, yerr=e, fmt='ro', alpha=.5, markersize=4,label='probability',markeredgecolor = 'none')
+pylab.legend(loc='upper left')
+pylab.xlabel('value') 
+pylab.ylabel('frequency/probability')
+pylab.title('TEST: probability and frequencies are not normalized')
 pylab.show()
 
-print("Holding for input.")
-pdb.set_trace()
+raw_input("Press Enter when finished...")

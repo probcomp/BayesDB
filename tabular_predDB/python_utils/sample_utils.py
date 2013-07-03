@@ -51,12 +51,13 @@ def simple_predictive_probability(M_c, X_L, X_D, Y, Q, get_next_seed, n=1000):
     is_observed_row = query_row < num_rows
     x = []
     if not is_observed_row:
-        x = simple_predictive_probability_unobserved(
+        x, stderr = simple_predictive_probability_unobserved(
             M_c, X_L, X_D, Y, query_row, query_columns, elements, get_next_seed, n=n)
+        return x, stderr
     else:
         x = simple_predictive_probability_observed(
             M_c, X_L, X_D, Y, query_row, query_columns, elements, get_next_seed)    
-    return x
+        return x
 
 
 def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
@@ -95,6 +96,7 @@ def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
     
     return ans
 
+# also returns standard error
 def simple_predictive_probability_unobserved(M_c, X_L, X_D, Y, query_row,
                                         query_columns, elements, get_next_seed, n=100):
     num_views = len(X_D)
