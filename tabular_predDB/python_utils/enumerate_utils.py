@@ -26,12 +26,11 @@ import scipy as sp
 import itertools
 import pdb
 
-
+import tabular_predDB.cython_code.State as State
 import tabular_predDB.python_utils.data_utils as du
 
 # generates a random state with n_rows rows and n_cols columns, fills it with 
-# normal data and prepares it for running. Returns T, M_r, and M_c. Which are
-# all the things that you need to start the sampler.
+# normal data and prepares it for running. Returns a State.p_state object
 # Arguments:
 #	n_rows    : the number of rows
 #	n_cols    : the number of columns
@@ -55,14 +54,32 @@ def GenerateRandomState(n_rows, n_cols, mean_gen=0.0, std_gen=1.0, std_data=0.1,
 	assert(std_gen > 0.0)
 	assert(std_data > 0.0)
 	assert(alpha_col > 0.0)
-	assert(alpha_row > 0.0)
+	assert(alpha_rows > 0.0)
 
 	# generate the partitioning
-	part = CrossCatPartitions(n_rows, n_cols, alpha_col, alpha_rows)
+	part = GenerateRandomPartition(n_rows, n_cols, alpha_col, alpha_rows)
+
 	# fill it with data
 	T, M_r, M_c = GenDataFromPartitions(part['col_parts'], part['row_parts'], mean_gen, std_gen, std_data)
 
-	return T, M_r, M_c
+	# this part is kind of hacky:
+	# generate a state from the prior 
+	state = State.p_State(M_c, T, N_GRID=100)
+	# get the X_L and X_D and implant part['col_parts'], part['row_parts'], then 
+	# create a new state with the new X_L and X_D defined
+	X_L = state.get_X_L()
+	X_D = state.get_X_D()
+
+	# this should be all we need to change for 
+	# State.transform_latent_state_to_constructor_args(X_L, X_D) to be able
+	# to construct the arguments to intialize a state
+	X_L['column_partition']['assignments'] = part['col_parts'].tolist()
+	X_D = part['row_parts'].tolist()
+
+	# create a new state with the updated X_D and X_L
+	state = State.p_State(M_c, T, X_L=X_L, X_D=X_D, N_GRID=100)
+
+	return state
 
 # generates a random partitioning of n_rows rows and n_cols columns based on the
 # CRP. The resulting partition is a dict with two entries: ['col_parts'] and
@@ -168,7 +185,7 @@ def GenDataFromPartitions(col_part,row_parts,mean_gen,std_gen,std_data):
 				T[row,col] = X[i]
 				i += 1
 
-	T.to_list()
+	T.tolist()
 	M_r = du.gen_M_r_from_T(T)
 	M_c = du.gen_M_c_from_T(T)
 
