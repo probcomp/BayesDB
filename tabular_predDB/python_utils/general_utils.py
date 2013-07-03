@@ -7,12 +7,15 @@ class Timer(object):
         self.task = task
         self.verbose = verbose
         self.timer = default_timer
+        self.start = None
+    def get_elapsed_secs(self):
+        end = self.timer()
+        return end - self.start
     def __enter__(self):
         self.start = self.timer()
         return self
     def __exit__(self, *args):
-        end = self.timer()
-        self.elapsed_secs = end - self.start
+        self.elapsed_secs = self.get_elapsed_secs()
         self.elapsed = self.elapsed_secs * 1000 # millisecs
         if self.verbose:
             print '%s took:\t% 7d ms' % (self.task, self.elapsed)
