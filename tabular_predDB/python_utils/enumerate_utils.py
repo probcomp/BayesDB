@@ -86,7 +86,7 @@ def GenerateRandomState(n_rows, n_cols, mean_gen=0.0, std_gen=1.0, std_data=0.1,
 	# create a new state with the updated X_D and X_L
 	state = State.p_State(M_c, T, X_L=X_L, X_D=X_D, N_GRID=100)
 
-	pdb.set_trace()
+	# pdb.set_trace()
 
 	return state
 
