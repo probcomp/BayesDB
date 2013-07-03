@@ -58,7 +58,9 @@ def parse_hadoop_line(line):
         dict_in = eval(dict_in_str)
     return key, dict_in
 
-def write_initialization_files(initialize_input_filename, initialize_args_dict, n_chains):
+def write_initialization_files(initialize_input_filename,
+                               initialize_args_dict=default_initialize_args_dict,
+                               n_chains=10):
     with open(initialize_input_filename, 'w') as out_fh:
         for SEED in range(n_chains):
             out_dict = initialize_args_dict.copy()
