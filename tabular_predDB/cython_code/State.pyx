@@ -23,6 +23,7 @@ cimport numpy as np
 import numpy
 #
 import tabular_predDB.python_utils.file_utils as fu
+import tabular_predDB.python_utils.general_utils as gu
 # import tabular_predDB.python_utils.plot_utils as pu
 
 
@@ -333,18 +334,22 @@ cdef class p_State:
          if len(which_transitions) == 0:
               seed = self.thisptr.draw_rand_i()
               which_transitions = get_all_transitions_permuted(seed)
-         for step_idx in range(n_steps):
-              for which_transition in which_transitions:
-                   method_name_and_args = transition_name_to_method_name_and_args.get(which_transition)
-                   if method_name_and_args is not None:
-                        method_name, args_list = method_name_and_args
-                        which_method = getattr(self, method_name)
-                        args_dict = get_args_dict(args_list, locals())
-                        score_delta += which_method(**args_dict)
-                   else:
-                        print_str = 'INVALID TRANSITION TYPE TO' \
-                            'State.transition: %s' % which_transition
-                        print print_str
+         with gu.Timer('transition', verbose=False) as timer:
+              for step_idx in range(n_steps):
+                   for which_transition in which_transitions:
+                        elapsed_secs = timer.get_elapsed_secs()
+                        if (max_time != -1) and (max_time < elapsed_secs):
+                             break
+                        method_name_and_args = transition_name_to_method_name_and_args.get(which_transition)
+                        if method_name_and_args is not None:
+                             method_name, args_list = method_name_and_args
+                             which_method = getattr(self, method_name)
+                             args_dict = get_args_dict(args_list, locals())
+                             score_delta += which_method(**args_dict)
+                        else:
+                             print_str = 'INVALID TRANSITION TYPE TO' \
+                                 'State.transition: %s' % which_transition
+                             print print_str
          return score_delta
     def transition_column_crp_alpha(self):
          return self.thisptr.transition_column_crp_alpha()
