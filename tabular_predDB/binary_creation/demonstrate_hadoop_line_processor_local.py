@@ -33,6 +33,7 @@ xu.run_script_local(initialize_input_filename, script_name,
 
 # read initialization output, write analyze input
 analyze_args_dict['n_steps'] = n_steps
+analyze_args_dict['max_time'] = 20
 xu.link_initialize_to_analyze(initialize_output_filename,
                               analyze_input_filename,
                               analyze_args_dict)
