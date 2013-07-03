@@ -68,7 +68,7 @@ X_diff = [x-sample[0] for sample in samples]
 
 Qs = [];
 for i in range(n):
-    Qtmp = (0,2,samples[i])
+    Qtmp = (0,2,samples[i][0])
     Qs.append(Qtmp)
 
 Ps = su.simple_predictive_probability(M_c, X_L, X_D, Y, Qs, get_next_seed)
@@ -78,3 +78,5 @@ P_diff = p[0]-Ps
 # make a scatterplot
 pylab.scatter(X_diff,P_diff,c='black',alpha=.5)
 pylab.show()
+
+pdb.set_trace()

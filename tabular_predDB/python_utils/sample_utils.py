@@ -86,6 +86,9 @@ def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
             component_model = cluster_model[which_column]
             draw_constraints = get_draw_constraints(X_L, X_D, Y,which_row, which_column)
             SEED = get_next_seed()
+            if type(elements[q]) is not float:
+                print "elements[q] is not a float"
+                pdb.set_trace()
             logp = component_model.get_predictive_probability(elements[q],draw_constraints)
             Ps[sample_idx,q] = logp
         q += 1
