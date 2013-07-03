@@ -1,11 +1,10 @@
 #!/bin/bash
 
 
-<<<<<<< HEAD
 HDFS_DIR="/user/bigdata/SSCI/"
 # HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 HDFS_URI="hdfs://xd-hm-nn.xdata.data-tactics-corp.com:8020/"
->>>>>>> ca7c34f48902504f8137e4e0ed218cf5e9a0506d
+
 
 # print script usage
 usage() {
