@@ -29,8 +29,40 @@ import pdb
 import tabular_predDB.cython_code.State as State
 import tabular_predDB.python_utils.data_utils as du
 
+
+# generates from a state with the columns to views partition col_parts, and 
+# the rows in views to cats partition row_parts (X_D). Accepts partitions
+# as numpy array or lists. Returns a state; the data table, T; and M_c
+# Arguments:
+#	col_parts : vector of length n_cols assigning columns to views
+#	row_parts : a list of vectors (or numpy array) with n_views rows where
+#				each row, i, is a vector assigning the rows of the columns 
+#				in view i to categories
+#	mean_gen  : the mean of the means of data clusters
+#	std_gen   : the standard deviation of cluster means
+#	std_data  : the standard deviation of the individual clusters
+def GenerateStateFromPartitions(col_parts, row_parts, mean_gen=0.0, std_gen=1.0, std_data=0.1):
+	
+	T, M_r, M_c = GenDataFromPartitions(col_parts, row_parts, mean_gen=mean_gen, std_gen=std_gen, std_data=std_data)
+	state = State.p_State(M_c, T, N_GRID=100)
+
+	X_L = state.get_X_L()
+	X_D = state.get_X_D()
+
+	if type(col_parts) is not list:
+		X_L['column_partition']['assignments'] = col_parts.tolist()
+
+	if type(row_parts) is not list:
+		X_D = row_parts.tolist()
+
+	# create a new state with the updated X_D and X_L
+	state = State.p_State(M_c, T, X_L=X_L, X_D=X_D, N_GRID=100)
+
+	return state, T, M_c
+
 # generates a random state with n_rows rows and n_cols columns, fills it with 
-# normal data and prepares it for running. Returns a State.p_state object
+# normal data and the specified alphas, and prepares it for running. Returns 
+# a State.p_state object and the table of data and M_c
 # Arguments:
 #	n_rows    : the number of rows
 #	n_cols    : the number of columns
@@ -88,7 +120,7 @@ def GenerateRandomState(n_rows, n_cols, mean_gen=0.0, std_gen=1.0, std_data=0.1,
 
 	# pdb.set_trace()
 
-	return state
+	return state, T, M_c
 
 # generates a random partitioning of n_rows rows and n_cols columns based on the
 # CRP. The resulting partition is a dict with two entries: ['col_parts'] and
@@ -548,7 +580,7 @@ def CCML(ccpart,ccmat,mu,r,nu,s,row_alpha,col_alpha):
 
 # Fixes the prior
 def FixPriors(X_L,alpha,mu,s,r,nu):
-	num_cols = len(X_L)
+	num_cols = len(X_L['column_partition']['assignments']
 	X_L['column_partition']['hypers']['alpha'] = alpha
 	# print(new_X_L)
 	for i in range(len(X_L['view_state'])):
