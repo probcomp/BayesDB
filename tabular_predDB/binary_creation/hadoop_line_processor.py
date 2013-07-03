@@ -46,10 +46,12 @@ def analyze_helper(table_data, dict_in):
     n_steps = dict_in['n_steps']
     c = dict_in['c']
     r = dict_in['r']
+    max_time = dict_in['max_time']
     SEED = dict_in['SEED']
     engine = LE.LocalEngine(SEED)
     X_L_prime, X_D_prime = engine.analyze(M_c, T, X_L, X_D, kernel_list=kernel_list,
-                                          n_steps=n_steps, c=c, r=r)
+                                          n_steps=n_steps, c=c, r=r,
+                                          max_time=max_time)
     #
     ret_dict = dict(X_L=X_L_prime, X_D=X_D_prime)
     return ret_dict
