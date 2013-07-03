@@ -168,7 +168,7 @@ def GenDataFromPartitions(col_part,row_parts,mean_gen,std_gen,std_data):
 				T[row,col] = X[i]
 				i += 1
 
-	# T.to_list()
+	T.to_list()
 	M_r = du.gen_M_r_from_T(T)
 	M_c = du.gen_M_c_from_T(T)
 
