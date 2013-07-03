@@ -22,6 +22,7 @@ default_analyze_args_dict = dict(
     n_steps=1,
     c=(),
     r=(),
+    max_time=-1,
     )
 
 # read the data, create metadata
