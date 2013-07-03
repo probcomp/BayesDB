@@ -76,8 +76,17 @@ def GenerateRandomState(n_rows, n_cols, mean_gen=0.0, std_gen=1.0, std_data=0.1,
 	X_L['column_partition']['assignments'] = part['col_parts'].tolist()
 	X_D = part['row_parts'].tolist()
 
+	# hack in the alpha values supplied (or not) by the user
+	X_L['column_partition']['hypers']['alpha'] = alpha_col
+	for i in range(len(X_L['view_state'])):
+		X_L['view_state'][i]['row_partition_model']['hypers']['alpha'] = alpha_col
+	for i in range(n_cols):
+		X_L['column_hypers'][i]['alpha'] = alpha_rows
+
 	# create a new state with the updated X_D and X_L
 	state = State.p_State(M_c, T, X_L=X_L, X_D=X_D, N_GRID=100)
+
+	pdb.set_trace()
 
 	return state
 
