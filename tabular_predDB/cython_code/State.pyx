@@ -179,6 +179,12 @@ transition_name_to_method_name_and_args = dict(
      row_partition_assignments=('transition_row_partition_assignments', ['r']),
      )
 
+def get_all_transitions_permuted(seed):
+     which_transitions = transition_name_to_method_name_and_args.keys()
+     random_state = numpy.random.RandomState(seed)
+     which_transitions = random_state.permutation(which_transitions)
+     return which_transitions
+
 cdef class p_State:
     cdef State *thisptr
     cdef matrix[double] *dataptr
@@ -323,15 +329,10 @@ cdef class p_State:
     # mutators
     def transition(self, which_transitions=(), n_steps=1,
                    c=(), r=(), max_iterations=-1, max_time=-1):
-         # FIXME: respect max time
-         transition_name_to_method_name_and_args         
-
-         if len(which_transitions) == 0:
-              which_transitions = transition_name_to_method_name_and_args.keys()
-              seed = self.thisptr.draw_rand_i()
-              random_state = numpy.random.RandomState(seed)
-              which_transitions = random_state.permutation(which_transitions)
          score_delta = 0
+         if len(which_transitions) == 0:
+              seed = self.thisptr.draw_rand_i()
+              which_transitions = get_all_transitions_permuted(seed)
          for step_idx in range(n_steps):
               for which_transition in which_transitions:
                    method_name_and_args = transition_name_to_method_name_and_args.get(which_transition)
