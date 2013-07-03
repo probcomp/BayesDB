@@ -28,7 +28,7 @@ default_analyze_args_dict = dict(
 def pickle_table_data(in_filename_or_dict, pkl_filename):
     table_data = None
     if isinstance(in_filename_or_dict, str):
-        T, M_r, M_c = du.read_model_data_from_csv(in_filename, gen_seed=0)
+        T, M_r, M_c = du.read_model_data_from_csv(in_filename_or_dict, gen_seed=0)
         table_data = dict(T=T, M_r=M_r, M_c=M_c)
     else:
         table_data = in_filename_or_dict
