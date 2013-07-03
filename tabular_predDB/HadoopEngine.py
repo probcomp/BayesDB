@@ -338,6 +338,7 @@ if __name__ == '__main__':
     parser.add_argument('--table_filename', type=str, default='../www/data/dha_small.csv')
     parser.add_argument('--resume_filename', type=str, default=None)
     parser.add_argument('--pkl_filename', type=str, default=None)
+    parser.add_argument('--cctypes_filename', type=str, default=None)
     #
     args = parser.parse_args()
     base_uri = args.base_uri
@@ -353,11 +354,18 @@ if __name__ == '__main__':
     table_filename = args.table_filename
     resume_filename = args.resume_filename
     pkl_filename = args.pkl_filename
+    #
     command = args.command
     assert command in set(gu.get_method_names(HadoopEngine))
+    #
+    cctypes_filename = args.cctypes_filename
+    cctypes = None
+    if cctypes_filename is not None:
+      cctypes = fu.unpickle(cctypes_filename)
 
     hdfs_uri, jobtracker_uri = get_uris(base_uri, hdfs_uri, jobtracker_uri)
-    T, M_r, M_c = du.read_model_data_from_csv(table_filename, gen_seed=0)
+    T, M_r, M_c = du.read_model_data_from_csv(table_filename, gen_seed=0,
+                                              cctypes=cctypes)
     he = HadoopEngine(which_engine_binary=which_engine_binary,
 		      which_hadoop_binary=which_hadoop_binary,
 		      which_hadoop_jar=which_hadoop_jar,
