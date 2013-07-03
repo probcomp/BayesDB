@@ -190,6 +190,18 @@ double MultinomialComponentModel::get_draw(int random_seed) const {
   return draw;
 }
 
+// for simple predictive probability
+double MultinomialComponentModel::get_predictive_probability(double element, vector<double> constraints) const{
+  // get modified suffstats
+  int count;
+  map<string, double> counts;
+  get_suffstats(count, counts);
+  // get a random draw
+  double logp = calc_element_predictive_logp(element);
+
+  return element;
+}
+
 double MultinomialComponentModel::get_draw_constrained(int random_seed, vector<double> constraints) const {
   // get modified suffstats
   int count;

@@ -15,7 +15,9 @@
 #
 import sys
 import copy
+import pdb
 from collections import Counter
+from scipy.misc import logsumexp
 #
 import numpy
 #
@@ -33,6 +35,116 @@ class Bunch(dict):
         self[key] = value
 
 Constraints = Bunch
+
+################################################################################
+################################################################################
+def simple_predictive_probability(M_c, X_L, X_D, Y, Q, get_next_seed, n=1000):
+    num_rows = len(X_D[0])
+    num_cols = len(M_c['column_metadata'])
+    query_row = Q[0][0]
+    query_columns = [query[1] for query in Q]
+    elements = [query[2] for query in Q]
+    # enforce query rows all same row
+    assert(all([query[0]==query_row for query in Q]))
+    # enforce query columns observed column
+    assert(all([query_column<num_cols for query_column in query_columns]))
+    is_observed_row = query_row < num_rows
+    x = []
+    if not is_observed_row:
+        x = simple_predictive_probability_unobserved(
+            M_c, X_L, X_D, Y, query_row, query_columns, elements, get_next_seed, n=n)
+    else:
+        x = simple_predictive_probability_observed(
+            M_c, X_L, X_D, Y, query_row, query_columns, elements, get_next_seed, n=n)    
+    return x
+
+
+def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
+                                      which_columns, elements, get_next_seed, n=1000):
+    get_which_view = lambda which_column: \
+        X_L['column_partition']['assignments'][which_column]
+    column_to_view = dict()
+    for which_column in which_columns:
+        column_to_view[which_column] = get_which_view(which_column)
+    #
+    view_to_cluster_model = dict()
+    for which_view in list(set(column_to_view.values())):
+        which_cluster = X_D[which_view][which_row]
+        cluster_model = create_cluster_model_from_X_L(M_c, X_L, which_view,
+                                                      which_cluster)
+        view_to_cluster_model[which_view] = cluster_model
+    #
+    
+    # holds all the answers which we will then logsumexp later
+    Ps = numpy.zeros((n,len(which_columns))) 
+
+    q = 0 # query index
+    for which_column in which_columns:
+        for sample_idx in range(n):
+            which_view = column_to_view[which_column]
+            cluster_model = view_to_cluster_model[which_view]
+            component_model = cluster_model[which_column]
+            draw_constraints = get_draw_constraints(X_L, X_D, Y,which_row, which_column)
+            SEED = get_next_seed()
+            logp = component_model.get_predictive_probability(elements[q],draw_constraints)
+            Ps[sample_idx,q] = logp
+        q += 1
+
+    ans = logsumexp(Ps,axis=0)-numpy.log(n)
+    return ans
+
+def simple_predictive_probability_unobserved(M_c, X_L, X_D, Y, query_row,
+                                        query_columns, elements, get_next_seed, n=1000):
+    num_views = len(X_D)
+    #
+    cluster_logps_list = []
+    for view_idx in range(num_views):
+        cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, query_row,
+                                                view_idx)
+        cluster_logps_list.append(cluster_logps)
+    #
+    # holds all the answers which we will then logsumexp later
+    Ps = numpy.zeros((n,len(which_columns))) 
+    for sample_idx in range(n):
+        view_cluster_draws = dict()
+        for view_idx, cluster_logps in enumerate(cluster_logps_list):
+            probs = numpy.exp(cluster_logps)
+            probs /= sum(probs)
+            draw = numpy.nonzero(numpy.random.multinomial(1, probs))[0][0]
+            view_cluster_draws[view_idx] = draw
+        #
+        get_which_view = lambda which_column: \
+            X_L['column_partition']['assignments'][which_column]
+        column_to_view = dict()
+        for query_column in query_columns:
+            column_to_view[query_column] = get_which_view(query_column)
+        view_to_cluster_model = dict()
+        for which_view in list(set(column_to_view.values())):
+            which_cluster = view_cluster_draws[which_view]
+            cluster_model = create_cluster_model_from_X_L(M_c, X_L,
+                                                          which_view,
+                                                          which_cluster)
+            view_to_cluster_model[which_view] = cluster_model
+        #
+        this_sample_draws = []
+        q = 0
+        for query_column in query_columns:
+            which_view = get_which_view(query_column)
+            cluster_model = view_to_cluster_model[which_view]
+            component_model = cluster_model[query_column]
+            draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
+            
+            logp = component_model.get_draw_constrained(elements[q],draw_constraints)
+            Ps[sample_idx,q] = logp
+            q += 1
+            
+        
+    ans = logsumexp(Ps,axis=0)-numpy.log(n)
+    return ans
+
+
+################################################################################
+################################################################################
 
 def simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed, n=1):
     num_rows = len(X_D[0])

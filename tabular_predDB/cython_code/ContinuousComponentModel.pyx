@@ -38,6 +38,7 @@ cdef extern from "ContinuousComponentModel.h":
         cpp_string to_string()
         double get_draw(int seed)
         double get_draw_constrained(int seed, vector[double] constraints)
+        double get_predictive_probability(double element, vector[double] constraints)
         double insert_element(double element)
         double remove_element(double element)
         double incorporate_hyper_update()
@@ -64,6 +65,9 @@ cdef class p_ContinuousComponentModel:
         return self.thisptr.get_draw(seed)
     def get_draw_constrained(self, seed, constraints):
         return self.thisptr.get_draw_constrained(seed, constraints)
+    # simple predictive probability (BAX)
+    def get_predictive_probability(self, element, constraints):
+        return self.thisptr.get_predictive_probability(element, constraints);
     def insert_element(self, element):
         return self.thisptr.insert_element(element)
     def remove_element(self, element):

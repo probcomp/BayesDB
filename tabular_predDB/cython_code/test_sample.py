@@ -53,7 +53,7 @@ X_D = save_dict['X_D']
 # Y = [su.Bunch(index=2,value=2.3), su.Bunch(index=0,value=-4.)]
 Y = None
 
-# test simple_predictive_sample_observed LOCALLY
+# test simple_predictive_sample_observed
 views_replicating_samples_params = su.determine_replicating_samples_params(X_L, X_D)
 views_samples = []
 for replicating_samples_params in views_replicating_samples_params:

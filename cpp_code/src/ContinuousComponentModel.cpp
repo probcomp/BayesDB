@@ -205,6 +205,27 @@ double ContinuousComponentModel::get_draw_constrained(int random_seed, vector<do
   return draw;
 }
 
+// For simple predictive probability
+double ContinuousComponentModel::get_predictive_probability(double element, vector<double> constraints) const {
+  // get modified suffstats
+  double r, nu, s, mu;
+  int count;
+  double sum_x, sum_x_sq;
+  get_hyper_doubles(r, nu, s, mu);
+  get_suffstats(count, sum_x, sum_x_sq);
+  for(int constraint_idx=0; constraint_idx<constraints.size();
+      constraint_idx++) {
+    double constraint = constraints[constraint_idx];
+    numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq,
+               constraint);
+  }
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+
+  double logp = calc_element_predictive_logp(element);
+
+  return logp;
+}
+
 map<string, double> ContinuousComponentModel::get_suffstats() const {
   return suffstats;
 }
