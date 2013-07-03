@@ -55,12 +55,12 @@ def simple_predictive_probability(M_c, X_L, X_D, Y, Q, get_next_seed, n=1000):
             M_c, X_L, X_D, Y, query_row, query_columns, elements, get_next_seed, n=n)
     else:
         x = simple_predictive_probability_observed(
-            M_c, X_L, X_D, Y, query_row, query_columns, elements, get_next_seed, n=n)    
+            M_c, X_L, X_D, Y, query_row, query_columns, elements, get_next_seed)    
     return x
 
 
 def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
-                                      which_columns, elements, get_next_seed, n=1000):
+                                      which_columns, elements, get_next_seed):
     get_which_view = lambda which_column: \
         X_L['column_partition']['assignments'][which_column]
     column_to_view = dict()
@@ -75,29 +75,28 @@ def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
         view_to_cluster_model[which_view] = cluster_model
     #
     
-    # holds all the answers which we will then logsumexp later
-    Ps = numpy.zeros((n,len(which_columns))) 
+    Ps = numpy.zeros(len(which_columns)) 
 
     q = 0 # query index
     for which_column in which_columns:
-        for sample_idx in range(n):
-            which_view = column_to_view[which_column]
-            cluster_model = view_to_cluster_model[which_view]
-            component_model = cluster_model[which_column]
-            draw_constraints = get_draw_constraints(X_L, X_D, Y,which_row, which_column)
-            SEED = get_next_seed()
-            if type(elements[q]) is not float:
-                print "elements[q] is not a float"
-                pdb.set_trace()
-            logp = component_model.get_predictive_probability(elements[q],draw_constraints)
-            Ps[sample_idx,q] = logp
+        which_view = column_to_view[which_column]
+        cluster_model = view_to_cluster_model[which_view]
+        component_model = cluster_model[which_column]
+        draw_constraints = get_draw_constraints(X_L, X_D, Y,which_row, which_column)
+        SEED = get_next_seed()
+        if type(elements[q]) is not float:
+            print "elements[q] is not a float"
+            pdb.set_trace()
+        logp = component_model.get_predictive_probability(elements[q],draw_constraints)
+        Ps[q] = logp
         q += 1
 
-    ans = logsumexp(Ps,axis=0)-numpy.log(n)
+    ans = Ps
+    
     return ans
 
 def simple_predictive_probability_unobserved(M_c, X_L, X_D, Y, query_row,
-                                        query_columns, elements, get_next_seed, n=1000):
+                                        query_columns, elements, get_next_seed, n=100):
     num_views = len(X_D)
     #
     cluster_logps_list = []
@@ -107,7 +106,7 @@ def simple_predictive_probability_unobserved(M_c, X_L, X_D, Y, query_row,
         cluster_logps_list.append(cluster_logps)
     #
     # holds all the answers which we will then logsumexp later
-    Ps = numpy.zeros((n,len(which_columns))) 
+    Ps = numpy.zeros((n,len(query_columns))) 
     for sample_idx in range(n):
         view_cluster_draws = dict()
         for view_idx, cluster_logps in enumerate(cluster_logps_list):
@@ -137,13 +136,15 @@ def simple_predictive_probability_unobserved(M_c, X_L, X_D, Y, query_row,
             component_model = cluster_model[query_column]
             draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
             
-            logp = component_model.get_draw_constrained(elements[q],draw_constraints)
+            logp = component_model.get_predictive_probability(elements[q],draw_constraints)
             Ps[sample_idx,q] = logp
             q += 1
             
         
     ans = logsumexp(Ps,axis=0)-numpy.log(n)
-    return ans
+    stderr = numpy.std(numpy.exp(Ps),axis=0)/numpy.sqrt(n)
+    
+    return ans, stderr
 
 
 ################################################################################
