@@ -78,7 +78,12 @@ method_lookup = dict(
     )
 
 if __name__ == '__main__':
-    table_data_filename = xu.default_table_data_filename
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--table_data_filename', type=str,
+                        default=xu.default_table_data_filename)
+    args = parser.parse_args()
+    table_data_filename = args.table_data_filename
     table_data = fu.unpickle(table_data_filename)
     #
     from signal import signal, SIGPIPE, SIG_DFL 
