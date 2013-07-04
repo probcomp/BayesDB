@@ -580,7 +580,7 @@ def CCML(ccpart,ccmat,mu,r,nu,s,row_alpha,col_alpha):
 
 # Fixes the prior
 def FixPriors(X_L,alpha,mu,s,r,nu):
-	num_cols = len(X_L['column_partition']['assignments']
+	num_cols = len(X_L['column_partition']['assignments'])
 	X_L['column_partition']['hypers']['alpha'] = alpha
 	# print(new_X_L)
 	for i in range(len(X_L['view_state'])):
