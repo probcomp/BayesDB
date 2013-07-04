@@ -58,7 +58,7 @@ def GenerateStateFromPartitions(col_parts, row_parts, mean_gen=0.0, std_gen=1.0,
 	# create a new state with the updated X_D and X_L
 	state = State.p_State(M_c, T, X_L=X_L, X_D=X_D, N_GRID=100)
 
-	return state, T, M_c
+	return state, T, M_c, M_r, X_L, X_D
 
 # generates a random state with n_rows rows and n_cols columns, fills it with 
 # normal data and the specified alphas, and prepares it for running. Returns 
@@ -92,7 +92,7 @@ def GenerateRandomState(n_rows, n_cols, mean_gen=0.0, std_gen=1.0, std_data=0.1,
 	part = GenerateRandomPartition(n_rows, n_cols, alpha_col, alpha_rows)
 
 	# fill it with data
-	T, M_r, M_c = GenDataFromPartitions(part['col_parts'], part['row_parts'], mean_gen, std_gen, std_data)
+	state, T, M_c, M_r, X_L, X_D = GenDataFromPartitions(part['col_parts'], part['row_parts'], mean_gen, std_gen, std_data)
 
 	# this part is kind of hacky:
 	# generate a state from the prior 
