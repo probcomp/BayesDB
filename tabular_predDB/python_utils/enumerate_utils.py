@@ -120,7 +120,7 @@ def GenerateRandomState(n_rows, n_cols, mean_gen=0.0, std_gen=1.0, std_data=0.1,
 
 	# pdb.set_trace()
 
-	return state, T, M_c
+	return state, T, M_r, M_c
 
 # generates a random partitioning of n_rows rows and n_cols columns based on the
 # CRP. The resulting partition is a dict with two entries: ['col_parts'] and
