@@ -39,11 +39,17 @@ done
 
 
 # from guest OS
-WHICH_JAR=/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar
-#WHICH_JAR=/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.2.jar
+CDH4_2_0_JAR=/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar
+CDH4_1_2_JAR=/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.2.jar
+WHICH_JAR=$CDH4_2_0_JAR
+if [[ ! -f $WHICH_JAR ]]; then
+  WHICH_JAR=$CDH4_1_2_JAR
+fi
 
 # do once
-# hadoop fs -fs "$HADOOP_FS" -put /usr/share/dict/words
+
+hadoop fs -fs "$HADOOP_FS" -mkdir /user/bigdata/SSCI/test_remote_streaming
+hadoop fs -fs "$HADOOP_FS" -put /usr/share/dict/words /user/bigdata/SSCI/test_remote_streaming
 hadoop fs -fs "$HADOOP_FS" -rm -r "$HDFS_OUTPUT_DIR" > hadoop_streaming_verification.out
 #
 hadoop jar $WHICH_JAR -fs "$HADOOP_FS" -jt "$HADOOP_JT" -input "$HDFS_INPUT" -output "$HADOOP_FS/$HDFS_OUTPUT_DIR" -mapper /bin/cat -reducer /usr/bin/wc >> hadoop_streaming_verification.out

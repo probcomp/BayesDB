@@ -66,7 +66,6 @@ def do_initialize(M_c, M_r, T, initialization, SEED):
 def do_analyze(M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
                max_iterations, max_time, SEED):
     p_State = State.p_State(M_c, T, X_L, X_D, SEED=SEED)
-    # FIXME: actually pay attention to max_iterations, max_time
     p_State.transition(kernel_list, n_steps, c, r,
                        max_iterations, max_time)
     X_L_prime = p_State.get_X_L()

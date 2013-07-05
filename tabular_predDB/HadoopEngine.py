@@ -60,7 +60,6 @@ default_table_data_filename = xu.default_table_data_filename
 
 class HadoopEngine(object):
 
-    # FIXME: where is binary created/sent?
     def __init__(self, seed=0,
                  which_engine_binary=default_engine_binary,
                  hdfs_dir=default_hdfs_dir,
@@ -124,7 +123,7 @@ class HadoopEngine(object):
         xu.assert_vpn_is_connected()
         #
         analyze_args_dict = dict(command='analyze', kernel_list=kernel_list,
-                                 n_steps=n_steps, c=c, r=r)
+                                 n_steps=n_steps, c=c, r=r, max_time=max_time)
         if not xu.get_is_multistate(X_L, X_D):
             X_L = [X_L]
             X_D = [X_D]
@@ -335,9 +334,11 @@ if __name__ == '__main__':
     parser.add_argument('--which_hadoop_jar', type=str, default=default_hadoop_jar)
     parser.add_argument('--n_chains', type=int, default=4)
     parser.add_argument('--n_steps', type=int, default=1)
+    parser.add_argument('--max_time', type=float, default=-1)
     parser.add_argument('--table_filename', type=str, default='../www/data/dha_small.csv')
     parser.add_argument('--resume_filename', type=str, default=None)
     parser.add_argument('--pkl_filename', type=str, default=None)
+    parser.add_argument('--cctypes_filename', type=str, default=None)
     #
     args = parser.parse_args()
     base_uri = args.base_uri
@@ -350,14 +351,22 @@ if __name__ == '__main__':
     which_hadoop_jar= args.which_hadoop_jar
     n_chains = args.n_chains
     n_steps = args.n_steps
+    max_time = args.max_time
     table_filename = args.table_filename
     resume_filename = args.resume_filename
     pkl_filename = args.pkl_filename
+    #
     command = args.command
     assert command in set(gu.get_method_names(HadoopEngine))
+    #
+    cctypes_filename = args.cctypes_filename
+    cctypes = None
+    if cctypes_filename is not None:
+      cctypes = fu.unpickle(cctypes_filename)
 
     hdfs_uri, jobtracker_uri = get_uris(base_uri, hdfs_uri, jobtracker_uri)
-    T, M_r, M_c = du.read_model_data_from_csv(table_filename, gen_seed=0)
+    T, M_r, M_c = du.read_model_data_from_csv(table_filename, gen_seed=0,
+                                              cctypes=cctypes)
     he = HadoopEngine(which_engine_binary=which_engine_binary,
 		      which_hadoop_binary=which_hadoop_binary,
 		      which_hadoop_jar=which_hadoop_jar,
@@ -380,7 +389,7 @@ if __name__ == '__main__':
         X_L_list = resume_dict['X_L_list']
         X_D_list = resume_dict['X_D_list']
         hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list,
-                                   n_steps=n_steps)
+                                   n_steps=n_steps, max_time=max_time)
         if hadoop_output is not None:
             X_L_list, X_D_list = hadoop_output
     else:

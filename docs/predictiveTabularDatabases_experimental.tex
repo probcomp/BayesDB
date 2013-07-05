@@ -65,12 +65,13 @@ x \sim Pr[q|X_L,Y].
 $$
 
 % SimplePredictiveProbability
-\item \texttt{simple\_predictive\_probability($M_c, X_L,X_D,Y,Q,n$)} $\rightarrow p$. $Y$ is a list of conditioning conditions (indices paired with values), while  
-$Q$ is a list of queried conditions (a indices paired with values). $n$ is the number of samples used to approximate the predictive probability.
+\item \texttt{simple\_predictive\_probability($M_c,X_L,X_D,Y,Q$)} $\rightarrow p$. $Y$ is a list of conditioning conditions (indices paired with values), while  
+$Q$ is a list of queried conditions (indices paired with values). 
 The output, $p$, is the marginal predictive probability of the queried $Q$ given the conditions $Y$, assuming the model in $X_L$,
 $$
 p = Pr[Q | X_L,Y].
 $$
+The probabilities are approximated, for any given query, by summing over the categories. If the queried variable is continuous, the probability is approximated using the CDF (epsilon is based on floating point accuracy).
 
 % Impute
 \item \texttt{impute($M_c, X_L,X_D,Y,q,n$) } $\rightarrow e$. The output is a list of the expected values of the posterior predictive distribution for variables corresponding to the indices $q$, approximated using $n$ samples,
@@ -221,13 +222,13 @@ x_i \sim  PP(\vec{\tau^{d}_c})
 \SetKwInOut{Output}{output}
 \SetKwInOut{Initialize}{initialize}
 
-\Input{$M_c, X_L, X_D, Y, Q, n$.}
+\Input{$M_c, X_L, X_D, Y, Q$.}
 \Output{A list of marginal probabilities $p$.}
 \BlankLine
 
 \ForEach{$i \in Q$}{
 
-Extract the queried row and dimension:\\
+Extract the queried row, dimension, and value:\\
 $r,d,x \leftarrow Q_i$
 
 Find all elements of $Y$ that apply to the same dimension:
@@ -235,20 +236,21 @@ Find all elements of $Y$ that apply to the same dimension:
 
 $p_i \leftarrow 0$
 
-\For{n iterations}{
-Sample a view and category, allowing the possibility of choosing a new view and/or category: \[
-Pr(v', y'| X_L, Y') \propto Pr(Y'|v', y',X_L)Pr(v',y'|X_L)
-\] 
+\For{categories in view (and a new category)}{
+\If{isContinuous(d)}{
+$pX_c = cdf(x+\epsilon|X_L,Y') - cdf(x-\epsilon|X_L,Y')$
+}{
+$pX_c = P(x|X_L,Y')$
+}
+$pCat_c = P(z_d=c|Y')$
 %The assignment of views is deterministic in the case where $d$ is previously observed,
 %$v' \leftarrow z_d$. The assignment of categories is deterministic when $v'$ and $r$ are previously observed, 
 %$y' \leftarrow y^{v'}_r$.
 
-Assess probability based on the appropriate posterior predictive (PP) distribution: \[ 
-p_i =  p_i + PP(Q_i | \vec{\tau^{d}_c}) 
-\] 
 }
 
-$p_i \leftarrow \frac{p_i}{n}$
+$pCat = logsumexp(pCat)$
+$p_i = \sum_c (pX \times pCat)$
 
 }
 
@@ -555,21 +557,21 @@ Jill		& 60				& Female		& US			& 104 \\
 $M_c$ and $M_r$ could be:
 \begin{verbatim}
 M_c: {
-  Òname_to_idxÓ: {0: ÒHeightÓ, 1: ÒGenderÓ, 2: ÒNationalityÓ, 3: ÒIQÓ}
-  Òidx_to_nameÓ: {ÒHeightÓ:0, ÒGenderÓ: 1, ÒNationalityÓ: 2, ÒIQÓ: 3}
-  Òcolumn_metadataÓ: [
-    {ÒmodeltypeÓ: Ònormal_inverse_gammaÓ, Òvalue_to_codeÓ: {}, Òcode_to_valueÓ: {}},
-    {ÒmodeltypeÓ: Òasymmetric_beta_bernoulliÓ, Òvalue_to_codeÓ: {0:ÓMaleÓ, 1:ÓFemaleÓ}, ...
-    	Òcode_to_valueÓ: {ÒMaleÓ:0, ÒFemaleÓ:1}},
-    {ÒmodeltypeÓ: Òsymmetric_dirichlet_discreteÓ, Òcode_to_valueÓ: {ÒUSÓ:0, ÒCanadianÓ:1}, ...
-    	Òvalue_to_codeÓ: {1:ÓCanadianÓ, 0:ÓUSÓ}},
-    {ÒmodeltypeÓ: Ònormal_inverse_gammaÓ, Òvalue_to_codeÓ: {}, Òcode_to_valueÓ:{}}
+  ï¿½name_to_idxï¿½: {0: ï¿½Heightï¿½, 1: ï¿½Genderï¿½, 2: ï¿½Nationalityï¿½, 3: ï¿½IQï¿½}
+  ï¿½idx_to_nameï¿½: {ï¿½Heightï¿½:0, ï¿½Genderï¿½: 1, ï¿½Nationalityï¿½: 2, ï¿½IQï¿½: 3}
+  ï¿½column_metadataï¿½: [
+    {ï¿½modeltypeï¿½: ï¿½normal_inverse_gammaï¿½, ï¿½value_to_codeï¿½: {}, ï¿½code_to_valueï¿½: {}},
+    {ï¿½modeltypeï¿½: ï¿½asymmetric_beta_bernoulliï¿½, ï¿½value_to_codeï¿½: {0:ï¿½Maleï¿½, 1:ï¿½Femaleï¿½}, ...
+    	ï¿½code_to_valueï¿½: {ï¿½Maleï¿½:0, ï¿½Femaleï¿½:1}},
+    {ï¿½modeltypeï¿½: ï¿½symmetric_dirichlet_discreteï¿½, ï¿½code_to_valueï¿½: {ï¿½USï¿½:0, ï¿½Canadianï¿½:1}, ...
+    	ï¿½value_to_codeï¿½: {1:ï¿½Canadianï¿½, 0:ï¿½USï¿½}},
+    {ï¿½modeltypeï¿½: ï¿½normal_inverse_gammaï¿½, ï¿½value_to_codeï¿½: {}, ï¿½code_to_valueï¿½:{}}
     ]
 }
 
 M_r: {
-  Òname_to_idxÓ: {ÒBobÓ:0, ÒSteveÓ:1, ÒJillÓ:2},
-  Òidx_to_nameÓ: {0:ÓBobÓ, 1:ÓSteveÓ, 3:ÓJillÓ},
+  ï¿½name_to_idxï¿½: {ï¿½Bobï¿½:0, ï¿½Steveï¿½:1, ï¿½Jillï¿½:2},
+  ï¿½idx_to_nameï¿½: {0:ï¿½Bobï¿½, 1:ï¿½Steveï¿½, 3:ï¿½Jillï¿½},
 }
 \end{verbatim}
 
@@ -602,29 +604,29 @@ categories: [
 Then, $X_L$ could be: 
 \begin{verbatim}
 X_L: {
-  Òcolumn_partitionÓ: {
-	ÒhypersÓ: {Òlog_alphaÓ: 1.1},
-	ÒassignmentsÓ: [0, 0, 1, 2],
-	ÒcountsÓ: [2, 1, 1],
+  ï¿½column_partitionï¿½: {
+	ï¿½hypersï¿½: {ï¿½log_alphaï¿½: 1.1},
+	ï¿½assignmentsï¿½: [0, 0, 1, 2],
+	ï¿½countsï¿½: [2, 1, 1],
 },
-  Òcolumn_hypersÓ: [
-	{ÒfixedÓ: false, ÒmuÓ: 63.5, Ólog_kappaÓ: 8.2, Ólog_alphaÓ: 2.3, Òlog_betaÓ: 3.4},
-	{ÒfixedÓ: false, Òlog_strengthÓ: 10, ÒbalanceÓ: 1.2}
-	{ÒfixedÓ: true, Òlog_alphaÓ: .5, ÒKÓ: 2},
-	{ÒfixedÓ: false, ÒmuÓ: 101.1, Ólog_kappaÓ: 4, Òlog_alphaÓ: 10.1, Òlog_betaÓ: 5}
+  ï¿½column_hypersï¿½: [
+	{ï¿½fixedï¿½: false, ï¿½muï¿½: 63.5, ï¿½log_kappaï¿½: 8.2, ï¿½log_alphaï¿½: 2.3, ï¿½log_betaï¿½: 3.4},
+	{ï¿½fixedï¿½: false, ï¿½log_strengthï¿½: 10, ï¿½balanceï¿½: 1.2}
+	{ï¿½fixedï¿½: true, ï¿½log_alphaï¿½: .5, ï¿½Kï¿½: 2},
+	{ï¿½fixedï¿½: false, ï¿½muï¿½: 101.1, ï¿½log_kappaï¿½: 4, ï¿½log_alphaï¿½: 10.1, ï¿½log_betaï¿½: 5}
 	],
-  Òview_stateÓ: [
-	{Òrow_partition_modelÓ: {ÒhypersÓ: {Òlog_alphaÓ:3.2}, ÒcountsÓ:[2, 1]}, ...
+  ï¿½view_stateï¿½: [
+	{ï¿½row_partition_modelï¿½: {ï¿½hypersï¿½: {ï¿½log_alphaï¿½:3.2}, ï¿½countsï¿½:[2, 1]}, ...
 		"column_names": ["Height(in)", "Gender"], ...
-		Òcolumn_component_suffstatsÓ: [[{Òsum_xÓ: 66.0, Òsum_x_sqÓ: 4356.0},...
-		{Òsum_xÓ: 60.0, Òsum_x_sqÓ: 3600.0}], [{Ò0_countÓ: 2, Ò1_countÓ: 0}, ...
-			{Ò0_countÓ: 0, Ò1_countÓ: 1}]]},
-	{Òrow_partition_modelÓ: {ÒhypersÓ: {Òlog_alphaÓ:2.2}, ÒcountsÓ:[2, 1]}, ...
+		ï¿½column_component_suffstatsï¿½: [[{ï¿½sum_xï¿½: 66.0, ï¿½sum_x_sqï¿½: 4356.0},...
+		{ï¿½sum_xï¿½: 60.0, ï¿½sum_x_sqï¿½: 3600.0}], [{ï¿½0_countï¿½: 2, ï¿½1_countï¿½: 0}, ...
+			{ï¿½0_countï¿½: 0, ï¿½1_countï¿½: 1}]]},
+	{ï¿½row_partition_modelï¿½: {ï¿½hypersï¿½: {ï¿½log_alphaï¿½:2.2}, ï¿½countsï¿½:[2, 1]}, ...
 		"column_names": ["Nationality"], ...
-		Òcolumn_component_suffstatsÓ: [[{Ò0_countÓ: 2, Ò1_countÓ:0},{Ò0_countÓ: 2, Ò1_countÓ:0}]]},
-	{Òrow_partition_modelÓ: {ÒhypersÓ: {Òlog_alphaÓ:0.8}, ÒcountsÓ:[3]}, ...
+		ï¿½column_component_suffstatsï¿½: [[{ï¿½0_countï¿½: 2, ï¿½1_countï¿½:0},{ï¿½0_countï¿½: 2, ï¿½1_countï¿½:0}]]},
+	{ï¿½row_partition_modelï¿½: {ï¿½hypersï¿½: {ï¿½log_alphaï¿½:0.8}, ï¿½countsï¿½:[3]}, ...
 		"column_names": ["IQ"], ...
-		Òcolumn_component_suffstatsÓ: [[{Òsum_xÓ: 309.0, Òsum_x_sqÓ: 31481.0}]]}
+		ï¿½column_component_suffstatsï¿½: [[{ï¿½sum_xï¿½: 309.0, ï¿½sum_x_sqï¿½: 31481.0}]]}
 	]
 }
 \end{verbatim}
