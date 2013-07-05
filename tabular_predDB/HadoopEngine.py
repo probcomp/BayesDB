@@ -70,6 +70,7 @@ class HadoopEngine(object):
                  output_path=default_output_path,
                  input_filename=default_input_filename,
                  table_data_filename=default_table_data_filename,
+                 one_map_task_per_line=True,
                  ):
         xu.assert_vpn_is_connected()
         #
@@ -84,6 +85,7 @@ class HadoopEngine(object):
         self.output_path = output_path
         self.input_filename = input_filename
         self.table_data_filename = table_data_filename
+        self.one_map_task_per_line = one_map_task_per_line
         return
 
     def initialize(self, M_c, M_r, T, initialization='from_the_prior',
@@ -240,6 +242,8 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
     #
     fs_str = '-fs "%s"' % hadoop_engine.hdfs_uri if hadoop_engine.hdfs_uri is not None else ''
     jt_str = '-jt "%s"' % hadoop_engine.jobtracker_uri if hadoop_engine.jobtracker_uri is not None else ''
+    #
+    input_format_str = '-inputformat org.apache.hadoop.mapred.lib.NLineInputFormat' if hadoop_engine.one_map_task_per_line else ''
     hadoop_cmd_str = ' '.join([
             jar_str,
             '-D mapred.task.timeout=%s' % task_timeout,
@@ -248,7 +252,7 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
             archive_str,
             fs_str,
 	    jt_str,
-            # fixme: need to prepend output_path to input_filename
+            input_format_str,
             '-input "%s"' % os.path.join(hdfs_path, hadoop_engine.input_filename),
             '-output "%s"' % os.path.join(hdfs_path, hadoop_engine.output_path),
             '-mapper "%s"' % mapper_path,
