@@ -26,6 +26,8 @@ import scipy as sp
 import itertools
 import pdb
 
+from scipy.special import binom
+
 import tabular_predDB.cython_code.State as State
 import tabular_predDB.python_utils.data_utils as du
 
@@ -58,7 +60,7 @@ def GenerateStateFromPartitions(col_parts, row_parts, mean_gen=0.0, std_gen=1.0,
 	# create a new state with the updated X_D and X_L
 	state = State.p_State(M_c, T, X_L=X_L, X_D=X_D, N_GRID=100)
 
-	return state, T, M_c
+	return state, T, M_c, M_r, X_L, X_D
 
 # generates a random state with n_rows rows and n_cols columns, fills it with 
 # normal data and the specified alphas, and prepares it for running. Returns 
@@ -118,9 +120,7 @@ def GenerateRandomState(n_rows, n_cols, mean_gen=0.0, std_gen=1.0, std_data=0.1,
 	# create a new state with the updated X_D and X_L
 	state = State.p_State(M_c, T, X_L=X_L, X_D=X_D, N_GRID=100)
 
-	# pdb.set_trace()
-
-	return state, T, M_c
+	return state, T, M_r, M_c
 
 # generates a random partitioning of n_rows rows and n_cols columns based on the
 # CRP. The resulting partition is a dict with two entries: ['col_parts'] and
@@ -213,11 +213,11 @@ def GenDataFromPartitions(col_part,row_parts,mean_gen,std_gen,std_data):
 	T = np.zeros((n_rows,n_cols))
 
 	for col in range(n_cols):
-		view = col_part[col]-1
+		view = col_part[col]
 		row_part = row_parts[view,:]
-		cats = max(row_part)
+		cats = max(row_part)+1
 		for cat in range(cats):
-			row_dex = np.nonzero(row_part==cat+1)[0]
+			row_dex = np.nonzero(row_part==cat)[0]
 			n_rows_cat = len(row_dex)
 			mean = np.random.normal(mean_gen,std_gen)
 			X = np.random.normal(mean,std_data,(n_rows_cat,1))
@@ -226,7 +226,8 @@ def GenDataFromPartitions(col_part,row_parts,mean_gen,std_gen,std_data):
 				T[row,col] = X[i]
 				i += 1
 
-	T.tolist()
+	
+	T = T.tolist()
 	M_r = du.gen_M_r_from_T(T)
 	M_c = du.gen_M_c_from_T(T)
 
@@ -414,12 +415,12 @@ class Partition(object):
 		expectedPartitions = Bell(N)
 		currentPartition = 2
 
-		C = np.copy(p.s)
+		C = np.copy(p.s-1)
 	    
 		while p.proceed:
 			p.Next()
 			if p.proceed:
-				C = np.vstack([C,p.s]);
+				C = np.vstack([C,p.s-1]);
 				currentPartition += 1
 			else:
 				break
@@ -580,7 +581,7 @@ def CCML(ccpart,ccmat,mu,r,nu,s,row_alpha,col_alpha):
 
 # Fixes the prior
 def FixPriors(X_L,alpha,mu,s,r,nu):
-	num_cols = len(X_L['column_partition']['assignments']
+	num_cols = len(X_L['column_partition']['assignments'])
 	X_L['column_partition']['hypers']['alpha'] = alpha
 	# print(new_X_L)
 	for i in range(len(X_L['view_state'])):
