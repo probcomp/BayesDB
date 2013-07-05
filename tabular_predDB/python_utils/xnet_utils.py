@@ -56,7 +56,13 @@ def parse_hadoop_line(line):
     key, dict_in = None, None
     if match:
         key, dict_in_str = match.groups()
-        dict_in = eval(dict_in_str)
+        try:
+          dict_in = eval(dict_in_str)
+        except Exception, e:
+          # for parsing new NLineInputFormat
+          match = pattern.match(dict_in_str)
+          key, dict_in_str = match.groups()
+          dict_in = eval(dict_in_str)
     return key, dict_in
 
 def write_initialization_files(initialize_input_filename,
