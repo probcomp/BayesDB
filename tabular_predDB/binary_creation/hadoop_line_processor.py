@@ -63,6 +63,8 @@ def chunk_analyze_helper(table_data, dict_in):
     original_SEED = dict_in['SEED']
     chunk_size = dict_in['chunk_size']
     chunk_filename_prefix = dict_in.pop('chunk_filename_prefix', 'chunk')
+    # chunk_dest_dir = dict_in.pop('chunk_dest_dir', 'for_mapred')
+    chunk_dest_dir = dict_in.pop('chunk_dest_dir', '/user/bigdata/for_mapred')
     #
     dict_in['n_steps'] = chunk_size
     steps_done = 0
@@ -72,13 +74,10 @@ def chunk_analyze_helper(table_data, dict_in):
         dict_out = analyze_helper(table_data, dict_in)
         dict_in.update(dict_out)
         # write to hdfs
-        chunk_filename = '%s_%s.pkl.gz' % (chunk_filename_prefix, ith_chunk)
-        chunk_filename = os.path.join('/tmp/', chunk_filename)
-        print chunk_filename
+        chunk_filename = '%s_seed_%s_chunk_%s.pkl.gz' % (chunk_filename_prefix, original_SEED, ith_chunk)
         fu.pickle(dict_out, chunk_filename)
-        import pydoop.hdfs as hdfs
-        hdfs.put(chunk_filename, "/user/bigdata/")
-        HE.put_hdfs("hdfs://localhost:8020/", chunk_filename, "/user/bigdata/")
+        # HE.put_hdfs("hdfs://localhost:8020/", chunk_filename, chunk_dest_dir)
+        HE.put_hdfs("hdfs://localhost:8020/", chunk_filename, '/user/bigdata/for_mapred/' + chunk_filename)
         #
         steps_done += chunk_size
     return dict_out
