@@ -62,8 +62,8 @@ def chunk_analyze_helper(table_data, dict_in):
     original_n_steps = dict_in['n_steps']
     original_SEED = dict_in['SEED']
     chunk_size = dict_in['chunk_size']
-    chunk_filename_prefix = dict_in.pop('chunk_filename_prefix', 'chunk')
-    chunk_dest_dir = dict_in.pop('chunk_dest_dir', '/user/bigdata/for_mapred')
+    chunk_filename_prefix = dict_in['chunk_filename_prefix']
+    chunk_dest_dir = dict_in['chunk_dest_dir']
     #
     steps_done = 0
     while steps_done < original_n_steps:
