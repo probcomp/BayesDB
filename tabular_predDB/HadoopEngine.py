@@ -164,7 +164,7 @@ def rm_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     # rm_infix_args = '-rm -r -f'
     hdfs_path = os.path.join(hdfs_base_dir, path)
     fs_str = ('-fs "%s"' % hdfs_uri) if hdfs_uri is not None else ''
-    cmd_str = 'hadoop fs %s %s %s'
+    cmd_str = 'hadoop fs %s %s %s >rm_hdfs.out 2>rm_hdfs.err'
     cmd_str %= (fs_str, rm_infix_args, hdfs_path)
     if DEBUG:
         print cmd_str
@@ -212,9 +212,8 @@ def put_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     # put to hdfs
     fs_str = ('-fs "%s"' % hdfs_uri) if hdfs_uri is not None else ''
     ensure_dir_hdfs(fs_str, hdfs_path)
-    cmd_str = 'hadoop fs %s -put %s %s'
+    cmd_str = 'hadoop fs %s -put %s %s >put_hdfs.out 2>put_hdfs.err'
     cmd_str %= (fs_str, path, hdfs_path)
-    print cmd_str
     if DEBUG:
         print cmd_str
     else:
