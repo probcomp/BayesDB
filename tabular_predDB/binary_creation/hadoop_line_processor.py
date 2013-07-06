@@ -15,6 +15,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
+import os
 import sys
 #
 import tabular_predDB.python_utils.data_utils as du
@@ -56,6 +57,27 @@ def analyze_helper(table_data, dict_in):
     ret_dict = dict(X_L=X_L_prime, X_D=X_D_prime)
     return ret_dict
 
+def checkpoint_analyze_helper(table_data, dict_in):
+    original_n_steps = dict_in['n_steps']
+    original_SEED = dict_in['SEED']
+    chunk_size = dict_in['chunk_size']
+    checkpoint_filename_prefix = dict_in['checkpoint_filename_prefix']
+    #
+    dict_in['n_steps'] = chunk_size
+    steps_done = 0
+    while steps_done < original_n_steps:
+        # FIXME: modify SEED
+        ith_chunk = steps_done / chunk_size
+        dict_out = analyze_helper(table_data, dict_in)
+        dict_in.update(dict_out)
+        # write to hdfs
+        checkpoint_filename = '%s_%s' % (checkpoint_filename_prefix, ith_chunk)
+        fu.pickle(dict_out, checkpoint_filename)
+        HE.put_hdfs(None, checkpoint_filename)
+        #
+        steps_taken += step_size
+    return dict_out
+    
 def time_analyze_helper(table_data, dict_in):
     start_dims = du.get_state_shape(dict_in['X_L'])
     with gu.Timer('time_analyze_helper', verbose=False) as timer:
@@ -77,6 +99,7 @@ method_lookup = dict(
     initialize=initialize_helper,
     analyze=analyze_helper,
     time_analyze=time_analyze_helper,
+    checkpoint_analyze=checkpoint_analyze_helper,
     )
 
 if __name__ == '__main__':
