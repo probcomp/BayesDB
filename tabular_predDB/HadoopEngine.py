@@ -307,6 +307,7 @@ def read_hadoop_output(output_path, copy_to_filename=None):
     if copy_to_filename is not None:
       cmd_str = 'cp %s %s' % (hadoop_output_filename, copy_to_filename)
       os.system(cmd_str)
+    hadoop_output = read_hadoop_output_file(hadoop_output_filename)
     X_L_list = [el['X_L'] for el in hadoop_output.values()]
     X_D_list = [el['X_D'] for el in hadoop_output.values()]
     return X_L_list, X_D_list
