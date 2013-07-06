@@ -349,7 +349,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_steps', type=int, default=1)
     parser.add_argument('--chunk_size', type=int, default=1)
     parser.add_argument('--chunk_filename_prefix', type=str, default='chunk')
-    parser.add_argument('--chunk_dest_dir', type=str, default='/user/bigdata/for_mapred')
+    parser.add_argument('--chunk_dest_dir', type=str, default='/user/bigdata/SSCI/chunk_dir')
     parser.add_argument('--max_time', type=float, default=-1)
     parser.add_argument('--table_filename', type=str, default='../www/data/dha_small.csv')
     parser.add_argument('--resume_filename', type=str, default=None)
