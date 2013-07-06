@@ -114,7 +114,7 @@ class HadoopEngine(object):
       return hadoop_output
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
-                max_iterations=-1, max_time=-1, chunk_size=None):
+                max_iterations=-1, max_time=-1, **kwargs):  
         output_path = self.output_path
         input_filename = self.input_filename
         table_data_filename = self.table_data_filename
@@ -122,9 +122,17 @@ class HadoopEngine(object):
         #
         analyze_args_dict = dict(command='analyze', kernel_list=kernel_list,
                                  n_steps=n_steps, c=c, r=r, max_time=max_time)
-        if chunk_size is not None:
+        # chunk_analyze is a special case of analyze
+        if 'chunk_size' in kwargs:
+          chunk_size = kwargs['chunk_size']
+          chunk_filename_prefix = kwargs['chunk_filename_prefix']
+          chunk_dest_dir = kwargs['chunk_dest_dir']
           analyze_args_dict['command'] = 'chunk_analyze'
           analyze_args_dict['chunk_size'] = chunk_size
+          analyze_args_dict['chunk_filename_prefix'] = chunk_filename_prefix
+          # WARNING: chunk_dest_dir MUST be writeable by hadoop user mapred
+          analyze_args_dict['chunk_dest_dir'] = chunk_dest_dir
+
         if not xu.get_is_multistate(X_L, X_D):
             X_L = [X_L]
             X_D = [X_D]
@@ -340,6 +348,8 @@ if __name__ == '__main__':
     parser.add_argument('--n_chains', type=int, default=4)
     parser.add_argument('--n_steps', type=int, default=1)
     parser.add_argument('--chunk_size', type=int, default=1)
+    parser.add_argument('--chunk_filename_prefix', type=str, default='chunk')
+    parser.add_argument('--chunk_dest_dir', type=str, default='/user/bigdata/for_mapred')
     parser.add_argument('--max_time', type=float, default=-1)
     parser.add_argument('--table_filename', type=str, default='../www/data/dha_small.csv')
     parser.add_argument('--resume_filename', type=str, default=None)
@@ -358,6 +368,8 @@ if __name__ == '__main__':
     n_chains = args.n_chains
     n_steps = args.n_steps
     chunk_size = args.chunk_size
+    chunk_filename_prefix = args.chunk_filename_prefix
+    chunk_dest_dir = args.chunk_dest_dir
     max_time = args.max_time
     table_filename = args.table_filename
     resume_filename = args.resume_filename
@@ -409,7 +421,9 @@ if __name__ == '__main__':
         X_D_list = resume_dict['X_D_list']
         hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list,
                                    n_steps=n_steps, max_time=max_time,
-                                   chunk_size=chunk_size)
+                                   chunk_size=chunk_size,
+                                   chunk_filename_prefix=chunk_filename_prefix,
+                                   chunk_dest_dir=chunk_dest_dir)
         if hadoop_output is not None:
             X_L_list, X_D_list = hadoop_output
     else:
