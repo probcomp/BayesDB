@@ -428,6 +428,7 @@ if __name__ == '__main__':
             X_L_list, X_D_list = hadoop_output
     else:
         print 'Unknown command: %s' % command
+        import sys
         sys.exit()
         
     if pkl_filename is not None:
