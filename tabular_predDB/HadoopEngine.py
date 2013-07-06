@@ -114,7 +114,7 @@ class HadoopEngine(object):
       return hadoop_output
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
-                max_iterations=-1, max_time=-1):
+                max_iterations=-1, max_time=-1, chunk_size=None):
         output_path = self.output_path
         input_filename = self.input_filename
         table_data_filename = self.table_data_filename
@@ -122,6 +122,9 @@ class HadoopEngine(object):
         #
         analyze_args_dict = dict(command='analyze', kernel_list=kernel_list,
                                  n_steps=n_steps, c=c, r=r, max_time=max_time)
+        if chunk_size is not None:
+          analyze_args_dict['command'] = 'chunk_analyze'
+          analyze_args_dict['chunk_size'] = chunk_size
         if not xu.get_is_multistate(X_L, X_D):
             X_L = [X_L]
             X_D = [X_D]
@@ -211,6 +214,7 @@ def put_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     ensure_dir_hdfs(fs_str, hdfs_path)
     cmd_str = 'hadoop fs %s -put %s %s'
     cmd_str %= (fs_str, path, hdfs_path)
+    print cmd_str
     if DEBUG:
         print cmd_str
     else:
@@ -336,6 +340,7 @@ if __name__ == '__main__':
     parser.add_argument('--which_hadoop_jar', type=str, default=default_hadoop_jar)
     parser.add_argument('--n_chains', type=int, default=4)
     parser.add_argument('--n_steps', type=int, default=1)
+    parser.add_argument('--chunk_size', type=int, default=1)
     parser.add_argument('--max_time', type=float, default=-1)
     parser.add_argument('--table_filename', type=str, default='../www/data/dha_small.csv')
     parser.add_argument('--resume_filename', type=str, default=None)
@@ -353,13 +358,14 @@ if __name__ == '__main__':
     which_hadoop_jar= args.which_hadoop_jar
     n_chains = args.n_chains
     n_steps = args.n_steps
+    chunk_size = args.chunk_size
     max_time = args.max_time
     table_filename = args.table_filename
     resume_filename = args.resume_filename
     pkl_filename = args.pkl_filename
     #
     command = args.command
-    assert command in set(gu.get_method_names(HadoopEngine))
+    # assert command in set(gu.get_method_names(HadoopEngine))
     #
     cctypes_filename = args.cctypes_filename
     cctypes = None
@@ -392,6 +398,19 @@ if __name__ == '__main__':
         X_D_list = resume_dict['X_D_list']
         hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list,
                                    n_steps=n_steps, max_time=max_time)
+        if hadoop_output is not None:
+            X_L_list, X_D_list = hadoop_output
+    elif command == 'chunk_analyze':
+        assert resume_filename is not None
+        if fu.is_pkl(resume_filename):
+          resume_dict = fu.unpickle(resume_filename)
+        else:
+          resume_dict = read_hadoop_output_file(resume_filename)
+        X_L_list = resume_dict['X_L_list']
+        X_D_list = resume_dict['X_D_list']
+        hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list,
+                                   n_steps=n_steps, max_time=max_time,
+                                   chunk_size=chunk_size)
         if hadoop_output is not None:
             X_L_list, X_D_list = hadoop_output
     else:

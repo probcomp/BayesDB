@@ -23,6 +23,7 @@ import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.LocalEngine as LE
+import tabular_predDB.HadoopEngine as HE
 
 
 def initialize_helper(table_data, dict_in):
@@ -57,11 +58,11 @@ def analyze_helper(table_data, dict_in):
     ret_dict = dict(X_L=X_L_prime, X_D=X_D_prime)
     return ret_dict
 
-def checkpoint_analyze_helper(table_data, dict_in):
+def chunk_analyze_helper(table_data, dict_in):
     original_n_steps = dict_in['n_steps']
     original_SEED = dict_in['SEED']
     chunk_size = dict_in['chunk_size']
-    checkpoint_filename_prefix = dict_in['checkpoint_filename_prefix']
+    chunk_filename_prefix = dict_in.pop('chunk_filename_prefix', 'chunk')
     #
     dict_in['n_steps'] = chunk_size
     steps_done = 0
@@ -71,11 +72,15 @@ def checkpoint_analyze_helper(table_data, dict_in):
         dict_out = analyze_helper(table_data, dict_in)
         dict_in.update(dict_out)
         # write to hdfs
-        checkpoint_filename = '%s_%s' % (checkpoint_filename_prefix, ith_chunk)
-        fu.pickle(dict_out, checkpoint_filename)
-        HE.put_hdfs(None, checkpoint_filename)
+        chunk_filename = '%s_%s.pkl.gz' % (chunk_filename_prefix, ith_chunk)
+        chunk_filename = os.path.join('/tmp/', chunk_filename)
+        print chunk_filename
+        fu.pickle(dict_out, chunk_filename)
+        import pydoop.hdfs as hdfs
+        hdfs.put(chunk_filename, "/user/bigdata/")
+        HE.put_hdfs("hdfs://localhost:8020/", chunk_filename, "/user/bigdata/")
         #
-        steps_taken += step_size
+        steps_done += chunk_size
     return dict_out
     
 def time_analyze_helper(table_data, dict_in):
@@ -99,7 +104,7 @@ method_lookup = dict(
     initialize=initialize_helper,
     analyze=analyze_helper,
     time_analyze=time_analyze_helper,
-    checkpoint_analyze=checkpoint_analyze_helper,
+    chunk_analyze=chunk_analyze_helper,
     )
 
 if __name__ == '__main__':
