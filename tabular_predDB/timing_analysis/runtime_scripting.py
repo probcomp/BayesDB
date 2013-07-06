@@ -146,9 +146,7 @@ if __name__ == '__main__':
                                                 input_filename,
                                                 output_path, n_tasks=n_tasks)
         if was_successful:
-            hadoop_output = HE.read_hadoop_output(output_path)
-            hadoop_output_filename = HE.get_hadoop_output_filename(output_path)
-            os.system('cp %s %s' % (hadoop_output_filename, output_filename))
+            HE.read_hadoop_output(output_path, output_filename)
         else:
             print 'remote hadoop job NOT successful'
     else:

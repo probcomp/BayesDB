@@ -108,12 +108,8 @@ class HadoopEngine(object):
                                            n_tasks=n_chains)
       hadoop_output = None
       if was_successful:
-        hadoop_output = read_hadoop_output(output_path)
-        hadoop_output_filename = get_hadoop_output_filename(output_path)
-        os.system('cp %s initialize_output' % hadoop_output_filename)
-        X_L_list = [el['X_L'] for el in hadoop_output.values()]
-        X_D_list = [el['X_D'] for el in hadoop_output.values()]
-        # make output format match LocalEngine
+        X_L_list, X_D_list = read_hadoop_output(output_path,
+                                                hadoop_output_filename)
         hadoop_output = M_c, M_r, X_L_list, X_D_list
       return hadoop_output
 
@@ -146,13 +142,9 @@ class HadoopEngine(object):
                                             n_tasks=len(X_L))
         hadoop_output = None
         if was_successful:
-            hadoop_output = read_hadoop_output(output_path)
-            hadoop_output_filename = get_hadoop_output_filename(output_path)
-            os.system('cp %s analyze_output' % hadoop_output_filename)
-            X_L_list = [el['X_L'] for el in hadoop_output.values()]
-            X_D_list = [el['X_D'] for el in hadoop_output.values()]
-            # make output format match LocalEngine
-            hadoop_output = X_L_list, X_D_list
+          X_L_list, X_D_list = read_hadoop_output(output_path,
+                                                  hadoop_output_filename)
+          hadoop_output = X_L_list, X_D_list
         return hadoop_output
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
@@ -310,9 +302,14 @@ def read_hadoop_output_file(hadoop_output_filename):
     with open(hadoop_output_filename) as fh:
         ret_dict = dict([xu.parse_hadoop_line(line) for line in fh])
     return ret_dict
-def read_hadoop_output(output_path):
+def read_hadoop_output(output_path, copy_to_filename=None):
     hadoop_output_filename = get_hadoop_output_filename(output_path)
-    return read_hadoop_output_file(hadoop_output_filename)
+    if copy_to_filename is not None:
+      cmd_str = 'cp %s %s' % (hadoop_output_filename, copy_to_filename)
+      os.system(cmd_str)
+    X_L_list = [el['X_L'] for el in hadoop_output.values()]
+    X_D_list = [el['X_D'] for el in hadoop_output.values()]
+    return X_L_list, X_D_list
 
 def get_uris(base_uri, hdfs_uri, jobtracker_uri):
     if base_uri is not None:
