@@ -109,7 +109,7 @@ class HadoopEngine(object):
       hadoop_output = None
       if was_successful:
         X_L_list, X_D_list = read_hadoop_output(output_path,
-                                                hadoop_output_filename)
+                                                'initialize_output')
         hadoop_output = M_c, M_r, X_L_list, X_D_list
       return hadoop_output
 
@@ -143,7 +143,7 @@ class HadoopEngine(object):
         hadoop_output = None
         if was_successful:
           X_L_list, X_D_list = read_hadoop_output(output_path,
-                                                  hadoop_output_filename)
+                                                  'analyze_output')
           hadoop_output = X_L_list, X_D_list
         return hadoop_output
 
