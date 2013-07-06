@@ -76,7 +76,7 @@ def chunk_analyze_helper(table_data, dict_in):
         # write to hdfs
         chunk_filename = '%s_seed_%s_chunk_%s.pkl.gz' % (chunk_filename_prefix, original_SEED, ith_chunk)
         fu.pickle(dict_out, chunk_filename)
-        HE.put_hdfs("hdfs://localhost:8020/", chunk_filename, chunk_dest_dir)
+        HE.put_hdfs(None, chunk_filename, chunk_dest_dir)
         #
         steps_done += chunk_size
     return dict_out
