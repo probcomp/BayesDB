@@ -28,11 +28,12 @@ random_state = numpy.random.RandomState(inf_seed)
 col = numpy.array([0,0])
 row = numpy.array([[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]])
 
-p_State, T, M_c = eu.GenerateStateFromPartitions(col,row,std_gen=1000.0, std_data=0.01)
+p_State, T, M_c, M_r, X_L, X_D = eu.GenerateStateFromPartitions(col,row,std_gen=1000.0, std_data=0.01)
 
 X_L = p_State.get_X_L()
 X_D = p_State.get_X_D()
 
+# pdb.set_trace()
 
 # move stuff around a little bit
 for i in range(100):
@@ -43,8 +44,11 @@ x = 1.0;
 query_row = len(row[0])
 Q = [(query_row,0,x)]
 
-Y = []
-p = su.simple_predictive_probability(M_c, X_L, X_D, Y, Q, get_next_seed,n=100)
+# Y = []
+Y = [(1,0,.1),(3,0,.1),(22,0,105),(30,0,100)]
+
+# p = su.simple_predictive_probability(M_c, X_L, X_D, Y, Q, get_next_seed,n=100)
+p = su.simple_predictive_probability(M_c, X_L, X_D, Y, Q, get_next_seed)
 
 n = 1000;
 samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed,n=n)
@@ -60,7 +64,8 @@ for i in range(n):
     Qtmp = (query_row,0,samples[i][0])
     Qs.append(Qtmp)
 
-Ps,e = su.simple_predictive_probability(M_c, X_L, X_D, Y, Qs, get_next_seed,n=100)
+# Ps,e = su.simple_predictive_probability_2(M_c, X_L, X_D, Y, Qs, get_next_seed,n=100)
+Ps,e = su.simple_predictive_probability(M_c, X_L, X_D, Y, Qs, get_next_seed)
 
 Ps = numpy.exp(Ps)
 
