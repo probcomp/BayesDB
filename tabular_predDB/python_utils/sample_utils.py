@@ -145,7 +145,7 @@ def simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row,
     # construct draw conataints
     draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
 
-    # pdb.set_trace()
+    pdb.set_trace()
     # return the CDF value (exp)
     p_b = component_model.get_predictive_cdf(b, draw_constraints)
     p_a = component_model.get_predictive_cdf(a, draw_constraints)

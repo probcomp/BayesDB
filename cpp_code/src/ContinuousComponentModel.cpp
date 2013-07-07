@@ -54,8 +54,29 @@ double ContinuousComponentModel::calc_element_predictive_logp(double element) co
   //
   numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq, element);
   numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+
+
   double logp_prime = numerics::calc_continuous_logp(count, r, nu, s, log_Z_0);
   return logp_prime - score;
+}
+
+double ContinuousComponentModel::calc_element_predictive_cdf(double element) const {
+  if(isnan(element)) return 0;
+  double r, nu, s, mu;
+  int count;
+  double sum_x, sum_x_sq;
+  get_hyper_doubles(r, nu, s, mu);
+  get_suffstats(count, sum_x, sum_x_sq);
+  //
+  numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq, element);
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+
+  boost::math::student_t dist(nu);
+  double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
+  // manipulate the number so it will fit in the standard t (reverse of the draw proceedure)
+  double rev_draw = element / coeff - mu;
+  double cdfval = boost::math::cdf(dist, rev_draw);
+  return cdfval
 }
 
 double ContinuousComponentModel::calc_element_predictive_logp_constrained(double element, vector<double> constraints) const {
@@ -206,7 +227,7 @@ double ContinuousComponentModel::get_draw_constrained(int random_seed, vector<do
 }
 
 // For simple predictive probability
-double ContinuousComponentModel::get_predictive_probability(double element, vector<double> constraints) const {
+double ContinuousComponentModel::get_predictive_cdf(double element, vector<double> constraints) const {
   // get modified suffstats
   double r, nu, s, mu;
   int count;
@@ -221,9 +242,11 @@ double ContinuousComponentModel::get_predictive_probability(double element, vect
   }
   numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
 
-  double logp = calc_element_predictive_logp(element);
+  // double logp = calc_element_predictive_logp(element);
 
-  return logp;
+  double p = calc_element_predictive_cdf(element);
+
+  return p;
 }
 
 map<string, double> ContinuousComponentModel::get_suffstats() const {
