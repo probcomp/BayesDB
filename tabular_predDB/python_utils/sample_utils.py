@@ -39,7 +39,7 @@ Constraints = Bunch
 
 ################################################################################
 ################################################################################
-def simple_predictive_probability(M_c, X_L, X_D, Y, Q, get_next_seed, n=1000):
+def simple_predictive_probability(M_c, X_L, X_D, Y, Q, epsilon=.001):
     num_rows = len(X_D[0])
     num_cols = len(M_c['column_metadata'])
     query_row = Q[0][0]
@@ -50,22 +50,21 @@ def simple_predictive_probability(M_c, X_L, X_D, Y, Q, get_next_seed, n=1000):
     # enforce query columns observed column
     assert(all([query_column<num_cols for query_column in query_columns]))
     is_observed_row = query_row < num_rows
+
     x = []
-    # pdb.set_trace()
+
     if not is_observed_row:
-        x = simple_predictive_probability_unobserved_2(
-            M_c, X_L, X_D, Y, query_row, query_columns, elements)
-        # x = simple_predictive_probability_unobserved(
-        #     M_c, X_L, X_D, Y, query_row, query_columns, elements, get_next_seed)
-        return x
+        x = simple_predictive_probability_unobserved(
+            M_c, X_L, X_D, Y, query_row, query_columns, elements, epsilon=epsilon)
     else:
         x = simple_predictive_probability_observed(
-            M_c, X_L, X_D, Y, query_row, query_columns, elements, get_next_seed)    
-        return x
+            M_c, X_L, X_D, Y, query_row, query_columns, elements, epsilon=epsilon)    
+
+    return x
 
 
 def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
-                                      which_columns, elements, get_next_seed):
+                                      which_columns, elements, epsilon=.001):
     get_which_view = lambda which_column: \
         X_L['column_partition']['assignments'][which_column]
     column_to_view = dict()
@@ -88,18 +87,29 @@ def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
         cluster_model = view_to_cluster_model[which_view]
         component_model = cluster_model[which_column]
         draw_constraints = get_draw_constraints(X_L, X_D, Y,which_row, which_column)
-        SEED = get_next_seed()
-        if type(elements[q]) is not float:
-            print "elements[q] is not a float"
-            # pdb.set_trace()
-        logp = component_model.get_predictive_probability(elements[q],draw_constraints)
+
+        # TODO: These should be implemented in their respective classes
+        model_type = M_c['column_metadata'][which_column]['modeltype']
+
+        if model_type == 'normal_inverse_gamma':
+            a = elements[q]-epsilon
+            b = elements[q]+epsilon
+            p_a = component_model.get_predictive_cdf(a,draw_constraints)
+            p_b = component_model.get_predictive_cdf(b,draw_constraints)
+            logp = numpy.log(p_b-p_a)
+        elif model_type == 'symmetric_dirichlet_discrete':
+            logp = component_model.get_predictive_probability(elements[q],draw_constraints)
+        else:
+            print "error: simple_predictive_probability_unobserved: Undefined model type."
+            pdb.set_trace();
+       
         Ps[q] = logp
         q += 1
 
     ans = Ps
     
     return ans
-def simple_predictive_probability_unobserved_2(M_c, X_L, X_D, Y, query_row, query_columns, elements):
+def simple_predictive_probability_unobserved(M_c, X_L, X_D, Y, query_row, query_columns, elements, epsilon=.001):
 
     n_queries = len(query_columns)
 
@@ -107,11 +117,11 @@ def simple_predictive_probability_unobserved_2(M_c, X_L, X_D, Y, query_row, quer
 
     for n in range(n_queries):
         # figure out what kind of model we are dealing with 
-        # FIXME:  These should be implemented in their respective classes
+        # TODO:  These should be implemented in their respective classes
         model_type = M_c['column_metadata'][query_columns[n]]['modeltype']
 
         if model_type == 'normal_inverse_gamma':
-            answer[n] = simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
+            answer[n] = simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n],epsilon=epsilon)
         elif model_type == 'symmetric_dirichlet_discrete':
             answer[n] = simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
         else:
@@ -120,7 +130,7 @@ def simple_predictive_probability_unobserved_2(M_c, X_L, X_D, Y, query_row, quer
 
     return answer
 
-def simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row,query_column, element):
+def simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row,query_column, element, epsilon=.001):
     # TODO: Add user-defined epsilon value?
 
     # get the view to which this column is assigned
@@ -128,31 +138,33 @@ def simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row,
     # get the logps for all the clusters (plus a new one) in this view
     cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, query_row, view_idx)
 
-    # we numerically integrate over a small portion of space using floating point 
-    # precision. nextafter() returns the next representable number. Epsilons are the
-    # space between these numbers. Epsilon will vary depenting on the target element
-
+    # we calculate a small portion of the integral using the CDF (student's t). 
+    # CDF(b) - CDF(a)
     x = element
-    b = numpy.nextafter(x,x+1) # next representable number after x
-    a = numpy.nextafter(x,x-1) # first representable number before x
+    a = x-epsilon
+    b = x+epsilon
+    
+    answers = numpy.zeros(len(cluster_logps))
 
-    cluster_idx = len(cluster_logps)-1;
+    for cluster_idx in range(len(cluster_logps)):
 
-    # get the cluster model for this cluster
-    cluster_model = create_cluster_model_from_X_L(M_c, X_L, view_idx, cluster_idx)
-    # get the specific cluster model for this column
-    component_model = cluster_model[query_column]
-    # construct draw conataints
-    draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
+        # get the cluster model for this cluster
+        cluster_model = create_cluster_model_from_X_L(M_c, X_L, view_idx, cluster_idx)
+        # get the specific cluster model for this column
+        component_model = cluster_model[query_column]
+        # construct draw conataints
+        draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
 
-    pdb.set_trace()
-    # return the CDF value (exp)
-    p_b = component_model.get_predictive_cdf(b, draw_constraints)
-    p_a = component_model.get_predictive_cdf(a, draw_constraints)
+        # return the CDF value (exp)
+        p_b = component_model.get_predictive_cdf(b, draw_constraints)
+        p_a = component_model.get_predictive_cdf(a, draw_constraints)
 
-    norm = cluster_logps[-1]-sum(cluster_logps)
+        # weighted sum of probabilities over clusters
+        norm = cluster_logps[cluster_idx]-logsumexp(cluster_logps)
 
-    answer = numpy.log(p_b-p_a)+norm
+        answers[cluster_idx] = numpy.log(p_b-p_a)+norm
+
+    answer = logsumexp(answers);
 
     return answer
 
@@ -166,81 +178,26 @@ def simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query
 
     x = element
 
-    cluster_idx = len(cluster_logps)-1;
+    answers = numpy.zeros(len(cluster_logps))
 
-    # get the cluster model for this cluster
-    cluster_model = create_cluster_model_from_X_L(M_c, X_L, view_idx, cluster_idx)
-    # get the specific cluster model for this column
-    component_model = cluster_model[query_column]
-    # construct draw conataints
-    draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
+    for cluster_idx in range(len(cluster_logps)):
 
-    # return the CDF value (exp)
-    px = component_model.get_predictive_probability(b, draw_constraints)
+        # get the cluster model for this cluster
+        cluster_model = create_cluster_model_from_X_L(M_c, X_L, view_idx, cluster_idx)
+        # get the specific cluster model for this column
+        component_model = cluster_model[query_column]
+        # construct draw conataints
+        draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
 
-    norm = cluster_logps[-1]-sum(cluster_logps)
+        # return the CDF value (exp)
+        px = component_model.get_predictive_probability(b, draw_constraints)
 
-    answer = px+norm
+        norm = cluster_logps[cluster_idx]-logsumexp(cluster_logps)
 
+        answers[cluster_idx] = px+norm
+
+    answer = logsumexp(answers);
     return answer
-
-# also returns standard error
-def simple_predictive_probability_unobserved(M_c, X_L, X_D, Y, query_row,
-                                        query_columns, elements, get_next_seed, n=100):
-    num_views = len(X_D)
-    #
-    cluster_logps_list = []
-    for view_idx in range(num_views):
-        cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, query_row,
-                                                view_idx)
-        cluster_logps_list.append(cluster_logps)
-    #
-    # holds all the answers which we will then logsumexp later
-    Ps = numpy.zeros((n,len(query_columns))) 
-    for sample_idx in range(n):
-        view_cluster_draws = dict()
-        for view_idx, cluster_logps in enumerate(cluster_logps_list):
-            probs = numpy.exp(cluster_logps)
-            probs /= sum(probs)
-            draw = numpy.nonzero(numpy.random.multinomial(1, probs))[0][0]
-            view_cluster_draws[view_idx] = draw
-
-        # pdb.set_trace()
-        #
-        get_which_view = lambda which_column: \
-            X_L['column_partition']['assignments'][which_column]
-        column_to_view = dict()
-        for query_column in query_columns:
-            column_to_view[query_column] = get_which_view(query_column)
-        view_to_cluster_model = dict()
-        for which_view in list(set(column_to_view.values())):
-            which_cluster = view_cluster_draws[which_view]
-            cluster_model = create_cluster_model_from_X_L(M_c, X_L,
-                                                          which_view,
-                                                          which_cluster)
-            # pdb.set_trace()
-            view_to_cluster_model[which_view] = cluster_model
-        #
-        this_sample_draws = []
-        q = 0
-        for query_column in query_columns:
-            which_view = get_which_view(query_column)
-            cluster_model = view_to_cluster_model[which_view]
-            component_model = cluster_model[query_column]
-            draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
-            
-            pdb.set_trace()
-
-            logp = component_model.get_predictive_probability(elements[q],draw_constraints)
-            Ps[sample_idx,q] = logp
-            q += 1
-            
-        
-    ans = logsumexp(Ps,axis=0)-numpy.log(n)
-    stderr = numpy.std(numpy.exp(Ps),axis=0)/numpy.sqrt(n)
-    
-    return ans, stderr
-
 
 ################################################################################
 ################################################################################
@@ -523,7 +480,7 @@ def determine_cluster_logps(M_c, X_L, X_D, Y, query_row, view_idx):
     cluster_data_logps = numpy.array(cluster_data_logps)
     # 
     cluster_logps = cluster_crp_logps + cluster_data_logps
-    # pdb.set_trace()
+    
     return cluster_logps
 
 def sample_from_cluster(cluster_model, random_state):

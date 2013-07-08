@@ -17,6 +17,7 @@ import tabular_predDB.cython_code.State as State
 
 random.seed(None)
 inf_seed = random.randrange(32767)
+# THIS CODE ONLY TESTS CONTINUOUS DATA
 
 # FIXME: getting weird error on conversion to int: too large from inside pyx
 def get_next_seed(max_val=32767): # sys.maxint):
@@ -33,44 +34,45 @@ p_State, T, M_c, M_r, X_L, X_D = eu.GenerateStateFromPartitions(col,row,std_gen=
 X_L = p_State.get_X_L()
 X_D = p_State.get_X_D()
 
-# pdb.set_trace()
-
 # move stuff around a little bit
 for i in range(100):
 	p_State.transition(which_transitions=['column_partition_assignments','row_partition_assignments'])
 
 # quick test just to make sure things output what they're supposed to 
-x = 1.0;
-query_row = len(row[0])
+x = 0.0;
+query_row = len(row[0]) # tests unobserved
+# query_row = 3;		# tests observed
 Q = [(query_row,0,x)]
 
-# Y = []
-Y = [(1,0,.1),(3,0,.1),(22,0,105),(30,0,100)]
 
-# p = su.simple_predictive_probability(M_c, X_L, X_D, Y, Q, get_next_seed,n=100)
-p = su.simple_predictive_probability(M_c, X_L, X_D, Y, Q, get_next_seed)
+Y = [] # no contraints
+# Y = [(1,0,.1),(3,0,.1),(22,0,105),(30,0,100)] # generic constraints
 
-n = 1000;
+p = su.simple_predictive_probability(M_c, X_L, X_D, Y, Q)
+
+n = 10000;
 samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed,n=n)
 
 X = [sample[0] for sample in samples]
 
 pylab.figure(facecolor='white')
-pylab.hist(X,50,normed=1, histtype='bar',label='samples',edgecolor='none')
-# pylab.show()
+pdf, bins, patches = pylab.hist(X,50,normed=True, histtype='bar',label='samples',edgecolor='none')
+pylab.show()
+
+pdf_max = max(pdf)
 
 Qs = [];
 for i in range(n):
-    Qtmp = (query_row,0,samples[i][0])
+    Qtmp = (query_row,0,X[i])
     Qs.append(Qtmp)
 
-# Ps,e = su.simple_predictive_probability_2(M_c, X_L, X_D, Y, Qs, get_next_seed,n=100)
-Ps,e = su.simple_predictive_probability(M_c, X_L, X_D, Y, Qs, get_next_seed)
+Ps = su.simple_predictive_probability(M_c, X_L, X_D, Y, Qs)
 
-Ps = numpy.exp(Ps)
+Ps = (numpy.exp(Ps)/max(numpy.exp(Ps)))*pdf_max
 
 # make a scatterplot
-pylab.errorbar(X,Ps, yerr=e, fmt='ro', alpha=.5, markersize=4,label='probability',markeredgecolor = 'none')
+pylab.scatter(X,Ps, c='red',label="p from cdf")
+
 pylab.legend(loc='upper left')
 pylab.xlabel('value') 
 pylab.ylabel('frequency/probability')
