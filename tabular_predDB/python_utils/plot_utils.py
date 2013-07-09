@@ -196,3 +196,28 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
                                   rotation=90, size='small')
     pylab.title('column dependencies for: %s' % tablename)
     pylab.savefig(filename)
+
+def legend_outside(ax=None, bbox_to_anchor=(0.5, -.25), loc='upper center',
+                   ncol=None):
+    # labels must be set in original plot call: plot(..., label=label)
+    if ax is None:
+        ax = pylab.gca()
+    handles, labels = ax.get_legend_handles_labels()
+    label_to_handle = dict(zip(labels, handles))
+    labels = label_to_handle.keys()
+    handles = label_to_handle.values()
+    if ncol is None:
+        ncol = min(len(labels), 3)
+    lgd = ax.legend(handles, labels, loc=loc, ncol=ncol,
+                    bbox_to_anchor=bbox_to_anchor, prop={"size":14})
+    return
+
+def savefig_legend_outside(filename, ax=None, bbox_inches='tight'):
+    if ax is None:
+        ax = pylab.gca()
+    lgd = ax.get_legend()
+    pylab.savefig(filename,
+                  bbox_extra_artists=(lgd,),
+                  bbox_inches=bbox_inches,
+                  )
+    return
