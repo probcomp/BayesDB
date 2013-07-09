@@ -79,14 +79,16 @@ def write_initialization_files(initialize_input_filename,
 def link_initialize_to_analyze(initialize_output_filename,
                                analyze_input_filename,
                                analyze_args_dict=default_analyze_args_dict):
+    num_lines = 0
     with open(initialize_output_filename) as in_fh:
         with open(analyze_input_filename, 'w') as out_fh:
             for line in in_fh:
+                num_lines += 1
                 key, dict_in = parse_hadoop_line(line)
                 dict_in.update(analyze_args_dict)
                 dict_in['SEED'] = int(key)
                 write_hadoop_line(out_fh, key, dict_in)
-    return
+    return num_lines
 
 def get_is_multistate(X_L, X_D):
     if isinstance(X_L, (list, tuple)):
