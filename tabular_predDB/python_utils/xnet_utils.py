@@ -16,6 +16,7 @@ default_initialize_args_dict = dict(
     initialization='from_the_prior',
     )
 
+default_analyze_args_dict_filename = 'analyze_args_dict.pkl.gz'
 default_analyze_args_dict = dict(
     command='analyze',
     kernel_list=(),
