@@ -113,6 +113,7 @@ def assert_vpn_is_connected():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('do_what', type=str)
+    parser.add_argument('--hadoop_filename', type=str, default=None)
     parser.add_argument('--table_filename',
         default=default_table_filename, type=str)
     parser.add_argument('--pkl_filename',
@@ -128,6 +129,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     #
     do_what = args.do_what
+    hadoop_filename = args.hadoop_filename
     table_filename = args.table_filename
     pkl_filename = args.pkl_filename
     initialize_input_filename = args.initialize_input_filename
@@ -149,5 +151,14 @@ if __name__ == '__main__':
                                    analyze_args_dict)
     elif do_what == 'assert_vpn_is_connected':
         assert_vpn_is_connected()
+    elif do_what == 'parse_hadoop_lines':
+        assert hadoop_filename is not None
+        parsed_lines = []
+        with open(hadoop_filename) as fh:
+            for line in fh:
+                parsed_lines.append(parse_hadoop_line(line))
+                print len(parsed_lines)
+        if pkl_filename != default_table_data_filename:
+            fu.pickle(parsed_lines, pkl_filename)
     else:
         print 'uknown do_what: %s' % do_what
