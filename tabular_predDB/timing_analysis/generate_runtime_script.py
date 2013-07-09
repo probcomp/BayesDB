@@ -13,7 +13,7 @@ base_str = ' '.join([
   '-do_remote >>out 2>>err &',
   ])
 
-num_rows_list = [100, 400, 1000]
+num_rows_list = [100, 400, 1000, 4000, 10000]
 num_cols_list = [4, 16, 32]
 num_clusters_list = [10, 20, 50]
 num_splits_list = [1, 2, 4]
