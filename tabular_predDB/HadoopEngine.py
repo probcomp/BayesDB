@@ -418,10 +418,10 @@ if __name__ == '__main__':
         assert resume_filename is not None
         if fu.is_pkl(resume_filename):
           resume_dict = fu.unpickle(resume_filename)
+          X_L_list = resume_dict['X_L_list']
+          X_D_list = resume_dict['X_D_list']
         else:
-          resume_dict = read_hadoop_output_file(resume_filename)
-        X_L_list = resume_dict['X_L_list']
-        X_D_list = resume_dict['X_D_list']
+          X_L_list, X_D_list = read_hadoop_output_file(resume_filename)
         hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list,
                                    n_steps=n_steps, max_time=max_time,
                                    chunk_size=chunk_size,
