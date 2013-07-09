@@ -57,7 +57,7 @@ plot_parameter_lookup = dict(
         )
     )
 
-def plot_grouped_data(dict_of_dicts, timing_row_to_color, save_filename=None):
+def plot_grouped_data(dict_of_dicts, timing_row_to_color, plot_filename=None):
     pylab.figure()
     for configuration, run_data in dict_of_dicts.iteritems():
         x = sorted(run_data.keys())
@@ -75,19 +75,23 @@ def plot_grouped_data(dict_of_dicts, timing_row_to_color, save_filename=None):
         #
         pylab.plot(x, y, **plot_args)
     fh = pu.legend_outside(bbox_to_anchor=(0.5, -.05), ncol=4)
-    if save_filename is not None:
-        pu.savefig_legend_outside(save_filename)
+    if plot_filename is not None:
+        pu.savefig_legend_outside(plot_filename)
+    else:
+        pylab.ion()
+        pylab.show()
     return fh
 
 if __name__ == '__main__':
     # parse some arguments
     parser = argparse.ArgumentParser()
-#    parser.add_argument('--plot_which_kernel', type=str, default='row_partition_assignments')
     parser.add_argument('--plot_which_kernel', type=str, default='column_partition_assignments')
-    parser.add_argument('--filename', type=str, default='parsed_output')
+    parser.add_argument('--input_filename', type=str, default='parsed_output')
+    parser.add_argument('--plot_filename', type=str, default=None)
     args = parser.parse_args()
-    filename = args.filename
+    input_filename = args.input_filename
     plot_which_kernel = args.plot_which_kernel
+    plot_filename = args.plot_filename
 
     # configure parsing/plotting
     plot_parameters = plot_parameter_lookup[plot_which_kernel]
@@ -104,13 +108,11 @@ if __name__ == '__main__':
         color_dict[get_color_parameter(timing_row)]
 
     # parse the timing data
-    timing_rows = parse_timing_file(filename)
+    timing_rows = parse_timing_file(input_filename)
     these_timing_rows = filter(get_is_this_kernel, timing_rows)
     these_timing_rows = filter(is_one_view, these_timing_rows)
     dict_of_dicts = group_results(these_timing_rows, get_fixed_parameters,
                                   get_variable_parameter)
     
     # plot
-    plot_grouped_data(dict_of_dicts, timing_row_to_color)
-    pylab.ion()
-    pylab.show()
+    plot_grouped_data(dict_of_dicts, timing_row_to_color, plot_filename)
