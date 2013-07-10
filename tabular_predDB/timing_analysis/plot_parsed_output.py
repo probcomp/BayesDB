@@ -12,13 +12,13 @@ import tabular_predDB.python_utils.plot_utils as pu
 get_time_per_step = lambda timing_row: float(timing_row.time_per_step)
 get_num_rows = lambda timing_row: timing_row.num_rows
 get_num_cols = lambda timing_row: timing_row.num_cols
+do_strip = lambda string: string.strip()
 #
 def parse_timing_file(filename):
     header, rows = du.read_csv(filename)
     _timing_row = namedtuple('timing_row', ' '.join(header))
     timing_rows = []
     for row in rows:
-        do_strip = lambda string: string.strip()
         row = map(do_strip, row)
         timing_row = _timing_row(*row)
         timing_rows.append(timing_row)
@@ -45,6 +45,7 @@ plot_parameter_lookup = dict(
         get_variable_parameter=get_num_rows,
         get_color_parameter=get_num_cols,
         color_dict=num_cols_to_color,
+        xlabel='# rows',
         ),
     column_partition_assignments=dict(
         which_kernel='column_partition_assignments',
@@ -54,10 +55,18 @@ plot_parameter_lookup = dict(
         get_variable_parameter=get_num_cols,
         get_color_parameter=get_num_rows,
         color_dict=num_rows_to_color,
+        xlabel='# columns',
         )
     )
 
-def plot_grouped_data(dict_of_dicts, timing_row_to_color, plot_filename=None):
+def plot_grouped_data(dict_of_dicts, plot_parameters, plot_filename=None):
+    get_color_parameter = plot_parameters['get_color_parameter']
+    color_dict = plot_parameters['color_dict']
+    timing_row_to_color = lambda timing_row: \
+        color_dict[get_color_parameter(timing_row)]
+    xlabel = plot_parameters['xlabel']
+    which_kernel = plot_parameters['which_kernel']
+    #
     pylab.figure()
     for configuration, run_data in dict_of_dicts.iteritems():
         x = sorted(run_data.keys())
@@ -74,7 +83,11 @@ def plot_grouped_data(dict_of_dicts, timing_row_to_color, plot_filename=None):
         plot_args['label'] = label
         #
         pylab.plot(x, y, **plot_args)
-    fh = pu.legend_outside(bbox_to_anchor=(0.5, -.05), ncol=4)
+    #
+    pylab.xlabel(xlabel)
+    pylab.ylabel('time per step (seconds)')
+    pylab.title('Timing analysis for kernel: %s' % which_kernel)
+    fh = pu.legend_outside(bbox_to_anchor=(0.5, -.1), ncol=4)
     if plot_filename is not None:
         pu.savefig_legend_outside(plot_filename)
     else:
@@ -97,15 +110,11 @@ if __name__ == '__main__':
     plot_parameters = plot_parameter_lookup[plot_which_kernel]
     get_fixed_parameters = plot_parameters['get_fixed_parameters']
     get_variable_parameter = plot_parameters['get_variable_parameter']
-    get_color_parameter = plot_parameters['get_color_parameter']
-    color_dict = plot_parameters['color_dict']
 
     # some helper functions
     get_is_this_kernel = lambda timing_row: \
         timing_row.which_kernel == plot_which_kernel
     is_one_view = lambda timing_row: timing_row.num_views == '1'
-    timing_row_to_color = lambda timing_row: \
-        color_dict[get_color_parameter(timing_row)]
 
     # parse the timing data
     timing_rows = parse_timing_file(input_filename)
@@ -115,4 +124,4 @@ if __name__ == '__main__':
                                   get_variable_parameter)
     
     # plot
-    plot_grouped_data(dict_of_dicts, timing_row_to_color, plot_filename)
+    plot_grouped_data(dict_of_dicts, plot_parameters, plot_filename)
