@@ -60,5 +60,9 @@ if __name__ == '__main__':
     print header
     reduced_lines = map(lambda x: x[1], lines)
     for reduced_line in reduced_lines:
-        parsed_line = parse_reduced_line(reduced_line)
-        print ', '.join(map(str, parsed_line))
+        try:
+            parsed_line = parse_reduced_line(reduced_line)
+            print ', '.join(map(str, parsed_line))
+        except Exception, e:
+            pass
+
