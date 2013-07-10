@@ -396,6 +396,12 @@ class MiddlewareEngine(object):
     ret = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in ret] 
     return ret
 
+  def order_by_similarity(data_tuples, X_L_list, X_D_list, row_id, col_id=None):
+    # Return the original data tuples, but sorted by similarity to the given row_id
+    # By default, average the similarity over columns, unless one particular column id is specified.
+    # TODO
+    return data_tuples
+
 
   def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
