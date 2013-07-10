@@ -204,8 +204,8 @@ def legend_outside(ax=None, bbox_to_anchor=(0.5, -.25), loc='upper center',
         ax = pylab.gca()
     handles, labels = ax.get_legend_handles_labels()
     label_to_handle = dict(zip(labels, handles))
-    labels = label_to_handle.keys()
-    handles = label_to_handle.values()
+    labels = sorted(label_to_handle.keys())
+    handles = [label_to_handle[label] for label in labels]
     if ncol is None:
         ncol = min(len(labels), 3)
     lgd = ax.legend(handles, labels, loc=loc, ncol=ncol,
