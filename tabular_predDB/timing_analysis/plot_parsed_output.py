@@ -34,7 +34,7 @@ def group_results(timing_rows, get_fixed_parameters, get_variable_parameter):
         dict_of_dicts[fixed_parameters][variable_parameter] = timing_row
     return dict_of_dicts
 
-num_cols_to_color = {'4':'b', '16':'r', '32':'k'}
+num_cols_to_color = {'4':'b', '16':'r', '32':'k', '64':'g'}
 num_rows_to_color = {'100':'b', '400':'r', '1000':'k', '4000':'y', '10000':'g'}
 num_clusters_to_marker = {'10':'x', '20':'o', '50':'v'}
 num_views_to_marker = {'1':'x', '2':'o', '4':'v'}
