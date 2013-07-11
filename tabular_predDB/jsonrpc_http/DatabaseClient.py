@@ -74,7 +74,9 @@ class DatabaseClient(object):
                         if len(words) >= 7:
                             if words[4] == 'with' and self.is_int(words[5]) and words[6] == 'explanations':
                                 n_chains = int(words[5])
-                        return self.create_model(tablename, n_chains)
+                        result = self.create_model(tablename, n_chains)
+                        print 'Created %d models for ptable %s' % (n_chains, tablename)
+                        return result
                     else:
                         print 'Did you mean: CREATE MODELS FOR <ptable> [WITH <n_chains> EXPLANATIONS];?'
                         return False
@@ -84,7 +86,9 @@ class DatabaseClient(object):
                     if words[2] == 'model' or words[2] == 'models':
                         if len(words) >= 5 and words[3] == 'for':
                             tablename = words[4]
-                            return self.create_model(tablename, n_chains)
+                            result = self.create_model(tablename, n_chains)
+                            print 'Created %d models for ptable %s' % (n_chains, tablename)
+                            return result
                         else:
                             print 'Did you mean: CREATE <n_chains> MODELS FOR <ptable>;?'
                             return False
@@ -102,7 +106,9 @@ class DatabaseClient(object):
                         try:
                             f = open(orig.split()[4], 'r')
                             csv = f.read()
-                            return self.upload_data_table(tablename, csv, crosscat_column_types)
+                            result = self.upload_data_table(tablename, csv, crosscat_column_types)
+                            print 'Created ptable %s' % tablename
+                            return result
                         except Exception as e:
                             print str(e)
                             return False
@@ -130,6 +136,9 @@ class DatabaseClient(object):
                 else:
                     print 'Did you mean: DELETE CHAIN <chain_index> FROM <tablename>;?'
                     return False
+
+    def parse_runsql_order_by_similarity(self, words, orig):
+        
 
     def parse_analyze(self, words, orig):
         chain_index = 'all'
@@ -277,7 +286,7 @@ class DatabaseClient(object):
         else:
             return result
 
-    def is_int(s):
+    def is_int(self, s):
         try:
             int(s)
             return True
@@ -291,7 +300,6 @@ class DatabaseClient(object):
         method = getattr(middleware_engine, method_name)
         argnames = inspect.getargspec(method)[0]
         args = [args_dict[argname] for argname in argnames if argname in args_dict]
-        print 'Calling: %s' % method_name
         out = method(*args)
       return out
 

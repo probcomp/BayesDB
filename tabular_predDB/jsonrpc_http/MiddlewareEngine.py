@@ -381,9 +381,9 @@ class MiddlewareEngine(object):
     ret = []
     for q in Q:
       args_dict['Q'] = q # querys
-#      out, id = au.call('impute_and_confidence', args_dict, self.BACKEND_URI)
+      out, id = au.call('impute_and_confidence', args_dict, self.BACKEND_URI)
       # TODO: call with whole X_L_list and X_D_list once multistate impute implemented
-      out = engine.impute_and_confidence(M_c, X_L_list[0], X_D_list[0], Y, [q], numsamples)
+#      out = engine.impute_and_confidence(M_c, X_L_list[0], X_D_list[0], Y, [q], numsamples)
       value, conf = out
       if conf >= confidence:
         row_idx = q[0]
@@ -659,7 +659,8 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
   args_dict['r'] = () # Currently ignored by analyze
   args_dict['max_iterations'] = -1 # Currently ignored by analyze
   args_dict['max_time'] = -1 # Currently ignored by analyze
-  out, id = au.call('analyze', args_dict, BACKEND_URI)
+#  out, id = au.call('analyze', args_dict, BACKEND_URI)
+  out = engine.analyze(M_c, T, X_L_prime, X_D_prime, (), iterations)
   X_L_prime, X_D_prime = out
 
   # Store X_L_prime, X_D_prime
