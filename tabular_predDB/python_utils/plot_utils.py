@@ -19,6 +19,8 @@ import numpy
 import pylab
 pylab.ion()
 import hcluster
+#
+import tabular_predDB.python_utils.general_utils as gu
 
 
 def my_savefig(filename, dir='', close=True):
@@ -210,6 +212,48 @@ def legend_outside(ax=None, bbox_to_anchor=(0.5, -.25), loc='upper center',
     handles = [label_to_handle[label] for label in labels]
     if ncol is None:
         ncol = min(len(labels), 3)
+    lgd = ax.legend(handles, labels, loc=loc, ncol=ncol,
+                    bbox_to_anchor=bbox_to_anchor, prop={"size":14})
+    return
+
+int_cmp = lambda x, y: cmp(int(x), int(y))
+def legend_outside_from_dicts(marker_dict, color_dict,
+                              marker_prepend='', color_prepend='',
+                              ax=None, bbox_to_anchor=(0.5, -.07), loc='upper center',
+                              ncol=None, label_cmp=None,
+                              marker_color='k'):
+    marker_handles = []
+    marker_labels = []
+    for label in sorted(marker_dict.keys(), cmp=int_cmp):
+        marker = marker_dict[label]
+        handle = pylab.Line2D([],[], color=marker_color, marker=marker, linewidth=0)
+        marker_handles.append(handle)
+        marker_labels.append(marker_prepend+label)
+    color_handles = []
+    color_labels = []
+    for label in sorted(color_dict.keys(), cmp=int_cmp):
+        color = color_dict[label]
+        handle = pylab.Line2D([],[], color=color, linewidth=3)
+        color_handles.append(handle)
+        color_labels.append(color_prepend+label)
+    num_marker_handles = len(marker_handles)
+    num_color_handles = len(color_handles)
+    num_to_add = abs(num_marker_handles - num_color_handles)
+    if num_marker_handles < num_color_handles:
+        add_to_handles = marker_handles
+        add_to_labels = marker_labels
+    else:
+        add_to_handles = color_handles
+        add_to_labels = color_labels
+    for add_idx in range(num_to_add):
+        add_to_handles.append(pylab.Line2D([],[], color=None, linewidth=0))
+        add_to_labels.append('')
+    handles = gu.roundrobin(marker_handles, color_handles)
+    labels = gu.roundrobin(marker_labels, color_labels)
+    if ax is None:
+        ax = pylab.gca()
+    if ncol is None:
+        ncol = max(num_marker_handles, num_color_handles)
     lgd = ax.legend(handles, labels, loc=loc, ncol=ncol,
                     bbox_to_anchor=bbox_to_anchor, prop={"size":14})
     return
