@@ -34,8 +34,8 @@ def group_results(timing_rows, get_fixed_parameters, get_variable_parameter):
         dict_of_dicts[fixed_parameters][variable_parameter] = timing_row
     return dict_of_dicts
 
-num_cols_to_color = {'4':'b', '16':'r', '32':'k', '64':'g'}
-num_rows_to_color = {'100':'b', '400':'r', '1000':'k', '4000':'y', '10000':'g'}
+num_cols_to_color = {'4':'b', '16':'r', '32':'m', '64':'g', '128':'c'}
+num_rows_to_color = {'100':'b', '400':'r', '1000':'m', '4000':'y', '10000':'g'}
 num_clusters_to_marker = {'10':'x', '20':'o', '50':'v'}
 num_views_to_marker = {'1':'x', '2':'o', '4':'v'}
 num_rows_to_marker = {'100':'x', '400':'o', '1000':'v', '4000':'1', '10000':'*'}
@@ -91,7 +91,22 @@ plot_parameter_lookup = dict(
         ),
     )
 
+import itertools
+def roundrobin(*iterables):
+    "roundrobin('ABC', 'D', 'EF') --> A D E B F C"
+    # Recipe credited to George Sakkis
+    pending = len(iterables)
+    nexts = itertools.cycle(iter(it).next for it in iterables)
+    while pending:
+        try:
+            for next in nexts:
+                yield next()
+        except StopIteration:
+            pending -= 1
+            nexts = itertools.cycle(itertools.islice(nexts, pending))
+
 get_first_label_value = lambda label: label[1+label.index('='):label.index(';')]
+int_cmp = lambda x, y: cmp(int(x), int(y))
 label_cmp = lambda x, y: cmp(int(get_first_label_value(x)), int(get_first_label_value(y)))
 def plot_grouped_data(dict_of_dicts, plot_parameters, plot_filename=None):
     get_color_parameter = plot_parameters['get_color_parameter']
@@ -105,7 +120,7 @@ def plot_grouped_data(dict_of_dicts, plot_parameters, plot_filename=None):
     vary_what = plot_parameters['vary_what']
     which_kernel = plot_parameters['which_kernel']
     #
-    pylab.figure()
+    fh = pylab.figure()
     for configuration, run_data in dict_of_dicts.iteritems():
         x = sorted(run_data.keys())
         _y = [run_data[el] for el in x]
@@ -125,7 +140,44 @@ def plot_grouped_data(dict_of_dicts, plot_parameters, plot_filename=None):
     pylab.xlabel('# %s' % vary_what)
     pylab.ylabel('time per step (seconds)')
     pylab.title('Timing analysis for kernel: %s' % which_kernel)
-    fh = pu.legend_outside(bbox_to_anchor=(0.5, -.1), ncol=4, label_cmp=label_cmp)
+
+    # fh = pu.legend_outside(bbox_to_anchor=(0.5, -.1), ncol=4, label_cmp=label_cmp)
+    marker_handles = []
+    marker_labels = []
+    for label in sorted(marker_dict.keys(), cmp=int_cmp):
+        marker = marker_dict[label]
+        handle = pylab.Line2D([],[], color='k', marker=marker, linewidth=0)
+        marker_handles.append(handle)
+        marker_labels.append('#R='+label)
+
+    color_handles = []
+    color_labels = []
+    for label in sorted(color_dict.keys(), cmp=int_cmp):
+        color = color_dict[label]
+        handle = pylab.Line2D([],[], color=color, linewidth=3)
+        color_handles.append(handle)
+        color_labels.append('#C='+label)
+
+    # handles = pylab.append(marker_handles, color_handles)
+    # labels = pylab.append(marker_labels, color_labels)
+    num_marker_handles = len(marker_handles)
+    num_color_handles = len(color_handles)
+    num_to_add = abs(num_marker_handles - num_color_handles)
+    if num_marker_handles < num_color_handles:
+        add_to_handles = marker_handles
+        add_to_labels = marker_labels
+    else:
+        add_to_handles = color_handles
+        add_to_labels = color_labels
+    for add_idx in range(num_to_add):
+        add_to_handles.append(pylab.Line2D([],[], color=None, linewidth=0))
+        add_to_labels.append('')
+        
+    handles = roundrobin(marker_handles, color_handles)
+    labels = roundrobin(marker_labels, color_labels)
+
+    ax = pylab.gca()
+    lgd = ax.legend(handles, labels, bbox_to_anchor=(0.5, -.07), loc='upper center', ncol=5)
     if plot_filename is not None:
         pu.savefig_legend_outside(plot_filename)
     else:
