@@ -79,6 +79,9 @@ def chunk_analyze_helper(table_data, dict_in):
         HE.put_hdfs(None, chunk_filename, chunk_dest_dir)
         #
         steps_done += chunk_size
+    chunk_filename = '%s_seed_%s_chunk_%s.pkl.gz' % (chunk_filename_prefix, original_SEED, 'FINAL')
+    fu.pickle(dict_out, chunk_filename)
+    HE.put_hdfs(None, chunk_filename, chunk_dest_dir)
     return dict_out
     
 def time_analyze_helper(table_data, dict_in):

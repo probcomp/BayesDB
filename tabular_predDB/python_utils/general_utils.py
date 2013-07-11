@@ -1,3 +1,4 @@
+import itertools
 import inspect
 from timeit import default_timer
 
@@ -26,6 +27,19 @@ def int_generator(start=0):
         yield next_i
         next_i += 1
 
+def roundrobin(*iterables):
+    "roundrobin('ABC', 'D', 'EF') --> A D E B F C"
+    # Recipe credited to George Sakkis
+    pending = len(iterables)
+    nexts = itertools.cycle(iter(it).next for it in iterables)
+    while pending:
+        try:
+            for next in nexts:
+                yield next()
+        except StopIteration:
+            pending -= 1
+            nexts = itertools.cycle(itertools.islice(nexts, pending))
+
 # introspection helpers
 def is_obj_method_name(obj, method_name):
     attr = getattr(obj, method_name)
@@ -51,3 +65,4 @@ def get_method_name_to_args(obj):
 
 def get_getname(name):
     return lambda in_dict: in_dict[name]
+

@@ -294,9 +294,12 @@ def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
     output_path_dotdot = os.path.split(output_path)[0]
     out_filename = os.path.join(output_path_dotdot, 'out')
     err_filename = os.path.join(output_path_dotdot, 'err')
-    redirect_str = ' >>%s 2>>%s'
+    redirect_str = '>>%s 2>>%s'
     redirect_str %= (out_filename, err_filename)
-    os.system(hadoop_cmd_str + redirect_str)
+    # could I nohup and check hdfs for presence of _SUCCESS every N seconds?
+    # cmd_str = ' '.join(['nohup', hadoop_cmd_str, redirect_str, '&'])
+    cmd_str = ' '.join([hadoop_cmd_str, redirect_str])
+    os.system(cmd_str)
     # retrieve results
     get_hdfs(hadoop_engine.hdfs_uri, output_path,
              hdfs_base_dir=hadoop_engine.hdfs_dir)
@@ -415,10 +418,10 @@ if __name__ == '__main__':
         assert resume_filename is not None
         if fu.is_pkl(resume_filename):
           resume_dict = fu.unpickle(resume_filename)
+          X_L_list = resume_dict['X_L_list']
+          X_D_list = resume_dict['X_D_list']
         else:
-          resume_dict = read_hadoop_output_file(resume_filename)
-        X_L_list = resume_dict['X_L_list']
-        X_D_list = resume_dict['X_D_list']
+          X_L_list, X_D_list = read_hadoop_output(resume_filename)
         hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list,
                                    n_steps=n_steps, max_time=max_time,
                                    chunk_size=chunk_size,
