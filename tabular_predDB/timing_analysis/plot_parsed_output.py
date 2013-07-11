@@ -50,8 +50,10 @@ plot_parameter_lookup = dict(
         get_variable_parameter=get_num_rows,
         get_color_parameter=get_num_cols,
         color_dict=num_cols_to_color,
+        color_label_prepend='#Col=',
         get_marker_parameter=get_num_clusters,
         marker_dict=num_clusters_to_marker,
+        marker_label_prepend='#Clust=',
         ),
     cols=dict(
         vary_what='cols',
@@ -62,8 +64,10 @@ plot_parameter_lookup = dict(
         get_variable_parameter=get_num_cols,
         get_color_parameter=get_num_rows,
         color_dict=num_rows_to_color,
+        color_label_prepend='#Row=',
         get_marker_parameter=get_num_clusters,
         marker_dict=num_clusters_to_marker,
+        marker_label_prepend='#Clust=',
         ),
     clusters=dict(
         vary_what='clusters',
@@ -74,8 +78,10 @@ plot_parameter_lookup = dict(
         get_variable_parameter=get_num_clusters,
         get_color_parameter=get_num_rows,
         color_dict=num_rows_to_color,
+        color_label_prepend='#Row=',
         get_marker_parameter=get_num_views,
         marker_dict=num_views_to_marker,
+        marker_label_prepend='#View=',
         ),
     views=dict(
         vary_what='views',
@@ -86,8 +92,10 @@ plot_parameter_lookup = dict(
         get_variable_parameter=get_num_views,
         get_color_parameter=get_num_cols,
         color_dict=num_cols_to_color,
+        color_label_prepend='#Col=',
         get_marker_parameter=get_num_rows,
         marker_dict=num_rows_to_marker,
+        marker_label_prepend='#Row=',
         ),
     )
 
@@ -96,10 +104,12 @@ label_cmp = lambda x, y: cmp(int(get_first_label_value(x)), int(get_first_label_
 def plot_grouped_data(dict_of_dicts, plot_parameters, plot_filename=None):
     get_color_parameter = plot_parameters['get_color_parameter']
     color_dict = plot_parameters['color_dict']
+    color_label_prepend = plot_parameters['color_label_prepend']
     timing_row_to_color = lambda timing_row: \
         color_dict[get_color_parameter(timing_row)]
     get_marker_parameter = plot_parameters['get_marker_parameter']
     marker_dict = plot_parameters['marker_dict']
+    marker_label_prepend = plot_parameters['marker_label_prepend']
     timing_row_to_marker = lambda timing_row: \
         marker_dict[get_marker_parameter(timing_row)]
     vary_what = plot_parameters['vary_what']
@@ -128,7 +138,7 @@ def plot_grouped_data(dict_of_dicts, plot_parameters, plot_filename=None):
 
     # pu.legend_outside(bbox_to_anchor=(0.5, -.1), ncol=4, label_cmp=label_cmp)
     pu.legend_outside_from_dicts(marker_dict, color_dict,
-                                 marker_prepend='#R=', color_prepend='#C=',
+                                 marker_label_prepend=marker_label_prepend, color_label_prepend=color_label_prepend,
                                  bbox_to_anchor=(0.5, -.1), label_cmp=label_cmp)
                                  
                                  
