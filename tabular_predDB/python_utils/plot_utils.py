@@ -218,7 +218,7 @@ def legend_outside(ax=None, bbox_to_anchor=(0.5, -.25), loc='upper center',
 
 int_cmp = lambda x, y: cmp(int(x), int(y))
 def legend_outside_from_dicts(marker_dict, color_dict,
-                              marker_prepend='', color_prepend='',
+                              marker_label_prepend='', color_label_prepend='',
                               ax=None, bbox_to_anchor=(0.5, -.07), loc='upper center',
                               ncol=None, label_cmp=None,
                               marker_color='k'):
@@ -228,14 +228,14 @@ def legend_outside_from_dicts(marker_dict, color_dict,
         marker = marker_dict[label]
         handle = pylab.Line2D([],[], color=marker_color, marker=marker, linewidth=0)
         marker_handles.append(handle)
-        marker_labels.append(marker_prepend+label)
+        marker_labels.append(marker_label_prepend+label)
     color_handles = []
     color_labels = []
     for label in sorted(color_dict.keys(), cmp=int_cmp):
         color = color_dict[label]
         handle = pylab.Line2D([],[], color=color, linewidth=3)
         color_handles.append(handle)
-        color_labels.append(color_prepend+label)
+        color_labels.append(color_label_prepend+label)
     num_marker_handles = len(marker_handles)
     num_color_handles = len(color_handles)
     num_to_add = abs(num_marker_handles - num_color_handles)
