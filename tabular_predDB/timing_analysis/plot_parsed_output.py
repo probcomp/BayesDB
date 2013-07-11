@@ -39,6 +39,7 @@ num_rows_to_color = {'100':'b', '400':'r', '1000':'m', '4000':'y', '10000':'g'}
 num_clusters_to_marker = {'10':'x', '20':'o', '50':'v'}
 num_views_to_marker = {'1':'x', '2':'o', '4':'v'}
 num_rows_to_marker = {'100':'x', '400':'o', '1000':'v', '4000':'1', '10000':'*'}
+num_cols_to_marker = {'4':'x', '16':'o', '32':'v', '64':'1', '128':'*'}
 #
 plot_parameter_lookup = dict(
     rows=dict(
@@ -90,12 +91,12 @@ plot_parameter_lookup = dict(
             (timing_row.num_rows, timing_row.num_cols,
              timing_row.num_clusters),
         get_variable_parameter=get_num_views,
-        get_color_parameter=get_num_cols,
-        color_dict=num_cols_to_color,
-        color_label_prepend='#Col=',
-        get_marker_parameter=get_num_rows,
-        marker_dict=num_rows_to_marker,
-        marker_label_prepend='#Row=',
+        get_color_parameter=get_num_rows,
+        color_dict=num_rows_to_color,
+        color_label_prepend='#Row=',
+        get_marker_parameter=get_num_cols,
+        marker_dict=num_cols_to_marker,
+        marker_label_prepend='#Col=',
         ),
     )
 
