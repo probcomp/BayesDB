@@ -102,7 +102,7 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute('DROP TABLE preddb_data.%s' % tablename)
+      cur.execute('DROP TABLE %s' % tablename)
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
       tableids = cur.fetchall()
       for tid in tableids:
@@ -145,7 +145,7 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("select exists(select * from information_schema.tables where table_name='preddb_data.%s');" % tablename)
+      cur.execute("select exists(select * from information_schema.tables where table_name='%s');" % tablename)
       if cur.fetchone()[0]:
         return "Error: table with that name already exists."
       conn.commit()
@@ -208,9 +208,9 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("CREATE TABLE preddb_data.%s (%s);" % (tablename, colstring))
+      cur.execute("CREATE TABLE %s (%s);" % (tablename, colstring))
       with open(clean_csv_abs_path) as fh:
-        cur.copy_from(fh, 'preddb_data.%s' % tablename, sep=',')
+        cur.copy_from(fh, '%s' % tablename, sep=',')
       curtime = datetime.datetime.now().ctime()
       cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
       conn.commit()
@@ -330,7 +330,7 @@ class MiddlewareEngine(object):
       tableid, M_c_json, t_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       t = json.loads(t_json)
-      cur.execute("SELECT COUNT(*) FROM preddb_data.%s;" % tablename)
+      cur.execute("SELECT COUNT(*) FROM %s;" % tablename)
       numrows = cur.fetchone()[0]
       cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
       chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
@@ -396,6 +396,12 @@ class MiddlewareEngine(object):
     ret = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in ret] 
     return ret
 
+  def order_by_similarity(data_tuples, X_L_list, X_D_list, row_id, col_id=None):
+    # Return the original data tuples, but sorted by similarity to the given row_id
+    # By default, average the similarity over columns, unless one particular column id is specified.
+    # TODO
+    return data_tuples
+
 
   def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
@@ -408,7 +414,7 @@ class MiddlewareEngine(object):
       tableid, M_c_json, t_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       t = json.loads(t_json)
-      cur.execute("SELECT COUNT(*) FROM preddb_data.%s;" % tablename)
+      cur.execute("SELECT COUNT(*) FROM %s;" % tablename)
       numrows = int(cur.fetchone()[0])
       cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
       chainids = [my_tuple[0] for my_tuple in cur.fetchall()]

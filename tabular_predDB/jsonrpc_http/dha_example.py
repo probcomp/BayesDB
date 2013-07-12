@@ -91,7 +91,7 @@ if do_remote:
     dview.apply_sync(lambda: sys.path.append('/usr/local/'))
     #
     with dview.sync_imports(): 
-        import tabular_predDB.jsonrpc_http.Engine as E
+        import tabular_predDB.LocalEngine as LE
     dview.push(dict(
             M_c=M_c,
             M_r=M_r,

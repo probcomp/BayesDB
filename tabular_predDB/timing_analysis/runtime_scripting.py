@@ -5,7 +5,6 @@ import tempfile
 import numpy
 #
 import tabular_predDB.python_utils.data_utils as du
-import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
@@ -146,9 +145,7 @@ if __name__ == '__main__':
                                                 input_filename,
                                                 output_path, n_tasks=n_tasks)
         if was_successful:
-            hadoop_output = HE.read_hadoop_output(output_path)
-            hadoop_output_filename = HE.get_hadoop_output_filename(output_path)
-            os.system('cp %s %s' % (hadoop_output_filename, output_filename))
+            HE.read_hadoop_output(output_path, output_filename)
         else:
             print 'remote hadoop job NOT successful'
     else:

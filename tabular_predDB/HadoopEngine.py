@@ -108,17 +108,13 @@ class HadoopEngine(object):
                                            n_tasks=n_chains)
       hadoop_output = None
       if was_successful:
-        hadoop_output = read_hadoop_output(output_path)
-        hadoop_output_filename = get_hadoop_output_filename(output_path)
-        os.system('cp %s initialize_output' % hadoop_output_filename)
-        X_L_list = [el['X_L'] for el in hadoop_output.values()]
-        X_D_list = [el['X_D'] for el in hadoop_output.values()]
-        # make output format match LocalEngine
+        X_L_list, X_D_list = read_hadoop_output(output_path,
+                                                'initialize_output')
         hadoop_output = M_c, M_r, X_L_list, X_D_list
       return hadoop_output
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
-                max_iterations=-1, max_time=-1):
+                max_iterations=-1, max_time=-1, **kwargs):  
         output_path = self.output_path
         input_filename = self.input_filename
         table_data_filename = self.table_data_filename
@@ -126,6 +122,17 @@ class HadoopEngine(object):
         #
         analyze_args_dict = dict(command='analyze', kernel_list=kernel_list,
                                  n_steps=n_steps, c=c, r=r, max_time=max_time)
+        # chunk_analyze is a special case of analyze
+        if 'chunk_size' in kwargs:
+          chunk_size = kwargs['chunk_size']
+          chunk_filename_prefix = kwargs['chunk_filename_prefix']
+          chunk_dest_dir = kwargs['chunk_dest_dir']
+          analyze_args_dict['command'] = 'chunk_analyze'
+          analyze_args_dict['chunk_size'] = chunk_size
+          analyze_args_dict['chunk_filename_prefix'] = chunk_filename_prefix
+          # WARNING: chunk_dest_dir MUST be writeable by hadoop user mapred
+          analyze_args_dict['chunk_dest_dir'] = chunk_dest_dir
+
         if not xu.get_is_multistate(X_L, X_D):
             X_L = [X_L]
             X_D = [X_D]
@@ -146,13 +153,9 @@ class HadoopEngine(object):
                                             n_tasks=len(X_L))
         hadoop_output = None
         if was_successful:
-            hadoop_output = read_hadoop_output(output_path)
-            hadoop_output_filename = get_hadoop_output_filename(output_path)
-            os.system('cp %s analyze_output' % hadoop_output_filename)
-            X_L_list = [el['X_L'] for el in hadoop_output.values()]
-            X_D_list = [el['X_D'] for el in hadoop_output.values()]
-            # make output format match LocalEngine
-            hadoop_output = X_L_list, X_D_list
+          X_L_list, X_D_list = read_hadoop_output(output_path,
+                                                  'analyze_output')
+          hadoop_output = X_L_list, X_D_list
         return hadoop_output
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
@@ -169,7 +172,7 @@ def rm_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     # rm_infix_args = '-rm -r -f'
     hdfs_path = os.path.join(hdfs_base_dir, path)
     fs_str = ('-fs "%s"' % hdfs_uri) if hdfs_uri is not None else ''
-    cmd_str = 'hadoop fs %s %s %s'
+    cmd_str = 'hadoop fs %s %s %s >rm_hdfs.out 2>rm_hdfs.err'
     cmd_str %= (fs_str, rm_infix_args, hdfs_path)
     if DEBUG:
         print cmd_str
@@ -217,7 +220,7 @@ def put_hdfs(hdfs_uri, path, hdfs_base_dir=''):
     # put to hdfs
     fs_str = ('-fs "%s"' % hdfs_uri) if hdfs_uri is not None else ''
     ensure_dir_hdfs(fs_str, hdfs_path)
-    cmd_str = 'hadoop fs %s -put %s %s'
+    cmd_str = 'hadoop fs %s -put %s %s >put_hdfs.out 2>put_hdfs.err'
     cmd_str %= (fs_str, path, hdfs_path)
     if DEBUG:
         print cmd_str
@@ -291,9 +294,12 @@ def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
     output_path_dotdot = os.path.split(output_path)[0]
     out_filename = os.path.join(output_path_dotdot, 'out')
     err_filename = os.path.join(output_path_dotdot, 'err')
-    redirect_str = ' >>%s 2>>%s'
+    redirect_str = '>>%s 2>>%s'
     redirect_str %= (out_filename, err_filename)
-    os.system(hadoop_cmd_str + redirect_str)
+    # could I nohup and check hdfs for presence of _SUCCESS every N seconds?
+    # cmd_str = ' '.join(['nohup', hadoop_cmd_str, redirect_str, '&'])
+    cmd_str = ' '.join([hadoop_cmd_str, redirect_str])
+    os.system(cmd_str)
     # retrieve results
     get_hdfs(hadoop_engine.hdfs_uri, output_path,
              hdfs_base_dir=hadoop_engine.hdfs_dir)
@@ -310,9 +316,15 @@ def read_hadoop_output_file(hadoop_output_filename):
     with open(hadoop_output_filename) as fh:
         ret_dict = dict([xu.parse_hadoop_line(line) for line in fh])
     return ret_dict
-def read_hadoop_output(output_path):
+def read_hadoop_output(output_path, copy_to_filename=None):
     hadoop_output_filename = get_hadoop_output_filename(output_path)
-    return read_hadoop_output_file(hadoop_output_filename)
+    if copy_to_filename is not None:
+      cmd_str = 'cp %s %s' % (hadoop_output_filename, copy_to_filename)
+      os.system(cmd_str)
+    hadoop_output = read_hadoop_output_file(hadoop_output_filename)
+    X_L_list = [el['X_L'] for el in hadoop_output.values()]
+    X_D_list = [el['X_D'] for el in hadoop_output.values()]
+    return X_L_list, X_D_list
 
 def get_uris(base_uri, hdfs_uri, jobtracker_uri):
     if base_uri is not None:
@@ -338,6 +350,9 @@ if __name__ == '__main__':
     parser.add_argument('--which_hadoop_jar', type=str, default=default_hadoop_jar)
     parser.add_argument('--n_chains', type=int, default=4)
     parser.add_argument('--n_steps', type=int, default=1)
+    parser.add_argument('--chunk_size', type=int, default=1)
+    parser.add_argument('--chunk_filename_prefix', type=str, default='chunk')
+    parser.add_argument('--chunk_dest_dir', type=str, default='/user/bigdata/SSCI/chunk_dir')
     parser.add_argument('--max_time', type=float, default=-1)
     parser.add_argument('--table_filename', type=str, default='../www/data/dha_small.csv')
     parser.add_argument('--resume_filename', type=str, default=None)
@@ -355,13 +370,16 @@ if __name__ == '__main__':
     which_hadoop_jar= args.which_hadoop_jar
     n_chains = args.n_chains
     n_steps = args.n_steps
+    chunk_size = args.chunk_size
+    chunk_filename_prefix = args.chunk_filename_prefix
+    chunk_dest_dir = args.chunk_dest_dir
     max_time = args.max_time
     table_filename = args.table_filename
     resume_filename = args.resume_filename
     pkl_filename = args.pkl_filename
     #
     command = args.command
-    assert command in set(gu.get_method_names(HadoopEngine))
+    # assert command in set(gu.get_method_names(HadoopEngine))
     #
     cctypes_filename = args.cctypes_filename
     cctypes = None
@@ -396,8 +414,24 @@ if __name__ == '__main__':
                                    n_steps=n_steps, max_time=max_time)
         if hadoop_output is not None:
             X_L_list, X_D_list = hadoop_output
+    elif command == 'chunk_analyze':
+        assert resume_filename is not None
+        if fu.is_pkl(resume_filename):
+          resume_dict = fu.unpickle(resume_filename)
+          X_L_list = resume_dict['X_L_list']
+          X_D_list = resume_dict['X_D_list']
+        else:
+          X_L_list, X_D_list = read_hadoop_output(resume_filename)
+        hadoop_output = he.analyze(M_c, T, X_L_list, X_D_list,
+                                   n_steps=n_steps, max_time=max_time,
+                                   chunk_size=chunk_size,
+                                   chunk_filename_prefix=chunk_filename_prefix,
+                                   chunk_dest_dir=chunk_dest_dir)
+        if hadoop_output is not None:
+            X_L_list, X_D_list = hadoop_output
     else:
         print 'Unknown command: %s' % command
+        import sys
         sys.exit()
         
     if pkl_filename is not None:

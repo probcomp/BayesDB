@@ -15,6 +15,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
+import os
 import sys
 #
 import tabular_predDB.python_utils.data_utils as du
@@ -22,6 +23,7 @@ import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.LocalEngine as LE
+import tabular_predDB.HadoopEngine as HE
 
 
 def initialize_helper(table_data, dict_in):
@@ -56,6 +58,32 @@ def analyze_helper(table_data, dict_in):
     ret_dict = dict(X_L=X_L_prime, X_D=X_D_prime)
     return ret_dict
 
+def chunk_analyze_helper(table_data, dict_in):
+    original_n_steps = dict_in['n_steps']
+    original_SEED = dict_in['SEED']
+    chunk_size = dict_in['chunk_size']
+    chunk_filename_prefix = dict_in['chunk_filename_prefix']
+    chunk_dest_dir = dict_in['chunk_dest_dir']
+    #
+    steps_done = 0
+    while steps_done < original_n_steps:
+        steps_remaining = original_n_steps - steps_done
+        dict_in['n_steps'] = min(chunk_size, steps_remaining)
+        # FIXME: modify SEED
+        ith_chunk = steps_done / chunk_size
+        dict_out = analyze_helper(table_data, dict_in)
+        dict_in.update(dict_out)
+        # write to hdfs
+        chunk_filename = '%s_seed_%s_chunk_%s.pkl.gz' % (chunk_filename_prefix, original_SEED, ith_chunk)
+        fu.pickle(dict_out, chunk_filename)
+        HE.put_hdfs(None, chunk_filename, chunk_dest_dir)
+        #
+        steps_done += chunk_size
+    chunk_filename = '%s_seed_%s_chunk_%s.pkl.gz' % (chunk_filename_prefix, original_SEED, 'FINAL')
+    fu.pickle(dict_out, chunk_filename)
+    HE.put_hdfs(None, chunk_filename, chunk_dest_dir)
+    return dict_out
+    
 def time_analyze_helper(table_data, dict_in):
     start_dims = du.get_state_shape(dict_in['X_L'])
     with gu.Timer('time_analyze_helper', verbose=False) as timer:
@@ -77,6 +105,7 @@ method_lookup = dict(
     initialize=initialize_helper,
     analyze=analyze_helper,
     time_analyze=time_analyze_helper,
+    chunk_analyze=chunk_analyze_helper,
     )
 
 if __name__ == '__main__':

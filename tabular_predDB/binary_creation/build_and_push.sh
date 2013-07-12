@@ -82,4 +82,5 @@ fi
 
 # prep HDFS
 hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"${WHICH_BINARY}.jar
+hadoop fs -fs "$HDFS_URI" -mkdir "${HDFS_DIR}"
 hadoop fs -fs "$HDFS_URI" -put ${WHICH_BINARY}.jar "${HDFS_DIR}"

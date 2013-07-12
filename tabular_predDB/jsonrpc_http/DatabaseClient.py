@@ -14,6 +14,8 @@
 #   limitations under the License.
 #
 import tabular_predDB.python_utils.api_utils as au
+import inspect
+import prettytable
 
 from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine
 middleware_engine = MiddlewareEngine()
@@ -23,12 +25,265 @@ class DatabaseClient(object):
         if hostname == None:
             self.online = False
         else:
+            self.online = True
+            self.hostname = hostname
+            self.port = port
             self.URI = 'http://' + hostname + ':%d' % port
 
-    #def execute(self, sql_string):
-        # parse sql_string, then dispatch to the appropriate method
-        # TODO
+    def parse_set_hostname(self, words, orig):
+        if len(words) >= 3:
+            if words[0] == 'set' and words[1] == 'hostname':
+                return self.set_hostname(words[2])
 
+    def set_hostname(self, hostname):
+        self.hostname = hostname
+        self.URI = 'http://' + self.hostname + ':%d' % self.port
+
+    def parse_get_hostname(self, words, orig):
+        if len(words) >= 2 and words[0] == 'get' and words[1] == 'hostname':
+            return self.get_hostname()
+
+    def get_hostname(self):
+        return self.hostname
+
+    def parse_ping(self, words, orig):
+        if len(words) >= 1 and words[0] == 'ping':
+            return self.ping()
+
+    def parse_start_from_scratch(self, words, orig):
+        if len(words) >= 3:
+            if words[0] == 'start' and words[1] == 'from' and words[2] == 'scratch':
+                return self.start_from_scratch()
+
+    def parse_drop_and_load_db(self, words, orig):
+        if len(words) >= 2:
+            if words[0] == 'drop' and words[1] == 'and' and words[2] == 'load':
+                if len(words) == 3:
+                    return self.drop_and_load_db(words[3])
+                else:
+                    print 'Did you mean: DROP AND LOAD <filename>;?'
+                    return False
+
+    def parse_create_model(self, words, orig):
+        n_chains = 10
+        if len(words) >=1:
+            if words[0] == 'create':
+                if len(words) >= 4 and words[1] == 'model' or words[1] == 'models':
+                    if words[2] == 'for':
+                        tablename = words[3]
+                        if len(words) >= 7:
+                            if words[4] == 'with' and self.is_int(words[5]) and words[6] == 'explanations':
+                                n_chains = int(words[5])
+                        return self.create_model(tablename, n_chains)
+                    else:
+                        print 'Did you mean: CREATE MODELS FOR <ptable> [WITH <n_chains> EXPLANATIONS];?'
+                        return False
+                elif len(words) >= 3 and self.is_int(words[1]):
+                    n_chains = int(words[1])
+                    assert n_chains > 0
+                    if words[2] == 'model' or words[2] == 'models':
+                        if len(words) >= 5 and words[3] == 'for':
+                            tablename = words[4]
+                            return self.create_model(tablename, n_chains)
+                        else:
+                            print 'Did you mean: CREATE <n_chains> MODELS FOR <ptable>;?'
+                            return False
+                else:
+                    print 'Did you mean: CREATE <n_chains> MODELS FOR <ptable>;?'
+                    return False
+
+    def parse_upload_data_table(self, words, orig):
+        crosscat_column_types = None
+        if len(words) >= 2:
+            if (words[0] == 'upload' or words[0] == 'create') and words[1] == 'ptable':
+                if len(words) >= 5:
+                    tablename = words[2]
+                    if words[3] == 'from':
+                        try:
+                            f = open(orig.split()[4], 'r')
+                            csv = f.read()
+                            return self.upload_data_table(tablename, csv, crosscat_column_types)
+                        except Exception as e:
+                            print str(e)
+                            return False
+                else:
+                    print 'Did you mean: CREATE PTABLE <tablename> FROM <filename>;?'
+                    return False
+
+    def parse_drop_tablename(self, words, orig):
+        if len(words) >= 3:
+            if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable'):
+                return self.drop_tablename(words[2])
+
+    def parse_delete_chain(self, words, orig):
+        if len(words) >= 3:
+            if words[0] == 'delete':
+                if words[1] == 'chain' and self.is_int(words[2]):
+                    chain_index = int(words[2])
+                    if words[3] == 'from':
+                        tablename = words[4]
+                        return self.delete_chain(tablename, chain_index)
+                elif len(words) >= 6 and words[2] == 'all' and words[3] == 'chains' and words[4] == 'from':
+                    chain_index = 'all'
+                    tablename = words[5]
+                    return self.delete_chain(tablename, chain_index)
+                else:
+                    print 'Did you mean: DELETE CHAIN <chain_index> FROM <tablename>;?'
+                    return False
+
+    def parse_analyze(self, words, orig):
+        chain_index = 'all'
+        iterations = 2
+        wait = False
+        if len(words) >= 1 and words[0] == 'analyze':
+            if len(words) >= 2:
+                tablename = words[1]
+            else:
+                print 'Did you mean: ANALYZE <ptable> [CHAIN INDEX <chain_index>] [FOR <iterations> ITERATIONS];?'
+                return False
+            idx = 2
+            if words[idx] == "chain" and words[idx+1] == 'index':
+                chain_index = words[idx+2]
+                idx += 3
+            ## TODO: check length here
+            if words[idx] == "for" and words[idx+2] == 'iterations':
+                iterations = words[idx+1]
+            return self.analyze(tablename, chain_index, iterations, wait=False)
+
+    def parse_infer(self, words, orig):
+        return
+        ## TODO
+        newtablename = newtablename
+        whereclause = whereclause
+        confidence = confidence
+        limit = limit
+        numsamples = numsamples
+        if words[0] == 'infer':
+            idx = 1
+            cols = []
+            cols.append(words[idx])
+            while ',' in words[idx] and len(words) > idx + 1:
+                idx += 1
+                cols.append(words[idx])
+            if len(words) > idx and words[idx + 1] == 'from':
+                columnstring = ' '.join(cols)
+                tablename = words[idx + 2]
+                
+                idx = idx + 3
+                if words[idx + 3] == 'where':
+                    where = []
+                    ## use python sqlparse?
+                ## TODO: parse where, confidence, etc. here
+            else:
+                print 'Did you mean: INFER col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] '+\
+                    'WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY similarity(row_id, [col])];?'
+                return False
+
+    def parse_predict(self, words, orig):
+        return
+        args_dict = dict()
+        tablename = tablename
+        columnstring = columnstring
+        newtablename = newtablename
+        whereclause = whereclause
+        numpredictions = numpredictions
+        print 'Did you mean: SIMULATE col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] TIMES <times> '+\
+            '[ORDER BY similarity(row_id, [col])];?'
+        return False
+
+    def parse_write_json_for_table(self, words, orig):
+        if len(words) >= 5:
+            if words[0] == 'write' and words[1] == 'json' and words[2] == 'for' and words[3] == 'table':
+                return {'tablename': words[4]}
+
+    def parse_create_histogram(self, words, orig):
+        args_dict = dict()
+        M_c = M_c
+        data = data
+        columns = columns
+        mc_col_indices = mc_col_indices
+        filename = filename
+
+    ## TODO: fix all these
+    def parse_jsonify_and_dump(self, words, orig):
+        return self.call('jsonify_and_dump', {'to_dump': to_dump, 'filename': filename})
+
+    def parse_get_metadata_and_table(self, tablename):
+        return self.call('get_metadata_and_table', {'tablename': tablename})
+
+    def parse_get_latent_states(self, tablename):
+        return self.call('get_latent_states', {'tablename': tablename})
+
+    def parse_gen_feature_z(self, tablename, filename=None, dir=None):
+        return self.call('gen_feature_z', {'tablename': tablename, 'filename':filename, 'dir':dir})
+
+    def parse_dump_db(self, filename, dir=None):
+        return self.call('dump_db', {'filename':filename, 'dir':dir})
+
+    def parse_guessschema(self, tablename, csv):
+        return self.call('guessschema', {'tablename':tablename, 'csv':csv})
+    
+    def pretty_print(self, query_obj, presql_command=None):
+        """If presql_command is None, we must guess"""
+        result = ""
+        if type(query_obj) == dict and 'data' in query_obj and 'columns' in query_obj:
+            pt = prettytable.PrettyTable()
+            pt.field_names = query_obj['columns']
+            for row in query_obj['data']:
+                pt.add_row(row)
+            result = pt
+        else:
+            result = str(query_obj)
+        return result
+    
+    def execute(self, sql_string, pretty=True):
+        """
+        Call all parse methods.
+        If the sql_string does not match, it returns None.
+        If the sql_string partially matches enough that we know it's what the user meant, False is returned.
+        Otherwise, True is returned for a success, or a Python object may be returned.
+        The python object may be printed with pretty_print.
+        """
+        if sql_string[-1] == ';':
+            sql_string = sql_string[:-1]
+        words = sql_string.lower().split()
+        presql_commands = ['ping',
+                           'drop_and_load_db',
+                           'drop_tablename',
+                           'set_hostname',
+                           'get_hostname',
+                           'start_from_scratch',
+                           'predict',
+                           'infer',
+                           'analyze',
+                           'upload_data_table',
+                           'create_model']
+        for presql_command in presql_commands:
+            parser = getattr(self, 'parse_' + presql_command)
+            result = parser(words, sql_string)
+            if result is None:
+                continue
+            if result == False:
+                return
+            if type(result) == str or not pretty:
+                return result
+            else:
+                return self.pretty_print(result, presql_command)
+        # No predictive sql functions match: attempt to run as sql  
+        sql_string = sql_string.lower()
+        result = self.runsql(sql_string)
+        if pretty:
+            return self.pretty_print(result, presql_command)
+        else:
+            return result
+
+    def is_int(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+        
     def call(self, method_name, args_dict):
       if self.online:
         out, id = au.call(method_name, args_dict, self.URI)
@@ -36,6 +291,7 @@ class DatabaseClient(object):
         method = getattr(middleware_engine, method_name)
         argnames = inspect.getargspec(method)[0]
         args = [args_dict[argname] for argname in argnames if argname in args_dict]
+        print 'Calling: %s' % method_name
         out = method(*args)
       return out
 
@@ -55,12 +311,12 @@ class DatabaseClient(object):
         return self.call('drop_tablename', {'tablename': tablename})
 
     def delete_chain(self, tablename, chain_index):
-        return self.call('delete_chain', {'tablename': tablename})
+        return self.call('delete_chain', {'tablename': tablename, 'chain_index': chain_index})
     
     def upload_data_table(self, tablename, csv, crosscat_column_types):
         args_dict = dict()
         args_dict['tablename'] = tablename
-        args_dict['csv'] = table_csv 
+        args_dict['csv'] = csv
         args_dict['crosscat_column_types'] = crosscat_column_types
         return self.call('upload_data_table', args_dict)
 
