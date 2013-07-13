@@ -1,6 +1,7 @@
 import os
 #
 import tabular_predDB.python_utils.xnet_utils as xu
+import tabular_predDB.python_utils.file_utils as fu
 
 
 def rm_hdfs(hdfs_uri, path, hdfs_base_dir='', DEBUG=False):
@@ -20,7 +21,7 @@ def rm_hdfs(hdfs_uri, path, hdfs_base_dir='', DEBUG=False):
 def get_hdfs(hdfs_uri, path, hdfs_base_dir='', DEBUG=False):
     hdfs_path = os.path.join(hdfs_base_dir, path)
     # clear local path
-    rm_local(path)
+    fu.rm_local(path)
     # get from hdfs
     fs_str = ('-fs "%s"' % hdfs_uri) if hdfs_uri is not None else ''
     cmd_str = 'hadoop fs %s -get %s %s'
@@ -115,7 +116,7 @@ def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
     print hadoop_cmd_str
     return hadoop_cmd_str
   else:
-    ensure_dir(output_path)
+    fu.ensure_dir(output_path)
     output_path_dotdot = os.path.split(output_path)[0]
     out_filename = os.path.join(output_path_dotdot, 'out')
     err_filename = os.path.join(output_path_dotdot, 'err')
