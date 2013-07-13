@@ -52,7 +52,7 @@ else:
     default_jobtracker_uri = default_xdata_highmem_jobtracker_uri
 #
 default_hadoop_binary = 'hadoop'
-default_engine_binary = "/user/bigdata/SSCI/hadoop_line_processor"
+default_engine_binary = "/user/bigdata/SSCI/hadoop_line_processor.jar"
 default_hdfs_dir = "/user/bigdata/SSCI/"
 default_output_path = 'myOutputDir'
 default_input_filename = 'hadoop_input'

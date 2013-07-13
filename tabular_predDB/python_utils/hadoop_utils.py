@@ -64,7 +64,7 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
     hdfs_uri = hadoop_engine.hdfs_uri if hadoop_engine.hdfs_uri is not None else "hdfs://"
     hdfs_path = os.path.join(hdfs_uri, hadoop_engine.hdfs_dir)
     # note: hdfs_path is hadoop_engine.hdfs_dir is omitted
-    archive_path = hdfs_uri + hadoop_engine.which_engine_binary + '.jar'
+    archive_path = hdfs_uri + hadoop_engine.which_engine_binary
     engine_binary_infix = os.path.splitext(os.path.split(hadoop_engine.which_engine_binary)[-1])[0]
     ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
     ld_library_path = './%s.jar:%s' % (engine_binary_infix, ld_library_path)
