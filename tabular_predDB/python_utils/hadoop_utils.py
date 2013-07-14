@@ -60,25 +60,30 @@ def put_hdfs(hdfs_uri, path, hdfs_base_dir='', DEBUG=False):
         os.system(cmd_str)
     return
 
-def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
-    hdfs_uri = hadoop_engine.hdfs_uri if hadoop_engine.hdfs_uri is not None else "hdfs://"
-    hdfs_path = os.path.join(hdfs_uri, hadoop_engine.hdfs_dir)
-    # note: hdfs_path is hadoop_engine.hdfs_dir is omitted
-    archive_path = hdfs_uri + hadoop_engine.which_engine_binary
-    engine_binary_infix = os.path.splitext(os.path.split(hadoop_engine.which_engine_binary)[-1])[0]
+def create_hadoop_cmd_str(hdfs_uri, hdfs_dir, jobtracker_uri,
+        which_engine_binary, which_hadoop_binary, which_hadoop_jar,
+        input_filename, table_data_filename, output_path,
+        n_tasks=1, one_map_task_per_line=True,
+        task_timeout=60000000):
+    if hdfs_uri is None:
+        hdfs_uri = "hdfs://"
+    hdfs_path = os.path.join(hdfs_uri, hdfs_dir)
+    # note: hdfs_path is hdfs_dir is omitted
+    archive_path = hdfs_uri + which_engine_binary
+    engine_binary_infix = os.path.splitext(os.path.split(which_engine_binary)[-1])[0]
     ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
     ld_library_path = './%s.jar:%s' % (engine_binary_infix, ld_library_path)
     mapper_path = '%s.jar/%s' % (engine_binary_infix, engine_binary_infix)
     #
-    jar_str = '%s jar %s' % (hadoop_engine.which_hadoop_binary,
-                             hadoop_engine.which_hadoop_jar)
+    jar_str = '%s jar %s' % (which_hadoop_binary,
+                             which_hadoop_jar)
     archive_str = '-archives "%s"' % archive_path
     cmd_env_str = '-cmdenv LD_LIBRARY_PATH=%s' % ld_library_path
     #
-    fs_str = '-fs "%s"' % hadoop_engine.hdfs_uri if hadoop_engine.hdfs_uri is not None else ''
-    jt_str = '-jt "%s"' % hadoop_engine.jobtracker_uri if hadoop_engine.jobtracker_uri is not None else ''
+    fs_str = '-fs "%s"' % hdfs_uri if hdfs_uri is not None else ''
+    jt_str = '-jt "%s"' % jobtracker_uri if jobtracker_uri is not None else ''
     #
-    input_format_str = '-inputformat org.apache.hadoop.mapred.lib.NLineInputFormat' if hadoop_engine.one_map_task_per_line else ''
+    input_format_str = '-inputformat org.apache.hadoop.mapred.lib.NLineInputFormat' if one_map_task_per_line else ''
     hadoop_cmd_str = ' '.join([
             jar_str,
             '-D mapred.task.timeout=%s' % task_timeout,
@@ -88,11 +93,11 @@ def create_hadoop_cmd_str(hadoop_engine, task_timeout=60000000, n_tasks=1):
             fs_str,
 	    jt_str,
             input_format_str,
-            '-input "%s"' % os.path.join(hdfs_path, hadoop_engine.input_filename),
-            '-output "%s"' % os.path.join(hdfs_path, hadoop_engine.output_path),
+            '-input "%s"' % os.path.join(hdfs_path, input_filename),
+            '-output "%s"' % os.path.join(hdfs_path, output_path),
             '-mapper "%s"' % mapper_path,
             '-reducer /bin/cat',
-            '-file %s' % hadoop_engine.table_data_filename,
+            '-file %s' % table_data_filename,
             cmd_env_str,
             ])
     print hadoop_cmd_str
@@ -103,14 +108,21 @@ def get_was_successful(output_path):
     was_successful = os.path.isfile(success_file)
     return was_successful
 
-def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
-                        output_path, n_tasks, DEBUG=False):
+def send_hadoop_command(hdfs_uri, hdfs_dir, jobtracker_uri,
+      which_engine_binary, which_hadoop_binary, which_hadoop_jar,
+      input_filename, table_data_filename, output_path,
+      n_tasks=1, one_map_task_per_line=True,
+      task_timeout=60000000, DEBUG=False):
   # make sure output_path doesn't exist
-  rm_hdfs(hadoop_engine.hdfs_uri, output_path, hdfs_base_dir=hadoop_engine.hdfs_dir)
+  rm_hdfs(hdfs_uri, output_path, hdfs_base_dir=hdfs_dir)
   # send up input
-  put_hdfs(hadoop_engine.hdfs_uri, input_filename, hdfs_base_dir=hadoop_engine.hdfs_dir)
+  put_hdfs(hdfs_uri, input_filename, hdfs_base_dir=hdfs_dir)
   # actually send
-  hadoop_cmd_str = create_hadoop_cmd_str(hadoop_engine, n_tasks=n_tasks)
+  hadoop_cmd_str = create_hadoop_cmd_str(hdfs_uri, hdfs_dir, jobtracker_uri,
+      which_engine_binary, which_hadoop_binary, which_hadoop_jar,
+      input_filename, table_data_filename, output_path,
+      n_tasks, one_map_task_per_line,
+      task_timeout)
   was_successful = None
   if DEBUG:
     print hadoop_cmd_str
@@ -127,8 +139,8 @@ def send_hadoop_command(hadoop_engine, table_data_filename, input_filename,
     cmd_str = ' '.join([hadoop_cmd_str, redirect_str])
     os.system(cmd_str)
     # retrieve results
-    get_hdfs(hadoop_engine.hdfs_uri, output_path,
-             hdfs_base_dir=hadoop_engine.hdfs_dir)
+    get_hdfs(hdfs_uri, output_path,
+             hdfs_base_dir=hdfs_dir)
     was_successful = get_was_successful(output_path)
   return was_successful
   
