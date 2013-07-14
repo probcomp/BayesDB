@@ -46,6 +46,44 @@ class path():
     except Exception, e:
         pass
 
+class Hadoop():
+    DEFAULT_CLUSTER = 'xdata_highmem'
+    DEBUG = False
+    #
+    xdata_hadoop_jar_420 = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
+    xdata_hadoop_jar_412 = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.2.jar"
+    default_xdata_hadoop_jar = xdata_hadoop_jar_420 \
+        if os.path.exists(xdata_hadoop_jar_420) else xdata_hadoop_jar_412
+    default_xdata_compute_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
+    default_xdata_compute_jobtracker_uri = "xd-jobtracker.xdata.data-tactics-corp.com:8021"
+    default_xdata_highmem_hdfs_uri = "hdfs://xd-hm-nn.xdata.data-tactics-corp.com:8020/"
+    default_xdata_highmem_jobtracker_uri = "xd-hm-jt.xdata.data-tactics-corp.com:8021"
+    #
+    default_starcluster_hadoop_jar = "/usr/lib/hadoop-0.20/contrib/streaming/hadoop-streaming-0.20.2-cdh3u2.jar"
+    default_starcluster_hdfs_uri = None
+    default_starcluster_jobtracker_uri = None
+    #
+    default_localhost_hadoop_jar = default_xdata_hadoop_jar
+    default_localhost_hdfs_uri = None
+    default_localhost_jobtracker_uri = None
+    #
+    if DEFAULT_CLUSTER == 'starcluster':
+      default_hadoop_jar = default_starcluster_hadoop_jar
+      default_hdfs_uri = default_starcluster_hdfs_uri
+      default_jobtracker_uri = default_starcluster_jobtracker_uri
+    elif DEFAULT_CLUSTER == 'localhost':
+      default_hadoop_jar = default_localhost_hadoop_jar
+      default_hdfs_uri = default_localhost_hdfs_uri
+      default_jobtracker_uri = default_localhost_jobtracker_uri
+    else:
+      default_hadoop_jar = default_xdata_hadoop_jar
+      if DEFAULT_CLUSTER == 'xdata_compute':
+        default_hdfs_uri = default_xdata_compute_hdfs_uri
+        default_jobtracker_uri = default_xdata_compute_jobtracker_uri
+      else:
+        default_hdfs_uri = default_xdata_highmem_hdfs_uri
+        default_jobtracker_uri = default_xdata_highmem_jobtracker_uri
+
 class s3():
     bucket_str = 'mitpcp-tabular-predDB'
     bucket_dir = ''
