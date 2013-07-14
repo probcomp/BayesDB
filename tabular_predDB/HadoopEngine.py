@@ -103,16 +103,21 @@ class HadoopEngine(object):
       # fixme: need to prepend output_path to input_filename
       xu.write_initialization_files(input_filename, initialize_args_dict, n_chains)
       # os.system('cp %s initialize_input' % input_filename)
-      was_successful = hu.send_hadoop_command(self,
-                                              table_data_filename,
-                                              input_filename, output_path,
-                                              n_tasks=n_chains)
+      was_successful = self.send_hadoop_command(n_tasks=n_chains)
       hadoop_output = None
       if was_successful:
         X_L_list, X_D_list = hu.read_hadoop_output(output_path,
                                                    'initialize_output')
         hadoop_output = M_c, M_r, X_L_list, X_D_list
       return hadoop_output
+
+    def send_hadoop_command(self, n_tasks=1):
+        was_successful = hu.send_hadoop_command(
+            self.hdfs_uri, self.hdfs_dir, self.jobtracker_uri,
+            self.which_engine_binary, self.which_hadoop_binary, self.which_hadoop_jar,
+            self.input_filename, self.table_data_filename, self.output_path,
+            n_tasks, self.one_map_task_per_line)
+        return was_successful
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1, **kwargs):  
@@ -148,10 +153,8 @@ class HadoopEngine(object):
                 dict_out.update(analyze_args_dict)
                 xu.write_hadoop_line(fh, SEED, dict_out)
         os.system('cp %s analyze_input' % input_filename)
-        was_successful = hu.send_hadoop_command(self,
-                                                table_data_filename,
-                                                input_filename, output_path,
-                                                n_tasks=len(X_L))
+        n_tasks = len(X_L)
+        was_successful = self.send_hadoop_command(n_tasks)
         hadoop_output = None
         if was_successful:
           X_L_list, X_D_list = hu.read_hadoop_output(output_path,
