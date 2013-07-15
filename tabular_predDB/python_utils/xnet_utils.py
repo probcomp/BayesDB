@@ -33,7 +33,7 @@ def run_script_local(infile, script_name, outfile):
     os.system(cmd_str)
     return
 
-newline_escape = 'NEWLINE_ESCAPE'
+newline_escape = '\a'
 def my_dumps(in_object):
     unescaped_str = cPickle.dumps(in_object)
     escaped_str = unescaped_str.replace('\n', newline_escape)
