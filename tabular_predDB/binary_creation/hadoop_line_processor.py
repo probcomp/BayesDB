@@ -126,5 +126,5 @@ if __name__ == '__main__':
         command = dict_in['command']
         method = method_lookup[command]
         ret_dict = method(table_data, dict_in)
-        print key, ret_dict
+        xu.write_hadoop_line(sys.stdout, key, ret_dict)
 

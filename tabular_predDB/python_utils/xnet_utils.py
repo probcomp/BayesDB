@@ -1,6 +1,7 @@
 import os
 import re
 import argparse
+import cPickle
 #
 import tabular_predDB.settings as S
 import tabular_predDB.python_utils.file_utils as fu
@@ -44,8 +45,20 @@ def run_script_local(infile, script_name, outfile):
     os.system(cmd_str)
     return
 
+newline_escape = 'NEWLINE_ESCAPE'
+def my_dumps(in_object):
+    unescaped_str = cPickle.dumps(in_object)
+    escaped_str = unescaped_str.replace('\n', newline_escape)
+    return escaped_str
+def my_loads(escaped_str):
+    unescaped_str = escaped_str.replace(newline_escape, '\n')
+    out_object = cPickle.loads(unescaped_str)
+    return out_object
+
 def write_hadoop_line(fh, key, dict_to_write):
-    fh.write(' '.join(map(str, [key, dict_to_write])))
+    escaped_str = my_dumps(dict_to_write)
+    fh.write(str(key) + ' ')
+    fh.write(escaped_str)
     fh.write('\n')
     return
 
@@ -58,12 +71,14 @@ def parse_hadoop_line(line):
     if match:
         key, dict_in_str = match.groups()
         try:
-          dict_in = eval(dict_in_str)
+          dict_in = my_loads(dict_in_str)
         except Exception, e:
           # for parsing new NLineInputFormat
           match = pattern.match(dict_in_str)
+          if match is None:
+            print 'OMG: ' + dict_in_str[:50]
           key, dict_in_str = match.groups()
-          dict_in = eval(dict_in_str)
+          dict_in = my_loads(dict_in_str)
     return key, dict_in
 
 def write_initialization_files(initialize_input_filename,
