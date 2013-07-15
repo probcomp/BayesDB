@@ -2,6 +2,8 @@ import os
 import re
 import argparse
 import cPickle
+import zlib
+import base64
 #
 import tabular_predDB.settings as S
 from tabular_predDB.settings import Hadoop as hs
@@ -33,14 +35,16 @@ def run_script_local(infile, script_name, outfile):
     os.system(cmd_str)
     return
 
-newline_escape = '\a'
 def my_dumps(in_object):
-    unescaped_str = cPickle.dumps(in_object)
-    escaped_str = unescaped_str.replace('\n', newline_escape)
-    return escaped_str
-def my_loads(escaped_str):
-    unescaped_str = escaped_str.replace(newline_escape, '\n')
-    out_object = cPickle.loads(unescaped_str)
+    ret_str = cPickle.dumps(in_object)
+    ret_str = zlib.compress(ret_str)
+    ret_str = base64.b64encode(ret_str) 
+    return ret_str
+
+def my_loads(in_str):
+    in_str = base64.b64decode(in_str)
+    in_str = zlib.decompress(in_str)
+    out_object = cPickle.loads(in_str)
     return out_object
 
 def write_hadoop_line(fh, key, dict_to_write):
@@ -65,6 +69,7 @@ def parse_hadoop_line(line):
           match = pattern.match(dict_in_str)
           if match is None:
             print 'OMG: ' + dict_in_str[:50]
+            import pdb; pdb.set_trace()
           key, dict_in_str = match.groups()
           dict_in = my_loads(dict_in_str)
     return key, dict_in
