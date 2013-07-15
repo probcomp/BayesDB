@@ -9,6 +9,7 @@ import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
 import tabular_predDB.cython_code.State as State
+from tabular_predDB.settings import Hadoop as hs
 
 
 def get_generative_clustering(M_c, M_r, T,
@@ -71,7 +72,7 @@ def generate_hadoop_dicts(which_kernels, X_L, X_D, args_dict):
 
 def write_hadoop_input(input_filename, X_L, X_D, n_steps, SEED):
     # prep settings dictionary
-    time_analyze_args_dict = xu.default_analyze_args_dict
+    time_analyze_args_dict = hs.default_analyze_args_dict
     time_analyze_args_dict['command'] = 'time_analyze'
     time_analyze_args_dict['SEED'] = SEED
     time_analyze_args_dict['n_steps'] = n_steps

@@ -20,43 +20,18 @@ import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.python_utils.hadoop_utils as hu
+from tabular_predDB.settings import Hadoop as hs
 
 
-DEFAULT_CLUSTER = 'xdata_highmem'
-DEBUG = False
-
-xdata_hadoop_jar_420 = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
-xdata_hadoop_jar_412 = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.2.jar"
-
-default_xdata_hadoop_jar = xdata_hadoop_jar_420 if os.path.exists(xdata_hadoop_jar_420) else xdata_hadoop_jar_412
-default_xdata_compute_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
-default_xdata_compute_jobtracker_uri = "xd-jobtracker.xdata.data-tactics-corp.com:8021"
-default_xdata_highmem_hdfs_uri = "hdfs://xd-hm-nn.xdata.data-tactics-corp.com:8020/"
-default_xdata_highmem_jobtracker_uri = "xd-hm-jt.xdata.data-tactics-corp.com:8021"
-#
-default_starcluster_hadoop_jar = "/usr/lib/hadoop-0.20/contrib/streaming/hadoop-streaming-0.20.2-cdh3u2.jar"
-default_starcluster_hdfs_uri = None
-default_starcluster_jobtracker_uri = None
-#
-if DEFAULT_CLUSTER == 'starcluster':
-  default_hadoop_jar = default_starcluster_hadoop_jar
-  default_hdfs_uri = default_starcluster_hdfs_uri
-  default_jobtracker_uri = default_starcluster_jobtracker_uri
-else:
-  default_hadoop_jar = default_xdata_hadoop_jar
-  if DEFAULT_CLUSTER == 'xdata_compute':
-    default_hdfs_uri = default_xdata_compute_hdfs_uri
-    default_jobtracker_uri = default_xdata_compute_jobtracker_uri
-  else:
-    default_hdfs_uri = default_xdata_highmem_hdfs_uri
-    default_jobtracker_uri = default_xdata_highmem_jobtracker_uri
-#
-default_hadoop_binary = 'hadoop'
-default_engine_binary = "/user/bigdata/SSCI/hadoop_line_processor.jar"
-default_hdfs_dir = "/user/bigdata/SSCI/"
-default_output_path = 'myOutputDir'
-default_input_filename = 'hadoop_input'
-default_table_data_filename = xu.default_table_data_filename
+default_hadoop_binary = hs.default_hadoop_binary
+default_engine_binary = hs.default_engine_binary
+default_hdfs_dir = hs.default_hdfs_dir
+default_output_path = hs.default_output_path
+default_input_filename = hs.default_input_filename
+default_table_data_filename = hs.default_table_data_filename
+default_hdfs_uri = hs.default_hdfs_uri
+default_jobtracker_uri = hs.default_jobtracker_uri
+default_hadoop_jar = hs.default_hadoop_jar
 
 
 class HadoopEngine(object):

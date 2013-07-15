@@ -83,6 +83,28 @@ class Hadoop():
       else:
         default_hdfs_uri = default_xdata_highmem_hdfs_uri
         default_jobtracker_uri = default_xdata_highmem_jobtracker_uri
+    default_hadoop_binary = 'hadoop'
+    default_engine_binary = '/user/bigdata/SSCI/hadoop_line_processor.jar'
+    default_hdfs_dir = '/user/bigdata/SSCI/'
+    default_output_path = 'myOutputDir'
+    default_input_filename = 'hadoop_input'
+    default_table_data_filename = 'table_data.pkl.gz'
+    default_table_filename = os.path.join(path.web_resources_data_dir,
+      'dha.csv')
+    default_analyze_args_dict_filename = 'analyze_args_dict.pkl.gz'
+    # 
+    default_initialize_args_dict = dict(
+        command='initialize',
+        initialization='from_the_prior',
+        )
+    default_analyze_args_dict = dict(
+        command='analyze',
+        kernel_list=(),
+        n_steps=1,
+        c=(),
+        r=(),
+        max_time=-1,
+        )
 
 class s3():
     bucket_str = 'mitpcp-tabular-predDB'

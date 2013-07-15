@@ -24,6 +24,7 @@ import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
+from tabular_predDB.settings import Hadoop as hs
 
 
 def initialize_helper(table_data, dict_in):
@@ -112,7 +113,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--table_data_filename', type=str,
-                        default=xu.default_table_data_filename)
+                        default=hs.default_table_data_filename)
     args = parser.parse_args()
     table_data_filename = args.table_data_filename
     table_data = fu.unpickle(table_data_filename)

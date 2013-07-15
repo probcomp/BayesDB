@@ -4,28 +4,16 @@ import argparse
 import cPickle
 #
 import tabular_predDB.settings as S
+from tabular_predDB.settings import Hadoop as hs
 import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.data_utils as du
 
 
-default_table_data_filename = 'table_data.pkl.gz'
-default_table_filename = os.path.join(S.path.web_resources_data_dir,
-  'dha.csv')
+default_table_data_filename = hs.default_table_data_filename
+default_table_filename = hs.default_table_filename
+default_analyze_args_dict = hs.default_analyze_args_dict.copy()
+default_initialize_args_dict = hs.default_initialize_args_dict.copy()
 
-default_initialize_args_dict = dict(
-    command='initialize',
-    initialization='from_the_prior',
-    )
-
-default_analyze_args_dict_filename = 'analyze_args_dict.pkl.gz'
-default_analyze_args_dict = dict(
-    command='analyze',
-    kernel_list=(),
-    n_steps=1,
-    c=(),
-    r=(),
-    max_time=-1,
-    )
 
 # read the data, create metadata
 def pickle_table_data(in_filename_or_dict, pkl_filename):
@@ -82,8 +70,10 @@ def parse_hadoop_line(line):
     return key, dict_in
 
 def write_initialization_files(initialize_input_filename,
-                               initialize_args_dict=default_initialize_args_dict,
+                               initialize_args_dict=None,
                                n_chains=10):
+    if initialize_args_dict is None:
+        initialize_args_dict = default_initialize_args_dict.copy()
     with open(initialize_input_filename, 'w') as out_fh:
         for SEED in range(n_chains):
             out_dict = initialize_args_dict.copy()
@@ -94,7 +84,9 @@ def write_initialization_files(initialize_input_filename,
 # read initialization output, write analyze input
 def link_initialize_to_analyze(initialize_output_filename,
                                analyze_input_filename,
-                               analyze_args_dict=default_analyze_args_dict):
+                               analyze_args_dict=None):
+    if analyze_args_dict is None:
+        analyze_args_dict = default_analyze_args_dict.copy()
     num_lines = 0
     with open(initialize_output_filename) as in_fh:
         with open(analyze_input_filename, 'w') as out_fh:
