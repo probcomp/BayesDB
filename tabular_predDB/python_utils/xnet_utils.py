@@ -89,6 +89,21 @@ def write_initialization_files(initialize_input_filename,
             write_hadoop_line(out_fh, SEED, out_dict)
     return
 
+def write_analyze_files(analyze_input_filename, X_L_list, X_D_list,
+                        table_data, table_data_filename,
+                        analyze_args_dict, analyze_args_dict_filename,
+                        SEEDS=None):
+    assert len(X_L) == len(X_D)
+    write_support_files(table_data, table_data_filename,
+                        analyze_args_dict, analyze_args_dict_filename)
+    if SEEDS is None:
+        SEEDS = xrange(len(X_L))
+    with open(analyze_input_filename, 'w') as out_fh:
+        for SEED, X_L, X_D in zip(SEEDS, X_L_list, X_D_list):
+            out_dict = dict(SEED=SEED, X_L=X_L, X_D=X_D)
+            write_hadoop_line(out_fh, SEED, out_dict)
+    return
+
 # read initialization output, write analyze input
 def link_initialize_to_analyze(initialize_output_filename,
                                analyze_input_filename,

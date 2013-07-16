@@ -160,9 +160,7 @@ def copy_hadoop_output(output_path, copy_to_filename):
     cmd_str = 'cp %s %s' % (hadoop_output_filename, copy_to_filename)
     os.system(cmd_str)
     return
-def read_hadoop_output(output_path, copy_to_filename=None):
-    if copy_to_filename is not None:
-      copy_hadoop_output(output_path, copy_to_filename)
+def read_hadoop_output(output_path):
     hadoop_output_filename = get_hadoop_output_filename(output_path)
     hadoop_output = read_hadoop_output_file(hadoop_output_filename)
     X_L_list = [el['X_L'] for el in hadoop_output.values()]

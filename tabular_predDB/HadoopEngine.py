@@ -82,12 +82,12 @@ class HadoopEngine(object):
                                     initialize_args_dict,
                                     intialize_args_dict_filename,
                                     n_chains)
-      # os.system('cp %s initialize_input' % input_filename)
+      os.system('cp %s initialize_input' % input_filename)
       was_successful = self.send_hadoop_command(n_tasks=n_chains)
       hadoop_output = None
       if was_successful:
-        X_L_list, X_D_list = hu.read_hadoop_output(output_path,
-                                                   'initialize_output')
+        hu.copy_hadoop_output(output_path, 'initialize_output')
+        X_L_list, X_D_list = hu.read_hadoop_output(output_path)
         hadoop_output = X_L_list, X_D_list
       return hadoop_output
 
@@ -105,8 +105,10 @@ class HadoopEngine(object):
         output_path = self.output_path
         input_filename = self.input_filename
         table_data_filename = self.table_data_filename
+        analyze_args_dict_filename = self.command_dict_filename
         xu.assert_vpn_is_connected()
         #
+        table_data = dict(M_c=M_c, T=T)
         analyze_args_dict = dict(command='analyze', kernel_list=kernel_list,
                                  n_steps=n_steps, c=c, r=r, max_time=max_time)
         # chunk_analyze is a special case of analyze
@@ -119,27 +121,22 @@ class HadoopEngine(object):
           analyze_args_dict['chunk_filename_prefix'] = chunk_filename_prefix
           # WARNING: chunk_dest_dir MUST be writeable by hadoop user mapred
           analyze_args_dict['chunk_dest_dir'] = chunk_dest_dir
-
         if not xu.get_is_multistate(X_L, X_D):
             X_L = [X_L]
             X_D = [X_D]
         #
-        table_data = dict(M_c=M_c, T=T)
-        # fixme: need to prepend output_path to table_data_filename
-        fu.pickle(table_data, table_data_filename)
-        # fixme: need to prepend output_path to input_filename
-        with open(input_filename, 'w') as fh:
-            for SEED, (X_L_i, X_D_i) in enumerate(zip(X_L, X_D)):
-                dict_out = dict(X_L=X_L_i, X_D=X_D_i, SEED=SEED)
-                dict_out.update(analyze_args_dict)
-                xu.write_hadoop_line(fh, SEED, dict_out)
+        SEEDS = kwargs.get('SEEDS', None)
+        xu.write_analyze_files(input_filename, X_L, X_D,
+                               table_data, table_data_filename,
+                               analyze_args_dict, analyze_args_dict_filename,
+                               SEEDS)
         os.system('cp %s analyze_input' % input_filename)
         n_tasks = len(X_L)
         was_successful = self.send_hadoop_command(n_tasks)
         hadoop_output = None
         if was_successful:
-          X_L_list, X_D_list = hu.read_hadoop_output(output_path,
-                                                     'analyze_output')
+          hu.copy_hadoop_output(output_path, 'analyze_output')
+          X_L_list, X_D_list = hu.read_hadoop_output(output_path)
           hadoop_output = X_L_list, X_D_list
         return hadoop_output
 
