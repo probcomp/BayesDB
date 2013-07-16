@@ -139,7 +139,9 @@ def send_hadoop_command(hdfs_uri, hdfs_dir, jobtracker_uri,
     # cmd_str = ' '.join(['nohup', hadoop_cmd_str, redirect_str, '&'])
     cmd_str = ' '.join([hadoop_cmd_str, redirect_str])
     os.system(cmd_str)
-    # retrieve results
+  return
+
+def get_hadoop_results(hdfs_uri, output_path, hdfs_dir):
     get_hdfs(hdfs_uri, output_path,
              hdfs_base_dir=hdfs_dir)
     was_successful = get_was_successful(output_path)

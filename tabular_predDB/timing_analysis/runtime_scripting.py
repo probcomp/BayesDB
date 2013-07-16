@@ -142,7 +142,8 @@ if __name__ == '__main__':
                                         input_filename=input_filename,
                                         table_data_filename=table_data_filename,
                                         )
-        was_successful = hadoop_engine.send_hadoop_command(n_tasks)
+        hadoop_engine.send_hadoop_command(n_tasks)
+        was_successful = hadoop_engine.get_hadoop_results()
         if was_successful:
             hu.copy_hadoop_output(output_path, output_filename)
         else:

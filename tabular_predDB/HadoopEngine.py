@@ -67,6 +67,20 @@ class HadoopEngine(object):
         self.command_dict_filename = command_dict_filename
         return
 
+    def send_hadoop_command(self, n_tasks=1):
+        hu.send_hadoop_command(
+            self.hdfs_uri, self.hdfs_dir, self.jobtracker_uri,
+            self.which_engine_binary, self.which_hadoop_binary, self.which_hadoop_jar,
+            self.input_filename, self.table_data_filename,
+            self.command_dict_filename, self.output_path,
+            n_tasks, self.one_map_task_per_line)
+        return
+
+    def get_hadoop_results(self):
+        was_successful = hu.get_hadoop_results(self.hdfs_uri, self.output_path, self.hdfs_dir)
+        print 'was_successful: %s' % was_successful
+        return was_successful
+
     def initialize(self, M_c, M_r, T, initialization='from_the_prior',
                    n_chains=1):
       output_path = self.output_path
@@ -84,23 +98,14 @@ class HadoopEngine(object):
                                     intialize_args_dict_filename,
                                     n_chains)
       os.system('cp %s initialize_input' % input_filename)
-      was_successful = self.send_hadoop_command(n_tasks=n_chains)
+      self.send_hadoop_command(n_tasks=n_chains)
+      was_successful = self.get_hadoop_results()
       hadoop_output = None
       if was_successful:
         hu.copy_hadoop_output(output_path, 'initialize_output')
         X_L_list, X_D_list = hu.read_hadoop_output(output_path)
         hadoop_output = X_L_list, X_D_list
       return hadoop_output
-
-    def send_hadoop_command(self, n_tasks=1):
-        was_successful = hu.send_hadoop_command(
-            self.hdfs_uri, self.hdfs_dir, self.jobtracker_uri,
-            self.which_engine_binary, self.which_hadoop_binary, self.which_hadoop_jar,
-            self.input_filename, self.table_data_filename,
-            self.command_dict_filename, self.output_path,
-            n_tasks, self.one_map_task_per_line)
-        print 'was_successful: %s' % was_successful
-        return was_successful
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1, **kwargs):  
@@ -134,7 +139,8 @@ class HadoopEngine(object):
                                SEEDS)
         os.system('cp %s analyze_input' % input_filename)
         n_tasks = len(X_L)
-        was_successful = self.send_hadoop_command(n_tasks)
+        send_hadoop_command(n_tasks)
+        was_successful = self.get_hadoop_results()
         hadoop_output = None
         if was_successful:
           hu.copy_hadoop_output(output_path, 'analyze_output')
