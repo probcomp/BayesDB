@@ -72,6 +72,7 @@ class HadoopEngine(object):
       output_path = self.output_path
       input_filename = self.input_filename
       table_data_filename = self.table_data_filename
+      intialize_args_dict_filename = self.command_dict_filename
       xu.assert_vpn_is_connected()
       #
       table_data = dict(M_c=M_c, M_r=M_r, T=T)
@@ -98,6 +99,7 @@ class HadoopEngine(object):
             self.input_filename, self.table_data_filename,
             self.command_dict_filename, self.output_path,
             n_tasks, self.one_map_task_per_line)
+        print 'was_successful: %s' % was_successful
         return was_successful
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
