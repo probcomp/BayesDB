@@ -83,7 +83,7 @@ class HadoopEngine(object):
       if was_successful:
         X_L_list, X_D_list = hu.read_hadoop_output(output_path,
                                                    'initialize_output')
-        hadoop_output = M_c, M_r, X_L_list, X_D_list
+        hadoop_output = X_L_list, X_D_list
       return hadoop_output
 
     def send_hadoop_command(self, n_tasks=1):
@@ -216,7 +216,7 @@ if __name__ == '__main__':
                                       initialization='from_the_prior',
                                       n_chains=n_chains)
         if hadoop_output is not None:
-            M_c, M_r, X_L_list, X_D_list = hadoop_output
+            X_L_list, X_D_list = hadoop_output
     elif command == 'analyze':
         assert resume_filename is not None
         if fu.is_pkl(resume_filename):

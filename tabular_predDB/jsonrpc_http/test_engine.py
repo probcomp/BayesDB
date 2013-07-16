@@ -67,7 +67,7 @@ engine = Engine()
 # initialize
 kernel_list = None
 c, r, max_iterations, max_time = None, None, None, None
-M_c, M_r, X_L, X_D = engine.initialize(M_c, M_r, T)
+X_L, X_D = engine.initialize(M_c, M_r, T)
 
 # burn in 
 X_L, X_D = engine.analyze(M_c, T, X_L, X_D, kernel_list, burn_in,

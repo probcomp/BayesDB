@@ -51,7 +51,7 @@ Consists of a language for interfacing with domain-general multidimensional dens
 
 \begin{itemize}
 
-\item \texttt{initialize($M_c, M_r, T, i$)} $\rightarrow \{ M_c, M_r, X_L, X_D \}$. \\
+\item \texttt{initialize($M_c, M_r, T, i$)} $\rightarrow \{ X_L, X_D \}$. \\
 $M_c$ is the metadata for columns including bidirectional mappings between labels and indices, the modeltype---`asymmetric\_beta\_bernoulli' for binary data, `symmetric\_dirichlet\_discrete' for closed categorical data, `pitmanyor\_atom' for open categorical data, `poisson\_gamma' for frequency data, and `normal\_inverse\_gamma' for numeric data. $M_r$ is the metadata for rows including bidirectional mappings between labels and indices. $T$ is a table indicating the values for a collection of variables, and $i$ is an initialization (together, apart, or from\_the\_prior). It returns $X_L$ and $X_D$. $X_L$ is the latent state, including all information necessary for prediction. $X_D$ is a mapping between the latent state and the table $T$. 
 
 \item \texttt{analyze($M_c, T, X_L, X_D, kernel\_list, n\_steps, c, r$)} $\rightarrow \{X'_L, X'_D\}$. \\
