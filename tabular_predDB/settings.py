@@ -89,6 +89,7 @@ class Hadoop():
     default_output_path = 'myOutputDir'
     default_input_filename = 'hadoop_input'
     default_table_data_filename = 'table_data.pkl.gz'
+    default_command_dict_filename = 'command_dict.pkl.gz'
     default_table_filename = os.path.join(path.web_resources_data_dir,
       'dha.csv')
     default_analyze_args_dict_filename = 'analyze_args_dict.pkl.gz'

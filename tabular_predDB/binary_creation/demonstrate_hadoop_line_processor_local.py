@@ -21,7 +21,7 @@ analyze_output_filename = 'analyze_output'
 analyze_args_dict = hs.default_analyze_args_dict
 
 # set up
-table_data = xu.pickle_table_data(filename, table_data_filename)
+table_data = xu.read_and_pickle_table_data(filename, table_data_filename)
 
 # create initialize input
 xu.write_initialization_files(initialize_input_filename,

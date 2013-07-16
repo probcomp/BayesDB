@@ -32,6 +32,7 @@ default_table_data_filename = hs.default_table_data_filename
 default_hdfs_uri = hs.default_hdfs_uri
 default_jobtracker_uri = hs.default_jobtracker_uri
 default_hadoop_jar = hs.default_hadoop_jar
+default_command_dict_filename = hs.default_command_dict_filename
 
 
 class HadoopEngine(object):
@@ -46,6 +47,7 @@ class HadoopEngine(object):
                  output_path=default_output_path,
                  input_filename=default_input_filename,
                  table_data_filename=default_table_data_filename,
+                 command_dict_filename=hs.default_command_dict_filename,
                  one_map_task_per_line=True,
                  ):
         xu.assert_vpn_is_connected()
@@ -62,6 +64,7 @@ class HadoopEngine(object):
         self.input_filename = input_filename
         self.table_data_filename = table_data_filename
         self.one_map_task_per_line = one_map_task_per_line
+        self.command_dict_filename = command_dict_filename
         return
 
     def initialize(self, M_c, M_r, T, initialization='from_the_prior',
@@ -71,12 +74,14 @@ class HadoopEngine(object):
       table_data_filename = self.table_data_filename
       xu.assert_vpn_is_connected()
       #
-      initialize_args_dict = dict(command='initialize', initialization=initialization)
-      #
       table_data = dict(M_c=M_c, M_r=M_r, T=T)
-      xu.pickle_table_data(table_data, table_data_filename)
-      # fixme: need to prepend output_path to input_filename
-      xu.write_initialization_files(input_filename, initialize_args_dict, n_chains)
+      initialize_args_dict = dict(command='initialize',
+                                  initialization=initialization)
+      xu.write_initialization_files(input_filename,
+                                    table_data, table_data_filename,
+                                    initialize_args_dict,
+                                    intialize_args_dict_filename,
+                                    n_chains)
       # os.system('cp %s initialize_input' % input_filename)
       was_successful = self.send_hadoop_command(n_tasks=n_chains)
       hadoop_output = None
@@ -90,7 +95,8 @@ class HadoopEngine(object):
         was_successful = hu.send_hadoop_command(
             self.hdfs_uri, self.hdfs_dir, self.jobtracker_uri,
             self.which_engine_binary, self.which_hadoop_binary, self.which_hadoop_jar,
-            self.input_filename, self.table_data_filename, self.output_path,
+            self.input_filename, self.table_data_filename,
+            self.command_dict_filename, self.output_path,
             n_tasks, self.one_map_task_per_line)
         return was_successful
 
@@ -120,7 +126,7 @@ class HadoopEngine(object):
         #
         table_data = dict(M_c=M_c, T=T)
         # fixme: need to prepend output_path to table_data_filename
-        xu.pickle_table_data(table_data, table_data_filename)
+        fu.pickle(table_data, table_data_filename)
         # fixme: need to prepend output_path to input_filename
         with open(input_filename, 'w') as fh:
             for SEED, (X_L_i, X_D_i) in enumerate(zip(X_L, X_D)):

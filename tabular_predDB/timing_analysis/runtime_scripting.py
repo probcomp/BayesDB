@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
     # write table_data
     table_data = dict(M_c=M_c, M_r=M_r, T=T)
-    xu.pickle_table_data(table_data, table_data_filename)
+    fu.pickle(table_data, table_data_filename)
     # write hadoop input
     n_tasks = write_hadoop_input(input_filename, X_L, X_D, n_steps, SEED=gen_seed)
 

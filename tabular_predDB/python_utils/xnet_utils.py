@@ -18,13 +18,10 @@ default_initialize_args_dict = hs.default_initialize_args_dict.copy()
 
 
 # read the data, create metadata
-def pickle_table_data(in_filename_or_dict, pkl_filename):
-    table_data = None
-    if isinstance(in_filename_or_dict, str):
-        T, M_r, M_c = du.read_model_data_from_csv(in_filename_or_dict, gen_seed=0)
-        table_data = dict(T=T, M_r=M_r, M_c=M_c)
-    else:
-        table_data = in_filename_or_dict
+def read_and_pickle_table_data(table_data_filename, pkl_filename):
+    T, M_r, M_c = du.read_model_data_from_csv(table_data_filename,
+                                              gen_seed=0)
+    table_data = dict(T=T, M_r=M_r, M_c=M_c)
     fu.pickle(table_data, pkl_filename)
     return table_data
 
@@ -74,15 +71,21 @@ def parse_hadoop_line(line):
           dict_in = my_loads(dict_in_str)
     return key, dict_in
 
+def write_support_files(table_data, table_data_filename,
+                        command_dict, command_dict_filename):
+    fu.pickle(table_data, table_data_filename)
+    fu.pickle(command_dict, command_dict_filename)
+    return
+
 def write_initialization_files(initialize_input_filename,
-                               initialize_args_dict=None,
+                               table_data, table_data_filename,
+                               initialize_args_dict, intialize_args_dict_filename,
                                n_chains=10):
-    if initialize_args_dict is None:
-        initialize_args_dict = default_initialize_args_dict.copy()
+    write_support_files(table_data, table_data_filename,
+                        initialize_args_dict, intialize_args_dict_filename)
     with open(initialize_input_filename, 'w') as out_fh:
         for SEED in range(n_chains):
-            out_dict = initialize_args_dict.copy()
-            out_dict['SEED'] = SEED
+            out_dict = dict(SEED=SEED)
             write_hadoop_line(out_fh, SEED, out_dict)
     return
 
@@ -154,10 +157,11 @@ if __name__ == '__main__':
     n_chains = args.n_chains
 
 
-    if do_what == 'pickle_table_data':
-        pickle_table_data(table_filename, pkl_filename)
+    if do_what == 'read_and_pickle_table_data':
+        read_and_pickle_table_data(table_filename, pkl_filename)
     elif do_what == 'write_initialization_files':
-        write_initialization_files(initialize_input_filename, n_chains)
+        write_initialization_files(initialize_input_filename,
+                                   n_chains=n_chains)
     elif do_what == 'link_initialize_to_analyze':
         analyze_args_dict = default_analyze_args_dict.copy()
         analyze_args_dict['n_steps'] = n_steps
