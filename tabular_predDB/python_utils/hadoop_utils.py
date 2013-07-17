@@ -145,7 +145,7 @@ def get_hadoop_results(hdfs_uri, output_path, hdfs_dir):
     get_hdfs(hdfs_uri, output_path,
              hdfs_base_dir=hdfs_dir)
     was_successful = get_was_successful(output_path)
-  return was_successful
+    return was_successful
   
 def write_hadoop_input():
     pass
