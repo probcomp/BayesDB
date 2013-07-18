@@ -13,7 +13,7 @@
 *   See the License for the specific language governing permissions and
 *   limitations under the License.
 */
-
+#include "ContinuousComponentModel.h"
 using namespace std;
 
 ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hypers) {
