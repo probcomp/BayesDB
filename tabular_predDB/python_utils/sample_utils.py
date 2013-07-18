@@ -146,6 +146,7 @@ def simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row,
     
     answers = numpy.zeros(len(cluster_logps))
 
+    # enumerate over the clusters
     for cluster_idx in range(len(cluster_logps)):
 
         # get the cluster model for this cluster
@@ -189,7 +190,6 @@ def simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query
         # construct draw conataints
         draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
 
-        # return the CDF value (exp)
         px = component_model.get_predictive_probability(b, draw_constraints)
 
         norm = cluster_logps[cluster_idx]-logsumexp(cluster_logps)

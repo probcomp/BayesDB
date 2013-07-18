@@ -13,7 +13,6 @@
 *   See the License for the specific language governing permissions and
 *   limitations under the License.
 */
-#include "ContinuousComponentModel.h"
 
 using namespace std;
 
@@ -224,10 +223,6 @@ double ContinuousComponentModel::get_predictive_cdf(double element, vector<doubl
   numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
 
   // double logp = calc_element_predictive_logp(element);
-
-  // this is not a log value
-  // double p = calc_element_predictive_cdf(element);
-
 
   boost::math::students_t dist(nu);
   double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
