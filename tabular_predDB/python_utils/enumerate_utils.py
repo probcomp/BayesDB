@@ -570,7 +570,6 @@ def CCML(ccpart,ccmat,mu,r,nu,s,row_alpha,col_alpha):
 			cols_view = np.nonzero(all_cols==view)[0]
 			for col in cols_view:
 				for cat in range(row_part.max()+1):
-					# pdb.set_trace()
 					X = ccmat[np.nonzero(row_part==cat)[0],col]
 					lp_temp += NGML(X,mu,r,nu,s)
 
