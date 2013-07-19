@@ -41,6 +41,7 @@ def pickle_table_data(in_filename_or_dict, pkl_filename):
 def run_script_local(infile, script_name, outfile, table_data_filename):
     cmd_str = 'cat %s | python %s --table_data_filename %s > %s'
     cmd_str %= (infile, script_name, table_data_filename, outfile)
+    print cmd_str
     os.system(cmd_str)
     return
 
