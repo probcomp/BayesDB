@@ -71,6 +71,7 @@ if __name__ == '__main__':
         timing_run_parameters = dict(num_rows=num_rows, num_cols=num_cols, num_views=num_splits, num_clusters=num_clusters)
         write_hadoop_input(input_filename, timing_run_parameters,  n_steps, SEED=gen_seed)
 
+    n_tasks = len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_splits_list)*5
     # Create a dummy table data file
     table_data=dict(T=[],M_c=[],X_L=[],X_D=[])
     xu.pickle_table_data(table_data, table_data_filename)
