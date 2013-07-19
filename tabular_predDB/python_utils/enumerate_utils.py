@@ -288,19 +288,20 @@ class CrossCatPartitions(object):
 
 
 		for i in range(0,self.col_partition.shape[0]):
-			K = int(self.col_partition[i].max())
+			K = int(self.col_partition[i].max()+1)
 			self.N += int(pow(Bn,K))
 
 		self.states = []
 		state_idx = 0
 		for col_part in range(self.col_partition.shape[0]):
-			K = int(max(self.col_partition[col_part]))
-			n_views = int(max(self.col_partition[col_part]))
+			K = int(max(self.col_partition[col_part])+1)
+			n_views = int(max(self.col_partition[col_part])+1)
 			# self.states[state_idx]= dict()
 			for rprt in range(len(self.row_perms[n_views-1])):
 				temp_state = dict()
 				temp_state['idx'] = state_idx
 				temp_state['col_parts'] = self.col_partition[col_part]
+				
 				this_row_partition = self.row_perms[n_views-1][rprt][0]-1
 				temp_row_parts = np.array([self.row_partition[this_row_partition]])
 				for view in range(1,n_views):
@@ -319,25 +320,21 @@ class CrossCatPartitions(object):
 			return self.states[state_num]
 
 	def findState(self, col_part, row_parts):
-		if min(col_part) == 0:
-			n_views = max(col_part) + 1
-		else:
-			n_views = max(col_part)
+
+		n_views = len(row_parts)
 
 		col_part_cm = vectorToCHMat(col_part);
 
 		for state in range(len(self.states)):
 			this_col_part = self.states[state]['col_parts']
-			if max(this_col_part) != n_views:
+			if max(this_col_part) != n_views-1:
 				continue
 
 			if not np.all(col_part_cm == vectorToCHMat(this_col_part)):
 				continue
 
 			for view in range(n_views):
-
 				this_row_part = self.states[state]['row_parts'][view]
-
 				if np.all(vectorToCHMat(row_parts[view])==vectorToCHMat(this_row_part)):
 					if view == n_views-1:
 						return self.states[state]['idx']
@@ -345,7 +342,8 @@ class CrossCatPartitions(object):
 					break
 			
 		print "Error: no state match found"
-		return none
+		pdb.set_trace()
+		return None
 
 	def test(self):
 		print "Testing CrossCatPartitions"
@@ -478,11 +476,11 @@ def Stirling2nd(n,k):
 # parameter, alpha.
 def lcrp(prt,alpha):
 	# generate a histogram of prt
-	k = max(prt)
+	k = max(prt)+1
 	ns = np.zeros(k)
 	n = len(prt)
 	for i in range(n):
-		ns[prt[i]-1] += 1.0
+		ns[prt[i]] += 1.0
 
 	lp = sum(sp.special.gammaln(ns))+k*math.log(alpha)+sp.special.gammaln(alpha)-sp.special.gammaln(n+alpha)
 
@@ -554,6 +552,8 @@ def NGML(X,mu,r,nu,s):
 def CCML(ccpart,ccmat,mu,r,nu,s,row_alpha,col_alpha):
 	lp = []
 	
+	ccmat = np.array(ccmat)
+
 	state = ccpart.states[1]
 
 	# loop through the states
@@ -561,17 +561,17 @@ def CCML(ccpart,ccmat,mu,r,nu,s,row_alpha,col_alpha):
 		all_cols = state['col_parts']
 		all_rows = state['row_parts']
 
-		K = max(all_cols)
+		K = max(all_cols)+1
 				
 		lp_temp = lcrp(all_cols,col_alpha)
 		for view in range(K):
-			row_part =  all_rows[view,:]
+			row_part = all_rows[view,:]
 			lp_temp += lcrp(row_part,row_alpha)
-			cols_view = np.nonzero(all_cols==view+1)[0]
-
+			cols_view = np.nonzero(all_cols==view)[0]
 			for col in cols_view:
-				for cat in range(row_part.max()):
-					X = ccmat[np.nonzero(row_part==cat+1)[0],col]
+				for cat in range(row_part.max()+1):
+					# pdb.set_trace()
+					X = ccmat[np.nonzero(row_part==cat)[0],col]
 					lp_temp += NGML(X,mu,r,nu,s)
 
 		lp.append(lp_temp);
