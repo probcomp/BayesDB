@@ -225,6 +225,8 @@ cdef class p_State:
                                        row_initialization,
                                        N_GRID, SEED)
          else:
+              # # !!! MUTATES X_L !!!
+              # X_L = desparsify_X_L(M_C, X_L)
               constructor_args = \
                   transform_latent_state_to_constructor_args(X_L, X_D)
               hypers_m = constructor_args['hypers_m']
@@ -297,7 +299,10 @@ cdef class p_State:
               column_names_i.append(value)
          return column_names_i
     def get_column_component_suffstats_i(self, view_idx):
-          return self.thisptr.get_column_component_suffstats_i(view_idx)
+         column_component_suffstats_i = \
+             self.thisptr.get_column_component_suffstats_i(view_idx)
+         sparsify_column_component_suffstats(column_component_suffstats_i)
+         return column_component_suffstats_i
     def get_view_state_i(self, view_idx):
           row_partition_model = self.get_row_partition_model_i(view_idx)
           column_names = self.get_column_names_i(view_idx)
@@ -446,3 +451,60 @@ def transform_latent_state_to_constructor_args(X_L, X_D):
      constructor_args['SEED'] = seed
      #
      return constructor_args
+
+def remove_zero_values(dict_in):
+     print 'type(dict_in): %s' % type(dict_in)
+     for key in dict_in:
+          if dict_in[key] == 0:
+               dict_in.pop(key)
+     return dict_in
+
+def insert_zero_values(dict_in, keys):
+     for key in keys:
+          if key not in dict_in:
+               dict_in[key] = 0
+     return dict_in
+
+def sparsify_column_component_suffstats(column_component_suffstats):
+     for idx, suffstats_i in enumerate(column_component_suffstats):
+          suffstats_i = remove_zero_values(suffstats_i).copy()
+          column_component_suffstats[idx] = suffstats_i
+     return None
+
+def desparsify_column_component_suffstats(column_component_suffstats,
+                                          keys):
+     for idx, suffstats_i in enumerate(column_component_suffstats):
+          insert_zero_values(suffstats_i, keys)
+     return None
+
+def get_column_component_suffstats_by_global_col_idx(M_c, X_L, col_idx):
+     col_name = M_c['idx_to_name'][col_idx]
+     view_idx = X_L['column_partition']['assignments'][col_idx]
+     view_state_i = X_L['view_state'][view_idx]
+     within_view_idx = view_state_i['column_names'].index(col_name)
+     column_component_suffstats_i = view_state_i['column_component_suffats'][within_view_idx]
+     return column_component_suffstats_i
+     
+def sparsify_X_L(M_c, X_L):
+     for col_idx, col_i_metadata in enumerate(M_c['column_metadata']):
+          modeltype = col_i_metadata['modeltype']
+          if modeltype != 'symmetric_dirichlet_discrete':
+               continue
+          column_component_suffstats_i = \
+              get_column_component_suffstats_by_global_col_idx(M_c, X_L,
+                                                               col_idx)
+          sparsify_column_component_suffstats(column_component_suffstats_i)
+     return None
+
+def desparsify_X_L(M_c, X_L):
+     for col_idx, col_i_metadata in enumerate(M_c['column_metadata']):
+          modeltype = col_i_metadata['modeltype']
+          if modeltype != 'symmetric_dirichlet_discrete':
+               continue
+          column_component_suffstats_i = \
+              get_column_component_suffstats_by_global_col_idx(M_c, X_L,
+                                                               col_idx)
+          keys = col_i_metadata['value_to_code'].values()
+          desparsify_column_component_suffstats(column_component_suffstats_i,
+                                                keys)
+     return None
