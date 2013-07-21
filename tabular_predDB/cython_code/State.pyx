@@ -226,8 +226,7 @@ cdef class p_State:
                                        N_GRID, SEED)
          else:
               # # !!! MUTATES X_L !!!
-              # FIXME: this needs to be done and work
-              # X_L = desparsify_X_L(M_c, X_L)
+              desparsify_X_L(M_c, X_L)
               constructor_args = \
                   transform_latent_state_to_constructor_args(X_L, X_D)
               hypers_m = constructor_args['hypers_m']
@@ -467,10 +466,11 @@ def remove_zero_values(dict_in):
                dict_in.pop(key)
      return dict_in
 
-def insert_zero_values(dict_in, keys):
-     for key in keys:
-          if key not in dict_in:
-               dict_in[key] = 0
+def insert_zero_values(dict_in, N_keys):
+     for key in range(N_keys):
+          key_str = str(key)
+          if key_str not in dict_in:
+               dict_in[key_str] = 0.0
      return dict_in
 
 def sparsify_column_component_suffstats(column_component_suffstats):
@@ -480,9 +480,9 @@ def sparsify_column_component_suffstats(column_component_suffstats):
      return None
 
 def desparsify_column_component_suffstats(column_component_suffstats,
-                                          keys):
+                                          N_keys):
      for idx, suffstats_i in enumerate(column_component_suffstats):
-          insert_zero_values(suffstats_i, keys)
+          insert_zero_values(suffstats_i, N_keys)
      return None
 
 def get_column_component_suffstats_by_global_col_idx(M_c, X_L, col_idx):
@@ -512,9 +512,9 @@ def desparsify_X_L(M_c, X_L):
           column_component_suffstats_i = \
               get_column_component_suffstats_by_global_col_idx(M_c, X_L,
                                                                col_idx)
-          keys = col_i_metadata['value_to_code'].values()
+          N_keys = len(col_i_metadata['value_to_code'])
           desparsify_column_component_suffstats(column_component_suffstats_i,
-                                                keys)
+                                                N_keys)
      return None
 
 def get_modeltype_from_name(M_c, col_name):
