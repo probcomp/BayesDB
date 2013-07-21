@@ -21,8 +21,8 @@ import tabular_predDB.python_utils.api_utils as au
 import tabular_predDB.python_utils.general_utils as gu
 
 
-method_name_to_args = get_method_name_to_args(EngineTemplate.EngineTemplate)
-method_names_set = set(get_method_names(EngineTemplate.EngineTemplate))
+method_name_to_args = gu.get_method_name_to_args(EngineTemplate.EngineTemplate)
+method_names_set = set(gu.get_method_names(EngineTemplate.EngineTemplate))
 
 
 class JSONRPCEngine(EngineTemplate.EngineTemplate):
