@@ -302,12 +302,14 @@ cdef class p_State:
     def get_column_component_suffstats_i(self, view_idx):
          column_component_suffstats = \
              self.thisptr.get_column_component_suffstats_i(view_idx)
-         column_names = self.get_column_names_i(view_idx)
-         for col_name, column_component_suffstats_i in \
-                  zip(column_names, column_component_suffstats):
-             modeltype = get_modeltype_from_name(self.M_c, col_name)
-             if modeltype == 'symmetric_dirichlet_discrete':
-                 sparsify_column_component_suffstats(column_component_suffstats_i)
+         # FIXME: make this actually work
+         #        should sparsify here rather than later in get_X_L
+         # column_names = self.get_column_names_i(view_idx)
+         # for col_name, column_component_suffstats_i in \
+         #          zip(column_names, column_component_suffstats):
+         #     modeltype = get_modeltype_from_name(self.M_c, col_name)
+         #     if modeltype == 'symmetric_dirichlet_discrete':
+         #         sparsify_column_component_suffstats(column_component_suffstats_i)
          return column_component_suffstats
     def get_view_state_i(self, view_idx):
           row_partition_model = self.get_row_partition_model_i(view_idx)
@@ -393,6 +395,7 @@ cdef class p_State:
           X_L['column_partition'] = column_partition
           X_L['column_hypers'] = column_hypers
           X_L['view_state'] = view_state
+          sparsify_X_L(self.M_c, X_L)
           return X_L
     def save(self, filename, dir='', **kwargs):
          save_dict = dict(
