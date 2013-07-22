@@ -11,6 +11,7 @@ import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
 import tabular_predDB.cython_code.State as State
 import parse_timing
+from collections import namedtuple
 
 def generate_hadoop_dicts(which_kernels, timing_run_parameters, args_dict):
     for which_kernel in which_kernels:
@@ -33,6 +34,47 @@ def write_hadoop_input(input_filename, timing_run_parameters, n_steps, SEED):
         dict_generator = generate_hadoop_dicts(all_kernels,timing_run_parameters, time_analyze_args_dict)
         for dict_to_write in dict_generator:
             xu.write_hadoop_line(out_fh, key=dict_to_write['SEED'], dict_to_write=dict_to_write)
+
+def find_regression_coeff(filename, parameter_list):
+
+    # Find regression coefficients from the times stored in the parsed csv files
+    num_cols = 20
+    # Read the csv file
+    with open(filename) as fh:
+        csv_reader = csv.reader(fh)
+        header = csv_reader.next()[:num_cols]
+        timing_rows = [row[:num_cols] for row in csv_reader]
+
+    
+    num_rows_list = parameter_list[0]
+    num_cols_list = parameter_list[1]
+    num_clusters_list = parameter_list[2]
+    num_views_list = parameter_list[3]
+
+     # Iterate over the parameter values and finding matching indices in the timing data
+    take_product_of = [num_rows_list, num_cols_list, num_clusters_list, num_views_list]
+    count = -1
+    a_matrix = numpy.ones((len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_views_list), 5))
+    b_matrix = numpy.zeros((len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_views_list), 1))
+
+    times_only = numpy.asarray([float(timing_rows[i][4]) for i in range(len(timing_rows))])
+    #pdb.set_trace()
+    for num_rows, num_cols, num_clusters, num_views in itertools.product(*take_product_of):
+        count = count + 1
+        matchindx = [i for i in range(len(timing_rows)) if timing_rows[i][0] == str(num_rows) and \
+                         timing_rows[i][1]== str(num_cols) and \
+                         timing_rows[i][2]== str(num_clusters) and \
+                         timing_rows[i][3]== str(num_views)]
+        a_matrix[count,1] = num_rows
+        a_matrix[count,2] = num_cols*num_clusters
+        a_matrix[count,3] = num_rows*num_cols*num_clusters
+        a_matrix[count,4] = num_views*num_rows*num_cols
+        b_matrix[count] = numpy.sum(times_only[matchindx]) 
+        
+    x, j1, j2, j3 = numpy.linalg.lstsq(a_matrix,b_matrix)
+
+
+    return x    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -60,10 +102,18 @@ if __name__ == '__main__':
     
 
     # Hard code the parameter values for now
-    num_rows_list = [100]
-    num_cols_list = [4]
-    num_clusters_list = [10, 20]
-    num_splits_list = [1, 2]
+
+    num_rows_list = [100, 400, 1000, 4000, 10000]
+    num_cols_list = [4, 8, 16, 24, 32]
+    num_clusters_list = [10, 20, 30, 40, 50]
+    num_splits_list = [1, 2, 3, 4, 5]
+    
+    # num_rows_list = [100]
+    # num_cols_list = [4]
+    # num_clusters_list = [10, 20]
+    # num_splits_list = [1, 2]
+
+    parameter_list = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
 
     # Iterate over the parameter values and write each run as a line in the hadoop_input file
     take_product_of = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
@@ -96,6 +146,8 @@ if __name__ == '__main__':
             cmd_str = 'cp %s %s' % (hadoop_output_filename, output_filename) 
 	    os.system(cmd_str)
             parse_timing.parse_timing_to_csv(output_filename)
+            coeff_list = test.find_regression_coeff(output_filename, parameter_list)
+
         else:
             print 'remote hadoop job NOT successful'
     else:
