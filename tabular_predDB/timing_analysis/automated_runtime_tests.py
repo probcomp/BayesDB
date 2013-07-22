@@ -1,4 +1,4 @@
-import os
+import os, csv
 import argparse
 import tempfile
 #
@@ -10,6 +10,7 @@ import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
 import tabular_predDB.cython_code.State as State
+import parse_timing
 
 def generate_hadoop_dicts(which_kernels, timing_run_parameters, args_dict):
     for which_kernel in which_kernels:
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     input_filename = os.path.join(temp_dir, 'hadoop_input')
     output_filename = os.path.join(temp_dir, 'hadoop_output')
     output_path = os.path.join(temp_dir, 'output')
-    print table_data_filename
+    
 
     # Hard code the parameter values for now
     num_rows_list = [100]
@@ -78,18 +79,23 @@ if __name__ == '__main__':
 
     if do_local:
         xu.run_script_local(input_filename, script_filename, output_filename, table_data_filename)
-        print 'Local Engine for timing runs has not been implemented/tested'
+        print 'Local Engine for automated timing runs has not been completely implemented/tested'
     elif do_remote:
         hadoop_engine = HE.HadoopEngine(output_path=output_path,
                                         input_filename=input_filename,
                                         table_data_filename=table_data_filename,
                                         )
+	
         was_successful = HE.send_hadoop_command(hadoop_engine,
                                                 table_data_filename,
                                                 input_filename,
                                                 output_path, n_tasks=n_tasks)
         if was_successful:
-            HE.read_hadoop_output(output_path, output_filename)
+            #HE.read_hadoop_output(output_path, output_filename)
+	    hadoop_output_filename = HE.get_hadoop_output_filename(output_path)
+            cmd_str = 'cp %s %s' % (hadoop_output_filename, output_filename) 
+	    os.system(cmd_str)
+            parse_timing.parse_timing_to_csv(output_filename)
         else:
             print 'remote hadoop job NOT successful'
     else:
