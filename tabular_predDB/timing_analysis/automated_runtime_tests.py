@@ -103,15 +103,15 @@ if __name__ == '__main__':
 
     # Hard code the parameter values for now
 
-    num_rows_list = [100, 400, 1000, 4000, 10000]
-    num_cols_list = [4, 8, 16, 24, 32]
-    num_clusters_list = [10, 20, 30, 40, 50]
-    num_splits_list = [1, 2, 3, 4, 5]
+    #num_rows_list = [100, 400, 1000, 4000, 10000]
+    #num_cols_list = [4, 8, 16, 24, 32]
+    #num_clusters_list = [10, 20, 30, 40, 50]
+    #num_splits_list = [1, 2, 3, 4, 5]
     
-    # num_rows_list = [100]
-    # num_cols_list = [4]
-    # num_clusters_list = [10, 20]
-    # num_splits_list = [1, 2]
+    num_rows_list = [100]
+    num_cols_list = [4]
+    num_clusters_list = [10, 20]
+    num_splits_list = [1, 2]
 
     parameter_list = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
 
@@ -146,7 +146,7 @@ if __name__ == '__main__':
             cmd_str = 'cp %s %s' % (hadoop_output_filename, output_filename) 
 	    os.system(cmd_str)
             parse_timing.parse_timing_to_csv(output_filename)
-            coeff_list = test.find_regression_coeff(output_filename, parameter_list)
+            coeff_list = find_regression_coeff(output_filename, parameter_list)
 
         else:
             print 'remote hadoop job NOT successful'
