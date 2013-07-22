@@ -59,8 +59,8 @@ if __name__ == '__main__':
     print table_data_filename
 
     # Hard code the parameter values for now
-    num_rows_list = [100, 400]
-    num_cols_list = [4, 16]
+    num_rows_list = [100]
+    num_cols_list = [4]
     num_clusters_list = [10, 20]
     num_splits_list = [1, 2]
 
