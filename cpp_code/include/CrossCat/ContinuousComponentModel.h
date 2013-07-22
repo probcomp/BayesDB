@@ -18,6 +18,7 @@ class ContinuousComponentModel : public ComponentModel {
   double get_draw(int random_seed) const;
   double get_draw_constrained(int random_seed, std::vector<double> constraints) const;
   double get_predictive_cdf(double element, std::vector<double> constraints) const;
+  double get_predictive_pdf(double element, std::vector<double> constraints) const;
   //
   // calculators
   double calc_marginal_logp() const;

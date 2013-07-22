@@ -222,8 +222,6 @@ double ContinuousComponentModel::get_predictive_cdf(double element, vector<doubl
   }
   numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
 
-  // double logp = calc_element_predictive_logp(element);
-
   boost::math::students_t dist(nu);
   double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
   // manipulate the number so it will fit in the standard t (reverse of the draw proceedure)
@@ -231,6 +229,32 @@ double ContinuousComponentModel::get_predictive_cdf(double element, vector<doubl
   double cdfval = boost::math::cdf(dist, rev_draw);
 
   return cdfval;
+}
+
+// For simple predictive probability
+double ContinuousComponentModel::get_predictive_pdf(double element, vector<double> constraints) const {
+  // get modified suffstats
+  double r, nu, s, mu;
+  int count;
+  double sum_x, sum_x_sq;
+  get_hyper_doubles(r, nu, s, mu);
+  get_suffstats(count, sum_x, sum_x_sq);
+  for(int constraint_idx=0; constraint_idx<constraints.size();
+      constraint_idx++) {
+    double constraint = constraints[constraint_idx];
+    numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq,
+               constraint);
+  }
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+
+  
+  boost::math::students_t dist(nu);
+  double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
+  // manipulate the number so it will fit in the standard t (reverse of the draw proceedure)
+  double rev_draw = (element-mu)/ coeff ;
+  double pdfval = boost::math::pdf(dist, rev_draw);
+
+  return pdfval;
 }
 
 map<string, double> ContinuousComponentModel::get_suffstats() const {
