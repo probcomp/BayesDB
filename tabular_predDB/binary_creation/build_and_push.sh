@@ -3,7 +3,7 @@
 
 HDFS_DIR="/user/bigdata/SSCI/"
 # HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
-HDFS_URI="hdfs://xd-hm-nn.xdata.data-tactics-corp.com:8020/"
+HDFS_URI="hdfs://10.1.93.51:8020/"
 
 
 # print script usage

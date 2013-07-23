@@ -60,16 +60,17 @@ def find_regression_coeff(filename, parameter_list):
     times_only = numpy.asarray([float(timing_rows[i][4]) for i in range(len(timing_rows))])
     #pdb.set_trace()
     for num_rows, num_cols, num_clusters, num_views in itertools.product(*take_product_of):
-        count = count + 1
         matchindx = [i for i in range(len(timing_rows)) if timing_rows[i][0] == str(num_rows) and \
                          timing_rows[i][1]== str(num_cols) and \
                          timing_rows[i][2]== str(num_clusters) and \
                          timing_rows[i][3]== str(num_views)]
-        a_matrix[count,1] = num_rows
-        a_matrix[count,2] = num_cols*num_clusters
-        a_matrix[count,3] = num_rows*num_cols*num_clusters
-        a_matrix[count,4] = num_views*num_rows*num_cols
-        b_matrix[count] = numpy.sum(times_only[matchindx]) 
+        if matchindx != []:
+          count = count + 1
+          a_matrix[count,1] = num_rows
+          a_matrix[count,2] = num_cols*num_clusters
+          a_matrix[count,3] = num_rows*num_cols*num_clusters
+          a_matrix[count,4] = num_views*num_rows*num_cols
+          b_matrix[count] = numpy.sum(times_only[matchindx]) 
         
     x, j1, j2, j3 = numpy.linalg.lstsq(a_matrix,b_matrix)
 
@@ -108,10 +109,10 @@ if __name__ == '__main__':
     #num_clusters_list = [10, 20, 30, 40, 50]
     #num_splits_list = [1, 2, 3, 4, 5]
     
-    num_rows_list = [100]
-    num_cols_list = [4]
-    num_clusters_list = [10, 20]
-    num_splits_list = [1, 2]
+    num_rows_list = [100, 400, 1000]
+    num_cols_list = [8, 16, 24, 64]
+    num_clusters_list = [5, 10, 20, 40, 50]
+    num_splits_list = [1,8,16]
 
     parameter_list = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
 
@@ -119,8 +120,9 @@ if __name__ == '__main__':
     take_product_of = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
     for num_rows, num_cols, num_clusters, num_splits \
             in itertools.product(*take_product_of):
-        timing_run_parameters = dict(num_rows=num_rows, num_cols=num_cols, num_views=num_splits, num_clusters=num_clusters)
-        write_hadoop_input(input_filename, timing_run_parameters,  n_steps, SEED=gen_seed)
+        if numpy.mod(num_rows, num_clusters) == 0 and numpy.mod(num_cols,num_splits)==0:
+          timing_run_parameters = dict(num_rows=num_rows, num_cols=num_cols, num_views=num_splits, num_clusters=num_clusters)
+          write_hadoop_input(input_filename, timing_run_parameters,  n_steps, SEED=gen_seed)
 
     n_tasks = len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_splits_list)*5
     # Create a dummy table data file

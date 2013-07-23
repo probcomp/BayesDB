@@ -21,7 +21,7 @@ import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.python_utils.xnet_utils as xu
 
 
-DEFAULT_CLUSTER = 'starcluster'
+DEFAULT_CLUSTER = 'highmem'
 DEBUG = False
 
 xdata_hadoop_jar_420 = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
@@ -30,9 +30,12 @@ xdata_hadoop_jar_412 = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-
 default_xdata_hadoop_jar = xdata_hadoop_jar_420 if os.path.exists(xdata_hadoop_jar_420) else xdata_hadoop_jar_412
 default_xdata_compute_hdfs_uri = "hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 default_xdata_compute_jobtracker_uri = "xd-jobtracker.xdata.data-tactics-corp.com:8021"
-default_xdata_highmem_hdfs_uri = "hdfs://xd-hm-nn.xdata.data-tactics-corp.com:8020/"
-default_xdata_highmem_jobtracker_uri = "xd-hm-jt.xdata.data-tactics-corp.com:8021"
+#default_xdata_highmem_hdfs_uri = "hdfs://xd-hm-nn.xdata.data-tactics-corp.com:8020/"
+#default_xdata_highmem_jobtracker_uri = "xd-hm-jt.xdata.data-tactics-corp.com:8021"
 #
+default_xdata_highmem_hdfs_uri = "hdfs://10.1.93.51:8020/"
+default_xdata_highmem_jobtracker_uri = "10.1.93.53:8021"
+
 default_starcluster_hadoop_jar = "/usr/lib/hadoop-0.20/contrib/streaming/hadoop-streaming-0.20.2-cdh3u2.jar"
 default_starcluster_hdfs_uri = None
 default_starcluster_jobtracker_uri = None
