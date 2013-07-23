@@ -4,7 +4,7 @@ import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.cython_code.State as State
-from ARI_CrossCat import ARI_CrossCat
+
 
 def get_generative_clustering(M_c, M_r, T,
                               data_inverse_permutation_indices,
@@ -81,40 +81,4 @@ def write_hadoop_input(input_filename, X_L, X_D, n_steps, SEED):
     return n_tasks
 
 
-def truth_from_permute_indices(data_inverse_permutation_indices, num_rows,num_cols,num_views, num_clusters):
-    # We assume num_rows is divisible by num_clusters and num_cols is divisible by num_views
-    num_cols_per_view = num_cols/num_views
-    view_assignments = []
-    for viewindx in range(num_views):
-        view_assignments = view_assignments + [viewindx]*num_cols_per_view
 
-    num_rows_per_cluster = num_rows/num_clusters
-    
-    reference_list = []
-    for clusterindx in range(num_clusters):
-        reference_list = reference_list + [clusterindx]*num_rows_per_cluster
-        
-    X_D_truth = []
-    for viewindx in range(num_views):
-        X_D_truth.append([a for (b,a) in sorted(zip(data_inverse_permutation_indices[viewindx], reference_list))])
-        
-    X_D_truth = numpy.asarray(X_D_truth)
-    X_D_truth = X_D_truth.T
-    X_D_truth = X_D_truth.tolist()
-        
-    return view_assignments, X_D_truth
-
-def multi_chain_ARI(X_L_list, X_D_List, view_assignment_truth, X_D_truth):
-    ari_table = 0
-    ari_views = 0
-    num_chains = len(X_L_list)
-    for chainindx in range(num_chains):
-        view_assignments = X_L_list[chainindx]['column_partition']['assignments']
-        curr_ari_table, curr_ari_views = ARI_CrossCat(view_assignments, X_D_List[chainindx], view_assignment_truth, X_D_truth)
-        ari_table = ari_table + curr_ari_table
-        ari_views = ari_views + curr_ari_views
-
-    ari_table = ari_table/float(num_chains)
-    ari_views = ari_views/float(num_chains)
-    return ari_table, ari_views
-         
