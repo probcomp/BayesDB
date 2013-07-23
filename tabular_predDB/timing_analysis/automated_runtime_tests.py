@@ -1,4 +1,5 @@
-import os, csv
+import os
+import csv
 import argparse
 import tempfile
 #
