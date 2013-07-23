@@ -12,6 +12,8 @@ import tabular_predDB.HadoopEngine as HE
 import tabular_predDB.cython_code.State as State
 import parse_timing
 from collections import namedtuple
+import time
+import pdb
 
 def generate_hadoop_dicts(which_kernels, timing_run_parameters, args_dict):
     for which_kernel in which_kernels:
@@ -35,7 +37,7 @@ def write_hadoop_input(input_filename, timing_run_parameters, n_steps, SEED):
         for dict_to_write in dict_generator:
             xu.write_hadoop_line(out_fh, key=dict_to_write['SEED'], dict_to_write=dict_to_write)
 
-def find_regression_coeff(filename, parameter_list):
+def find_regression_coeff(filename, parameter_list, regression_file='daily_regression_coeffs.csv'):
 
     # Find regression coefficients from the times stored in the parsed csv files
     num_cols = 20
@@ -51,31 +53,44 @@ def find_regression_coeff(filename, parameter_list):
     num_clusters_list = parameter_list[2]
     num_views_list = parameter_list[3]
 
-     # Iterate over the parameter values and finding matching indices in the timing data
-    take_product_of = [num_rows_list, num_cols_list, num_clusters_list, num_views_list]
-    count = -1
-    a_matrix = numpy.ones((len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_views_list), 5))
-    b_matrix = numpy.zeros((len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_views_list), 1))
 
-    times_only = numpy.asarray([float(timing_rows[i][4]) for i in range(len(timing_rows))])
-    #pdb.set_trace()
-    for num_rows, num_cols, num_clusters, num_views in itertools.product(*take_product_of):
-        matchindx = [i for i in range(len(timing_rows)) if timing_rows[i][0] == str(num_rows) and \
-                         timing_rows[i][1]== str(num_cols) and \
-                         timing_rows[i][2]== str(num_clusters) and \
-                         timing_rows[i][3]== str(num_views)]
-        if matchindx != []:
-          count = count + 1
-          a_matrix[count,1] = num_rows
-          a_matrix[count,2] = num_cols*num_clusters
-          a_matrix[count,3] = num_rows*num_cols*num_clusters
-          a_matrix[count,4] = num_views*num_rows*num_cols
-          b_matrix[count] = numpy.sum(times_only[matchindx]) 
-        
-    x, j1, j2, j3 = numpy.linalg.lstsq(a_matrix,b_matrix)
+    # Compute regression coefficients over all kernels
+    all_kernels = State.transition_name_to_method_name_and_args.keys()
+    
+    with open(regression_file, 'a') as outfile:
+         csvwriter=csv.writer(outfile,delimiter=',')
+         
+         for kernelindx in range(len(all_kernels)):
+             curr_kernel = all_kernels[kernelindx]
+             curr_timing_rows = [timing_rows[tmp] for tmp in range(len(timing_rows)) if timing_rows[tmp][5] == curr_kernel]
+             # Iterate over the parameter values and finding matching indices in the timing data
+             take_product_of = [num_rows_list, num_cols_list, num_clusters_list, num_views_list]
+             count = -1
+             a_list = []
+             b_list = []
+             #a_matrix = numpy.ones((len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_views_list), 5))
+             #b_matrix = numpy.zeros((len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_views_list), 1))
 
+             times_only = numpy.asarray([float(curr_timing_rows[i][4]) for i in range(len(curr_timing_rows))])
+ 
+             #pdb.set_trace()
+             for num_rows, num_cols, num_clusters, num_views in itertools.product(*take_product_of):
+                 matchlist = [i for i in range(len(curr_timing_rows)) if curr_timing_rows[i][0] == str(num_rows) and \
+                                  curr_timing_rows[i][1]== str(num_cols) and \
+                                  curr_timing_rows[i][2]== str(num_clusters) and \
+                                  curr_timing_rows[i][3]== str(num_views)]
+                 if matchlist != []:
+                     for matchindx in range(len(matchlist)):
+                         a_list.append([1, num_rows, num_cols*num_clusters, num_rows*num_cols*num_clusters, num_views*num_rows*num_cols])
+                         b_list.append(times_only[matchlist[matchindx]])
 
-    return x    
+             a_matrix = numpy.asarray(a_list)
+             b_matrix = numpy.asarray(b_list)
+             
+             print a_matrix.shape, b_matrix.shape
+             x, j1, j2, j3 = numpy.linalg.lstsq(a_matrix,b_matrix)
+             csvwriter.writerow([time.ctime(), curr_kernel, x[0], x[1], x[2], x[3], x[4]])
+   
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
