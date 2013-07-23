@@ -1,4 +1,6 @@
-import sys, csv, os
+import sys
+import csv
+import os
 #
 import numpy
 #

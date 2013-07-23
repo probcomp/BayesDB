@@ -38,9 +38,12 @@ def pickle_table_data(in_filename_or_dict, pkl_filename):
     return table_data
 
 # cat the data into the script, as hadoop would
-def run_script_local(infile, script_name, outfile, table_data_filename):
-    cmd_str = 'cat %s | python %s --table_data_filename %s > %s'
-    cmd_str %= (infile, script_name, table_data_filename, outfile)
+def run_script_local(infile, script_name, outfile, table_data_filename=None):
+    infix_str = ''
+    if table_data_filename is not None:
+        infix_str = '--table_data_filename %s' % table_data_filename
+    cmd_str = 'cat %s | python %s %s > %s'
+    cmd_str %= (infile, script_name, infix_str, outfile)
     print cmd_str
     os.system(cmd_str)
     return

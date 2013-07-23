@@ -16,7 +16,7 @@
 #   limitations under the License.
 #
 import os
-import sys, pdb
+import sys
 #
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.file_utils as fu
@@ -25,6 +25,7 @@ import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.python_utils.timing_test_utils as ttu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
+
 
 def initialize_helper(table_data, dict_in):
     M_c = table_data['M_c']

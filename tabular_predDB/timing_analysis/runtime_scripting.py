@@ -134,18 +134,6 @@ if __name__ == '__main__':
 
     # actually run
     if do_local:
-        # local_engine = LE.LocalEngine()
-        # # run inference on hyperparameters to leave them in a reasonable state
-        # kernel_list = (
-        #     'row_partition_hyperparameters',
-        #     'column_hyperparameters',
-        #     'column_partition_hyperparameter',
-        #     )
-        # M_c, M_r, X_L, X_D = local_engine.initialize(M_c, M_r, T,
-        #                                              initialization='from_the_prior')
-        # X_L, X_D = local_engine.analyze(M_c, T, gen_X_L, gen_X_D, n_steps=1,
-        #                                 kernel_list=kernel_list)
-        
         xu.run_script_local(input_filename, script_filename, output_filename, table_data_filename)
     elif do_remote:
         hadoop_engine = HE.HadoopEngine(output_path=output_path,
