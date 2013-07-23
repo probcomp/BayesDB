@@ -22,6 +22,7 @@ import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.python_utils.general_utils as gu
+import tabular_predDB.python_utils.timing_test_utils as ttu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
 
@@ -85,7 +86,22 @@ def chunk_analyze_helper(table_data, dict_in):
     return dict_out
     
 def time_analyze_helper(table_data, dict_in):
-    start_dims = du.get_state_shape(dict_in['X_L'])
+    gen_seed = dict_in['SEED']
+    num_clusters = dict_in['num_clusters']
+    num_cols = dict_in['num_cols']
+    num_rows = dict_in['num_rows']
+    num_views = dict_in['num_views']
+
+    T, M_c, M_r, X_L, X_D = ttu.generate_clean_state(gen_seed,
+                                                 num_clusters,
+                                                 num_cols, num_rows,
+                                                 num_views,
+                                                 max_mean=10, max_std=1)
+    table_data = dict(T=T,M_c=M_c)
+
+    dict_in['X_L'] = X_L
+    dict_in['X_D'] = X_D
+    start_dims = du.get_state_shape(X_L)
     with gu.Timer('time_analyze_helper', verbose=False) as timer:
         inner_ret_dict = analyze_helper(table_data, dict_in)
     end_dims = du.get_state_shape(inner_ret_dict['X_L'])
@@ -116,7 +132,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     table_data_filename = args.table_data_filename
     table_data = fu.unpickle(table_data_filename)
-    #
+    
+
     from signal import signal, SIGPIPE, SIG_DFL 
     signal(SIGPIPE,SIG_DFL) 
     for line in sys.stdin:
