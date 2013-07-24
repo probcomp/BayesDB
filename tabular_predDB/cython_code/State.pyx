@@ -110,6 +110,7 @@ cdef extern from "State.h":
           double transition_views_row_partition_hyper()
           double transition_views_col_hypers()
           double transition_views_zs(matrix[double] data)
+          double calc_row_predictive_logp(vector[double] in_vd)
           # getters
           double get_column_crp_alpha()
           double get_column_crp_score()
@@ -274,6 +275,8 @@ cdef class p_State:
         return self.thisptr.get_marginal_logp()
     def get_num_views(self):
         return self.thisptr.get_num_views()
+    def calc_row_predictive_logp(self, in_vd):
+         return self.thisptr.calc_row_predictive_logp(in_vd)
     #
     # get_X_L helpers helpers
     def get_row_partition_model_i(self, view_idx):
