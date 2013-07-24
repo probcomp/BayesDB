@@ -329,6 +329,17 @@ MatrixD extract_columns(const MatrixD fromM, vector<int> from_cols) {
   return toM;
 }
 
+vector<double> extract_columns(const vector<double> in_vd,
+			       const vector<int> from_cols) {
+  vector<double> out_vd;
+  vector<int>::const_iterator it;
+  for(it=from_cols.begin(); it!=from_cols.end(); it++) {
+    int from_col = *it;
+    out_vd.push_back(in_vd[from_col]);
+  }
+  return out_vd;
+}
+
 int intify(std::string str) {
   std::istringstream strin(str);
   int str_int;
