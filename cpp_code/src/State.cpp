@@ -556,6 +556,26 @@ vector<double> State::calc_column_crp_marginals(vector<double> alphas_to_score) 
   return crp_scores;
 }
 
+double State::calc_row_predictive_logp(const vector<double> &in_vd) {
+  vector<double> view_mean_predictive_logps;
+  vector<int> global_column_indices = create_sequence(in_vd.size());
+  set<View*>::iterator svp_it;
+  for(svp_it=views.begin(); svp_it!=views.end(); svp_it++) {
+    // for each view
+    View &v = **svp_it;
+    vector<int> view_cols = get_indices_to_reorder(global_column_indices,
+						   v.global_to_local);
+    vector<double> use_vd = extract_columns(in_vd, view_cols);
+    vector<double> this_view_predictive_logps = \
+      v.calc_cluster_vector_predictive_logps(use_vd);
+    double this_view_mean_predictive_logp = \
+      std_vector_mean(this_view_predictive_logps);
+    view_mean_predictive_logps.push_back(this_view_mean_predictive_logp);
+  }
+  double row_predictive_logp = std_vector_mean(view_mean_predictive_logps);
+  return row_predictive_logp;
+}
+
 double State::transition_column_crp_alpha() {
   // to make score_crp not calculate absolute, need to track score deltas
   // and apply delta to crp_score
