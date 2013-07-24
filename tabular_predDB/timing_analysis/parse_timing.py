@@ -46,8 +46,8 @@ def parse_reduced_line(reduced_line):
         time_per_step, which_kernel
 
 def parse_timing_to_csv(filename, outfile='parsed_timing.csv'):
-   drive, path = os.path.splitdrive(filename)
-   outpath, file_nameonly = os.path.split(path)
+   #drive, path = os.path.splitdrive(filename)
+   #outpath, file_nameonly = os.path.split(path)
 
    with open(filename) as fh:
         lines = []
@@ -58,7 +58,7 @@ def parse_timing_to_csv(filename, outfile='parsed_timing.csv'):
    
    reduced_lines = map(lambda x: x[1], lines)
       
-   with open(drive+outpath+'/'+outfile,'w') as csvfile:
+   with open(outfile,'w') as csvfile:
 	csvwriter = csv.writer(csvfile,delimiter=',')
 	csvwriter.writerow(header)
     	for reduced_line in reduced_lines:
