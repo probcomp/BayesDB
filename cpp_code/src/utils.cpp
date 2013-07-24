@@ -123,9 +123,19 @@ vector<double> filter_nans(vector<double> values) {
   return non_nan_values;
 }
 
-double calc_sum_sq_deviation(vector<double> values) {
+double std_vector_sum(vector<double> values) {
   double sum = std::accumulate(values.begin(), values.end(), 0.0);
+  return sum;
+}
+
+double std_vector_mean(vector<double> values) {
+  double sum = std_vector_sum(values);
   double mean = sum / values.size();
+  return mean;
+}
+
+double calc_sum_sq_deviation(vector<double> values) {
+  double mean = std_vector_mean(values)
   double sum_sq_deviation = 0;
   vector<double>::iterator it;
   for(it=values.begin(); it!=values.end(); it++) {

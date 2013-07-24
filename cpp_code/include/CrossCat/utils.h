@@ -73,6 +73,8 @@ std::vector<double> std_vector_add(std::vector<double> vec1,
 				   std::vector<double> vec2);
 std::vector<double> std_vector_add(std::vector<std::vector<double> > vec_vec);
 
+double std_vector_sum(std::vector<double> vec);
+double std_vector_mean(std::vector<double> vec);
 double calc_sum_sq_deviation(std::vector<double> values);
 std::vector<double> extract_row(const MatrixD data, int row_idx);
 std::vector<double> extract_col(const MatrixD data, int col_idx);
