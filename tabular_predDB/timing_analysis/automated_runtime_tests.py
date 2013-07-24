@@ -2,9 +2,11 @@ import os
 import csv
 import argparse
 import tempfile
+import time
+from collections import namedtuple
+import itertools
 #
 import numpy
-import itertools
 #
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.xnet_utils as xu
@@ -12,9 +14,6 @@ import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
 import tabular_predDB.cython_code.State as State
 import parse_timing
-from collections import namedtuple
-import time
-import pdb
 
 def generate_hadoop_dicts(which_kernels, timing_run_parameters, args_dict):
     for which_kernel in which_kernels:
@@ -74,7 +73,6 @@ def find_regression_coeff(filename, parameter_list, regression_file='daily_regre
 
              times_only = numpy.asarray([float(curr_timing_rows[i][4]) for i in range(len(curr_timing_rows))])
  
-             #pdb.set_trace()
              for num_rows, num_cols, num_clusters, num_views in itertools.product(*take_product_of):
                  matchlist = [i for i in range(len(curr_timing_rows)) if curr_timing_rows[i][0] == str(num_rows) and \
                                   curr_timing_rows[i][1]== str(num_cols) and \

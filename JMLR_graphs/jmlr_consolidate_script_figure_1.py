@@ -129,7 +129,6 @@ def plot(num_views_list_dict, seconds_since_start_list_dict, filename=None):
                            rectangularize_with_nans(num_views_list).T,
                            label=initialization, color=color, alpha=0.3)
     set_lim(ax, ymax=15)
-    import pdb; pdb.set_trace()
     ax.set_xticks(ax.get_xticks()[::2])
     pylab.xlabel('iteration #')
     pylab.ylabel('# views')

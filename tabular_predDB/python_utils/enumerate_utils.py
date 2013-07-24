@@ -24,7 +24,6 @@ import random as rand
 import numpy as np
 import scipy as sp
 import itertools
-import pdb
 
 from scipy.special import binom
 
@@ -342,7 +341,6 @@ class CrossCatPartitions(object):
 					break
 			
 		print "Error: no state match found"
-		pdb.set_trace()
 		return None
 
 	def test(self):
