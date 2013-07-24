@@ -94,7 +94,7 @@ vector<double> log_linspace(double a, double b, int n) {
   return values;
 }
 
-vector<double> std_vector_sum(vector<double> vec1, vector<double> vec2) {
+vector<double> std_vector_add(vector<double> vec1, vector<double> vec2) {
   assert(vec1.size()==vec2.size());
   vector<double> sum_vec;
   for(unsigned int i=0; i<vec1.size(); i++) {
@@ -103,12 +103,12 @@ vector<double> std_vector_sum(vector<double> vec1, vector<double> vec2) {
   return sum_vec;
 }
 
-vector<double> std_vector_sum(vector<vector<double> > vec_vec) {
+vector<double> std_vector_add(vector<vector<double> > vec_vec) {
   vector<double> sum_vec = vec_vec[0];
   vector<vector<double> >::iterator it = vec_vec.begin();
   it++;
   for(; it!=vec_vec.end(); it++) {
-    sum_vec = std_vector_sum(sum_vec, *it);
+    sum_vec = std_vector_add(sum_vec, *it);
   }
   return sum_vec;
 }

@@ -323,7 +323,7 @@ std::vector<double> View::calc_hyper_conditionals(int which_col,
     vec_vec.push_back(logps);
   }
   
-  return std_vector_sum(vec_vec);
+  return std_vector_add(vec_vec);
 }
 
 double View::set_hyper(int which_col, string which_hyper, double new_value) {
