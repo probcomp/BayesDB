@@ -15,12 +15,11 @@
 #
 import sys
 import copy
-import pdb
+
 from collections import Counter
 from scipy.misc import logsumexp
 #
 import numpy
-import pdb
 #
 import tabular_predDB.cython_code.ContinuousComponentModel as CCM
 import tabular_predDB.cython_code.MultinomialComponentModel as MCM
@@ -99,8 +98,7 @@ def simple_predictive_probability_density_observed(M_c, X_L, X_D, Y, which_row,
         elif model_type == 'symmetric_dirichlet_discrete':
             logp = component_model.get_predictive_probability(elements[q],draw_constraints)
         else:
-            print "error: simple_predictive_probability_unobserved: Undefined model type."
-            pdb.set_trace();
+            sys.exit("error: simple_predictive_probability_density_observed: Undefined model type.");
        
         Ps[q] = logp
         q += 1
@@ -125,8 +123,7 @@ def simple_predictive_probability_density_unobserved(M_c, X_L, X_D, Y, query_row
         elif model_type == 'symmetric_dirichlet_discrete':
             answer[n] = simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
         else:
-            print "error: simple_predictive_probability_unobserved: Undefined model type."
-            pdb.set_trace();
+            sys.exit("error: simple_predictive_probability__density_unobserved: Undefined model type.");
 
     return answer
 
@@ -228,8 +225,7 @@ def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
         elif model_type == 'symmetric_dirichlet_discrete':
             logp = component_model.get_predictive_probability(elements[q],draw_constraints)
         else:
-            print "error: simple_predictive_probability_unobserved: Undefined model type."
-            pdb.set_trace();
+            sys.exit("error: simple_predictive_probability_observed: Undefined model type.");
        
         Ps[q] = logp
         q += 1
@@ -253,8 +249,7 @@ def simple_predictive_probability_unobserved(M_c, X_L, X_D, Y, query_row, query_
         elif model_type == 'symmetric_dirichlet_discrete':
             answer[n] = simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
         else:
-            print "error: simple_predictive_probability_unobserved: Undefined model type."
-            pdb.set_trace();
+            sys.exit("error: simple_predictive_probability_unobserved: Undefined model type.");
 
     return answer
 
