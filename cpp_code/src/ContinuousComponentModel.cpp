@@ -247,7 +247,6 @@ double ContinuousComponentModel::get_predictive_pdf(double element, vector<doubl
   }
   numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
 
-  
   boost::math::students_t dist(nu);
   double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
   // manipulate the number so it will fit in the standard t (reverse of the draw proceedure)
