@@ -27,7 +27,7 @@ class LocalEngine(EngineTemplate.EngineTemplate):
         # FIXME: why is M_r passed?
         SEED = self.get_next_seed()
         X_L, X_D = do_initialize(M_c, M_r, T, initialization, SEED)
-        return X_L, X_D
+        return M_c, M_r, X_L, X_D
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1):
