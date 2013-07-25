@@ -20,6 +20,7 @@ import sys
 #
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.file_utils as fu
+import tabular_predDB.python_utils.hadoop_utils as hu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.python_utils.timing_test_utils as ttu
@@ -79,13 +80,13 @@ def chunk_analyze_helper(table_data, data_dict, command_dict):
         chunk_filename = '%s_seed_%s_chunk_%s.pkl.gz' \
             % (chunk_filename_prefix, original_SEED, ith_chunk)
         fu.pickle(dict_out, chunk_filename)
-        HE.put_hdfs(None, chunk_filename, chunk_dest_dir)
+        hu.put_hdfs(None, chunk_filename, chunk_dest_dir)
         #
         steps_done += chunk_size
     chunk_filename = '%s_seed_%s_chunk_%s.pkl.gz' \
         % (chunk_filename_prefix, original_SEED, 'FINAL')
     fu.pickle(dict_out, chunk_filename)
-    HE.put_hdfs(None, chunk_filename, chunk_dest_dir)
+    hu.put_hdfs(None, chunk_filename, chunk_dest_dir)
     return dict_out
     
 def time_analyze_helper(table_data, data_dict, command_dict):
