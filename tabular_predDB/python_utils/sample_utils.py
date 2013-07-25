@@ -15,7 +15,6 @@
 #
 import sys
 import copy
-import pdb
 import math
 
 from collections import Counter
@@ -686,7 +685,6 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, query_row,
             component_model = cluster_model[query_column]
             draw_constraints = get_draw_constraints(X_L, X_D, Y,
                                                     query_row, query_column)
-            # pdb.set_trace()
             SEED = get_next_seed()
             draw = component_model.get_draw_constrained(SEED,
                                                         draw_constraints)
