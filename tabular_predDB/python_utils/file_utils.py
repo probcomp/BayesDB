@@ -46,3 +46,19 @@ def unpickle(filename, dir=''):
     with opener(full_filename, 'rb') as fh:
         variable = cPickle.load(fh)
     return variable
+
+def rm_local(path, DEBUG=False):
+    cmd_str = 'rm -rf %s'
+    cmd_str %= path
+    if DEBUG:
+        print cmd_str
+    else:
+        os.system(cmd_str)
+    return
+
+def ensure_dir(dir):
+  try:
+    os.makedirs(dir)
+  except:
+    pass
+  return

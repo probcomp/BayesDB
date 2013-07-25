@@ -21,7 +21,7 @@ def get_generative_clustering(M_c, M_r, T,
     gen_X_L_assignments = numpy.repeat(range(num_views), (num_cols / num_views))
     # initialize to generate an X_L to manipulate
     local_engine = LE.LocalEngine()
-    M_c, M_r, bad_X_L, bad_X_D = local_engine.initialize(M_c, M_r, T,
+    bad_X_L, bad_X_D = local_engine.initialize(M_c, M_r, T,
                                                          initialization='apart')
     bad_X_L['column_partition']['assignments'] = gen_X_L_assignments
     # manually constrcut state in in generative configuration

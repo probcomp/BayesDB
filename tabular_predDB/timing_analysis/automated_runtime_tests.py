@@ -9,6 +9,8 @@ import itertools
 import numpy
 #
 import tabular_predDB.python_utils.data_utils as du
+import tabular_predDB.python_utils.file_utils as fu
+import tabular_predDB.python_utils.hadoop_utils as hu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
@@ -120,8 +122,8 @@ if __name__ == '__main__':
 
     #num_rows_list = [100, 400, 1000, 4000, 10000]
     #num_cols_list = [4, 8, 16, 24, 32]
-    #num_clusters_list = [10, 20, 30, 40, 50]
-    #num_splits_list = [1, 2, 3, 4, 5]
+    #num_clusters_list = [11, 20, 30, 40, 50]
+    #num_splits_list = [2, 2, 3, 4, 5]
     
     num_rows_list = [100, 400]
     num_cols_list = [8, 16]
@@ -141,7 +143,7 @@ if __name__ == '__main__':
     n_tasks = len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_splits_list)*5
     # Create a dummy table data file
     table_data=dict(T=[],M_c=[],X_L=[],X_D=[])
-    xu.pickle_table_data(table_data, table_data_filename)
+    fu.pickle(table_data, table_data_filename)
 
     if do_local:
         xu.run_script_local(input_filename, script_filename, output_filename, table_data_filename)
@@ -151,17 +153,12 @@ if __name__ == '__main__':
                                         input_filename=input_filename,
                                         table_data_filename=table_data_filename,
                                         )
-	
-        was_successful = HE.send_hadoop_command(hadoop_engine,
-                                                table_data_filename,
-                                                input_filename,
-                                                output_path, n_tasks=n_tasks)
+        xu.write_support_files(table_data, hadoop_engine.table_data_filename,
+                              dict(command='time_analyze'), hadoop_engine.command_dict_filename)
+	hadoop_engine.send_hadoop_command(n_tasks=n_tasks)
+        was_successful = hadoop_engine.get_hadoop_results()
         if was_successful:
-            #HE.read_hadoop_output(output_path, output_filename)
-	    hadoop_output_filename = HE.get_hadoop_output_filename(output_path)
-            cmd_str = 'cp %s %s' % (hadoop_output_filename, output_filename) 
-	    os.system(cmd_str)
-	    
+            hu.copy_hadoop_output(hadoop_engine.output_path, output_filename)
             parse_timing.parse_timing_to_csv(output_filename, outfile=parsed_out_file)
             coeff_list = find_regression_coeff(parsed_out_file, parameter_list)
 

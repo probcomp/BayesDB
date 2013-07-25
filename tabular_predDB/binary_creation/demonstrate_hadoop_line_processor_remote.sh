@@ -59,7 +59,7 @@ echo "n_chains=$n_chains"
 echo "n_steps=$n_steps"
 echo "task_timeout_in_ms=$task_timeout_in_ms"
 
-python ../python_utils/xnet_utils.py pickle_table_data
+python ../python_utils/xnet_utils.py read_and_pickle_table_data
 python ../python_utils/xnet_utils.py write_initialization_files --n_chains $n_chains
 cp initialize_input hadoop_input
 bash send_hadoop_command.sh -t $task_timeout_in_ms

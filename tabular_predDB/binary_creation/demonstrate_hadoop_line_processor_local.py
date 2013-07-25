@@ -2,6 +2,7 @@ import os
 #
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.settings as S
+from tabular_predDB.settings import Hadoop as hs
 
 
 # settings
@@ -11,16 +12,16 @@ n_steps = 20
 filename = os.path.join(S.path.web_resources_data_dir, 'dha_small.csv')
 script_name = 'hadoop_line_processor.py'
 #
-table_data_filename = xu.default_table_data_filename
+table_data_filename = hs.default_table_data_filename
 initialize_input_filename = 'initialize_input'
 initialize_output_filename = 'initialize_output'
-initialize_args_dict = xu.default_initialize_args_dict
+initialize_args_dict = hs.default_initialize_args_dict
 analyze_input_filename = 'analyze_input'
 analyze_output_filename = 'analyze_output'
-analyze_args_dict = xu.default_analyze_args_dict
+analyze_args_dict = hs.default_analyze_args_dict
 
 # set up
-table_data = xu.pickle_table_data(filename, table_data_filename)
+table_data = xu.read_and_pickle_table_data(filename, table_data_filename)
 
 # create initialize input
 xu.write_initialization_files(initialize_input_filename,

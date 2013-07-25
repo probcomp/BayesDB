@@ -6,9 +6,11 @@ import numpy
 #
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.xnet_utils as xu
+import tabular_predDB.python_utils.hadoop_utils as hu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
 import tabular_predDB.cython_code.State as State
+from tabular_predDB.settings import Hadoop as hs
 
 
 def get_generative_clustering(M_c, M_r, T,
@@ -26,7 +28,7 @@ def get_generative_clustering(M_c, M_r, T,
     gen_X_L_assignments = numpy.repeat(range(num_views), (num_cols / num_views))
     # initialize to generate an X_L to manipulate
     local_engine = LE.LocalEngine()
-    M_c, M_r, bad_X_L, bad_X_D = local_engine.initialize(M_c, M_r, T,
+    bad_X_L, bad_X_D = local_engine.initialize(M_c, M_r, T,
                                                          initialization='apart')
     bad_X_L['column_partition']['assignments'] = gen_X_L_assignments
     # manually constrcut state in in generative configuration
@@ -71,7 +73,7 @@ def generate_hadoop_dicts(which_kernels, X_L, X_D, args_dict):
 
 def write_hadoop_input(input_filename, X_L, X_D, n_steps, SEED):
     # prep settings dictionary
-    time_analyze_args_dict = xu.default_analyze_args_dict
+    time_analyze_args_dict = hs.default_analyze_args_dict
     time_analyze_args_dict['command'] = 'time_analyze'
     time_analyze_args_dict['SEED'] = SEED
     time_analyze_args_dict['n_steps'] = n_steps
@@ -128,7 +130,7 @@ if __name__ == '__main__':
 
     # write table_data
     table_data = dict(M_c=M_c, M_r=M_r, T=T)
-    xu.pickle_table_data(table_data, table_data_filename)
+    fu.pickle(table_data, table_data_filename)
     # write hadoop input
     n_tasks = write_hadoop_input(input_filename, X_L, X_D, n_steps, SEED=gen_seed)
 
@@ -140,12 +142,10 @@ if __name__ == '__main__':
                                         input_filename=input_filename,
                                         table_data_filename=table_data_filename,
                                         )
-        was_successful = HE.send_hadoop_command(hadoop_engine,
-                                                table_data_filename,
-                                                input_filename,
-                                                output_path, n_tasks=n_tasks)
+        hadoop_engine.send_hadoop_command(n_tasks)
+        was_successful = hadoop_engine.get_hadoop_results()
         if was_successful:
-            HE.read_hadoop_output(output_path, output_filename)
+            hu.copy_hadoop_output(output_path, output_filename)
         else:
             print 'remote hadoop job NOT successful'
     else:

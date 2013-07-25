@@ -67,6 +67,6 @@ if __name__ == '__main__':
         max_mean=max_mean, max_std=max_std,
         )
     #
-    M_c_prime, M_r_prime, X_L, X_D, = je.initialize(M_c, M_r, T)
+    X_L, X_D, = je.initialize(M_c, M_r, T)
     X_L_prime, X_D_prime = je.analyze(M_c, T, X_L, X_D)
     X_L_prime, X_D_prime = je.analyze(M_c, T, X_L_prime, X_D_prime)
