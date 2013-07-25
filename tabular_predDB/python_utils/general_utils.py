@@ -1,7 +1,7 @@
 import itertools
 import inspect
 from timeit import default_timer
-
+import datetime
 
 class Timer(object):
     def __init__(self, task='action', verbose=True):
@@ -66,3 +66,8 @@ def get_method_name_to_args(obj):
 def get_getname(name):
     return lambda in_dict: in_dict[name]
 
+def print_ts(in_str):
+    now_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print_str = '%s:: %s' % (now_str, in_str)
+    print print_str
+    
