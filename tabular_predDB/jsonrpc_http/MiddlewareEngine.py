@@ -102,7 +102,7 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute('DROP TABLE preddb_data.%s' % tablename)
+      cur.execute('DROP TABLE %s' % tablename)
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
       tableids = cur.fetchall()
       for tid in tableids:
@@ -145,7 +145,7 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("select exists(select * from information_schema.tables where table_name='preddb_data.%s');" % tablename)
+      cur.execute("select exists(select * from information_schema.tables where table_name='%s');" % tablename)
       if cur.fetchone()[0]:
         return "Error: table with that name already exists."
       conn.commit()
@@ -208,9 +208,9 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("CREATE TABLE preddb_data.%s (%s);" % (tablename, colstring))
+      cur.execute("CREATE TABLE %s (%s);" % (tablename, colstring))
       with open(clean_csv_abs_path) as fh:
-        cur.copy_from(fh, 'preddb_data.%s' % tablename, sep=',')
+        cur.copy_from(fh, '%s' % tablename, sep=',')
       curtime = datetime.datetime.now().ctime()
       cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
       conn.commit()
@@ -330,7 +330,7 @@ class MiddlewareEngine(object):
       tableid, M_c_json, t_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       t = json.loads(t_json)
-      cur.execute("SELECT COUNT(*) FROM preddb_data.%s;" % tablename)
+      cur.execute("SELECT COUNT(*) FROM %s;" % tablename)
       numrows = cur.fetchone()[0]
       cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
       chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
@@ -396,6 +396,12 @@ class MiddlewareEngine(object):
     ret = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in ret] 
     return ret
 
+  def order_by_similarity(data_tuples, X_L_list, X_D_list, row_id, col_id=None):
+    # Return the original data tuples, but sorted by similarity to the given row_id
+    # By default, average the similarity over columns, unless one particular column id is specified.
+    # TODO
+    return data_tuples
+
 
   def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
@@ -408,7 +414,7 @@ class MiddlewareEngine(object):
       tableid, M_c_json, t_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       t = json.loads(t_json)
-      cur.execute("SELECT COUNT(*) FROM preddb_data.%s;" % tablename)
+      cur.execute("SELECT COUNT(*) FROM %s;" % tablename)
       numrows = int(cur.fetchone()[0])
       cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
       chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
@@ -477,32 +483,7 @@ class MiddlewareEngine(object):
   def write_json_for_table(self, tablename):
     M_c, M_r, t_dict = self.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-
-    for name in M_c['name_to_idx']:
-      M_c['name_to_idx'][name] += 1
-    M_c = dict(labelToIndex=M_c['name_to_idx'])
-
-    for name in M_r['name_to_idx']:
-      M_r['name_to_idx'][name] += 1
-      M_r['name_to_idx'][name]  = M_r['name_to_idx'][name]
-    M_r = dict(labelToIndex=M_r['name_to_idx'])
-
-    self.jsonify_and_dump(M_c, 'M_c.json')
-    self.jsonify_and_dump(M_r, 'M_r.json')
-    self.jsonify_and_dump(t_dict, 'T.json')
-
-    for idx, X_L_i in enumerate(X_L_list):
-      filename = 'X_L_%s.json' % idx
-      X_L_i = (numpy.array(X_L_i['column_partition']['assignments'])+1).tolist()
-      X_L_i = dict(columnPartitionAssignments=X_L_i)
-      self.jsonify_and_dump(X_L_i, filename)
-    for idx, X_D_i in enumerate(X_D_list):
-      filename = 'X_D_%s.json' % idx
-      X_D_i = (numpy.array(X_D_i)+1).tolist()
-      X_D_i = dict(rowPartitionAssignments=X_D_i)
-      self.jsonify_and_dump(X_D_i, filename)
-    json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
-    self.jsonify_and_dump(json_indices_dict, "json_indices")
+    write_json_for_table(t_dict, M_c, X_L_list, X_D_list, M_r)
 
   def create_histogram(self, M_c, data, columns, mc_col_indices, filename):
     dir=S.path.web_resources_data_dir
@@ -533,19 +514,6 @@ class MiddlewareEngine(object):
         ax.set_yticklabels(unique_labels)
     pylab.tight_layout()
     pylab.savefig(full_filename)
-
-  def jsonify_and_dump(self, to_dump, filename):
-    dir=S.path.web_resources_data_dir
-    full_filename = os.path.join(dir, filename)
-    print full_filename
-    try:
-      with open(full_filename, 'w') as fh:
-        json_str = json.dumps(to_dump)
-        json_str = json_str.replace("NaN", "0")
-        fh.write(json_str)
-    except Exception, e:
-      print e
-    return 0
 
   def get_metadata_and_table(self, tablename):
     """Return M_c and M_r and T"""
@@ -609,7 +577,8 @@ class MiddlewareEngine(object):
       filename = tablename + '_feature_z'
     full_filename = os.path.join(dir, filename)
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-    do_gen_feature_z(X_L_list, X_D_list, M_c, full_filename, tablename)
+    return do_gen_feature_z(X_L_list, X_D_list, M_c,
+                            full_filename, tablename)
 
   def dump_db(self, filename, dir=S.path.web_resources_dir):
     full_filename = os.path.join(dir, filename)
@@ -710,6 +679,20 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
       conn.close()      
   return 0
 
+
+def jsonify_and_dump(to_dump, filename):
+  dir=S.path.web_resources_data_dir
+  full_filename = os.path.join(dir, filename)
+  print full_filename
+  try:
+    with open(full_filename, 'w') as fh:
+      json_str = json.dumps(to_dump)
+      json_str = json_str.replace("NaN", "0")
+      fh.write(json_str)
+  except Exception, e:
+    print e
+  return 0
+
 def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
     num_cols = len(X_L_list[0]['column_partition']['assignments'])
     column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
@@ -755,3 +738,45 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
                                   rotation=90, size='small')
     pylab.title('column dependencies for: %s' % tablename)
     pylab.savefig(filename)
+    #
+    ret_dict = dict(
+      z_matrix_reordered=z_matrix_reordered,
+      column_names_reordered=column_names_reordered,
+      )
+    return ret_dict
+
+def write_json_for_table(t_dict, M_c, X_L_list, X_D_list, M_r=None):
+    dir=S.path.web_resources_data_dir
+    os.system('rm %s/*.json' % dir)
+    if M_r is None:
+      num_rows = len(X_D_list[0][0])
+      row_indices = range(num_rows)
+      row_names = map(str, row_indices)
+      name_to_idx = dict(zip(row_names, row_indices))
+      idx_to_name = dict(zip(row_indices, row_names))
+      M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
+    #
+    for name in M_c['name_to_idx']:
+      M_c['name_to_idx'][name] += 1
+    M_c = dict(labelToIndex=M_c['name_to_idx'])
+    for name in M_r['name_to_idx']:
+      M_r['name_to_idx'][name] += 1
+      M_r['name_to_idx'][name]  = M_r['name_to_idx'][name]
+    M_r = dict(labelToIndex=M_r['name_to_idx'])
+    #
+    jsonify_and_dump(M_c, 'M_c.json')
+    jsonify_and_dump(M_r, 'M_r.json')
+    jsonify_and_dump(t_dict, 'T.json')
+    #
+    for idx, X_L_i in enumerate(X_L_list):
+      filename = 'X_L_%s.json' % idx
+      X_L_i = (numpy.array(X_L_i['column_partition']['assignments'])+1).tolist()
+      X_L_i = dict(columnPartitionAssignments=X_L_i)
+      jsonify_and_dump(X_L_i, filename)
+    for idx, X_D_i in enumerate(X_D_list):
+      filename = 'X_D_%s.json' % idx
+      X_D_i = (numpy.array(X_D_i)+1).tolist()
+      X_D_i = dict(rowPartitionAssignments=X_D_i)
+      jsonify_and_dump(X_D_i, filename)
+    json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
+    jsonify_and_dump(json_indices_dict, "json_indices")

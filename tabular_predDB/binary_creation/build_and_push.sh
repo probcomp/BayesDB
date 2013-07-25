@@ -1,8 +1,9 @@
 #!/bin/bash
 
 
-HDFS_DIR="/user/bigdata/SSCI/test_remote_streaming/"
-HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
+HDFS_DIR="/user/bigdata/SSCI/"
+# HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
+HDFS_URI="hdfs://10.1.93.51:8020/"
 
 # print script usage
 usage() {
@@ -70,8 +71,15 @@ export PYTHONPATH=$CODE_REL_DIR:$PYTHONPATH
 cd $CODE_REL_DIR/tabular_predDB/binary_creation
 rm -rf build
 python setup.py build >build.out 2>build.err
+# FIXME: find a better way to do this; works on 20130307 VM to use on XDATA cluster
+LARGEST_LAPACK_LITE=$(locate lapack_lite | xargs ls -al | sort -k 4 | head -n 1 | awk '{print $NF}')
+if [[ ! -z $LARGEST_LAPACK_LITE ]]; then
+    TARGET_LAPACK_LITE=build/exe.linux-x86_64-2.7/numpy.linalg.lapack_lite.so
+    cp $LARGEST_LAPACK_LITE $TARGET_LAPACK_LITE
+fi
 (cd build/exe.linux-x86_64-2.7 && jar cvf ../../${WHICH_BINARY}.jar *)
 
 # prep HDFS
 hadoop fs -fs "$HDFS_URI" -rm "${HDFS_DIR}"${WHICH_BINARY}.jar
+hadoop fs -fs "$HDFS_URI" -mkdir "${HDFS_DIR}"
 hadoop fs -fs "$HDFS_URI" -put ${WHICH_BINARY}.jar "${HDFS_DIR}"

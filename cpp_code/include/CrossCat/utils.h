@@ -69,14 +69,16 @@ std::vector<double> linspace(double a, double b, int n);
 std::vector<double> log_linspace(double a, double b, int n);
 std::vector<int> create_sequence(int len, int start=0);
 
-std::vector<double> std_vector_sum(std::vector<double> vec1,
+std::vector<double> std_vector_add(std::vector<double> vec1,
 				   std::vector<double> vec2);
-std::vector<double> std_vector_sum(std::vector<std::vector<double> > vec_vec);
+std::vector<double> std_vector_add(std::vector<std::vector<double> > vec_vec);
 
+double std_vector_sum(std::vector<double> vec);
+double std_vector_mean(std::vector<double> vec);
 double calc_sum_sq_deviation(std::vector<double> values);
 std::vector<double> extract_row(const MatrixD data, int row_idx);
 std::vector<double> extract_col(const MatrixD data, int col_idx);
-				
+
 std::vector<double> append(std::vector<double> vec1, std::vector<double> vec2);
 
 template <class K, class V>
@@ -156,6 +158,8 @@ std::vector<std::vector<int> > draw_crp_init(std::vector<int> global_row_indices
 
 void copy_column(const MatrixD fromM, int from_col, MatrixD &toM, int to_col);
 MatrixD extract_columns(const MatrixD fromM, std::vector<int> from_cols);
+std::vector<double> extract_columns(const std::vector<double> in_vd,
+				    const std::vector<int> from_cols);
 
 template <class T>
 std::vector<T> set_to_vector(const std::set<T> in_set) {

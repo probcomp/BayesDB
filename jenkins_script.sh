@@ -58,4 +58,4 @@ cd $WORKSPACE/tabular_predDB
 make tests
 make cython
 cd tabular_predDB/tests
-python /usr/bin/nosetests --with-xunit cpp_unit_tests.py cpp_long_tests.py test_middleware.py test_sampler.py
+python /usr/bin/nosetests --with-xunit cpp_unit_tests.py cpp_long_tests.py test_middleware.py test_sampler_enumeration.py

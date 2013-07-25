@@ -23,6 +23,7 @@ cimport numpy as np
 import numpy
 #
 import tabular_predDB.python_utils.file_utils as fu
+import tabular_predDB.python_utils.general_utils as gu
 # import tabular_predDB.python_utils.plot_utils as pu
 
 
@@ -109,6 +110,7 @@ cdef extern from "State.h":
           double transition_views_row_partition_hyper()
           double transition_views_col_hypers()
           double transition_views_zs(matrix[double] data)
+          double calc_row_predictive_logp(vector[double] in_vd)
           # getters
           double get_column_crp_alpha()
           double get_column_crp_score()
@@ -179,6 +181,12 @@ transition_name_to_method_name_and_args = dict(
      row_partition_assignments=('transition_row_partition_assignments', ['r']),
      )
 
+def get_all_transitions_permuted(seed):
+     which_transitions = transition_name_to_method_name_and_args.keys()
+     random_state = numpy.random.RandomState(seed)
+     which_transitions = random_state.permutation(which_transitions)
+     return which_transitions
+
 cdef class p_State:
     cdef State *thisptr
     cdef matrix[double] *dataptr
@@ -218,6 +226,8 @@ cdef class p_State:
                                        row_initialization,
                                        N_GRID, SEED)
          else:
+              # # !!! MUTATES X_L !!!
+              desparsify_X_L(M_c, X_L)
               constructor_args = \
                   transform_latent_state_to_constructor_args(X_L, X_D)
               hypers_m = constructor_args['hypers_m']
@@ -267,6 +277,8 @@ cdef class p_State:
         return self.thisptr.get_marginal_logp()
     def get_num_views(self):
         return self.thisptr.get_num_views()
+    def calc_row_predictive_logp(self, in_vd):
+         return self.thisptr.calc_row_predictive_logp(in_vd)
     #
     # get_X_L helpers helpers
     def get_row_partition_model_i(self, view_idx):
@@ -290,7 +302,17 @@ cdef class p_State:
               column_names_i.append(value)
          return column_names_i
     def get_column_component_suffstats_i(self, view_idx):
-          return self.thisptr.get_column_component_suffstats_i(view_idx)
+         column_component_suffstats = \
+             self.thisptr.get_column_component_suffstats_i(view_idx)
+         # FIXME: make this actually work
+         #        should sparsify here rather than later in get_X_L
+         # column_names = self.get_column_names_i(view_idx)
+         # for col_name, column_component_suffstats_i in \
+         #          zip(column_names, column_component_suffstats):
+         #     modeltype = get_modeltype_from_name(self.M_c, col_name)
+         #     if modeltype == 'symmetric_dirichlet_discrete':
+         #         sparsify_column_component_suffstats(column_component_suffstats_i)
+         return column_component_suffstats
     def get_view_state_i(self, view_idx):
           row_partition_model = self.get_row_partition_model_i(view_idx)
           column_names = self.get_column_names_i(view_idx)
@@ -323,27 +345,26 @@ cdef class p_State:
     # mutators
     def transition(self, which_transitions=(), n_steps=1,
                    c=(), r=(), max_iterations=-1, max_time=-1):
-         # FIXME: respect max time
-         transition_name_to_method_name_and_args         
-
-         if len(which_transitions) == 0:
-              which_transitions = transition_name_to_method_name_and_args.keys()
-              seed = self.thisptr.draw_rand_i()
-              random_state = numpy.random.RandomState(seed)
-              which_transitions = random_state.permutation(which_transitions)
          score_delta = 0
-         for step_idx in range(n_steps):
-              for which_transition in which_transitions:
-                   method_name_and_args = transition_name_to_method_name_and_args.get(which_transition)
-                   if method_name_and_args is not None:
-                        method_name, args_list = method_name_and_args
-                        which_method = getattr(self, method_name)
-                        args_dict = get_args_dict(args_list, locals())
-                        score_delta += which_method(**args_dict)
-                   else:
-                        print_str = 'INVALID TRANSITION TYPE TO' \
-                            'State.transition: %s' % which_transition
-                        print print_str
+         if len(which_transitions) == 0:
+              seed = self.thisptr.draw_rand_i()
+              which_transitions = get_all_transitions_permuted(seed)
+         with gu.Timer('transition', verbose=False) as timer:
+              for step_idx in range(n_steps):
+                   for which_transition in which_transitions:
+                        elapsed_secs = timer.get_elapsed_secs()
+                        if (max_time != -1) and (max_time < elapsed_secs):
+                             break
+                        method_name_and_args = transition_name_to_method_name_and_args.get(which_transition)
+                        if method_name_and_args is not None:
+                             method_name, args_list = method_name_and_args
+                             which_method = getattr(self, method_name)
+                             args_dict = get_args_dict(args_list, locals())
+                             score_delta += which_method(**args_dict)
+                        else:
+                             print_str = 'INVALID TRANSITION TYPE TO' \
+                                 'State.transition: %s' % which_transition
+                             print print_str
          return score_delta
     def transition_column_crp_alpha(self):
          return self.thisptr.transition_column_crp_alpha()
@@ -376,6 +397,7 @@ cdef class p_State:
           X_L['column_partition'] = column_partition
           X_L['column_hypers'] = column_hypers
           X_L['view_state'] = view_state
+          sparsify_X_L(self.M_c, X_L)
           return X_L
     def save(self, filename, dir='', **kwargs):
          save_dict = dict(
@@ -440,3 +462,65 @@ def transform_latent_state_to_constructor_args(X_L, X_D):
      constructor_args['SEED'] = seed
      #
      return constructor_args
+
+def remove_zero_values(dict_in):
+     for key in dict_in.keys():
+          if dict_in[key] == 0:
+               dict_in.pop(key)
+     return dict_in
+
+def insert_zero_values(dict_in, N_keys):
+     for key in range(N_keys):
+          key_str = str(key)
+          if key_str not in dict_in:
+               dict_in[key_str] = 0.0
+     return dict_in
+
+def sparsify_column_component_suffstats(column_component_suffstats):
+     for idx, suffstats_i in enumerate(column_component_suffstats):
+          suffstats_i = remove_zero_values(suffstats_i).copy()
+          column_component_suffstats[idx] = suffstats_i
+     return None
+
+def desparsify_column_component_suffstats(column_component_suffstats,
+                                          N_keys):
+     for idx, suffstats_i in enumerate(column_component_suffstats):
+          insert_zero_values(suffstats_i, N_keys)
+     return None
+
+def get_column_component_suffstats_by_global_col_idx(M_c, X_L, col_idx):
+     col_name = M_c['idx_to_name'][str(col_idx)]
+     view_idx = X_L['column_partition']['assignments'][col_idx]
+     view_state_i = X_L['view_state'][view_idx]
+     within_view_idx = view_state_i['column_names'].index(col_name)
+     column_component_suffstats_i = view_state_i['column_component_suffstats'][within_view_idx]
+     return column_component_suffstats_i
+     
+def sparsify_X_L(M_c, X_L):
+     for col_idx, col_i_metadata in enumerate(M_c['column_metadata']):
+          modeltype = col_i_metadata['modeltype']
+          if modeltype != 'symmetric_dirichlet_discrete':
+               continue
+          column_component_suffstats_i = \
+              get_column_component_suffstats_by_global_col_idx(M_c, X_L,
+                                                               col_idx)
+          sparsify_column_component_suffstats(column_component_suffstats_i)
+     return None
+
+def desparsify_X_L(M_c, X_L):
+     for col_idx, col_i_metadata in enumerate(M_c['column_metadata']):
+          modeltype = col_i_metadata['modeltype']
+          if modeltype != 'symmetric_dirichlet_discrete':
+               continue
+          column_component_suffstats_i = \
+              get_column_component_suffstats_by_global_col_idx(M_c, X_L,
+                                                               col_idx)
+          N_keys = len(col_i_metadata['value_to_code'])
+          desparsify_column_component_suffstats(column_component_suffstats_i,
+                                                N_keys)
+     return None
+
+def get_modeltype_from_name(M_c, col_name):
+    global_col_idx = M_c['name_to_idx'][col_name]
+    modeltype = M_c['column_metadata'][global_col_idx]['modeltype']
+    return modeltype

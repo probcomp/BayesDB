@@ -89,7 +89,8 @@ function load_to_datatable(data, columns, sorting) {
 	"aoColumns": columns,
 	"aaSorting": sorting,
 	"aLengthMenu": [100, 200, 1000],
-	"iDisplayLength": 100
+	"iDisplayLength": 1000,
+	"bStateSave": true
     } );
 }
 

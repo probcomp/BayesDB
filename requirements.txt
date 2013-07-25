@@ -20,15 +20,12 @@ freetype-py==0.4.1
 matplotlib==1.2.0
 # for middleware
 psycopg2==2.4.6
-# this fails and needs to be done manually
-# don't include in install from scratch, else install will lose progress
-# hcluster==0.2.0
-# manual process is as follows
+# hcluster==0.2.0 install must be modified
 # pip install --download ./ hcluster==0.2.0
 # tar xvfz hcluster-0.2.0.tar.gz 
 # cd hcluster-0.2.0
+# perl -pi.bak -e "s/input\('Selection \[default=1\]:'\)/2/" setup.py
 # python setup.py install
-# choose option 2
 
 # freeze for creating binaries to run with hadoop streaming
 # must manually install per https://github.com/pypa/pip/issues/537

@@ -35,6 +35,15 @@ namespace numerics {
     return logp;
   }
 
+  double logaddexp(vector<double> logs) {
+    double result = 0;
+    vector<double>::iterator it;
+    for(it=logs.begin(); it!=logs.end(); it++) {
+      result += exp(*it);
+    }
+    return log(result);
+  }
+
   // subtract minimum value, logaddexp residuals, pass residuals and partition to
   // draw_sample_with_partition
   int draw_sample_unnormalized(vector<double> unorm_logps, double rand_u) {

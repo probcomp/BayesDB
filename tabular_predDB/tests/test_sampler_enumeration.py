@@ -8,7 +8,7 @@ import pylab
 from scipy.stats import pearsonr as pearsonr
 
 # Do we want to plot the results?
-do_plot = False
+do_plot = True
 
 if do_plot:
 	pylab.ion()

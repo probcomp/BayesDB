@@ -19,12 +19,13 @@ import pdb
 import math
 
 from collections import Counter
-from scipy.misc import logsumexp
 #
+from scipy.misc import logsumexp
 import numpy
 #
 import tabular_predDB.cython_code.ContinuousComponentModel as CCM
 import tabular_predDB.cython_code.MultinomialComponentModel as MCM
+import tabular_predDB.python_utils.general_utils as gu
 
 
 class Bunch(dict):
@@ -693,40 +694,54 @@ def simple_predictive_sample_unobserved(M_c, X_L, X_D, Y, query_row,
         samples_list.append(this_sample_draws)
     return samples_list
 
-def continuous_imputation(samples, get_next_seed, return_confidence=False):
-    n_samples = len(samples)
-    mean_sample = sum(samples) / float(n_samples)
-    if return_confidence:
-        print "sample_utils.continuous_imputation: return_confidence not yet implemented"
-        condience = None
-        return mean_sample, None
-    else:
-        return mean_sample
 
-def multinomial_imputation(samples, get_next_seed, return_confidence=False):
+def multinomial_imputation_confidence(samples, imputed, column_hypers_i):
+    max_count = sum(numpy.array(samples) == imputed)
+    confidence = float(max_count) / len(samples)
+    return confidence
+
+def get_continuous_mass_within_delta(samples, center, delta):
+    num_samples = len(samples)
+    num_within_delta = sum(numpy.abs(samples - center) < delta)
+    mass_fraction = float(num_within_delta) / num_samples
+    return mass_fraction
+
+def continuous_imputation_confidence(samples, imputed,
+                                     column_component_suffstats_i):
+    col_std = get_column_std(column_component_suffstats_i)
+    delta = .1 * col_std
+    confidence = get_continuous_mass_within_delta(samples, imputed, delta)
+    return confidence
+
+def continuous_imputation(samples, get_next_seed):
+    imputed = numpy.median(samples)
+    return imputed
+
+def multinomial_imputation(samples, get_next_seed):
     counter = Counter(samples)
     max_tuple = counter.most_common(1)[0]
     max_count = max_tuple[1]
     counter_counter = Counter(counter.values())
     num_max_count = counter_counter[max_count]
-    mle_sample = max_tuple[0]
+    imputed = max_tuple[0]
     if num_max_count >= 1:
         # if there is a tie, draw randomly
         max_tuples = counter.most_common(num_max_count)
         values = [max_tuple[0] for max_tuple in max_tuples]
         random_state = numpy.random.RandomState(get_next_seed())
         draw = random_state.randint(len(values))
-        mle_sample = values[draw]
-    if return_confidence:
-        confidence = float(max_count) / len(samples)
-        return mle_sample, confidence
-    else:
-        return mle_sample
+        imputed = values[draw]
+    return imputed
 
 # FIXME: ensure callers aren't passing continuous, multinomial
 modeltype_to_imputation_function = {
     'normal_inverse_gamma': continuous_imputation,
     'symmetric_dirichlet_discrete': multinomial_imputation,
+    }
+
+modeltype_to_imputation_confidence_function = {
+    'normal_inverse_gamma': continuous_imputation_confidence,
+    'symmetric_dirichlet_discrete': multinomial_imputation_confidence,
     }
 
 def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed, return_samples=False):
@@ -736,8 +751,7 @@ def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed, return_samples=False):
     col_idx = Q[0][1]
     modeltype = M_c['column_metadata'][col_idx]['modeltype']
     assert(modeltype in modeltype_to_imputation_function)
-    if isinstance(X_L, (list, tuple)):
-        assert isinstance(X_D, (list, tuple))
+    if get_is_multistate(X_L, X_D):
         samples = simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
                                            get_next_seed, n)
     else:
@@ -751,20 +765,55 @@ def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed, return_samples=False):
     else:
         return e
 
+def get_confidence_interval(imputed, samples, confidence=.5):
+    deltas = numpy.array(samples) - imputed
+    sorted_abs_delta = numpy.sort(numpy.abs(deltas))
+    n_samples = len(samples)
+    lower_index = int(numpy.floor(confidence * n_samples))
+    lower_value = sorted_abs_delta[lower_index]
+    upper_value = sorted_abs_delta[lower_index + 1]
+    interval = numpy.mean([lower_value, upper_value])
+    return interval
+
+def get_column_std(column_component_suffstats_i):
+    N = sum(map(gu.get_getname('N'), column_component_suffstats_i))
+    sum_x = sum(map(gu.get_getname('sum_x'), column_component_suffstats_i))
+    sum_x_squared = sum(map(gu.get_getname('sum_x_squared'), column_component_suffstats_i))
+    #
+    exp_x = sum_x / float(N)
+    exp_x_squared = sum_x_squared / float(N)
+    col_var = exp_x_squared - (exp_x ** 2)
+    col_std = col_var ** .5
+    return col_std
+
+def get_column_component_suffstats_i(M_c, X_L, col_idx):
+    column_name = M_c['idx_to_name'][str(col_idx)]
+    view_idx = X_L['column_partition']['assignments'][col_idx]
+    view_state_i = X_L['view_state'][view_idx]
+    local_col_idx = view_state_i['column_names'].index(column_name)
+    column_component_suffstats_i = \
+        view_state_i['column_component_suffstats'][local_col_idx]
+    return column_component_suffstats_i
+
 def impute_and_confidence(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     # FIXME: allow more than one cell to be imputed
     assert(len(Q)==1)
-    #
     col_idx = Q[0][1]
     modeltype = M_c['column_metadata'][col_idx]['modeltype']
-    assert(modeltype in modeltype_to_imputation_function)
-    samples = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
-                                       get_next_seed, n)
-    samples = numpy.array(samples).T[0]
-    imputation_function = modeltype_to_imputation_function[modeltype]
-    e, confidence = imputation_function(samples, get_next_seed,
-                                        return_confidence=True)
-    return e, confidence
+    imputation_confidence_function = \
+        modeltype_to_imputation_confidence_function[modeltype]
+    #
+    imputed, samples = impute(M_c, X_L, X_D, Y, Q, n, get_next_seed,
+                        return_samples=True)
+    if get_is_multistate(X_L, X_D):
+        X_L = X_L[0]
+        X_D = X_D[0]
+    column_component_suffstats_i = \
+        get_column_component_suffstats_i(M_c, X_L, col_idx)
+    imputation_confidence = \
+        imputation_confidence_function(samples, imputed,
+                                       column_component_suffstats_i)
+    return imputed, imputation_confidence
 
 def determine_replicating_samples_params(X_L, X_D):
     view_assignments_array = X_L['column_partition']['assignments']

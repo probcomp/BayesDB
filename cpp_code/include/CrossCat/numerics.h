@@ -19,6 +19,8 @@ const static double LOG_2 = log(2.0);
 
 namespace numerics {
 
+  double logaddexp(std::vector<double> logs);
+
   // sampling given vector of logps or related
   int draw_sample_unnormalized(std::vector<double> unorm_logps, double rand_u);
   int draw_sample_with_partition(std::vector<double> unorm_logps,

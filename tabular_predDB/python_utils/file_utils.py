@@ -17,10 +17,20 @@ import cPickle
 import gzip
 import os
 
-def my_open(filename):
+
+def is_gz(filename):
     ext = os.path.splitext(filename)[-1]
+    return ext == '.gz'
+
+def is_pkl(filename):
+    if is_gz(filename):
+        filename = os.path.splitext(filename)[0]
+    ext = os.path.splitext(filename)[-1]
+    return ext == '.pkl'
+
+def my_open(filename):
     opener = open
-    if ext == 'gz':
+    if is_gz(filename):
         opener = gzip.open
     return opener
 
@@ -36,3 +46,19 @@ def unpickle(filename, dir=''):
     with opener(full_filename, 'rb') as fh:
         variable = cPickle.load(fh)
     return variable
+
+def rm_local(path, DEBUG=False):
+    cmd_str = 'rm -rf %s'
+    cmd_str %= path
+    if DEBUG:
+        print cmd_str
+    else:
+        os.system(cmd_str)
+    return
+
+def ensure_dir(dir):
+  try:
+    os.makedirs(dir)
+  except:
+    pass
+  return

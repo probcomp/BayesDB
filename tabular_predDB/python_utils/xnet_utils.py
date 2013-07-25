@@ -1,49 +1,57 @@
 import os
 import re
 import argparse
+import cPickle
+import zlib
+import base64
 #
 import tabular_predDB.settings as S
+from tabular_predDB.settings import Hadoop as hs
 import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.data_utils as du
 
 
-default_table_data_filename = 'table_data.pkl.gz'
-default_table_filename = os.path.join(S.path.web_resources_data_dir,
-  'dha.csv')
+default_table_data_filename = hs.default_table_data_filename
+default_table_filename = hs.default_table_filename
+default_analyze_args_dict = hs.default_analyze_args_dict.copy()
+default_initialize_args_dict = hs.default_initialize_args_dict.copy()
 
-default_initialize_args_dict = dict(
-    command='initialize',
-    initialization='from_the_prior',
-    )
-
-default_analyze_args_dict = dict(
-    command='analyze',
-    kernel_list=(),
-    n_steps=1,
-    c=(),
-    r=(),
-    )
 
 # read the data, create metadata
-def pickle_table_data(in_filename_or_dict, pkl_filename):
-    table_data = None
-    if isinstance(in_filename_or_dict, str):
-        T, M_r, M_c = du.read_model_data_from_csv(in_filename, gen_seed=0)
-        table_data = dict(T=T, M_r=M_r, M_c=M_c)
-    else:
-        table_data = in_filename_or_dict
+def read_and_pickle_table_data(table_data_filename, pkl_filename):
+    T, M_r, M_c = du.read_model_data_from_csv(table_data_filename,
+                                              gen_seed=0)
+    table_data = dict(T=T, M_r=M_r, M_c=M_c)
     fu.pickle(table_data, pkl_filename)
     return table_data
 
 # cat the data into the script, as hadoop would
-def run_script_local(infile, script_name, outfile):
-    cmd_str = 'cat %s | python %s > %s'
-    cmd_str %= (infile, script_name, outfile)
+def run_script_local(infile, script_name, outfile, table_data_filename=None):
+    infix_str = ''
+    if table_data_filename is not None:
+        infix_str = '--table_data_filename %s' % table_data_filename
+    cmd_str = 'cat %s | python %s %s > %s'
+    cmd_str %= (infile, script_name, infix_str, outfile)
+    print cmd_str
     os.system(cmd_str)
     return
 
+def my_dumps(in_object):
+    ret_str = cPickle.dumps(in_object)
+    ret_str = zlib.compress(ret_str)
+    ret_str = base64.b64encode(ret_str) 
+    return ret_str
+
+def my_loads(in_str):
+    in_str = base64.b64decode(in_str)
+    in_str = zlib.decompress(in_str)
+    out_object = cPickle.loads(in_str)
+    return out_object
+
 def write_hadoop_line(fh, key, dict_to_write):
-    fh.write(' '.join(map(str, [key, dict_to_write])))
+    escaped_str = my_dumps(dict_to_write)
+    fh.write(str(key) + ' ')
+    fh.write(escaped_str)
     fh.write('\n')
     return
 
@@ -55,29 +63,67 @@ def parse_hadoop_line(line):
     key, dict_in = None, None
     if match:
         key, dict_in_str = match.groups()
-        dict_in = eval(dict_in_str)
+        try:
+          dict_in = my_loads(dict_in_str)
+        except Exception, e:
+          # for parsing new NLineInputFormat
+          match = pattern.match(dict_in_str)
+          if match is None:
+            print 'OMG: ' + dict_in_str[:50]
+            import pdb; pdb.set_trace()
+          key, dict_in_str = match.groups()
+          dict_in = my_loads(dict_in_str)
     return key, dict_in
 
-def write_initialization_files(initialize_input_filename, initialize_args_dict, n_chains):
+def write_support_files(table_data, table_data_filename,
+                        command_dict, command_dict_filename):
+    fu.pickle(table_data, table_data_filename)
+    fu.pickle(command_dict, command_dict_filename)
+    return
+
+def write_initialization_files(initialize_input_filename,
+                               table_data, table_data_filename,
+                               initialize_args_dict, intialize_args_dict_filename,
+                               n_chains=10):
+    write_support_files(table_data, table_data_filename,
+                        initialize_args_dict, intialize_args_dict_filename)
     with open(initialize_input_filename, 'w') as out_fh:
         for SEED in range(n_chains):
-            out_dict = initialize_args_dict.copy()
-            out_dict['SEED'] = SEED
+            out_dict = dict(SEED=SEED)
+            write_hadoop_line(out_fh, SEED, out_dict)
+    return
+
+def write_analyze_files(analyze_input_filename, X_L_list, X_D_list,
+                        table_data, table_data_filename,
+                        analyze_args_dict, analyze_args_dict_filename,
+                        SEEDS=None):
+    assert len(X_L_list) == len(X_D_list)
+    write_support_files(table_data, table_data_filename,
+                        analyze_args_dict, analyze_args_dict_filename)
+    if SEEDS is None:
+        SEEDS = xrange(len(X_L_list))
+    with open(analyze_input_filename, 'w') as out_fh:
+        for SEED, X_L, X_D in zip(SEEDS, X_L_list, X_D_list):
+            out_dict = dict(SEED=SEED, X_L=X_L, X_D=X_D)
             write_hadoop_line(out_fh, SEED, out_dict)
     return
 
 # read initialization output, write analyze input
 def link_initialize_to_analyze(initialize_output_filename,
                                analyze_input_filename,
-                               analyze_args_dict=default_analyze_args_dict):
+                               analyze_args_dict=None):
+    if analyze_args_dict is None:
+        analyze_args_dict = default_analyze_args_dict.copy()
+    num_lines = 0
     with open(initialize_output_filename) as in_fh:
         with open(analyze_input_filename, 'w') as out_fh:
             for line in in_fh:
+                num_lines += 1
                 key, dict_in = parse_hadoop_line(line)
                 dict_in.update(analyze_args_dict)
                 dict_in['SEED'] = int(key)
                 write_hadoop_line(out_fh, key, dict_in)
-    return
+    return num_lines
 
 def get_is_multistate(X_L, X_D):
     if isinstance(X_L, (list, tuple)):
@@ -104,6 +150,7 @@ def assert_vpn_is_connected():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('do_what', type=str)
+    parser.add_argument('--hadoop_filename', type=str, default=None)
     parser.add_argument('--table_filename',
         default=default_table_filename, type=str)
     parser.add_argument('--pkl_filename',
@@ -119,6 +166,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     #
     do_what = args.do_what
+    hadoop_filename = args.hadoop_filename
     table_filename = args.table_filename
     pkl_filename = args.pkl_filename
     initialize_input_filename = args.initialize_input_filename
@@ -128,10 +176,11 @@ if __name__ == '__main__':
     n_chains = args.n_chains
 
 
-    if do_what == 'pickle_table_data':
-        pickle_table_data(table_filename, pkl_filename)
+    if do_what == 'read_and_pickle_table_data':
+        read_and_pickle_table_data(table_filename, pkl_filename)
     elif do_what == 'write_initialization_files':
-        write_initialization_files(initialize_input_filename, n_chains)
+        write_initialization_files(initialize_input_filename,
+                                   n_chains=n_chains)
     elif do_what == 'link_initialize_to_analyze':
         analyze_args_dict = default_analyze_args_dict.copy()
         analyze_args_dict['n_steps'] = n_steps
@@ -140,5 +189,14 @@ if __name__ == '__main__':
                                    analyze_args_dict)
     elif do_what == 'assert_vpn_is_connected':
         assert_vpn_is_connected()
+    elif do_what == 'parse_hadoop_lines':
+        assert hadoop_filename is not None
+        parsed_lines = []
+        with open(hadoop_filename) as fh:
+            for line in fh:
+                parsed_lines.append(parse_hadoop_line(line))
+                print len(parsed_lines)
+        if pkl_filename != default_table_data_filename:
+            fu.pickle(parsed_lines, pkl_filename)
     else:
         print 'uknown do_what: %s' % do_what

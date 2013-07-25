@@ -94,7 +94,7 @@ vector<double> log_linspace(double a, double b, int n) {
   return values;
 }
 
-vector<double> std_vector_sum(vector<double> vec1, vector<double> vec2) {
+vector<double> std_vector_add(vector<double> vec1, vector<double> vec2) {
   assert(vec1.size()==vec2.size());
   vector<double> sum_vec;
   for(unsigned int i=0; i<vec1.size(); i++) {
@@ -103,12 +103,12 @@ vector<double> std_vector_sum(vector<double> vec1, vector<double> vec2) {
   return sum_vec;
 }
 
-vector<double> std_vector_sum(vector<vector<double> > vec_vec) {
+vector<double> std_vector_add(vector<vector<double> > vec_vec) {
   vector<double> sum_vec = vec_vec[0];
   vector<vector<double> >::iterator it = vec_vec.begin();
   it++;
   for(; it!=vec_vec.end(); it++) {
-    sum_vec = std_vector_sum(sum_vec, *it);
+    sum_vec = std_vector_add(sum_vec, *it);
   }
   return sum_vec;
 }
@@ -123,9 +123,19 @@ vector<double> filter_nans(vector<double> values) {
   return non_nan_values;
 }
 
-double calc_sum_sq_deviation(vector<double> values) {
+double std_vector_sum(vector<double> values) {
   double sum = std::accumulate(values.begin(), values.end(), 0.0);
+  return sum;
+}
+
+double std_vector_mean(vector<double> values) {
+  double sum = std_vector_sum(values);
   double mean = sum / values.size();
+  return mean;
+}
+
+double calc_sum_sq_deviation(vector<double> values) {
+  double mean = std_vector_mean(values);
   double sum_sq_deviation = 0;
   vector<double>::iterator it;
   for(it=values.begin(); it!=values.end(); it++) {
@@ -317,6 +327,17 @@ MatrixD extract_columns(const MatrixD fromM, vector<int> from_cols) {
     copy_column(fromM, from_col, toM, to_col);
   }
   return toM;
+}
+
+vector<double> extract_columns(const vector<double> in_vd,
+			       const vector<int> from_cols) {
+  vector<double> out_vd;
+  vector<int>::const_iterator it;
+  for(it=from_cols.begin(); it!=from_cols.end(); it++) {
+    int from_col = *it;
+    out_vd.push_back(in_vd[from_col]);
+  }
+  return out_vd;
 }
 
 int intify(std::string str) {
