@@ -3,8 +3,8 @@ import csv
 import os
 
 ari_filename = 'ari_convergence_results.csv'
-n_steps = 200
-block_size = 50
+n_steps = 500
+block_size = 20
 run_script = False
 #
 base_str = ' '.join([
@@ -16,7 +16,7 @@ base_str = ' '.join([
   '--block_size %s' % block_size,
   '--num_transitions %s' % n_steps,
   '--ari_logfile %s' % ari_filename,
-  '>>out 2>>err &',
+  '>>out 2>>err',
   ])
 
 # num_rows_list = [100, 400, 1000, 4000, 10000]
@@ -24,10 +24,10 @@ base_str = ' '.join([
 # num_clusters_list = [10, 20, 30, 40, 50]
 # num_splits_list = [1, 2, 3, 4, 5]
 
-num_rows_list = [100]
-num_cols_list = [4]
-num_clusters_list = [10]
-num_splits_list = [1,2]
+num_rows_list = [200, 400]
+num_cols_list = [4, 8]
+num_clusters_list = [5, 10]
+num_splits_list = [2,4]
 
 # First create the headers in the output file - the convergence test script does not write headers
 with open(ari_filename, 'w') as outfile:

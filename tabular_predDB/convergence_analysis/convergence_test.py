@@ -1,11 +1,11 @@
-import argparse, pylab, numpy, pdb
+import argparse, pylab, numpy, csv, pdb
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.sample_utils as su
 import tabular_predDB.python_utils.plot_utils as pu
 import tabular_predDB.CrossCatClient as ccc
 import tabular_predDB.python_utils.file_utils as f_utils
-import tabular_predDB.python_utils.timing_test_utils as ttu
-from time import time
+import tabular_predDB.python_utils.convergence_test_utils as ctu
+import time
 
 # Parse input arguments
 parser = argparse.ArgumentParser()
@@ -17,7 +17,7 @@ parser.add_argument('--inf_seed', default=0, type=int)
 parser.add_argument('--gen_seed', default=0, type=int)
 parser.add_argument('--num_transitions', default=500, type=int)
 parser.add_argument('--N_GRID', default=31, type=int)
-parser.add_argument('--max_rows', default=400, type=int)
+parser.add_argument('--max_rows', default=1000, type=int)
 parser.add_argument('--num_clusters', default=10, type=int)
 parser.add_argument('--num_views', default=2, type=int)
 parser.add_argument('--num_cols', default=16, type=int)
@@ -42,16 +42,16 @@ engine = ccc.get_CrossCatClient('hadoop', seed = inf_seed)
 
 if filename is not None:
     # Load the data from table and sub-sample entities to max_rows
-    T, M_r, M_c = du.read_model_data_from_csv(filename, max_rows, gen_seed,cctypes = cctypes)
+    T, M_r, M_c = du.read_model_data_from_csv(filename, max_rows, gen_seed)
     truth_flag = 0
 else:
     T, M_r, M_c, data_inverse_permutation_indices = \
         du.gen_factorial_data_objects(gen_seed, num_clusters,
                                       num_cols, max_rows, num_views,
-                                      max_mean=10, max_std=1,
+                                      max_mean=100, max_std=1,
                                       send_data_inverse_permutation_indices=True)
-        view_assignment_truth, X_D_truth = ttu.truth_from_permute_indices(data_inverse_permutation_indices, max_rows,num_cols,num_views, num_clusters)
-        truth_flag = 1
+    view_assignment_truth, X_D_truth = ctu.truth_from_permute_indices(data_inverse_permutation_indices, max_rows,num_cols,num_views, num_clusters)
+    truth_flag = 1
 
 
         
@@ -66,7 +66,7 @@ print 'Initializing ...'
 # Call Initialize and Analyze
 M_c, M_r, X_L_list, X_D_list = engine.initialize(M_c, M_r, T, n_chains = numChains)
 if truth_flag:
-    tmp_ari_table, tmp_ari_views = ttu.multi_chain_ARI(X_L_list,X_D_list, view_assignment_truth, X_D_truth)
+    tmp_ari_table, tmp_ari_views = ctu.multi_chain_ARI(X_L_list,X_D_list, view_assignment_truth, X_D_truth)
     ari_table.append(tmp_ari_table)
     ari_views.append(tmp_ari_views)
             
@@ -80,20 +80,25 @@ while (completed_transitions < num_transitions):
                                         n_steps=n_steps, max_time=-1)
     
     if truth_flag:
-        tmp_ari_table, tmp_ari_views = ttu.multi_chain_ARI(X_L_list,X_D_list, view_assignment_truth, X_D_truth)
+        tmp_ari_table, tmp_ari_views = ctu.multi_chain_ARI(X_L_list,X_D_list, view_assignment_truth, X_D_truth)
         ari_table.append(tmp_ari_table)
         ari_views.append(tmp_ari_views)
         
+    else:
+        # Not sure we want to save the models for convergence testing 
+        saved_dict = {'T':T, 'M_c':M_c, 'X_L_list':X_L_list, 'X_D_list': X_D_list}
+        pkl_filename = 'model_{!s}.pkl.gz'.format(str(completed_transitions))
+        f_utils.pickle(saved_dict, filename = pkl_filename)
+
     completed_transitions = completed_transitions+block_size
     print completed_transitions
-    saved_dict = {'T':T, 'M_c':M_c, 'X_L_list':X_L_list, 'X_D_list': X_D_list}
-    pkl_filename = 'model_{!s}.pkl.gz'.format(str(completed_transitions))
-    f_utils.pickle(saved_dict, filename = pkl_filename)
     
+# Always save the last model
 saved_dict = {'T':T, 'M_c':M_c, 'X_L_list':X_L_list, 'X_D_list': X_D_list}
 pkl_filename = 'model_{!s}.pkl.gz'.format('last')
 f_utils.pickle(saved_dict, filename = pkl_filename)
 
-with open(ari_logfile, 'a') as outfile:
-    csvwriter=csv.writer(outfile,delimiter=',')
-    csvwriter.writerow([time.ctime(), ari_views, ari_table])
+if truth_flag:
+    with open(ari_logfile, 'a') as outfile:
+        csvwriter=csv.writer(outfile,delimiter=',')
+        csvwriter.writerow([time.ctime(), num_transitions, block_size, max_rows, num_cols, num_views, num_clusters, ari_views, ari_table])

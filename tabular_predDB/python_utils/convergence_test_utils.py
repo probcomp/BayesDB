@@ -23,9 +23,6 @@ def truth_from_permute_indices(data_inverse_permutation_indices, num_rows,num_co
     for viewindx in range(num_views):
         X_D_truth.append([a for (b,a) in sorted(zip(data_inverse_permutation_indices[viewindx], reference_list))])
         
-    X_D_truth = numpy.asarray(X_D_truth)
-    X_D_truth = X_D_truth.T
-    X_D_truth = X_D_truth.tolist()
         
     return view_assignments, X_D_truth
 
@@ -83,16 +80,20 @@ def ARI_CrossCat(Xc, Xrv, XRc, XRrv):
 
     return ARI, ARI_viewonly
 
-def multi_chain_ARI(X_L_list, X_D_List, view_assignment_truth, X_D_truth):
-    ari_table = 0
-    ari_views = 0
+def multi_chain_ARI(X_L_list, X_D_List, view_assignment_truth, X_D_truth, return_list=False):
     num_chains = len(X_L_list)
+    ari_table = numpy.zeros((1,num_chains))
+    ari_views = numpy.zeros((1,num_chains))
     for chainindx in range(num_chains):
         view_assignments = X_L_list[chainindx]['column_partition']['assignments']
-        curr_ari_table, curr_ari_views = ARI_CrossCat(view_assignments, X_D_List[chainindx], view_assignment_truth, X_D_truth)
-        ari_table = ari_table + curr_ari_table
-        ari_views = ari_views + curr_ari_views
+        curr_ari_table, curr_ari_views = ARI_CrossCat(numpy.asarray(view_assignments), numpy.asarray(X_D_List[chainindx]), numpy.asarray(view_assignment_truth), numpy.asarray(X_D_truth))
+        ari_table[chainindx] = curr_ari_table
+        ari_views[chainindx] = curr_ari_views
 
-    ari_table = ari_table/float(num_chains)
-    ari_views = ari_views/float(num_chains)
-    return ari_table, ari_views
+    ari_table_mean = numpy.mean(ari_table)
+    ari_views_mean = numpy.mean(ari_views)
+    if return_list:
+        return ari_table, ari_views
+    else:
+        return ari_table_mean, ari_views_mean
+    

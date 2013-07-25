@@ -16,13 +16,16 @@
 #   limitations under the License.
 #
 import os
+import numpy
 import sys
+from scipy import special
 #
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.python_utils.general_utils as gu
 import tabular_predDB.python_utils.timing_test_utils as ttu
+import tabular_predDB.python_utils.convergence_test_utils as ctu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
 
@@ -117,10 +120,69 @@ def time_analyze_helper(table_data, dict_in):
         )
     return ret_dict
 
+def convergence_analyze_helper(table_data, dict_in):
+    gen_seed = dict_in['SEED']
+    num_clusters = dict_in['num_clusters']
+    num_cols = dict_in['num_cols']
+    num_rows = dict_in['num_rows']
+    num_views = dict_in['num_views']
+    num_transitions = dict_in['n_steps']
+    block_size = dict_in['block_size']
+    init_seed = dict_in['init_seed']
+    
+    T, M_r, M_c, data_inverse_permutation_indices = du.gen_factorial_data_objects(gen_seed, num_clusters,
+                                                                                  num_cols, num_rows, num_views,
+                                                                                  max_mean=100, max_std=1,
+                                                                                  send_data_inverse_permutation_indices=True)
+    view_assignment_truth, X_D_truth = ctu.truth_from_permute_indices(data_inverse_permutation_indices, \
+                                                                      num_rows,num_cols, num_views, num_clusters)
+
+    ari_table = []
+    ari_views = []
+    
+    engine=LE.LocalEngine(init_seed)
+    M_c_prime, M_r_prime, X_L, X_D = \
+               engine.initialize(M_c, M_r, T, initialization='from_the_prior')
+    
+    view_assignments = X_L['column_partition']['assignments']
+    #tmp_ari_table, tmp_ari_views = ctu.multi_chain_ARI(X_L_list,X_D_list, view_assignment_truth, X_D_truth)
+    tmp_ari_table, tmp_ari_views = ctu.ARI_CrossCat(numpy.asarray(view_assignments), numpy.asarray(X_D), numpy.asarray(view_assignment_truth), numpy.asarray(X_D_truth))
+    ari_table.append(tmp_ari_table)
+    ari_views.append(tmp_ari_views)
+    
+
+    completed_transitions = 0
+    n_steps = min(block_size, num_transitions)
+    
+    while (completed_transitions < num_transitions):
+        # We won't be limiting by time in the convergence runs
+        X_L, X_D = engine.analyze(M_c, T, X_L, X_D, kernel_list=(), \
+                                            n_steps=n_steps, max_time=-1)
+        completed_transitions = completed_transitions+block_size
+        
+        view_assignments = X_L['column_partition']['assignments']
+        tmp_ari_table, tmp_ari_views = ctu.ARI_CrossCat(numpy.asarray(view_assignments), numpy.asarray(X_D), numpy.asarray(view_assignment_truth), numpy.asarray(X_D_truth))
+        ari_table.append(tmp_ari_table)
+        ari_views.append(tmp_ari_views)
+        
+    ret_dict = dict(
+        num_rows=num_rows,
+        num_cols=num_cols,
+        num_views=num_views,
+        num_clusters=num_clusters,
+        ari_table=ari_table,
+        ari_views=ari_views,
+        n_steps=num_transitions,
+        block_size=block_size,
+        )
+    return ret_dict
+    
+
 method_lookup = dict(
     initialize=initialize_helper,
     analyze=analyze_helper,
     time_analyze=time_analyze_helper,
+    convergence_analyze=convergence_analyze_helper,
     chunk_analyze=chunk_analyze_helper,
     )
 
