@@ -139,7 +139,7 @@ class HadoopEngine(object):
                                SEEDS)
         os.system('cp %s analyze_input' % input_filename)
         n_tasks = len(X_L)
-        send_hadoop_command(n_tasks)
+        self.send_hadoop_command(n_tasks)
         was_successful = self.get_hadoop_results()
         hadoop_output = None
         if was_successful:
