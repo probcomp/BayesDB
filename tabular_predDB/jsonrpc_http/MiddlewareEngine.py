@@ -220,7 +220,7 @@ class MiddlewareEngine(object):
     finally:
       if conn:
         conn.close()    
-    return 0
+    return dict(columns=colnames, data=[cctypes])
 
   def create_model(self, tablename, n_chains):
     """Call initialize n_chains times."""
@@ -472,7 +472,8 @@ class MiddlewareEngine(object):
     # convert to data, columns dict output format
     columns = colnames
     # map codes to original values
-    self.create_histogram(M_c, numpy.array(out), columns, col_indices, tablename+'_histogram')
+    ## TODO: Add histogram call back in, but on Python client locally!
+    #self.create_histogram(M_c, numpy.array(out), columns, col_indices, tablename+'_histogram')
     data = [[du.convert_code_to_value(M_c, cidx, code) for cidx,code in zip(col_indices,vals)] for vals in out]
     #data = numpy.array(out, dtype=float).reshape((numpredictions, len(colnames)))
     # FIXME: REMOVE WHEN DONE DEMO

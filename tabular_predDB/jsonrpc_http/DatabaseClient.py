@@ -16,6 +16,7 @@
 import tabular_predDB.python_utils.api_utils as au
 import inspect
 import prettytable
+import re
 
 from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine
 middleware_engine = MiddlewareEngine()
@@ -137,8 +138,20 @@ class DatabaseClient(object):
                     print 'Did you mean: DELETE CHAIN <chain_index> FROM <tablename>;?'
                     return False
 
-    def parse_runsql_order_by_similarity(self, words, orig):
-        
+    def parse_select(self, words, orig):
+        pass
+
+    def parse_order_by_similarity(self, words, orig):
+        match = re.search(r'order by similarity\((\w*?)((,\s+?)(\w*?))?\)', orig.lower())
+        if words[0] == 'select' and match:
+            try:
+                row_id = int(m.groups()[0])
+                col_id = m.groups()[3]
+                if not col is None:
+                    col = int(col)
+            except ValueError:
+                print "Similarity's arguments must be integers."
+            
 
     def parse_analyze(self, words, orig):
         chain_index = 'all'
@@ -156,49 +169,71 @@ class DatabaseClient(object):
                 idx += 3
             ## TODO: check length here
             if words[idx] == "for" and words[idx+2] == 'iterations':
-                iterations = words[idx+1]
+                iterations = int(words[idx+1])
             return self.analyze(tablename, chain_index, iterations, wait=False)
 
     def parse_infer(self, words, orig):
-        return
-        ## TODO
-        newtablename = newtablename
-        whereclause = whereclause
-        confidence = confidence
-        limit = limit
-        numsamples = numsamples
-        if words[0] == 'infer':
-            idx = 1
-            cols = []
-            cols.append(words[idx])
-            while ',' in words[idx] and len(words) > idx + 1:
-                idx += 1
-                cols.append(words[idx])
-            if len(words) > idx and words[idx + 1] == 'from':
-                columnstring = ' '.join(cols)
-                tablename = words[idx + 2]
-                
-                idx = idx + 3
-                if words[idx + 3] == 'where':
-                    where = []
-                    ## use python sqlparse?
-                ## TODO: parse where, confidence, etc. here
-            else:
+        match = re.search(r"""
+            infer\s+
+            (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
+            from\s+(?P<btable>[^\s]+)\s+
+            (where\s+(?P<whereclause>.*(?=with)))?
+            with\s+confidence\s+(?P<confidence>[^\s]+)
+            (\s+limit\s+(?P<limit>[^\s]+))?
+            (\s+numsamples\s+(?P<numsamples>[^\s]+))?;?'
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'infer':
                 print 'Did you mean: INFER col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] '+\
                     'WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY similarity(row_id, [col])];?'
                 return False
+            else:
+                return None
+        else:
+            columnstring = match.group('columnstring').strip()
+            tablename = match.group('btable')
+            whereclause = match.group('whereclause').strip()
+            if whereclause is None:
+                whereclause = ''
+            confidence = float(match.group('confidence'))
+            limit = match.group('limit')
+            if limit is None:
+                limit = Float("inf")
+            else:
+                limit = int(limit)
+            numsamples = match.group('numsamples')
+            if numsamples is None:
+                numsamples = 1
+            else:
+                numsamples = int(numsamples)
+            newtablename = '' # For INTO
+            return self.infer(tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples)
 
     def parse_predict(self, words, orig):
-        return
-        args_dict = dict()
-        tablename = tablename
-        columnstring = columnstring
-        newtablename = newtablename
-        whereclause = whereclause
-        numpredictions = numpredictions
-        print 'Did you mean: SIMULATE col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] TIMES <times> '+\
-            '[ORDER BY similarity(row_id, [col])];?'
-        return False
+        match = re.search(r"""
+            simulate\s+
+            (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
+            from\s+(?P<btable>[^\s]+)\s+
+            (where\s+(?P<whereclause>.*(?=times)))?
+            times\s+(?P<times>[^\s]+)
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'simulate':
+                print 'Did you mean: SIMULATE col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] TIMES <times> '+\
+                    '[ORDER BY similarity(row_id, [col])];?'
+                return False
+            else:
+                return None
+        else:
+            columnstring = match.group('columnstring').strip()
+            tablename = match.group('btable')
+            whereclause = match.group('whereclause').strip()
+            print 'whereclause:',whereclause
+            if whereclause is None:
+                whereclause = ''
+            numpredictions = int(match.group('times'))
+            newtablename = '' # For INTO
+            return self.predict(tablename, columnstring, newtablename, whereclause, numpredictions)
 
     def parse_write_json_for_table(self, words, orig):
         if len(words) >= 5:
@@ -206,6 +241,7 @@ class DatabaseClient(object):
                 return {'tablename': words[4]}
 
     def parse_create_histogram(self, words, orig):
+        '''TODO'''
         args_dict = dict()
         M_c = M_c
         data = data
@@ -215,22 +251,30 @@ class DatabaseClient(object):
 
     ## TODO: fix all these
     def parse_jsonify_and_dump(self, words, orig):
-        return self.call('jsonify_and_dump', {'to_dump': to_dump, 'filename': filename})
+        '''TODO'''
+        pass
+        #return self.call('jsonify_and_dump', {'to_dump': to_dump, 'filename': filename})
 
     def parse_get_metadata_and_table(self, tablename):
-        return self.call('get_metadata_and_table', {'tablename': tablename})
+        '''TODO'''
+        pass
+        #return self.call('get_metadata_and_table', {'tablename': tablename})
 
     def parse_get_latent_states(self, tablename):
-        return self.call('get_latent_states', {'tablename': tablename})
+        pass
+        #return self.call('get_latent_states', {'tablename': tablename})
 
     def parse_gen_feature_z(self, tablename, filename=None, dir=None):
-        return self.call('gen_feature_z', {'tablename': tablename, 'filename':filename, 'dir':dir})
+        pass
+        #return self.call('gen_feature_z', {'tablename': tablename, 'filename':filename, 'dir':dir})
 
     def parse_dump_db(self, filename, dir=None):
-        return self.call('dump_db', {'filename':filename, 'dir':dir})
+        pass
+        #return self.call('dump_db', {'filename':filename, 'dir':dir})
 
     def parse_guessschema(self, tablename, csv):
-        return self.call('guessschema', {'tablename':tablename, 'csv':csv})
+        pass
+        #return self.call('guessschema', {'tablename':tablename, 'csv':csv})
     
     def pretty_print(self, query_obj, presql_command=None):
         """If presql_command is None, we must guess"""
@@ -241,6 +285,8 @@ class DatabaseClient(object):
             for row in query_obj['data']:
                 pt.add_row(row)
             result = pt
+        elif type(query_obj) == list and type(query_obj[0]) == tuple:
+            pt = prettytable.PrettyTable()
         else:
             result = str(query_obj)
         return result

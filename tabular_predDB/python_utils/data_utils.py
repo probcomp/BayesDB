@@ -316,6 +316,7 @@ def remove_ignore_cols(T, cctypes, header):
 def read_data_objects(filename, max_rows=None, gen_seed=0,
                       cctypes=None, colnames=None):
     header, raw_T = read_csv(filename, has_header=True)
+    header = [h.lower() for h in header]
     # FIXME: why both accept colnames argument and read header?
     if colnames is None:
         colnames = header
