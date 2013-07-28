@@ -13,6 +13,7 @@ import tabular_predDB.HadoopEngine as HE
 import tabular_predDB.cython_code.State as State
 from collections import namedtuple
 import time
+import parse_convergence_results as pc
 
 
 def generate_hadoop_dicts(timing_run_parameters, args_dict):
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     input_filename = os.path.join(temp_dir, 'hadoop_input')
     output_filename = os.path.join(temp_dir, 'hadoop_output')
     output_path = os.path.join(temp_dir, 'output')  
-    parsed_out_file = os.path.join(temp_dir, 'parsed_output.csv')
+    parsed_out_file = os.path.join(temp_dir, 'parsed_convergence_output.csv')
 
     # Hard code the parameter values for now
 
@@ -70,10 +71,10 @@ if __name__ == '__main__':
     num_splits_list = [2, 4]
     max_mean_list = [0.5, 1, 2]
     
-    #num_rows_list = [10000]
-    #num_cols_list = [32]
-    #num_clusters_list = [20]
-    #num_splits_list = [8]
+    #num_rows_list = [200]
+    #num_cols_list = [8]
+    #num_clusters_list = [5]
+    #num_splits_list = [2,4]
     #max_mean_list = [1]
 
     parameter_list = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
@@ -112,6 +113,8 @@ if __name__ == '__main__':
 	    hadoop_output_filename = HE.get_hadoop_output_filename(output_path)
             cmd_str = 'cp %s %s' % (hadoop_output_filename, output_filename) 
 	    os.system(cmd_str)
+
+            pc.parse_to_csv(output_filename,parsed_out_file)
 
         else:
             print 'remote hadoop job NOT successful'
