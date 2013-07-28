@@ -18,6 +18,7 @@ import os
 import pickle
 import json
 import datetime
+import re
 #
 import pylab
 import numpy
@@ -45,7 +46,7 @@ class MiddlewareEngine(object):
   def ping(self):
     return "MIDDLEWARE GOT PING"
 
-  def runsql(self, sql_command):
+  def runsql(self, sql_command, order_by=False):
     """Run an arbitrary sql command. Returns the query results for select; 0 if not select."""
     try:
       conn = psycopg2.connect(psycopg_connect_str)
@@ -58,6 +59,11 @@ class MiddlewareEngine(object):
         ret = {'data':data, 'columns':colnames}
       except psycopg2.ProgrammingError:
         ret = 0
+      if order_by:
+        # GET X_L AND X_D
+        tablename = re.search(r'from\s+(?P<tablename>[^\s]+)', sql_command).group('tablename').strip()
+        X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
+        ret = self.order_by_similarity(ret, X_L_list, X_D_list, order_by)
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)      
@@ -65,6 +71,7 @@ class MiddlewareEngine(object):
     finally:
       conn.close()
     return ret
+
 
   def start_from_scratch(self):
     # drop
@@ -367,7 +374,7 @@ class MiddlewareEngine(object):
         conn.close()
     return 0
 
-  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples):
+  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False):
     """Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
     Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
@@ -444,15 +451,53 @@ class MiddlewareEngine(object):
         ret.append((row_idx, col_idx, value))
         counter += 1
         if counter >= limit:
-          break
+          BREAK
     #ret = du.map_from_T_with_M_c(ret, M_c)
-    ret = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in ret] 
+    imputations_list = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in ret]
+    table = self.select(tablename, columnstring, whereclause, limit)
+    ## Overwrite table with imputations
+    print imputations_list
+    for r,c,value in imputations_list:
+      table['data'][r][c] = value
+    ret = table
+    ret = self.order_by_similarity(ret, X_L_list, X_D_list, order_by)
     return ret
 
-  def order_by_similarity(data_tuples, X_L_list, X_D_list, row_id, col_id=None):
+  def select(self, tablename, columnstring, whereclause, limit):
+    try:
+      conn = psycopg2.connect(psycopg_connect_str)
+      cur = conn.cursor()
+      cmd = 'SELECT %s FROM %s' % (columnstring, tablename)
+      if len(whereclause) > 0:
+        cmd += ' WHERE %s' % (whereclause)
+      if limit and limit != float("inf"):
+        cmd += ' LIMIT %s' % str(limit)
+      cmd += ';'
+      print cmd
+      cur.execute(cmd)
+      try:
+        data = cur.fetchall()
+        col_metadata = cur.description
+        colnames = [coltuple[0] for coltuple in col_metadata]
+        ret = {'data':data, 'columns':colnames}
+      except psycopg2.ProgrammingError:
+        ret = 0
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)      
+      return e
+    finally:
+      conn.close()
+    return ret
+
+  def order_by_similarity(self, data_tuples, X_L_list, X_D_list, order_by):
     # Return the original data tuples, but sorted by similarity to the given row_id
     # By default, average the similarity over columns, unless one particular column id is specified.
     # TODO
+    if not order_by:
+      return data_tuples
+    rowid = order_by['rowid']
+    column = order_by['column']
     return data_tuples
 
 

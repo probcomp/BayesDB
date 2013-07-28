@@ -138,9 +138,6 @@ class DatabaseClient(object):
                     print 'Did you mean: DELETE CHAIN <chain_index> FROM <tablename>;?'
                     return False
 
-    def parse_select(self, words, orig):
-        pass
-
     def parse_order_by_similarity(self, words, orig):
         match = re.search(r'order by similarity\((\w*?)((,\s+?)(\w*?))?\)', orig.lower())
         if words[0] == 'select' and match:
@@ -178,14 +175,75 @@ class DatabaseClient(object):
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
             (where\s+(?P<whereclause>.*(?=with)))?
-            with\s+confidence\s+(?P<confidence>[^\s]+)
+            \s*with\s+confidence\s+(?P<confidence>[^\s]+)
             (\s+limit\s+(?P<limit>[^\s]+))?
-            (\s+numsamples\s+(?P<numsamples>[^\s]+))?;?'
+            (\s+numsamples\s+(?P<numsamples>[^\s]+))?
         """, orig.lower(), re.VERBOSE)
         if match is None:
             if words[0] == 'infer':
                 print 'Did you mean: INFER col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] '+\
-                    'WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY similarity(row_id, [col])];?'
+                    'WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]];?'
+                return False
+            else:
+                return None
+        else:
+            columnstring = match.group('columnstring').strip()
+            tablename = match.group('btable')
+            whereclause = match.group('whereclause')
+            if whereclause is None:
+                whereclause = ''
+            else:
+                whereclause = whereclause.strip()
+            confidence = float(match.group('confidence'))
+            limit = match.group('limit')
+            if limit is None:
+                limit = float("inf")
+            else:
+                limit = int(limit)
+            numsamples = match.group('numsamples')
+            if numsamples is None:
+                numsamples = 1
+            else:
+                numsamples = int(numsamples)
+            newtablename = '' # For INTO
+            orig, order_by = self.extract_order_by(orig)
+            return self.infer(tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by)
+
+    def extract_order_by(self, orig):
+        pattern = r"""
+            order\s+by\s+similarity\s+to\s+(?P<rowid>[^\s]+)
+            (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
+        """ 
+        match = re.search(pattern, orig.lower(), re.VERBOSE)
+        if match:
+            rowid = int(match.group('rowid').strip())
+            if match.group('column'):
+                column = match.group('column').strip()
+            else:
+                column = None
+            orig = re.sub(pattern, '', orig.lower(), flags=re.VERBOSE)
+            return (orig, {'rowid': rowid, 'column': column})
+        else:
+            return (orig, False)
+        
+    def parse_select(self, words, orig):
+        if words[0] == 'select':
+            orig, order_by = self.extract_order_by(orig)
+            result = self.runsql(orig, order_by)
+            return result
+        '''            
+        match = re.search(r"""
+            select\s+
+(?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
+            from\s+(?P<btable>[^\s]+)\s+
+            (where\s+(?P<whereclause>.*(?=limit)))?
+            (\s+limit\s+(?P<limit>[^\s]+))?.*
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'infer':
+                print 'Did you mean: SELECT col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] '+\
+                    '[LIMIT <limit>] [ORDER BY SIMILARITY TO <rowid> [WITH RESPECT TO <column>]];?'
+                    
                 return False
             else:
                 return None
@@ -195,7 +253,6 @@ class DatabaseClient(object):
             whereclause = match.group('whereclause').strip()
             if whereclause is None:
                 whereclause = ''
-            confidence = float(match.group('confidence'))
             limit = match.group('limit')
             if limit is None:
                 limit = Float("inf")
@@ -208,6 +265,7 @@ class DatabaseClient(object):
                 numsamples = int(numsamples)
             newtablename = '' # For INTO
             return self.infer(tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples)
+        '''
 
     def parse_predict(self, words, orig):
         match = re.search(r"""
@@ -220,7 +278,7 @@ class DatabaseClient(object):
         if match is None:
             if words[0] == 'simulate':
                 print 'Did you mean: SIMULATE col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] TIMES <times> '+\
-                    '[ORDER BY similarity(row_id, [col])];?'
+                    '[ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]];?'
                 return False
             else:
                 return None
@@ -228,12 +286,12 @@ class DatabaseClient(object):
             columnstring = match.group('columnstring').strip()
             tablename = match.group('btable')
             whereclause = match.group('whereclause').strip()
-            print 'whereclause:',whereclause
             if whereclause is None:
                 whereclause = ''
             numpredictions = int(match.group('times'))
             newtablename = '' # For INTO
-            return self.predict(tablename, columnstring, newtablename, whereclause, numpredictions)
+            orig, order_by = self.extract_order_by(orig)
+            return self.predict(tablename, columnstring, newtablename, whereclause, numpredictions, order_by)
 
     def parse_update_datatypes(self, words, orig):
         match = re.search(r"""
@@ -347,7 +405,8 @@ class DatabaseClient(object):
                            'analyze',
                            'upload_data_table',
                            'create_model',
-                           'update_datatypes']
+                           'update_datatypes',
+                           'select']
         for presql_command in presql_commands:
             parser = getattr(self, 'parse_' + presql_command)
             result = parser(words, sql_string)
@@ -387,8 +446,8 @@ class DatabaseClient(object):
     def ping(self):
         return self.call('ping', {})
 
-    def runsql(self, sql_command):
-        return self.call('runsql', {'sql_command': sql_command})
+    def runsql(self, sql_command, order_by=False):
+        return self.call('runsql', {'sql_command': sql_command, 'order_by': order_by})
 
     def start_from_scratch(self):
         return self.call('start_from_scratch', {})
@@ -430,7 +489,7 @@ class DatabaseClient(object):
         args_dict['iterations'] = iterations
         return self.call('analyze', args_dict)  
 
-    def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples):
+    def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by):
         args_dict = dict()
         args_dict['tablename'] = tablename
         args_dict['columnstring'] = columnstring
@@ -439,15 +498,17 @@ class DatabaseClient(object):
         args_dict['confidence'] = confidence
         args_dict['limit'] = limit
         args_dict['numsamples'] = numsamples
+        args_dict['order_by'] = order_by
         return self.call('infer', args_dict)
 
-    def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
+    def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):
         args_dict = dict()
         args_dict['tablename'] = tablename
         args_dict['columnstring'] = columnstring
         args_dict['newtablename'] = newtablename
         args_dict['whereclause'] = whereclause
         args_dict['numpredictions'] = numpredictions
+        args_dict['order_by'] = order_by
         return self.call('predict', args_dict)
 
     def write_json_for_table(self, tablename):
