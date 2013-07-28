@@ -1,4 +1,4 @@
-import numpy
+import numpy, pdb
 
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.xnet_utils as xu
@@ -82,8 +82,8 @@ def ARI_CrossCat(Xc, Xrv, XRc, XRrv):
 
 def multi_chain_ARI(X_L_list, X_D_List, view_assignment_truth, X_D_truth, return_list=False):
     num_chains = len(X_L_list)
-    ari_table = numpy.zeros((1,num_chains))
-    ari_views = numpy.zeros((1,num_chains))
+    ari_table = numpy.zeros(num_chains)
+    ari_views = numpy.zeros(num_chains)
     for chainindx in range(num_chains):
         view_assignments = X_L_list[chainindx]['column_partition']['assignments']
         curr_ari_table, curr_ari_views = ARI_CrossCat(numpy.asarray(view_assignments), numpy.asarray(X_D_List[chainindx]), numpy.asarray(view_assignment_truth), numpy.asarray(X_D_truth))
