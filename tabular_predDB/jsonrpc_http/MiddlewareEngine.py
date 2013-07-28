@@ -136,6 +136,59 @@ class MiddlewareEngine(object):
        conn.close()
      return 0
 
+  def update_datatypes(self, tablename, mappings):
+    """
+    mappings is a dict of column name to 'continuous', 'multinomial',
+    or an int, which signifies multinomial of a specific type.
+    TODO: FIX HACKS. Current works by reloading all the data from csv,
+    and you it ignores multinomials of specific types.
+    Also, disastrous things may happen if you update a schema after creating models.
+    """
+    # First, get existing cctypes, and T, M_c, and M_r.
+    try:
+      conn = psycopg2.connect(psycopg_connect_str)
+      cur = conn.cursor()
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % (tablename))
+      tableid = cur.fetchone()[0]
+      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      max_chainid = cur.fetchone()[0]
+      cur.execute("SELECT cctypes, t, m_r, m_c, path FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cctypes_json, t_json, m_r_json, m_c_json, csv_abs_path = cur.fetchone()
+      cctypes = json.loads(cctypes_json)
+      t = json.loads(t_json)
+      m_r = json.loads(m_r_json)
+      m_c = json.loads(m_c_json)
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return 'Caught DB Error: ' + str(e)
+    finally:
+      conn.close()
+    if max_chainid is not None:
+      return 'Error: cannot update datatypes after models have already been created. Please create a new table.'
+
+    # Now, update cctypes, T, M_c, and M_r
+    for col, mapping in mappings.items():
+      ## TODO: fix this hack! See method's docstring.
+      if type(mapping) == int:
+        mapping = 'multinomial'
+      cctypes[m_c['name_to_idx'][col]] = mapping
+    t, m_r, m_c, header = du.read_data_objects(csv_abs_path, cctypes=cctypes)
+
+    # Now, put cctypes, T, M_c, and M_r back into the DB
+    try:
+      conn = psycopg2.connect(psycopg_connect_str)
+      cur = conn.cursor()
+      cur.execute("UPDATE preddb.table_index SET cctypes='%s', m_r='%s', m_c='%s', t='%s' WHERE tablename='%s';" % (json.dumps(cctypes), json.dumps(m_r), json.dumps(m_c), json.dumps(t), tablename))
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return 'Caught DB Error: ' + str(e)
+    finally:
+      conn.close()
+    colnames = [m_c['idx_to_name'][str(idx)] for idx in range(len(m_c['idx_to_name']))]
+    return dict(columns=colnames, data=[cctypes])
+      
   def upload_data_table(self, tablename, csv, crosscat_column_types):
     """Upload a csv table to the predictive db.
     Crosscat_column_types must be a dictionary mapping column names
@@ -212,7 +265,7 @@ class MiddlewareEngine(object):
       with open(clean_csv_abs_path) as fh:
         cur.copy_from(fh, '%s' % tablename, sep=',')
       curtime = datetime.datetime.now().ctime()
-      cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes)))
+      cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes, path) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes), csv_abs_path))
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)

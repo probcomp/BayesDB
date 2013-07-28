@@ -235,6 +235,40 @@ class DatabaseClient(object):
             newtablename = '' # For INTO
             return self.predict(tablename, columnstring, newtablename, whereclause, numpredictions)
 
+    def parse_update_datatypes(self, words, orig):
+        match = re.search(r"""
+            update\s+datatypes\s+from\s+
+            (?P<btable>[^\s]+)\s+
+            set\s+(?P<mappings>[^;]*);?
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'update':
+                print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical[(k)]]+;?'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable').strip()
+            mapping_string = match.group('mappings').strip()
+            mappings = dict()
+            for mapping in mapping_string.split(','):
+                vals = mapping.split('=')
+                if 'continuous' in vals[1] or 'numerical' in vals[1]:
+                    datatype = 'continuous'
+                elif 'multinomial' in vals[1] or 'categorical' in vals[1]:
+                    m = re.search(r'\((?P<num>[^\)]+)\)', vals[1])
+                    if m:
+                        datatype = int(m.group('num'))
+                    else:
+                        datatype = 'multinomial'
+                elif 'ignore' in vals[1]:
+                    datatype = 'ignore'
+                else:
+                    print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical[(k)]]+;?'
+                    return False
+                mappings[vals[0]] = datatype
+            return self.update_datatypes(tablename, mappings)
+
     def parse_write_json_for_table(self, words, orig):
         if len(words) >= 5:
             if words[0] == 'write' and words[1] == 'json' and words[2] == 'for' and words[3] == 'table':
@@ -312,7 +346,8 @@ class DatabaseClient(object):
                            'infer',
                            'analyze',
                            'upload_data_table',
-                           'create_model']
+                           'create_model',
+                           'update_datatypes']
         for presql_command in presql_commands:
             parser = getattr(self, 'parse_' + presql_command)
             result = parser(words, sql_string)
@@ -372,8 +407,15 @@ class DatabaseClient(object):
         args_dict['tablename'] = tablename
         args_dict['csv'] = csv
         args_dict['crosscat_column_types'] = crosscat_column_types
-        return self.call('upload_data_table', args_dict)
-
+        ret = self.call('upload_data_table', args_dict)
+        print 'Created btable %s. Inferred schema:\n' % tablename
+        return ret
+                              
+    def update_datatypes(self, tablename, mappings):
+        ret = self.call('update_datatypes', {'tablename':tablename, 'mappings': mappings})
+        print 'Updated schema:\n'
+        return ret
+    
     def create_model(self, tablename, n_chains):
         args_dict = dict()
         args_dict['tablename'] = tablename
