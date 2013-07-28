@@ -322,6 +322,14 @@ def read_data_objects(filename, max_rows=None, gen_seed=0,
         colnames = header
     # remove excess rows
     raw_T = at_most_N_rows(raw_T, N=max_rows, gen_seed=gen_seed)
+    # convert empty strings to NAN
+    def filter_empty(el):
+        if len(el) == 0:
+            return 'NAN'
+        else:
+            return el
+    for i in range(len(raw_T)):
+        raw_T[i] = map(filter_empty, raw_T[i])
     # remove ignore columns
     if cctypes is None:
         cctypes = ['continuous'] * len(header)

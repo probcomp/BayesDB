@@ -225,8 +225,18 @@ class DatabaseClient(object):
             return (orig, {'rowid': rowid, 'column': column})
         else:
             return (orig, False)
+
+    def extract_limit(self, orig):
+        pattern = r'limit\s+(?P<limit>\d+)'
+        match = re.search(pattern, orig.lower())
+        if match:
+            limit = int(match.group('limit').strip())
+            return limit
+        else:
+            return float('inf')
         
     def parse_select(self, words, orig):
+        '''
         if words[0] == 'select':
             orig, order_by = self.extract_order_by(orig)
             result = self.runsql(orig, order_by)
@@ -234,38 +244,36 @@ class DatabaseClient(object):
         '''            
         match = re.search(r"""
             select\s+
-(?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
-            from\s+(?P<btable>[^\s]+)\s+
-            (where\s+(?P<whereclause>.*(?=limit)))?
-            (\s+limit\s+(?P<limit>[^\s]+))?.*
+            (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)
+            \s+from\s+(?P<btable>[^\s]+)\s*
+            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
+            (\s+limit\s+(?P<limit>[^\s]+))?
         """, orig.lower(), re.VERBOSE)
         if match is None:
-            if words[0] == 'infer':
+            if words[0] == 'select':
                 print 'Did you mean: SELECT col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] '+\
                     '[LIMIT <limit>] [ORDER BY SIMILARITY TO <rowid> [WITH RESPECT TO <column>]];?'
-                    
                 return False
             else:
                 return None
         else:
             columnstring = match.group('columnstring').strip()
             tablename = match.group('btable')
-            whereclause = match.group('whereclause').strip()
+            whereclause = match.group('whereclause')
             if whereclause is None:
                 whereclause = ''
+            else:
+                whereclause = whereclause.strip()
+            limit = self.extract_limit(orig)
+            '''
             limit = match.group('limit')
             if limit is None:
-                limit = Float("inf")
+                limit = float("inf")
             else:
                 limit = int(limit)
-            numsamples = match.group('numsamples')
-            if numsamples is None:
-                numsamples = 1
-            else:
-                numsamples = int(numsamples)
-            newtablename = '' # For INTO
-            return self.infer(tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples)
-        '''
+            '''
+            orig, order_by = self.extract_order_by(orig)
+            return self.select(tablename, columnstring, whereclause, limit, order_by)
 
     def parse_predict(self, words, orig):
         match = re.search(r"""
@@ -500,6 +508,15 @@ class DatabaseClient(object):
         args_dict['numsamples'] = numsamples
         args_dict['order_by'] = order_by
         return self.call('infer', args_dict)
+
+    def select(self, tablename, columnstring, whereclause, limit, order_by):
+        args_dict = dict()
+        args_dict['tablename'] = tablename
+        args_dict['columnstring'] = columnstring
+        args_dict['whereclause'] = whereclause
+        args_dict['limit'] = limit
+        args_dict['order_by'] = order_by
+        return self.call('select', args_dict)
 
     def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):
         args_dict = dict()

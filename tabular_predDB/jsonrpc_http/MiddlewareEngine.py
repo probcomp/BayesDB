@@ -19,6 +19,8 @@ import pickle
 import json
 import datetime
 import re
+import operator
+import copy
 #
 import pylab
 import numpy
@@ -441,9 +443,9 @@ class MiddlewareEngine(object):
     ret = []
     for q in Q:
       args_dict['Q'] = q # querys
-      out, id = au.call('impute_and_confidence', args_dict, self.BACKEND_URI)
+      #out, id = au.call('impute_and_confidence', args_dict, self.BACKEND_URI)
       # TODO: call with whole X_L_list and X_D_list once multistate impute implemented
-#      out = engine.impute_and_confidence(M_c, X_L_list[0], X_D_list[0], Y, [q], numsamples)
+      out = engine.impute_and_confidence(M_c, X_L_list, X_D_list, Y, [q], numsamples)
       value, conf = out
       if conf >= confidence:
         row_idx = q[0]
@@ -454,40 +456,92 @@ class MiddlewareEngine(object):
           BREAK
     #ret = du.map_from_T_with_M_c(ret, M_c)
     imputations_list = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in ret]
-    table = self.select(tablename, columnstring, whereclause, limit)
+    ## Convert into dict with r,c keys
+    imputations_dict = dict()
+    for r,c,val in imputations_list:
+      imputations_dict[(r,c)] = val
+    data = self.select(tablename, columnstring, whereclause, limit, order_by=False, imputations_dict=imputations_dict)
     ## Overwrite table with imputations
-    print imputations_list
-    for r,c,value in imputations_list:
-      table['data'][r][c] = value
-    ret = table
-    ret = self.order_by_similarity(ret, X_L_list, X_D_list, order_by)
+    #print imputations_list
+    #colidx_map_overall_to_local = dict()
+    #for idx, col in enumerate(colnames):
+      #overall_idx = name_to_idx[col]
+      #colidx_map_overall_to_local[overall_idx] = idx
+    ## TODO: fix!!!
+    #for r,c,value in imputations_list:
+      #c = colidx_map_overall_to_local[c]
+      ## TODO: should avoid copying this whole tuple
+      #row = list(table['data'][r])
+      #row[c] = value
+      #table['data'][r] = tuple(row)
+    #ret = table
+    data = self.order_by_similarity(ret, X_L_list, X_D_list, order_by)
+    ret = {'data': data, 'columns': colnames}
     return ret
 
-  def select(self, tablename, columnstring, whereclause, limit):
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cmd = 'SELECT %s FROM %s' % (columnstring, tablename)
-      if len(whereclause) > 0:
-        cmd += ' WHERE %s' % (whereclause)
-      if limit and limit != float("inf"):
-        cmd += ' LIMIT %s' % str(limit)
-      cmd += ';'
-      print cmd
-      cur.execute(cmd)
-      try:
-        data = cur.fetchall()
-        col_metadata = cur.description
-        colnames = [coltuple[0] for coltuple in col_metadata]
-        ret = {'data':data, 'columns':colnames}
-      except psycopg2.ProgrammingError:
-        ret = 0
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)      
-      return e
-    finally:
-      conn.close()
+  def select(self, tablename, columnstring, whereclause, limit, order_by, imputations_dict=None):
+    M_c, M_r, T = self.get_metadata_and_table(tablename)
+    conds = list() ## List of (c_idx, op, val) tuples.
+    if len(whereclause) > 0:
+      conditions = whereclause.split(',')
+      ## Order matters: need <= and >= before < and > and =.
+      operator_list = ['<=', '>=', '=', '>', '<']
+      operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
+      for condition in conditions:
+        for operator_str in operator_list:
+          if operator_str in condition:
+            op_str = operator_str
+            op = operator_map[op_str]
+            break
+        vals = condition.split(op_str)
+        column = vals[0].strip()
+        val = int(vals[1].strip())
+        c_idx = M_c['name_to_idx'][column]
+        conds.append((c_idx, op, val))
+
+    ## queries is a list of c_idxs or (c_idx, value) tuples. A tuple indicates that it's a probability query.
+    colnames = [colname.strip() for colname in columnstring.split(',')]
+    queries = []
+    for idx, colname in enumerate(colnames):
+      p_match = re.search(r'probability\s*\(\s*(?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)\s*\)', colname.lower())
+      if p_match:
+        column = p_match.group('column')
+        c_idx = M_c['name_to_idx'][column]
+        value = int(p_match.group('value'))
+        queries.append((c_idx, value))
+      else:
+        queries.append(M_c['name_to_idx'][colname])
+
+    ## Helper function that applies WHERE conditions to row.
+    def is_row_valid(row):
+      for (c_idx, op, val) in conds:
+        if not op(row[c_idx], val):
+          return False
+      return True
+
+    ## Do the select
+    data = []
+    row_count = 0
+    for idx, row in enumerate(T):
+      if is_row_valid(row): ## Where clause filtering.
+        ## Now: get the desired elements.
+        ret_row = []
+        for q in queries:
+          if type(q) == int:
+            ret_row.append(row[q])
+          elif type(q) == tuple:
+            ## TODO: SELECT PROBABILITY. Need to hook up simple_predictive_sample: for another time.
+            ret_row.append('?')
+        data.append(tuple(ret_row))
+        row_count += 1
+        if row_count >= limit:
+          break
+
+    ## Prepare for return
+    ret = {'data': data, 'columns': colnames}
+    if order_by:
+      X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
+      ret['data'] = self.order_by_similarity(ret['data'], X_L_list, X_D_list, order_by)
     return ret
 
   def order_by_similarity(self, data_tuples, X_L_list, X_D_list, order_by):
