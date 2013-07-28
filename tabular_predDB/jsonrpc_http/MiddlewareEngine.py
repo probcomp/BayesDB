@@ -460,7 +460,7 @@ class MiddlewareEngine(object):
     imputations_dict = dict()
     for r,c,val in imputations_list:
       imputations_dict[(r,c)] = val
-    data = self.select(tablename, columnstring, whereclause, limit, order_by=False, imputations_dict=imputations_dict)
+    ret = self.select(tablename, columnstring, whereclause, limit, order_by=False, imputations_dict=imputations_dict)
     ## Overwrite table with imputations
     #print imputations_list
     #colidx_map_overall_to_local = dict()
@@ -475,8 +475,7 @@ class MiddlewareEngine(object):
       #row[c] = value
       #table['data'][r] = tuple(row)
     #ret = table
-    data = self.order_by_similarity(ret, X_L_list, X_D_list, order_by)
-    ret = {'data': data, 'columns': colnames}
+    ret['data'] = self.order_by_similarity(ret['data'], X_L_list, X_D_list, order_by)
     return ret
 
   def select(self, tablename, columnstring, whereclause, limit, order_by, imputations_dict=None):
@@ -528,7 +527,11 @@ class MiddlewareEngine(object):
         ret_row = []
         for q in queries:
           if type(q) == int:
-            ret_row.append(row[q])
+            if imputations_dict and (idx,q) in imputations_dict:
+              val = imputations_dict[(idx,q)]
+            else:
+              val = row[q]
+            ret_row.append(val)
           elif type(q) == tuple:
             ## TODO: SELECT PROBABILITY. Need to hook up simple_predictive_sample: for another time.
             ret_row.append('?')
