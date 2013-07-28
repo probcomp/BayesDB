@@ -126,13 +126,14 @@ def convergence_analyze_helper(table_data, dict_in):
     num_cols = dict_in['num_cols']
     num_rows = dict_in['num_rows']
     num_views = dict_in['num_views']
+    max_mean = dict_in['max_mean']
     num_transitions = dict_in['n_steps']
     block_size = dict_in['block_size']
     init_seed = dict_in['init_seed']
     
     T, M_r, M_c, data_inverse_permutation_indices = du.gen_factorial_data_objects(gen_seed, num_clusters,
                                                                                   num_cols, num_rows, num_views,
-                                                                                  max_mean=100, max_std=1,
+                                                                                  max_mean=max_mean, max_std=1,
                                                                                   send_data_inverse_permutation_indices=True)
     view_assignment_truth, X_D_truth = ctu.truth_from_permute_indices(data_inverse_permutation_indices, \
                                                                       num_rows,num_cols, num_views, num_clusters)
@@ -170,6 +171,7 @@ def convergence_analyze_helper(table_data, dict_in):
         num_cols=num_cols,
         num_views=num_views,
         num_clusters=num_clusters,
+        max_mean = max_mean,
         ari_table=ari_table,
         ari_views=ari_views,
         n_steps=num_transitions,

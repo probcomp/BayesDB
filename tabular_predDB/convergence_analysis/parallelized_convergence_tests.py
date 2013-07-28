@@ -13,7 +13,7 @@ import tabular_predDB.HadoopEngine as HE
 import tabular_predDB.cython_code.State as State
 from collections import namedtuple
 import time
-import pdb
+
 
 def generate_hadoop_dicts(timing_run_parameters, args_dict):
     dict_to_write = dict(timing_run_parameters)
@@ -36,8 +36,8 @@ def write_hadoop_input(input_filename, timing_run_parameters, n_steps, block_siz
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gen_seed', type=int, default=0)
-    parser.add_argument('--n_steps', type=int, default=100)
-    parser.add_argument('--num_chains', type=int, default=20)
+    parser.add_argument('--n_steps', type=int, default=500)
+    parser.add_argument('--num_chains', type=int, default=50)
     parser.add_argument('--block_size', type=int, default=20)
     parser.add_argument('-do_local', action='store_true')
     parser.add_argument('-do_remote', action='store_true')
@@ -64,30 +64,32 @@ if __name__ == '__main__':
 
     # Hard code the parameter values for now
 
-    #num_rows_list = [100, 400, 1000, 4000, 10000]
-    #num_cols_list = [4, 8, 16, 24, 32]
-    #num_clusters_list = [10, 20, 30, 40, 50]
-    #num_splits_list = [1, 2, 3, 4, 5]
+    num_rows_list = [200, 400, 1000]
+    num_cols_list = [8, 16, 32]
+    num_clusters_list = [5,10]
+    num_splits_list = [2, 4]
+    max_mean_list = [0.5, 1, 2]
     
-    num_rows_list = [200, 400]
-    num_cols_list = [8]
-    num_clusters_list = [5, 10]
-    num_splits_list = [2,4]
+    #num_rows_list = [10000]
+    #num_cols_list = [32]
+    #num_clusters_list = [20]
+    #num_splits_list = [8]
+    #max_mean_list = [1]
 
     parameter_list = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
 
     count = -1
     # Iterate over the parameter values and write each run as a line in the hadoop_input file
-    take_product_of = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
-    for num_rows, num_cols, num_clusters, num_splits in itertools.product(*take_product_of):
+    take_product_of = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list, max_mean_list]
+    for num_rows, num_cols, num_clusters, num_splits, max_mean in itertools.product(*take_product_of):
         if numpy.mod(num_rows, num_clusters) == 0 and numpy.mod(num_cols,num_splits)==0:
           count = count + 1
           for chainindx in range(num_chains):
               timing_run_parameters = dict(num_rows=num_rows, num_cols=num_cols, \
-                                           num_views=num_splits, num_clusters=num_clusters, init_seed = chainindx)
+                                           num_views=num_splits, num_clusters=num_clusters, max_mean=max_mean, init_seed = chainindx)
               write_hadoop_input(input_filename, timing_run_parameters,  n_steps, block_size, SEED=count)
 
-    n_tasks = len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_splits_list)*num_chains
+    n_tasks = len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_splits_list)*len(max_mean_list)*num_chains
     # Create a dummy table data file
     table_data=dict(T=[],M_c=[],X_L=[],X_D=[])
     xu.pickle_table_data(table_data, table_data_filename)
