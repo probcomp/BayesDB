@@ -284,6 +284,49 @@ class MiddlewareEngine(object):
         conn.close()    
     return dict(columns=colnames, data=[cctypes])
 
+  def import_samples(self, tablename, X_L_list, X_D_list, iterations=0):
+    """Import these samples as if they are new chains"""
+    # Get t, m_c, and m_r, and tableid
+    try:
+      conn = psycopg2.connect(psycopg_connect_str)
+      cur = conn.cursor()
+      cur.execute("SELECT t, m_r, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      t_json, m_r_json, m_c_json = cur.fetchone()
+      t = json.loads(t_json)
+      m_r = json.loads(m_r_json)
+      m_c = json.loads(m_c_json)
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % (tablename))
+      tableid = cur.fetchone()[0]
+      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      max_chainid = cur.fetchone()[0]
+      if max_chainid is None: max_chainid = -1
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    except psycopg2.ProgrammingError:
+      conn.commit()
+    finally:
+      if conn:
+        conn.close()
+
+    # Insert states for each chain into the middleware db
+    try:
+      conn = psycopg2.connect(psycopg_connect_str)
+      cur = conn.cursor()
+      curtime = datetime.datetime.now().ctime()
+      for idx, (X_L, X_D) in enumerate(zip(X_L_list, X_D_list)):
+        chain_index = max_chainid + 1 + idx
+        cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%d, '%s', '%s', '%s', %d, %d);" % (tableid, json.dumps(X_L), json.dumps(X_D), curtime, chain_index, iterations))        
+      conn.commit()
+    except psycopg2.DatabaseError, e:
+      print('Error %s' % e)
+      return e
+    finally:
+      if conn:
+        conn.close()
+    return 0
+    
   def create_model(self, tablename, n_chains):
     """Call initialize n_chains times."""
     # Get t, m_c, and m_r, and tableid

@@ -15,6 +15,8 @@
 #
 import tabular_predDB.python_utils.api_utils as au
 import inspect
+import pickle
+import gzip
 import prettytable
 import re
 
@@ -234,6 +236,35 @@ class DatabaseClient(object):
             return limit
         else:
             return float('inf')
+
+    def parse_import_samples(self, words, orig):
+        match = re.search(r"""
+            import\s+samples\s+
+            (?P<pklpath>[^\s]+)\s+
+            into\s+
+            (?P<btable>[^\s]+)
+            (\s+iterations\s+(?P<iterations>[^\s]+))?
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'import':
+                print 'Did you mean: IMPORT SAMPLES <pklpath> INTO <btable> [ITERATIONS <iterations>]'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable')
+            pklpath = match.group('pklpath')
+            if pklpath[-3:] == '.gz':
+                samples = pickle.load(gzip.open(pklpath, 'rb'))
+            else:
+                samples = pickle.load(open(pklpath, 'rb'))
+            X_L_list = samples['X_L_list']
+            X_D_list = samples['X_D_list']
+            if match.group('iterations'):
+                iterations = int(match.group('iterations').strip())
+            else:
+                iterations = 0
+            return self.import_samples(tablename, X_L_list, X_D_list, iterations)
         
     def parse_select(self, words, orig):
         '''
@@ -414,7 +445,8 @@ class DatabaseClient(object):
                            'upload_data_table',
                            'create_model',
                            'update_datatypes',
-                           'select']
+                           'select',
+                           'import_samples']
         for presql_command in presql_commands:
             parser = getattr(self, 'parse_' + presql_command)
             result = parser(words, sql_string)
@@ -517,6 +549,12 @@ class DatabaseClient(object):
         args_dict['limit'] = limit
         args_dict['order_by'] = order_by
         return self.call('select', args_dict)
+
+    def import_samples(self, tablename, X_L_list, X_D_list, iterations=0):
+        return self.call('import_samples', {'tablename':tablename,
+                                            'X_L_list': X_L_list,
+                                            'X_D_list': X_D_list,
+                                            'iterations': iterations})
 
     def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):
         args_dict = dict()
