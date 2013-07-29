@@ -69,13 +69,12 @@ if __name__ == '__main__':
         max_mean=max_mean, max_std=max_std,
         )
     #
-    M_c_prime, M_r_prime, X_L, X_D, = ccc.initialize(M_c, M_r, T)
+    X_L, X_D, = ccc.initialize(M_c, M_r, T)
     X_L_prime, X_D_prime = ccc.analyze(M_c, T, X_L, X_D)
     X_L_prime, X_D_prime = ccc.analyze(M_c, T, X_L_prime, X_D_prime)
     #
     ccc = get_CrossCatClient('jsonrpc', seed=0, URI='http://localhost:8007')
-    # M_c_prime, M_r_prime, X_L, X_D, = ccc.initialize(M_c=M_c, M_r=M_r, T=T)
-    M_c_prime, M_r_prime, X_L, X_D, = ccc.initialize(M_c, M_r, T)
+    X_L, X_D, = ccc.initialize(M_c, M_r, T)
     X_L_prime, X_D_prime = ccc.analyze(M_c, T, X_L, X_D)
     X_L_prime, X_D_prime = ccc.analyze(M_c, T, X_L_prime, X_D_prime)
     

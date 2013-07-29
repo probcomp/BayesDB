@@ -56,7 +56,7 @@ bash ${source_dir}/install_scripts/set_postgres_trust.sh
 mkdir -p ${jenkins_home}/.matplotlib
 echo backend: Agg > ${jenkins_home}/.matplotlib/matplotlibrc
 # set up password login, set password for jenkins user
-bash ${source_dir}/setup_password_login.sh -u jenkins -p jenkins
+bash ${source_dir}/setup_password_login.sh -u jenkins -p bigdata
 # make sure jenkins api available for job setup automation
 sudo -u $user zsh -c -i 'pip install jenkinsapi==0.1.13'
 

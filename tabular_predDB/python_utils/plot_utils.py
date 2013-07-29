@@ -100,7 +100,6 @@ def plot_views(T_array, X_D, X_L, M_c, filename=None, dir='', close=True):
                
         pylab.gca().set_xticks(range(num_cols_i))
         #pylab.gca().set_xticklabels(map(str, xticklabels))
-        #pdb.set_trace()
         pylab.gca().set_xticklabels(column_names[is_this_view], rotation=90, size='x-small')
         pylab.gca().set_yticklabels([])
         pylab.xlim([-0.5, num_cols_i-0.5])

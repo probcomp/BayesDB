@@ -38,6 +38,7 @@ cdef extern from "MultinomialComponentModel.h":
         cpp_string to_string()
         double get_draw(int seed)
         double get_draw_constrained(int seed, vector[double] constraints)
+        double get_predictive_probability(double element, vector[double] constraints)
         void get_suffstats(int count_out, cpp_map[cpp_string, double] counts)
         double insert_element(double element)
         double remove_element(double element)
@@ -65,6 +66,9 @@ cdef class p_MultinomialComponentModel:
         return self.thisptr.get_draw(seed)
     def get_draw_constrained(self, seed, constraints):
         return self.thisptr.get_draw_constrained(seed, constraints)
+    # simple predictive probability (BAX)
+    def get_predictive_probability(self, element, constraints):
+        return self.thisptr.get_predictive_probability(element, constraints);
     def get_suffstats(self):
         cdef int count_out
         count_out = 0

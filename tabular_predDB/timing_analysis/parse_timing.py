@@ -1,4 +1,6 @@
 import sys
+import csv
+import os
 #
 import numpy
 #
@@ -42,6 +44,29 @@ def parse_reduced_line(reduced_line):
     time_per_step = reduced_line['elapsed_secs'] / reduced_line['n_steps']
     return num_rows, num_cols, num_clusters, num_views, \
         time_per_step, which_kernel
+
+def parse_timing_to_csv(filename, outfile='parsed_timing.csv'):
+   #drive, path = os.path.splitdrive(filename)
+   #outpath, file_nameonly = os.path.split(path)
+
+   with open(filename) as fh:
+        lines = []
+        for line in fh:
+            lines.append(xu.parse_hadoop_line(line))
+
+   header = ['num_rows', 'num_cols', 'num_clusters', 'num_views', 'time_per_step', 'which_kernel']
+   
+   reduced_lines = map(lambda x: x[1], lines)
+      
+   with open(outfile,'w') as csvfile:
+	csvwriter = csv.writer(csvfile,delimiter=',')
+	csvwriter.writerow(header)
+    	for reduced_line in reduced_lines:
+            try:
+            	parsed_line = parse_reduced_line(reduced_line)
+	    	csvwriter.writerow(parsed_line)
+            except Exception, e:
+                pass
 
 
 if __name__ == '__main__':

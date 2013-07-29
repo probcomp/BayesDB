@@ -18,6 +18,7 @@ class MultinomialComponentModel : public ComponentModel {
   void get_keys_counts_for_draw(std::vector<std::string> &keys, std::vector<double> &log_counts_for_draw, std::map<std::string, double> counts) const;
   double get_draw(int random_seed) const;
   double get_draw_constrained(int random_seed, std::vector<double> constraints) const;
+  double get_predictive_probability(double element, std::vector<double> constraints) const;
   //
   // calculators
   double calc_marginal_logp() const;

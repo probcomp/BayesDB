@@ -14,7 +14,6 @@
 *   limitations under the License.
 */
 #include "ContinuousComponentModel.h"
-
 using namespace std;
 
 ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hypers) {
@@ -54,6 +53,8 @@ double ContinuousComponentModel::calc_element_predictive_logp(double element) co
   //
   numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq, element);
   numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+
+
   double logp_prime = numerics::calc_continuous_logp(count, r, nu, s, log_Z_0);
   return logp_prime - score;
 }
@@ -203,6 +204,57 @@ double ContinuousComponentModel::get_draw_constrained(int random_seed, vector<do
   double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
   double draw = student_t_draw * coeff + mu;
   return draw;
+}
+
+// For simple predictive probability
+double ContinuousComponentModel::get_predictive_cdf(double element, vector<double> constraints) const {
+  // get modified suffstats
+  double r, nu, s, mu;
+  int count;
+  double sum_x, sum_x_sq;
+  get_hyper_doubles(r, nu, s, mu);
+  get_suffstats(count, sum_x, sum_x_sq);
+  for(int constraint_idx=0; constraint_idx<constraints.size();
+      constraint_idx++) {
+    double constraint = constraints[constraint_idx];
+    numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq,
+               constraint);
+  }
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+
+  boost::math::students_t dist(nu);
+  double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
+  // manipulate the number so it will fit in the standard t (reverse of the draw proceedure)
+  double rev_draw = (element-mu)/ coeff ;
+  double cdfval = boost::math::cdf(dist, rev_draw);
+
+  return cdfval;
+}
+
+// For simple predictive probability
+double ContinuousComponentModel::get_predictive_pdf(double element, vector<double> constraints) const {
+  // get modified suffstats
+  double r, nu, s, mu;
+  int count;
+  double sum_x, sum_x_sq;
+  get_hyper_doubles(r, nu, s, mu);
+  get_suffstats(count, sum_x, sum_x_sq);
+  for(int constraint_idx=0; constraint_idx<constraints.size();
+      constraint_idx++) {
+    double constraint = constraints[constraint_idx];
+    numerics::insert_to_continuous_suffstats(count, sum_x, sum_x_sq,
+               constraint);
+  }
+  numerics::update_continuous_hypers(count, sum_x, sum_x_sq, r, nu, s, mu);
+
+  
+  boost::math::students_t dist(nu);
+  double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
+  // manipulate the number so it will fit in the standard t (reverse of the draw proceedure)
+  double rev_draw = (element-mu)/ coeff ;
+  double pdfval = boost::math::pdf(dist, rev_draw);
+
+  return pdfval;
 }
 
 map<string, double> ContinuousComponentModel::get_suffstats() const {

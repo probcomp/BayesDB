@@ -1,8 +1,17 @@
 import numpy, pylab, os, csv
 import tabular_predDB.python_utils.sample_utils as su
+from copy import copy
 
+def isnan_mixedtype(input_list):
+    # Checks to see which elements are nans in a list of characters and numbers (the characters cannot be nans)
+    outlist = numpy.zeros(len(input_list))
+
+    num_indices = [x for x in range(len(input_list)) if numpy.isreal(input_list[x]) and numpy.isnan(input_list[x])]
+    outlist[num_indices] = 1
+    return outlist
 
 def impute_table(T, M_c, X_L_list, X_D_list, numDraws, get_next_seed):
+    T_imputed = copy(T)
     num_rows = len(T)
     num_cols = len(T[0])
     # Identify column types
@@ -14,38 +23,27 @@ def impute_table(T, M_c, X_L_list, X_D_list, numDraws, get_next_seed):
         else:
             coltype.append('multinomial')
 
-    # FIXME: This code currently works if there is one missing value in a table
-    #        Predict table below implements this correctly        
-
-    # Find missing values            
-    missingRowIndices = [missingRowIndices for missingRowIndices in range(len(T)) if any(numpy.isnan(T[missingRowIndices]))]
-    missingColIndices = []
-    for x in missingRowIndices:
-        y = [y for y in range(len(T[0])) if numpy.isnan(T[x][y])]
-        missingColIndices.append(y[0]) 
-
-    # Build queries for imputation
-    numImputations = len(missingRowIndices)
+    rowsWithNans = [i for i in range(len(T)) if any(isnan_mixedtype(T[i]))]
+    print rowsWithNans
     Q = []
-    for i in range(numImputations):
-        #print missingRowIndices[i],missingColIndices[i], len(T), len(T[0])
-        Q.append([missingRowIndices[i],missingColIndices[i]])
+    for x in rowsWithNans:
+        y = [y for y in range(len(T[0])) if isnan_mixedtype([T[x][y]])]
+        Q.extend(zip([x]*len(y), y)) 
 
+    numImputations = len(Q)
     # Impute missing values in table
     values_list = []
     for queryindx in range(len(Q)):
         values = su.impute(M_c, X_L_list, X_D_list, [], [Q[queryindx]], numDraws, get_next_seed)
         values_list.append(values)
 
+    
     # Put the samples back into the data table
-    T_imputed = T
-   
     for imputeindx in range(numImputations):
-        T_imputed[missingRowIndices[imputeindx]][missingColIndices[imputeindx]] = values_list[imputeindx]
-    for colindx in range(len(T[0])):
-        if coltype[colindx] == 'multinomial':
-            for rowindx in range(len(T)):
-                T_imputed[rowindx][colindx] =  M_c['column_metadata'][colindx]['value_to_code'][T_imputed[rowindx][colindx]]
+        imputed_value = values_list[imputeindx]
+        if coltype[Q[imputeindx][1]] == 'multinomial':
+            imputed_value = M_c['column_metadata'][Q[imputeindx][1]]['value_to_code'][imputed_value]
+        T_imputed[Q[imputeindx][0]][Q[imputeindx][1]] = imputed_value
 
     return T_imputed
 
@@ -87,10 +85,10 @@ def predict_in_table(T_test, T, M_c, X_L, X_D, numDraws, get_next_seed):
             coltype.append('multinomial')
 
     # Find missing values            
-    rowsWithNans = [rowsWithNans for rowsWithNans in range(len(T_test)) if any(numpy.isnan(T_test[rowsWithNans]))]
+    rowsWithNans = [rowsWithNans for rowsWithNans in range(len(T_test)) if any(isnan_mixedtype(T_test[rowsWithNans]))]
     Q = []
     for x in rowsWithNans:
-        y = [y for y in range(len(T_test[0])) if numpy.isnan(T_test[x][y])]
+        y = [y for y in range(len(T_test[0])) if isnan_mixedtype([T_test[x][y]])]
         Q.extend(zip([x]*len(y), y)) 
 
     # Build queries for imputation
@@ -113,13 +111,13 @@ def predict_in_table(T_test, T, M_c, X_L, X_D, numDraws, get_next_seed):
         values_list.append(values)
 
     # Put the samples back into the data table
-    T_predicted = T_test
+    T_predicted = copy(T_test)
 
     for predictindx in range(numPredictions):
         predicted_value = values_list[predictindx]
         if coltype[Q[predictindx][1]] == 'multinomial':
             predicted_value = M_c['column_metadata'][Q[predictindx][1]]['value_to_code'][predicted_value]
-        T_predicted[Q[predictindx][0]][Q[predictindx][1]] = values_list[predictindx]
+        T_predicted[Q[predictindx][0]][Q[predictindx][1]] = predicted_value
 
     return T_predicted
 

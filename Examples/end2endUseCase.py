@@ -1,4 +1,8 @@
-import argparse, pylab, numpy, pdb
+import argparse
+#
+import pylab
+import numpy
+#
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.sample_utils as su
 import tabular_predDB.python_utils.plot_utils as pu
@@ -69,7 +73,7 @@ for colindx in range(len(col_names)):
 if cachedState == ' ':
     print 'Initializing ...'
     # Call Initialize and Analyze
-    M_c, M_r, X_L_list, X_D_list = engine.initialize(M_c, M_r, T, n_chains = numChains)
+    X_L_list, X_D_list = engine.initialize(M_c, M_r, T, n_chains = numChains)
     completed_transitions = 0
     n_steps = min(step_size, num_transitions)
     print 'Analyzing ...'
