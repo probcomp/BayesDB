@@ -43,6 +43,9 @@ class LocalEngine(EngineTemplate.EngineTemplate):
         samples = do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed)
         return samples
 
+    def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, epsilon=0.001):
+        return su.simple_predictive_probability(M_c, X_L, X_D, Y, Q, epsilon)
+
     def impute(self, M_c, X_L, X_D, Y, Q, n):
         e = su.impute(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
         return e

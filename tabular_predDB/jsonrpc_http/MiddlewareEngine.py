@@ -508,6 +508,8 @@ class MiddlewareEngine(object):
     return ret
 
   def select(self, tablename, columnstring, whereclause, limit, order_by, imputations_dict=None):
+    probability_query = False
+    data_query = False
     M_c, M_r, T = self.get_metadata_and_table(tablename)
     conds = list() ## List of (c_idx, op, val) tuples.
     if len(whereclause) > 0:
@@ -531,6 +533,7 @@ class MiddlewareEngine(object):
     if '*' in columnstring:
       colnames = []
       queries = []
+      data_query = True
       for idx in range(len(M_c['name_to_idx'].keys())):
         queries.append(idx)
         colnames.append(M_c['idx_to_name'][idx])
@@ -544,8 +547,10 @@ class MiddlewareEngine(object):
           c_idx = M_c['name_to_idx'][column]
           value = int(p_match.group('value'))
           queries.append((c_idx, value))
+          probability_query = True
         else:
           queries.append(M_c['name_to_idx'][colname])
+          data_query = True
     colnames = ['row_id'] + colnames
     queries = ['row_id'] + queries
 
@@ -556,9 +561,21 @@ class MiddlewareEngine(object):
           return False
       return True
 
+    if probability_query:
+      X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
+
+      if whereclause=="" or '=' not in whereclause:
+        Y = None
+      else:
+        varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
+        Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
+        # map values to codes
+        Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
+
     ## Do the select
     data = []
     row_count = 0
+    probabilities_only = True
     for idx, row in enumerate(T):
       if is_row_valid(row): ## Where clause filtering.
         ## Now: get the desired elements.
@@ -566,18 +583,24 @@ class MiddlewareEngine(object):
         for q in queries:
           if type(q) == str and q=='row_id':
             ret_row.append(idx)
+            probabilities_only = False
           elif type(q) == int:
             if imputations_dict and (idx,q) in imputations_dict:
               val = imputations_dict[(idx,q)]
             else:
               val = row[q]
             ret_row.append(val)
+            probabilities_only = False
           elif type(q) == tuple:
+            (c_idx, value) = q
+            val = float(M_c['column_metadata'][c_idx]['code_to_value'][str(value)])
+            Q = [(idx, c_idx, val)]
+            prob = engine.simple_predictive_probability(M_c, X_L_list[0], X_D_list[0], Y, Q)
             ## TODO: SELECT PROBABILITY. Need to hook up simple_predictive_sample: for another time.
-            ret_row.append('?')
+            ret_row.append(prob)
         data.append(tuple(ret_row))
         row_count += 1
-        if row_count >= limit:
+        if row_count >= limit or probabilities_only:
           break
 
     ## Prepare for return
