@@ -557,10 +557,16 @@ class MiddlewareEngine(object):
     queries = ['row_id'] + queries
 
     ## Helper function that applies WHERE conditions to row.
-    def is_row_valid(row):
+    def is_row_valid(idx, row):
       for (c_idx, op, val) in conds:
         if not op(row[c_idx], val):
           return False
+      if imputations_dict:
+        has_imputation = False
+        for q in queries:
+          if (idx, q) in imputations_dict:
+            has_imputation = True
+        return has_imputation
       return True
 
     if probability_query:
@@ -590,7 +596,7 @@ class MiddlewareEngine(object):
     for idx, row in enumerate(T):
       ## Convert row to values
       #row = convert_row(row)
-      if is_row_valid(row): ## Where clause filtering.
+      if is_row_valid(idx, row): ## Where clause filtering.
         ## Now: get the desired elements.
         ret_row = []
         for q in queries:
