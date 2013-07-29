@@ -25,7 +25,7 @@ middleware_engine = MiddlewareEngine()
 
 class DatabaseClient(object):
     def __init__(self, hostname='localhost', port=8008):
-        if hostname == None:
+        if hostname is None or hostname=='localhost':
             self.online = False
         else:
             self.online = True
@@ -78,10 +78,10 @@ class DatabaseClient(object):
                             if words[4] == 'with' and self.is_int(words[5]) and words[6] == 'explanations':
                                 n_chains = int(words[5])
                         result = self.create_model(tablename, n_chains)
-                        print 'Created %d models for ptable %s' % (n_chains, tablename)
+                        print 'Created %d models for btable %s' % (n_chains, tablename)
                         return result
                     else:
-                        print 'Did you mean: CREATE MODELS FOR <ptable> [WITH <n_chains> EXPLANATIONS];?'
+                        print 'Did you mean: CREATE MODELS FOR <btable> [WITH <n_chains> EXPLANATIONS];?'
                         return False
                 elif len(words) >= 3 and self.is_int(words[1]):
                     n_chains = int(words[1])
@@ -90,19 +90,19 @@ class DatabaseClient(object):
                         if len(words) >= 5 and words[3] == 'for':
                             tablename = words[4]
                             result = self.create_model(tablename, n_chains)
-                            print 'Created %d models for ptable %s' % (n_chains, tablename)
+                            print 'Created %d models for btable %s' % (n_chains, tablename)
                             return result
                         else:
-                            print 'Did you mean: CREATE <n_chains> MODELS FOR <ptable>;?'
+                            print 'Did you mean: CREATE <n_chains> MODELS FOR <btable>;?'
                             return False
                 else:
-                    print 'Did you mean: CREATE <n_chains> MODELS FOR <ptable>;?'
+                    print 'Did you mean: CREATE <n_chains> MODELS FOR <btable> or CREATE BTABLE <btable> FROM <csvfile>;?'
                     return False
 
     def parse_upload_data_table(self, words, orig):
         crosscat_column_types = None
         if len(words) >= 2:
-            if (words[0] == 'upload' or words[0] == 'create') and words[1] == 'ptable':
+            if (words[0] == 'upload' or words[0] == 'create') and (words[1] == 'ptable' or words[1] == 'btable'):
                 if len(words) >= 5:
                     tablename = words[2]
                     if words[3] == 'from':
@@ -110,18 +110,18 @@ class DatabaseClient(object):
                             f = open(orig.split()[4], 'r')
                             csv = f.read()
                             result = self.upload_data_table(tablename, csv, crosscat_column_types)
-                            print 'Created ptable %s' % tablename
+                            #print 'Created btable %s' % tablename
                             return result
                         except Exception as e:
                             print str(e)
                             return False
                 else:
-                    print 'Did you mean: CREATE PTABLE <tablename> FROM <filename>;?'
+                    print 'Did you mean: CREATE BTABLE <tablename> FROM <filename>;?'
                     return False
 
     def parse_drop_tablename(self, words, orig):
         if len(words) >= 3:
-            if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable'):
+            if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
                 return self.drop_tablename(words[2])
 
     def parse_delete_chain(self, words, orig):
@@ -160,7 +160,7 @@ class DatabaseClient(object):
             if len(words) >= 2:
                 tablename = words[1]
             else:
-                print 'Did you mean: ANALYZE <ptable> [CHAIN INDEX <chain_index>] [FOR <iterations> ITERATIONS];?'
+                print 'Did you mean: ANALYZE <btable> [CHAIN INDEX <chain_index>] [FOR <iterations> ITERATIONS];?'
                 return False
             idx = 2
             if words[idx] == "chain" and words[idx+1] == 'index':
@@ -183,7 +183,7 @@ class DatabaseClient(object):
         """, orig.lower(), re.VERBOSE)
         if match is None:
             if words[0] == 'infer':
-                print 'Did you mean: INFER col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] '+\
+                print 'Did you mean: INFER col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
                     'WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]];?'
                 return False
             else:
@@ -282,7 +282,7 @@ class DatabaseClient(object):
         """, orig.lower(), re.VERBOSE)
         if match is None:
             if words[0] == 'select':
-                print 'Did you mean: SELECT col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] '+\
+                print 'Did you mean: SELECT col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
                     '[LIMIT <limit>] [ORDER BY SIMILARITY TO <rowid> [WITH RESPECT TO <column>]];?'
                 return False
             else:
@@ -316,7 +316,7 @@ class DatabaseClient(object):
         """, orig.lower(), re.VERBOSE)
         if match is None:
             if words[0] == 'simulate':
-                print 'Did you mean: SIMULATE col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] TIMES <times> '+\
+                print 'Did you mean: SIMULATE col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times> '+\
                     '[ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]];?'
                 return False
             else:
@@ -421,6 +421,9 @@ class DatabaseClient(object):
         else:
             result = str(query_obj)
         return result
+
+    def __call__(self, sql_string, pretty=True):
+        self.execute(sql_string, pretty)
     
     def execute(self, sql_string, pretty=True):
         """
@@ -455,14 +458,17 @@ class DatabaseClient(object):
             if result == False:
                 return
             if type(result) == str or not pretty:
+                print result
                 return result
             else:
-                return self.pretty_print(result, presql_command)
+                pp = self.pretty_print(result, presql_command)
+                return pp
         # No predictive sql functions match: attempt to run as sql  
         sql_string = sql_string.lower()
         result = self.runsql(sql_string)
         if pretty:
-            return self.pretty_print(result, presql_command)
+            pp = self.pretty_print(result, presql_command)
+            return pp
         else:
             return result
 
@@ -507,12 +513,14 @@ class DatabaseClient(object):
         args_dict['csv'] = csv
         args_dict['crosscat_column_types'] = crosscat_column_types
         ret = self.call('upload_data_table', args_dict)
-        print 'Created btable %s. Inferred schema:\n' % tablename
+        if type(ret) == dict:
+            print 'Created btable %s. Inferred schema:\n' % tablename
         return ret
                               
     def update_datatypes(self, tablename, mappings):
         ret = self.call('update_datatypes', {'tablename':tablename, 'mappings': mappings})
-        print 'Updated schema:\n'
+        if type(ret) == dict:
+            print 'Updated schema:\n'
         return ret
     
     def create_model(self, tablename, n_chains):

@@ -65,7 +65,7 @@ class MiddlewareEngine(object):
         # GET X_L AND X_D
         tablename = re.search(r'from\s+(?P<tablename>[^\s]+)', sql_command).group('tablename').strip()
         X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-        ret = self.order_by_similarity(ret, X_L_list, X_D_list, order_by)
+        ret = self.order_by_similarity(colnames, ret, X_L_list, X_D_list, order_by)
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)      
@@ -518,7 +518,7 @@ class MiddlewareEngine(object):
       #row[c] = value
       #table['data'][r] = tuple(row)
     #ret = table
-    ret['data'] = self.order_by_similarity(ret['data'], X_L_list, X_D_list, order_by)
+    ret['data'] = self.order_by_similarity(ret['columns'], ret['data'], X_L_list, X_D_list, order_by)
     return ret
 
   def select(self, tablename, columnstring, whereclause, limit, order_by, imputations_dict=None):
@@ -542,17 +542,24 @@ class MiddlewareEngine(object):
         conds.append((c_idx, op, val))
 
     ## queries is a list of c_idxs or (c_idx, value) tuples. A tuple indicates that it's a probability query.
-    colnames = [colname.strip() for colname in columnstring.split(',')]
-    queries = []
-    for idx, colname in enumerate(colnames):
-      p_match = re.search(r'probability\s*\(\s*(?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)\s*\)', colname.lower())
-      if p_match:
-        column = p_match.group('column')
-        c_idx = M_c['name_to_idx'][column]
-        value = int(p_match.group('value'))
-        queries.append((c_idx, value))
-      else:
-        queries.append(M_c['name_to_idx'][colname])
+    if '*' in columnstring:
+      colnames = []
+      queries = []
+      for idx in range(len(M_c['name_to_idx'].keys())):
+        queries.append(idx)
+        colnames.append(M_c['idx_to_name'][idx])
+    else:
+      colnames = [colname.strip() for colname in columnstring.split(',')]
+      queries = []
+      for idx, colname in enumerate(colnames):
+        p_match = re.search(r'probability\s*\(\s*(?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)\s*\)', colname.lower())
+        if p_match:
+          column = p_match.group('column')
+          c_idx = M_c['name_to_idx'][column]
+          value = int(p_match.group('value'))
+          queries.append((c_idx, value))
+        else:
+          queries.append(M_c['name_to_idx'][colname])
 
     ## Helper function that applies WHERE conditions to row.
     def is_row_valid(row):
@@ -587,18 +594,35 @@ class MiddlewareEngine(object):
     ret = {'data': data, 'columns': colnames}
     if order_by:
       X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-      ret['data'] = self.order_by_similarity(ret['data'], X_L_list, X_D_list, order_by)
+      ret['data'] = self.order_by_similarity(colnames, ret['data'], X_L_list, X_D_list, order_by)
     return ret
 
-  def order_by_similarity(self, data_tuples, X_L_list, X_D_list, order_by):
+  def order_by_similarity(self, colnames, data_tuples, X_L_list, X_D_list, order_by):
     # Return the original data tuples, but sorted by similarity to the given row_id
     # By default, average the similarity over columns, unless one particular column id is specified.
     # TODO
     if not order_by:
       return data_tuples
-    rowid = order_by['rowid']
-    column = order_by['column']
-    return data_tuples
+    target_rowid = order_by['rowid']
+    target_column = order_by['column']
+    if target_column:
+      col_idxs = [target_column]
+    else:
+      col_idxs = range(len(data_tuples)-1)
+    
+    scored_data_tuples = list() ## Entries are (score, data_tuple)
+    for idx, row in enumerate(data_tuples):
+      score = 0
+      ## Assume row is first value in returned data.
+      rowid = row[0]
+      for X_L, X_D in zip(X_L_list, X_D_list):
+        for col_idx in col_idxs:
+          view_idx = X_L['column_partitions']['assignments'][col_idx]
+          if X_D[view_idx][rowid] == X_D[view_idx][target_rowid]:
+            score += 1
+      scored_data_tuples.append((score, data_tuple))
+    sorted_tuples = scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
+    return [tup[1] for tup in sorted_tuples]
 
 
   def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
