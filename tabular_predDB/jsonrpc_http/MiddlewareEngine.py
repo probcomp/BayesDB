@@ -584,7 +584,7 @@ class MiddlewareEngine(object):
       ret = []
       for cidx, code in enumerate(row): #tuple([du.convert_code_to_value(M_c, cidx, code) for cidx, code in enumerate(row)])
         if not numpy.isnan(code) and not code=='nan':
-          ret.append(du.convert_code_to_value(M_c, cidx, str(int(code))))
+          ret.append(du.convert_code_to_value(M_c, cidx, code))
         else:
           ret.append(code)
       return tuple(ret)
