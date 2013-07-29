@@ -260,11 +260,12 @@ class DatabaseClient(object):
                 samples = pickle.load(open(pklpath, 'rb'))
             X_L_list = samples['X_L_list']
             X_D_list = samples['X_D_list']
+            M_c = samples['M_c']
             if match.group('iterations'):
                 iterations = int(match.group('iterations').strip())
             else:
                 iterations = 0
-            return self.import_samples(tablename, X_L_list, X_D_list, iterations)
+            return self.import_samples(tablename, X_L_list, X_D_list, M_c, iterations)
         
     def parse_select(self, words, orig):
         '''
@@ -489,12 +490,14 @@ class DatabaseClient(object):
                 return result
             else:
                 pp = self.pretty_print(result, presql_command)
+                print pp
                 return pp
         # No predictive sql functions match: attempt to run as sql  
         sql_string = sql_string.lower()
         result = self.runsql(sql_string)
         if pretty:
             pp = self.pretty_print(result, presql_command)
+            print pp
             return pp
         else:
             return result
@@ -618,10 +621,11 @@ class DatabaseClient(object):
         args_dict['order_by'] = order_by
         return self.call('select', args_dict)
 
-    def import_samples(self, tablename, X_L_list, X_D_list, iterations=0):
+    def import_samples(self, tablename, X_L_list, X_D_list, M_c, iterations=0):
         return self.call('import_samples', {'tablename':tablename,
                                             'X_L_list': X_L_list,
                                             'X_D_list': X_D_list,
+                                            'M_c': M_c, 
                                             'iterations': iterations})
 
     def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):
