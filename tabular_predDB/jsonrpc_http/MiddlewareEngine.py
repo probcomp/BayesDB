@@ -560,6 +560,8 @@ class MiddlewareEngine(object):
           queries.append((c_idx, value))
         else:
           queries.append(M_c['name_to_idx'][colname])
+    colnames = ['row_id'] + colnames
+    queries = ['row_id'] + queries
 
     ## Helper function that applies WHERE conditions to row.
     def is_row_valid(row):
@@ -576,7 +578,9 @@ class MiddlewareEngine(object):
         ## Now: get the desired elements.
         ret_row = []
         for q in queries:
-          if type(q) == int:
+          if type(q) == str and q=='row_id':
+            ret_row.append(idx)
+          elif type(q) == int:
             if imputations_dict and (idx,q) in imputations_dict:
               val = imputations_dict[(idx,q)]
             else:
@@ -601,28 +605,29 @@ class MiddlewareEngine(object):
     # Return the original data tuples, but sorted by similarity to the given row_id
     # By default, average the similarity over columns, unless one particular column id is specified.
     # TODO
-    if not order_by:
+    if len(data_tuples) == 0 or not order_by:
       return data_tuples
     target_rowid = order_by['rowid']
     target_column = order_by['column']
     if target_column:
       col_idxs = [target_column]
     else:
-      col_idxs = range(len(data_tuples)-1)
+      col_idxs = range(len(data_tuples[0])-1)
     
     scored_data_tuples = list() ## Entries are (score, data_tuple)
-    for idx, row in enumerate(data_tuples):
+    for idx, data_tuple in enumerate(data_tuples):
       score = 0
       ## Assume row is first value in returned data.
-      rowid = row[0]
+      rowid = data_tuple[0]
       for X_L, X_D in zip(X_L_list, X_D_list):
         for col_idx in col_idxs:
-          view_idx = X_L['column_partitions']['assignments'][col_idx]
+          view_idx = X_L['column_partition']['assignments'][col_idx]
           if X_D[view_idx][rowid] == X_D[view_idx][target_rowid]:
             score += 1
       scored_data_tuples.append((score, data_tuple))
-    sorted_tuples = scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
-    return [tup[1] for tup in sorted_tuples]
+    scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
+    print [tup[0] for tup in scored_data_tuples]
+    return [tup[1] for tup in scored_data_tuples]
 
 
   def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
