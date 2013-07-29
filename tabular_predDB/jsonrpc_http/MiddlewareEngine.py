@@ -581,13 +581,13 @@ class MiddlewareEngine(object):
         Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
         
     def convert_row(row):
-      row = []
+      ret = []
       for cidx, code in enumerate(row): #tuple([du.convert_code_to_value(M_c, cidx, code) for cidx, code in enumerate(row)])
         if not numpy.isnan(code) and not code=='nan':
-          row.append(du.convert_code_to_value(M_c, cidx, code))
+          ret.append(du.convert_code_to_value(M_c, cidx, str(int(code))))
         else:
-          row.append(code)
-      return tuple(row)
+          ret.append(code)
+      return tuple(ret)
     
     ## Do the select
     data = []
@@ -595,7 +595,7 @@ class MiddlewareEngine(object):
     probabilities_only = True
     for idx, row in enumerate(T):
       ## Convert row to values
-      #row = convert_row(row)
+      row = convert_row(row)
       if is_row_valid(idx, row): ## Where clause filtering.
         ## Now: get the desired elements.
         ret_row = []
@@ -1008,15 +1008,15 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=N
       pylab.imshow(z_matrix_reordered, interpolation='none',
                    cmap=matplotlib.cm.gray_r)
       pylab.colorbar()
-      if num_cols < 14:
-        pylab.gca().set_yticks(range(num_cols))
+      if len(column_names_reordered) < 14:
+        pylab.gca().set_yticks(range(len(column_names_reordered)))
         pylab.gca().set_yticklabels(column_names_reordered, size='small')
-        pylab.gca().set_xticks(range(num_cols))
+        pylab.gca().set_xticks(range(len(column_names_reordered)))
         pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
       else:
-        pylab.gca().set_yticks(range(num_cols)[::2])
+        pylab.gca().set_yticks(range(len(column_names_reordered))[::2])
         pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
-        pylab.gca().set_xticks(range(num_cols)[1::2])
+        pylab.gca().set_xticks(range(len(column_names_reordered))[1::2])
         pylab.gca().set_xticklabels(column_names_reordered[1::2],
                                     rotation=90, size='small')
       pylab.title('column dependencies for: %s' % tablename)

@@ -1,12 +1,12 @@
-import tabular_predDB.python_utils.file_utils as fu
-cctypes = fu.unpickle('kiva_cctypes.pkl.gz')
+#import tabular_predDB.python_utils.file_utils as fu
+#cctypes = fu.unpickle('kiva_cctypes.pkl.gz')
 
 from DatabaseClient import DatabaseClient
 client = DatabaseClient(hostname=None)
-client('drop btable dan_kiva;')
-client('create btable dan_kiva from data/kiva.csv;')
-client('import samples data/kiva_flat_table_model_500.pkl.gz into dan_kiva iterations 500;')
-print client('select * from dan_kiva limit 5;')
+#client('drop btable dan_kiva;')
+#client('create btable dan_kiva from data/kiva.csv;')
+#client('import samples data/kiva_flat_table_model_500.pkl.gz into dan_kiva iterations 500;')
+#print client('select * from dan_kiva limit 5;')
 
 fields_of_interest = [
     'partner_status',

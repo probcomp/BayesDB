@@ -19,6 +19,7 @@ import pickle
 import gzip
 import prettytable
 import re
+import os
 
 from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine
 middleware_engine = MiddlewareEngine()
@@ -357,7 +358,10 @@ class DatabaseClient(object):
                 limit = int(match.group('limit'))
             else:
                 limit = float("inf")
-            filename = match.group('filename')
+            if match.group('filename'):
+                filename = os.path.join('../../www/', match.group('filename'))
+            else:
+                filename = None
             return self.estimate_dependence_probabilities(tablename, col, confidence, limit, filename)
 
     def parse_update_datatypes(self, words, orig):
