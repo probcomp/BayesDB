@@ -978,19 +978,22 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=N
       z_matrix = z_matrix[columns,:][:,columns]
       column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
       column_names = numpy.array(column_names)
-    
-    # hierachically cluster z_matrix
-    import hcluster
-    Y = hcluster.pdist(z_matrix)
-    Z = hcluster.linkage(Y)
-    pylab.figure()
-    hcluster.dendrogram(Z)
-    intify = lambda x: int(x.get_text())
-    reorder_indices = map(intify, pylab.gca().get_xticklabels())
-    pylab.close()
-    # REORDER! 
-    z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
-    column_names_reordered = column_names[reorder_indices]
+      
+      z_matrix_reordered = z_matrix
+      column_names_reordered = column_names[columns]
+    else:
+      # hierachically cluster z_matrix
+      import hcluster
+      Y = hcluster.pdist(z_matrix)
+      Z = hcluster.linkage(Y)
+      pylab.figure()
+      hcluster.dendrogram(Z)
+      intify = lambda x: int(x.get_text())
+      reorder_indices = map(intify, pylab.gca().get_xticklabels())
+      pylab.close()
+      # REORDER! 
+      z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
+      column_names_reordered = column_names[reorder_indices]
 
     if filename:
       # actually create figure
