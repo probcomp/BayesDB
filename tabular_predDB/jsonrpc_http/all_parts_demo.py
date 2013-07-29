@@ -95,8 +95,9 @@ cmds.append('select %s from dan_kiva limit 20;' % fields_str)
 cmds.append('select %s from dan_kiva limit 10 order by similarity to 0;' % fields_str)
 field_str = 'loan_amount'
 cmds.append('simulate %s from dan_kiva where %s = 4000  TIMES 10' % pop_el(fields_of_interest, field_str))
+cmds.append('select partner_status, partner_rating, delinquent, loan_amount, gender_ratio, default_rate from dan_kiva where default_rate = 40 limit 10')
 field_str = 'default_rate'
-cmds.append('simulate %s from dan_kiva where %s = 20 TIMES 10' % pop_el(fields_of_interest, field_str))
+cmds.append('simulate %s from dan_kiva where %s = 40 TIMES 10' % pop_el(fields_of_interest, field_str))
 # cmds.append('select %s from dan_kiva limit 10 order by similarity to 0 with respect to default_rate;' % fields_str)
 # cmds.append('select %s from dan_kiva limit 10 order by similarity to 2 with respect to delinquency_rate;' % fields_str)
 # cmds.append('select %s from dan_kiva limit 10 order by similarity to 2 with respect to loan_amount;' % fields_str)
