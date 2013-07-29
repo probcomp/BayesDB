@@ -600,7 +600,7 @@ class MiddlewareEngine(object):
             ret_row.append(prob)
         data.append(tuple(ret_row))
         row_count += 1
-        if row_count >= limit or probabilities_only:
+        if (row_count >= limit and not order_by) or probabilities_only:
           break
 
     ## Prepare for return
@@ -608,6 +608,8 @@ class MiddlewareEngine(object):
     if order_by:
       X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
       ret['data'] = self.order_by_similarity(colnames, ret['data'], X_L_list, X_D_list, M_c, order_by)
+      if limit and limit != float("inf"):
+        ret['data'] = ret['data'][:limit]
     return ret
 
   def order_by_similarity(self, colnames, data_tuples, X_L_list, X_D_list, M_c, order_by):
