@@ -65,7 +65,7 @@ class MiddlewareEngine(object):
         # GET X_L AND X_D
         tablename = re.search(r'from\s+(?P<tablename>[^\s]+)', sql_command).group('tablename').strip()
         X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-        ret = self.order_by_similarity(colnames, ret, X_L_list, X_D_list, order_by)
+        ret = self.order_by_similarity(colnames, ret, X_L_list, X_D_list, M_c, order_by)
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)      
@@ -504,7 +504,7 @@ class MiddlewareEngine(object):
     for r,c,val in imputations_list:
       imputations_dict[(r,c)] = val
     ret = self.select(tablename, columnstring, whereclause, limit, order_by=False, imputations_dict=imputations_dict)
-    ret['data'] = self.order_by_similarity(ret['columns'], ret['data'], X_L_list, X_D_list, order_by)
+    ret['data'] = self.order_by_similarity(ret['columns'], ret['data'], X_L_list, X_D_list, M_c, order_by)
     return ret
 
   def select(self, tablename, columnstring, whereclause, limit, order_by, imputations_dict=None):
@@ -536,7 +536,7 @@ class MiddlewareEngine(object):
       data_query = True
       for idx in range(len(M_c['name_to_idx'].keys())):
         queries.append(idx)
-        colnames.append(M_c['idx_to_name'][idx])
+        colnames.append(M_c['idx_to_name'][str(idx)])
     else:
       colnames = [colname.strip() for colname in columnstring.split(',')]
       queries = []
@@ -607,10 +607,10 @@ class MiddlewareEngine(object):
     ret = {'data': data, 'columns': colnames}
     if order_by:
       X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-      ret['data'] = self.order_by_similarity(colnames, ret['data'], X_L_list, X_D_list, order_by)
+      ret['data'] = self.order_by_similarity(colnames, ret['data'], X_L_list, X_D_list, M_c, order_by)
     return ret
 
-  def order_by_similarity(self, colnames, data_tuples, X_L_list, X_D_list, order_by):
+  def order_by_similarity(self, colnames, data_tuples, X_L_list, X_D_list, M_c, order_by):
     # Return the original data tuples, but sorted by similarity to the given row_id
     # By default, average the similarity over columns, unless one particular column id is specified.
     # TODO
@@ -619,7 +619,7 @@ class MiddlewareEngine(object):
     target_rowid = order_by['rowid']
     target_column = order_by['column']
     if target_column:
-      col_idxs = [target_column]
+      col_idxs = [M_c['name_to_idx'][target_column]]
     else:
       col_idxs = range(len(data_tuples[0])-1)
     
@@ -808,6 +808,10 @@ class MiddlewareEngine(object):
         conn.close()
     return (X_L_list, X_D_list, M_c)
 
+  def estimate_dependence_probabilities(self, tablename, cola, colb, confidence, limit):
+    X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
+    return do_gen_feature_z(X_L_list, X_D_list, M_c, tablename)
+
   def gen_feature_z(self, tablename, filename=None,
                     dir=S.path.web_resources_dir):
     if filename is None:
@@ -815,7 +819,7 @@ class MiddlewareEngine(object):
     full_filename = os.path.join(dir, filename)
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
     return do_gen_feature_z(X_L_list, X_D_list, M_c,
-                            full_filename, tablename)
+                            tablename, full_filename)
 
   def dump_db(self, filename, dir=S.path.web_resources_dir):
     full_filename = os.path.join(dir, filename)
@@ -931,7 +935,7 @@ def jsonify_and_dump(to_dump, filename):
     print e
   return 0
 
-def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
+def do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None):
     num_cols = len(X_L_list[0]['column_partition']['assignments'])
     column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
     column_names = numpy.array(column_names)
@@ -957,26 +961,28 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, filename, tablename=''):
     # REORDER! 
     z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
     column_names_reordered = column_names[reorder_indices]
-    # actually create figure
-    fig = pylab.figure()
-    fig.set_size_inches(16, 12)
-    pylab.imshow(z_matrix_reordered, interpolation='none',
-                 cmap=matplotlib.cm.gray_r)
-    pylab.colorbar()
-    if num_cols < 14:
-      pylab.gca().set_yticks(range(num_cols))
-      pylab.gca().set_yticklabels(column_names_reordered, size='small')
-      pylab.gca().set_xticks(range(num_cols))
-      pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
-    else:
-      pylab.gca().set_yticks(range(num_cols)[::2])
-      pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
-      pylab.gca().set_xticks(range(num_cols)[1::2])
-      pylab.gca().set_xticklabels(column_names_reordered[1::2],
-                                  rotation=90, size='small')
-    pylab.title('column dependencies for: %s' % tablename)
-    pylab.savefig(filename)
-    #
+
+    if filename:
+      # actually create figure
+      fig = pylab.figure()
+      fig.set_size_inches(16, 12)
+      pylab.imshow(z_matrix_reordered, interpolation='none',
+                   cmap=matplotlib.cm.gray_r)
+      pylab.colorbar()
+      if num_cols < 14:
+        pylab.gca().set_yticks(range(num_cols))
+        pylab.gca().set_yticklabels(column_names_reordered, size='small')
+        pylab.gca().set_xticks(range(num_cols))
+        pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
+      else:
+        pylab.gca().set_yticks(range(num_cols)[::2])
+        pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
+        pylab.gca().set_xticks(range(num_cols)[1::2])
+        pylab.gca().set_xticklabels(column_names_reordered[1::2],
+                                    rotation=90, size='small')
+      pylab.title('column dependencies for: %s' % tablename)
+      pylab.savefig(filename)
+      #
     ret_dict = dict(
       z_matrix_reordered=z_matrix_reordered,
       column_names_reordered=column_names_reordered,

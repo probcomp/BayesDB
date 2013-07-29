@@ -332,6 +332,32 @@ class DatabaseClient(object):
             orig, order_by = self.extract_order_by(orig)
             return self.predict(tablename, columnstring, newtablename, whereclause, numpredictions, order_by)
 
+    def parse_estimate_dependence_probabilities(self, words, orig):
+        match = re.search(r"""
+            estimate\s+dependence\s+probabilities\s+from\s+
+            (?P<btable>[^\s]+)
+            (\s+for\s+(?P<cola>[^\s]+))?
+            (\s+referencing\s+(?P<colb>[^\s]+))?
+            (\s+with\s+confidence\s+(?P<confidence>[^\s]+))?
+            (\s+limit\s+(?P<limit>[^\s]+))?
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'estimate':
+                print 'Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [FOR <colA>] [ REFERENCING <colB>] [WITH CONFIDENCE <prob>] [LIMIT <k>]'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable').strip()
+            cola = match.group('cola')
+            colb = match.group('colb')
+            confidence = match.group('confidence')
+            if match.group('limit'):
+                limit = int(match.group('limit'))
+            else:
+                limit = float("inf")
+            return self.estimate_dependence_probabilities(tablename, cola, colb, confidence, limit)
+
     def parse_update_datatypes(self, words, orig):
         match = re.search(r"""
             update\s+datatypes\s+from\s+
@@ -449,7 +475,8 @@ class DatabaseClient(object):
                            'create_model',
                            'update_datatypes',
                            'select',
-                           'import_samples']
+                           'import_samples',
+                           'estimate_dependence_probabilities']
         for presql_command in presql_commands:
             parser = getattr(self, 'parse_' + presql_command)
             result = parser(words, sql_string)
@@ -521,6 +548,39 @@ class DatabaseClient(object):
         ret = self.call('update_datatypes', {'tablename':tablename, 'mappings': mappings})
         if type(ret) == dict:
             print 'Updated schema:\n'
+        return ret
+
+    def estimate_dependence_probabilities(self, tablename, cola, colb, confidence, limit):
+        ret = self.call('estimate_dependence_probabilities', dict(
+                tablename=tablename,
+                cola=cola,
+                colb=colb,
+                confidence=confidence,
+                limit=limit))
+        '''
+        filename = tablename + '_dependencies'
+        z_matrix_reordered = ret['z_matrix_reordered']
+        column_names_reordered = ret['column_names_reordered']
+        # actually create figure
+        fig = pylab.figure()
+        fig.set_size_inches(16, 12)
+        pylab.imshow(z_matrix_reordered, interpolation='none',
+                     cmap=matplotlib.cm.gray_r)
+        pylab.colorbar()
+        if num_cols < 14:
+            pylab.gca().set_yticks(range(num_cols))
+            pylab.gca().set_yticklabels(column_names_reordered, size='small')
+            pylab.gca().set_xticks(range(num_cols))
+            pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
+        else:
+            pylab.gca().set_yticks(range(num_cols)[::2])
+            pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
+            pylab.gca().set_xticks(range(num_cols)[1::2])
+            pylab.gca().set_xticklabels(column_names_reordered[1::2],
+                                        rotation=90, size='small')
+        pylab.title('column dependencies for: %s' % tablename)
+        pylab.savefig(filename)
+        '''
         return ret
     
     def create_model(self, tablename, n_chains):
