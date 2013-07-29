@@ -823,9 +823,9 @@ class MiddlewareEngine(object):
         conn.close()
     return (X_L_list, X_D_list, M_c)
 
-  def estimate_dependence_probabilities(self, tablename, cola, colb, confidence, limit):
+  def estimate_dependence_probabilities(self, tablename, col, confidence, limit):
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-    return do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, None, cola, confidence, limit)
+    return do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, None, col, confidence, limit)
 
   def gen_feature_z(self, tablename, filename=None,
                     dir=S.path.web_resources_dir):
@@ -967,7 +967,7 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=N
     
     if col:
       z_column = list(z_matrix[M_c['name_to_idx'][col]])
-      data_tuples = zip(z_column, list(column_names))
+      data_tuples = zip(z_column, range(num_cols))
       data_tuples.sort(reverse=True)
       if confidence:
         data_tuples = filter(lambda tup: tup[0] >= float(confidence), data_tuples)
@@ -975,7 +975,9 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=N
         data_tuples = data_tuples[:int(limit)]
       data = [tuple([d[0] for d in data_tuples])]
       columns = [d[1] for d in data_tuples]
-      return {'data':data, 'columns':columns}
+      z_matrix = z_matrix[columns,:][:,columns]
+      column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
+      column_names = numpy.array(column_names)
     
     # hierachically cluster z_matrix
     import hcluster

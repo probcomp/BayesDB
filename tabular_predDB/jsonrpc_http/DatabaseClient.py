@@ -338,27 +338,25 @@ class DatabaseClient(object):
         match = re.search(r"""
             estimate\s+dependence\s+probabilities\s+from\s+
             (?P<btable>[^\s]+)
-            (\s+for\s+(?P<cola>[^\s]+))?
-            (\s+referencing\s+(?P<colb>[^\s]+))?
+            (\s+referencing\s+(?P<col>[^\s]+))?
             (\s+with\s+confidence\s+(?P<confidence>[^\s]+))?
             (\s+limit\s+(?P<limit>[^\s]+))?
         """, orig.lower(), re.VERBOSE)
         if match is None:
             if words[0] == 'estimate':
-                print 'Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [FOR <colA>] [ REFERENCING <colB>] [WITH CONFIDENCE <prob>] [LIMIT <k>]'
+                print 'Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]]'
                 return False
             else:
                 return None
         else:
             tablename = match.group('btable').strip()
-            cola = match.group('cola')
-            colb = match.group('colb')
+            col = match.group('col')
             confidence = match.group('confidence')
             if match.group('limit'):
                 limit = int(match.group('limit'))
             else:
                 limit = float("inf")
-            return self.estimate_dependence_probabilities(tablename, cola, colb, confidence, limit)
+            return self.estimate_dependence_probabilities(tablename, col, confidence, limit)
 
     def parse_update_datatypes(self, words, orig):
         match = re.search(r"""
@@ -563,11 +561,10 @@ class DatabaseClient(object):
             print 'Updated schema:\n'
         return ret
 
-    def estimate_dependence_probabilities(self, tablename, cola, colb, confidence, limit):
+    def estimate_dependence_probabilities(self, tablename, col, confidence, limit):
         ret = self.call('estimate_dependence_probabilities', dict(
                 tablename=tablename,
-                cola=cola,
-                colb=colb,
+                col=col,
                 confidence=confidence,
                 limit=limit))
         '''
