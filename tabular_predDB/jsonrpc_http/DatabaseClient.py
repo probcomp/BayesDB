@@ -261,11 +261,12 @@ class DatabaseClient(object):
             X_L_list = samples['X_L_list']
             X_D_list = samples['X_D_list']
             M_c = samples['M_c']
+            T = samples['T']
             if match.group('iterations'):
                 iterations = int(match.group('iterations').strip())
             else:
                 iterations = 0
-            return self.import_samples(tablename, X_L_list, X_D_list, M_c, iterations)
+            return self.import_samples(tablename, X_L_list, X_D_list, M_c, T, iterations)
         
     def parse_select(self, words, orig):
         '''
@@ -630,11 +631,12 @@ class DatabaseClient(object):
         args_dict['order_by'] = order_by
         return self.call('select', args_dict)
 
-    def import_samples(self, tablename, X_L_list, X_D_list, M_c, iterations=0):
+    def import_samples(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
         return self.call('import_samples', {'tablename':tablename,
                                             'X_L_list': X_L_list,
                                             'X_D_list': X_D_list,
-                                            'M_c': M_c, 
+                                            'M_c': M_c,
+                                            'T': T,
                                             'iterations': iterations})
 
     def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):

@@ -284,7 +284,7 @@ class MiddlewareEngine(object):
         conn.close()    
     return dict(columns=colnames, data=[cctypes])
 
-  def import_samples(self, tablename, X_L_list, X_D_list, M_c, iterations=0):
+  def import_samples(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
     """Import these samples as if they are new chains"""
     # Get t, m_c, and m_r, and tableid
     try:
@@ -316,7 +316,7 @@ class MiddlewareEngine(object):
       cur = conn.cursor()
       curtime = datetime.datetime.now().ctime()
       ## TODO: This is dangerous. We're using the new M_c, but cctypes will be out of date. Need to update cctypes.
-      cur.execute("UPDATE preddb.table_index SET m_c='%s' WHERE tablename='%s';" % (json.dumps(M_c), tablename))
+      cur.execute("UPDATE preddb.table_index SET m_c='%s', t='%s' WHERE tablename='%s';" % (json.dumps(M_c), json.dumps(T), tablename))
       for idx, (X_L, X_D) in enumerate(zip(X_L_list, X_D_list)):
         chain_index = max_chainid + 1 + idx
         cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%d, '%s', '%s', '%s', %d, %d);" % (tableid, json.dumps(X_L), json.dumps(X_D), curtime, chain_index, iterations))        
@@ -363,7 +363,7 @@ class MiddlewareEngine(object):
     args_dict['T'] = t
     for chain_index in range(max_chainid, n_chains + max_chainid):
       out, id = au.call('initialize', args_dict, self.BACKEND_URI)
-      m_c, m_r, x_l_prime, x_d_prime = out
+      x_l_prime, x_d_prime = out
       states_by_chain.append((x_l_prime, x_d_prime))
     
     # Insert initial states for each chain into the middleware db
@@ -498,7 +498,7 @@ class MiddlewareEngine(object):
         ret.append((row_idx, col_idx, value))
         counter += 1
         if counter >= limit:
-          BREAK
+          break
     #ret = du.map_from_T_with_M_c(ret, M_c)
     imputations_list = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in ret]
     ## Convert into dict with r,c keys
@@ -573,12 +573,23 @@ class MiddlewareEngine(object):
         Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
         # map values to codes
         Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
-
+        
+    def convert_row(row):
+      row = []
+      for cidx, code in enumerate(row): #tuple([du.convert_code_to_value(M_c, cidx, code) for cidx, code in enumerate(row)])
+        if not numpy.isnan(code) and not code=='nan':
+          row.append(du.convert_code_to_value(M_c, cidx, code))
+        else:
+          row.append(code)
+      return tuple(row)
+    
     ## Do the select
     data = []
     row_count = 0
     probabilities_only = True
     for idx, row in enumerate(T):
+      ## Convert row to values
+      #row = convert_row(row)
       if is_row_valid(row): ## Where clause filtering.
         ## Now: get the desired elements.
         ret_row = []
