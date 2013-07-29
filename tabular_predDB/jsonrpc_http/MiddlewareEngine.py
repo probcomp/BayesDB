@@ -823,9 +823,9 @@ class MiddlewareEngine(object):
         conn.close()
     return (X_L_list, X_D_list, M_c)
 
-  def estimate_dependence_probabilities(self, tablename, col, confidence, limit):
+  def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename):
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-    return do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, None, col, confidence, limit)
+    return do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, filename, col, confidence, limit)
 
   def gen_feature_z(self, tablename, filename=None,
                     dir=S.path.web_resources_dir):

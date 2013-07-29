@@ -341,10 +341,11 @@ class DatabaseClient(object):
             (\s+referencing\s+(?P<col>[^\s]+))?
             (\s+with\s+confidence\s+(?P<confidence>[^\s]+))?
             (\s+limit\s+(?P<limit>[^\s]+))?
+            (\s+save\s+to\s+(?P<filename>[^\s]+))?
         """, orig.lower(), re.VERBOSE)
         if match is None:
             if words[0] == 'estimate':
-                print 'Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]]'
+                print 'Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]] [SAVE TO <file>]'
                 return False
             else:
                 return None
@@ -356,7 +357,8 @@ class DatabaseClient(object):
                 limit = int(match.group('limit'))
             else:
                 limit = float("inf")
-            return self.estimate_dependence_probabilities(tablename, col, confidence, limit)
+            filename = match.group('filename')
+            return self.estimate_dependence_probabilities(tablename, col, confidence, limit, filename)
 
     def parse_update_datatypes(self, words, orig):
         match = re.search(r"""
@@ -561,12 +563,13 @@ class DatabaseClient(object):
             print 'Updated schema:\n'
         return ret
 
-    def estimate_dependence_probabilities(self, tablename, col, confidence, limit):
+    def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename):
         ret = self.call('estimate_dependence_probabilities', dict(
                 tablename=tablename,
                 col=col,
                 confidence=confidence,
-                limit=limit))
+                limit=limit,
+                filename=filename))
         '''
         filename = tablename + '_dependencies'
         z_matrix_reordered = ret['z_matrix_reordered']
