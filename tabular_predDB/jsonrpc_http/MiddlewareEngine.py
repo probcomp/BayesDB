@@ -504,20 +504,6 @@ class MiddlewareEngine(object):
     for r,c,val in imputations_list:
       imputations_dict[(r,c)] = val
     ret = self.select(tablename, columnstring, whereclause, limit, order_by=False, imputations_dict=imputations_dict)
-    ## Overwrite table with imputations
-    #print imputations_list
-    #colidx_map_overall_to_local = dict()
-    #for idx, col in enumerate(colnames):
-      #overall_idx = name_to_idx[col]
-      #colidx_map_overall_to_local[overall_idx] = idx
-    ## TODO: fix!!!
-    #for r,c,value in imputations_list:
-      #c = colidx_map_overall_to_local[c]
-      ## TODO: should avoid copying this whole tuple
-      #row = list(table['data'][r])
-      #row[c] = value
-      #table['data'][r] = tuple(row)
-    #ret = table
     ret['data'] = self.order_by_similarity(ret['columns'], ret['data'], X_L_list, X_D_list, order_by)
     return ret
 

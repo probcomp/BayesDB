@@ -52,7 +52,7 @@ class LocalEngine(EngineTemplate.EngineTemplate):
             assert isinstance(X_D, (list, tuple))
             # TODO: multistate impute doesn't exist yet
             #e,confidence = su.impute_and_confidence_multistate(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
-            e,confidence = su.impute_and_confidence(M_c, X_L[0], X_D[0], Y, Q, n, self.get_next_seed)
+            e,confidence = su.impute_and_confidence(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
         else:
             e,confidence = su.impute_and_confidence(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
         return (e,confidence)
