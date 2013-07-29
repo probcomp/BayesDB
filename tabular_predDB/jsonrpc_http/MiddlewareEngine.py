@@ -639,7 +639,7 @@ class MiddlewareEngine(object):
             score += 1
       scored_data_tuples.append((score, data_tuple))
     scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
-    print [tup[0] for tup in scored_data_tuples]
+    #print [tup[0] for tup in scored_data_tuples] # print similarities
     return [tup[1] for tup in scored_data_tuples]
 
 

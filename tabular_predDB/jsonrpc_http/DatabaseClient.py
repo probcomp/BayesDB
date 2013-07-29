@@ -445,6 +445,14 @@ class DatabaseClient(object):
             result = pt
         elif type(query_obj) == list and type(query_obj[0]) == tuple:
             pt = prettytable.PrettyTable()
+        elif type(query_obj) == dict and 'column_names_reordered' in query_obj:
+            colnames = query_obj['column_names_reordered']
+            zmatrix = query_obj['z_matrix_reordered']
+            pt = prettytable.PrettyTable(hrules=prettytable.ALL, vrules=prettytable.ALL, header=False)
+            pt.add_row([''] + list(colnames))
+            for row, colname in zip(zmatrix, list(colnames)):
+                pt.add_row([colname] + list(row))
+            result = pt
         else:
             result = str(query_obj)
         return result
