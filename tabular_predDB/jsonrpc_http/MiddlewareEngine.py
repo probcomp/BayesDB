@@ -316,7 +316,7 @@ class MiddlewareEngine(object):
       cur = conn.cursor()
       curtime = datetime.datetime.now().ctime()
       ## TODO: This is dangerous. We're using the new M_c, but cctypes will be out of date. Need to update cctypes.
-      cur.execute("INSERT INTO preddb.table_index (m_c) VALUES ('%s') WHERE tablename='%s';" % json.dumps(M_c))
+      cur.execute("UPDATE preddb.table_index SET m_c='%s' WHERE tablename='%s';" % (json.dumps(M_c), tablename))
       for idx, (X_L, X_D) in enumerate(zip(X_L_list, X_D_list)):
         chain_index = max_chainid + 1 + idx
         cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%d, '%s', '%s', '%s', %d, %d);" % (tableid, json.dumps(X_L), json.dumps(X_D), curtime, chain_index, iterations))        
@@ -340,7 +340,6 @@ class MiddlewareEngine(object):
       t = json.loads(t_json)
       m_r = json.loads(m_r_json)
       m_c = json.loads(m_c_json)
-      import pdb; pdb.set_trace()
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % (tablename))
       tableid = cur.fetchone()[0]
       cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
