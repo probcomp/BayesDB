@@ -284,7 +284,7 @@ class DatabaseClient(object):
         if match is None:
             if words[0] == 'select':
                 print 'Did you mean: SELECT col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
-                    '[LIMIT <limit>] [ORDER BY SIMILARITY TO <rowid> [WITH RESPECT TO <column>]];?'
+                    '[ORDER BY SIMILARITY TO <rowid> [WITH RESPECT TO <column>]] [LIMIT <limit>];?'
                 return False
             else:
                 return None
@@ -458,7 +458,7 @@ class DatabaseClient(object):
         return result
 
     def __call__(self, sql_string, pretty=True):
-        self.execute(sql_string, pretty)
+        return self.execute(sql_string, pretty)
     
     def execute(self, sql_string, pretty=True):
         """
@@ -508,6 +508,7 @@ class DatabaseClient(object):
             print pp
             return pp
         else:
+            print result
             return result
 
     def is_int(self, s):
