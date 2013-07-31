@@ -22,6 +22,7 @@ class LocalEngine(EngineTemplate.EngineTemplate):
     """A simple interface to the Cython-wrapped C++ engine
 
     LocalEngine holds no state other than a seed generator.
+    Methods use resources on the local machine.
 
     """
 
