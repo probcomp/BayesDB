@@ -826,6 +826,7 @@ def determine_replicating_samples_params(X_L, X_D):
 def get_is_multistate(X_L, X_D):
     if isinstance(X_L, (list, tuple)):
         assert isinstance(X_D, (list, tuple))
+        assert len(X_L) == len(X_D)
         return True
     else:
         return False
