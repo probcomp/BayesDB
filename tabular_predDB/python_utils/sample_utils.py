@@ -26,7 +26,6 @@ import tabular_predDB.cython_code.ContinuousComponentModel as CCM
 import tabular_predDB.cython_code.MultinomialComponentModel as MCM
 import tabular_predDB.python_utils.general_utils as gu
 
-
 class Bunch(dict):
     def __getattr__(self, key):
         if self.has_key(key):
@@ -37,7 +36,6 @@ class Bunch(dict):
         self[key] = value
 
 Constraints = Bunch
-
 
 # simple_predictive_probability_density code is hacked from simple_predictive_probability
 # code. The dfference is that it returns log(pdf) for Normal Inverse-Gamma
@@ -59,6 +57,7 @@ def simple_predictive_probability_density(M_c, X_L, X_D, Y, Q):
     if not is_observed_row:
         x = simple_predictive_probability_density_unobserved(
             M_c, X_L, X_D, Y, query_row, query_columns, elements)
+        
     else:
         x = simple_predictive_probability_density_observed(
             M_c, X_L, X_D, Y, query_row, query_columns, elements)    
@@ -118,6 +117,7 @@ def simple_predictive_probability_density_unobserved(M_c, X_L, X_D, Y, query_row
     n_queries = len(query_columns)
 
     answer = numpy.zeros(n_queries)
+    answers = numpy.array([])
 
     for n in range(n_queries):
         # figure out what kind of model we are dealing with 
@@ -144,6 +144,9 @@ def simple_predictive_probability_density_unobserved_normal(M_c, X_L, X_D, Y, qu
     
     answers = numpy.zeros(len(cluster_logps))
 
+    # cluster_logps should logsumexp to log(1)
+    assert(numpy.abs(logsumexp(cluster_logps)) < .0000001)
+
     # enumerate over the clusters
     for cluster_idx in range(len(cluster_logps)):
 
@@ -156,16 +159,13 @@ def simple_predictive_probability_density_unobserved_normal(M_c, X_L, X_D, Y, qu
 
         # return the PDF value (exp)
         p_x = component_model.get_predictive_pdf(x, draw_constraints)
-
-        # weighted sum of probabilities over clusters
-        norm = cluster_logps[cluster_idx]-logsumexp(cluster_logps)
-
+        
         try:
-            answers[cluster_idx] = math.log(p_x)+norm
+            answers[cluster_idx] = p_x+cluster_logps[cluster_idx]
         except ValueError:
             answers[cluster_idx] = float('-inf')
 
-    answer = logsumexp(answers);
+    answer = logsumexp(answers)
  
     return answer
 
@@ -271,6 +271,9 @@ def simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row,
     # get the logps for all the clusters (plus a new one) in this view
     cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, query_row, view_idx)
 
+    # cluster_logps should logsumexp to log(1)
+    assert(numpy.abs(logsumexp(cluster_logps)) < .0000001)
+
     # we calculate a small portion of the integral using the CDF (student's t). 
     # CDF(b) - CDF(a)
     x = element
@@ -293,10 +296,8 @@ def simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row,
         p_b = component_model.get_predictive_cdf(b, draw_constraints)
         p_a = component_model.get_predictive_cdf(a, draw_constraints)
 
-        norm = cluster_logps[cluster_idx]-logsumexp(cluster_logps)
-
         try:
-            answers[cluster_idx] = math.log(p_b-p_a)+norm
+            answers[cluster_idx] = math.log(p_b-p_a)+cluster_logps[cluster_idx]
         except ValueError:
             answers[cluster_idx] = float('-inf')
 
@@ -311,6 +312,9 @@ def simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query
     view_idx = X_L['column_partition']['assignments'][query_column]
     # get the logps for all the clusters (plus a new one) in this view
     cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, query_row, view_idx)
+
+    # cluster_logps should logsumexp to log(1)
+    assert(numpy.abs(logsumexp(cluster_logps)) < .0000001)
 
     x = element
 
@@ -327,11 +331,8 @@ def simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query
 
         px = component_model.get_predictive_probability(b, draw_constraints)
 
-        norm = cluster_logps[cluster_idx]-logsumexp(cluster_logps)
-
-        answers[cluster_idx] = px+norm
         try:
-            answers[cluster_idx] = px+norm
+            answers[cluster_idx] = px+cluster_logps[cluster_idx]
         except ValueError:
             answers[cluster_idx] = float('-inf')
 

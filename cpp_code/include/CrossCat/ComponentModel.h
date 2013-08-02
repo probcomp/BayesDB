@@ -11,7 +11,8 @@
 #include "utils.h"
 #include "constants.h"
 #include <boost/random/student_t_distribution.hpp>
-#include <boost/math/distributions/students_t.hpp>      
+#include <boost/math/distributions/students_t.hpp>    
+#include <boost/math/special_functions/gamma.hpp>  
 #include <boost/random/mersenne_twister.hpp>
 
 class ComponentModel {

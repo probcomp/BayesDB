@@ -13,7 +13,7 @@ import tabular_predDB.python_utils.data_utils as du
 
 import tabular_predDB.cython_code.State as State
 
-random.seed(None)
+random.seed(None) # seed with system time
 inf_seed = random.randrange(32767)
 # THIS CODE ONLY TESTS CONTINUOUS DATA
 
@@ -32,7 +32,7 @@ query_column = 1
 # query_row = 3		# tests observed
 Q = [(query_row, query_column)]
 
-p_state, T, M_c, M_r, X_L, X_D = eu.GenerateStateFromPartitions(col,row,std_gen=10.0, std_data=.1)
+p_state, T, M_c, M_r, X_L, X_D = eu.GenerateStateFromPartitions(col, row, std_gen=10.0, std_data=.1)
 
 T_array = numpy.array(T)
 mu = numpy.mean(T_array[:,query_column])
@@ -46,61 +46,79 @@ X_D = p_state.get_X_D()
 Y = [] # no constraints
 # Y = [(1,query_column,.1),(3,query_column,.1),(22,query_column,105),(30,query_column,100)] # generic constraints
 
-
 n = 3000; # number of samples to take
+
+# pull n samples
 samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed,n=n)
 
-X_array = numpy.array(samples)
+X_array = numpy.sort(numpy.array(samples))
 
 std_X = numpy.std(X_array)
 mean_X = numpy.mean(X_array)
 
 # filter out extreme values
-X_filter_low = numpy.nonzero(X_array < mean_X-3.*std_X)[0]
-X_filter_high = numpy.nonzero(X_array > mean_X+3.*std_X)[0]
+X_filter_low = numpy.nonzero(X_array < mean_X-2.*std_X)[0]
+X_filter_high = numpy.nonzero(X_array > mean_X+2.*std_X)[0]
 X_filter = numpy.hstack((X_filter_low, X_filter_high))
-
 X_array = numpy.delete(X_array, X_filter)
+
+# sort for area calculation later on
+X_array = numpy.sort(X_array)
 
 X = X_array.tolist()
 
-pdf, bins, patches = pylab.hist(X,50,normed=1, histtype='bar',label='samples',edgecolor='none',alpha=.5)
-pylab.show()
-
-pdf_max = max(pdf)
-
+# build the queries
 Qs = [];
 for x in X:
     Qtmp = (query_row, query_column, x)
     Qs.append(Qtmp)
 
-Ps = su.simple_predictive_probability(M_c, X_L, X_D, Y, Qs, epsilon=.01)
-Ps2 = su.simple_predictive_probability_density(M_c, X_L, X_D, Y, Qs)
+# get probabilities 
+probabilities = numpy.exp(su.simple_predictive_probability(M_c, X_L, X_D, Y, Qs, epsilon=.001))
+# get pdf values
+densities = numpy.exp(su.simple_predictive_probability_density(M_c, X_L, X_D, Y, Qs))
 
-Ps = (numpy.exp(Ps)/max(numpy.exp(Ps)))*pdf_max
-# since Ps2 comes from the pdf, it should not need to be normalized
-Ps2 = numpy.exp(Ps2)#/max(numpy.exp(Ps2)))*pdf_max
+max_probability_value = max(probabilities)
+max_density_value = max(densities)
+
+# scale the probability values to the pdf for fit purposes. 
+# the shape should be the same, but the probability values are based on
+# epsilon. Density should not need to be scaled
+probabilities = (probabilities/max_probability_value)*max_density_value
+
+# test that the area under Ps2 and pdfs is about 1 
+# calculated using the trapezoid rule
+area_density = 0;
+for i in range(len(X)-1):
+	area_density += (X[i+1]-X[i])*(densities[i+1]+densities[i])/2.0
+
+print "Area of PDF (should be close to, but not greater than, 1): " + str(area_density)
+
+pylab.figure(facecolor='white')
 
 
-# make a scatterplot
-pylab.scatter(X,Ps, c='red',label="p from cdf")
+# PLOT: probability vs samples distribution
+# scale all histograms to be valid PDFs (area=1)
+pylab.subplot(1,2,1)
 
-pylab.legend(loc='upper left')
+pdf, bins, patches = pylab.hist(X,100,normed=1, histtype='stepfilled',label='samples',alpha=.5,color=[.5,.5,.5])
+pylab.scatter(X,probabilities, c='red',label="p from cdf", edgecolor='none')
+
+pylab.legend(loc='upper left',fontsize='x-small')
 pylab.xlabel('value') 
-pylab.ylabel('frequency/probability')
-pylab.title('TEST: probability and frequencies are not normalized')
-pylab.show()
+pylab.ylabel('frequency/scaled probability')
+pylab.title('simple_predictive_probability (scaled to max(pdf))')
 
-raw_input("Press Enter when finished with probabilty...")
+# PLOT: desnity vs samples distribution
+pylab.subplot(1,2,2)
+pdf, bins, patches = pylab.hist(X,100,normed=1, histtype='stepfilled',label='samples', alpha=.5, color=[.5,.5,.5])
+pylab.scatter(X,densities, c="red", label="pdf", edgecolor='none')
 
-pylab.clf()
-pdf, bins, patches = pylab.hist(X,50,normed=1, histtype='bar',label='samples',edgecolor='none',alpha=.5)
-pylab.scatter(X,Ps2, c='green',label="pdf")
-
-pylab.legend(loc='upper left')
+pylab.legend(loc='upper left',fontsize='x-small')
 pylab.xlabel('value') 
 pylab.ylabel('frequency/density')
-pylab.title('TEST: probability and frequencies are not normalized')
+pylab.title('TEST: PDF (not scaled)')
+
 pylab.show()
 
-raw_input("Press Enter when finished with density...")
+raw_input("Press Enter when finished...")
