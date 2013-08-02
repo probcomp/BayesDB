@@ -15,14 +15,18 @@
 #
 import tabular_predDB.python_utils.api_utils as au
 import inspect
+import pickle
+import gzip
 import prettytable
+import re
+import os
 
 from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine
 middleware_engine = MiddlewareEngine()
 
 class DatabaseClient(object):
     def __init__(self, hostname='localhost', port=8008):
-        if hostname == None:
+        if hostname is None or hostname=='localhost':
             self.online = False
         else:
             self.online = True
@@ -74,9 +78,11 @@ class DatabaseClient(object):
                         if len(words) >= 7:
                             if words[4] == 'with' and self.is_int(words[5]) and words[6] == 'explanations':
                                 n_chains = int(words[5])
-                        return self.create_model(tablename, n_chains)
+                        result = self.create_model(tablename, n_chains)
+                        print 'Created %d models for btable %s' % (n_chains, tablename)
+                        return result
                     else:
-                        print 'Did you mean: CREATE MODELS FOR <ptable> [WITH <n_chains> EXPLANATIONS];?'
+                        print 'Did you mean: CREATE MODELS FOR <btable> [WITH <n_chains> EXPLANATIONS];?'
                         return False
                 elif len(words) >= 3 and self.is_int(words[1]):
                     n_chains = int(words[1])
@@ -84,35 +90,39 @@ class DatabaseClient(object):
                     if words[2] == 'model' or words[2] == 'models':
                         if len(words) >= 5 and words[3] == 'for':
                             tablename = words[4]
-                            return self.create_model(tablename, n_chains)
+                            result = self.create_model(tablename, n_chains)
+                            print 'Created %d models for btable %s' % (n_chains, tablename)
+                            return result
                         else:
-                            print 'Did you mean: CREATE <n_chains> MODELS FOR <ptable>;?'
+                            print 'Did you mean: CREATE <n_chains> MODELS FOR <btable>;?'
                             return False
                 else:
-                    print 'Did you mean: CREATE <n_chains> MODELS FOR <ptable>;?'
+                    print 'Did you mean: CREATE <n_chains> MODELS FOR <btable> or CREATE BTABLE <btable> FROM <csvfile>;?'
                     return False
 
     def parse_upload_data_table(self, words, orig):
         crosscat_column_types = None
         if len(words) >= 2:
-            if (words[0] == 'upload' or words[0] == 'create') and words[1] == 'ptable':
+            if (words[0] == 'upload' or words[0] == 'create') and (words[1] == 'ptable' or words[1] == 'btable'):
                 if len(words) >= 5:
                     tablename = words[2]
                     if words[3] == 'from':
                         try:
                             f = open(orig.split()[4], 'r')
                             csv = f.read()
-                            return self.upload_data_table(tablename, csv, crosscat_column_types)
+                            result = self.upload_data_table(tablename, csv, crosscat_column_types)
+                            #print 'Created btable %s' % tablename
+                            return result
                         except Exception as e:
                             print str(e)
                             return False
                 else:
-                    print 'Did you mean: CREATE PTABLE <tablename> FROM <filename>;?'
+                    print 'Did you mean: CREATE BTABLE <tablename> FROM <filename>;?'
                     return False
 
     def parse_drop_tablename(self, words, orig):
         if len(words) >= 3:
-            if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable'):
+            if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
                 return self.drop_tablename(words[2])
 
     def parse_delete_chain(self, words, orig):
@@ -131,6 +141,18 @@ class DatabaseClient(object):
                     print 'Did you mean: DELETE CHAIN <chain_index> FROM <tablename>;?'
                     return False
 
+    def parse_order_by_similarity(self, words, orig):
+        match = re.search(r'order by similarity\((\w*?)((,\s+?)(\w*?))?\)', orig.lower())
+        if words[0] == 'select' and match:
+            try:
+                row_id = int(m.groups()[0])
+                col_id = m.groups()[3]
+                if not col is None:
+                    col = int(col)
+            except ValueError:
+                print "Similarity's arguments must be integers."
+            
+
     def parse_analyze(self, words, orig):
         chain_index = 'all'
         iterations = 2
@@ -139,7 +161,7 @@ class DatabaseClient(object):
             if len(words) >= 2:
                 tablename = words[1]
             else:
-                print 'Did you mean: ANALYZE <ptable> [CHAIN INDEX <chain_index>] [FOR <iterations> ITERATIONS];?'
+                print 'Did you mean: ANALYZE <btable> [CHAIN INDEX <chain_index>] [FOR <iterations> ITERATIONS];?'
                 return False
             idx = 2
             if words[idx] == "chain" and words[idx+1] == 'index':
@@ -147,49 +169,234 @@ class DatabaseClient(object):
                 idx += 3
             ## TODO: check length here
             if words[idx] == "for" and words[idx+2] == 'iterations':
-                iterations = words[idx+1]
+                iterations = int(words[idx+1])
             return self.analyze(tablename, chain_index, iterations, wait=False)
 
     def parse_infer(self, words, orig):
-        return
-        ## TODO
-        newtablename = newtablename
-        whereclause = whereclause
-        confidence = confidence
-        limit = limit
-        numsamples = numsamples
-        if words[0] == 'infer':
-            idx = 1
-            cols = []
-            cols.append(words[idx])
-            while ',' in words[idx] and len(words) > idx + 1:
-                idx += 1
-                cols.append(words[idx])
-            if len(words) > idx and words[idx + 1] == 'from':
-                columnstring = ' '.join(cols)
-                tablename = words[idx + 2]
-                
-                idx = idx + 3
-                if words[idx + 3] == 'where':
-                    where = []
-                    ## use python sqlparse?
-                ## TODO: parse where, confidence, etc. here
-            else:
-                print 'Did you mean: INFER col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] '+\
-                    'WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY similarity(row_id, [col])];?'
+        match = re.search(r"""
+            infer\s+
+            (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
+            from\s+(?P<btable>[^\s]+)\s+
+            (where\s+(?P<whereclause>.*(?=with)))?
+            \s*with\s+confidence\s+(?P<confidence>[^\s]+)
+            (\s+limit\s+(?P<limit>[^\s]+))?
+            (\s+numsamples\s+(?P<numsamples>[^\s]+))?
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'infer':
+                print 'Did you mean: INFER col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
+                    'WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]];?'
                 return False
+            else:
+                return None
+        else:
+            columnstring = match.group('columnstring').strip()
+            tablename = match.group('btable')
+            whereclause = match.group('whereclause')
+            if whereclause is None:
+                whereclause = ''
+            else:
+                whereclause = whereclause.strip()
+            confidence = float(match.group('confidence'))
+            limit = match.group('limit')
+            if limit is None:
+                limit = float("inf")
+            else:
+                limit = int(limit)
+            numsamples = match.group('numsamples')
+            if numsamples is None:
+                numsamples = 1
+            else:
+                numsamples = int(numsamples)
+            newtablename = '' # For INTO
+            orig, order_by = self.extract_order_by(orig)
+            return self.infer(tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by)
+
+    def extract_order_by(self, orig):
+        pattern = r"""
+            order\s+by\s+similarity\s+to\s+(?P<rowid>[^\s]+)
+            (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
+        """ 
+        match = re.search(pattern, orig.lower(), re.VERBOSE)
+        if match:
+            rowid = int(match.group('rowid').strip())
+            if match.group('column'):
+                column = match.group('column').strip()
+            else:
+                column = None
+            orig = re.sub(pattern, '', orig.lower(), flags=re.VERBOSE)
+            return (orig, {'rowid': rowid, 'column': column})
+        else:
+            return (orig, False)
+
+    def extract_limit(self, orig):
+        pattern = r'limit\s+(?P<limit>\d+)'
+        match = re.search(pattern, orig.lower())
+        if match:
+            limit = int(match.group('limit').strip())
+            return limit
+        else:
+            return float('inf')
+
+    def parse_import_samples(self, words, orig):
+        match = re.search(r"""
+            import\s+samples\s+
+            (?P<pklpath>[^\s]+)\s+
+            into\s+
+            (?P<btable>[^\s]+)
+            (\s+iterations\s+(?P<iterations>[^\s]+))?
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'import':
+                print 'Did you mean: IMPORT SAMPLES <pklpath> INTO <btable> [ITERATIONS <iterations>]'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable')
+            pklpath = match.group('pklpath')
+            if pklpath[-3:] == '.gz':
+                samples = pickle.load(gzip.open(pklpath, 'rb'))
+            else:
+                samples = pickle.load(open(pklpath, 'rb'))
+            X_L_list = samples['X_L_list']
+            X_D_list = samples['X_D_list']
+            M_c = samples['M_c']
+            T = samples['T']
+            if match.group('iterations'):
+                iterations = int(match.group('iterations').strip())
+            else:
+                iterations = 0
+            return self.import_samples(tablename, X_L_list, X_D_list, M_c, T, iterations)
+        
+    def parse_select(self, words, orig):
+        '''
+        if words[0] == 'select':
+            orig, order_by = self.extract_order_by(orig)
+            result = self.runsql(orig, order_by)
+            return result
+        '''            
+        match = re.search(r"""
+            select\s+
+            (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)
+            \s+from\s+(?P<btable>[^\s]+)\s*
+            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
+            (\s+limit\s+(?P<limit>[^\s]+))?
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'select':
+                print 'Did you mean: SELECT col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
+                    '[ORDER BY SIMILARITY TO <rowid> [WITH RESPECT TO <column>]] [LIMIT <limit>];?'
+                return False
+            else:
+                return None
+        else:
+            columnstring = match.group('columnstring').strip()
+            tablename = match.group('btable')
+            whereclause = match.group('whereclause')
+            if whereclause is None:
+                whereclause = ''
+            else:
+                whereclause = whereclause.strip()
+            limit = self.extract_limit(orig)
+            '''
+            limit = match.group('limit')
+            if limit is None:
+                limit = float("inf")
+            else:
+                limit = int(limit)
+            '''
+            orig, order_by = self.extract_order_by(orig)
+            return self.select(tablename, columnstring, whereclause, limit, order_by)
 
     def parse_predict(self, words, orig):
-        return
-        args_dict = dict()
-        tablename = tablename
-        columnstring = columnstring
-        newtablename = newtablename
-        whereclause = whereclause
-        numpredictions = numpredictions
-        print 'Did you mean: SIMULATE col0, [col1, ...] FROM <ptable> [WHERE <whereclause>] TIMES <times> '+\
-            '[ORDER BY similarity(row_id, [col])];?'
-        return False
+        match = re.search(r"""
+            simulate\s+
+            (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
+            from\s+(?P<btable>[^\s]+)\s+
+            (where\s+(?P<whereclause>.*(?=times)))?
+            times\s+(?P<times>[^\s]+)
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'simulate':
+                print 'Did you mean: SIMULATE col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times> '+\
+                    '[ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]];?'
+                return False
+            else:
+                return None
+        else:
+            columnstring = match.group('columnstring').strip()
+            tablename = match.group('btable')
+            whereclause = match.group('whereclause').strip()
+            if whereclause is None:
+                whereclause = ''
+            numpredictions = int(match.group('times'))
+            newtablename = '' # For INTO
+            orig, order_by = self.extract_order_by(orig)
+            return self.predict(tablename, columnstring, newtablename, whereclause, numpredictions, order_by)
+
+    def parse_estimate_dependence_probabilities(self, words, orig):
+        match = re.search(r"""
+            estimate\s+dependence\s+probabilities\s+from\s+
+            (?P<btable>[^\s]+)
+            (\s+referencing\s+(?P<col>[^\s]+))?
+            (\s+with\s+confidence\s+(?P<confidence>[^\s]+))?
+            (\s+limit\s+(?P<limit>[^\s]+))?
+            (\s+save\s+to\s+(?P<filename>[^\s]+))?
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'estimate':
+                print 'Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]] [SAVE TO <file>]'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable').strip()
+            col = match.group('col')
+            confidence = match.group('confidence')
+            if match.group('limit'):
+                limit = int(match.group('limit'))
+            else:
+                limit = float("inf")
+            if match.group('filename'):
+                filename = os.path.join('../../www/', match.group('filename'))
+            else:
+                filename = None
+            return self.estimate_dependence_probabilities(tablename, col, confidence, limit, filename)
+
+    def parse_update_datatypes(self, words, orig):
+        match = re.search(r"""
+            update\s+datatypes\s+from\s+
+            (?P<btable>[^\s]+)\s+
+            set\s+(?P<mappings>[^;]*);?
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'update':
+                print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical[(k)]]+;?'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable').strip()
+            mapping_string = match.group('mappings').strip()
+            mappings = dict()
+            for mapping in mapping_string.split(','):
+                vals = mapping.split('=')
+                if 'continuous' in vals[1] or 'numerical' in vals[1]:
+                    datatype = 'continuous'
+                elif 'multinomial' in vals[1] or 'categorical' in vals[1]:
+                    m = re.search(r'\((?P<num>[^\)]+)\)', vals[1])
+                    if m:
+                        datatype = int(m.group('num'))
+                    else:
+                        datatype = 'multinomial'
+                elif 'ignore' in vals[1]:
+                    datatype = 'ignore'
+                else:
+                    print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical[(k)]]+;?'
+                    return False
+                mappings[vals[0]] = datatype
+            return self.update_datatypes(tablename, mappings)
 
     def parse_write_json_for_table(self, words, orig):
         if len(words) >= 5:
@@ -197,6 +404,7 @@ class DatabaseClient(object):
                 return {'tablename': words[4]}
 
     def parse_create_histogram(self, words, orig):
+        '''TODO'''
         args_dict = dict()
         M_c = M_c
         data = data
@@ -206,22 +414,30 @@ class DatabaseClient(object):
 
     ## TODO: fix all these
     def parse_jsonify_and_dump(self, words, orig):
-        return self.call('jsonify_and_dump', {'to_dump': to_dump, 'filename': filename})
+        '''TODO'''
+        pass
+        #return self.call('jsonify_and_dump', {'to_dump': to_dump, 'filename': filename})
 
     def parse_get_metadata_and_table(self, tablename):
-        return self.call('get_metadata_and_table', {'tablename': tablename})
+        '''TODO'''
+        pass
+        #return self.call('get_metadata_and_table', {'tablename': tablename})
 
     def parse_get_latent_states(self, tablename):
-        return self.call('get_latent_states', {'tablename': tablename})
+        pass
+        #return self.call('get_latent_states', {'tablename': tablename})
 
     def parse_gen_feature_z(self, tablename, filename=None, dir=None):
-        return self.call('gen_feature_z', {'tablename': tablename, 'filename':filename, 'dir':dir})
+        pass
+        #return self.call('gen_feature_z', {'tablename': tablename, 'filename':filename, 'dir':dir})
 
     def parse_dump_db(self, filename, dir=None):
-        return self.call('dump_db', {'filename':filename, 'dir':dir})
+        pass
+        #return self.call('dump_db', {'filename':filename, 'dir':dir})
 
     def parse_guessschema(self, tablename, csv):
-        return self.call('guessschema', {'tablename':tablename, 'csv':csv})
+        pass
+        #return self.call('guessschema', {'tablename':tablename, 'csv':csv})
     
     def pretty_print(self, query_obj, presql_command=None):
         """If presql_command is None, we must guess"""
@@ -232,9 +448,22 @@ class DatabaseClient(object):
             for row in query_obj['data']:
                 pt.add_row(row)
             result = pt
+        elif type(query_obj) == list and type(query_obj[0]) == tuple:
+            pt = prettytable.PrettyTable()
+        elif type(query_obj) == dict and 'column_names_reordered' in query_obj:
+            colnames = query_obj['column_names_reordered']
+            zmatrix = query_obj['z_matrix_reordered']
+            pt = prettytable.PrettyTable(hrules=prettytable.ALL, vrules=prettytable.ALL, header=False)
+            pt.add_row([''] + list(colnames))
+            for row, colname in zip(zmatrix, list(colnames)):
+                pt.add_row([colname] + list(row))
+            result = pt
         else:
             result = str(query_obj)
         return result
+
+    def __call__(self, sql_string, pretty=True):
+        return self.execute(sql_string, pretty)
     
     def execute(self, sql_string, pretty=True):
         """
@@ -257,7 +486,11 @@ class DatabaseClient(object):
                            'infer',
                            'analyze',
                            'upload_data_table',
-                           'create_model']
+                           'create_model',
+                           'update_datatypes',
+                           'select',
+                           'import_samples',
+                           'estimate_dependence_probabilities']
         for presql_command in presql_commands:
             parser = getattr(self, 'parse_' + presql_command)
             result = parser(words, sql_string)
@@ -266,18 +499,24 @@ class DatabaseClient(object):
             if result == False:
                 return
             if type(result) == str or not pretty:
+                print result
                 return result
             else:
-                return self.pretty_print(result, presql_command)
+                pp = self.pretty_print(result, presql_command)
+                print pp
+                return pp
         # No predictive sql functions match: attempt to run as sql  
         sql_string = sql_string.lower()
         result = self.runsql(sql_string)
         if pretty:
-            return self.pretty_print(result, presql_command)
+            pp = self.pretty_print(result, presql_command)
+            print pp
+            return pp
         else:
+            print result
             return result
 
-    def is_int(s):
+    def is_int(self, s):
         try:
             int(s)
             return True
@@ -291,15 +530,14 @@ class DatabaseClient(object):
         method = getattr(middleware_engine, method_name)
         argnames = inspect.getargspec(method)[0]
         args = [args_dict[argname] for argname in argnames if argname in args_dict]
-        print 'Calling: %s' % method_name
         out = method(*args)
       return out
 
     def ping(self):
         return self.call('ping', {})
 
-    def runsql(self, sql_command):
-        return self.call('runsql', {'sql_command': sql_command})
+    def runsql(self, sql_command, order_by=False):
+        return self.call('runsql', {'sql_command': sql_command, 'order_by': order_by})
 
     def start_from_scratch(self):
         return self.call('start_from_scratch', {})
@@ -318,8 +556,50 @@ class DatabaseClient(object):
         args_dict['tablename'] = tablename
         args_dict['csv'] = csv
         args_dict['crosscat_column_types'] = crosscat_column_types
-        return self.call('upload_data_table', args_dict)
+        ret = self.call('upload_data_table', args_dict)
+        if type(ret) == dict:
+            print 'Created btable %s. Inferred schema:\n' % tablename
+        return ret
+                              
+    def update_datatypes(self, tablename, mappings):
+        ret = self.call('update_datatypes', {'tablename':tablename, 'mappings': mappings})
+        if type(ret) == dict:
+            print 'Updated schema:\n'
+        return ret
 
+    def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename):
+        ret = self.call('estimate_dependence_probabilities', dict(
+                tablename=tablename,
+                col=col,
+                confidence=confidence,
+                limit=limit,
+                filename=filename))
+        '''
+        filename = tablename + '_dependencies'
+        z_matrix_reordered = ret['z_matrix_reordered']
+        column_names_reordered = ret['column_names_reordered']
+        # actually create figure
+        fig = pylab.figure()
+        fig.set_size_inches(16, 12)
+        pylab.imshow(z_matrix_reordered, interpolation='none',
+                     cmap=matplotlib.cm.gray_r)
+        pylab.colorbar()
+        if num_cols < 14:
+            pylab.gca().set_yticks(range(num_cols))
+            pylab.gca().set_yticklabels(column_names_reordered, size='small')
+            pylab.gca().set_xticks(range(num_cols))
+            pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
+        else:
+            pylab.gca().set_yticks(range(num_cols)[::2])
+            pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
+            pylab.gca().set_xticks(range(num_cols)[1::2])
+            pylab.gca().set_xticklabels(column_names_reordered[1::2],
+                                        rotation=90, size='small')
+        pylab.title('column dependencies for: %s' % tablename)
+        pylab.savefig(filename)
+        '''
+        return ret
+    
     def create_model(self, tablename, n_chains):
         args_dict = dict()
         args_dict['tablename'] = tablename
@@ -334,7 +614,7 @@ class DatabaseClient(object):
         args_dict['iterations'] = iterations
         return self.call('analyze', args_dict)  
 
-    def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples):
+    def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by):
         args_dict = dict()
         args_dict['tablename'] = tablename
         args_dict['columnstring'] = columnstring
@@ -343,15 +623,34 @@ class DatabaseClient(object):
         args_dict['confidence'] = confidence
         args_dict['limit'] = limit
         args_dict['numsamples'] = numsamples
+        args_dict['order_by'] = order_by
         return self.call('infer', args_dict)
 
-    def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
+    def select(self, tablename, columnstring, whereclause, limit, order_by):
+        args_dict = dict()
+        args_dict['tablename'] = tablename
+        args_dict['columnstring'] = columnstring
+        args_dict['whereclause'] = whereclause
+        args_dict['limit'] = limit
+        args_dict['order_by'] = order_by
+        return self.call('select', args_dict)
+
+    def import_samples(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
+        return self.call('import_samples', {'tablename':tablename,
+                                            'X_L_list': X_L_list,
+                                            'X_D_list': X_D_list,
+                                            'M_c': M_c,
+                                            'T': T,
+                                            'iterations': iterations})
+
+    def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):
         args_dict = dict()
         args_dict['tablename'] = tablename
         args_dict['columnstring'] = columnstring
         args_dict['newtablename'] = newtablename
         args_dict['whereclause'] = whereclause
         args_dict['numpredictions'] = numpredictions
+        args_dict['order_by'] = order_by
         return self.call('predict', args_dict)
 
     def write_json_for_table(self, tablename):

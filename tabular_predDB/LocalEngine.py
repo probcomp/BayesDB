@@ -26,13 +26,13 @@ class LocalEngine(EngineTemplate.EngineTemplate):
     def initialize(self, M_c, M_r, T, initialization='from_the_prior'):
         # FIXME: why is M_r passed?
         SEED = self.get_next_seed()
-        X_L, X_D = do_initialize(M_c, M_r, T, initialization, SEED)
+        X_L, X_D = _do_initialize(M_c, M_r, T, initialization, SEED)
         return X_L, X_D
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1):
         SEED = self.get_next_seed()
-        X_L_prime, X_D_prime = do_analyze(M_c, T, X_L, X_D,
+        X_L_prime, X_D_prime = _do_analyze(M_c, T, X_L, X_D,
                                            kernel_list, n_steps, c, r,
                                            max_iterations, max_time,
                                            SEED)
@@ -40,8 +40,11 @@ class LocalEngine(EngineTemplate.EngineTemplate):
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
         get_next_seed = self.get_next_seed
-        samples = do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed)
+        samples = _do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed)
         return samples
+
+    def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, epsilon=0.001):
+        return su.simple_predictive_probability(M_c, X_L, X_D, Y, Q, epsilon)
 
     def impute(self, M_c, X_L, X_D, Y, Q, n):
         e = su.impute(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
@@ -51,19 +54,20 @@ class LocalEngine(EngineTemplate.EngineTemplate):
         if isinstance(X_L, (list, tuple)):
             assert isinstance(X_D, (list, tuple))
             # TODO: multistate impute doesn't exist yet
-            e,confidence = su.impute_and_confidence_multistate(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
+            #e,confidence = su.impute_and_confidence_multistate(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
+            e,confidence = su.impute_and_confidence(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
         else:
             e,confidence = su.impute_and_confidence(M_c, X_L, X_D, Y, Q, n, self.get_next_seed)
         return (e,confidence)
 
 
-def do_initialize(M_c, M_r, T, initialization, SEED):
+def _do_initialize(M_c, M_r, T, initialization, SEED):
     p_State = State.p_State(M_c, T, initialization=initialization, SEED=SEED)
     X_L = p_State.get_X_L()
     X_D = p_State.get_X_D()
     return X_L, X_D
 
-def do_analyze(M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
+def _do_analyze(M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
                max_iterations, max_time, SEED):
     p_State = State.p_State(M_c, T, X_L, X_D, SEED=SEED)
     p_State.transition(kernel_list, n_steps, c, r,
@@ -72,7 +76,7 @@ def do_analyze(M_c, T, X_L, X_D, kernel_list, n_steps, c, r,
     X_D_prime = p_State.get_X_D()
     return X_L_prime, X_D_prime
 
-def do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed):
+def _do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed):
     is_multistate = su.get_is_multistate(X_L, X_D)
     if is_multistate:
         samples = su.simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
