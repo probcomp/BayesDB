@@ -25,7 +25,11 @@ def get_ith_ordering(in_list, i):
     return [el for sub_list in temp_list for el in sub_list]
 
 def gen_data(gen_seed, num_clusters,
-             num_cols, num_rows, max_mean=10, max_std=1):
+             num_cols, num_rows, max_mean_per_category=10, max_std=1,
+             max_mean=None):
+    if max_mean is None:
+       max_mean = max_mean_per_category * num_clusters
+    print 'using max_mean: %s' % max_mean
     n_grid = 11
     mu_grid = numpy.linspace(-max_mean, max_mean, n_grid)
     sigma_grid = 10 ** numpy.linspace(-1, numpy.log10(max_std), n_grid)
@@ -56,8 +60,6 @@ def gen_factorial_data(gen_seed, num_clusters,
 		max_mean_per_category=10, max_std=1,
         max_mean=None
         ):
-    if max_mean is None:
-       max_mean = max_mean_per_category * num_clusters
     random_state = numpy.random.RandomState(gen_seed)
     data_list = []
     inverse_permutation_indices_list = []
@@ -67,8 +69,9 @@ def gen_factorial_data(gen_seed, num_clusters,
             num_clusters=num_clusters,
             num_cols=num_cols/num_splits,
             num_rows=num_rows,
-            max_mean=max_mean,
+            max_mean_per_category=max_mean_per_category,
             max_std=max_std,
+            max_mean=max_mean
             )
         permutation_indices = random_state.permutation(xrange(num_rows))
         # permutation_indices = get_ith_ordering(range(num_rows), data_idx)
