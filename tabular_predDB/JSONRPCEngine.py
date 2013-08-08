@@ -26,6 +26,11 @@ method_names_set = set(gu.get_method_names(EngineTemplate.EngineTemplate))
 
 
 class JSONRPCEngine(EngineTemplate.EngineTemplate):
+    """An 'adapter' for sending commands to an Engine resident on a remote machine.
+
+    JSONRPCEngine supports all methods that the remote engine does.  The remote engine must be listening at the URI specified in the constructor.  Commands are sent via JSONRPC-2.0.
+
+    """
 
     def __init__(self, seed=0, URI=None):
         super(JSONRPCEngine, self).__init__(seed=seed)

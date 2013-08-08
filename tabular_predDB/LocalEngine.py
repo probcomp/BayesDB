@@ -27,6 +27,12 @@ class LocalEngine(EngineTemplate.EngineTemplate):
     """
 
     def __init__(self, seed=0):
+        """Initialize a LocalEngine
+
+        This is really just setting the initial seed to be used for
+        initializing CrossCat states.  Seeds are generated sequentially
+
+        """
         super(LocalEngine, self).__init__(seed=seed)
 
     def initialize(self, M_c, M_r, T, initialization='from_the_prior'):
