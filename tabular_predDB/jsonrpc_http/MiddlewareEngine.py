@@ -26,6 +26,7 @@ import pylab
 import numpy
 import psycopg2
 import matplotlib.cm
+from collections import defaultdict
 #
 import tabular_predDB.python_utils.api_utils as au
 import tabular_predDB.python_utils.data_utils as du
@@ -40,7 +41,13 @@ user = os.environ['USER']
 psycopg_connect_str = 'dbname=%s user=%s' % (dbname, user)
 
 class MiddlewareEngine(object):
-
+  """
+  Possible ideas for refactoring:
+  1. Have a query class. Created when a complex query (like select) is received, and is able
+  to set state on itself including X_L_list, X_D_list, etc. as necessary.
+  2. Have separate classes for select, etc.
+  3. Have user defined functions all sitting in their own module? Or importable from somewhere?
+  """
   def __init__(self, backend_hostname='localhost', backend_uri=8007):
     self.backend_hostname = backend_hostname
     self.BACKEND_URI = 'http://' + backend_hostname + ':' + str(backend_uri)
@@ -502,18 +509,35 @@ class MiddlewareEngine(object):
     #ret = du.map_from_T_with_M_c(ret, M_c)
     imputations_list = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in ret]
     ## Convert into dict with r,c keys
-    imputations_dict = dict()
+    imputations_dict = defaultdict(dict)
     for r,c,val in imputations_list:
-      imputations_dict[(r,c)] = val
+      imputations_dict[r][c] = val
     ret = self.select(tablename, columnstring, whereclause, limit, order_by=False, imputations_dict=imputations_dict)
     ret['data'] = self.order_by_similarity(ret['columns'], ret['data'], X_L_list, X_D_list, M_c, order_by)
     return ret
 
   def select(self, tablename, columnstring, whereclause, limit, order_by, imputations_dict=None):
-    probability_query = False
-    data_query = False
+    """
+    Our own homebrewed select query.
+    First, reads codes from T and converts them to values.
+    Then, filters the values based on the where clause.
+    Then, fills in all imputed values, if applicable.
+    Then, orders by the given order_by functions.
+    Then, computes the queried values requested by the column string.
+
+    One refactoring option: you could try generating a list of all functions that will be needed, either
+    for selecting or for ordering. Then compute those and add them to the data tuples. Then just do the
+    order by as if you're doing it exclusively on columns. The only downside is that now if there isn't an
+    order by, but there is a limit, then we computed a large number of extra functions.
+    """
+    probability_query = False ## probability_query is True if at least one of the queries is for probability.
+    data_query = False ## data_query is True if at least one of the queries is for raw data.
+    similarity_query = False
     M_c, M_r, T = self.get_metadata_and_table(tablename)
-    conds = list() ## List of (c_idx, op, val) tuples.
+
+    ## Create conds: the list of conditions in the whereclause.
+    ## List of (c_idx, op, val) tuples.
+    conds = list() 
     if len(whereclause) > 0:
       conditions = whereclause.split(',')
       ## Order matters: need <= and >= before < and > and =.
@@ -531,47 +555,76 @@ class MiddlewareEngine(object):
         c_idx = M_c['name_to_idx'][column]
         conds.append((c_idx, op, val))
 
-    ## queries is a list of c_idxs or (c_idx, value) tuples. A tuple indicates that it's a probability query.
+    ## Iterate through the columnstring portion of the input, and generate the query list.
+    ## queries is a list of (query_type, query) tuples, where query_type is: row_id, column, probability, similarity.
+    ## For row_id: query is ignored (so it is None).
+    ## For column: query is a c_idx.
+    ## For probability: query is a (c_idx, value) tuple.
+    ## For similarity: query is a (target_row_id, target_column) tuple.
+    ##
+    ## TODOSpecial case for SELECT *: should this be refactored to support selecting * as well as other functions?
     if '*' in columnstring:
-      colnames = []
+      query_colnames = []
       queries = []
       data_query = True
       for idx in range(len(M_c['name_to_idx'].keys())):
         queries.append(idx)
         colnames.append(M_c['idx_to_name'][str(idx)])
     else:
-      colnames = [colname.strip() for colname in columnstring.split(',')]
+      query_colnames = [colname.strip() for colname in columnstring.split(',')]
       queries = []
-      for idx, colname in enumerate(colnames):
-        p_match = re.search(r'probability\s*\(\s*(?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)\s*\)', colname.lower())
-        if p_match:
-          column = p_match.group('column')
+      for idx, colname in enumerate(query_colnames):
+        ## Check if probability query
+        prob_match = re.search(r"""
+            probability\s*
+            \(\s*
+            (?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)
+            \s*\)
+        """, colname.lower(), re.VERBOSE)
+        if prob_match:
+          column = prob_match.group('column')
           c_idx = M_c['name_to_idx'][column]
           value = int(p_match.group('value'))
-          queries.append((c_idx, value))
+          queries.append(('probability', (c_idx, value)))
           probability_query = True
-        else:
-          queries.append(M_c['name_to_idx'][colname])
-          data_query = True
-    colnames = ['row_id'] + colnames
-    queries = ['row_id'] + queries
+          continue
 
-    ## Helper function that applies WHERE conditions to row.
+        ## Check if similarity query
+        similarity_match = re.search(r"""
+            similarity\s+to\s+
+            (?P<rowid>[^\s]+)
+            (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
+        """, colname.lower(), re.VERBOSE)
+        if similarity_match:
+            target_row_id = int(match.group('rowid').strip())
+            if match.group('column'):
+                column = match.group('column').strip()
+            else:
+                column = None
+          queries.append(('similarity', (target_row_id, target_column)))
+          similarity_query = True
+          continue
+
+        ## If none of above query types matched, then this is a normal column query.
+        queries.append(('column', M_c['name_to_idx'][colname]))
+        data_query = True
+
+    ## Always return row_id as the first column.
+    query_colnames = ['row_id'] + query_colnames
+    queries = [('row_id', None)] + queries
+
+    ## Helper function that applies WHERE conditions to row, returning True if row satisfies where clause.
     def is_row_valid(idx, row):
       for (c_idx, op, val) in conds:
         if not op(row[c_idx], val):
           return False
-      if imputations_dict:
-        has_imputation = False
-        for q in queries:
-          if (idx, q) in imputations_dict:
-            has_imputation = True
-        return has_imputation
       return True
 
-    if probability_query:
+    ## If probability query: get latent states, and simple predictive probability givens (Y).
+    ## TODO: Pretty sure this is the wrong way to get Y.
+    if probability_query or similarity_query or order_by:
       X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-
+    if probability_query:
       if whereclause=="" or '=' not in whereclause:
         Y = None
       else:
@@ -579,65 +632,98 @@ class MiddlewareEngine(object):
         Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
         # map values to codes
         Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
-        
+
+    ## Helper function to convert a row from its 'code' (as it's stored in T) to its 'value'
+    ## (the human-understandable value).
     def convert_row(row):
       ret = []
-      for cidx, code in enumerate(row): #tuple([du.convert_code_to_value(M_c, cidx, code) for cidx, code in enumerate(row)])
+      for cidx, code in enumerate(row): 
         if not numpy.isnan(code) and not code=='nan':
           ret.append(du.convert_code_to_value(M_c, cidx, code))
         else:
           ret.append(code)
       return tuple(ret)
-    
-    ## Do the select
+
+    ## If there are only probability values, then only return one row.
+    ## TODO: is this actually right? Or is probability also a function of row? If so: get rid of this.
+    probabilities_only = reduce(lambda q,v: q[0] == 'probability' and v, queries, True)
+    if probabilities_only:
+      limit = 1
+
+    ## Iterate through all rows of T, convert codes to values, filter by all predicates in where clause,
+    ## and fill in imputed values.
+    filtered_values = list()
+    for row_id, T_row in enumerate(T):
+      row_values = convert_row(T_row) ## Convert row from codes to values
+      if is_row_valid(row_id, row_values): ## Where clause filtering.
+        if imputations_dict and len(imputations_dict[row_id]) > 0:
+          ## Fill in any imputed values.
+          for col_idx, value in imputations_dict[row_id].items():
+            row_values[col_idx] = value
+        filtered_values.append((row_id, row_values))
+
+    ## Apply order by, if applicable.
+    if order_by:
+      ## Step 1: get appropriate functions.
+      function_list = list()
+      for orderable in order_by:
+        if type(orderable) == tuple:
+          function_name, args_dict = orderable
+          args_dict['M_c'] = M_c
+          args_dict['X_L_list'] = X_L_list
+          args_dict['X_D_list'] = X_D_list
+          method = getattr(self, 'get_%s_function' % function_name)
+          argnames = inspect.getargspec(method)[0]
+          args = [args_dict[argname] for argname in argnames if argname in args_dict]
+          function = method(*args)
+          function_list.append(function)          
+        elif type(orderable) == str:
+          function = self.get_column_function(orderable, M_c)
+          function_list.append(function)
+      ## Step 2: call order by.
+      filtered_values = self.order_by(filtered_values, function_list)
+
+    ## Now: generate result set by getting the desired elements of each row, iterating through queries.
     data = []
     row_count = 0
-    probabilities_only = True
-    for idx, row in enumerate(T):
-      ## Convert row to values
-      row = convert_row(row)
-      if is_row_valid(idx, row): ## Where clause filtering.
-        ## Now: get the desired elements.
-        ret_row = []
-        for q in queries:
-          if type(q) == str and q=='row_id':
-            ret_row.append(idx)
-            probabilities_only = False
-          elif type(q) == int:
-            if imputations_dict and (idx,q) in imputations_dict:
-              val = imputations_dict[(idx,q)]
-            else:
-              val = row[q]
-            ret_row.append(val)
-            probabilities_only = False
-          elif type(q) == tuple:
-            (c_idx, value) = q
-            val = float(M_c['column_metadata'][c_idx]['code_to_value'][str(value)])
-            Q = [(idx, c_idx, val)]
-            prob = engine.simple_predictive_probability(M_c, X_L_list[0], X_D_list[0], Y, Q)
-            ## TODO: SELECT PROBABILITY. Need to hook up simple_predictive_sample: for another time.
-            ret_row.append(prob)
-        data.append(tuple(ret_row))
-        row_count += 1
-        if (row_count >= limit and not order_by) or probabilities_only:
-          break
+    for row_id, row_values in filtered_values:
+      ret_row = []
+      for (query_type, query) in queries:
+        if query_type == 'row_id':
+          ret_row.append(row_id)
+        elif query_type == 'column':
+          col_idx = query
+          val = row_values[col_idx]
+          ret_row.append(val)
+        elif query_type == 'probability':
+          c_idx, value = query
+          val = float(M_c['column_metadata'][c_idx]['code_to_value'][str(value)])
+          Q = [(idx, c_idx, val)]
+          prob = engine.simple_predictive_probability(M_c, X_L_list[0], X_D_list[0], Y, Q)
+          ## TODO: SELECT PROBABILITY. Need to hook up simple_predictive_sample: for another time.
+          ret_row.append(prob)
+        elif query_type == 'similarity':
+          target_row_id, target_column = query
+          sim = self.similarity(row_id, target_column, target_row_id, X_L_list, X_D_list, M_c)
+          ret_row.append(prob)
+      data.append(tuple(ret_row))
+      row_count += 1
+      if (row_count >= limit and not order_by):
+        break
 
     ## Prepare for return
-    ret = {'data': data, 'columns': colnames}
-    if order_by:
-      X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-      ret['data'] = self.order_by_similarity(colnames, ret['data'], X_L_list, X_D_list, M_c, order_by)
-      if limit and limit != float("inf"):
-        ret['data'] = ret['data'][:limit]
+    ret = {'data': data, 'columns': query_colnames}
     return ret
 
   def order_by_similarity(self, colnames, data_tuples, X_L_list, X_D_list, M_c, order_by):
-    # Return the original data tuples, but sorted by similarity to the given row_id
-    # By default, average the similarity over columns, unless one particular column id is specified.
-    # TODO
+    """
+    Legacy version of order by similarity. To be phased out by order_by and similarity.
+    Return the original data tuples, but sorted by similarity to the given row_id
+    By default, average the similarity over columns, unless one particular column id is specified.
+    """
     if len(data_tuples) == 0 or not order_by:
       return data_tuples
-    target_rowid = order_by['rowid']
+    target_row_id = order_by['rowid']
     target_column = order_by['column']
     if target_column:
       col_idxs = [M_c['name_to_idx'][target_column]]
@@ -652,11 +738,66 @@ class MiddlewareEngine(object):
       for X_L, X_D in zip(X_L_list, X_D_list):
         for col_idx in col_idxs:
           view_idx = X_L['column_partition']['assignments'][col_idx]
-          if X_D[view_idx][rowid] == X_D[view_idx][target_rowid]:
+          if X_D[view_idx][rowid] == X_D[view_idx][target_row_id]:
             score += 1
       scored_data_tuples.append((score, data_tuple))
     scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
     #print [tup[0] for tup in scored_data_tuples] # print similarities
+    return [tup[1] for tup in scored_data_tuples]
+
+  def get_column_function(self, column, M_c):
+    """
+    Returns a function of the form required by order_by that returns the column value.
+    """
+    col_idx = M_c['name_to_idx'][column]
+    return lambda row_id, data_values: data_values[col_idx]
+                          
+
+  def get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c):
+    """
+    Call this function to get a version of similarity as a function of only (row_id, data_values).
+    """
+    return lambda row_id, data_values: self.similarity(row_id, target_column, target_row_id, X_L_list, X_D_list, M_c)
+
+  def similarity(self, row_id, target_column, target_row_id, X_L_list, X_D_list, M_c):
+    """
+    Returns the similarity of the given row to the target row, averaged over
+    all the column indexes given by col_idxs.
+    Similarity is defined as the proportion of times that two cells are in the same
+    view and category.
+    """
+    score = 0.0
+
+    ## Set col_idxs: defaults to all columns.
+    if target_column:
+      col_idxs = [M_c['name_to_idx'][target_column]]
+    else:
+      col_idxs = X_L['column_partition']['assignments'].keys() #range(len(data_tuples[0])-1)
+    
+    ## Iterate over all latent states.
+    for X_L, X_D in zip(X_L_list, X_D_list):
+        for col_idx in col_idxs:
+          view_idx = X_L['column_partition']['assignments'][col_idx]
+          if X_D[view_idx][rowid] == X_D[view_idx][target_row_id]:
+            score += 1.0
+    return score / len(X_L_list)
+
+  def order_by(self, filtered_values, functions):
+    """
+    Return the original data tuples, but sorted by the given functions.
+    functions is an iterable of functions that take only data_tuple as an argument.
+    The data_tuples must contain all __original__ data because you can order by
+    data that won't end up in the final result set.
+    """
+    if len(data_tuples) == 0 or not functions:
+      return data_tuples
+    
+    scored_data_tuples = list() ## Entries are (score, data_tuple)
+    for row_id, data_tuple in filtered_values:
+      ## Apply each function to each data_tuple to get a #functions-length tuple of scores.
+      scores = tuple([func(row_id, data_tuple) for func in functions])
+      scored_data_tuples.append((scores, data_tuple))
+    scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
     return [tup[1] for tup in scored_data_tuples]
 
 

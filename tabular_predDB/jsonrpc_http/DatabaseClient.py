@@ -70,7 +70,7 @@ class DatabaseClient(object):
 
     def parse_create_model(self, words, orig):
         n_chains = 10
-        if len(words) >=1:
+        if len(words) >= 1:
             if words[0] == 'create':
                 if len(words) >= 4 and words[1] == 'model' or words[1] == 'models':
                     if words[2] == 'for':
@@ -140,18 +140,6 @@ class DatabaseClient(object):
                 else:
                     print 'Did you mean: DELETE CHAIN <chain_index> FROM <tablename>;?'
                     return False
-
-    def parse_order_by_similarity(self, words, orig):
-        match = re.search(r'order by similarity\((\w*?)((,\s+?)(\w*?))?\)', orig.lower())
-        if words[0] == 'select' and match:
-            try:
-                row_id = int(m.groups()[0])
-                col_id = m.groups()[3]
-                if not col is None:
-                    col = int(col)
-            except ValueError:
-                print "Similarity's arguments must be integers."
-            
 
     def parse_analyze(self, words, orig):
         chain_index = 'all'
@@ -270,12 +258,6 @@ class DatabaseClient(object):
             return self.import_samples(tablename, X_L_list, X_D_list, M_c, T, iterations)
         
     def parse_select(self, words, orig):
-        '''
-        if words[0] == 'select':
-            orig, order_by = self.extract_order_by(orig)
-            result = self.runsql(orig, order_by)
-            return result
-        '''            
         match = re.search(r"""
             select\s+
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)
@@ -299,13 +281,6 @@ class DatabaseClient(object):
             else:
                 whereclause = whereclause.strip()
             limit = self.extract_limit(orig)
-            '''
-            limit = match.group('limit')
-            if limit is None:
-                limit = float("inf")
-            else:
-                limit = int(limit)
-            '''
             orig, order_by = self.extract_order_by(orig)
             return self.select(tablename, columnstring, whereclause, limit, order_by)
 
@@ -574,30 +549,6 @@ class DatabaseClient(object):
                 confidence=confidence,
                 limit=limit,
                 filename=filename))
-        '''
-        filename = tablename + '_dependencies'
-        z_matrix_reordered = ret['z_matrix_reordered']
-        column_names_reordered = ret['column_names_reordered']
-        # actually create figure
-        fig = pylab.figure()
-        fig.set_size_inches(16, 12)
-        pylab.imshow(z_matrix_reordered, interpolation='none',
-                     cmap=matplotlib.cm.gray_r)
-        pylab.colorbar()
-        if num_cols < 14:
-            pylab.gca().set_yticks(range(num_cols))
-            pylab.gca().set_yticklabels(column_names_reordered, size='small')
-            pylab.gca().set_xticks(range(num_cols))
-            pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
-        else:
-            pylab.gca().set_yticks(range(num_cols)[::2])
-            pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
-            pylab.gca().set_xticks(range(num_cols)[1::2])
-            pylab.gca().set_xticklabels(column_names_reordered[1::2],
-                                        rotation=90, size='small')
-        pylab.title('column dependencies for: %s' % tablename)
-        pylab.savefig(filename)
-        '''
         return ret
     
     def create_model(self, tablename, n_chains):
