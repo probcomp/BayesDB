@@ -43,6 +43,9 @@ psycopg_connect_str = 'dbname=%s user=%s' % (dbname, user)
 class MiddlewareEngine(object):
   """
   Possible ideas for refactoring:
+  0. Re-architect classes. DatabaseClient should be a light client that simply sends the query string
+  to the middleware. Middleware should have a query parsing module.
+  
   1. Have a query class. Created when a complex query (like select) is received, and is able
   to set state on itself including X_L_list, X_D_list, etc. as necessary.
   2. Have separate classes for select, etc.
@@ -664,22 +667,18 @@ class MiddlewareEngine(object):
 
     ## Apply order by, if applicable.
     if order_by:
-      ## Step 1: get appropriate functions.
+      ## Step 1: get appropriate functions. Examples are 'column' and 'similarity'.
       function_list = list()
       for orderable in order_by:
-        if type(orderable) == tuple:
-          function_name, args_dict = orderable
-          args_dict['M_c'] = M_c
-          args_dict['X_L_list'] = X_L_list
-          args_dict['X_D_list'] = X_D_list
-          method = getattr(self, 'get_%s_function' % function_name)
-          argnames = inspect.getargspec(method)[0]
-          args = [args_dict[argname] for argname in argnames if argname in args_dict]
-          function = method(*args)
-          function_list.append(function)          
-        elif type(orderable) == str:
-          function = self.get_column_function(orderable, M_c)
-          function_list.append(function)
+        function_name, args_dict = orderable
+        args_dict['M_c'] = M_c
+        args_dict['X_L_list'] = X_L_list
+        args_dict['X_D_list'] = X_D_list
+        method = getattr(self, 'get_%s_function' % function_name)
+        argnames = inspect.getargspec(method)[0]
+        args = [args_dict[argname] for argname in argnames if argname in args_dict]
+        function = method(*args)
+        function_list.append(function)          
       ## Step 2: call order by.
       filtered_values = self.order_by(filtered_values, function_list)
 

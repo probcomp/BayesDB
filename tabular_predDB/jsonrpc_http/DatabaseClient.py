@@ -200,22 +200,38 @@ class DatabaseClient(object):
             orig, order_by = self.extract_order_by(orig)
             return self.infer(tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by)
 
+
     def extract_order_by(self, orig):
         pattern = r"""
-            order\s+by\s+similarity\s+to\s+(?P<rowid>[^\s]+)
-            (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
+            (order\s+by\s+(?P<orderbyclause>.*?((?=limit)|$)))?
         """ 
         match = re.search(pattern, orig.lower(), re.VERBOSE)
         if match:
-            rowid = int(match.group('rowid').strip())
-            if match.group('column'):
-                column = match.group('column').strip()
-            else:
-                column = None
+            order_by_clause = match.group('order_by_clause')
+            ret = list()
+            orderables = order_by_clause.split(',')
+            for orderable in orderables:
+                ## Check for similarity
+                pattern = r"""
+                    similarity\s+to\s+(?P<rowid>[^\s]+)
+                    (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
+                """ 
+                match = re.search(pattern, orderable.lower(), re.VERBOSE)
+                if match:
+                    rowid = int(match.group('rowid').strip())
+                    if match.group('column'):
+                        column = match.group('column').strip()
+                    else:
+                        column = None
+                    orderables.append(('similarity', {'target_row_id': rowid, 'target_column': column}))
+                else:
+                    orderables.append(('column', {'column': orderable}))
             orig = re.sub(pattern, '', orig.lower(), flags=re.VERBOSE)
-            return (orig, {'rowid': rowid, 'column': column})
+            return (orig, orderables)
         else:
             return (orig, False)
+
+
 
     def extract_limit(self, orig):
         pattern = r'limit\s+(?P<limit>\d+)'
