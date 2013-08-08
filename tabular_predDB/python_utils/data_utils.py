@@ -52,8 +52,12 @@ def gen_data(gen_seed, num_clusters,
     return xs, zs
 
 def gen_factorial_data(gen_seed, num_clusters,
-                       num_cols, num_rows, num_splits,
-                       max_mean=10, max_std=1):
+        num_cols, num_rows, num_splits,
+		max_mean_per_category=10, max_std=1,
+        max_mean=None
+        ):
+    if max_mean is None:
+       max_mean = max_mean_per_category * num_clusters
     random_state = numpy.random.RandomState(gen_seed)
     data_list = []
     inverse_permutation_indices_list = []
