@@ -32,6 +32,7 @@ perl -i.orig -pe 's/search ec2.internal/# search ec2.internal/' /etc/resolv.conf
 # make sure openjdk-6-jdk is available
 apt-get install -y openjdk-6-jdk
 
+# determine which JAVA_HOME to use
 for JAVA_HOME in /usr/lib/jvm/java-6-openjdk/ \
 	/usr/lib/jvm/java-6-openjdk-amd64/ \
 	NONE
