@@ -24,6 +24,7 @@ virtual_env_dirs = [
 	'/opt/anaconda/',
 	'/var/lib/jenkins/.virtualenvs/tabular_predDB/',
 	'~/.virtualenvs/tabular_predDB/',
+	'~/.virtualenvs/tabular-predDB/',
 	]
 numpy_rel_dir = "lib/python2.7/site-packages/numpy/core/include/"
 numpy_include_full_dirs = [
