@@ -1,5 +1,5 @@
 #
-# Copyright 2013 Baxter, Lovell, Mangsingkha, Saeedi
+# COPYRIGHT 2013 Baxter, Lovell, Mangsingkha, Saeedi
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -571,8 +571,8 @@ class MiddlewareEngine(object):
       queries = []
       data_query = True
       for idx in range(len(M_c['name_to_idx'].keys())):
-        queries.append(idx)
-        colnames.append(M_c['idx_to_name'][str(idx)])
+        queries.append(('column', idx))
+        query_colnames.append(M_c['idx_to_name'][str(idx)])
     else:
       query_colnames = [colname.strip() for colname in columnstring.split(',')]
       queries = []
@@ -604,9 +604,9 @@ class MiddlewareEngine(object):
                 column = match.group('column').strip()
             else:
                 column = None
-          queries.append(('similarity', (target_row_id, target_column)))
-          similarity_query = True
-          continue
+            queries.append(('similarity', (target_row_id, target_column)))
+            similarity_query = True
+            continue
 
         ## If none of above query types matched, then this is a normal column query.
         queries.append(('column', M_c['name_to_idx'][colname]))
@@ -649,7 +649,7 @@ class MiddlewareEngine(object):
 
     ## If there are only probability values, then only return one row.
     ## TODO: is this actually right? Or is probability also a function of row? If so: get rid of this.
-    probabilities_only = reduce(lambda q,v: q[0] == 'probability' and v, queries, True)
+    probabilities_only = reduce(lambda v,q: q[0] == 'probability' and v, queries, True)
     if probabilities_only:
       limit = 1
 
@@ -662,7 +662,9 @@ class MiddlewareEngine(object):
         if imputations_dict and len(imputations_dict[row_id]) > 0:
           ## Fill in any imputed values.
           for col_idx, value in imputations_dict[row_id].items():
+            row_values = list(row_values)
             row_values[col_idx] = value
+            row_values = tuple(row_values)
         filtered_values.append((row_id, row_values))
 
     ## Apply order by, if applicable.
@@ -771,13 +773,14 @@ class MiddlewareEngine(object):
     if target_column:
       col_idxs = [M_c['name_to_idx'][target_column]]
     else:
-      col_idxs = X_L['column_partition']['assignments'].keys() #range(len(data_tuples[0])-1)
+      col_idxs = M_c['idx_to_name'].keys() #range(len(data_tuples[0])-1)
+    col_idxs = [int(col_idx) for col_idx in col_idxs]
     
     ## Iterate over all latent states.
     for X_L, X_D in zip(X_L_list, X_D_list):
         for col_idx in col_idxs:
           view_idx = X_L['column_partition']['assignments'][col_idx]
-          if X_D[view_idx][rowid] == X_D[view_idx][target_row_id]:
+          if X_D[view_idx][row_id] == X_D[view_idx][target_row_id]:
             score += 1.0
     return score / len(X_L_list)
 
@@ -788,14 +791,14 @@ class MiddlewareEngine(object):
     The data_tuples must contain all __original__ data because you can order by
     data that won't end up in the final result set.
     """
-    if len(data_tuples) == 0 or not functions:
-      return data_tuples
+    if len(filtered_values) == 0 or not functions:
+      return filtered_values
     
     scored_data_tuples = list() ## Entries are (score, data_tuple)
     for row_id, data_tuple in filtered_values:
       ## Apply each function to each data_tuple to get a #functions-length tuple of scores.
       scores = tuple([func(row_id, data_tuple) for func in functions])
-      scored_data_tuples.append((scores, data_tuple))
+      scored_data_tuples.append((scores, (row_id, data_tuple)))
     scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
     return [tup[1] for tup in scored_data_tuples]
 

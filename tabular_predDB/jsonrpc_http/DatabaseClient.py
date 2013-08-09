@@ -203,19 +203,19 @@ class DatabaseClient(object):
 
     def extract_order_by(self, orig):
         pattern = r"""
-            (order\s+by\s+(?P<orderbyclause>.*?((?=limit)|$)))?
+            (order\s+by\s+(?P<orderbyclause>.*?((?=limit)|$)))
         """ 
         match = re.search(pattern, orig.lower(), re.VERBOSE)
         if match:
-            order_by_clause = match.group('order_by_clause')
+            order_by_clause = match.group('orderbyclause')
             ret = list()
-            orderables = order_by_clause.split(',')
-            for orderable in orderables:
+            orderables = list()
+            for orderable in order_by_clause.split(','):
                 ## Check for similarity
                 pattern = r"""
                     similarity\s+to\s+(?P<rowid>[^\s]+)
                     (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
-                """ 
+                """
                 match = re.search(pattern, orderable.lower(), re.VERBOSE)
                 if match:
                     rowid = int(match.group('rowid').strip())
@@ -591,6 +591,7 @@ class DatabaseClient(object):
         args_dict['limit'] = limit
         args_dict['numsamples'] = numsamples
         args_dict['order_by'] = order_by
+        print args_dict
         return self.call('infer', args_dict)
 
     def select(self, tablename, columnstring, whereclause, limit, order_by):
