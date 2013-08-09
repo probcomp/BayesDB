@@ -52,3 +52,7 @@ if [[ ! -z ${SUDO_USER} ]]; then
 export JAVA_HOME=$JAVA_HOME
 EOF
 fi
+
+
+# if you have hadoop, you'll want cx_freeze
+bash install_cx_freeze.sh
