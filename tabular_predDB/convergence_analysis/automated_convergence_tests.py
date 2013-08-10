@@ -7,6 +7,7 @@ import numpy
 import itertools
 #
 import tabular_predDB.python_utils.data_utils as du
+import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
@@ -53,6 +54,7 @@ if __name__ == '__main__':
 
     script_filename = 'hadoop_line_processor.py'
     # some hadoop processing related settings
+    # FIXME: need to make sure 'dir' argument exists
     temp_dir = tempfile.mkdtemp(prefix='convergence_analysis_',
                                 dir='convergence_analysis')
     print 'using dir: %s' % temp_dir
@@ -71,11 +73,11 @@ if __name__ == '__main__':
     num_splits_list = [2, 4]
     max_mean_list = [0.5, 1, 2]
     
-    #num_rows_list = [200]
-    #num_cols_list = [8]
-    #num_clusters_list = [5]
-    #num_splits_list = [2,4]
-    #max_mean_list = [1]
+#    num_rows_list = [200]
+#    num_cols_list = [8]
+#    num_clusters_list = [5]
+#    num_splits_list = [2,4]
+#    max_mean_list = [1]
 
     parameter_list = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
 
@@ -86,14 +88,16 @@ if __name__ == '__main__':
         if numpy.mod(num_rows, num_clusters) == 0 and numpy.mod(num_cols,num_splits)==0:
           count = count + 1
           for chainindx in range(num_chains):
-              convergence_run_parameters = dict(num_rows=num_rows, num_cols=num_cols, \
-                                           num_views=num_splits, num_clusters=num_clusters, max_mean=max_mean, init_seed = chainindx)
-              write_hadoop_input(input_filename, convergence_run_parameters,  n_steps, block_size, SEED=count)
+              convergence_run_parameters = dict(num_rows=num_rows, num_cols=num_cols,
+                      num_views=num_splits, num_clusters=num_clusters, max_mean=max_mean,
+                      init_seed=chainindx)
+              write_hadoop_input(input_filename, convergence_run_parameters,  n_steps, block_size,
+                      SEED=count)
 
     n_tasks = len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_splits_list)*len(max_mean_list)*num_chains
     # Create a dummy table data file
     table_data=dict(T=[],M_c=[],X_L=[],X_D=[])
-    xu.pickle_table_data(table_data, table_data_filename)
+    fu.pickle(table_data, table_data_filename)
 
     if do_local:
         xu.run_script_local(input_filename, script_filename, output_filename, table_data_filename)
@@ -103,19 +107,13 @@ if __name__ == '__main__':
                                         input_filename=input_filename,
                                         table_data_filename=table_data_filename,
                                         )
-	
-        was_successful = HE.send_hadoop_command(hadoop_engine,
-                                                table_data_filename,
-                                                input_filename,
-                                                output_path, n_tasks=n_tasks)
+        xu.write_support_files(table_data, hadoop_engine.table_data_filename,
+                              dict(command='convergence_analyze'), hadoop_engine.command_dict_filename)
+        hadoop_engine.send_hadoop_command(n_tasks=n_tasks)
+        was_successful = hadoop_engine.get_hadoop_results()
         if was_successful:
-            #HE.read_hadoop_output(output_path, output_filename)
-	    hadoop_output_filename = HE.get_hadoop_output_filename(output_path)
-            cmd_str = 'cp %s %s' % (hadoop_output_filename, output_filename) 
-	    os.system(cmd_str)
-
+            hu.copy_hadoop_output(hadoop_engine.output_path, output_filename)
             pc.parse_to_csv(output_filename,parsed_out_file)
-
         else:
             print 'remote hadoop job NOT successful'
     else:
