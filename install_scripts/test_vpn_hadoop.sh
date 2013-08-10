@@ -3,9 +3,13 @@ if [[ -z $(ifconfig | grep tun0) ]]; then
 	exit
 fi
 
+if [[ $(whoami) != "bigdata" ]]; then
+	echo "$0 must be run as user 'bigdata'"
+	exit
+fi
 
 # can you get to the computer cluster jobtracker?
-wget 10.1.92.53:50030 && rm index.html
+wget 10.1.92.53:50030 -O - >/dev/null
 
 # verify hdfs connectivity
 $(grep "export JAVA_HOME" /home/$SUDO_USER/.bashrc)
