@@ -36,6 +36,15 @@ default_command_dict_filename = hs.default_command_dict_filename
 
 
 class HadoopEngine(object):
+    """A class to dispatch jobs to a Hadoop cluster
+
+    Requires that a binary, to be run by Hadoop streaming, already exists on the
+    cluster.
+
+    Requires specfication of write-able file locations where intermediate Hadoop
+    output will be stored before being parsed and returned as X_L and X_D
+
+    """
 
     def __init__(self, seed=0,
                  which_engine_binary=default_engine_binary,
@@ -83,32 +92,75 @@ class HadoopEngine(object):
 
     def initialize(self, M_c, M_r, T, initialization='from_the_prior',
                    n_chains=1):
-      output_path = self.output_path
-      input_filename = self.input_filename
-      table_data_filename = self.table_data_filename
-      intialize_args_dict_filename = self.command_dict_filename
-      xu.assert_vpn_is_connected()
-      #
-      table_data = dict(M_c=M_c, M_r=M_r, T=T)
-      initialize_args_dict = dict(command='initialize',
-                                  initialization=initialization)
-      xu.write_initialization_files(input_filename,
-                                    table_data, table_data_filename,
-                                    initialize_args_dict,
-                                    intialize_args_dict_filename,
-                                    n_chains)
-      os.system('cp %s initialize_input' % input_filename)
-      self.send_hadoop_command(n_tasks=n_chains)
-      was_successful = self.get_hadoop_results()
-      hadoop_output = None
-      if was_successful:
-        hu.copy_hadoop_output(output_path, 'initialize_output')
-        X_L_list, X_D_list = hu.read_hadoop_output(output_path)
-        hadoop_output = X_L_list, X_D_list
-      return hadoop_output
+        """Sample a latent state from prior
+
+        :param M_c: The column metadata
+        :type M_c: dict
+        :param M_r: The row metadata
+        :type M_r: dict
+        :param T: The data table in mapped representation (all floats)
+        :type T: list of lists
+        :returns: X_L, X_D -- the latent state
+
+        """
+
+        output_path = self.output_path
+        input_filename = self.input_filename
+        table_data_filename = self.table_data_filename
+        intialize_args_dict_filename = self.command_dict_filename
+        xu.assert_vpn_is_connected()
+          #
+        table_data = dict(M_c=M_c, M_r=M_r, T=T)
+        initialize_args_dict = dict(command='initialize',
+                                    initialization=initialization)
+        xu.write_initialization_files(input_filename,
+                                      table_data, table_data_filename,
+                                      initialize_args_dict,
+                                      intialize_args_dict_filename,
+                                      n_chains)
+        os.system('cp %s initialize_input' % input_filename)
+        self.send_hadoop_command(n_tasks=n_chains)
+        was_successful = self.get_hadoop_results()
+        hadoop_output = None
+        if was_successful:
+            hu.copy_hadoop_output(output_path, 'initialize_output')
+            X_L_list, X_D_list = hu.read_hadoop_output(output_path)
+            hadoop_output = X_L_list, X_D_list
+            return hadoop_output
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1, **kwargs):  
+        """Evolve the latent state by running transition kernels
+
+        :param M_c: The column metadata
+        :type M_c: dict
+        :param T: The data table in mapped representation (all floats)
+        :type T: list of lists
+        :param X_L: the latent variables associated with the latent state
+        :type X_L: dict
+        :param X_D: the particular cluster assignments of each row in each view
+        :type X_D: list of lists
+        :param kernel_list: names of the transition kernels to run
+        :type kernel_list: list of strings
+        :param n_steps: the number of times to run each transition kernel
+        :type n_steps: int
+        :param c: the (global) column indices to run transitions on
+        :type c: list of ints
+        :param r: the (global) row indices to run transitions on
+        :type r: list of ints
+        :param max_iterations: the maximum number of times ot run each transition
+                               kernel. Applicable only if max_time != -1.
+        :type max_iterations: int
+        :param max_time: the maximum amount of time (seconds) to run transitions
+                         for before stopping to return progress
+        :type max_time: float
+        :param kwargs: optional arguments to pass to hadoop_line_processor.jar.
+                       Currently, presence of a 'chunk_size' kwarg causes
+                       different behavior.
+        :returns: X_L, X_D -- the evolved latent state
+        
+        """
+
         output_path = self.output_path
         input_filename = self.input_filename
         table_data_filename = self.table_data_filename
