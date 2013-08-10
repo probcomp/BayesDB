@@ -13,7 +13,6 @@ excludes = [
     'FixTk',
     'Tkconstants',
     'Tkinter',
-    'sklearn',
     ]
 includes = [
     'tabular_predDB.python_utils.data_utils',
@@ -27,7 +26,8 @@ includes = [
     'tabular_predDB.python_utils.general_utils',
     'tabular_predDB.python_utils.sample_utils',
     'numpy',
-    # 'sklearn.metrics',
+    # 'sklearn',
+    'sklearn.metrics',
     ]
 
 buildOptions = dict(
