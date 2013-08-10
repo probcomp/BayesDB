@@ -148,8 +148,7 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
     ari_views = []
     
     engine=LE.LocalEngine(init_seed)
-    M_c_prime, M_r_prime, X_L, X_D = \
-               engine.initialize(M_c, M_r, T, initialization='from_the_prior')
+    X_L, X_D = engine.initialize(M_c, M_r, T, initialization='from_the_prior')
     
     view_assignments = X_L['column_partition']['assignments']
     #tmp_ari_table, tmp_ari_views = ctu.multi_chain_ARI(X_L_list,X_D_list, view_assignment_truth, X_D_truth)
