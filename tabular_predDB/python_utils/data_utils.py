@@ -29,7 +29,6 @@ def gen_data(gen_seed, num_clusters,
              max_mean=None):
     if max_mean is None:
        max_mean = max_mean_per_category * num_clusters
-    print 'using max_mean: %s' % max_mean
     n_grid = 11
     mu_grid = numpy.linspace(-max_mean, max_mean, n_grid)
     sigma_grid = 10 ** numpy.linspace(-1, numpy.log10(max_std), n_grid)
