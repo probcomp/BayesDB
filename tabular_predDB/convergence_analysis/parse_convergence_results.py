@@ -6,28 +6,30 @@ import numpy
 #
 import tabular_predDB.python_utils.xnet_utils as xu
 
-def parse_to_csv(filename, outfile='parsed_convergence.csv'):
-   #drive, path = os.path.splitdrive(filename)
-   #outpath, file_nameonly = os.path.split(path)
-    
-    with open(filename) as fh:
-        lines = []
-        for line in fh:
-            lines.append(xu.parse_hadoop_line(line))
-          
-    fh.close()
-    header = ['experiment', 'num_rows', 'num_cols', 'num_clusters', 'num_views', 'num_steps','block_size','ari_views', 'ari_table']
-   
-    reduced_lines = map(lambda x: x[1], lines)
+def parsed_line_to_output_row(parsed_line):
+  ret_list = [
+      int(parsed_line[0]),
+      parsed_line[1]['num_rows'],
+      parsed_line[1]['num_cols'],
+      parsed_line[1]['num_views'],
+      parsed_line[1]['num_clusters'],
+      parsed_line[1]['n_steps'],
+      parsed_line[1]['block_size'],
+      parsed_line[1]['ari_views'],
+      parsed_line[1]['ari_table'],
+      ]
+  return ret_list
 
-    with open(outfile,'w') as csvfile:
-        csvwriter = csv.writer(csvfile,delimiter=',')
+def parse_to_csv(in_filename, out_filename='parsed_convergence.csv'):
+    header = ['experiment', 'num_rows', 'num_cols', 'num_clusters', 'num_views', 'num_steps',
+        'block_size','ari_views', 'ari_table']
+    with open(in_filename) as in_fh:
+      with open(out_filename,'w') as out_fh:
+        csvwriter = csv.writer(out_fh)
 	csvwriter.writerow(header)
-        for line in lines:
-            tmp_list = [int(line[0]),line[1]['num_rows'],line[1]['num_cols'], \
-                            line[1]['num_views'],line[1]['num_clusters'],\
-                            line[1]['n_steps'],line[1]['block_size']]
-            csvwriter.writerow(tmp_list+ line[1]['ari_views']+line[1]['ari_table'])
-
-    csvfile.close()
-      
+        for line in in_fh:
+            try:
+              parsed_line = xu.parse_hadoop_line(line)
+              csvwriter.writerow(parsed_line_to_output_row(parsed_line))
+            except Exception, e:
+              sys.stderr.write(line + '\n' + str(e) + '\n')
