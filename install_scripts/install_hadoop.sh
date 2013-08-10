@@ -32,27 +32,34 @@ perl -i.orig -pe 's/search ec2.internal/# search ec2.internal/' /etc/resolv.conf
 # make sure openjdk-6-jdk is available
 apt-get install -y openjdk-6-jdk
 
+# hadoop needs cx_freeze to build binaries for hadoop streaming
+bash install_cx_freeze.sh
+
 # determine which JAVA_HOME to use
-for JAVA_HOME in /usr/lib/jvm/java-6-openjdk/ \
-	/usr/lib/jvm/java-6-openjdk-amd64/ \
-	NONE
+for TMP_JAVA_HOME in /usr/lib/jvm/java-6-openjdk/ \
+	/usr/lib/jvm/java-6-openjdk-amd64/
 do
-	if [[ -d $JAVA_HOME ]]; then
+	if [[ -d $TMP_JAVA_HOME ]]; then
+		JAVA_HOME=$TMP_JAVA_HOME
 		break
 	fi
 done
-if [[ "$JAVA_HOME" == "NONE" ]]; then
-	echo "No valid JAVA_HOME"
-	exit
+
+HADOOP_USER=bigdata
+# make sure $HADOOP_USER user exists: should be used for all XNET hadoop operations
+HADOOP_USER_LINE=$(grep $HADOOP_USER /etc/passwd)
+if [[ -z $BIGDATA_USER_LINE ]]; then
+	sudo adduser $HADOOP_USER --quiet --home /home/$HADOOP_USER --shell /bin/bash \
+		--disabled-password --gecos ""
 fi
 
-# set up JAVA_HOME for sudo user
-if [[ ! -z ${SUDO_USER} ]]; then
-	cat -- >> /home/$SUDO_USER/.bashrc <<EOF
+# set up JAVA_HOME for $HADOOP_USER user
+if [[ -z $JAVA_HOME ]]
+then
+	echo "No valid JAVA_HOME"
+	exit
+else
+	cat -- >> /home/$HADOOP_USER/.bashrc <<EOF
 export JAVA_HOME=$JAVA_HOME
 EOF
 fi
-
-
-# if you have hadoop, you'll want cx_freeze
-bash install_cx_freeze.sh
