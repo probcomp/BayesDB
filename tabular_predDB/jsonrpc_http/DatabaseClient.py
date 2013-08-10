@@ -225,7 +225,7 @@ class DatabaseClient(object):
                         column = None
                     orderables.append(('similarity', {'target_row_id': rowid, 'target_column': column}))
                 else:
-                    orderables.append(('column', {'column': orderable}))
+                    orderables.append(('column', {'column': orderable.strip()}))
             orig = re.sub(pattern, '', orig.lower(), flags=re.VERBOSE)
             return (orig, orderables)
         else:
@@ -276,11 +276,12 @@ class DatabaseClient(object):
     def parse_select(self, words, orig):
         match = re.search(r"""
             select\s+
-            (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)
-            \s+from\s+(?P<btable>[^\s]+)\s*
+            (?P<columnstring>.*?((?=from)))
+            \s*from\s+(?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
-            (\s+limit\s+(?P<limit>[^\s]+))?
+            (\s*limit\s+(?P<limit>[^\s]+))?
         """, orig.lower(), re.VERBOSE)
+        ## (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)
         if match is None:
             if words[0] == 'select':
                 print 'Did you mean: SELECT col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\

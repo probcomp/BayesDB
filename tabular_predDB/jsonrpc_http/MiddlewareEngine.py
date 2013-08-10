@@ -599,11 +599,11 @@ class MiddlewareEngine(object):
             (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
         """, colname.lower(), re.VERBOSE)
         if similarity_match:
-            target_row_id = int(match.group('rowid').strip())
-            if match.group('column'):
-                column = match.group('column').strip()
+            target_row_id = int(similarity_match.group('rowid').strip())
+            if similarity_match.group('column'):
+                target_column = similarity_match.group('column').strip()
             else:
-                column = None
+                target_column = None
             queries.append(('similarity', (target_row_id, target_column)))
             similarity_query = True
             continue
@@ -706,7 +706,7 @@ class MiddlewareEngine(object):
         elif query_type == 'similarity':
           target_row_id, target_column = query
           sim = self.similarity(row_id, target_column, target_row_id, X_L_list, X_D_list, M_c)
-          ret_row.append(prob)
+          ret_row.append(sim)
       data.append(tuple(ret_row))
       row_count += 1
       if (row_count >= limit and not order_by):
