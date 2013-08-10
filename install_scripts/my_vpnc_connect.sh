@@ -8,11 +8,36 @@ if [[ "$USER" != "root" ]]; then
 fi
 
 
+# print script usage
+usage() {
+    cat <<EOF
+usage: $0 options
+    
+    Set up postgres database
+    
+    OPTIONS:
+    -h      Show this message
+    -l      use local-port 0
+EOF
+exit
+}
+
+
+#Process the arguments
+while getopts hl opt
+do
+    case "$opt" in
+        h) usage;;
+        l) vpnc_connect_infix="--local-port 0";;
+    esac
+done
+
+
 # get original gateway to make sure it exists afterward
 DEFAULT_ROUTE_LINE=$(route -n | grep ^0.0.0.0)
 
 # connect to VPN: must insert login credentials
-vpnc-connect --gateway xdata.data-tactics-corp.com --id xdata && \
+vpnc-connect $vpnc_connect_infix --gateway xdata.data-tactics-corp.com --id xdata && \
 	route add -net 10.1.93.0 netmask 255.255.255.0 dev tun0 && \
 	route add -net 10.1.92.0 netmask 255.255.255.0 dev tun0 && \
 	route add -net 10.1.90.0 netmask 255.255.255.0 dev tun0 && \
