@@ -18,8 +18,14 @@ vpnc-connect --gateway xdata.data-tactics-corp.com --id xdata && \
 	route add -net 10.1.90.0 netmask 255.255.255.0 dev tun0 && \
 	route del -net 0.0.0.0 tun0
 
+# make sure tun0 exists before proceeding
+if [[ -z $(ifconfig | grep tun0) ]]; then
+	echo "interface tun0 doesn't exist; assuming vpnc-connect failed"
+	exit
+fi
+
 # make sure original gateway exists
-if [[ -z $(route -n | grep ^0.0.0.0) | grep $DEFAULT_IF$ ]]; then
+if [[ -z $(route -n | grep ^0.0.0.0 | grep $DEFAULT_IF$) ]]; then
 	DEFAULT_GATEWAY=$(awk '{print $2}' <(echo $DEFAULT_ROUTE_LINE))
 	DEFAULT_IF=$(awk '{print $NF}' <(echo $DEFAULT_ROUTE_LINE))
 	route add -net 0.0.0.0 gw $DEFAULT_GATEWAY dev $DEFAULT_IF
