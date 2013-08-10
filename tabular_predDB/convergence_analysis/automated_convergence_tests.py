@@ -7,6 +7,7 @@ import numpy
 import itertools
 #
 import tabular_predDB.python_utils.data_utils as du
+import tabular_predDB.python_utils.hadoop_utils as hu
 import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
