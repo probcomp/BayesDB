@@ -126,16 +126,16 @@ def time_analyze_helper(table_data, data_dict, command_dict):
         )
     return ret_dict
 
-def convergence_analyze_helper(table_data, dict_in):
-    gen_seed = dict_in['SEED']
-    num_clusters = dict_in['num_clusters']
-    num_cols = dict_in['num_cols']
-    num_rows = dict_in['num_rows']
-    num_views = dict_in['num_views']
-    max_mean = dict_in['max_mean']
-    num_transitions = dict_in['n_steps']
-    block_size = dict_in['block_size']
-    init_seed = dict_in['init_seed']
+def convergence_analyze_helper(table_data, data_dict, command_dict):
+    gen_seed = data_dict['SEED']
+    num_clusters = data_dict['num_clusters']
+    num_cols = data_dict['num_cols']
+    num_rows = data_dict['num_rows']
+    num_views = data_dict['num_views']
+    max_mean = data_dict['max_mean']
+    num_transitions = data_dict['n_steps']
+    block_size = data_dict['block_size']
+    init_seed = data_dict['init_seed']
     
     T, M_r, M_c, data_inverse_permutation_indices = du.gen_factorial_data_objects(gen_seed, num_clusters,
                                                                                   num_cols, num_rows, num_views,
