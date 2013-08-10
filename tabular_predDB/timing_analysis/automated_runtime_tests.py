@@ -108,6 +108,7 @@ if __name__ == '__main__':
 
     script_filename = 'hadoop_line_processor.py'
     # some hadoop processing related settings
+    # FIXME: need to make sure 'dir' argument exists
     temp_dir = tempfile.mkdtemp(prefix='runtime_analysis_',
                                 dir='runtime_analysis')
     print 'using dir: %s' % temp_dir
@@ -155,7 +156,7 @@ if __name__ == '__main__':
                                         )
         xu.write_support_files(table_data, hadoop_engine.table_data_filename,
                               dict(command='time_analyze'), hadoop_engine.command_dict_filename)
-	hadoop_engine.send_hadoop_command(n_tasks=n_tasks)
+        hadoop_engine.send_hadoop_command(n_tasks=n_tasks)
         was_successful = hadoop_engine.get_hadoop_results()
         if was_successful:
             hu.copy_hadoop_output(hadoop_engine.output_path, output_filename)
