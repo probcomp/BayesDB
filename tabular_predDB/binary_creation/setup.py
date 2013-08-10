@@ -26,7 +26,6 @@ includes = [
     'tabular_predDB.python_utils.general_utils',
     'tabular_predDB.python_utils.sample_utils',
     'numpy',
-    # 'sklearn',
     'sklearn.metrics',
     'sklearn.utils.lgamma',
     'scipy.special',
