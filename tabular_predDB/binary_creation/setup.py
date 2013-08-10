@@ -28,6 +28,9 @@ includes = [
     'numpy',
     # 'sklearn',
     'sklearn.metrics',
+    'sklearn.utils.lgamma',
+    'scipy.special',
+    'scipy.sparse.csgraph._validation',
     ]
 
 buildOptions = dict(
