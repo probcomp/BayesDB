@@ -13,6 +13,7 @@ excludes = [
     'FixTk',
     'Tkconstants',
     'Tkinter',
+    'sklearn',
     ]
 includes = [
     'tabular_predDB.python_utils.data_utils',
@@ -26,14 +27,7 @@ includes = [
     'tabular_predDB.python_utils.general_utils',
     'tabular_predDB.python_utils.sample_utils',
     'numpy',
-    'scipy',
-    'sklearn',
-    'scipy.sparse.csgraph._validation',
-    'sklearn.utils.lgamma'
-    #'scipy.special',
-    # 'tabular_predDB.python_utils.plot_utils',
-    # 'pylab',
-    # 'matplotlib.backends.backend_qt4agg',
+    # 'sklearn.metrics',
     ]
 
 buildOptions = dict(
