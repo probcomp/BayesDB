@@ -137,12 +137,14 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
     block_size = data_dict['block_size']
     init_seed = data_dict['init_seed']
     
-    T, M_r, M_c, data_inverse_permutation_indices = du.gen_factorial_data_objects(gen_seed, num_clusters,
-                                                                                  num_cols, num_rows, num_views,
-                                                                                  max_mean=max_mean, max_std=1,
-                                                                                  send_data_inverse_permutation_indices=True)
-    view_assignment_truth, X_D_truth = ctu.truth_from_permute_indices(data_inverse_permutation_indices, \
-                                                                      num_rows,num_cols, num_views, num_clusters)
+    T, M_r, M_c, data_inverse_permutation_indices = \
+            du.gen_factorial_data_objects(gen_seed, num_clusters,
+                    num_cols, num_rows, num_views,
+                    max_mean=max_mean, max_std=1,
+                    send_data_inverse_permutation_indices=True)
+    view_assignment_truth, X_D_truth = \
+            ctu.truth_from_permute_indices(data_inverse_permutation_indices,
+                    num_rows,num_cols, num_views, num_clusters)
 
     ari_table = []
     ari_views = []
@@ -151,8 +153,10 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
     X_L, X_D = engine.initialize(M_c, M_r, T, initialization='from_the_prior')
     
     view_assignments = X_L['column_partition']['assignments']
-    #tmp_ari_table, tmp_ari_views = ctu.multi_chain_ARI(X_L_list,X_D_list, view_assignment_truth, X_D_truth)
-    tmp_ari_table, tmp_ari_views = ctu.ARI_CrossCat(numpy.asarray(view_assignments), numpy.asarray(X_D), numpy.asarray(view_assignment_truth), numpy.asarray(X_D_truth))
+    tmp_ari_table, tmp_ari_views = ctu.ARI_CrossCat(numpy.asarray(view_assignments),
+            numpy.asarray(X_D),
+            numpy.asarray(view_assignment_truth),
+            numpy.asarray(X_D_truth))
     ari_table.append(tmp_ari_table)
     ari_views.append(tmp_ari_views)
     
@@ -162,12 +166,14 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
     
     while (completed_transitions < num_transitions):
         # We won't be limiting by time in the convergence runs
-        X_L, X_D = engine.analyze(M_c, T, X_L, X_D, kernel_list=(), \
-                                            n_steps=n_steps, max_time=-1)
+        X_L, X_D = engine.analyze(M_c, T, X_L, X_D, kernel_list=(),
+                n_steps=n_steps, max_time=-1)
         completed_transitions = completed_transitions+block_size
-        
         view_assignments = X_L['column_partition']['assignments']
-        tmp_ari_table, tmp_ari_views = ctu.ARI_CrossCat(numpy.asarray(view_assignments), numpy.asarray(X_D), numpy.asarray(view_assignment_truth), numpy.asarray(X_D_truth))
+        tmp_ari_table, tmp_ari_views = ctu.ARI_CrossCat(numpy.asarray(view_assignments),
+                numpy.asarray(X_D),
+                numpy.asarray(view_assignment_truth),
+                numpy.asarray(X_D_truth))
         ari_table.append(tmp_ari_table)
         ari_views.append(tmp_ari_views)
         
