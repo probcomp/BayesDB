@@ -1,11 +1,12 @@
-import argparse, pylab, numpy, csv, pdb
+import argparse
+import csv
+import time
+#
 import tabular_predDB.python_utils.data_utils as du
-import tabular_predDB.python_utils.sample_utils as su
-import tabular_predDB.python_utils.plot_utils as pu
 import tabular_predDB.CrossCatClient as ccc
 import tabular_predDB.python_utils.file_utils as f_utils
 import tabular_predDB.python_utils.convergence_test_utils as ctu
-import time
+
 
 # Parse input arguments
 parser = argparse.ArgumentParser()
@@ -23,7 +24,7 @@ parser.add_argument('--num_views', default=2, type=int)
 parser.add_argument('--num_cols', default=16, type=int)
 parser.add_argument('--numChains',default=50, type = int)
 parser.add_argument('--block_size',default=20, type = int)
-
+#
 args = parser.parse_args()
 filename = args.filename
 ari_logfile = args.ari_logfile
@@ -37,6 +38,7 @@ num_views = args.num_views
 num_cols = args.num_cols
 numChains = args.numChains
 block_size = args.block_size
+
 
 engine = ccc.get_CrossCatClient('hadoop', seed = inf_seed)
 
@@ -53,9 +55,7 @@ else:
     view_assignment_truth, X_D_truth = ctu.truth_from_permute_indices(data_inverse_permutation_indices, max_rows,num_cols,num_views, num_clusters)
     truth_flag = 1
 
-
         
-T_array = numpy.asarray(T)
 num_rows = len(T)
 num_cols = len(T[0])
 
