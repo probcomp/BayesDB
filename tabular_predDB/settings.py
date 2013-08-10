@@ -47,7 +47,7 @@ class path():
         pass
 
 class Hadoop():
-    DEFAULT_CLUSTER = 'xdata_compute'
+    DEFAULT_CLUSTER = 'xdata_highmem'
     DEBUG = False
     #
     xdata_hadoop_jar_420 = "/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.2.0.jar"
