@@ -14,8 +14,8 @@ def extract_variables(parsed_line, variables_names_to_extract):
             ]
     return variables
 
-def parsed_line_to_output_row(parsed_line, get_line_label=get_line_label,
-        variable_names_to_extract=variable_names_to_extract):
+def parsed_line_to_output_row(parsed_line, variable_names_to_extract,
+        get_line_label=get_line_label):
     line_label = get_line_label(parsed_line)
     variables = extract_variables(parsed_line, variable_names_to_extract)
     ret_list = [line_label] + variables
