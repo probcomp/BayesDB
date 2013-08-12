@@ -16,6 +16,7 @@
 import tabular_predDB.cython_code.State as State
 import tabular_predDB.EngineTemplate as EngineTemplate
 import tabular_predDB.python_utils.sample_utils as su
+import tabular_predDB.python_utils.xnet_utils as xu
 
 
 class LocalEngine(EngineTemplate.EngineTemplate):
