@@ -2,6 +2,13 @@ import numpy
 from sklearn import metrics
 
 
+def determine_synthetic_column_ground_truth_assignments(num_cols, num_views):
+    num_cols_per_view = num_cols / num_views
+    view_assignments = []
+    for view_idx in range(num_views):
+        view_assignments.extend([view_idx] * num_cols_per_view)
+    return view_assignments
+
 def truth_from_permute_indices(data_inverse_permutation_indices, num_rows,num_cols,num_views, num_clusters):
     # We assume num_rows is divisible by num_clusters and num_cols is divisible by num_views
     num_cols_per_view = num_cols/num_views
