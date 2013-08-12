@@ -35,7 +35,8 @@ class LocalEngine(EngineTemplate.EngineTemplate):
         """
         super(LocalEngine, self).__init__(seed=seed)
 
-    def initialize(self, M_c, M_r, T, initialization='from_the_prior'):
+    def initialize(self, M_c, M_r, T, initialization='from_the_prior',
+            n_chains=1):
         """Sample a latent state from prior
 
         :param M_c: The column metadata
@@ -49,9 +50,19 @@ class LocalEngine(EngineTemplate.EngineTemplate):
         """
 
         # FIXME: why is M_r passed?
-        SEED = self.get_next_seed()
-        X_L, X_D = _do_initialize(M_c, M_r, T, initialization, SEED)
-        return X_L, X_D
+        if n_chains == 1:
+            SEED = self.get_next_seed()
+            X_L, X_D = _do_initialize(M_c, M_r, T, initialization, SEED)
+            return X_L, X_D
+        else:
+            X_L_list = []
+            X_D_list = []
+            for chain_idx in range(n_chains):
+                SEED = self.get_next_seed()
+                X_L, X_D = _do_initialize(M_c, M_r, T, initialization, SEED)
+                X_L_list.append(X_L)
+                X_D_list.append(X_D)
+            return X_L_list, X_D_list
 
     def analyze(self, M_c, T, X_L, X_D, kernel_list=(), n_steps=1, c=(), r=(),
                 max_iterations=-1, max_time=-1):
@@ -83,12 +94,25 @@ class LocalEngine(EngineTemplate.EngineTemplate):
 
         """
 
-        SEED = self.get_next_seed()
-        X_L_prime, X_D_prime = _do_analyze(M_c, T, X_L, X_D,
-                                           kernel_list, n_steps, c, r,
-                                           max_iterations, max_time,
-                                           SEED)
-        return X_L_prime, X_D_prime
+        if not xu.get_is_multistate(X_L, X_D):
+            SEED = self.get_next_seed()
+            X_L_prime, X_D_prime = _do_analyze(M_c, T, X_L, X_D,
+                    kernel_list, n_steps, c, r,
+                    max_iterations, max_time,
+                    SEED)
+            return X_L_prime, X_D_prime
+        else:
+            X_L_prime_list = []
+            X_D_prime_list = []
+            for X_L_i, X_D_i in zip(X_L, X_D):
+                SEED = self.get_next_seed()
+                X_L_i_prime, X_D_i_prime = _do_analyze(M_c, T, X_L_i, X_D_i,
+                        kernel_list, n_steps, c, r,
+                        max_iterations, max_time,
+                        SEED)
+                X_L_prime_list.append(X_L_i_prime)
+                X_D_prime_list.append(X_D_i_prime)
+            return X_L_prime_list, X_D_prime_list
 
     def simple_predictive_sample(self, M_c, X_L, X_D, Y, Q, n=1):
         """Sample values from the predictive distribution of the given latent state
@@ -225,4 +249,44 @@ def _do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed):
 
 
 if __name__ == '__main__':
-    le = LocalEngine(seed=10)
+    import tabular_predDB.python_utils.data_utils as du
+    import tabular_predDB.python_utils.xnet_utils as xu
+    import tabular_predDB.python_utils.convergence_test_utils as ctu
+    
+
+    gen_seed = 0
+    num_clusters = 4
+    num_cols = 32
+    num_rows = 400
+    num_views = 2
+    n_steps = 1
+    n_chains = 3
+    n_times = 5
+
+    # generate some data
+    T, M_r, M_c, data_inverse_permutation_indices = du.gen_factorial_data_objects(
+            gen_seed, num_clusters, num_cols, num_rows, num_views,
+            max_mean=100, max_std=1, send_data_inverse_permutation_indices=True)
+    view_assignment_truth, X_D_truth = ctu.truth_from_permute_indices(
+            data_inverse_permutation_indices, num_rows, num_cols, num_views, num_clusters)
+    #
+    engine = LocalEngine(seed=10)
+    # single state test
+    single_state_ARIs = []
+    X_L, X_D = engine.initialize(M_c, M_r, T, n_chains=1)
+    single_state_ARIs.append(ctu.get_column_ARI(X_L, view_assignment_truth))
+    for time_i in range(n_times):
+        X_L, X_D = engine.analyze(M_c, T, X_L, X_D, n_steps=n_steps)
+        single_state_ARIs.append(ctu.get_column_ARI(X_L, view_assignment_truth))
+    # multistate test
+    multi_state_ARIs = []
+    X_L_list, X_D_list = engine.initialize(M_c, M_r, T, n_chains=n_chains)
+    multi_state_ARIs.append(ctu.get_column_ARIs(X_L_list, view_assignment_truth))
+    for time_i in range(n_times):
+        X_L_list, X_D_list = engine.analyze(M_c, T, X_L_list, X_D_list, n_steps=n_steps)
+        multi_state_ARIs.append(ctu.get_column_ARIs(X_L_list, view_assignment_truth))
+
+    print 'single_state_ARIs:'
+    print single_state_ARIs
+    print 'multi_state_ARIs:'
+    print multi_state_ARIs
