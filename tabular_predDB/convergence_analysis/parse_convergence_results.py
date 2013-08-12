@@ -6,7 +6,7 @@ import tabular_predDB.python_utils.xnet_utils as xu
 
 def get_line_label(parsed_line):
     return int(parsed_line[0])
-def extract_variables(parsed_line, variables_names_to_extract):
+def extract_variables(parsed_line, variable_names_to_extract):
     variable_dict = parsed_line[1]
     variables = [
             variable_dict[variable_name]
@@ -22,8 +22,8 @@ def parsed_line_to_output_row(parsed_line, variable_names_to_extract,
     return ret_list
 
 def parse_to_csv(in_filename, out_filename='parsed_convergence.csv'):
-    variables_names_to_extract = ['num_rows', 'num_cols', 'num_clusters', 'num_views',
-            'num_steps', 'block_size','column_ari_list']
+    variable_names_to_extract = ['num_rows', 'num_cols', 'num_clusters', 'num_views',
+            'n_steps', 'block_size','column_ari_list']
     header = ['experiment'] + variable_names_to_extract
     with open(in_filename) as in_fh:
       with open(out_filename,'w') as out_fh:
@@ -37,3 +37,15 @@ def parse_to_csv(in_filename, out_filename='parsed_convergence.csv'):
               csvwriter.writerow(output_row)
             except Exception, e:
               sys.stderr.write(line + '\n' + str(e) + '\n')
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('in_filename', type=str)
+    parser.add_argument('--out_filename', type=str,
+            default='parsed_convergence.csv')
+    args = parser.parse_args()
+    in_filename = args.in_filename
+    out_filename = args.out_filename
+    parse_to_csv(in_filename, out_filename)
