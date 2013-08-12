@@ -143,7 +143,7 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
                     max_mean=max_mean, max_std=1,
                     send_data_inverse_permutation_indices=True)
     view_assignment_ground_truth = \
-            ctu.determine_synthetic_column_ground_truth_assignements(num_cols,
+            ctu.determine_synthetic_column_ground_truth_assignments(num_cols,
                     num_views)
     #
     engine=LE.LocalEngine(init_seed)
