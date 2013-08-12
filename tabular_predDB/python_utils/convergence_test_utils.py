@@ -76,6 +76,17 @@ def ARI_CrossCat(Xc, Xrv, XRc, XRrv):
 
     return ARI, ARI_viewonly
 
+def get_column_ARI(X_L, view_assignment_truth):
+    view_assignments = X_L['column_partition']['assignments']
+    ARI = metrics.adjusted_rand_score(view_assignments, view_assignment_truth)
+    return ARI
+
+def get_column_ARIs(X_L_list, view_assignment_truth):
+    get_column_ARI_helper = lambda X_L: \
+            get_column_ARI(X_L, view_assignment_truth)
+    ARIs = map(get_column_ARI_helper, X_L_list)
+    return ARIs
+
 def multi_chain_ARI(X_L_list, X_D_List, view_assignment_truth, X_D_truth, return_list=False):
     num_chains = len(X_L_list)
     ari_table = numpy.zeros(num_chains)
