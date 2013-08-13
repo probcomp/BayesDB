@@ -58,37 +58,40 @@ def plot_convergence_metrics(convergence_metrics, title_append=''):
     pylab.ylabel('mean test log likelihood')
     return fh
 
-
-# parse some arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('filename', type=str)
-parser.add_argument('-one_plot', action='store_true')
-args = parser.parse_args()
-filename = args.filename
-one_plot = args.one_plot
-#
-get_run_key = _get_run_key
-if one_plot:
-    get_run_key = _get_run_key_dummy
-
-
-# parse the csv
-convergence_metrics_dict = collections.defaultdict(get_default_dict)
-with open(filename) as fh:
-    csv_reader = csv.reader(fh)
-    header = csv_reader.next()
-    for line in csv_reader:
-        evaled_line = map(eval, line)
-        line_dict = dict(zip(header, evaled_line))
-        run_key = get_run_key(line_dict)
-        convergence_metrics = convergence_metrics_dict[run_key]
-        new_values_dict = get_dict_subset(line_dict, ['column_ari_list', 'mean_test_ll_list'])
-        new_values_dict['iter_idx_list'] = get_iter_indices(line_dict)
-        update_convergence_metrics(convergence_metrics, new_values_dict)
+def parse_convergence_metrics_csv(filename):
+    convergence_metrics_dict = collections.defaultdict(get_default_dict)
+    with open(filename) as fh:
+        csv_reader = csv.reader(fh)
+        header = csv_reader.next()
+        for line in csv_reader:
+            evaled_line = map(eval, line)
+            line_dict = dict(zip(header, evaled_line))
+            run_key = get_run_key(line_dict)
+            convergence_metrics = convergence_metrics_dict[run_key]
+            new_values_dict = get_dict_subset(line_dict, ['column_ari_list', 'mean_test_ll_list'])
+            new_values_dict['iter_idx_list'] = get_iter_indices(line_dict)
+            update_convergence_metrics(convergence_metrics, new_values_dict)
+    return convergence_metrics_dict
 
 
-# actually plot
-fh_list = []
-for run_key, convergence_metrics in convergence_metrics_dict.iteritems():
-    fh = plot_convergence_metrics(convergence_metrics, title_append=str(run_key))
-    fh_list.append(fh)
+if __name__ == '__main__':
+    # parse some arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', type=str)
+    parser.add_argument('-one_plot', action='store_true')
+    args = parser.parse_args()
+    filename = args.filename
+    one_plot = args.one_plot
+    #
+    get_run_key = _get_run_key
+    if one_plot:
+        get_run_key = _get_run_key_dummy
+
+    # parse the csv
+    convergence_metrics_dict = parse_convergence_metrics_csv(filename)
+
+    # actually plot
+    fh_list = []
+    for run_key, convergence_metrics in convergence_metrics_dict.iteritems():
+        fh = plot_convergence_metrics(convergence_metrics, title_append=str(run_key))
+        fh_list.append(fh)
