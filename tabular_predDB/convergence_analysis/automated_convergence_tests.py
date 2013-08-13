@@ -30,11 +30,14 @@ def write_hadoop_input(input_filename, convergence_run_parameters, n_steps, bloc
     convergence_analyze_args_dict['SEED'] = SEED
     convergence_analyze_args_dict['n_steps'] = n_steps
     convergence_analyze_args_dict['block_size'] = block_size
-    
+    #
+    n_tasks = 0
     with open(input_filename, 'a') as out_fh:
         dict_generator = generate_hadoop_dicts(convergence_run_parameters, convergence_analyze_args_dict)
         for dict_to_write in dict_generator:
             xu.write_hadoop_line(out_fh, key=dict_to_write['SEED'], dict_to_write=dict_to_write)
+            n_tasks += 1
+    return n_tasks
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -82,21 +85,22 @@ if __name__ == '__main__':
 
     parameter_list = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
 
-    count = -1
+    n_tasks = 0
+    gen_seed = -1
     # Iterate over the parameter values and write each run as a line in the hadoop_input file
     take_product_of = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list, max_mean_list]
     for num_rows, num_cols, num_clusters, num_splits, max_mean in itertools.product(*take_product_of):
-        if numpy.mod(num_rows, num_clusters) == 0 and numpy.mod(num_cols,num_splits)==0:
-          count = count + 1
+        if numpy.mod(num_rows, num_clusters) == 0 and numpy.mod(num_cols, num_splits) == 0:
+          gen_seed = gen_seed + 1
           for chainindx in range(num_chains):
               convergence_run_parameters = dict(num_rows=num_rows, num_cols=num_cols,
                       num_views=num_splits, num_clusters=num_clusters, max_mean=max_mean,
                       n_test=100,
                       init_seed=chainindx)
-              write_hadoop_input(input_filename, convergence_run_parameters,  n_steps, block_size,
-                      SEED=count)
+              n_tasks += write_hadoop_input(input_filename,
+                      convergence_run_parameters,  n_steps, block_size,
+                      SEED=gen_seed)
 
-    n_tasks = len(num_rows_list)*len(num_cols_list)*len(num_clusters_list)*len(num_splits_list)*len(max_mean_list)*num_chains
     # Create a dummy table data file
     table_data=dict(T=[],M_c=[],X_L=[],X_D=[])
     fu.pickle(table_data, table_data_filename)
