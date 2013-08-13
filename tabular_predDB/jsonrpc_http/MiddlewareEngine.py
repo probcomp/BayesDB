@@ -515,8 +515,8 @@ class MiddlewareEngine(object):
     imputations_dict = defaultdict(dict)
     for r,c,val in imputations_list:
       imputations_dict[r][c] = val
-    ret = self.select(tablename, columnstring, whereclause, limit, order_by=False, imputations_dict=imputations_dict)
-    ret['data'] = self.order_by_similarity(ret['columns'], ret['data'], X_L_list, X_D_list, M_c, order_by)
+    ret = self.select(tablename, columnstring, whereclause, limit, order_by=order_by, imputations_dict=imputations_dict)
+    #ret['data'] = self.order_by_similarity(ret['columns'], ret['data'], X_L_list, X_D_list, M_c, order_by)
     return ret
 
   def select(self, tablename, columnstring, whereclause, limit, order_by, imputations_dict=None):
@@ -782,7 +782,7 @@ class MiddlewareEngine(object):
           view_idx = X_L['column_partition']['assignments'][col_idx]
           if X_D[view_idx][row_id] == X_D[view_idx][target_row_id]:
             score += 1.0
-    return score / len(X_L_list)
+    return score / (len(X_L_list)*len(col_idxs))
 
   def order_by(self, filtered_values, functions):
     """
