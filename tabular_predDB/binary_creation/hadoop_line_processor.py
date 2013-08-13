@@ -158,22 +158,26 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
     engine=LE.LocalEngine(init_seed)
     column_ari_list = []
     mean_test_ll_list = []
+    elapsed_seconds_list = []
 
     # get initial ARI, test_ll
-    X_L, X_D = engine.initialize(M_c, M_r, T, initialization='from_the_prior')
+    with gu.Timer('initialize', verbose=False) as timer:
+        X_L, X_D = engine.initialize(M_c, M_r, T, initialization='from_the_prior')
     column_ari = ctu.get_column_ARI(X_L, view_assignment_ground_truth)
     column_ari_list.append(column_ari)
     mean_test_ll = ctu.calc_mean_test_log_likelihood(M_c, T, X_L, X_D,
             T_test)
     mean_test_ll_list.append(mean_test_ll)
+    elapsed_seconds_list.append(timer.elapsed_secs)
 
     # run blocks of transitions, recording ARI, test_ll progression
     completed_transitions = 0
     n_steps = min(block_size, num_transitions)
     while (completed_transitions < num_transitions):
         # We won't be limiting by time in the convergence runs
-        X_L, X_D = engine.analyze(M_c, T, X_L, X_D, kernel_list=(),
-                n_steps=n_steps, max_time=-1)
+        with gu.Timer('initialize', verbose=False) as timer:
+             X_L, X_D = engine.analyze(M_c, T, X_L, X_D, kernel_list=(),
+                     n_steps=n_steps, max_time=-1)
         completed_transitions = completed_transitions + block_size
         #
         column_ari = ctu.get_column_ARI(X_L, view_assignment_ground_truth)
@@ -181,6 +185,7 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
         mean_test_ll = ctu.calc_mean_test_log_likelihood(M_c, T, X_L, X_D,
                 T_test)
         mean_test_ll_list.append(mean_test_ll)
+        elapsed_seconds_list.append(timer.elapsed_secs)
 
     ret_dict = dict(
         num_rows=num_rows,
@@ -191,6 +196,7 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
         column_ari_list=column_ari_list,
         mean_test_ll_list=mean_test_ll_list,
         generative_mean_test_log_likelihood=generative_mean_test_log_likelihood,
+        elapsed_seconds_list=elapsed_seconds_list,
         n_steps=num_transitions,
         block_size=block_size,
         )
