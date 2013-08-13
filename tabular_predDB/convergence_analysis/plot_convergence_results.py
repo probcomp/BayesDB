@@ -18,7 +18,7 @@ def get_dict_subset(in_dict, keys_subset):
     return dict_subset
 
 def _get_run_key(line_dict):
-    fields = ['num_rows', 'num_cols', 'num_clusters', 'num_views']
+    fields = ['num_rows', 'num_cols', 'num_clusters', 'num_views', 'max_mean']
     values = get_dict_values_subset(line_dict, fields)
     run_key = tuple(values)
     return run_key
