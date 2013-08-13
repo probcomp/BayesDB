@@ -91,6 +91,7 @@ if __name__ == '__main__':
           for chainindx in range(num_chains):
               convergence_run_parameters = dict(num_rows=num_rows, num_cols=num_cols,
                       num_views=num_splits, num_clusters=num_clusters, max_mean=max_mean,
+                      n_test=100,
                       init_seed=chainindx)
               write_hadoop_input(input_filename, convergence_run_parameters,  n_steps, block_size,
                       SEED=count)
