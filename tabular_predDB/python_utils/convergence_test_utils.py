@@ -1,5 +1,9 @@
 import numpy
 from sklearn import metrics
+#
+import tabular_predDB.cython_code.State as State
+import tabular_predDB.python_utils.general_utils as gu
+import tabular_predDB.python_utils.sample_utils as su
 
 
 def determine_synthetic_column_ground_truth_assignments(num_cols, num_views):
@@ -110,4 +114,21 @@ def multi_chain_ARI(X_L_list, X_D_List, view_assignment_truth, X_D_truth, return
         return ari_table, ari_views
     else:
         return ari_table_mean, ari_views_mean
-    
+
+def create_test_set(M_c, T, X_L, X_D, n_test, seed_seed=0):
+    sample_row_idx = len(T) + 1
+    n_cols = len(T[0])
+    Y = []
+    Q = [(sample_row_idx, col_idx) for col_idx in range(n_cols)]
+    int_generator = gu.int_generator(seed_seed)
+    get_next_seed = lambda: int_generator.next()
+    samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed, n=n_test)
+    return samples
+
+# FIXME: remove dependence on T as input
+#        by making p_State constructor actually use only suffstats
+def calc_mean_test_log_likelihood(M_c, T, X_L, X_D, T_test):
+    state = State.p_State(M_c, T, X_L, X_D)
+    test_log_likelihoods = map(state.calc_row_predictive_logp, T)
+    mean_test_log_likelihood = numpy.mean(test_log_likelihoods)
+    return mean_test_log_likelihood
