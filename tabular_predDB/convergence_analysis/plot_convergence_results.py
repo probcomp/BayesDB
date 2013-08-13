@@ -7,6 +7,12 @@ pylab.ion()
 pylab.show()
 
 
+# settings
+run_key_fields = ['num_rows', 'num_cols', 'num_clusters', 'num_views', 'max_mean']
+dict_subset_keys = ['column_ari_list', 'mean_test_ll_list',
+        'elapsed_seconds_list']
+
+
 # set up some helper functions
 def get_dict_values_subset(in_dict, keys_subset):
     values_subset = [in_dict[key] for key in keys_subset]
@@ -18,8 +24,7 @@ def get_dict_subset(in_dict, keys_subset):
     return dict_subset
 
 def _get_run_key(line_dict):
-    fields = ['num_rows', 'num_cols', 'num_clusters', 'num_views', 'max_mean']
-    values = get_dict_values_subset(line_dict, fields)
+    values = get_dict_values_subset(line_dict, run_key_fields)
     run_key = tuple(values)
     return run_key
 
@@ -27,7 +32,9 @@ def _get_run_key_dummy(line_dict):
     return 'all'
 
 def get_default_dict():
-    return dict(column_ari_list=list(), mean_test_ll_list=list(), iter_idx_list=list())
+    ret_dict = dict((key, list()) for key in dict_subset_keys)
+    ret_dict['iter_idx_list'] = list()
+    return ret_dict
 
 def update_convergence_metrics(convergence_metrics, new_values_dict):
     for key, value in new_values_dict.iteritems():
@@ -41,20 +48,29 @@ def get_iter_indices(line_dict):
     iter_indices = pylab.arange(num_blocks) * block_size
     return iter_indices
 
-def plot_convergence_metrics(convergence_metrics, title_append=''):
-    iter_idx_arr = pylab.array(convergence_metrics['iter_idx_list']).T
+def plot_convergence_metrics(convergence_metrics, title_append='',
+        x_is_iters=False):
+    x_variable = None
+    x_label = None
+    if x_is_iters:
+        x_variable = pylab.array(convergence_metrics['iter_idx_list']).T
+        x_label = 'iter idx'
+    else:
+        x_variable = pylab.array(convergence_metrics['elapsed_seconds_list']).T
+        x_variable = x_variable.cumsum(axis=0)
+        x_label = 'cumulative time (seconds)'
     ari_arr = pylab.array(convergence_metrics['column_ari_list']).T
     mean_test_ll_arr = pylab.array(convergence_metrics['mean_test_ll_list']).T
     #
     fh = pylab.figure()
     pylab.subplot(211)
     pylab.title('convergence diagnostics: %s' % title_append)
-    pylab.plot(iter_idx_arr, ari_arr)
-    pylab.xlabel('iter idx')
+    pylab.plot(x_variable, ari_arr)
+    pylab.xlabel(x_label)
     pylab.ylabel('column ARI')
     pylab.subplot(212)
-    pylab.plot(iter_idx_arr, mean_test_ll_arr)
-    pylab.xlabel('iter idx')
+    pylab.plot(x_variable, mean_test_ll_arr)
+    pylab.xlabel(x_label)
     pylab.ylabel('mean test log likelihood')
     return fh
 
@@ -68,7 +84,7 @@ def parse_convergence_metrics_csv(filename):
             line_dict = dict(zip(header, evaled_line))
             run_key = get_run_key(line_dict)
             convergence_metrics = convergence_metrics_dict[run_key]
-            new_values_dict = get_dict_subset(line_dict, ['column_ari_list', 'mean_test_ll_list'])
+            new_values_dict = get_dict_subset(line_dict, dict_subset_keys) 
             new_values_dict['iter_idx_list'] = get_iter_indices(line_dict)
             update_convergence_metrics(convergence_metrics, new_values_dict)
     return convergence_metrics_dict
@@ -79,9 +95,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', type=str)
     parser.add_argument('-one_plot', action='store_true')
+    parser.add_argument('-x_is_iters', action='store_true')
     args = parser.parse_args()
     filename = args.filename
     one_plot = args.one_plot
+    x_is_iters = args.x_is_iters
     #
     get_run_key = _get_run_key
     if one_plot:
@@ -93,5 +111,6 @@ if __name__ == '__main__':
     # actually plot
     fh_list = []
     for run_key, convergence_metrics in convergence_metrics_dict.iteritems():
-        fh = plot_convergence_metrics(convergence_metrics, title_append=str(run_key))
+        fh = plot_convergence_metrics(convergence_metrics,
+                title_append=str(run_key), x_is_iters=x_is_iters)
         fh_list.append(fh)
