@@ -23,7 +23,7 @@ def parsed_line_to_output_row(parsed_line, variable_names_to_extract,
 
 def parse_to_csv(in_filename, out_filename='parsed_convergence.csv'):
     variable_names_to_extract = ['num_rows', 'num_cols', 'num_clusters', 'num_views',
-            'n_steps', 'block_size','column_ari_list',
+            'max_mean', 'n_steps', 'block_size','column_ari_list',
             'generative_mean_test_log_likelihood','mean_test_ll_list']
     header = ['experiment'] + variable_names_to_extract
     with open(in_filename) as in_fh:
