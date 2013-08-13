@@ -251,18 +251,22 @@ def _do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed):
 
 if __name__ == '__main__':
     import tabular_predDB.python_utils.data_utils as du
-    import tabular_predDB.python_utils.xnet_utils as xu
     import tabular_predDB.python_utils.convergence_test_utils as ctu
-    
+    import tabular_predDB.python_utils.timing_test_utils as ttu
 
+
+    # settings
     gen_seed = 0
+    inf_seed = 0
     num_clusters = 4
     num_cols = 32
     num_rows = 400
     num_views = 2
     n_steps = 1
-    n_chains = 3
     n_times = 5
+    n_chains = 3
+    n_test = 100
+
 
     # generate some data
     T, M_r, M_c, data_inverse_permutation_indices = du.gen_factorial_data_objects(
@@ -270,24 +274,55 @@ if __name__ == '__main__':
             max_mean=100, max_std=1, send_data_inverse_permutation_indices=True)
     view_assignment_truth, X_D_truth = ctu.truth_from_permute_indices(
             data_inverse_permutation_indices, num_rows, num_cols, num_views, num_clusters)
+    X_L_gen, X_D_gen = ttu.get_generative_clustering(M_c, M_r, T,
+            data_inverse_permutation_indices, num_clusters, num_views)
+    T_test = ctu.create_test_set(M_c, T, X_L_gen, X_D_gen, n_test, seed_seed=0)
     #
-    engine = LocalEngine(seed=10)
+    generative_mean_test_log_likelihood = ctu.calc_mean_test_log_likelihood(M_c, T,
+            X_L_gen, X_D_gen, T_test)
+
+
+    # run some tests
+    engine = LocalEngine(seed=inf_seed)
     # single state test
     single_state_ARIs = []
+    single_state_mean_test_lls = []
     X_L, X_D = engine.initialize(M_c, M_r, T, n_chains=1)
     single_state_ARIs.append(ctu.get_column_ARI(X_L, view_assignment_truth))
+    single_state_mean_test_lls.append(
+            ctu.calc_mean_test_log_likelihood(M_c, T, X_L, X_D, T_test)
+            )
     for time_i in range(n_times):
         X_L, X_D = engine.analyze(M_c, T, X_L, X_D, n_steps=n_steps)
         single_state_ARIs.append(ctu.get_column_ARI(X_L, view_assignment_truth))
+        single_state_mean_test_lls.append(
+            ctu.calc_mean_test_log_likelihood(M_c, T, X_L, X_D, T_test)
+            )
     # multistate test
     multi_state_ARIs = []
+    multi_state_mean_test_lls = []
     X_L_list, X_D_list = engine.initialize(M_c, M_r, T, n_chains=n_chains)
     multi_state_ARIs.append(ctu.get_column_ARIs(X_L_list, view_assignment_truth))
+    multi_state_mean_test_lls.append(ctu.calc_mean_test_log_likelihoods(M_c, T,
+        X_L_list, X_D_list, T_test))
     for time_i in range(n_times):
         X_L_list, X_D_list = engine.analyze(M_c, T, X_L_list, X_D_list, n_steps=n_steps)
         multi_state_ARIs.append(ctu.get_column_ARIs(X_L_list, view_assignment_truth))
+        multi_state_mean_test_lls.append(ctu.calc_mean_test_log_likelihoods(M_c, T,
+            X_L_list, X_D_list, T_test))
 
+    # print results
+    print 'generative_mean_test_log_likelihood'
+    print generative_mean_test_log_likelihood
+    #
+    print 'single_state_mean_test_lls:'
+    print single_state_mean_test_lls
+    #
     print 'single_state_ARIs:'
     print single_state_ARIs
+    #
+    print 'multi_state_mean_test_lls:'
+    print multi_state_mean_test_lls
+    #
     print 'multi_state_ARIs:'
     print multi_state_ARIs
