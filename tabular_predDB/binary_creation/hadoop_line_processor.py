@@ -133,10 +133,13 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
     num_rows = data_dict['num_rows']
     num_views = data_dict['num_views']
     max_mean = data_dict['max_mean']
+    n_test = data_dict['n_test']
     num_transitions = data_dict['n_steps']
     block_size = data_dict['block_size']
     init_seed = data_dict['init_seed']
-    
+
+
+    # generate some data
     T, M_r, M_c, data_inverse_permutation_indices = \
             du.gen_factorial_data_objects(gen_seed, num_clusters,
                     num_cols, num_rows, num_views,
@@ -145,16 +148,26 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
     view_assignment_ground_truth = \
             ctu.determine_synthetic_column_ground_truth_assignments(num_cols,
                     num_views)
-    #
-    engine=LE.LocalEngine(init_seed)
-    X_L, X_D = engine.initialize(M_c, M_r, T, initialization='from_the_prior')
-    column_ari_list = []
+    X_L_gen, X_D_gen = ttu.get_generative_clustering(M_c, M_r, T,
+            data_inverse_permutation_indices, num_clusters, num_views)
+    T_test = ctu.create_test_set(M_c, T, X_L_gen, X_D_gen, n_test, seed_seed=0)
+    generative_mean_test_log_likelihood = \
+            ctu.calc_mean_test_log_likelihood(M_c, T, X_L_gen, X_D_gen, T_test)
 
-    # get initial ARI
+    # additional set up
+    engine=LE.LocalEngine(init_seed)
+    column_ari_list = []
+    mean_test_ll_list = []
+
+    # get initial ARI, test_ll
+    X_L, X_D = engine.initialize(M_c, M_r, T, initialization='from_the_prior')
     column_ari = ctu.get_column_ARI(X_L, view_assignment_ground_truth)
     column_ari_list.append(column_ari)
+    mean_test_ll = ctu.calc_mean_test_log_likelihood(M_c, T, X_L, X_D,
+            T_test)
+    mean_test_ll_list.append(mean_test_ll)
 
-    # run blocks of transitions, recording ARI progression
+    # run blocks of transitions, recording ARI, test_ll progression
     completed_transitions = 0
     n_steps = min(block_size, num_transitions)
     while (completed_transitions < num_transitions):
@@ -162,9 +175,13 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
         X_L, X_D = engine.analyze(M_c, T, X_L, X_D, kernel_list=(),
                 n_steps=n_steps, max_time=-1)
         completed_transitions = completed_transitions + block_size
+        #
         column_ari = ctu.get_column_ARI(X_L, view_assignment_ground_truth)
         column_ari_list.append(column_ari)
-        
+        mean_test_ll = ctu.calc_mean_test_log_likelihood(M_c, T, X_L, X_D,
+                T_test)
+        mean_test_ll_list.append(mean_test_ll)
+
     ret_dict = dict(
         num_rows=num_rows,
         num_cols=num_cols,
@@ -172,6 +189,8 @@ def convergence_analyze_helper(table_data, data_dict, command_dict):
         num_clusters=num_clusters,
         max_mean=max_mean,
         column_ari_list=column_ari_list,
+        mean_test_ll_list=mean_test_ll_list,
+        generative_mean_test_log_likelihood=generative_mean_test_log_likelihood,
         n_steps=num_transitions,
         block_size=block_size,
         )
