@@ -2,8 +2,8 @@
 
 
 HDFS_DIR="/user/bigdata/SSCI/"
-# HDFS_URI="hdfs://xd-namenode.xdata.data-tactics-corp.com:8020/"
 HDFS_URI="$(python -c 'import tabular_predDB.settings as S; print S.Hadoop.default_hdfs_uri')"
+WHICH_BINARY="hadoop_line_processor"
 
 # print script usage
 usage() {
@@ -70,7 +70,8 @@ export PYTHONPATH=$CODE_REL_DIR:$PYTHONPATH
 # create binary
 cd $CODE_REL_DIR/tabular_predDB/binary_creation
 rm -rf build
-python setup.py build >build.out 2>build.err
+mkdir build
+python setup.py build >build/build.out 2>build/build.err
 # FIXME: find a better way to do this; works on 20130307 VM to use on XDATA cluster
 LARGEST_LAPACK_LITE=$(locate lapack_lite | xargs ls -al | sort -k 4 | head -n 1 | awk '{print $NF}')
 if [[ ! -z $LARGEST_LAPACK_LITE ]]; then
