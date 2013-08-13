@@ -132,3 +132,10 @@ def calc_mean_test_log_likelihood(M_c, T, X_L, X_D, T_test):
     test_log_likelihoods = map(state.calc_row_predictive_logp, T)
     mean_test_log_likelihood = numpy.mean(test_log_likelihoods)
     return mean_test_log_likelihood
+def calc_mean_test_log_likelihoods(M_c, T, X_L_list, X_D_list, T_test):
+    mean_test_log_likelihoods = []
+    for X_L, X_D in zip(X_L_list, X_D_list):
+        mean_test_log_likelihood = calc_mean_test_log_likelihood(M_c, T, X_L,
+                X_D, T_test)
+        mean_test_log_likelihoods.append(mean_test_log_likelihood)
+    return mean_test_log_likelihoods
