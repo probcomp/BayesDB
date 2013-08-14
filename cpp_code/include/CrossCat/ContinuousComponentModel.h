@@ -5,6 +5,7 @@
 #include "numerics.h"
 #include "utils.h"
 
+
 class ContinuousComponentModel : public ComponentModel {
  public:
   ContinuousComponentModel(std::map<std::string, double> &in_hyper_hash);
