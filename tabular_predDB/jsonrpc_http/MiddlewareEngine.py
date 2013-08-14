@@ -413,8 +413,10 @@ class MiddlewareEngine(object):
         chainids = [chain_index]
       conn.commit()
       p_list = []
+      chainid_iteration_info = list()
       for chainid in chainids:
-        analyze_helper(tableid, M_c, T, chainid, iterations, self.BACKEND_URI)
+        iters = analyze_helper(tableid, M_c, T, chainid, iterations, self.BACKEND_URI)
+        chainid_iteration_info.append('Chain %d: %d iterations' % (chainid, iters))
       #   from multiprocessing import Process
       #   p = Process(target=analyze_helper,
       #               args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
@@ -429,7 +431,7 @@ class MiddlewareEngine(object):
     finally:
       if conn:
         conn.close()
-    return 0
+    return ', '.join(chainid_iteration_info)
 
   def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False):
     """Impute missing values.
@@ -587,7 +589,7 @@ class MiddlewareEngine(object):
         if prob_match:
           column = prob_match.group('column')
           c_idx = M_c['name_to_idx'][column]
-          value = int(p_match.group('value'))
+          value = int(prob_match.group('value'))
           queries.append(('probability', (c_idx, value)))
           probability_query = True
           continue
@@ -1083,7 +1085,7 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
   finally:
     if conn:
       conn.close()      
-  return 0
+  return (prev_iterations + iterations)
 
 
 def jsonify_and_dump(to_dump, filename):
