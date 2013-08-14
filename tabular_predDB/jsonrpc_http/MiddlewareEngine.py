@@ -651,7 +651,7 @@ class MiddlewareEngine(object):
 
     ## If there are only probability values, then only return one row.
     ## TODO: is this actually right? Or is probability also a function of row? If so: get rid of this.
-    probabilities_only = reduce(lambda v,q: q[0] == 'probability' and v, queries, True)
+    probabilities_only = reduce(lambda v,q: q[0] == 'probability' and v, queries[1:], True)
     if probabilities_only:
       limit = 1
 
@@ -665,7 +665,7 @@ class MiddlewareEngine(object):
           ## Fill in any imputed values.
           for col_idx, value in imputations_dict[row_id].items():
             row_values = list(row_values)
-            row_values[col_idx] = value
+            row_values[col_idx] = '*' + str(value)
             row_values = tuple(row_values)
         filtered_values.append((row_id, row_values))
 
@@ -700,7 +700,10 @@ class MiddlewareEngine(object):
           ret_row.append(val)
         elif query_type == 'probability':
           c_idx, value = query
-          val = float(M_c['column_metadata'][c_idx]['code_to_value'][str(value)])
+          if M_c['column_metadata'][c_idx]['code_to_value']:
+            val = float(M_c['column_metadata'][c_idx]['code_to_value'][str(value)])
+          else:
+            val = value
           Q = [(idx, c_idx, val)]
           prob = engine.simple_predictive_probability(M_c, X_L_list[0], X_D_list[0], Y, Q)
           ## TODO: SELECT PROBABILITY. Need to hook up simple_predictive_sample: for another time.
