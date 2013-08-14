@@ -57,9 +57,10 @@ fields_of_interest = [
 fields_str = ', '.join(fields_of_interest)
 
 cmds = []
-cmds.append('select %s from dan_kiva limit 20;' % fields_str)
-cmds.append('select %s from dan_kiva limit 10 order by similarity to 0;' % fields_str)
-cmds.append('select %s from dan_kiva limit 10 order by similarity to 16 with respect to journal_entries;' % fields_str)
+cmds.append('select %s, similarity to 0 from dan_kiva limit 20;' % fields_str)
+cmds.append('select %s, similarity to 0 from dan_kiva limit 10 order by similarity to 0 limit 10;' % fields_str)
+cmds.append('select %s, similarity to 16 with respect to journal_entries from dan_kiva limit 10;' % fields_str)
+cmds.append('select %s, similarity to 16 with respect to journal_entries from dan_kiva limit 10 order by similarity to 16 with respect to journal_entries;' % fields_str)
 cmds.append('select %s from dan_kiva limit 10 order by similarity to 2 with respect to gender_ratio;' % fields_str)
 #
 print
