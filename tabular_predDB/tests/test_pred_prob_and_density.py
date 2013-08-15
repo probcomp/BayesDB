@@ -3,6 +3,8 @@ import argparse
 import sys
 from collections import Counter
 
+import pdb
+
 import numpy
 import pylab
 
@@ -122,3 +124,71 @@ pylab.title('TEST: PDF (not scaled)')
 pylab.show()
 
 raw_input("Press Enter when finished...")
+
+########################################################
+# do the test with multinomial data
+# T, M_r, M_c= du.gen_factorial_data_objects(0,2,2,row.shape[1],1)
+T, M_r, M_c= du.gen_factorial_data_objects(0,2,2,2,1)
+
+T = numpy.array(T,dtype=int)
+T = numpy.array(T,dtype=float)
+if numpy.min(T) < 0:
+	T = T - numpy.min(T)
+
+T, M_c = du.convert_columns_to_multinomial(T, M_c, [0,1])
+
+T = T.tolist()
+
+pdb.set_trace()
+state = State.p_State(M_c, T)
+
+# pull n samples
+samples = su.simple_predictive_sample(M_c, X_L, X_D, Y, Q, get_next_seed,n=n)
+X_array = numpy.sort(numpy.array(samples))
+X = X_array.tolist()
+
+pdb.set_trace()####
+# build the queries
+Qs = [];
+for x in X:
+    Qtmp = (query_row, query_column, x)
+    Qs.append(Qtmp)
+
+# get probabilities 
+probabilities = numpy.exp(su.simple_predictive_probability(M_c, X_L, X_D, Y, Qs, epsilon=.001))
+# get pdf values
+densities = numpy.exp(su.simple_predictive_probability_density(M_c, X_L, X_D, Y, Qs))
+
+max_probability_value = max(probabilities)
+max_density_value = max(densities)
+
+
+pylab.clf()
+
+# PLOT: probability vs samples distribution
+# scale all histograms to be valid PDFs (area=1)
+pylab.subplot(1,2,1)
+
+pdf, bins, patches = pylab.hist(X,100,normed=1, histtype='stepfilled',label='samples',alpha=.5,color=[.5,.5,.5])
+pylab.scatter(X,probabilities, c='red',label="p from cdf", edgecolor='none')
+
+pylab.legend(loc='upper left',fontsize='x-small')
+pylab.xlabel('value') 
+pylab.ylabel('frequency/scaled probability')
+pylab.title('simple_predictive_probability (scaled to max(pdf))')
+
+# PLOT: desnity vs samples distribution
+pylab.subplot(1,2,2)
+pdf, bins, patches = pylab.hist(X,100,normed=1, histtype='stepfilled',label='samples', alpha=.5, color=[.5,.5,.5])
+pylab.scatter(X,densities, c="red", label="pdf", edgecolor='none')
+
+pylab.legend(loc='upper left',fontsize='x-small')
+pylab.xlabel('value') 
+pylab.ylabel('frequency/density')
+pylab.title('TEST: PDF (not scaled)')
+
+pylab.show()
+
+
+
+
