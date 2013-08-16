@@ -352,7 +352,7 @@ namespace numerics {
       numerator += counts[element];
     }
     double denominator = sum_counts + K * dirichlet_alpha;
-    return numerator / denominator;
+    return log(numerator) - log(denominator);
   }
 
   vector<double> calc_multinomial_dirichlet_alpha_conditional(vector<double> dirichlet_alpha_grid,
