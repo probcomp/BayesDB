@@ -17,6 +17,8 @@ import sys
 import copy
 import math
 
+import pdb
+
 from collections import Counter
 #
 from scipy.misc import logsumexp
@@ -95,10 +97,7 @@ def simple_predictive_probability_density_observed(M_c, X_L, X_D, Y, which_row,
 
         if model_type == 'normal_inverse_gamma':
             p_x = component_model.get_predictive_pdf(elements[q],draw_constraints)
-            try:
-                logp = math.log(p_x)
-            except ValueError:
-                logp = float('-inf')
+            logp = p_x
             
         elif model_type == 'symmetric_dirichlet_discrete':
             logp = component_model.get_predictive_probability(elements[q],draw_constraints)
@@ -233,7 +232,7 @@ def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
             except ValueError:
                 logp = float('-inf')
         elif model_type == 'symmetric_dirichlet_discrete':
-            logp = component_model.get_predictive_probability(elements[q],draw_constraints)
+            logp = component_model.calc_element_predictive_logp_constrained(elements[q],draw_constraints)
         else:
             sys.exit("error: simple_predictive_probability_observed: Undefined model type.");
        
@@ -329,14 +328,12 @@ def simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query
         # construct draw conataints
         draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
 
-        px = component_model.get_predictive_probability(x, draw_constraints)
+        px = component_model.calc_element_predictive_logp_constrained(x, draw_constraints)
 
-        try:
-            answers[cluster_idx] = px+cluster_logps[cluster_idx]
-        except ValueError:
-            answers[cluster_idx] = float('-inf')
+        answers[cluster_idx] = px+cluster_logps[cluster_idx]
 
     answer = logsumexp(answers);
+    
     return answer
 
 ################################################################################
