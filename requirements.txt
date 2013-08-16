@@ -44,3 +44,6 @@ psycopg2==2.4.6
 # for ipython notebook
 ipython==0.13.2
 tornado==3.1
+
+# for convergence testing (ARI)
+scikit-learn
