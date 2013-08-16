@@ -4,11 +4,12 @@ print cmd
 raw_input()
 from DatabaseClient import DatabaseClient
 #
-cmd = '>>> client = DatabaseClient(hostname=None)'
+cmd = ">>> client = DatabaseClient(hostname='localhost')"
 print cmd
 raw_input()
 client = DatabaseClient(hostname=None)
 #
+'''
 cmd = 'drop btable dan_kiva;'
 print '>>> client.execute(\'%s\')' % cmd
 raw_input()
@@ -23,8 +24,16 @@ cmd = 'import samples data/kiva_flat_table_model_500.pkl.gz into dan_kiva iterat
 print '>>> client.execute(\'%s\')' % cmd
 raw_input()
 out =client(cmd)
+'''
 # print client('select * from dan_kiva limit 5;')
 
+####### New demo ########
+
+# select with ordering by similarity
+# infer: nans can't be filled in at one confidence level, but can at another
+# simulate
+
+#########################
 
 # #
 #  ESTIMATE DEPENDENCE
@@ -58,7 +67,7 @@ fields_str = ', '.join(fields_of_interest)
 
 cmds = []
 cmds.append('select %s, similarity to 0 from dan_kiva limit 20;' % fields_str)
-cmds.append('select %s, similarity to 0 from dan_kiva limit 10 order by similarity to 0 limit 10;' % fields_str)
+cmds.append('select %s, similarity to 0 from dan_kiva order by similarity to 0 limit 10;' % fields_str)
 cmds.append('select %s, similarity to 16 with respect to journal_entries from dan_kiva limit 10;' % fields_str)
 cmds.append('select %s, similarity to 16 with respect to journal_entries from dan_kiva limit 10 order by similarity to 16 with respect to journal_entries;' % fields_str)
 cmds.append('select %s from dan_kiva limit 10 order by similarity to 2 with respect to gender_ratio;' % fields_str)

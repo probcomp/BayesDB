@@ -331,7 +331,7 @@ class DatabaseClient(object):
         match = re.search(r"""
             estimate\s+dependence\s+probabilities\s+from\s+
             (?P<btable>[^\s]+)
-            (\s+referencing\s+(?P<col>[^\s]+))?
+            ((\s+referencing\s+(?P<refcol>[^\s]+))|(\s+for\s+(?P<forcol>[^\s]+)))?
             (\s+with\s+confidence\s+(?P<confidence>[^\s]+))?
             (\s+limit\s+(?P<limit>[^\s]+))?
             (\s+save\s+to\s+(?P<filename>[^\s]+))?
@@ -344,7 +344,12 @@ class DatabaseClient(object):
                 return None
         else:
             tablename = match.group('btable').strip()
-            col = match.group('col')
+            if match.group('refcol'):
+                col = match.group('refcol')
+                submatrix = True
+            else:
+                col = match.group('forcol')
+                submatrix = False
             confidence = match.group('confidence')
             if match.group('limit'):
                 limit = int(match.group('limit'))
@@ -354,7 +359,7 @@ class DatabaseClient(object):
                 filename = os.path.join('../../www/', match.group('filename'))
             else:
                 filename = None
-            return self.estimate_dependence_probabilities(tablename, col, confidence, limit, filename)
+            return self.estimate_dependence_probabilities(tablename, col, confidence, limit, filename, submatrix)
 
     def parse_update_datatypes(self, words, orig):
         match = re.search(r"""
@@ -559,13 +564,14 @@ class DatabaseClient(object):
             print 'Updated schema:\n'
         return ret
 
-    def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename):
+    def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename, submatrix):
         ret = self.call('estimate_dependence_probabilities', dict(
                 tablename=tablename,
                 col=col,
                 confidence=confidence,
                 limit=limit,
-                filename=filename))
+                filename=filename,
+                submatrix=submatrix))
         return ret
     
     def create_model(self, tablename, n_chains):
@@ -592,7 +598,6 @@ class DatabaseClient(object):
         args_dict['limit'] = limit
         args_dict['numsamples'] = numsamples
         args_dict['order_by'] = order_by
-        print args_dict
         return self.call('infer', args_dict)
 
     def select(self, tablename, columnstring, whereclause, limit, order_by):

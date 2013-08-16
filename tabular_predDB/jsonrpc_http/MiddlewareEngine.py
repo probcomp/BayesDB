@@ -21,6 +21,7 @@ import datetime
 import re
 import operator
 import copy
+import math
 #
 import pylab
 import numpy
@@ -630,13 +631,15 @@ class MiddlewareEngine(object):
     if probability_query or similarity_query or order_by:
       X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
     if probability_query:
-      if whereclause=="" or '=' not in whereclause:
-        Y = None
+      #if whereclause=="" or '=' not in whereclause:
+      Y = None
+      '''
       else:
         varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
         Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
         # map values to codes
         Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
+      '''
 
     ## Helper function to convert a row from its 'code' (as it's stored in T) to its 'value'
     ## (the human-understandable value).
@@ -704,9 +707,8 @@ class MiddlewareEngine(object):
             val = float(M_c['column_metadata'][c_idx]['code_to_value'][str(value)])
           else:
             val = value
-          Q = [(idx, c_idx, val)]
-          prob = engine.simple_predictive_probability(M_c, X_L_list[0], X_D_list[0], Y, Q)
-          ## TODO: SELECT PROBABILITY. Need to hook up simple_predictive_sample: for another time.
+          Q = [(len(X_D_list[0][0])+1, c_idx, val)] ## row is set to 1 + max row, instead of this row.
+          prob = math.exp(engine.simple_predictive_probability(M_c, X_L_list[0], X_D_list[0], Y, Q))
           ret_row.append(prob)
         elif query_type == 'similarity':
           target_row_id, target_column = query
@@ -714,7 +716,7 @@ class MiddlewareEngine(object):
           ret_row.append(sim)
       data.append(tuple(ret_row))
       row_count += 1
-      if (row_count >= limit and not order_by):
+      if row_count >= limit:
         break
 
     ## Prepare for return
@@ -977,9 +979,9 @@ class MiddlewareEngine(object):
         conn.close()
     return (X_L_list, X_D_list, M_c)
 
-  def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename):
+  def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename, submatrix):
     X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-    return do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, filename, col, confidence, limit)
+    return do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, filename, col, confidence, limit, submatrix)
 
   def gen_feature_z(self, tablename, filename=None,
                     dir=S.path.web_resources_dir):
@@ -1104,7 +1106,7 @@ def jsonify_and_dump(to_dump, filename):
     print e
   return 0
 
-def do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=None, confidence=None, limit=None):
+def do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
     num_cols = len(X_L_list[0]['column_partition']['assignments'])
     column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
     column_names = numpy.array(column_names)
@@ -1129,12 +1131,14 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=N
         data_tuples = data_tuples[:int(limit)]
       data = [tuple([d[0] for d in data_tuples])]
       columns = [d[1] for d in data_tuples]
-      z_matrix = z_matrix[columns,:][:,columns]
-      column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
+      column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]      
       column_names = numpy.array(column_names)
-      
-      z_matrix_reordered = z_matrix
       column_names_reordered = column_names[columns]
+      if submatrix:
+        z_matrix = z_matrix[columns,:][:,columns]
+        z_matrix_reordered = z_matrix
+      else:
+        return {'data': data, 'columns': column_names_reordered}
     else:
       # hierachically cluster z_matrix
       import hcluster
