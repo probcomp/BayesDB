@@ -30,7 +30,9 @@ int main(int argc, char** argv) {
 
   // load some data
   matrixD data;
-  string filename = "SynData2.csv";
+  // tail -n +2 ../../www/data/dha_small_cont.csv > dha_small_cont_no_header.csv
+  // string filename = "SynData2.csv";
+  string filename = "dha_small_cont_no_header.csv";
   // string filename = "analyze_2d/ring_data.csv";
   LoadData(filename, data);
   cout << "data is: " << data << endl;
