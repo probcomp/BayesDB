@@ -2,7 +2,7 @@ OPTIMIZED =
 ifdef OPTIMIZED
 CXXOPTS := -O2 -g $(CXXOPTS)
 else
-CXXOPTS := -g -O0 $(CXXOPTS) 
+CXXOPTS := -pg -g -O0 $(CXXOPTS) 
 endif
 
 CC = gcc
