@@ -145,6 +145,10 @@ double ContinuousComponentModel::remove_element(double element) {
 }
 
 double ContinuousComponentModel::incorporate_hyper_update() {
+  hyper_r = get(*p_hypers, (string) "r");
+  hyper_nu = get(*p_hypers, (string) "nu");
+  hyper_s = get(*p_hypers, (string) "s");
+  hyper_mu = get(*p_hypers, (string) "mu");
   double score_0 = score;
   // hypers[which_hyper] = value; // set by owner of hypers object
   set_log_Z_0();
