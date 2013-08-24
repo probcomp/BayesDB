@@ -21,7 +21,7 @@ class ComponentModel {
   std::map<std::string, double> get_hypers() const;
   int get_count() const;
   std::map<std::string, double> get_suffstats() const;
-  std::map<std::string, double> _get_suffstats() const;
+  virtual std::map<std::string, double> _get_suffstats() const;
   //
   //
   // calculators

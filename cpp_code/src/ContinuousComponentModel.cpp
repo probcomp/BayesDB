@@ -20,6 +20,10 @@ ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hyper
   count = 0;
   score = 0;
   p_hypers = &in_hypers;
+  hyper_r = (*p_hypers)["r"];
+  hyper_nu = (*p_hypers)["nu"];
+  hyper_s = (*p_hypers)["s"];
+  hyper_mu = (*p_hypers)["mu"];
   init_suffstats();
   set_log_Z_0();
 }
@@ -29,8 +33,20 @@ ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hyper
   sum_x = SUM_X;
   sum_x_squared = SUM_X_SQ;
   p_hypers = &in_hypers;
+  hyper_r = (*p_hypers)["r"];
+  hyper_nu = (*p_hypers)["nu"];
+  hyper_s = (*p_hypers)["s"];
+  hyper_mu = (*p_hypers)["mu"];
   set_log_Z_0();
   score = calc_marginal_logp();
+}
+
+void ContinuousComponentModel::get_hyper_doubles(double &r, double &nu,
+	       	double &s, double &mu) const {
+  r = hyper_r;
+  nu = hyper_nu;
+  s = hyper_s;
+  mu = hyper_mu;
 }
 
 double ContinuousComponentModel::calc_marginal_logp() const {
@@ -258,10 +274,3 @@ map<string, double> ContinuousComponentModel::_get_suffstats() const {
   	return suffstats;
 }
 
-void ContinuousComponentModel::get_hyper_doubles(double &r, double &nu,
-						 double &s, double &mu)  const {
-  r = get(*p_hypers, (string) "r");
-  nu = get(*p_hypers, (string) "nu");
-  s = get(*p_hypers, (string) "s");
-  mu = get(*p_hypers, (string) "mu");
-}
