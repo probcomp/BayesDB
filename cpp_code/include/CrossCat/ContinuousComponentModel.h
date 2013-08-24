@@ -12,8 +12,8 @@ class ContinuousComponentModel : public ComponentModel {
 			   int COUNT, double SUM_X, double SUM_X_SQ);
   //
   // getters
-  void get_hyper_doubles(double &r, double &nu, double &s, double &mu) const;
   void get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const;
+  void get_hyper_doubles(double &r, double &nu, double &s, double &mu) const;
   std::map<std::string, double> get_suffstats() const;
   std::map<std::string, double> _get_suffstats() const;
   double get_draw(int random_seed) const;
