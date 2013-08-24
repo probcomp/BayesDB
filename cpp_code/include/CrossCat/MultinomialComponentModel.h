@@ -15,6 +15,7 @@ class MultinomialComponentModel : public ComponentModel {
   std::map<std::string, double> get_hypers() const;
   void get_hyper_values(int &K, double &dirichlet_alpha) const;
   void get_suffstats(int &count_out, std::map<std::string, double> &counts) const;
+  std::map<std::string, double> _get_suffstats() const;
   void get_keys_counts_for_draw(std::vector<std::string> &keys, std::vector<double> &log_counts_for_draw, std::map<std::string, double> counts) const;
   double get_draw(int random_seed) const;
   double get_draw_constrained(int random_seed, std::vector<double> constraints) const;
@@ -35,6 +36,7 @@ class MultinomialComponentModel : public ComponentModel {
   void set_log_Z_0();
   void init_suffstats();
  private:
+  std::map<std::string, double> suffstats;
 };
 
 #endif // GUARD_multinomialcomponentmodel_h

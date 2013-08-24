@@ -230,6 +230,10 @@ double MultinomialComponentModel::get_draw_constrained(int random_seed, vector<d
   return draw;
 }
 
+map<string, double> MultinomialComponentModel::_get_suffstats() const {
+  	return suffstats;
+}
+
 void MultinomialComponentModel::get_suffstats(int &count_out,
 					      map<string, double> &counts) const {
   count_out = count;

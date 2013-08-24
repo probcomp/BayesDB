@@ -15,6 +15,7 @@ class ContinuousComponentModel : public ComponentModel {
   void get_hyper_doubles(double &r, double &nu, double &s, double &mu) const;
   void get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const;
   std::map<std::string, double> get_suffstats() const;
+  std::map<std::string, double> _get_suffstats() const;
   double get_draw(int random_seed) const;
   double get_draw_constrained(int random_seed, std::vector<double> constraints) const;
   double get_predictive_cdf(double element, std::vector<double> constraints) const;
@@ -35,6 +36,8 @@ class ContinuousComponentModel : public ComponentModel {
   void set_log_Z_0();
   void init_suffstats();
  private:
+  double sum_x;
+  double sum_x_squared;
 };
 
 #endif // GUARD_continuouscomponentmodel_h
