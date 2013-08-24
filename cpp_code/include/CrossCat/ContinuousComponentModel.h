@@ -12,7 +12,6 @@ class ContinuousComponentModel : public ComponentModel {
 			   int COUNT, double SUM_X, double SUM_X_SQ);
   //
   // getters
-  void get_hyper_doubles(double &r, double &nu, double &s, double &mu) const;
   void get_suffstats(int &count_out, double &sum_x, double &sum_x_sq) const;
   std::map<std::string, double> get_suffstats() const;
   std::map<std::string, double> _get_suffstats() const;
@@ -38,6 +37,10 @@ class ContinuousComponentModel : public ComponentModel {
  private:
   double sum_x;
   double sum_x_squared;
+  double hyper_r;
+  double hyper_nu;
+  double hyper_s;
+  double hyper_mu;
 };
 
 #endif // GUARD_continuouscomponentmodel_h

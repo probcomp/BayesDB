@@ -21,6 +21,8 @@ MultinomialComponentModel::MultinomialComponentModel(map<string, double> &in_hyp
   count = 0;
   score = 0;
   p_hypers = &in_hypers;
+  hyper_K = get(*p_hypers, (string) "K");
+  hyper_dirichlet_alpha = get(*p_hypers, (string) "dirichlet_alpha");
   init_suffstats();
   set_log_Z_0();
 }
@@ -31,6 +33,8 @@ MultinomialComponentModel::MultinomialComponentModel(map<string, double> &in_hyp
   count = 0;
   score = 0;
   p_hypers = &in_hypers;
+  hyper_K = get(*p_hypers, (string) "K");
+  hyper_dirichlet_alpha = get(*p_hypers, (string) "dirichlet_alpha");
   set_log_Z_0();
   // set suffstats
   count = count_in;
@@ -41,18 +45,16 @@ MultinomialComponentModel::MultinomialComponentModel(map<string, double> &in_hyp
 double MultinomialComponentModel::calc_marginal_logp() const {
   int count;
   map<string, double> counts;
-  int K;
-  double dirichlet_alpha;
-  get_hyper_values(K, dirichlet_alpha);
+  int K = hyper_K;
+  double dirichlet_alpha = hyper_dirichlet_alpha;
   get_suffstats(count, counts);
   return numerics::calc_multinomial_marginal_logp(count, counts, K, dirichlet_alpha);
 }
 
 double MultinomialComponentModel::calc_element_predictive_logp(double element) const {
   if(isnan(element)) return 0;
-  int K;
-  double dirichlet_alpha;
-  get_hyper_values(K, dirichlet_alpha);
+  int K = hyper_K;
+  double dirichlet_alpha = hyper_dirichlet_alpha;
   string element_str = stringify(element);
   double logp = numerics::calc_multinomial_predictive_logp(element_str,
 							   suffstats, count,
@@ -62,9 +64,8 @@ double MultinomialComponentModel::calc_element_predictive_logp(double element) c
 
 double MultinomialComponentModel::calc_element_predictive_logp_constrained(double element, vector<double> constraints) const {
   if(isnan(element)) return 0;
-  int K;
-  double dirichlet_alpha;
-  get_hyper_values(K, dirichlet_alpha);
+  int K = hyper_K;
+  double dirichlet_alpha = hyper_dirichlet_alpha;
   //
   map<string, double> suffstats_copy = suffstats;
   int count_copy = count;
@@ -88,9 +89,8 @@ double MultinomialComponentModel::calc_element_predictive_logp_constrained(doubl
 vector<double> MultinomialComponentModel::calc_hyper_conditionals(string which_hyper, vector<double> hyper_grid) const {
   int count;
   map<string, double> counts;
-  int K;
-  double dirichlet_alpha;
-  get_hyper_values(K, dirichlet_alpha);
+  int K = hyper_K;
+  double dirichlet_alpha = hyper_dirichlet_alpha;
   get_suffstats(count, counts);
   if(which_hyper=="dirichlet_alpha") {
     return numerics::calc_multinomial_dirichlet_alpha_conditional(hyper_grid,
@@ -128,6 +128,8 @@ double MultinomialComponentModel::remove_element(double element) {
 }
 
 double MultinomialComponentModel::incorporate_hyper_update() {
+  hyper_K = get(*p_hypers, (string) "K");
+  hyper_dirichlet_alpha = get(*p_hypers, (string) "dirichlet_alpha");
   double score_0 = score;
   // hypers[which_hyper] = value; // set by owner of hypers object
   score = calc_marginal_logp();
@@ -140,24 +142,16 @@ void MultinomialComponentModel::set_log_Z_0() {
 }
 
 void MultinomialComponentModel::init_suffstats() {
-  int K;
-  double dirichlet_alpha;
-  get_hyper_values(K, dirichlet_alpha);
+  int K = hyper_K;
+  double dirichlet_alpha = hyper_dirichlet_alpha;
   for(int key=0; key<K; key++) {
     suffstats[stringify(key)] = 0;
   }    
 }
 
-void MultinomialComponentModel::get_hyper_values(int &K,
-						 double &dirichlet_alpha) const {
-  K = get(*p_hypers, (string) "K");
-  dirichlet_alpha = get(*p_hypers, (string) "dirichlet_alpha");
-}
-
 void MultinomialComponentModel::get_keys_counts_for_draw(vector<string> &keys, vector<double> &log_counts_for_draw, map<string, double> counts) const {
-  int K;
-  double dirichlet_alpha;
-  get_hyper_values(K, dirichlet_alpha);
+  int K = hyper_K;
+  double dirichlet_alpha = hyper_dirichlet_alpha;
   map<string, double>::const_iterator it;
   for(it=counts.begin(); it!=counts.end(); it++) {
     string key = it->first;
