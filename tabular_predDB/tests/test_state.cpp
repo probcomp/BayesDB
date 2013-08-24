@@ -26,10 +26,9 @@ typedef boost::numeric::ublas::matrix<double> matrixD;
 using namespace std;
 
 
-int n_iterations = 2;
+int n_iterations = 10;
 string filename = "dha_small_cont_no_header.csv";
 // tail -n +2 ../../www/data/dha_small_cont.csv > dha_small_cont_no_header.csv
-// string filename = "SynData2.csv";
 
 
 // passing in a State is dangerous, if you don't pass in a reference, memory will be deallocated
