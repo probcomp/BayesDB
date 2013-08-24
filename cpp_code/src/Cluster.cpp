@@ -103,7 +103,8 @@ double Cluster::calc_column_predictive_logp(vector<double> column_data,
 					    string col_datatype,
 					    vector<int> data_global_row_indices,
 					    map<string, double> hypers) {
-  map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
+  // FIXME: global_to_data must be used if not all rows are present
+  // map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
   ComponentModel *p_cm;
   if(col_datatype==CONTINUOUS_DATATYPE) {
     p_cm = new ContinuousComponentModel(hypers);
@@ -116,7 +117,9 @@ double Cluster::calc_column_predictive_logp(vector<double> column_data,
   set<int>::iterator it;
   for(it=row_indices.begin(); it!=row_indices.end(); it++) {
     int global_row_idx = *it;
-    int data_idx = global_to_data[global_row_idx];
+    // FIXME: global_to_data must be used if not all rows are present
+    // int data_idx = global_to_data[global_row_idx];
+    int data_idx = global_row_idx;
     double value = column_data[data_idx];
     p_cm->insert_element(value);
   }
@@ -168,7 +171,8 @@ double Cluster::insert_col(vector<double> data,
 			   string col_datatype,
 			   vector<int> data_global_row_indices,
 			   map<string, double> &hypers) {
-  map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
+  // FIXME: global_to_data must be used if not all rows are present
+  // map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
   ComponentModel *p_cm;
   if(col_datatype==CONTINUOUS_DATATYPE) {
     p_cm = new ContinuousComponentModel(hypers);
@@ -180,7 +184,9 @@ double Cluster::insert_col(vector<double> data,
   set<int>::iterator it;
   for(it=row_indices.begin(); it!=row_indices.end(); it++) {
     int global_row_idx = *it;
-    int data_idx = global_to_data[global_row_idx];
+    // FIXME: global_to_data must be used if not all rows are present
+    // int data_idx = global_to_data[global_row_idx]    int data_idx = global_to_data[global_row_idx];
+    int data_idx = global_row_idx;
     double value = data[data_idx];
     p_cm->insert_element(value);
   }
