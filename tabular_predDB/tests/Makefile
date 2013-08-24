@@ -1,8 +1,8 @@
-OPTIMIZED = 
+OPTIMIZED = True
 ifdef OPTIMIZED
-CXXOPTS := -O2 -g $(CXXOPTS)
+CXXOPTS := -pg -Ofast $(CXXOPTS)
 else
-CXXOPTS := -pg -g -O0 $(CXXOPTS) 
+CXXOPTS := -pg -O0 -g $(CXXOPTS)
 endif
 
 CC = gcc
