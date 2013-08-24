@@ -27,8 +27,7 @@ using namespace std;
 
 
 int n_iterations = 10;
-string filename = "dha_small_cont_no_header.csv";
-// tail -n +2 ../../www/data/dha_small_cont.csv > dha_small_cont_no_header.csv
+string filename = "T.csv";
 
 
 // passing in a State is dangerous, if you don't pass in a reference, memory will be deallocated
@@ -73,7 +72,7 @@ int main(int argc, char** argv) {
 
 
   cout << "start X_D" << endl << s.get_X_D() << endl;
-  cout << "State:" << endl << s << endl;
+  // cout << "State:" << endl << s << endl;
 
   vector<int> empty_int_v;
   for(int i=0; i<n_iterations; i++) {
@@ -88,8 +87,8 @@ int main(int argc, char** argv) {
   }
 
 
-  cout << "FINAL STATE" << endl;
-  cout << s << endl;
+  // cout << "FINAL STATE" << endl;
+  // cout << s << endl;
   cout << "end X_D" << endl << s.get_X_D() << endl;
 
 
