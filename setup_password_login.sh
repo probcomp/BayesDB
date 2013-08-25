@@ -11,7 +11,7 @@ usage() {
     cat <<EOF
 usage: $0 options
     
-    Pull down repo from github and run tests via jenkins
+    Set up password login, optionally set password for specified user
     
     OPTIONS:
     -h      Show this message

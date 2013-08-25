@@ -33,7 +33,7 @@ num_transitions = 10
 
 for chain_idx in range(numChains):
     print 'Chain {!s}'.format(chain_idx)
-    M_c_prime, M_r_prime, X_L, X_D = engine.initialize(M_c, M_r, T_train)
+    X_L, X_D = engine.initialize(M_c, M_r, T_train)
     X_L_prime, X_D_prime = engine.analyze(M_c, T_train, X_L, X_D, kernel_list=(),
                                           n_steps=num_transitions)
     X_L_list.append(X_L_prime)

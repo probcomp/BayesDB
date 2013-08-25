@@ -1,18 +1,16 @@
 import os
 import argparse
+import tempfile
 #
 import numpy
-import pylab
-pylab.ion()
-pylab.show()
 #
 import tabular_predDB.python_utils.data_utils as du
-import tabular_predDB.python_utils.general_utils as gu
-import tabular_predDB.python_utils.plot_utils as pu
 import tabular_predDB.python_utils.xnet_utils as xu
+import tabular_predDB.python_utils.hadoop_utils as hu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
 import tabular_predDB.cython_code.State as State
+from tabular_predDB.settings import Hadoop as hs
 
 
 def get_generative_clustering(M_c, M_r, T,
@@ -30,7 +28,7 @@ def get_generative_clustering(M_c, M_r, T,
     gen_X_L_assignments = numpy.repeat(range(num_views), (num_cols / num_views))
     # initialize to generate an X_L to manipulate
     local_engine = LE.LocalEngine()
-    M_c, M_r, bad_X_L, bad_X_D = local_engine.initialize(M_c, M_r, T,
+    bad_X_L, bad_X_D = local_engine.initialize(M_c, M_r, T,
                                                          initialization='apart')
     bad_X_L['column_partition']['assignments'] = gen_X_L_assignments
     # manually constrcut state in in generative configuration
@@ -62,10 +60,32 @@ def generate_clean_state(gen_seed, num_clusters,
     X_L, X_D = get_generative_clustering(M_c, M_r, T,
                                          data_inverse_permutation_indices,
                                          num_clusters, num_splits)
-    if plot:
-        T_array = numpy.array(T)
-        pu.plot_views(T_array, X_D, X_L, M_c)
     return T, M_c, M_r, X_L, X_D
+
+def generate_hadoop_dicts(which_kernels, X_L, X_D, args_dict):
+    for which_kernel in which_kernels:
+        kernel_list = (which_kernel, )
+        dict_to_write = dict(X_L=X_L, X_D=X_D)
+        dict_to_write.update(args_dict)
+        # must write kernel_list after update
+        dict_to_write['kernel_list'] = kernel_list
+        yield dict_to_write
+
+def write_hadoop_input(input_filename, X_L, X_D, n_steps, SEED):
+    # prep settings dictionary
+    time_analyze_args_dict = hs.default_analyze_args_dict
+    time_analyze_args_dict['command'] = 'time_analyze'
+    time_analyze_args_dict['SEED'] = SEED
+    time_analyze_args_dict['n_steps'] = n_steps
+    # one kernel per line
+    all_kernels = State.transition_name_to_method_name_and_args.keys()
+    n_tasks = 0
+    with open(input_filename, 'w') as out_fh:
+        dict_generator = generate_hadoop_dicts(all_kernels, X_L, X_D, time_analyze_args_dict)
+        for dict_to_write in dict_generator:
+            xu.write_hadoop_line(out_fh, key=dict_to_write['SEED'], dict_to_write=dict_to_write)
+            n_tasks += 1
+    return n_tasks
 
 
 if __name__ == '__main__':
@@ -75,9 +95,9 @@ if __name__ == '__main__':
     parser.add_argument('--num_rows', type=int, default=1000)
     parser.add_argument('--num_cols', type=int, default=20)
     parser.add_argument('--num_splits', type=int, default=2)
-    parser.add_argument('--max_std', type=float, default=.001)
     parser.add_argument('--n_steps', type=int, default=10)
     parser.add_argument('-do_local', action='store_true')
+    parser.add_argument('-do_remote', action='store_true')
     #
     args = parser.parse_args()
     gen_seed = args.gen_seed
@@ -85,10 +105,22 @@ if __name__ == '__main__':
     num_cols = args.num_cols
     num_rows = args.num_rows
     num_splits = args.num_splits
-    max_std = args.max_std
     n_steps = args.n_steps
     do_local = args.do_local
+    do_remote = args.do_remote
 
+
+    script_filename = 'hadoop_line_processor.py'
+    # some hadoop processing related settings
+    temp_dir = tempfile.mkdtemp(prefix='runtime_analysis_',
+                                dir='runtime_analysis')
+    print 'using dir: %s' % temp_dir
+    #
+    table_data_filename = os.path.join(temp_dir, 'table_data.pkl.gz')
+    input_filename = os.path.join(temp_dir, 'hadoop_input')
+    output_filename = os.path.join(temp_dir, 'hadoop_output')
+    output_path = os.path.join(temp_dir, 'output')
+    print table_data_filename
     # generate data
     T, M_c, M_r, X_L, X_D = generate_clean_state(gen_seed,
                                                  num_clusters,
@@ -96,46 +128,27 @@ if __name__ == '__main__':
                                                  num_splits,
                                                  max_mean=10, max_std=1)
 
-    # some hadoop processing related settings
-    table_data_filename = 'table_data.pkl.gz'
-    input_filename = 'hadoop_input'
-    script_filename = 'hadoop_line_processor.py'
-    output_filename = 'hadoop_output'
-    SEED = 0
-
-    # prep settings dictionary
-    time_analyze_args_dict = xu.default_analyze_args_dict
-    time_analyze_args_dict['SEED'] = SEED
-    time_analyze_args_dict['command'] = 'time_analyze'
-    time_analyze_args_dict['n_steps'] = n_steps
-
-    # write table_data and hadoop input
+    # write table_data
     table_data = dict(M_c=M_c, M_r=M_r, T=T)
-    xu.pickle_table_data(table_data, table_data_filename)
-    # one kernel per line
-    all_kernels = State.transition_name_to_method_name_and_args.keys()
-    with open(input_filename, 'w') as out_fh:
-        for which_kernel in all_kernels:
-            kernel_list = (which_kernel, )
-            dict_to_write = dict(X_L=X_L, X_D=X_D)
-            dict_to_write.update(time_analyze_args_dict)
-            # must write kernel_list after update
-            dict_to_write['kernel_list'] = kernel_list
-            xu.write_hadoop_line(out_fh, key=dict_to_write['SEED'], dict_to_write=dict_to_write)
+    fu.pickle(table_data, table_data_filename)
+    # write hadoop input
+    n_tasks = write_hadoop_input(input_filename, X_L, X_D, n_steps, SEED=gen_seed)
 
     # actually run
     if do_local:
-        xu.run_script_local(input_filename, script_filename, output_filename)
-    else:
-        output_path = HE.output_path
-        hadoop_engine = HE.HadoopEngine()
-        was_successful = HE.send_hadoop_command(hadoop_engine,
-                                                table_data_filename,
-                                                input_filename,
-                                                output_path, n_tasks=2)
+        xu.run_script_local(input_filename, script_filename, output_filename, table_data_filename)
+    elif do_remote:
+        hadoop_engine = HE.HadoopEngine(output_path=output_path,
+                                        input_filename=input_filename,
+                                        table_data_filename=table_data_filename,
+                                        )
+        hadoop_engine.send_hadoop_command(n_tasks)
+        was_successful = hadoop_engine.get_hadoop_results()
         if was_successful:
-            hadoop_output = HE.read_hadoop_output(output_path)
-            hadoop_output_filename = HE.get_hadoop_output_filename(output_path)
-            os.system('cp %s %s' % (hadoop_output_filename, output_filename))
+            hu.copy_hadoop_output(output_path, output_filename)
         else:
             print 'remote hadoop job NOT successful'
+    else:
+        hadoop_engine = HE.HadoopEngine()
+        # print what the command would be
+        print HE.create_hadoop_cmd_str(hadoop_engine, n_tasks=n_tasks)

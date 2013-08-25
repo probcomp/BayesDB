@@ -17,12 +17,19 @@ excludes = [
 includes = [
     'tabular_predDB.python_utils.data_utils',
     'tabular_predDB.python_utils.file_utils',
+    'tabular_predDB.python_utils.timing_test_utils',
+    'tabular_predDB.python_utils.convergence_test_utils',
     'tabular_predDB.LocalEngine',
+    'tabular_predDB.HadoopEngine',
     'tabular_predDB.cython_code.State',
+    'tabular_predDB.python_utils.xnet_utils',
+    'tabular_predDB.python_utils.general_utils',
+    'tabular_predDB.python_utils.sample_utils',
     'numpy',
-    # 'tabular_predDB.python_utils.plot_utils',
-    # 'pylab',
-    # 'matplotlib.backends.backend_qt4agg',
+    'sklearn.metrics',
+    'sklearn.utils.lgamma',
+    'scipy.special',
+    'scipy.sparse.csgraph._validation',
     ]
 
 buildOptions = dict(

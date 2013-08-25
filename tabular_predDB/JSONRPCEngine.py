@@ -21,11 +21,16 @@ import tabular_predDB.python_utils.api_utils as au
 import tabular_predDB.python_utils.general_utils as gu
 
 
-method_name_to_args = get_method_name_to_args(EngineTemplate.EngineTemplate)
-method_names_set = set(get_method_names(EngineTemplate.EngineTemplate))
+method_name_to_args = gu.get_method_name_to_args(EngineTemplate.EngineTemplate)
+method_names_set = set(gu.get_method_names(EngineTemplate.EngineTemplate))
 
 
 class JSONRPCEngine(EngineTemplate.EngineTemplate):
+    """An 'adapter' for sending commands to an Engine resident on a remote machine.
+
+    JSONRPCEngine supports all methods that the remote engine does.  The remote engine must be listening at the URI specified in the constructor.  Commands are sent via JSONRPC-2.0.
+
+    """
 
     def __init__(self, seed=0, URI=None):
         super(JSONRPCEngine, self).__init__(seed=seed)
@@ -67,6 +72,6 @@ if __name__ == '__main__':
         max_mean=max_mean, max_std=max_std,
         )
     #
-    M_c_prime, M_r_prime, X_L, X_D, = je.initialize(M_c, M_r, T)
+    X_L, X_D, = je.initialize(M_c, M_r, T)
     X_L_prime, X_D_prime = je.analyze(M_c, T, X_L, X_D)
     X_L_prime, X_D_prime = je.analyze(M_c, T, X_L_prime, X_D_prime)

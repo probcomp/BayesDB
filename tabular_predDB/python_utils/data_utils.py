@@ -25,7 +25,10 @@ def get_ith_ordering(in_list, i):
     return [el for sub_list in temp_list for el in sub_list]
 
 def gen_data(gen_seed, num_clusters,
-             num_cols, num_rows, max_mean=10, max_std=1):
+             num_cols, num_rows, max_mean_per_category=10, max_std=1,
+             max_mean=None):
+    if max_mean is None:
+       max_mean = max_mean_per_category * num_clusters
     n_grid = 11
     mu_grid = numpy.linspace(-max_mean, max_mean, n_grid)
     sigma_grid = 10 ** numpy.linspace(-1, numpy.log10(max_std), n_grid)
@@ -52,8 +55,10 @@ def gen_data(gen_seed, num_clusters,
     return xs, zs
 
 def gen_factorial_data(gen_seed, num_clusters,
-                       num_cols, num_rows, num_splits,
-                       max_mean=10, max_std=1):
+        num_cols, num_rows, num_splits,
+		max_mean_per_category=10, max_std=1,
+        max_mean=None
+        ):
     random_state = numpy.random.RandomState(gen_seed)
     data_list = []
     inverse_permutation_indices_list = []
@@ -63,8 +68,9 @@ def gen_factorial_data(gen_seed, num_clusters,
             num_clusters=num_clusters,
             num_cols=num_cols/num_splits,
             num_rows=num_rows,
-            max_mean=max_mean,
+            max_mean_per_category=max_mean_per_category,
             max_std=max_std,
+            max_mean=max_mean
             )
         permutation_indices = random_state.permutation(xrange(num_rows))
         # permutation_indices = get_ith_ordering(range(num_rows), data_idx)
@@ -316,11 +322,20 @@ def remove_ignore_cols(T, cctypes, header):
 def read_data_objects(filename, max_rows=None, gen_seed=0,
                       cctypes=None, colnames=None):
     header, raw_T = read_csv(filename, has_header=True)
+    header = [h.lower() for h in header]
     # FIXME: why both accept colnames argument and read header?
     if colnames is None:
         colnames = header
     # remove excess rows
     raw_T = at_most_N_rows(raw_T, N=max_rows, gen_seed=gen_seed)
+    # convert empty strings to NAN
+    def filter_empty(el):
+        if len(el) == 0:
+            return 'NAN'
+        else:
+            return el
+    for i in range(len(raw_T)):
+        raw_T[i] = map(filter_empty, raw_T[i])
     # remove ignore columns
     if cctypes is None:
         cctypes = ['continuous'] * len(header)

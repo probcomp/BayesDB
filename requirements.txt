@@ -11,6 +11,7 @@ pyOpenSSL==0.13
 cython==0.17.1
 # sudo apt-get install -y python-dev
 numpy==1.7.0
+scipy==0.12.0
 # for engine for matplotlib
 # sudo apt-get install -y tk-dev
 # sudo apt-get install -y libfreetype6-dev
@@ -19,15 +20,12 @@ freetype-py==0.4.1
 matplotlib==1.2.0
 # for middleware
 psycopg2==2.4.6
-# this fails and needs to be done manually
-# don't include in install from scratch, else install will lose progress
-# hcluster==0.2.0
-# manual process is as follows
+# hcluster==0.2.0 install must be modified
 # pip install --download ./ hcluster==0.2.0
 # tar xvfz hcluster-0.2.0.tar.gz 
 # cd hcluster-0.2.0
+# perl -pi.bak -e "s/input\('Selection \[default=1\]:'\)/2/" setup.py
 # python setup.py install
-# choose option 2
 
 # freeze for creating binaries to run with hadoop streaming
 # must manually install per https://github.com/pypa/pip/issues/537
@@ -42,3 +40,10 @@ psycopg2==2.4.6
 # pycrypto==2.6
 # ssh==1.7.13
 # workerpool==0.9.2
+
+# for ipython notebook
+ipython==0.13.2
+tornado==3.1
+
+# for convergence testing (ARI)
+scikit-learn

@@ -47,7 +47,7 @@ pkl_filename = 'dha_example_num_transitions_%s.pkl.gz' % num_transitions
 
 
 def do_initialize(engine, M_c, M_r, T, q):
-    M_c_prime, M_r_prime, X_L, X_D = engine.initialize(M_c, M_r, T)
+    X_L, X_D = engine.initialize(M_c, M_r, T)
     q.put([X_L, X_D])
 
 def do_analyze(engine, M_c, T, X_L, X_D, q):
@@ -91,7 +91,7 @@ if do_remote:
     dview.apply_sync(lambda: sys.path.append('/usr/local/'))
     #
     with dview.sync_imports(): 
-        import tabular_predDB.jsonrpc_http.Engine as E
+        import tabular_predDB.LocalEngine as LE
     dview.push(dict(
             M_c=M_c,
             M_r=M_r,

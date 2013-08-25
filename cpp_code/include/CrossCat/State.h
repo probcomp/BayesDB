@@ -102,6 +102,7 @@ class State {
 					   std::map<std::string, double> hypers) const;
 					   
   std::vector<double> calc_feature_view_predictive_logps(std::vector<double> col_data, int global_col_idx) const;
+  double calc_row_predictive_logp(const std::vector<double> &in_vd);
   //
   // helpers
   double calc_column_crp_marginal() const;

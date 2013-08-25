@@ -5,3 +5,6 @@
 *.so
 *.pdf
 *~
+*.csv
+*.DS_Store
+*.jar

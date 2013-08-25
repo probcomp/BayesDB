@@ -35,6 +35,15 @@ namespace numerics {
     return logp;
   }
 
+  double logaddexp(vector<double> logs) {
+    double result = 0;
+    vector<double>::iterator it;
+    for(it=logs.begin(); it!=logs.end(); it++) {
+      result += exp(*it);
+    }
+    return log(result);
+  }
+
   // subtract minimum value, logaddexp residuals, pass residuals and partition to
   // draw_sample_with_partition
   int draw_sample_unnormalized(vector<double> unorm_logps, double rand_u) {
@@ -343,7 +352,7 @@ namespace numerics {
       numerator += counts[element];
     }
     double denominator = sum_counts + K * dirichlet_alpha;
-    return numerator / denominator;
+    return log(numerator) - log(denominator);
   }
 
   vector<double> calc_multinomial_dirichlet_alpha_conditional(vector<double> dirichlet_alpha_grid,
