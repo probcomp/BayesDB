@@ -94,17 +94,41 @@ def find_regression_coeff(filename, parameter_list, regression_file='daily_regre
    
 
 if __name__ == '__main__':
+    default_num_rows_list = [100, 400, 1000, 4000, 10000]
+    default_num_cols_list = [4, 8, 16, 24, 32]
+    default_num_clusters_list = [10, 20, 40, 50]
+    default_num_splits_list = [2, 3, 4]
+    #
     parser = argparse.ArgumentParser()
     parser.add_argument('--gen_seed', type=int, default=0)
     parser.add_argument('--n_steps', type=int, default=10)
     parser.add_argument('-do_local', action='store_true')
     parser.add_argument('-do_remote', action='store_true')
+    parser.add_argument('--num_rows_list', type=int, nargs='*',
+            default=default_num_rows_list)
+    parser.add_argument('--num_cols_list', type=int, nargs='*',
+            default=default_num_cols_list)
+    parser.add_argument('--num_clusters_list', type=int, nargs='*',
+            default=default_num_clusters_list)
+    parser.add_argument('--num_splits_list', type=int, nargs='*',
+            default=default_num_splits_list)
     #
     args = parser.parse_args()
     gen_seed = args.gen_seed
     n_steps = args.n_steps
     do_local = args.do_local
     do_remote = args.do_remote
+    num_rows_list = args.num_rows_list
+    num_cols_list = args.num_cols_list
+    num_clusters_list = args.num_clusters_list
+    num_splits_list = args.num_splits_list
+    #
+    print 'using num_rows_list: %s' % num_rows_list
+    print 'using num_cols_list: %s' % num_cols_list
+    print 'using num_clusters_list: %s' % num_clusters_list
+    print 'using num_splits_list: %s' % num_splits_list
+    time.sleep(2)
+
 
     script_filename = 'hadoop_line_processor.py'
     # some hadoop processing related settings
@@ -120,16 +144,6 @@ if __name__ == '__main__':
     parsed_out_file = os.path.join(temp_dir, 'parsed_output.csv')
 
     # Hard code the parameter values for now
-
-    #num_rows_list = [100, 400, 1000, 4000, 10000]
-    #num_cols_list = [4, 8, 16, 24, 32]
-    #num_clusters_list = [11, 20, 30, 40, 50]
-    #num_splits_list = [2, 2, 3, 4, 5]
-    
-    num_rows_list = [100, 400]
-    num_cols_list = [8, 16]
-    num_clusters_list = [5, 10]
-    num_splits_list = [1,8]
 
     parameter_list = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
 

@@ -40,6 +40,12 @@ def write_hadoop_input(input_filename, convergence_run_parameters, n_steps, bloc
     return n_tasks
 
 if __name__ == '__main__':
+    default_num_rows_list = [200, 400, 1000]
+    default_num_cols_list = [8, 16, 32]
+    default_num_clusters_list = [5,10]
+    default_num_splits_list = [2, 4]
+    default_max_mean_list = [0.5, 1, 2]
+    #
     parser = argparse.ArgumentParser()
     parser.add_argument('--gen_seed', type=int, default=0)
     parser.add_argument('--n_steps', type=int, default=500)
@@ -47,6 +53,16 @@ if __name__ == '__main__':
     parser.add_argument('--block_size', type=int, default=20)
     parser.add_argument('-do_local', action='store_true')
     parser.add_argument('-do_remote', action='store_true')
+    parser.add_argument('--num_rows_list', type=int, nargs='*',
+            default=default_num_rows_list)
+    parser.add_argument('--num_cols_list', type=int, nargs='*',
+            default=default_num_cols_list)
+    parser.add_argument('--num_clusters_list', type=int, nargs='*',
+            default=default_num_clusters_list)
+    parser.add_argument('--num_splits_list', type=int, nargs='*',
+            default=default_num_splits_list)
+    parser.add_argument('--max_mean_list', type=int, nargs='*',
+            default=default_max_mean_list)
     #
     args = parser.parse_args()
     gen_seed = args.gen_seed
@@ -55,6 +71,19 @@ if __name__ == '__main__':
     num_chains = args.num_chains
     do_remote = args.do_remote
     block_size = args.block_size
+    num_rows_list = args.num_rows_list
+    num_cols_list = args.num_cols_list
+    num_clusters_list = args.num_rows_list
+    num_splits_list = args.num_splits_list
+    max_mean_list = args.max_mean_list
+    #
+    print 'using num_rows_list: %s' % num_rows_list
+    print 'using num_cols_list: %s' % num_cols_list
+    print 'using num_clusters_list: %s' % num_rows_list
+    print 'using num_splits_list: %s' % num_splits_list
+    print 'using max_mean_list: %s' % max_mean_list
+    time.sleep(2)
+
 
     script_filename = 'hadoop_line_processor.py'
     # some hadoop processing related settings
@@ -69,19 +98,6 @@ if __name__ == '__main__':
     output_path = os.path.join(temp_dir, 'output')  
     parsed_out_file = os.path.join(temp_dir, 'parsed_convergence_output.csv')
 
-    # Hard code the parameter values for now
-
-    num_rows_list = [200, 400, 1000]
-    num_cols_list = [8, 16, 32]
-    num_clusters_list = [5,10]
-    num_splits_list = [2, 4]
-    max_mean_list = [0.5, 1, 2]
-    
-#    num_rows_list = [200]
-#    num_cols_list = [8]
-#    num_clusters_list = [5]
-#    num_splits_list = [2,4]
-#    max_mean_list = [1]
 
     parameter_list = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
 
