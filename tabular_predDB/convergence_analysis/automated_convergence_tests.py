@@ -53,6 +53,8 @@ if __name__ == '__main__':
     parser.add_argument('--num_chains', type=int, default=50)
     parser.add_argument('--block_size', type=int, default=20)
     parser.add_argument('-do_local', action='store_true')
+    parser.add_argument('--which_engine_binary', type=str,
+                        default=HE.default_engine_binary)
     parser.add_argument('-do_remote', action='store_true')
     parser.add_argument('-do_plot', action='store_true')
     parser.add_argument('--num_rows_list', type=int, nargs='*',
@@ -79,12 +81,14 @@ if __name__ == '__main__':
     num_clusters_list = args.num_clusters_list
     num_splits_list = args.num_splits_list
     max_mean_list = args.max_mean_list
+    which_engine_binary = args.which_engine_binary
     #
     print 'using num_rows_list: %s' % num_rows_list
     print 'using num_cols_list: %s' % num_cols_list
     print 'using num_clusters_list: %s' % num_clusters_list
     print 'using num_splits_list: %s' % num_splits_list
     print 'using max_mean_list: %s' % max_mean_list
+    print 'using engine_binary: %s' % which_engine_binary
     time.sleep(2)
 
 
@@ -129,10 +133,10 @@ if __name__ == '__main__':
         xu.run_script_local(input_filename, script_filename, output_filename, table_data_filename)
         print 'Local Engine for automated convergence runs has not been completely implemented/tested'
     elif do_remote:
-        hadoop_engine = HE.HadoopEngine(output_path=output_path,
-                                        input_filename=input_filename,
-                                        table_data_filename=table_data_filename,
-                                        )
+        hadoop_engine = HE.HadoopEngine(which_engine_binary=which_engine_binary,
+                output_path=output_path,
+                input_filename=input_filename,
+                table_data_filename=table_data_filename)
         xu.write_support_files(table_data, hadoop_engine.table_data_filename,
                               dict(command='convergence_analyze'), hadoop_engine.command_dict_filename)
         hadoop_engine.send_hadoop_command(n_tasks=n_tasks)
@@ -144,10 +148,10 @@ if __name__ == '__main__':
             print 'remote hadoop job NOT successful'
     else:
         # print what the command would be
-        hadoop_engine = HE.HadoopEngine(output_path=output_path,
+        hadoop_engine = HE.HadoopEngine(which_engine_binary=which_engine_binary,
+                output_path=output_path,
                 input_filename=input_filename,
-                table_data_filename=table_data_filename,
-                )
+                table_data_filename=table_data_filename)
         cmd_str = hu.create_hadoop_cmd_str(
                 hadoop_engine.hdfs_uri, hadoop_engine.hdfs_dir, hadoop_engine.jobtracker_uri,
                 hadoop_engine.which_engine_binary, hadoop_engine.which_hadoop_binary,
