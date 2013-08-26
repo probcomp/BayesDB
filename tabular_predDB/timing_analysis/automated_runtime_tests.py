@@ -102,6 +102,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gen_seed', type=int, default=0)
     parser.add_argument('--n_steps', type=int, default=10)
+    parser.add_argument('--which_engine_binary', type=str,
+            default=HE.default_engine_binary)
     parser.add_argument('-do_local', action='store_true')
     parser.add_argument('-do_remote', action='store_true')
     parser.add_argument('--num_rows_list', type=int, nargs='*',
@@ -122,11 +124,13 @@ if __name__ == '__main__':
     num_cols_list = args.num_cols_list
     num_clusters_list = args.num_clusters_list
     num_splits_list = args.num_splits_list
+    which_engine_binary = args.which_engine_binary
     #
     print 'using num_rows_list: %s' % num_rows_list
     print 'using num_cols_list: %s' % num_cols_list
     print 'using num_clusters_list: %s' % num_clusters_list
     print 'using num_splits_list: %s' % num_splits_list
+    print 'using engine_binary: %s' % which_engine_binary
     time.sleep(2)
 
 
@@ -165,10 +169,10 @@ if __name__ == '__main__':
         xu.run_script_local(input_filename, script_filename, output_filename, table_data_filename)
         print 'Local Engine for automated timing runs has not been completely implemented/tested'
     elif do_remote:
-        hadoop_engine = HE.HadoopEngine(output_path=output_path,
-                                        input_filename=input_filename,
-                                        table_data_filename=table_data_filename,
-                                        )
+        hadoop_engine = HE.HadoopEngine(which_engine_binary=which_engine_binary,
+                output_path=output_path,
+                input_filename=input_filename,
+                table_data_filename=table_data_filename)
         xu.write_support_files(table_data, hadoop_engine.table_data_filename,
                               dict(command='time_analyze'), hadoop_engine.command_dict_filename)
         hadoop_engine.send_hadoop_command(n_tasks=n_tasks)
