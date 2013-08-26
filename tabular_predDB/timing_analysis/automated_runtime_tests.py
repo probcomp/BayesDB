@@ -186,10 +186,10 @@ if __name__ == '__main__':
             print 'remote hadoop job NOT successful'
     else:
         # print what the command would be
-        hadoop_engine = HE.HadoopEngine(output_path=output_path,
+        hadoop_engine = HE.HadoopEngine(which_engine_binary=which_engine_binary,
+                output_path=output_path,
                 input_filename=input_filename,
-                table_data_filename=table_data_filename,
-                )
+                table_data_filename=table_data_filename)
         cmd_str = hu.create_hadoop_cmd_str(
                 hadoop_engine.hdfs_uri, hadoop_engine.hdfs_dir, hadoop_engine.jobtracker_uri,
                 hadoop_engine.which_engine_binary, hadoop_engine.which_hadoop_binary,
