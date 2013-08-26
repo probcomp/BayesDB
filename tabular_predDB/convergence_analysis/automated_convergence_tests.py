@@ -2,9 +2,11 @@ import os
 import csv
 import argparse
 import tempfile
+import time
+import itertools
+from collections import namedtuple
 #
 import numpy
-import itertools
 #
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.hadoop_utils as hu
@@ -13,9 +15,8 @@ import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
 import tabular_predDB.cython_code.State as State
-from collections import namedtuple
-import time
-import parse_convergence_results as pc
+import tabular_predDB.convergence_analysis.parse_convergence_results as parse_cr
+import tabular_predDB.convergence_analysis.plot_convergence_results as plot_cr
 
 
 def generate_hadoop_dicts(convergence_run_parameters, args_dict):
@@ -53,6 +54,7 @@ if __name__ == '__main__':
     parser.add_argument('--block_size', type=int, default=20)
     parser.add_argument('-do_local', action='store_true')
     parser.add_argument('-do_remote', action='store_true')
+    parser.add_argument('-do_plot', action='store_true')
     parser.add_argument('--num_rows_list', type=int, nargs='*',
             default=default_num_rows_list)
     parser.add_argument('--num_cols_list', type=int, nargs='*',
@@ -61,7 +63,7 @@ if __name__ == '__main__':
             default=default_num_clusters_list)
     parser.add_argument('--num_splits_list', type=int, nargs='*',
             default=default_num_splits_list)
-    parser.add_argument('--max_mean_list', type=int, nargs='*',
+    parser.add_argument('--max_mean_list', type=float, nargs='*',
             default=default_max_mean_list)
     #
     args = parser.parse_args()
@@ -70,16 +72,17 @@ if __name__ == '__main__':
     do_local = args.do_local
     num_chains = args.num_chains
     do_remote = args.do_remote
+    do_plot = args.do_plot
     block_size = args.block_size
     num_rows_list = args.num_rows_list
     num_cols_list = args.num_cols_list
-    num_clusters_list = args.num_rows_list
+    num_clusters_list = args.num_clusters_list
     num_splits_list = args.num_splits_list
     max_mean_list = args.max_mean_list
     #
     print 'using num_rows_list: %s' % num_rows_list
     print 'using num_cols_list: %s' % num_cols_list
-    print 'using num_clusters_list: %s' % num_rows_list
+    print 'using num_clusters_list: %s' % num_clusters_list
     print 'using num_splits_list: %s' % num_splits_list
     print 'using max_mean_list: %s' % max_mean_list
     time.sleep(2)
@@ -87,9 +90,10 @@ if __name__ == '__main__':
 
     script_filename = 'hadoop_line_processor.py'
     # some hadoop processing related settings
-    # FIXME: need to make sure 'dir' argument exists
+    dirname = 'convergence_analysis'
+    fu.ensure_dir(dirname)
     temp_dir = tempfile.mkdtemp(prefix='convergence_analysis_',
-                                dir='convergence_analysis')
+                                dir=dirname)
     print 'using dir: %s' % temp_dir
     #
     table_data_filename = os.path.join(temp_dir, 'table_data.pkl.gz')
@@ -135,7 +139,7 @@ if __name__ == '__main__':
         was_successful = hadoop_engine.get_hadoop_results()
         if was_successful:
             hu.copy_hadoop_output(hadoop_engine.output_path, output_filename)
-            pc.parse_to_csv(output_filename,parsed_out_file)
+            parse_cr.parse_to_csv(output_filename, parsed_out_file)
         else:
             print 'remote hadoop job NOT successful'
     else:
@@ -152,3 +156,11 @@ if __name__ == '__main__':
                 hadoop_engine.command_dict_filename, hadoop_engine.output_path,
                 n_tasks, hadoop_engine.one_map_task_per_line)
         print cmd_str
+
+    if do_plot and (do_local or do_remote):
+      convergence_metrics_dict = plot_cr.parse_convergence_metrics_csv(parsed_out_file)
+      for run_key, convergence_metrics in convergence_metrics_dict.iteritems():
+        save_filename = str(run_key) + '.png'
+        fh = plot_cr.plot_convergence_metrics(convergence_metrics,
+            title_append=str(run_key), save_filename=save_filename)
+            
