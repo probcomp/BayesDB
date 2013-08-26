@@ -49,7 +49,7 @@ def get_iter_indices(line_dict):
     return iter_indices
 
 def plot_convergence_metrics(convergence_metrics, title_append='',
-        x_is_iters=False):
+        x_is_iters=False, save_filename=None):
     x_variable = None
     x_label = None
     if x_is_iters:
@@ -72,9 +72,12 @@ def plot_convergence_metrics(convergence_metrics, title_append='',
     pylab.plot(x_variable, mean_test_ll_arr)
     pylab.xlabel(x_label)
     pylab.ylabel('mean test log likelihood')
+    #
+    if save_filename is not None:
+      pylab.savefig(save_filename)
     return fh
 
-def parse_convergence_metrics_csv(filename):
+def parse_convergence_metrics_csv(filename, get_run_key=_get_run_key):
     convergence_metrics_dict = collections.defaultdict(get_default_dict)
     with open(filename) as fh:
         csv_reader = csv.reader(fh)
@@ -96,10 +99,12 @@ if __name__ == '__main__':
     parser.add_argument('filename', type=str)
     parser.add_argument('-one_plot', action='store_true')
     parser.add_argument('-x_is_iters', action='store_true')
+    parser.add_argument('-do_save', action='store_true')
     args = parser.parse_args()
     filename = args.filename
     one_plot = args.one_plot
     x_is_iters = args.x_is_iters
+    do_save = args.do_save
     #
     get_run_key = _get_run_key
     if one_plot:
@@ -110,7 +115,11 @@ if __name__ == '__main__':
 
     # actually plot
     fh_list = []
+    save_filename = None
     for run_key, convergence_metrics in convergence_metrics_dict.iteritems():
-        fh = plot_convergence_metrics(convergence_metrics,
-                title_append=str(run_key), x_is_iters=x_is_iters)
-        fh_list.append(fh)
+      if do_save:
+        save_filename = str(run_key) + '.png'
+      fh = plot_convergence_metrics(convergence_metrics,
+          title_append=str(run_key), x_is_iters=x_is_iters,
+          save_filename=save_filename)
+      fh_list.append(fh)
