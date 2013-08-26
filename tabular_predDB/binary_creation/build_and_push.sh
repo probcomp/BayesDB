@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-HDFS_DIR="/user/bigdata/SSCI/"
+HDFS_DIR="$(python -c 'import tabular_predDB.settings as S; print S.Hadoop.default_hdfs_dir')"
 HDFS_URI="$(python -c 'import tabular_predDB.settings as S; print S.Hadoop.default_hdfs_uri')"
 WHICH_BINARY="hadoop_line_processor"
 
