@@ -86,9 +86,17 @@ git checkout master
 cd tabular_predDB/convergence_analysis
 for which_branch in $first_branch $second_branch; do
 	which_engine_binary=$(make_binary_name $which_branch)
-	python automated_convergence_tests.py -do_remote --which_engine_binary $which_engine_binary \
-		--num_rows_list 400 --num_cols_list 32 --num_clusters_list 5 --num_splits_list 4 \
-		--max_mean_list 1 --n_steps 100 -do_plot &
+	python automated_convergence_tests.py -do_remote \
+          --which_engine_binary $which_engine_binary \
+          --num_rows_list 400 1000 \
+          --num_cols_list 32 \
+          --num_clusters_list 10 \
+          --num_splits_list 2 \
+          --max_mean_list 1 \
+          --n_steps 100 \
+          --num_chains 100 \
+          --block_size 5 \
+          -do_plot &
 	sleep 30
 done
 wait
