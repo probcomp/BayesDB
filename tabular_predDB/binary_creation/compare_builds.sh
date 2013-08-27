@@ -41,8 +41,9 @@ done
 
 make_binary_name() {
 	which_branch=$1
-	today_date=$(date +"%Y%M%d")
-	which_engine_binary="hadoop_line_processor_${which_branch}_${today_date}.jar"
+	# build_date=$(date +"%Y%M%d")
+	build_date=20130826
+	which_engine_binary="${HDFS_DIR}/hadoop_line_processor_${which_branch}_${build_date}.jar"
 	echo $which_engine_binary
 }
 
@@ -73,7 +74,10 @@ cd tabular_predDB/timing_analysis
 for which_branch in $first_branch $second_branch; do
 	which_engine_binary=$(make_binary_name $which_branch)
 	python automated_runtime_tests.py -do_remote --which_engine_binary $which_engine_binary \
-	       --num_rows_list 1000 10000 --num_cols_list 128 256 --num_splits_list 8 16
+	       --num_rows_list 1000 --num_cols_list 16 32 --num_splits_list 2 4 &
+	sleep 30
+done
+wait
 
 
 # convergence analysis
@@ -82,9 +86,10 @@ git checkout master
 cd tabular_predDB/convergence_analysis
 for which_branch in $first_branch $second_branch; do
 	which_engine_binary=$(make_binary_name $which_branch)
-	python automated_runtime_tests.py -do_remote --which_engine_binary $which_engine_binary \
-	       --num_rows_list 1000 10000 --num_cols_list 128 256 --num_splits_list 8 16
 	python automated_convergence_tests.py -do_remote --which_engine_binary $which_engine_binary \
 		--num_rows_list 400 --num_cols_list 32 --num_clusters_list 5 --num_splits_list 4 \
-		--max_mean_list 1 --n_steps 100 -do_plot
+		--max_mean_list 1 --n_steps 100 -do_plot &
+	sleep 30
+done
+wait
 
