@@ -39,9 +39,9 @@ do
 done
 
 
+# build_date=$(date +"%Y%M%d")
 make_binary_name() {
 	which_branch=$1
-	# build_date=$(date +"%Y%M%d")
 	build_date=20130826
 	which_engine_binary="${HDFS_DIR}/hadoop_line_processor_${which_branch}_${build_date}.jar"
 	echo $which_engine_binary
