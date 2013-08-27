@@ -2,10 +2,16 @@
 
 
 # set deafults
-HDFS_DIR="$(python -c 'import tabular_predDB.settings as S; print S.Hadoop.default_hdfs_dir')"
-HDFS_URI="$(python -c 'import tabular_predDB.settings as S; print S.Hadoop.default_hdfs_uri')"
+# export PYTHONPATH=~/tabular_predDB:$PYTHONPATH
+# make sure environment is correct
 first_branch="master"
 second_branch="engine_optimization"
+HDFS_DIR="$(python -c 'import tabular_predDB.settings as S; print S.Hadoop.default_hdfs_dir')"
+HDFS_URI="$(python -c 'import tabular_predDB.settings as S; print S.Hadoop.default_hdfs_uri')"
+#
+repo_dir=$(python -c 'import tabular_predDB.settings as S; print S.path.this_repo_dir')
+cd $repo_dir
+# sudo bash install_scripts/my_vpnc_connect.sh
 
 
 # print script usage
@@ -48,23 +54,18 @@ make_binary_name() {
 }
 
 
-# make sure environment is correct
-# export PYTHONPATH=~/tabular_predDB:$PYTHONPATH
-repo_dir=$(python -c 'import tabular_predDB.settings as S; print S.path.this_repo_dir')
-cd $repo_dir
-sudo bash install_scripts/my_vpnc_connect.sh
-
-
 # build both branches
 for which_branch in $first_branch $second_branch; do
+	cd $repo_dir
 	git checkout $which_branch
 	git pull
-	cd $repo_dir
 	make clean && make cython
 	# FIXME: should break here if build fails
 	cd tabular_predDB/binary_creation
 	which_engine_binary=$(make_binary_name $which_branch)
-	bash build_and_push.sh -b $which_engine_binary -d $HDFS_DIR -u $HDFS_URI
+        binary_basename=$(basename $which_engine_binary)
+	bash build_and_push.sh -b ${binary_basename%.jar} -d $HDFS_DIR -u $HDFS_URI
+done
 
 
 # runtime analysis
@@ -88,15 +89,14 @@ for which_branch in $first_branch $second_branch; do
 	which_engine_binary=$(make_binary_name $which_branch)
 	python automated_convergence_tests.py -do_remote \
           --which_engine_binary $which_engine_binary \
-          --num_rows_list 400 1000 \
-          --num_cols_list 32 \
-          --num_clusters_list 10 \
-          --num_splits_list 2 \
+          --num_rows_list 400 \
+          --num_cols_list 64 \
+          --num_clusters_list 20 \
+          --num_splits_list 4 \
           --max_mean_list 1 \
-          --n_steps 100 \
-          --num_chains 100 \
-          --block_size 5 \
-          -do_plot &
+          --n_steps 200 \
+          --num_chains 200 \
+          --block_size 5 &
 	sleep 30
 done
 wait
