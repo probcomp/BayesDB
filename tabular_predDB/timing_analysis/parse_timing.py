@@ -87,7 +87,7 @@ if __name__ == '__main__':
     for reduced_line in reduced_lines:
         try:
             parsed_line = parse_reduced_line(reduced_line)
-            print ', '.join(map(str, parsed_line))
+            print ','.join(map(str, parsed_line))
         except Exception, e:
             pass
 
