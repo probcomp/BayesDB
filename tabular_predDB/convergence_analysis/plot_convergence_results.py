@@ -92,6 +92,10 @@ def parse_convergence_metrics_csv(filename, get_run_key=_get_run_key):
             update_convergence_metrics(convergence_metrics, new_values_dict)
     return convergence_metrics_dict
 
+def filter_join(in_list, joinwith):
+    in_list = filter(None, in_list)
+    return joinwith.join(in_list)
+
 
 if __name__ == '__main__':
     # parse some arguments
@@ -100,11 +104,14 @@ if __name__ == '__main__':
     parser.add_argument('-one_plot', action='store_true')
     parser.add_argument('-x_is_iters', action='store_true')
     parser.add_argument('-do_save', action='store_true')
+    parser.add_argument('--save_filename_prefix', type=str, default=None)
+    #
     args = parser.parse_args()
     filename = args.filename
     one_plot = args.one_plot
     x_is_iters = args.x_is_iters
     do_save = args.do_save
+    save_filename_prefix = args.save_filename_prefix
     #
     get_run_key = _get_run_key
     if one_plot:
@@ -118,8 +125,18 @@ if __name__ == '__main__':
     save_filename = None
     for run_key, convergence_metrics in convergence_metrics_dict.iteritems():
       if do_save:
-        save_filename = str(run_key) + '.png'
+        filename_parts = [save_filename_prefix, str(run_key), 'timeseries.png']
+        timeseries_save_filename = filter_join(filename_parts, '_')
+        filename_parts = [save_filename_prefix, str(run_key), 'test_ll_hist.png']
+        hist_save_filename = filter_join(filename_parts, '_')
+        #
+        test_lls = pylab.array(convergence_metrics['mean_test_ll_list'])
+        final_test_lls = test_lls[:, -1]
+        pylab.hist(final_test_lls)
+        pylab.savefig(hist_save_filename)
       fh = plot_convergence_metrics(convergence_metrics,
           title_append=str(run_key), x_is_iters=x_is_iters,
-          save_filename=save_filename)
+          save_filename=timeseries_save_filename)
       fh_list.append(fh)
+      #
+
