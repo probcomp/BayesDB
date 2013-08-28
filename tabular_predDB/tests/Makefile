@@ -1,6 +1,6 @@
 OPTIMIZED = True
 ifdef OPTIMIZED
-CXXOPTS := -pg -Ofast $(CXXOPTS)
+CXXOPTS := -pg -O2 $(CXXOPTS)
 else
 CXXOPTS := -pg -O0 -g $(CXXOPTS)
 endif
