@@ -7,8 +7,8 @@
 
 class MultinomialComponentModel : public ComponentModel {
  public:
-  MultinomialComponentModel(std::map<std::string, double> &in_hypers);
-  MultinomialComponentModel(std::map<std::string, double> &in_hypers,
+  MultinomialComponentModel(CM_Hypers &in_hypers);
+  MultinomialComponentModel(CM_Hypers &in_hypers,
 			    int count, std::map<std::string, double> counts);
   //
   // getters

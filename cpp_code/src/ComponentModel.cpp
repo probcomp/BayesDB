@@ -34,7 +34,7 @@ double ComponentModel::incorporate_hyper_update() { assert(0); return NaN; }
 void ComponentModel::set_log_Z_0() { assert(0); }
 void ComponentModel::init_suffstats() { assert(0); }
 
-map<string, double> ComponentModel::get_hypers() const {
+CM_Hypers ComponentModel::get_hypers() const {
   return *p_hypers;
 }
 

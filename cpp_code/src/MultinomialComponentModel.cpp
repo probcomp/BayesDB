@@ -17,7 +17,7 @@
 
 using namespace std;
 
-MultinomialComponentModel::MultinomialComponentModel(map<string, double> &in_hypers) {
+MultinomialComponentModel::MultinomialComponentModel(CM_Hypers &in_hypers) {
   count = 0;
   score = 0;
   p_hypers = &in_hypers;
@@ -27,7 +27,7 @@ MultinomialComponentModel::MultinomialComponentModel(map<string, double> &in_hyp
   set_log_Z_0();
 }
 
-MultinomialComponentModel::MultinomialComponentModel(map<string, double> &in_hypers,
+MultinomialComponentModel::MultinomialComponentModel(CM_Hypers &in_hypers,
 						     int count_in,
 						     std::map<std::string, double> counts) {
   count = 0;

@@ -16,7 +16,7 @@
 #include "ContinuousComponentModel.h"
 using namespace std;
 
-ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hypers) {
+ContinuousComponentModel::ContinuousComponentModel(CM_Hypers &in_hypers) {
   count = 0;
   score = 0;
   p_hypers = &in_hypers;
@@ -28,7 +28,7 @@ ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hyper
   set_log_Z_0();
 }
 
-ContinuousComponentModel::ContinuousComponentModel(map<string, double> &in_hypers, int COUNT, double SUM_X, double SUM_X_SQ) {
+ContinuousComponentModel::ContinuousComponentModel(CM_Hypers &in_hypers, int COUNT, double SUM_X, double SUM_X_SQ) {
   count = COUNT;
   sum_x = SUM_X;
   sum_x_squared = SUM_X_SQ;
