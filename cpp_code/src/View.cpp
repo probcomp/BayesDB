@@ -256,7 +256,7 @@ vector<int> View::get_cluster_counts() const {
 }
 
 double View::calc_cluster_vector_predictive_logp(vector<double> vd,
-						 Cluster which_cluster,
+						 const Cluster &which_cluster,
 						 double &crp_logp_delta,
 						 double &data_logp_delta) const {
   int cluster_count = which_cluster.get_count();
@@ -279,7 +279,7 @@ vector<double> View::calc_cluster_vector_predictive_logps(vector<double> vd) {
   double crp_logp_delta, data_logp_delta;
   for(; it!=clusters.end(); it++) {
     logps.push_back(calc_cluster_vector_predictive_logp(vd, **it, crp_logp_delta,
-							data_logp_delta));
+                                                        data_logp_delta));
   }
   Cluster empty_cluster(hypers_v);
   logps.push_back(calc_cluster_vector_predictive_logp(vd, empty_cluster,

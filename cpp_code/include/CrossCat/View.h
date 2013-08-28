@@ -80,7 +80,7 @@ class View {
   std::vector<int> get_cluster_counts() const;
   //
   // calculators
-  double calc_cluster_vector_predictive_logp(std::vector<double> vd, Cluster cd,
+  double calc_cluster_vector_predictive_logp(std::vector<double> vd, const Cluster &cd,
 					     double &crp_logp_delta,
 					     double &data_logp_delta) const;
   std::vector<double> calc_cluster_vector_predictive_logps(std::vector<double> vd);
