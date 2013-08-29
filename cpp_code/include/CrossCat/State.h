@@ -26,7 +26,7 @@ class State {
 	std::vector<int> GLOBAL_COL_MULTINOMIAL_COUNTS,
 	std::vector<int> global_row_indices,
 	std::vector<int> global_col_indices,
-	std::map<int, std::map<std::string, double> > HYPERS_M,
+	std::map<int, CM_Hypers > HYPERS_M,
 	std::vector<std::vector<int> > column_partition,
 	double COLUMN_CRP_ALPHA,
 	std::vector<std::vector<std::vector<int> > > row_partition_v,
@@ -58,7 +58,7 @@ class State {
   std::vector<int> get_row_partition_model_counts_i(int view_idx) const;
   std::vector<std::vector<std::map<std::string, double> > > get_column_component_suffstats_i(int view_idx) const;
   //
-  std::vector<std::map<std::string, double> > get_column_hypers() const;
+  std::vector<CM_Hypers > get_column_hypers() const;
   std::map<std::string, double> get_column_partition_hypers() const;
   std::vector<int> get_column_partition_assignments() const;
   std::vector<int> get_column_partition_counts() const;
@@ -99,7 +99,7 @@ class State {
 					   View v,
 					   double &crp_log_delta,
 					   double &data_log_delta,
-					   std::map<std::string, double> hypers) const;
+					   CM_Hypers hypers) const;
 					   
   std::vector<double> calc_feature_view_predictive_logps(std::vector<double> col_data, int global_col_idx) const;
   double calc_row_predictive_logp(const std::vector<double> &in_vd);
@@ -114,7 +114,7 @@ class State {
   // parameters
   std::map<int, std::string> global_col_datatypes;
   std::map<int, int> global_col_multinomial_counts;
-  std::map<int, std::map<std::string, double> > hypers_m;
+  std::map<int, CM_Hypers > hypers_m;
   double column_crp_alpha;
   double column_crp_score;
   double data_score;
@@ -136,9 +136,9 @@ class State {
   void construct_column_hyper_grids(boost::numeric::ublas::matrix<double> data,
 				    std::vector<int> global_col_indices,
 				    std::vector<std::string> global_col_datatypes);
-  std::map<std::string, double> get_default_hypers() const;
+  CM_Hypers get_default_hypers() const;
   void init_base_hypers();
-  std::map<std::string, double> uniform_sample_hypers(int global_col_idx);
+  CM_Hypers uniform_sample_hypers(int global_col_idx);
   void init_column_hypers(std::vector<int> global_col_indices);
   void init_views(const MatrixD &data,
 		  std::map<int, std::string> global_col_datatypes,

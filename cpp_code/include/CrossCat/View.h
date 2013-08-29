@@ -25,7 +25,7 @@ class View {
        std::vector<std::vector<int> > row_partitioning,
        std::vector<int> global_row_indices,
        std::vector<int> global_col_indices,
-       std::map<int, std::map<std::string, double> > &hypers_m,
+       std::map<int, CM_Hypers > &hypers_m,
        std::vector<double> ROW_CRP_ALPHA_GRID,
        std::vector<double> MULTINOMIAL_ALPHA_GRID,
        std::vector<double> R_GRID,
@@ -38,7 +38,7 @@ class View {
        std::map<int, std::string> GLOBAL_COL_DATATYPES,
        std::vector<int> global_row_indices,
        std::vector<int> global_col_indices,
-       std::map<int, std::map<std::string, double> > &hypers_m,
+       std::map<int, CM_Hypers > &hypers_m,
        std::vector<double> ROW_CRP_ALPHA_GRID,
        std::vector<double> MULTINOMIAL_ALPHA_GRID,
        std::vector<double> R_GRID,
@@ -67,7 +67,7 @@ class View {
   std::vector<double> get_crp_alpha_grid() const;
   std::vector<std::string> get_hyper_strings(int which_col);
   std::vector<double> get_hyper_grid(int global_col_idx, std::string which_hyper);
-  std::map<std::string, double> get_hypers(int local_col_idx) const;
+  CM_Hypers get_hypers(int local_col_idx) const;
   //
   // API helpers
   std::map<std::string, double> get_row_partition_model_hypers() const;
@@ -80,7 +80,7 @@ class View {
   std::vector<int> get_cluster_counts() const;
   //
   // calculators
-  double calc_cluster_vector_predictive_logp(std::vector<double> vd, Cluster cd,
+  double calc_cluster_vector_predictive_logp(std::vector<double> vd, const Cluster &cd,
 					     double &crp_logp_delta,
 					     double &data_logp_delta) const;
   std::vector<double> calc_cluster_vector_predictive_logps(std::vector<double> vd);
@@ -92,7 +92,7 @@ class View {
   double calc_column_predictive_logp(std::vector<double> column_data,
 				     std::string col_datatype,
 				     std::vector<int> data_global_row_indices,
-				     std::map<std::string, double> hypers);
+				     CM_Hypers hypers);
   //
   // mutators
   void set_row_partitioning(std::vector<std::vector<int> > row_partitioning);
@@ -106,11 +106,11 @@ class View {
   double insert_col(std::vector<double> col_data,
 		    std::vector<int> data_global_row_indices,
 		    int global_col_idx,
-		    std::map<std::string, double> &hypers);
+		    CM_Hypers &hypers);
   double insert_cols(const MatrixD data, 
 		     std::vector<int> global_row_indices,
 		     std::vector<int> global_col_indices,
-		     std::map<int, std::map<std::string, double> > &hypers_m);
+		     std::map<int, CM_Hypers > &hypers_m);
   void remove_if_empty(Cluster& which_cluster);
   void remove_all();
   double transition_z(std::vector<double> vd, int row_idx);
@@ -127,7 +127,7 @@ class View {
   // data structures
   std::set<Cluster* > clusters;
   std::map<int, Cluster* > cluster_lookup;
-  std::vector<std::map<std::string, double>*> hypers_v;
+  std::vector<CM_Hypers*> hypers_v;
   //
   // helper functions
   std::vector<double> align_data(std::vector<double> values,
@@ -167,7 +167,7 @@ class View {
   void construct_base_hyper_grids(int num_rows);
   void construct_column_hyper_grid(std::vector<double> col_data,
 				   int gobal_col_idx);
-  /* std::map<std::string, double> data_hypers; */
+  /* CM_Hypers data_hypers; */
 };
 
 #endif //GUARD_view_h
