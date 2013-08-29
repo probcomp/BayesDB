@@ -149,11 +149,13 @@ def do_test(which_plot, max_plots, n, burn_in, cc_samples, which_test, correlati
 
 	get_next_seed = lambda : random.randrange(32000)
 
+	# Build a state
 	M_c = du.gen_M_c_from_T(X.tolist())
 	state = State.p_State(M_c, X.tolist())
 	X_Ls = []
 	X_Ds = []
 	
+	# collect crosscat samples
 	for _ in range(cc_samples):
 		state = State.p_State(M_c, X.tolist())
 		state.transition(n_steps=burn_in)
@@ -175,6 +177,7 @@ def do_test(which_plot, max_plots, n, burn_in, cc_samples, which_test, correlati
 
 def MI_test(n, burn_in, cc_samples, which_test, n_MI_samples=500, correlation=0):
 	M_c, X_Ls, X_Ds = do_test(0, 0, n, burn_in, cc_samples, "correlated", correlation=correlation, do_plot=False)
+	# query column 0 and 1
 	MI, Linfoot = su.mutual_information(M_c, X_Ls, X_Ds, [(0,1)], n_samples=n_MI_samples)
 
 	MI = numpy.mean(MI)

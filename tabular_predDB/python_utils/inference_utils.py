@@ -12,9 +12,13 @@ import tabular_predDB.python_utils.sample_utils as su
 
 
 # return the estimated mutual information for each pair of columns on Q given
-# the set of samples in M_cs and X_Ls
+# the set of samples in X_Ls and X_Ds. Q is a list of tuples where each tuple
+# contains X and Y, the columns to compare. 
+# Q = [(X_1, Y_1), (X_2, Y_2), ..., (X_n, Y_n)]
 # Returns a list of list where each sublist is a set of MI's and Linfoots from
-# each crosscat posterior sample.
+# each crosscat posterior sample. 
+# See tests/test_mutual_information.py and 
+# tests/test_mutual_information_vs_correlation.py for useage examples
 def mutual_information(M_c, X_Ls, X_Ds, Q, n_samples=1000):
     #
     assert(len(X_Ds) == len(X_Ls))
