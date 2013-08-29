@@ -125,15 +125,28 @@ if __name__ == '__main__':
     save_filename = None
     for run_key, convergence_metrics in convergence_metrics_dict.iteritems():
       if do_save:
+        n_bins = 20
+        cumulative = True
+        #
         filename_parts = [save_filename_prefix, str(run_key), 'timeseries.png']
         timeseries_save_filename = filter_join(filename_parts, '_')
         filename_parts = [save_filename_prefix, str(run_key), 'test_ll_hist.png']
-        hist_save_filename = filter_join(filename_parts, '_')
+        test_ll_hist_save_filename = filter_join(filename_parts, '_')
+        filename_parts = [save_filename_prefix, str(run_key), 'runtime_hist.png']
+        runtime_hist_save_filename = filter_join(filename_parts, '_')
         #
+        pylab.figure()
         test_lls = pylab.array(convergence_metrics['mean_test_ll_list'])
         final_test_lls = test_lls[:, -1]
-        pylab.hist(final_test_lls)
-        pylab.savefig(hist_save_filename)
+        pylab.hist(final_test_lls, n_bins, cumulative=cumulative)
+        pylab.savefig(test_ll_hist_save_filename)
+        #
+        pylab.figure()
+        final_times = pylab.array(convergence_metrics['elapsed_seconds_list']).T
+        final_times = final_times.cumsum(axis=0)
+        final_times = final_times[-1, :]
+        pylab.hist(final_times, n_bins, cumulative=cumulative)
+        pylab.savefig(runtime_hist_save_filename)
       fh = plot_convergence_metrics(convergence_metrics,
           title_append=str(run_key), x_is_iters=x_is_iters,
           save_filename=timeseries_save_filename)
