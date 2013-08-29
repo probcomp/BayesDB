@@ -4,8 +4,8 @@
 # set deafults
 # export PYTHONPATH=~/tabular_predDB:$PYTHONPATH
 # make sure environment is correct
-first_branch="master"
-second_branch="engine_optimization"
+first_branch="pre-optimization"
+second_branch="optimized-v0.1"
 HDFS_DIR="$(python -c 'import tabular_predDB.settings as S; print S.Hadoop.default_hdfs_dir')"
 HDFS_URI="$(python -c 'import tabular_predDB.settings as S; print S.Hadoop.default_hdfs_uri')"
 #
