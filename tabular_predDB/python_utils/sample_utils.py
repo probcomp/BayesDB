@@ -39,6 +39,16 @@ class Bunch(dict):
 
 Constraints = Bunch
 
+
+def is_discrete(M_c, which_column):
+    model_type = M_c['column_metadata'][which_column]['modeltype']
+    lookup = dict( 
+        normal_inverse_gamma=False,
+        symmetric_dirichlet_discrete=True,
+    )
+    return lookup[model_type]
+
+
 # simple_predictive_probability_density code is hacked from simple_predictive_probability
 # code. The dfference is that it returns log(pdf) for Normal Inverse-Gamma
 # rather than log(cdf(b)-cdf(a))
@@ -92,18 +102,16 @@ def simple_predictive_probability_density_observed(M_c, X_L, X_D, Y, which_row,
         component_model = cluster_model[which_column]
         draw_constraints = get_draw_constraints(X_L, X_D, Y,which_row, which_column)
 
-        # TODO: These should be implemented in their respective classes
-        model_type = M_c['column_metadata'][which_column]['modeltype']
+        is_discrete_variable = is_discrete(M_c, which_column)
 
-        if model_type == 'normal_inverse_gamma':
+        if not is_discrete_variable:
             p_x = component_model.get_predictive_pdf(elements[q],draw_constraints)
             logp = p_x
-            
-        elif model_type == 'symmetric_dirichlet_discrete':
+        elif is_discrete_variable:
             logp = component_model.get_predictive_probability(elements[q],draw_constraints)
         else:
-            sys.exit("error: simple_predictive_probability_density_observed: Undefined model type.");
-       
+            sys.err('error: simple_predictive_probability_density_observed: Could not determine discreteness')
+        
         Ps[q] = logp
         q += 1
 
@@ -120,19 +128,18 @@ def simple_predictive_probability_density_unobserved(M_c, X_L, X_D, Y, query_row
 
     for n in range(n_queries):
         # figure out what kind of model we are dealing with 
-        # TODO:  These should be implemented in their respective classes
-        model_type = M_c['column_metadata'][query_columns[n]]['modeltype']
+        is_discrete_variable = is_discrete(M_c, query_columns[n])
 
-        if model_type == 'normal_inverse_gamma':
-            answer[n] = simple_predictive_probability_density_unobserved_normal(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
-        elif model_type == 'symmetric_dirichlet_discrete':
-            answer[n] = simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
+        if not is_discrete_variable:
+            answer[n] = simple_predictive_probability_density_unobserved_continuous(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
+        elif is_discrete_variable:
+            answer[n] = simple_predictive_probability_unobserved_discrete(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
         else:
             sys.exit("error: simple_predictive_probability__density_unobserved: Undefined model type.");
 
     return answer
 
-def simple_predictive_probability_density_unobserved_normal(M_c, X_L, X_D, Y, query_row,query_column, element):
+def simple_predictive_probability_density_unobserved_continuous(M_c, X_L, X_D, Y, query_row,query_column, element):
 
     # get the view to which this column is assigned
     view_idx = X_L['column_partition']['assignments'][query_column]
@@ -219,10 +226,9 @@ def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
         component_model = cluster_model[which_column]
         draw_constraints = get_draw_constraints(X_L, X_D, Y,which_row, which_column)
 
-        # TODO: These should be implemented in their respective classes
-        model_type = M_c['column_metadata'][which_column]['modeltype']
+        is_discrete_variable = is_discrete(M_c, which_column)
 
-        if model_type == 'normal_inverse_gamma':
+        if not is_discrete_variable:
             a = elements[q]-epsilon
             b = elements[q]+epsilon
             p_a = component_model.get_predictive_cdf(a,draw_constraints)
@@ -231,7 +237,7 @@ def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
                 logp = math.log(p_b-p_a)
             except ValueError:
                 logp = float('-inf')
-        elif model_type == 'symmetric_dirichlet_discrete':
+        elif is_discrete_variable:
             logp = component_model.calc_element_predictive_logp_constrained(elements[q],draw_constraints)
         else:
             sys.exit("error: simple_predictive_probability_observed: Undefined model type.");
@@ -250,19 +256,18 @@ def simple_predictive_probability_unobserved(M_c, X_L, X_D, Y, query_row, query_
 
     for n in range(n_queries):
         # figure out what kind of model we are dealing with 
-        # TODO:  These should be implemented in their respective classes
-        model_type = M_c['column_metadata'][query_columns[n]]['modeltype']
+        is_discrete_variable = is_discrete(M_c, query_columns[n])
 
-        if model_type == 'normal_inverse_gamma':
-            answer[n] = simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n],epsilon=epsilon)
-        elif model_type == 'symmetric_dirichlet_discrete':
-            answer[n] = simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
+        if not is_discrete_variable:
+            answer[n] = simple_predictive_probability_unobserved_continuous(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n],epsilon=epsilon)
+        elif is_discrete_variable:
+            answer[n] = simple_predictive_probability_unobserved_discrete(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
         else:
             sys.exit("error: simple_predictive_probability_unobserved: Undefined model type.");
 
     return answer
 
-def simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row,query_column, element, epsilon=.001):
+def simple_predictive_probability_unobserved_continuous(M_c, X_L, X_D, Y, query_row,query_column, element, epsilon=.001):
     # TODO: Add user-defined epsilon value?
 
     # get the view to which this column is assigned
@@ -304,7 +309,7 @@ def simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row,
 
     return answer
 
-def simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query_row,
+def simple_predictive_probability_unobserved_discrete(M_c, X_L, X_D, Y, query_row,
                                         query_column, element):
     
     # get the view to which this column is assigned
