@@ -18,13 +18,16 @@
 import os
 import numpy
 import sys
+import itertools
 #
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.file_utils as fu
 import tabular_predDB.python_utils.hadoop_utils as hu
 import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.python_utils.general_utils as gu
+import tabular_predDB.python_utils.inference_utils as iu
 import tabular_predDB.python_utils.timing_test_utils as ttu
+import tabular_predDB.python_utils.mutual_information_test_utils as mitu
 import tabular_predDB.python_utils.convergence_test_utils as ctu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
@@ -126,6 +129,65 @@ def time_analyze_helper(table_data, data_dict, command_dict):
         )
     return ret_dict
 
+def mi_analyze_helper(table_data, data_dict, command_dict):
+
+    gen_seed = data_dict['SEED']
+    crosscat_seed = data_dict['CCSEED']
+    num_clusters = data_dict['num_clusters']
+    num_cols = data_dict['num_cols']
+    num_rows = data_dict['num_rows']
+    num_views = data_dict['num_views']
+    corr = data_dict['corr']
+    burn_in = data_dict['burn_in']
+    mean_range = float(num_clusters)
+
+    # 32 bit signed int
+    random.seed(gen_seed)
+    get_next_seed = lambda : random.randrange(2147483647)
+
+    num_impute_samples = 1000
+
+    n_remove = int(num_rows*num_cols*del_prop)
+
+    # generate the stats
+    T, M_c, M_r, X_L, X_D = mitu.generate_correlated_state(num_rows,
+        num_cols, num_views, num_clusters, mean_range, corr, seed=gen_seed);
+
+    table_data = dict(T=T,M_c=M_c)
+
+    data_dict['X_L'] = X_L
+    data_dict['X_D'] = X_D
+
+    engine = LE.LocalEngine(crosscat_seed)
+    X_L_prime, X_D_prime = engine.analyze(M_c, T, X_L, X_D, n_steps=burn_in) 
+
+    X_L = X_L_prime
+    X_D = X_D_prime
+
+    view_assignment = X_L['column_partition']['assignments']
+
+    # for each view calclate the average MI between all pairs of columns
+    n_views = len(X_D)
+    MI = []
+    Linfoot = []
+    queries = []
+    for view in range(n_views):
+        columns_in_view = numpy.nonzero(view_assignment==view)[0]
+        combinations = itertools.combinations(columns_in_view,2)
+        for pair in combinations:
+            queries.append(pair)
+            MI_i, Linfoot_i = mutual_information(M_c, X_Ls, X_Ds, [pair], n_samples=1000)
+            MI.append(MI_i)
+
+    ret_dict = dict(
+        id=data_dict['id'],
+        dataset=data_dict['dataset'],
+        sample=data_dict['sample'],
+        mi=MI,
+        )
+
+    return ret_dict
+
 def convergence_analyze_helper(table_data, data_dict, command_dict):
     gen_seed = data_dict['SEED']
     num_clusters = data_dict['num_clusters']
@@ -209,6 +271,7 @@ method_lookup = dict(
     time_analyze=time_analyze_helper,
     convergence_analyze=convergence_analyze_helper,
     chunk_analyze=chunk_analyze_helper,
+    mi_analyze=mi_analyze_helper
     )
 
 

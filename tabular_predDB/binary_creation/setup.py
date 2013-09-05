@@ -17,6 +17,8 @@ excludes = [
 includes = [
     'tabular_predDB.python_utils.data_utils',
     'tabular_predDB.python_utils.file_utils',
+    'tabular_predDB.python_utils.inference_utils',
+    'tabular_predDB.python_utils.mutual_information_test_utils',
     'tabular_predDB.python_utils.timing_test_utils',
     'tabular_predDB.python_utils.convergence_test_utils',
     'tabular_predDB.LocalEngine',
