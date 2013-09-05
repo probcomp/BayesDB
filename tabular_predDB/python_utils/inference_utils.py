@@ -11,6 +11,9 @@ import tabular_predDB.cython_code.MultinomialComponentModel as MCM
 import tabular_predDB.python_utils.sample_utils as su
 
 
+def mutual_information_to_linfoot(MI):
+    return (1-numpy.exp(-2*MI))**0.5
+
 # return the estimated mutual information for each pair of columns on Q given
 # the set of samples in X_Ls and X_Ds. Q is a list of tuples where each tuple
 # contains X and Y, the columns to compare. 
@@ -49,7 +52,7 @@ def mutual_information(M_c, X_Ls, X_Ds, Q, n_samples=1000):
 
             MI_s = estimiate_MI_sample(X, Y, M_c, X_L, X_D, get_next_seed, n_samples=n_samples)
 
-            linfoot = (1-numpy.exp(-2*MI_s))**0.5
+            linfoot = mutual_information_to_linfoot(MI_s)
             if not linfoot >= 0 or not linfoot <= 1:
                 pdb.set_trace()
 

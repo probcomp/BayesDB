@@ -139,24 +139,17 @@ def mi_analyze_helper(table_data, data_dict, command_dict):
     num_views = data_dict['num_views']
     corr = data_dict['corr']
     burn_in = data_dict['burn_in']
-    mean_range = float(num_clusters)
+    mean_range = float(num_clusters)*2.0
 
     # 32 bit signed int
     random.seed(gen_seed)
     get_next_seed = lambda : random.randrange(2147483647)
-
-    num_impute_samples = 1000
-
-    n_remove = int(num_rows*num_cols*del_prop)
 
     # generate the stats
     T, M_c, M_r, X_L, X_D = mitu.generate_correlated_state(num_rows,
         num_cols, num_views, num_clusters, mean_range, corr, seed=gen_seed);
 
     table_data = dict(T=T,M_c=M_c)
-
-    data_dict['X_L'] = X_L
-    data_dict['X_D'] = X_D
 
     engine = LE.LocalEngine(crosscat_seed)
     X_L_prime, X_D_prime = engine.analyze(M_c, T, X_L, X_D, n_steps=burn_in) 

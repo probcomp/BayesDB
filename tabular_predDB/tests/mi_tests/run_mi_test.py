@@ -16,7 +16,9 @@ import tabular_predDB.python_utils.xnet_utils as xu
 import tabular_predDB.LocalEngine as LE
 import tabular_predDB.HadoopEngine as HE
 
-import impute_test_local
+import run_mi_test_local
+
+import pdb
 
 def generate_hadoop_dicts(which_kernels, impute_run_parameters, args_dict):
     for which_kernel in which_kernels:
@@ -37,19 +39,25 @@ def write_hadoop_input(input_filename, impute_run_parameters, SEED):
 # Run
 if __name__ == '__main__':
 
-	default_num_rows_list = [100, 500, 1000] 
-	default_num_cols_list = [8, 16, 32]	
-	default_num_clusters_list = [5, 25, 50]	
-	default_num_splits_list = [1, 2, 4, 8]
-	default_mean_ranges_list = [.5, 1, 2]
-	default_correlation_list = [.1, .25, .5, .75]
+	# default_num_rows_list = [100, 500, 1000] 
+	# default_num_cols_list = [2, 4, 8, 16]	
+	# default_num_clusters_list = [10, 25, 50]	
+	# default_num_views_list = [1, 2, 4, 8, 16]
+	# default_correlation_list = [.1, .5, .9]
 	
+
+	default_num_rows_list = [10] 
+	default_num_cols_list = [2]	
+	default_num_clusters_list = [10]	
+	default_num_views_list = [1, 2]
+	default_correlation_list = [.9]
+
 	#
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--gen_seed', type=int, default=0)
 	parser.add_argument('--num_datasets', type=int, default=5)
-	parser.add_argument('--num_chains', type=int, default=10)
-	parser.add_argument('--burn_in', type=int, default=200)
+	parser.add_argument('--num_samples', type=int, default=50)
+	parser.add_argument('--burn_in', type=int, default=250)
 	parser.add_argument('--which_engine_binary', type=str,
 	        default=HE.default_engine_binary)
 	parser.add_argument('-do_local', action='store_true')
@@ -60,8 +68,8 @@ if __name__ == '__main__':
 	        default=default_num_cols_list)
 	parser.add_argument('--num_clusters_list', type=int, nargs='*',
 	        default=default_num_clusters_list)
-	parser.add_argument('--num_splits_list', type=int, nargs='*',
-	        default=default_num_splits_list)
+	parser.add_argument('--num_views_list', type=int, nargs='*',
+	        default=default_num_views_list)
 	parser.add_argument('--corr_list', type=float, nargs='*',
 	        default=default_correlation_list)
 
@@ -71,12 +79,12 @@ if __name__ == '__main__':
 	do_local = args.do_local
 	do_remote = args.do_remote
 	burn_in = args.burn_in
-	num_chains = args.num_chains
+	num_samples = args.num_samples
 	num_datasets = args.num_datasets
 	num_rows_list = args.num_rows_list
 	num_cols_list = args.num_cols_list
 	num_clusters_list = args.num_clusters_list
-	num_splits_list = args.num_splits_list
+	num_views_list = args.num_views_list
 	corr_list = args.corr_list
 	which_engine_binary = args.which_engine_binary
 	#
@@ -84,8 +92,8 @@ if __name__ == '__main__':
 	print 'using num_rows_list: %s' % num_rows_list
 	print 'using num_cols_list: %s' % num_cols_list
 	print 'using num_clusters_list: %s' % num_clusters_list
-	print 'using num_splits_list: %s' % num_splits_list
-	print 'using delprop_list: %s' % corr_list
+	print 'using num_views_list: %s' % num_views_list
+	print 'using corr_list: %s' % corr_list
 	print 'using engine_binary: %s' % which_engine_binary
 	time.sleep(2)
 
@@ -111,13 +119,12 @@ if __name__ == '__main__':
 		'n_rows' 	  : num_rows_list,
 		'n_clusters'  : num_clusters_list,
 		'n_cols' 	  : num_cols_list,
-		'n_splits' 	  : num_splits_list,
+		'n_views' 	  : num_views_list,
 		'corr' 	  	  : corr_list,
-		'n_iters' 	  : repeat_times,
-		'n_chains' 	  : num_chains,
+		'n_datasets'  : num_datasets,
+		'n_samples'   : num_samples,
 		'n_datasets'  : num_datasets,
 		'burn_in' 	  : burn_in
-		'max_index'   : 0
 	}
 
 	# save the params file as pickle
@@ -131,30 +138,31 @@ if __name__ == '__main__':
 	pd_file.close()
 
 	# cartesian product of test parameters. 
-	tests = list(it.product(*[num_rows_list, num_clusters_list, num_cols_list, num_splits_list, corr_list]))
+	tests = list(it.product(*[num_rows_list, num_clusters_list, num_cols_list, num_views_list, corr_list]))
 
 	testlist = []
 	
 	print "Writing tests file."	
 	test_idx = 0
-	for n_rows, n_clusters, n_cols, n_splits, corr in tests:	
-		if numpy.mod(n_rows, n_clusters) == 0 and numpy.mod(n_cols,n_splits)==0:
+	for n_rows, n_clusters, n_cols, n_views, corr in tests:	
+		if n_rows >= n_clusters and n_cols >= n_views:
 			for dataset in range(num_datasets):
-				for chain in range(num_chains):
+				for sample in range(num_samples):
 					impute_run_parameters = dict(
 							id=test_idx,
 							dataset=dataset,
-							sample=chain,
+							sample=sample,
 							num_clusters=n_clusters,
 							num_rows=n_rows,
 							num_cols=n_cols,
-							num_views=n_splits,
+							num_views=n_views,
 							corr=corr,
 							burn_in=burn_in,
-							SEED=data_seed+test_idx+itr,
+							SEED=data_seed+dataset,
+							CCSEED=data_seed+dataset+sample
 						)
 
-					write_hadoop_input(input_filename, impute_run_parameters, SEED=data_seed+test_idx+itr)
+					write_hadoop_input(input_filename, impute_run_parameters, SEED=data_seed+dataset)
 					if do_local:
 						testlist.append(impute_run_parameters)
 			test_idx += 1
@@ -166,20 +174,19 @@ if __name__ == '__main__':
 	fu.pickle(table_data, table_data_filename)
 
 	#####################
-
 	if do_local:
 		output_filename = os.path.join(directory_path, "output_local")
 		output_file_object = open(output_filename, 'ab')
 		with open(input_filename,'rb') as infile:
 			for line in infile:
 				key, test_dict = xu.parse_hadoop_line(line)
-				ret_dict = impute_test_local.impute_test_local(test_dict, output_file_object)
+				ret_dict = run_mi_test_local.run_mi_test_local(test_dict)
 				xu.write_hadoop_line(output_file_object, key, ret_dict)
 				print "%s\n\t%s" % (str(test_dict), str(ret_dict))
 
 		output_file_object.close()
 		# generate the csv
-		parse_impute.parse_data_to_csv(input_filename, params_dict, test_idx, output_filename)
+		parse_mi.parse_data_to_csv(input_filename, params_dict, test_idx, output_filename)
 		print "Done."
 	elif do_remote:
 		# generate the massive hadoop files
@@ -199,6 +206,6 @@ if __name__ == '__main__':
 			t_total = t_end-t_start
 			print "That took %i seconds." % t_total
 			hu.copy_hadoop_output(hadoop_engine.output_path, output_filename)
-			parse_impute.parse_data_to_csv(input_filename, params_dict, test_idx, output_filename)
+			parse_mi.parse_data_to_csv(input_filename, params_dict, test_idx, output_filename)
 		else:
 			print "Hadoop job was NOT successful. Check %s" % output_path
