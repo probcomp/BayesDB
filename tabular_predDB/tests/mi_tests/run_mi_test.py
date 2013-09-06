@@ -18,8 +18,6 @@ import tabular_predDB.HadoopEngine as HE
 
 import run_mi_test_local
 
-import pdb
-
 def generate_hadoop_dicts(which_kernels, impute_run_parameters, args_dict):
     for which_kernel in which_kernels:
         kernel_list = (which_kernel, )
@@ -36,22 +34,21 @@ def write_hadoop_input(input_filename, impute_run_parameters, SEED):
     with open(input_filename, 'a') as out_fh:
         xu.write_hadoop_line(out_fh, key=SEED, dict_to_write=impute_run_parameters)
 
+# # example of how to run a simple test run on hadoop (xdata VM)
+# python run_mi_test.py --num_datasets 5 --num_samples 10 --which_engine_binary /user/bigdata/SSCI/be_mi_tests_00.jar \
+# --num_rows_list 10 --num_cols_list 2 --num_clusters_list 2 --num_views_list 1 --corr_list .1 .99 -do_remote
+# # example of a full run
+# python run_mi_test.py --which_engine_binary /user/bigdata/SSCI/be_mi_tests_00.jar -do_remote
+
 # Run
 if __name__ == '__main__':
 
-	# default_num_rows_list = [100, 500, 1000] 
-	# default_num_cols_list = [2, 4, 8, 16]	
-	# default_num_clusters_list = [10, 25, 50]	
-	# default_num_views_list = [1, 2, 4, 8, 16]
-	# default_correlation_list = [.1, .5, .9]
+	default_num_rows_list = [100, 500, 1000] 
+	default_num_cols_list = [2, 4, 8, 16]	
+	default_num_clusters_list = [10, 25, 50]	
+	default_num_views_list = [1, 2, 4, 8, 16]
+	default_correlation_list = [.1, .5, .9]
 	
-
-	default_num_rows_list = [10] 
-	default_num_cols_list = [2]	
-	default_num_clusters_list = [10]	
-	default_num_views_list = [1, 2]
-	default_correlation_list = [.9]
-
 	#
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--gen_seed', type=int, default=0)

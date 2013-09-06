@@ -7,6 +7,8 @@ import pickle
 import tabular_predDB.python_utils.inference_utils as iu
 import tabular_predDB.python_utils.xnet_utils as xu
 
+import pdb
+
 def is_hadoop_file(filename):
 	name, extension = os.path.splitext(filename)
 	if extension is 'gz':
@@ -47,19 +49,38 @@ def parse_data_to_csv(test_key_filename, params_dict, n_tests, output_filename):
 
 	header = ['id', 'num_rows', 'num_cols', 'num_views', 'num_splits', 'corr','MI','Linfoot']
 
-	data_mi = numpy.zeros((n_tests, n_samples*n_datasets))	
+	data_mi = [[[] for i in range(n_datasets)] for i in range(n_tests)]
+	data_linfoot = [[[] for i in range(n_datasets)] for i in range(n_tests)]
+
 
 	for result in results:
 		res = result[1] # because it's a tuple with an id at index 0
 		test_idx = res['id']
 		test_dataset = res['dataset']
 		test_sample = res['sample']
-		data_mi[test_idx, test_dataset*n_datasets+test_sample] += res['mi']
+		
+		if len(data_mi[test_idx][test_dataset]) == 0:
+			data_mi[test_idx][test_dataset] = [res['mi']]
+		else:
+			data_mi[test_idx][test_dataset].append(res['mi'])
+	
+
+	# calculate the mean over samples
+	for test in range(n_tests):
+		
+		for dataset in range(n_datasets):
+			
+			data_mi[test][dataset] = numpy.array(data_mi[test][dataset])
+			data_mi[test][dataset] = numpy.mean(data_mi[test][dataset],axis=0)
+			data_linfoot[test][dataset] = mi_to_linfoot(data_mi[test][dataset])
 
 
-	# get the mean over datasets and samples
-	mean_mi = numpy.mean(data_mi,axis=1)
-	mean_linfoot = mi_to_linfoot(mean_mi)
+			data_mi[test][dataset] = numpy.mean(data_mi[test][dataset])
+			data_linfoot[test][dataset] = numpy.mean(data_linfoot[test][dataset])
+
+		# now calculate the mean over datasets
+		data_mi[test] = numpy.mean(numpy.array(data_mi[test]))
+		data_linfoot[test] = numpy.mean(numpy.array(data_linfoot[test]))
 	
 	name, extension = os.path.splitext(output_filename)
 
@@ -74,15 +95,20 @@ def parse_data_to_csv(test_key_filename, params_dict, n_tests, output_filename):
 			test_idx = res['id']
 			if test_idx != current_idx:
 				current_idx = test_idx
-				line = parse_line(res, mean_mi[test_idx], mean_linfoot[test_idx])
+				line = parse_line(res, data_mi[test_idx], data_linfoot[test_idx])
 				csvwriter.writerow(line)
 
 def mi_to_linfoot(mi):
 	#
 	linfoot = numpy.zeros(mi.shape)
-	for r in range(mi.shape[0]):
-		for c in range(mi.shape[1]):
-			linfoot[r,c] = iu.mutual_information_to_linfoot(mi[r,c])
+	if len(mi.shape) == 1:
+		for entry in range(mi.size):
+			linfoot[entry] = iu.mutual_information_to_linfoot(mi[entry])
+	else:
+		for r in range(mi.shape[0]):
+			for c in range(mi.shape[1]):
+				linfoot[r,c] = iu.mutual_information_to_linfoot(mi[r,c])
+	return linfoot
 
 if __name__ == "__main__":
 
@@ -98,8 +124,10 @@ if __name__ == "__main__":
 
 	key_filename = args.key_filename
 	output_filename = args.output_filename
-	n_iters = args.n_iters
-	n_chains = args.n_chains
+	n_tests = args.n_tests
+	params_filename = args.params_filename
+	params_dict = pickle.load( open( params_filename, "rb" ))
+
 
 
 	parse_data_to_csv(key_filename, params_dict, n_tests, output_filename)

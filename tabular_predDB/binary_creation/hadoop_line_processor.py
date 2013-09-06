@@ -19,6 +19,7 @@ import os
 import numpy
 import sys
 import itertools
+import random
 #
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.file_utils as fu
@@ -149,6 +150,9 @@ def mi_analyze_helper(table_data, data_dict, command_dict):
     T, M_c, M_r, X_L, X_D = mitu.generate_correlated_state(num_rows,
         num_cols, num_views, num_clusters, mean_range, corr, seed=gen_seed);
 
+    # get the original assignment
+    view_assignment = numpy.array(X_L['column_partition']['assignments'])
+
     table_data = dict(T=T,M_c=M_c)
 
     engine = LE.LocalEngine(crosscat_seed)
@@ -156,21 +160,24 @@ def mi_analyze_helper(table_data, data_dict, command_dict):
 
     X_L = X_L_prime
     X_D = X_D_prime
-
-    view_assignment = X_L['column_partition']['assignments']
-
+ 
     # for each view calclate the average MI between all pairs of columns
     n_views = len(X_D)
     MI = []
     Linfoot = []
     queries = []
+    any_pairs = False
     for view in range(n_views):
         columns_in_view = numpy.nonzero(view_assignment==view)[0]
         combinations = itertools.combinations(columns_in_view,2)
         for pair in combinations:
+            any_pairs = True
             queries.append(pair)
-            MI_i, Linfoot_i = mutual_information(M_c, X_Ls, X_Ds, [pair], n_samples=1000)
-            MI.append(MI_i)
+            MI_i, Linfoot_i = iu.mutual_information(M_c, [X_L], [X_D], [pair], n_samples=1000)
+            MI.append(MI_i[0][0])
+
+    if not any_pairs:
+        MI = [0]
 
     ret_dict = dict(
         id=data_dict['id'],
