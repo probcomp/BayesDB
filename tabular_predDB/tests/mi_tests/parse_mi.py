@@ -49,8 +49,13 @@ def parse_data_to_csv(test_key_filename, params_dict, n_tests, output_filename):
 
 	header = ['id', 'num_rows', 'num_cols', 'num_views', 'num_clusters', 'corr','MI','Linfoot']
 
-	data_mi = [[[] for i in range(n_datasets)] for i in range(n_tests)]
-	data_linfoot = [[[] for i in range(n_datasets)] for i in range(n_tests)]
+	# data_mi = [[[0] for i in range(n_datasets)] for i in range(n_tests)]
+	# data_linfoot = [[[0] for i in range(n_datasets)] for i in range(n_tests)]
+	# counts = [[[0] for i in range(n_datasets)] for i in range(n_tests)]
+
+	data_mi = [0.0]*n_tests
+	data_linfoot = [0.0]*n_tests
+	counts = [0.0]*n_tests
 
 
 	for result in results:
@@ -59,28 +64,40 @@ def parse_data_to_csv(test_key_filename, params_dict, n_tests, output_filename):
 		test_dataset = res['dataset']
 		test_sample = res['sample']
 		
-		if len(data_mi[test_idx][test_dataset]) == 0:
-			data_mi[test_idx][test_dataset] = [res['mi']]
-		else:
-			data_mi[test_idx][test_dataset].append(res['mi'])
-	
-
-	# calculate the mean over samples
-	for test in range(n_tests):
+		floated_result = [float(r) for r in res['mi']]
 		
-		for dataset in range(n_datasets):
-			
-			data_mi[test][dataset] = numpy.array(data_mi[test][dataset])
-			data_mi[test][dataset] = numpy.mean(data_mi[test][dataset],axis=0)
-			data_linfoot[test][dataset] = mi_to_linfoot(data_mi[test][dataset])
+		for r in floated_result:
+			# pdb.set_trace()
+			data_mi[test_idx] += float(r) 
+			data_linfoot[test_idx] += float(iu.mutual_information_to_linfoot(r))
+			counts[test_idx] += 1.0
+	
+	for test_ids in range(n_tests):
+		data_mi[test_idx] /= counts[test_idx]
+		data_linfoot[test_idx] /= counts[test_idx]
 
+	# # calculate the mean over samples
+	# for test in range(n_tests):
+		
+	# 	for dataset in range(n_datasets):
+	# 		try:
+	# 			data_mi[test][dataset] = numpy.array(data_mi[test][dataset],dtype=float)
+	# 		except ValueError:
+	# 			pdb.set_trace()
 
-			data_mi[test][dataset] = numpy.mean(data_mi[test][dataset])
-			data_linfoot[test][dataset] = numpy.mean(data_linfoot[test][dataset])
+	# 		try:
+	# 			data_mi[test][dataset] = numpy.mean(data_mi[test][dataset],axis=0)
+	# 		except TypeError:
+	# 			pdb.set_trace()
 
-		# now calculate the mean over datasets
-		data_mi[test] = numpy.mean(numpy.array(data_mi[test]))
-		data_linfoot[test] = numpy.mean(numpy.array(data_linfoot[test]))
+	# 		data_linfoot[test][dataset] = mi_to_linfoot(data_mi[test][dataset])
+
+	# 		data_mi[test][dataset] = numpy.mean(data_mi[test][dataset])
+	# 		data_linfoot[test][dataset] = numpy.mean(data_linfoot[test][dataset])
+
+	# 	# now calculate the mean over datasets
+	# 	data_mi[test] = numpy.mean(numpy.array(data_mi[test]))
+	# 	data_linfoot[test] = numpy.mean(numpy.array(data_linfoot[test]))
 	
 	name, extension = os.path.splitext(output_filename)
 
@@ -100,15 +117,18 @@ def parse_data_to_csv(test_key_filename, params_dict, n_tests, output_filename):
 
 def mi_to_linfoot(mi):
 	#
-	linfoot = numpy.zeros(mi.shape)
-	if len(mi.shape) == 1:
-		for entry in range(mi.size):
-			linfoot[entry] = iu.mutual_information_to_linfoot(mi[entry])
-	else:
-		for r in range(mi.shape[0]):
-			for c in range(mi.shape[1]):
-				linfoot[r,c] = iu.mutual_information_to_linfoot(mi[r,c])
-	return linfoot
+	# linfoot = numpy.zeros(mi.shape)
+	# if len(mi.shape) == 1:
+	# 	for entry in range(mi.size):
+	# 		linfoot[entry] = iu.mutual_information_to_linfoot(mi[entry])
+	# else:
+	# 	for r in range(mi.shape[0]):
+	# 		for c in range(mi.shape[1]):
+	# 			linfoot[r,c] = iu.mutual_information_to_linfoot(mi[r,c])
+
+
+	# return linfoot
+	return [iu.mutual_information_to_linfoot(m) for m in mi]
 
 if __name__ == "__main__":
 

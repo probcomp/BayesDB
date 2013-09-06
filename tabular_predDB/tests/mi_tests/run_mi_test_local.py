@@ -22,11 +22,8 @@ def run_mi_test_local(data_dict):
     get_next_seed = lambda : random.randrange(2147483647)
 
     # generate the stats
-    T, M_c, M_r, X_L, X_D = mitu.generate_correlated_state(num_rows,
+    T, M_c, M_r, X_L, X_D, view_assignment = mitu.generate_correlated_state(num_rows,
         num_cols, num_views, num_clusters, mean_range, corr, seed=gen_seed);
-
-    # get the original assignment
-    view_assignment = numpy.array(X_L['column_partition']['assignments'])
 
     table_data = dict(T=T,M_c=M_c)
 
@@ -37,7 +34,7 @@ def run_mi_test_local(data_dict):
     X_D = X_D_prime
  
     # for each view calclate the average MI between all pairs of columns
-    n_views = len(X_D)
+    n_views = max(view_assignment)+1
     MI = []
     Linfoot = []
     queries = []
@@ -52,7 +49,7 @@ def run_mi_test_local(data_dict):
             MI.append(MI_i[0][0])
 
     if not any_pairs:
-        MI = [0]
+        MI = [0.0]
 
     ret_dict = dict(
         id=data_dict['id'],

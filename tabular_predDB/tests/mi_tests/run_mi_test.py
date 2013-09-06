@@ -43,11 +43,17 @@ def write_hadoop_input(input_filename, impute_run_parameters, SEED):
 # Run
 if __name__ == '__main__':
 
-	default_num_rows_list = [100, 500, 1000] 
-	default_num_cols_list = [2, 4, 8, 16]	
-	default_num_clusters_list = [10, 25, 50]	
-	default_num_views_list = [1, 2, 4, 8, 16]
-	default_correlation_list = [.1, .5, .9]
+	# default_num_rows_list = [100, 500, 1000] 
+	# default_num_cols_list = [2, 4, 8, 16]	
+	# default_num_clusters_list = [10, 25, 50]	
+	# default_num_views_list = [1, 2, 4, 8, 16]
+	# default_correlation_list = [.1, .5, .9]
+
+	default_num_rows_list = [50] 
+	default_num_cols_list = [8]	
+	default_num_clusters_list = [4]	
+	default_num_views_list = [2 4]
+	default_correlation_list = [.5]
 	
 	#
 	parser = argparse.ArgumentParser()

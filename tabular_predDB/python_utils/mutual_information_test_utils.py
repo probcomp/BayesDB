@@ -3,10 +3,8 @@ import tabular_predDB.cython_code.State as State
 import random
 import numpy
 
-import pdb
-
 # Generates a num_rows by num_cols array of data with covariance matrix I^{num_cols}*corr
-def generated_correlated_data(num_rows, num_cols, means, corr, seed=0):
+def generate_correlated_data(num_rows, num_cols, means, corr, seed=0):
 	assert(corr <= 1 and corr >= 0)
 	assert(num_cols == len(means))
 
@@ -71,7 +69,7 @@ def generate_correlated_state(num_rows, num_cols, num_views, num_clusters, mean_
 			cell_cols = view_counts[view]
 			cell_rows = cluster_counts[view][cluster]
 			means = numpy.random.uniform(-mean_range/2.0,mean_range/2.0,cell_cols)
-			X =  generated_correlated_data(cell_rows, cell_cols, means, corr, seed=get_next_seed())
+			X =  generated_correlate_data(cell_rows, cell_cols, means, corr, seed=get_next_seed())
 			# get the indices of the columns in this view
 			col_indices = numpy.nonzero(numpy.array(cols_to_views)==view)[0]
 			# get the indices of the rows in this view and this cluster
@@ -88,7 +86,7 @@ def generate_correlated_state(num_rows, num_cols, num_views, num_clusters, mean_
 	M_r = du.gen_M_r_from_T(T)
 	X_L, X_D = generate_X_L_and_X_D(T, M_c, cols_to_views, row_to_clusters, seed=get_next_seed())
 
-	return  T, M_c, M_r, X_L, X_D
+	return  T, M_c, M_r, X_L, X_D, cols_to_views
 
 def generate_X_L_and_X_D(T, M_c, cols_to_views, row_to_clusters, seed=0):
 	state = State.p_State(M_c, T, SEED=seed)

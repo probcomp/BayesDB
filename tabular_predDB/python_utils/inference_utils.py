@@ -5,6 +5,7 @@ from collections import Counter
 from scipy.misc import logsumexp
 import numpy
 import random
+import math
 
 import tabular_predDB.cython_code.ContinuousComponentModel as CCM
 import tabular_predDB.cython_code.MultinomialComponentModel as MCM
@@ -12,7 +13,7 @@ import tabular_predDB.python_utils.sample_utils as su
 
 
 def mutual_information_to_linfoot(MI):
-    return (1-numpy.exp(-2*MI))**0.5
+    return (1-math.exp(-2*MI))**0.5
 
 # return the estimated mutual information for each pair of columns on Q given
 # the set of samples in X_Ls and X_Ds. Q is a list of tuples where each tuple
