@@ -47,7 +47,7 @@ def parse_data_to_csv(test_key_filename, params_dict, n_tests, output_filename):
 	n_datasets = params_dict['n_datasets']
 	n_samples = params_dict['n_samples']
 
-	header = ['id', 'num_rows', 'num_cols', 'num_views', 'num_splits', 'corr','MI','Linfoot']
+	header = ['id', 'num_rows', 'num_cols', 'num_views', 'num_clusters', 'corr','MI','Linfoot']
 
 	data_mi = [[[] for i in range(n_datasets)] for i in range(n_tests)]
 	data_linfoot = [[[] for i in range(n_datasets)] for i in range(n_tests)]

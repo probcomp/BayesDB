@@ -1,0 +1,205 @@
+import numpy
+import pickle
+import csv
+import pylab as pl
+import itertools as it
+import os
+
+import argparse
+
+# Things that we can manipuate to express different values of different variables
+plot_colors = ['blue','red','green','yellow','black']
+marker_styles = ['o','D','s','^','v','*']            
+
+param_to_csv_row = dict(
+    index=0,
+    n_rows=1,
+    n_cols=2,
+    n_views=3,
+    n_clusters=4,
+    corr=5,
+    MI=6,
+    Linfoot=7
+    )
+
+# Sublots are always n_clusters because they affect the MSE so much that it would
+# make the plots confusing  otherwise
+
+def make_plots(params_filename, csv_filename):
+    plot_vars = ['n_views', 'n_cols', 'n_rows', 'corr']
+    params_dict = depickle_file(params_filename)
+
+    print "Making plots..."
+    i = 0
+    for x_var in plot_vars:
+            for color_var in plot_vars:
+                if x_var != color_var:
+                    i += 1
+                    print "plot %i. X-axis: %s, lineColor: %s" % (i, x_var, color_var)
+                    do_plot_vars = [pv for pv in plot_vars if pv != x_var and pv != color_var]
+                    do_plot_vars.append(color_var)                    
+                    generic_plot(params_dict, csv_filename, x_var, do_plot_vars, 'n_clusters', do_save=True)
+
+def depickle_file(filename):
+    assert(filename.endswith('.pkl'))
+    output = open(filename, 'rb')
+    ret = pickle.load(output)
+    output.close()
+    return ret
+
+def get_line(line_params, line_values, x_param, x_values, csv_filename ):
+    mean_mi = [0]*len(x_values)
+    mean_linfoot = [0]*len(x_values)
+
+    x_param_col = param_to_csv_row[x_param]
+    line_param_cols = [0]*len(line_params)
+
+    for c in range(len(line_params)):
+        line_param_cols[c] = param_to_csv_row[line_params[c]]
+ 
+    for x in range(len(x_values)):
+        with open(csv_filename, 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            reader.next()
+            for row in reader:
+                
+                if float(row[x_param_col]) != float(x_values[x]):
+                    continue
+                match = True
+
+                for c in range(len(line_params)):
+                    if float(row[line_param_cols[c]]) != float(line_values[c]):
+                        match = False
+                        break
+
+                if match:
+                    mean_mi[x] = float(row[param_to_csv_row['mean_abserr_impute']])
+                    mean_linfoot[x] = float(row[param_to_csv_row['mean_abserr_colave']])
+
+    return mean_mi, mean_linfoot
+
+
+def get_plot_params(param_1, param_2, param_3, param_names):
+    length_param_1 = len(param_1)
+    length_param_2 = len(param_2)
+    length_param_3 = len(param_3)
+
+    marker = marker_styles[:length_param_1]
+    mfc = plot_colors[:length_param_2]
+    c = plot_colors[:length_param_3]
+
+    key = ['marker', 'mfc', 'c']
+
+    key_string = ''
+    params = [param_1, param_2, param_3]
+    values = [marker, mfc, c]
+
+    p = 0
+    
+    for name in param_names[:4]:
+        key_string = '%s%s(%s)\n' % (key_string, name, key[p])
+        for i in range(len(params[p])):
+            key_string = '%s\t%s[%s]\n' % (key_string, values[p][i], params[p][i])
+
+        p += 1
+
+    params = it.product(*[marker, mfc, c])
+
+    return params, key_string
+
+def get_subplot_layout(n_plots):
+    lookup = [
+        [1,2], # 2
+        [2,2], # 4
+        [2,3], # 6
+        [2,4], # 8
+        [2,5], # 10
+        [2,6]] # 12
+    [plot_rows, plot_cols] = lookup[n_plots-1]
+    return plot_rows, plot_cols
+
+def generic_plot(params_dict, csv_filename, x_param, plot_vars, subplot_var, do_save):
+    n_plots = len(params_dict[subplot_var])
+    row_plots, col_plots = get_subplot_layout(n_plots)
+
+    x_values = params_dict[x_param]
+    plot_vars.append(subplot_var)
+
+    fig = pl.figure(facecolor='white', figsize=(20,8)) 
+    pl.clf()
+
+    for plot in range(1,n_plots+1):
+        # y_min = float('Inf')
+        # y_max = float(-1);
+        n_subplot_vars_tmp = [params_dict[subplot_var][plot-1]]
+        plot_params, legend_text = get_plot_params(params_dict[plot_vars[0]], params_dict[plot_vars[1]], params_dict[plot_vars[2]],params_dict[plot_vars[3]], plot_vars)
+        line_params = it.product(*[params_dict[plot_vars[0]], params_dict[plot_vars[1]], params_dict[plot_vars[2]], params_dict[plot_vars[3]], n_subplot_vars_tmp])
+        l =  -1;
+        for pparams in plot_params:
+            l += 1
+            marker = pparams[0]
+            mfc = pparams[1]
+            c = pparams[2]
+
+            lp = line_params.next()
+
+            mean_mi, mean_linfoot = get_line( plot_vars, lp, x_param, x_values, csv_filename)
+
+            # pmin = min(min(mean_mi), min(mean_linfoot))
+            # pmax = max(max(mean_mi), max(mean_linfoot))
+
+            # if pmin < y_min: 
+            #     y_min = pmin
+
+            # if pmax > y_max: 
+            #     y_max = pmax
+
+            pl.subplot(row_plots, col_plots, plot)
+            pl.plot(x_values, mean_mi, marker=marker, mfc=mfc, c=c, ms=8,)
+            
+            pl.subplot(row_plots, col_plots, plot+col_plots)
+            pl.plot(x_values, mean_linfoot, marker=marker, mfc=mfc, c=c, ms=8,)
+
+        # y_range = y_max-y_min
+        # y_buffer = y_range*.1
+
+        pl.subplot(row_plots, col_plots, plot)
+        pl.ylabel('Mutual Information')
+        pl.xlabel(x_param)
+        pl.title("%s: %s)" % (subplot_var, params_dict[subplot_var][plot-1]))
+        # pl.ylim([y_min-y_buffer, y_max+y_buffer])
+
+        pl.subplot(row_plots, col_plots, plot+col_plots)
+        pl.ylabel('Linfoot')
+        pl.xlabel(x_param)
+        pl.title("%s: %s)" % (subplot_var, params_dict[subplot_var][plot-1]))
+        # pl.ylim([y_min-y_buffer, y_max+y_buffer])
+        # draw legend
+
+
+    pl.figtext(0.01, 0.1, legend_text)
+
+    dirname = os.path.dirname(csv_filename)
+    figure_title = 'x-axis-%s_line_color-%s.png' % (x_param, plot_vars[-2])
+    figure_filename = os.path.join(dirname, figure_title)
+
+    print figure_filename
+
+    pl.savefig(figure_filename, dpi=75)
+    pl.close(fig)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--params_filename', type=str)
+    parser.add_argument('--csv_filename', type=str)
+
+    args = parser.parse_args()
+
+    params_filename = args.params_filename
+    csv_filename = args.csv_filename
+
+    make_plots(params_filename, csv_filename)
+
+
+
