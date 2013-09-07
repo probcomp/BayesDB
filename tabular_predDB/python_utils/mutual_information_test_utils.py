@@ -69,7 +69,7 @@ def generate_correlated_state(num_rows, num_cols, num_views, num_clusters, mean_
 			cell_cols = view_counts[view]
 			cell_rows = cluster_counts[view][cluster]
 			means = numpy.random.uniform(-mean_range/2.0,mean_range/2.0,cell_cols)
-			X =  generated_correlate_data(cell_rows, cell_cols, means, corr, seed=get_next_seed())
+			X =  generate_correlated_data(cell_rows, cell_cols, means, corr, seed=get_next_seed())
 			# get the indices of the columns in this view
 			col_indices = numpy.nonzero(numpy.array(cols_to_views)==view)[0]
 			# get the indices of the rows in this view and this cluster

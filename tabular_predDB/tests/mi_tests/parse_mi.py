@@ -64,13 +64,9 @@ def parse_data_to_csv(test_key_filename, params_dict, n_tests, output_filename):
 		test_dataset = res['dataset']
 		test_sample = res['sample']
 		
-		floated_result = [float(r) for r in res['mi']]
-		
-		for r in floated_result:
-			# pdb.set_trace()
-			data_mi[test_idx] += float(r) 
-			data_linfoot[test_idx] += float(iu.mutual_information_to_linfoot(r))
-			counts[test_idx] += 1.0
+		data_mi[test_idx] += float(res['mi']) 
+		data_linfoot[test_idx] += float(iu.mutual_information_to_linfoot(res['mi']))
+		counts[test_idx] += 1.0
 	
 	for test_ids in range(n_tests):
 		data_mi[test_idx] /= counts[test_idx]

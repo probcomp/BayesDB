@@ -43,17 +43,17 @@ def write_hadoop_input(input_filename, impute_run_parameters, SEED):
 # Run
 if __name__ == '__main__':
 
-	# default_num_rows_list = [100, 500, 1000] 
-	# default_num_cols_list = [2, 4, 8, 16]	
-	# default_num_clusters_list = [10, 25, 50]	
-	# default_num_views_list = [1, 2, 4, 8, 16]
-	# default_correlation_list = [.1, .5, .9]
+	default_num_rows_list = [100, 500, 1000] 
+	default_num_cols_list = [2, 4, 8, 16]	
+	default_num_clusters_list = [10, 25, 50]	
+	default_num_views_list = [1, 2, 4, 8, 16]
+	default_correlation_list = [.1, .5, .9]
 
-	default_num_rows_list = [50] 
-	default_num_cols_list = [8]	
-	default_num_clusters_list = [4]	
-	default_num_views_list = [2 4]
-	default_correlation_list = [.5]
+	# default_num_rows_list = [10] 
+	# default_num_cols_list = [2, 4, 8]	
+	# default_num_clusters_list = [2]	
+	# default_num_views_list = [1]
+	# default_correlation_list = [.9]
 	
 	#
 	parser = argparse.ArgumentParser()
@@ -61,6 +61,12 @@ if __name__ == '__main__':
 	parser.add_argument('--num_datasets', type=int, default=5)
 	parser.add_argument('--num_samples', type=int, default=50)
 	parser.add_argument('--burn_in', type=int, default=250)
+	parser.add_argument('--which_engine_binary', type=str,
+	        default=HE.default_engine_binary)
+	parser.add_argument('--jobtracker_uri', type=str,
+	        default=HE.default_jobtracker_uri)
+		parser.add_argument('--hdfs_uri', type=str,
+	        default=HE.default_hdfs_uri)
 	parser.add_argument('--which_engine_binary', type=str,
 	        default=HE.default_engine_binary)
 	parser.add_argument('-do_local', action='store_true')
@@ -82,6 +88,8 @@ if __name__ == '__main__':
 	do_local = args.do_local
 	do_remote = args.do_remote
 	burn_in = args.burn_in
+	jobtracker_uri = args.jobtracker_uri
+	hdfs_uri = args.hdfs_uri
 	num_samples = args.num_samples
 	num_datasets = args.num_datasets
 	num_rows_list = args.num_rows_list
@@ -197,6 +205,8 @@ if __name__ == '__main__':
                                     input_filename=input_filename,
                                     table_data_filename=table_data_filename,
                                     which_engine_binary=which_engine_binary,
+                                    hdfs_uri=hdfs_uri,
+                                    jobtracker_uri=jobtracker_uri,
                                     )
 	
 		xu.write_support_files(table_data, hadoop_engine.table_data_filename,

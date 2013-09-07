@@ -32,13 +32,16 @@ def run_mi_test_local(data_dict):
 
     X_L = X_L_prime
     X_D = X_D_prime
+
+    view_assignment = numpy.array(X_L['column_partition']['assignments'])
  
     # for each view calclate the average MI between all pairs of columns
     n_views = max(view_assignment)+1
     MI = []
     Linfoot = []
     queries = []
-    any_pairs = False
+    MI = 0.0
+    pairs = 0.0
     for view in range(n_views):
         columns_in_view = numpy.nonzero(view_assignment==view)[0]
         combinations = itertools.combinations(columns_in_view,2)
@@ -46,10 +49,12 @@ def run_mi_test_local(data_dict):
             any_pairs = True
             queries.append(pair)
             MI_i, Linfoot_i = iu.mutual_information(M_c, [X_L], [X_D], [pair], n_samples=1000)
-            MI.append(MI_i[0][0])
+            MI += MI_i[0][0]
+            pairs += 1.0
 
-    if not any_pairs:
-        MI = [0.0]
+    
+    if pairs > 0.0:
+        MI /= pairs
 
     ret_dict = dict(
         id=data_dict['id'],

@@ -11,6 +11,8 @@ import tabular_predDB.cython_code.ContinuousComponentModel as CCM
 import tabular_predDB.cython_code.MultinomialComponentModel as MCM
 import tabular_predDB.python_utils.sample_utils as su
 
+import pdb
+
 
 def mutual_information_to_linfoot(MI):
     return (1-math.exp(-2*MI))**0.5
@@ -112,9 +114,9 @@ def estimiate_MI_sample(X, Y, M_c, X_L, X_D, get_next_seed, n_samples=1000):
         Py = numpy.zeros(n_clusters)
 
         for i in range(n_clusters):
-            Px[i] = component_models_X[cluster_idx].calc_element_predictive_logp(x)
-            Py[i] = component_models_Y[cluster_idx].calc_element_predictive_logp(y)
-            Pxy[i] = Px[i]+Py[i] + cluster_logps[i]
+            Px[i] = component_models_X[i].calc_element_predictive_logp(x)
+            Py[i] = component_models_Y[i].calc_element_predictive_logp(y)
+            Pxy[i] = Px[i] + Py[i] + cluster_logps[i]
             Px[i] += cluster_logps[i]
             Py[i] += cluster_logps[i]
         
