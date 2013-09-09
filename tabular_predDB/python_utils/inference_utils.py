@@ -113,12 +113,12 @@ def estimiate_MI_sample(X, Y, M_c, X_L, X_D, get_next_seed, n_samples=1000):
         Px = numpy.zeros(n_clusters)
         Py = numpy.zeros(n_clusters)
 
-        for i in range(n_clusters):
-            Px[i] = component_models_X[i].calc_element_predictive_logp(x)
-            Py[i] = component_models_Y[i].calc_element_predictive_logp(y)
-            Pxy[i] = Px[i] + Py[i] + cluster_logps[i]
-            Px[i] += cluster_logps[i]
-            Py[i] += cluster_logps[i]
+        for j in range(n_clusters):
+            Px[j] = component_models_X[j].calc_element_predictive_logp(x)
+            Py[j] = component_models_Y[j].calc_element_predictive_logp(y)
+            Pxy[j] = Px[j] + Py[j] + cluster_logps[j]
+            Px[j] += cluster_logps[j]
+            Py[j] += cluster_logps[j]
         
         Px = logsumexp(Px)
         Py = logsumexp(Py)
