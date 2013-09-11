@@ -175,8 +175,12 @@ def simple_predictive_probability_density_unobserved_continuous(M_c, X_L, X_D, Y
  
     return answer
 
-################################################################################
-################################################################################
+
+# Q is a list of three element tuples where each typle, (r,c,x) is contains a
+# row, r; a column, c; and a value x. The contraints, Y follow an indentical format.
+# Epsilon is the interval over which to evaluate the probability.
+# Returns a numpy array where each entry, A[i] is the probability for query i given
+# the contraints in Y.
 def simple_predictive_probability(M_c, X_L, X_D, Y, Q, epsilon=.001):
     num_rows = len(X_D[0])
     num_cols = len(M_c['column_metadata'])
