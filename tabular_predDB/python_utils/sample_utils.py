@@ -15,6 +15,10 @@
 #
 import sys
 import copy
+import math
+
+import pdb
+
 from collections import Counter
 #
 from scipy.misc import logsumexp
@@ -23,7 +27,6 @@ import numpy
 import tabular_predDB.cython_code.ContinuousComponentModel as CCM
 import tabular_predDB.cython_code.MultinomialComponentModel as MCM
 import tabular_predDB.python_utils.general_utils as gu
-
 
 class Bunch(dict):
     def __getattr__(self, key):
@@ -35,6 +38,15 @@ class Bunch(dict):
         self[key] = value
 
 Constraints = Bunch
+
+
+def is_discrete(M_c, which_column):
+    model_type = M_c['column_metadata'][which_column]['modeltype']
+    lookup = dict( 
+        normal_inverse_gamma=False,
+        symmetric_dirichlet_discrete=True,
+    )
+    return lookup[model_type]
 
 
 # simple_predictive_probability_density code is hacked from simple_predictive_probability
@@ -55,10 +67,11 @@ def simple_predictive_probability_density(M_c, X_L, X_D, Y, Q):
     x = []
 
     if not is_observed_row:
-        x = simple_predictive_probability_unobserved(
+        x = simple_predictive_probability_density_unobserved(
             M_c, X_L, X_D, Y, query_row, query_columns, elements)
+        
     else:
-        x = simple_predictive_probability_observed(
+        x = simple_predictive_probability_density_observed(
             M_c, X_L, X_D, Y, query_row, query_columns, elements)    
 
     return x
@@ -89,17 +102,16 @@ def simple_predictive_probability_density_observed(M_c, X_L, X_D, Y, which_row,
         component_model = cluster_model[which_column]
         draw_constraints = get_draw_constraints(X_L, X_D, Y,which_row, which_column)
 
-        # TODO: These should be implemented in their respective classes
-        model_type = M_c['column_metadata'][which_column]['modeltype']
+        is_discrete_variable = is_discrete(M_c, which_column)
 
-        if model_type == 'normal_inverse_gamma':
-            p_x = component_model.get_predictive_pdf(x,draw_constraints)
-            logp = numpy.log(p_b-p_a)
-        elif model_type == 'symmetric_dirichlet_discrete':
+        if not is_discrete_variable:
+            p_x = component_model.get_predictive_pdf(elements[q],draw_constraints)
+            logp = p_x
+        elif is_discrete_variable:
             logp = component_model.get_predictive_probability(elements[q],draw_constraints)
         else:
-            print "error: simple_predictive_probability_unobserved: Undefined model type."
-       
+            sys.err('error: simple_predictive_probability_density_observed: Could not determine discreteness')
+        
         Ps[q] = logp
         q += 1
 
@@ -112,33 +124,34 @@ def simple_predictive_probability_density_unobserved(M_c, X_L, X_D, Y, query_row
     n_queries = len(query_columns)
 
     answer = numpy.zeros(n_queries)
+    answers = numpy.array([])
 
     for n in range(n_queries):
         # figure out what kind of model we are dealing with 
-        # TODO:  These should be implemented in their respective classes
-        model_type = M_c['column_metadata'][query_columns[n]]['modeltype']
+        is_discrete_variable = is_discrete(M_c, query_columns[n])
 
-        if model_type == 'normal_inverse_gamma':
-            answer[n] = simple_predictive_probability_density_unobserved_normal(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
-        elif model_type == 'symmetric_dirichlet_discrete':
-            answer[n] = simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
+        if not is_discrete_variable:
+            answer[n] = simple_predictive_probability_density_unobserved_continuous(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
+        elif is_discrete_variable:
+            answer[n] = simple_predictive_probability_unobserved_discrete(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
         else:
-            print "error: simple_predictive_probability_unobserved: Undefined model type."
+            sys.exit("error: simple_predictive_probability__density_unobserved: Undefined model type.");
 
     return answer
 
-def simple_predictive_probability_density_unobserved_normal(M_c, X_L, X_D, Y, query_row,query_column, element):
+def simple_predictive_probability_density_unobserved_continuous(M_c, X_L, X_D, Y, query_row,query_column, element):
 
     # get the view to which this column is assigned
     view_idx = X_L['column_partition']['assignments'][query_column]
     # get the logps for all the clusters (plus a new one) in this view
     cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, query_row, view_idx)
 
-    # we calculate a small portion of the integral using the CDF (student's t). 
-    # CDF(b) - CDF(a)
     x = element
     
     answers = numpy.zeros(len(cluster_logps))
+
+    # cluster_logps should logsumexp to log(1)
+    assert(numpy.abs(logsumexp(cluster_logps)) < .0000001)
 
     # enumerate over the clusters
     for cluster_idx in range(len(cluster_logps)):
@@ -151,19 +164,23 @@ def simple_predictive_probability_density_unobserved_normal(M_c, X_L, X_D, Y, qu
         draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
 
         # return the PDF value (exp)
-        p_x= component_model.get_predictive_pdf(x, draw_constraints)
+        p_x = component_model.get_predictive_pdf(x, draw_constraints)
+        
+        try:
+            answers[cluster_idx] = p_x+cluster_logps[cluster_idx]
+        except ValueError:
+            answers[cluster_idx] = float('-inf')
 
-        # weighted sum of probabilities over clusters
-        norm = cluster_logps[cluster_idx]-logsumexp(cluster_logps)
-
-        answers[cluster_idx] = numpy.log(p_x)+norm
-
-    answer = logsumexp(answers);
-
+    answer = logsumexp(answers)
+ 
     return answer
 
-################################################################################
-################################################################################
+
+# Q is a list of three element tuples where each typle, (r,c,x) is contains a
+# row, r; a column, c; and a value x. The contraints, Y follow an indentical format.
+# Epsilon is the interval over which to evaluate the probability.
+# Returns a numpy array where each entry, A[i] is the probability for query i given
+# the contraints in Y.
 def simple_predictive_probability(M_c, X_L, X_D, Y, Q, epsilon=.001):
     num_rows = len(X_D[0])
     num_cols = len(M_c['column_metadata'])
@@ -213,19 +230,21 @@ def simple_predictive_probability_observed(M_c, X_L, X_D, Y, which_row,
         component_model = cluster_model[which_column]
         draw_constraints = get_draw_constraints(X_L, X_D, Y,which_row, which_column)
 
-        # TODO: These should be implemented in their respective classes
-        model_type = M_c['column_metadata'][which_column]['modeltype']
+        is_discrete_variable = is_discrete(M_c, which_column)
 
-        if model_type == 'normal_inverse_gamma':
+        if not is_discrete_variable:
             a = elements[q]-epsilon
             b = elements[q]+epsilon
             p_a = component_model.get_predictive_cdf(a,draw_constraints)
             p_b = component_model.get_predictive_cdf(b,draw_constraints)
-            logp = numpy.log(p_b-p_a)
-        elif model_type == 'symmetric_dirichlet_discrete':
-            logp = component_model.get_predictive_probability(elements[q],draw_constraints)
+            try:
+                logp = math.log(p_b-p_a)
+            except ValueError:
+                logp = float('-inf')
+        elif is_discrete_variable:
+            logp = component_model.calc_element_predictive_logp_constrained(elements[q],draw_constraints)
         else:
-            print "error: simple_predictive_probability_unobserved: Undefined model type."
+            sys.exit("error: simple_predictive_probability_observed: Undefined model type.");
        
         Ps[q] = logp
         q += 1
@@ -241,25 +260,27 @@ def simple_predictive_probability_unobserved(M_c, X_L, X_D, Y, query_row, query_
 
     for n in range(n_queries):
         # figure out what kind of model we are dealing with 
-        # TODO:  These should be implemented in their respective classes
-        model_type = M_c['column_metadata'][query_columns[n]]['modeltype']
+        is_discrete_variable = is_discrete(M_c, query_columns[n])
 
-        if model_type == 'normal_inverse_gamma':
-            answer[n] = simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n],epsilon=epsilon)
-        elif model_type == 'symmetric_dirichlet_discrete':
-            answer[n] = simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
+        if not is_discrete_variable:
+            answer[n] = simple_predictive_probability_unobserved_continuous(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n],epsilon=epsilon)
+        elif is_discrete_variable:
+            answer[n] = simple_predictive_probability_unobserved_discrete(M_c, X_L, X_D, Y, query_row, query_columns[n], elements[n])
         else:
-            print "error: simple_predictive_probability_unobserved: Undefined model type."
+            sys.exit("error: simple_predictive_probability_unobserved: Undefined model type.");
 
     return answer
 
-def simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row,query_column, element, epsilon=.001):
+def simple_predictive_probability_unobserved_continuous(M_c, X_L, X_D, Y, query_row,query_column, element, epsilon=.001):
     # TODO: Add user-defined epsilon value?
 
     # get the view to which this column is assigned
     view_idx = X_L['column_partition']['assignments'][query_column]
     # get the logps for all the clusters (plus a new one) in this view
     cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, query_row, view_idx)
+
+    # cluster_logps should logsumexp to log(1)
+    assert(numpy.abs(logsumexp(cluster_logps)) < .0000001)
 
     # we calculate a small portion of the integral using the CDF (student's t). 
     # CDF(b) - CDF(a)
@@ -276,29 +297,32 @@ def simple_predictive_probability_unobserved_normal(M_c, X_L, X_D, Y, query_row,
         cluster_model = create_cluster_model_from_X_L(M_c, X_L, view_idx, cluster_idx)
         # get the specific cluster model for this column
         component_model = cluster_model[query_column]
-        # construct draw conataints
+        # construct draw constraints
         draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
 
         # return the CDF value (exp)
         p_b = component_model.get_predictive_cdf(b, draw_constraints)
         p_a = component_model.get_predictive_cdf(a, draw_constraints)
 
-        # weighted sum of probabilities over clusters
-        norm = cluster_logps[cluster_idx]-logsumexp(cluster_logps)
+        try:
+            answers[cluster_idx] = math.log(p_b-p_a)+cluster_logps[cluster_idx]
+        except ValueError:
+            answers[cluster_idx] = float('-inf')
 
-        answers[cluster_idx] = numpy.log(p_b-p_a)+norm
-
-    answer = logsumexp(answers);
+    answer = logsumexp(answers)
 
     return answer
 
-def simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query_row,
+def simple_predictive_probability_unobserved_discrete(M_c, X_L, X_D, Y, query_row,
                                         query_column, element):
     
     # get the view to which this column is assigned
     view_idx = X_L['column_partition']['assignments'][query_column]
     # get the logps for all the clusters (plus a new one) in this view
     cluster_logps = determine_cluster_logps(M_c, X_L, X_D, Y, query_row, view_idx)
+
+    # cluster_logps should logsumexp to log(1)
+    assert(numpy.abs(logsumexp(cluster_logps)) < .0000001)
 
     x = element
 
@@ -313,13 +337,12 @@ def simple_predictive_probability_unobserved_multinomial(M_c, X_L, X_D, Y, query
         # construct draw conataints
         draw_constraints = get_draw_constraints(X_L, X_D, Y, query_row, query_column)
 
-        px = component_model.get_predictive_probability(b, draw_constraints)
+        px = component_model.calc_element_predictive_logp_constrained(x, draw_constraints)
 
-        norm = cluster_logps[cluster_idx]-logsumexp(cluster_logps)
-
-        answers[cluster_idx] = px+norm
+        answers[cluster_idx] = px+cluster_logps[cluster_idx]
 
     answer = logsumexp(answers);
+    
     return answer
 
 ################################################################################

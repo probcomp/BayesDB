@@ -238,8 +238,10 @@ double ContinuousComponentModel::get_predictive_cdf(double element, vector<doubl
 
   boost::math::students_t dist(nu);
   double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
+  
   // manipulate the number so it will fit in the standard t (reverse of the draw proceedure)
   double rev_draw = (element-mu)/ coeff ;
+
   double cdfval = boost::math::cdf(dist, rev_draw);
 
   return cdfval;
@@ -261,12 +263,11 @@ double ContinuousComponentModel::get_predictive_pdf(double element, vector<doubl
   }
   numerics::update_continuous_hypers(count, sum_x, sum_x_squared, r, nu, s, mu);
 
-  
-  boost::math::students_t dist(nu);
   double coeff = sqrt((s * (r+1)) / (nu / 2. * r));
-  // manipulate the number so it will fit in the standard t (reverse of the draw proceedure)
-  double rev_draw = (element-mu)/ coeff ;
-  double pdfval = boost::math::pdf(dist, rev_draw);
+
+  // non-standard T-distribution
+  double pdfval = boost::math::lgamma((nu+1)/2) - (.5*log(nu*M_PI)+log(coeff)+boost::math::lgamma(nu/2));
+  pdfval -= ((nu+1)/2)*log(1+(1/nu)*(pow((element-mu)/coeff,2)));
 
   return pdfval;
 }
