@@ -16,6 +16,7 @@
 import cPickle
 import gzip
 import os
+import sys
 
 
 def is_gz(filename):
@@ -59,6 +60,10 @@ def rm_local(path, DEBUG=False):
 def ensure_dir(dir):
   try:
     os.makedirs(dir)
-  except:
-    pass
+  except Exception, e:
+    if e.strerror.upper()=='FILE EXISTS':
+      pass
+    else:
+      sys.stderr.write('Could not create dir: %s\n' % dir)
+      raise e
   return

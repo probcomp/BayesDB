@@ -17,12 +17,12 @@
 
 using namespace std;
 
-Cluster::Cluster(vector<map<string, double>*> &hypers_v) {
+Cluster::Cluster(vector<CM_Hypers*> &hypers_v) {
   init_columns(hypers_v);
 }
 
 Cluster::Cluster() {
-  vector<map<string, double>*> hypers_v;
+  vector<CM_Hypers*> hypers_v;
   init_columns(hypers_v);
 }
 
@@ -53,7 +53,7 @@ map<string, double> Cluster::get_suffstats_i(int idx) const {
   return p_model_v[idx]->get_suffstats();
 }
 
-map<string, double> Cluster::get_hypers_i(int idx) const {
+CM_Hypers Cluster::get_hypers_i(int idx) const {
   return p_model_v[idx]->get_hypers();
 }
 
@@ -102,8 +102,9 @@ vector<double> Cluster::calc_hyper_conditionals(int which_col,
 double Cluster::calc_column_predictive_logp(vector<double> column_data,
 					    string col_datatype,
 					    vector<int> data_global_row_indices,
-					    map<string, double> hypers) {
-  map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
+					    CM_Hypers hypers) {
+  // FIXME: global_to_data must be used if not all rows are present
+  // map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
   ComponentModel *p_cm;
   if(col_datatype==CONTINUOUS_DATATYPE) {
     p_cm = new ContinuousComponentModel(hypers);
@@ -116,7 +117,9 @@ double Cluster::calc_column_predictive_logp(vector<double> column_data,
   set<int>::iterator it;
   for(it=row_indices.begin(); it!=row_indices.end(); it++) {
     int global_row_idx = *it;
-    int data_idx = global_to_data[global_row_idx];
+    // FIXME: global_to_data must be used if not all rows are present
+    // int data_idx = global_to_data[global_row_idx];
+    int data_idx = global_row_idx;
     double value = column_data[data_idx];
     p_cm->insert_element(value);
   }
@@ -167,8 +170,9 @@ double Cluster::remove_col(int col_idx) {
 double Cluster::insert_col(vector<double> data,
 			   string col_datatype,
 			   vector<int> data_global_row_indices,
-			   map<string, double> &hypers) {
-  map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
+			   CM_Hypers &hypers) {
+  // FIXME: global_to_data must be used if not all rows are present
+  // map<int, int> global_to_data = construct_lookup_map(data_global_row_indices);
   ComponentModel *p_cm;
   if(col_datatype==CONTINUOUS_DATATYPE) {
     p_cm = new ContinuousComponentModel(hypers);
@@ -180,7 +184,9 @@ double Cluster::insert_col(vector<double> data,
   set<int>::iterator it;
   for(it=row_indices.begin(); it!=row_indices.end(); it++) {
     int global_row_idx = *it;
-    int data_idx = global_to_data[global_row_idx];
+    // FIXME: global_to_data must be used if not all rows are present
+    // int data_idx = global_to_data[global_row_idx]    int data_idx = global_to_data[global_row_idx];
+    int data_idx = global_row_idx;
     double value = data[data_idx];
     p_cm->insert_element(value);
   }
@@ -217,11 +223,11 @@ string Cluster::to_string(string join_str, bool top_level) const {
   return ss.str();
 }
 
-void Cluster::init_columns(vector<map<string, double>*> &hypers_v) {
+void Cluster::init_columns(vector<CM_Hypers*> &hypers_v) {
   score = 0;
-  vector<map<string, double>*>::iterator it;
+  vector<CM_Hypers*>::iterator it;
   for(it=hypers_v.begin(); it!=hypers_v.end(); it++) {
-    map<string, double> &hypers = **it;
+    CM_Hypers &hypers = **it;
     ComponentModel *p_cm;
     if(in(hypers, continuous_key)) {
       // FIXME: should be passed col_datatypes here

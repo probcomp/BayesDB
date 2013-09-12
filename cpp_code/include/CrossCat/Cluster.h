@@ -19,8 +19,8 @@
 
 class Cluster {
  public:
-  //Cluster(const std::vector<std::map<std::string, double>*> hypers_v);
-  Cluster(std::vector<std::map<std::string, double>*> &hypers_v);
+  //Cluster(const std::vector<CM_Hypers*> hypers_v);
+  Cluster(std::vector<CM_Hypers*> &hypers_v);
   Cluster();
   //
   // getters
@@ -28,7 +28,7 @@ class Cluster {
   int get_count() const;
   double get_marginal_logp() const;
   std::map<std::string, double> get_suffstats_i(int idx) const;
-  std::map<std::string, double> get_hypers_i(int idx) const;
+  CM_Hypers get_hypers_i(int idx) const;
   std::set<int> get_row_indices_set() const;
   std::vector<int> get_row_indices_vector() const;
   //
@@ -42,7 +42,7 @@ class Cluster {
   double calc_column_predictive_logp(std::vector<double> column_data,
 				     std::string col_datatype,
 				     std::vector<int> data_global_row_indices,
-				     std::map<std::string, double> hypers);
+				     CM_Hypers hypers);
   //
   // mutators
   double insert_row(std::vector<double> values, int row_idx);
@@ -51,7 +51,7 @@ class Cluster {
   double insert_col(std::vector<double> data,
 		    std::string col_datatype,
 		    std::vector<int> data_global_row_indices,
-		    std::map<std::string, double> &hypers);
+		    CM_Hypers &hypers);
   double incorporate_hyper_update(int which_col);
   void delete_component_models(bool check_empty=true);
   //
@@ -63,7 +63,7 @@ class Cluster {
   std::vector<ComponentModel*> p_model_v;
  private:
   double score;
-  void init_columns(std::vector<std::map<std::string, double>*> &hypers_v);
+  void init_columns(std::vector<CM_Hypers*> &hypers_v);
   std::set<int> row_indices;
 };
 

@@ -30,7 +30,7 @@ View::View(const MatrixD data,
 	   vector<vector<int> > row_partitioning,
 	   vector<int> global_row_indices,
 	   vector<int> global_col_indices,
-	   map<int, map<string, double> > &hypers_m,
+	   map<int, CM_Hypers > &hypers_m,
 	   vector<double> ROW_CRP_ALPHA_GRID,
 	   vector<double> MULTINOMIAL_ALPHA_GRID,
 	   vector<double> R_GRID,
@@ -59,7 +59,7 @@ View::View(const MatrixD data,
 	   map<int, string> GLOBAL_COL_DATATYPES,
 	   vector<int> global_row_indices,
 	   vector<int> global_col_indices,
-	   map<int, map<string, double> > &hypers_m,
+	   map<int, CM_Hypers > &hypers_m,
 	   vector<double> ROW_CRP_ALPHA_GRID,
 	   vector<double> MULTINOMIAL_ALPHA_GRID,
 	   vector<double> R_GRID,
@@ -196,12 +196,12 @@ vector<double> View::get_hyper_grid(int global_col_idx, std::string which_hyper)
   return hyper_grid;
 }
 
-map<string, double> View::get_hypers(int local_col_idx) const {
+CM_Hypers View::get_hypers(int local_col_idx) const {
   return *(hypers_v[local_col_idx]);
 }
 
 map<string, double> View::get_row_partition_model_hypers() const {
-  map<string, double> hypers;
+  CM_Hypers hypers;
   hypers["alpha"] = get_crp_alpha();
   return hypers;
 }
@@ -256,7 +256,7 @@ vector<int> View::get_cluster_counts() const {
 }
 
 double View::calc_cluster_vector_predictive_logp(vector<double> vd,
-						 Cluster which_cluster,
+						 const Cluster &which_cluster,
 						 double &crp_logp_delta,
 						 double &data_logp_delta) const {
   int cluster_count = which_cluster.get_count();
@@ -279,7 +279,7 @@ vector<double> View::calc_cluster_vector_predictive_logps(vector<double> vd) {
   double crp_logp_delta, data_logp_delta;
   for(; it!=clusters.end(); it++) {
     logps.push_back(calc_cluster_vector_predictive_logp(vd, **it, crp_logp_delta,
-							data_logp_delta));
+                                                        data_logp_delta));
   }
   Cluster empty_cluster(hypers_v);
   logps.push_back(calc_cluster_vector_predictive_logp(vd, empty_cluster,
@@ -411,7 +411,7 @@ double View::transition(std::map<int, std::vector<double> > row_data_map) {
 double View::calc_column_predictive_logp(vector<double> column_data,
 					 string col_datatype,
 					 vector<int> data_global_row_indices,
-					 map<string, double> hypers) {
+					 CM_Hypers hypers) {
   double score_delta = 0;
   setCp::iterator it;
   for(it=clusters.begin(); it!=clusters.end(); it++) {
@@ -495,7 +495,7 @@ void View::set_row_partitioning(vector<int> global_row_indices) {
 double View::insert_col(vector<double> col_data,
 			vector<int> data_global_row_indices,
 			int global_col_idx,
-			map<string, double> &hypers) {
+			CM_Hypers &hypers) {
   double score_delta = 0;
   string col_datatype = global_col_datatypes[global_col_idx];
   //
@@ -514,13 +514,13 @@ double View::insert_col(vector<double> col_data,
 double View::insert_cols(const MatrixD data,
 		   std::vector<int> global_row_indices,
 		   std::vector<int> global_col_indices,
-		   map<int, map<string, double> > &hypers_m) {
+		   map<int, CM_Hypers > &hypers_m) {
   int num_cols = global_col_indices.size();
   double score_delta = 0;
   for(int data_col_idx=0; data_col_idx<num_cols; data_col_idx++) {
     vector<double> col_data = extract_col(data, data_col_idx);
     int global_col_idx = global_col_indices[data_col_idx];
-    map<string, double> &hypers = hypers_m[global_col_idx];
+    CM_Hypers &hypers = hypers_m[global_col_idx];
     score_delta += insert_col(col_data, global_row_indices, global_col_idx,
 			      hypers);
   }

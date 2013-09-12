@@ -94,22 +94,52 @@ def find_regression_coeff(filename, parameter_list, regression_file='daily_regre
    
 
 if __name__ == '__main__':
+    default_num_rows_list = [100, 400, 1000, 4000, 10000]
+    default_num_cols_list = [4, 8, 16, 24, 32]
+    default_num_clusters_list = [10, 20, 40, 50]
+    default_num_splits_list = [2, 3, 4]
+    #
     parser = argparse.ArgumentParser()
     parser.add_argument('--gen_seed', type=int, default=0)
     parser.add_argument('--n_steps', type=int, default=10)
+    parser.add_argument('--which_engine_binary', type=str,
+            default=HE.default_engine_binary)
     parser.add_argument('-do_local', action='store_true')
     parser.add_argument('-do_remote', action='store_true')
+    parser.add_argument('--num_rows_list', type=int, nargs='*',
+            default=default_num_rows_list)
+    parser.add_argument('--num_cols_list', type=int, nargs='*',
+            default=default_num_cols_list)
+    parser.add_argument('--num_clusters_list', type=int, nargs='*',
+            default=default_num_clusters_list)
+    parser.add_argument('--num_splits_list', type=int, nargs='*',
+            default=default_num_splits_list)
     #
     args = parser.parse_args()
     gen_seed = args.gen_seed
     n_steps = args.n_steps
     do_local = args.do_local
     do_remote = args.do_remote
+    num_rows_list = args.num_rows_list
+    num_cols_list = args.num_cols_list
+    num_clusters_list = args.num_clusters_list
+    num_splits_list = args.num_splits_list
+    which_engine_binary = args.which_engine_binary
+    #
+    print 'using num_rows_list: %s' % num_rows_list
+    print 'using num_cols_list: %s' % num_cols_list
+    print 'using num_clusters_list: %s' % num_clusters_list
+    print 'using num_splits_list: %s' % num_splits_list
+    print 'using engine_binary: %s' % which_engine_binary
+    time.sleep(2)
+
 
     script_filename = 'hadoop_line_processor.py'
     # some hadoop processing related settings
+    dirname = 'runtime_analysis'
+    fu.ensure_dir(dirname)
     temp_dir = tempfile.mkdtemp(prefix='runtime_analysis_',
-                                dir='runtime_analysis')
+                                dir=dirname)
     print 'using dir: %s' % temp_dir
     #
     table_data_filename = os.path.join(temp_dir, 'table_data.pkl.gz')
@@ -119,16 +149,6 @@ if __name__ == '__main__':
     parsed_out_file = os.path.join(temp_dir, 'parsed_output.csv')
 
     # Hard code the parameter values for now
-
-    #num_rows_list = [100, 400, 1000, 4000, 10000]
-    #num_cols_list = [4, 8, 16, 24, 32]
-    #num_clusters_list = [11, 20, 30, 40, 50]
-    #num_splits_list = [2, 2, 3, 4, 5]
-    
-    num_rows_list = [100, 400]
-    num_cols_list = [8, 16]
-    num_clusters_list = [5, 10]
-    num_splits_list = [1,8]
 
     parameter_list = [num_rows_list, num_cols_list, num_clusters_list, num_splits_list]
 
@@ -149,13 +169,13 @@ if __name__ == '__main__':
         xu.run_script_local(input_filename, script_filename, output_filename, table_data_filename)
         print 'Local Engine for automated timing runs has not been completely implemented/tested'
     elif do_remote:
-        hadoop_engine = HE.HadoopEngine(output_path=output_path,
-                                        input_filename=input_filename,
-                                        table_data_filename=table_data_filename,
-                                        )
+        hadoop_engine = HE.HadoopEngine(which_engine_binary=which_engine_binary,
+                output_path=output_path,
+                input_filename=input_filename,
+                table_data_filename=table_data_filename)
         xu.write_support_files(table_data, hadoop_engine.table_data_filename,
                               dict(command='time_analyze'), hadoop_engine.command_dict_filename)
-	hadoop_engine.send_hadoop_command(n_tasks=n_tasks)
+        hadoop_engine.send_hadoop_command(n_tasks=n_tasks)
         was_successful = hadoop_engine.get_hadoop_results()
         if was_successful:
             hu.copy_hadoop_output(hadoop_engine.output_path, output_filename)
@@ -165,6 +185,16 @@ if __name__ == '__main__':
         else:
             print 'remote hadoop job NOT successful'
     else:
-        hadoop_engine = HE.HadoopEngine()
         # print what the command would be
-        print HE.create_hadoop_cmd_str(hadoop_engine, n_tasks=n_tasks)
+        hadoop_engine = HE.HadoopEngine(which_engine_binary=which_engine_binary,
+                output_path=output_path,
+                input_filename=input_filename,
+                table_data_filename=table_data_filename)
+        cmd_str = hu.create_hadoop_cmd_str(
+                hadoop_engine.hdfs_uri, hadoop_engine.hdfs_dir, hadoop_engine.jobtracker_uri,
+                hadoop_engine.which_engine_binary, hadoop_engine.which_hadoop_binary,
+                hadoop_engine.which_hadoop_jar,
+                hadoop_engine.input_filename, hadoop_engine.table_data_filename,
+                hadoop_engine.command_dict_filename, hadoop_engine.output_path,
+                n_tasks, hadoop_engine.one_map_task_per_line)
+        print cmd_str

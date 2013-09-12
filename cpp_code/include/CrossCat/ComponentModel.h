@@ -19,9 +19,11 @@ class ComponentModel {
  public:
   //
   // getters
-  std::map<std::string, double> get_hypers() const;
+  CM_Hypers get_hypers() const;
   int get_count() const;
   std::map<std::string, double> get_suffstats() const;
+  virtual std::map<std::string, double> _get_suffstats() const;
+  //
   //
   // calculators
   virtual double calc_marginal_logp() const;
@@ -38,11 +40,10 @@ class ComponentModel {
   // helpers
   friend std::ostream& operator<<(std::ostream& os, const ComponentModel &cm);
   // make protected later
-  std::map<std::string, double> *p_hypers;
+  CM_Hypers *p_hypers;
   std::string to_string(std::string join_str="\n") const;
  protected:
   int count;
-  std::map<std::string, double> suffstats;
   double log_Z_0;
   double score;
   //

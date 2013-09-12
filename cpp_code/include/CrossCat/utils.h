@@ -14,6 +14,9 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 
+typedef std::map<std::string, double> ComponentModelHypers;
+typedef ComponentModelHypers CM_Hypers;
+
 typedef boost::numeric::ublas::matrix<double> MatrixD;
 
 void LoadData(std::string file, MatrixD& M);

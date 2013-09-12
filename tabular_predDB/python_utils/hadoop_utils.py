@@ -73,7 +73,7 @@ def create_hadoop_cmd_str(hdfs_uri, hdfs_dir, jobtracker_uri,
     engine_binary_infix = os.path.splitext(os.path.split(which_engine_binary)[-1])[0]
     ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
     ld_library_path = './%s.jar:%s' % (engine_binary_infix, ld_library_path)
-    mapper_path = '%s.jar/%s' % (engine_binary_infix, engine_binary_infix)
+    mapper_path = '%s.jar/%s' % (engine_binary_infix, 'hadoop_line_processor') # engine_binary_infix)
     #
     jar_str = '%s jar %s' % (which_hadoop_binary,
                              which_hadoop_jar)

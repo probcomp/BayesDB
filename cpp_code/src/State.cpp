@@ -28,7 +28,7 @@ State::State(const MatrixD &data,
 	     vector<int> GLOBAL_COL_MULTINOMIAL_COUNTS,
 	     vector<int> global_row_indices,
 	     vector<int> global_col_indices,
-	     map<int, map<string, double> > HYPERS_M,
+	     map<int, CM_Hypers > HYPERS_M,
 	     vector<vector<int> > column_partition,
 	     double COLUMN_CRP_ALPHA,
 	     vector<vector<vector<int> > > row_partition_v,
@@ -112,7 +112,7 @@ vector<int> State::get_view_counts() const {
 double State::insert_feature(int feature_idx, vector<double> feature_data,
 			     View &which_view) {
   string col_datatype = global_col_datatypes[feature_idx];
-  map<string, double> &hypers = hypers_m[feature_idx];
+  CM_Hypers &hypers = hypers_m[feature_idx];
   double crp_logp_delta, data_logp_delta;
   double score_delta = calc_feature_view_predictive_logp(feature_data,
 							 col_datatype,
@@ -146,7 +146,7 @@ double State::sample_insert_feature(int feature_idx, vector<double> feature_data
 double State::remove_feature(int feature_idx, vector<double> feature_data,
 			     View* &p_singleton_view) {
   string col_datatype = global_col_datatypes[feature_idx];
-  map<string, double> &hypers = hypers_m[feature_idx];
+  CM_Hypers &hypers = hypers_m[feature_idx];
   map<int,View*>::iterator it = view_lookup.find(feature_idx);
   assert(it!=view_lookup.end());
   View &which_view = *(it->second);
@@ -289,14 +289,14 @@ vector<vector<map<string, double> > > State::get_column_component_suffstats_i(in
   return (**it).get_column_component_suffstats();
 }
 
-vector<map<string, double> > State::get_column_hypers() const {
-  vector<map<string, double> > column_hypers;
+vector<CM_Hypers > State::get_column_hypers() const {
+  vector<CM_Hypers > column_hypers;
   int num_cols = get_num_cols();
-  map<int, map<string, double> >::const_iterator it;
+  map<int, CM_Hypers >::const_iterator it;
   for(int global_col_idx=0; global_col_idx<num_cols; global_col_idx++) {
     it = hypers_m.find(global_col_idx);
     if(it==hypers_m.end()) continue;
-    map<string, double> hypers_i = it->second;
+    CM_Hypers hypers_i = it->second;
     // FIXME: actually detect
     hypers_i["fixed"] = 0.;
     column_hypers.push_back(hypers_i);
@@ -304,7 +304,7 @@ vector<map<string, double> > State::get_column_hypers() const {
   return column_hypers;
 }
 
-map<string,double> State::get_column_partition_hypers() const {
+map<string, double> State::get_column_partition_hypers() const {
   map<string, double> local_hypers;
   local_hypers["alpha"] = get_column_crp_alpha();
   return local_hypers;
@@ -497,7 +497,7 @@ double State::calc_feature_view_predictive_logp(vector<double> col_data,
 						string col_datatype, View v,
 						double &crp_log_delta,
 						double &data_log_delta,
-						map<string, double> hypers) const {
+						CM_Hypers hypers) const {
   int view_column_count = v.get_num_cols();
   int num_columns = get_num_cols();
   crp_log_delta = numerics::calc_cluster_crp_logp(view_column_count, num_columns,
@@ -516,7 +516,7 @@ double State::calc_feature_view_predictive_logp(vector<double> col_data,
 vector<double> State::calc_feature_view_predictive_logps(vector<double> col_data,
 							 int global_col_idx) const {
   vector<double> logps;
-  map<string, double> hypers = get(hypers_m, global_col_idx);
+  CM_Hypers hypers = get(hypers_m, global_col_idx);
   set<View*>::iterator it;
   double crp_log_delta, data_log_delta;
   string col_datatype = get(global_col_datatypes, global_col_idx);
@@ -640,11 +640,11 @@ int State::draw_rand_i(int max) {
   return rng.nexti(max);
 }
 
-map<string, double> State::uniform_sample_hypers(int global_col_idx) {
+CM_Hypers State::uniform_sample_hypers(int global_col_idx) {
   // presume all grids the same size
   int N_GRID = r_grid.size();
   string col_datatype = global_col_datatypes[global_col_idx];
-  map<string, double> hypers;
+  CM_Hypers hypers;
   if(col_datatype==CONTINUOUS_DATATYPE) {
     int r_draw = draw_rand_i(N_GRID);
     hypers["r"] = r_grid[r_draw];
