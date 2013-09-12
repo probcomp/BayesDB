@@ -31,6 +31,7 @@ from collections import defaultdict
 #
 import tabular_predDB.python_utils.api_utils as au
 import tabular_predDB.python_utils.data_utils as du
+import tabular_predDB.python_utils.sample_utils as su
 import tabular_predDB.settings as S
 
 # For testing
@@ -712,7 +713,7 @@ class MiddlewareEngine(object):
           ret_row.append(prob)
         elif query_type == 'similarity':
           target_row_id, target_column = query
-          sim = self.similarity(row_id, target_column, target_row_id, X_L_list, X_D_list, M_c)
+          sim = su.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
           ret_row.append(sim)
       data.append(tuple(ret_row))
       row_count += 1
@@ -759,37 +760,12 @@ class MiddlewareEngine(object):
     """
     col_idx = M_c['name_to_idx'][column]
     return lambda row_id, data_values: data_values[col_idx]
-                          
 
   def get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c):
     """
     Call this function to get a version of similarity as a function of only (row_id, data_values).
     """
-    return lambda row_id, data_values: self.similarity(row_id, target_column, target_row_id, X_L_list, X_D_list, M_c)
-
-  def similarity(self, row_id, target_column, target_row_id, X_L_list, X_D_list, M_c):
-    """
-    Returns the similarity of the given row to the target row, averaged over
-    all the column indexes given by col_idxs.
-    Similarity is defined as the proportion of times that two cells are in the same
-    view and category.
-    """
-    score = 0.0
-
-    ## Set col_idxs: defaults to all columns.
-    if target_column:
-      col_idxs = [M_c['name_to_idx'][target_column]]
-    else:
-      col_idxs = M_c['idx_to_name'].keys() #range(len(data_tuples[0])-1)
-    col_idxs = [int(col_idx) for col_idx in col_idxs]
-    
-    ## Iterate over all latent states.
-    for X_L, X_D in zip(X_L_list, X_D_list):
-        for col_idx in col_idxs:
-          view_idx = X_L['column_partition']['assignments'][col_idx]
-          if X_D[view_idx][row_id] == X_D[view_idx][target_row_id]:
-            score += 1.0
-    return score / (len(X_L_list)*len(col_idxs))
+    return lambda row_id, data_values: su.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
 
   def order_by(self, filtered_values, functions):
     """

@@ -345,6 +345,34 @@ def simple_predictive_probability_unobserved_discrete(M_c, X_L, X_D, Y, query_ro
     
     return answer
 
+
+def similarity(M_c, X_L_list, X_D_list, given_row_id, target_row_id, target_column=None):
+    """
+    Returns the similarity of the given row to the target row, averaged over
+    all the column indexes given by col_idxs.
+    Similarity is defined as the proportion of times that two cells are in the same
+    view and category.
+    """
+    score = 0.0
+
+    ## Set col_idxs: defaults to all columns.
+    if target_column:
+        if type(target_column) == str:
+            col_idxs = [M_c['name_to_idx'][target_column]]
+        else:
+            col_idxs = [target_column]
+    else:
+        col_idxs = M_c['idx_to_name'].keys()
+    col_idxs = [int(col_idx) for col_idx in col_idxs]
+    
+    ## Iterate over all latent states.
+    for X_L, X_D in zip(X_L_list, X_D_list):
+        for col_idx in col_idxs:
+            view_idx = X_L['column_partition']['assignments'][col_idx]
+            if X_D[view_idx][given_row_id] == X_D[view_idx][target_row_id]:
+                score += 1.0
+    return score / (len(X_L_list)*len(col_idxs))
+
 ################################################################################
 ################################################################################
 
