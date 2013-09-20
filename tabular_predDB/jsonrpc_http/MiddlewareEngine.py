@@ -123,13 +123,13 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute('DROP TABLE %s' % tablename)
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cur.execute('DROP TABLE %s', (tablename,))
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       tableids = cur.fetchall()
       for tid in tableids:
         tableid = tid[0]
-        cur.execute("DELETE FROM preddb.models WHERE tableid=%d;" % tableid)
-        cur.execute("DELETE FROM preddb.table_index WHERE tableid=%d;" % tableid)
+        cur.execute("DELETE FROM preddb.models WHERE tableid=%d;", (tableid,))
+        cur.execute("DELETE FROM preddb.table_index WHERE tableid=%d;", (tableid,))
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)      
@@ -143,12 +143,12 @@ class MiddlewareEngine(object):
      try:
        conn = psycopg2.connect(psycopg_connect_str)
        cur = conn.cursor()
-       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
+       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';", (tablename,))
        tableids = cur.fetchall()
        for tid in tableids:
          tableid = tid[0]
-         cur.execute("DELETE FROM preddb.models WHERE tableid=%d;" % tableid)
-         cur.execute("DELETE FROM preddb.table_index WHERE tableid=%d;" % tableid)
+         cur.execute("DELETE FROM preddb.models WHERE tableid=%d;", (tableid,))
+         cur.execute("DELETE FROM preddb.table_index WHERE tableid=%d;", (tableid,))
        conn.commit()
      except psycopg2.DatabaseError, e:
        print('Error %s' % e)      
@@ -169,11 +169,11 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % (tablename))
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       tableid = cur.fetchone()[0]
-      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%d;", (tableid,))
       max_chainid = cur.fetchone()[0]
-      cur.execute("SELECT cctypes, t, m_r, m_c, path FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cur.execute("SELECT cctypes, t, m_r, m_c, path FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       cctypes_json, t_json, m_r_json, m_c_json, csv_abs_path = cur.fetchone()
       cctypes = json.loads(cctypes_json)
       t = json.loads(t_json)
@@ -200,7 +200,7 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("UPDATE preddb.table_index SET cctypes='%s', m_r='%s', m_c='%s', t='%s' WHERE tablename='%s';" % (json.dumps(cctypes), json.dumps(m_r), json.dumps(m_c), json.dumps(t), tablename))
+      cur.execute("UPDATE preddb.table_index SET cctypes='%s', m_r='%s', m_c='%s', t='%s' WHERE tablename='%s';", (json.dumps(cctypes), json.dumps(m_r), json.dumps(m_c), json.dumps(t), tablename))
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
@@ -219,7 +219,7 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("select exists(select * from information_schema.tables where table_name='%s');" % tablename)
+      cur.execute("select exists(select * from information_schema.tables where table_name='%s');", (tablename,))
       if cur.fetchone()[0]:
         return "Error: table with that name already exists."
       conn.commit()
@@ -282,11 +282,11 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("CREATE TABLE %s (%s);" % (tablename, colstring))
+      cur.execute("CREATE TABLE %s (%s);", (tablename, colstring))
       with open(clean_csv_abs_path) as fh:
         cur.copy_from(fh, '%s' % tablename, sep=',')
       curtime = datetime.datetime.now().ctime()
-      cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes, path) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s', '%s');" % (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes), csv_abs_path))
+      cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes, path) VALUES ('%s', %d, '%s', NULL, '%s', '%s', '%s', '%s', '%s');", (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes), csv_abs_path))
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
@@ -302,14 +302,14 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("SELECT t, m_r, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cur.execute("SELECT t, m_r, m_c FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       t_json, m_r_json, m_c_json = cur.fetchone()
       t = json.loads(t_json)
       m_r = json.loads(m_r_json)
       m_c = json.loads(m_c_json)
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % (tablename))
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       tableid = cur.fetchone()[0]
-      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%d;", (tableid,))
       max_chainid = cur.fetchone()[0]
       if max_chainid is None: max_chainid = -1
       conn.commit()
@@ -328,10 +328,10 @@ class MiddlewareEngine(object):
       cur = conn.cursor()
       curtime = datetime.datetime.now().ctime()
       ## TODO: This is dangerous. We're using the new M_c, but cctypes will be out of date. Need to update cctypes.
-      cur.execute("UPDATE preddb.table_index SET m_c='%s', t='%s' WHERE tablename='%s';" % (json.dumps(M_c), json.dumps(T), tablename))
+      cur.execute("UPDATE preddb.table_index SET m_c='%s', t='%s' WHERE tablename='%s';", (json.dumps(M_c), json.dumps(T), tablename))
       for idx, (X_L, X_D) in enumerate(zip(X_L_list, X_D_list)):
         chain_index = max_chainid + 1 + idx
-        cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%d, '%s', '%s', '%s', %d, %d);" % (tableid, json.dumps(X_L), json.dumps(X_D), curtime, chain_index, iterations))        
+        cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%d, '%s', '%s', '%s', %d, %d);", (tableid, json.dumps(X_L), json.dumps(X_D), curtime, chain_index, iterations))
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
@@ -347,14 +347,14 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("SELECT t, m_r, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cur.execute("SELECT t, m_r, m_c FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       t_json, m_r_json, m_c_json = cur.fetchone()
       t = json.loads(t_json)
       m_r = json.loads(m_r_json)
       m_c = json.loads(m_c_json)
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % (tablename))
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       tableid = cur.fetchone()[0]
-      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%d;", (tableid,))
       max_chainid = cur.fetchone()[0]
       if max_chainid is None: max_chainid = 0
       conn.commit()
@@ -384,7 +384,7 @@ class MiddlewareEngine(object):
       cur = conn.cursor()
       curtime = datetime.datetime.now().ctime()
       for chain_index in range(n_chains):
-        cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%d, '%s', '%s', '%s', %d, 0);" % (tableid, json.dumps(x_l_prime), json.dumps(x_d_prime), curtime, chain_index))        
+        cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%d, '%s', '%s', '%s', %d, 0);", (tableid, json.dumps(x_l_prime), json.dumps(x_d_prime), curtime, chain_index))        
       conn.commit()
     except psycopg2.DatabaseError, e:
       print('Error %s' % e)
@@ -400,14 +400,14 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       tableid = int(cur.fetchone()[0])
-      cur.execute("SELECT m_c, t FROM preddb.table_index WHERE tableid=%d;" % tableid)
+      cur.execute("SELECT m_c, t FROM preddb.table_index WHERE tableid=%d;", (tableid,))
       M_c_json, T_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       T = json.loads(T_json)
       if (str(chain_index).upper() == 'ALL'):
-        cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+        cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;", (tableid,))
         chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
         chainids = map(int, chainids)
         print('chainids: %s' % chainids)
@@ -418,7 +418,7 @@ class MiddlewareEngine(object):
       chainid_iteration_info = list()
       for chainid in chainids:
         iters = analyze_helper(tableid, M_c, T, chainid, iterations, self.BACKEND_URI)
-        chainid_iteration_info.append('Chain %d: %d iterations' % (chainid, iters))
+        chainid_iteration_info.append('Chain %d: %d iterations', (chainid, iters))
       #   from multiprocessing import Process
       #   p = Process(target=analyze_helper,
       #               args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
@@ -447,20 +447,20 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("SELECT tableid, m_c, t FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cur.execute("SELECT tableid, m_c, t FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       tableid, M_c_json, t_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       t = json.loads(t_json)
-      cur.execute("SELECT COUNT(*) FROM %s;" % tablename)
+      cur.execute("SELECT COUNT(*) FROM %s;", (tablename,))
       numrows = cur.fetchone()[0]
-      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;", (tableid,))
       chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
       chainids = map(int, chainids)
       X_L_list = list()
       X_D_list = list()
       for chainid in chainids:
-        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d AND " % (tableid, chainid)
-                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);" % (tableid, chainid))
+        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d AND " 
+                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);", (tableid, chainid, tableid, chainid))
         X_L_prime_json, X_D_prime_json = cur.fetchone()
         X_L_list.append(json.loads(X_L_prime_json))
         X_D_list.append(json.loads(X_D_prime_json))
@@ -793,20 +793,20 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("SELECT tableid, m_c, t FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cur.execute("SELECT tableid, m_c, t FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       tableid, M_c_json, t_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       t = json.loads(t_json)
-      cur.execute("SELECT COUNT(*) FROM %s;" % tablename)
+      cur.execute("SELECT COUNT(*) FROM %s;", (tablename,))
       numrows = int(cur.fetchone()[0])
-      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;", (tableid))
       chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
       chainids = map(int, chainids)
       X_L_list = list()
       X_D_list = list()
       for chainid in chainids:
-        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d AND " % (tableid, chainid)
-                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);" % (tableid, chainid))
+        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d AND "
+                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);", (tableid, chainid, tableid, chainid))
         X_L_prime_json, X_D_prime_json = cur.fetchone()
         X_L_list.append(json.loads(X_L_prime_json))
         X_D_list.append(json.loads(X_D_prime_json))
@@ -904,7 +904,7 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("SELECT m_c, m_r, t FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cur.execute("SELECT m_c, m_r, t FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       M_c_json, M_r_json, t_json = cur.fetchone()
       conn.commit()
       M_c = json.loads(M_c_json)
@@ -932,17 +932,17 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("SELECT tableid, m_c FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cur.execute("SELECT tableid, m_c FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       tableid, M_c_json = cur.fetchone()
       M_c = json.loads(M_c_json)
-      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;" % tableid)
+      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%d;", (tableid,))
       chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
       chainids = map(int, chainids)
       X_L_list = list()
       X_D_list = list()
       for chainid in chainids:
-        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d AND " % (tableid, chainid)
-                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);" % (tableid, chainid))
+        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%d AND chainid=%d AND " 
+                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);", (tableid, chainid, tableid, chainid))
         X_L_prime_json, X_D_prime_json = cur.fetchone()
         X_L_list.append(json.loads(X_L_prime_json))
         X_D_list.append(json.loads(X_D_prime_json))
@@ -983,7 +983,7 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute("SELECT cctypes FROM preddb.table_index WHERE tablename='%s';" % tablename)
+      cur.execute("SELECT cctypes FROM preddb.table_index WHERE tablename='%s';", (tablename,))
       cctypes = cur.fetchone()[0]
       conn.commit()
     except psycopg2.DatabaseError, e:
@@ -1017,10 +1017,9 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
     conn = psycopg2.connect(psycopg_connect_str)
     cur = conn.cursor()
     exec_str = ("SELECT x_l, x_d, iterations FROM preddb.models"
-                + " WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
+                + " WHERE tableid=%d AND chainid=%d"
                 + " AND iterations=("
-                + " SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d" % (tableid, chainid)
-                + ");" )
+                + " SELECT MAX(iterations) FROM preddb.models WHERE tableid=%d AND chainid=%d);", (tableid, chainid, tableid, chainid))
     cur.execute(exec_str)
       
     X_L_prime_json, X_D_prime_json, prev_iterations = cur.fetchone()
@@ -1057,7 +1056,7 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
     cur = conn.cursor()
     curtime = datetime.datetime.now().ctime()
     cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) " + \
-                "VALUES (%d, '%s', '%s', '%s', %d, %d);" % \
+                "VALUES (%d, '%s', '%s', '%s', %d, %d);",
                   (tableid, json.dumps(X_L_prime), json.dumps(X_D_prime), curtime, chainid, prev_iterations + iterations))
     conn.commit()
   except psycopg2.DatabaseError, e:
