@@ -20,6 +20,7 @@ import gzip
 import prettytable
 import re
 import os
+import time
 
 from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine
 middleware_engine = MiddlewareEngine()
@@ -462,7 +463,7 @@ class DatabaseClient(object):
     def __call__(self, sql_string, pretty=True):
         return self.execute(sql_string, pretty)
     
-    def execute(self, sql_string, pretty=True):
+    def execute(self, sql_string, pretty=True, timing=False):
         """
         Call all parse methods.
         If the sql_string does not match, it returns None.
@@ -470,6 +471,8 @@ class DatabaseClient(object):
         Otherwise, True is returned for a success, or a Python object may be returned.
         The python object may be printed with pretty_print.
         """
+        if timing:
+            start_time = time.time()
         if sql_string[-1] == ';':
             sql_string = sql_string[:-1]
         words = sql_string.lower().split()
@@ -493,6 +496,11 @@ class DatabaseClient(object):
             result = parser(words, sql_string)
             if result is None:
                 continue
+
+            ## Command matched and executed: now return
+            if timing:
+                end_time = time.time()
+                print 'Elapsed time: %.2f seconds.' % (end_time - start_time)
             if result == False:
                 return
             if type(result) == str or not pretty:
