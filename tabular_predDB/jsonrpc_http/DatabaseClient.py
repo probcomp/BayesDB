@@ -243,9 +243,36 @@ class DatabaseClient(object):
         else:
             return float('inf')
 
+    def parse_export_samples(self, words, orig):
+        match = re.search(r"""
+            export\s+
+            (samples\s+)?
+            from\s+
+            (?P<btable>[^s]+)
+            \s+to\s+
+            (?P<pklpath>[^\s]+)
+        """, orig.lower(), re.VERBOSE)
+        if match is None:
+            if words[0] == 'export':
+                print 'Did you mean: EXPORT SAMPLES FROM <btable> TO <pklpath>;?'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable')
+            pklpath = match.group('pklpath')
+            if pklpath[-7:] != '.pkl.gz':
+                pklpath = pklpath + ".pkl.gz"
+            M_c, M_r, T, X_L_list, X_D_list = self.export_samples(tablename)
+            samples_dict = dict(M_c=M_c, M_r=M_r, T=T, X_L_list=X_L_list, X_D_list=X_D_list)
+            samples_file = gzip.GzipFile(pklpath, 'w')
+            pickle.dump(samples_dict, samples_file)
+            return "Successfully exported the samples to %s" % pklpath
+
     def parse_import_samples(self, words, orig):
         match = re.search(r"""
-            import\s+samples\s+
+            import\s+
+            (samples\s+)?
             (?P<pklpath>[^\s]+)\s+
             into\s+
             (?P<btable>[^\s]+)
@@ -490,6 +517,7 @@ class DatabaseClient(object):
                            'update_datatypes',
                            'select',
                            'import_samples',
+                           'export_samples',
                            'estimate_dependence_probabilities']
         for presql_command in presql_commands:
             parser = getattr(self, 'parse_' + presql_command)
@@ -624,6 +652,9 @@ class DatabaseClient(object):
                                             'M_c': M_c,
                                             'T': T,
                                             'iterations': iterations})
+
+    def export_samples(self, tablename):
+        return self.call('export_samples', {'tablename': tablename})
 
     def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):
         args_dict = dict()
