@@ -123,7 +123,7 @@ class MiddlewareEngine(object):
     try:
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
-      cur.execute('DROP TABLE %s', (tablename,))
+      cur.execute('DROP TABLE %s' % tablename)
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
       tableids = cur.fetchall()
       for tid in tableids:
