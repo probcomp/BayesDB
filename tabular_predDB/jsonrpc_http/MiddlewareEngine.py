@@ -585,24 +585,6 @@ class MiddlewareEngine(object):
         c_idx = M_c['name_to_idx'][column]
         conds.append((c_idx, op, val))
 
-    def column_string_splitter(columnstring):
-      paren_level = 0
-      output = []
-      current_column = []
-      for c in columnstring:
-        if c == '(':
-          paren_level += 1
-        elif c == ')':
-          paren_level -= 1
-
-        if c == ',' and paren_level == 0:
-            output.append(''.join(current_column))
-            current_column = []
-        else:
-          current_column.append(c)
-      output.append(''.join(current_column))
-      return output
-
     ## Iterate through the columnstring portion of the input, and generate the query list.
     ## queries is a list of (query_type, query) tuples, where query_type is: row_id, column, probability, similarity.
     ## For row_id: query is ignored (so it is None).
@@ -629,7 +611,7 @@ class MiddlewareEngine(object):
             \(\s*
             (?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)
             \s*\)
-        """, colname.lower(), re.VERBOSE)
+        """, colname, re.VERBOSE | re.IGNORECASE)
         if prob_match:
           column = prob_match.group('column')
           c_idx = M_c['name_to_idx'][column]
@@ -648,23 +630,34 @@ class MiddlewareEngine(object):
             similarity\s+to\s+
             (?P<rowid>[^\s]+)
             (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
-        """, colname.lower(), re.VERBOSE)
+        """, colname, re.VERBOSE | re.IGNORECASE)
         ## Try 2nd type of similarity syntax. Add "contextual similarity" for when cols are present?
         if not similarity_match:
           similarity_match = re.search(r"""
               similarity_to\s*\(\s*
-              (?P<rowid>[^\s]+)
-              (\s+,\s*(?P<column>[^s]+)\s*)?
+              (?P<rowid>[^,]+)
+              (\s*,\s*(?P<column>[^\s]+)\s*)?
               \s*\)
-          """, colname.lower(), re.VERBOSE)
+          """, colname, re.VERBOSE | re.IGNORECASE) 
+          
         if similarity_match:
             rowid = similarity_match.group('rowid').strip()
             if is_int(rowid):
               target_row_id = int(rowid)
             else:
               ## Instead of specifying an integer for rowid, you can specify a where clause.
-              target_row_whereclause = rowid
-              ### TODO: demo: PARSE THIS COLUMN VALUE (IT MUST BE FOR THE REFCOL/KEY/ID COL)
+              where_vals = rowid.split('=')
+              where_colname = where_vals[0]
+              where_val = where_vals[1]
+              if type(where_val) == str or type(where_val) == unicode:
+                where_val = ast.literal_eval(where_val)
+              ## Look up the row_id where this column has this value!
+              c_idx = M_c['name_to_idx'][where_colname.lower()]
+              for row_id, T_row in enumerate(T):
+                row_values = convert_row(T_row, M_c)
+                if row_values[c_idx] == where_val:
+                  target_row_id = row_id
+                  break
               
             if similarity_match.group('column'):
                 target_column = similarity_match.group('column').strip()
@@ -678,7 +671,7 @@ class MiddlewareEngine(object):
         ## Check if row structural anomalousness/typicality query
         row_anomalousness_match = re.search(r"""
             row_anomalousness
-        """, colname.lower(), re.VERBOSE)
+        """, colname, re.VERBOSE | re.IGNORECASE)
         if row_anomalousness_match:
             queries.append(('row_anomalousness', None))
             anomalousness_query = True
@@ -689,7 +682,7 @@ class MiddlewareEngine(object):
             col_anomalousness\s*\(\s*
             (?P<column>[^\s]+)
             \s*\)
-        """, colname.lower(), re.VERBOSE)
+        """, colname, re.VERBOSE | re.IGNORECASE)
         if col_anomalousness_match:
             colname = col_anomalousness_match.group('column').strip()
             queries.append(('col_anomalousness', M_c['name_to_idx'][colname]))
@@ -706,7 +699,7 @@ class MiddlewareEngine(object):
             \s*,\s*
             (?P<col2>[^\s]+)
             \s*\)
-        """, colname.lower(), re.VERBOSE)
+        """, colname, re.VERBOSE | re.IGNORECASE)
         if mutual_information_match:
             col1 = mutual_information_match.group('col1')
             col2 = mutual_information_match.group('col2')
@@ -746,17 +739,6 @@ class MiddlewareEngine(object):
         Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
       '''
 
-    ## Helper function to convert a row from its 'code' (as it's stored in T) to its 'value'
-    ## (the human-understandable value).
-    def convert_row(row):
-      ret = []
-      for cidx, code in enumerate(row): 
-        if not numpy.isnan(code) and not code=='nan':
-          ret.append(du.convert_code_to_value(M_c, cidx, code))
-        else:
-          ret.append(code)
-      return tuple(ret)
-
     ## If there are only aggregate values, then only return one row.
     ## TODO: is this actually right? Or is probability also a function of row? If so: get rid of this.
     aggregates_only = reduce(lambda v,q: (q[0] == 'probability' or \
@@ -769,7 +751,7 @@ class MiddlewareEngine(object):
     ## and fill in imputed values.
     filtered_values = list()
     for row_id, T_row in enumerate(T):
-      row_values = convert_row(T_row) ## Convert row from codes to values
+      row_values = convert_row(T_row, M_c) ## Convert row from codes to values
       if is_row_valid(row_id, row_values): ## Where clause filtering.
         if imputations_dict and len(imputations_dict[row_id]) > 0:
           ## Fill in any imputed values.
@@ -788,6 +770,7 @@ class MiddlewareEngine(object):
         args_dict['M_c'] = M_c
         args_dict['X_L_list'] = X_L_list
         args_dict['X_D_list'] = X_D_list
+        args_dict['T'] = T
         method = getattr(self, 'get_%s_function' % function_name)
         argnames = inspect.getargspec(method)[0]
         args = [args_dict[argname] for argname in argnames if argname in args_dict]
@@ -886,10 +869,25 @@ class MiddlewareEngine(object):
     col_idx = M_c['name_to_idx'][column]
     return lambda row_id, data_values: data_values[col_idx]
 
-  def get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c):
+  def get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c, T):
     """
     Call this function to get a version of similarity as a function of only (row_id, data_values).
     """
+    if type(target_row_id) == str or type(target_row_id) == unicode:
+      ## Instead of specifying an integer for rowid, you can specify a where clause.
+      where_vals = target_row_id.split('=')
+      where_colname = where_vals[0]
+      where_val = where_vals[1]
+      if type(where_val) == str:
+        print where_val
+        where_val = ast.literal_eval(where_val)
+      ## Look up the row_id where this column has this value!
+      c_idx = M_c['name_to_idx'][where_colname.lower()]
+      for row_id, T_row in enumerate(T):
+        row_values = convert_row(T_row, M_c)
+        if row_values[c_idx] == where_val:
+          target_row_id = row_id
+          break
     return lambda row_id, data_values: su.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
 
   def order_by(self, filtered_values, functions):
@@ -1335,3 +1333,34 @@ def is_float(s):
         return True
     except ValueError:
         return False
+
+def column_string_splitter(columnstring):
+    paren_level = 0
+    output = []
+    current_column = []
+    for c in columnstring:
+      if c == '(':
+        paren_level += 1
+      elif c == ')':
+        paren_level -= 1
+
+      if c == ',' and paren_level == 0:
+          output.append(''.join(current_column))
+          current_column = []
+      else:
+        current_column.append(c)
+    output.append(''.join(current_column))
+    return output
+
+def convert_row(row, M_c):
+  """
+  Helper function to convert a row from its 'code' (as it's stored in T) to its 'value'
+  (the human-understandable value).
+  """
+  ret = []
+  for cidx, code in enumerate(row): 
+    if not numpy.isnan(code) and not code=='nan':
+      ret.append(du.convert_code_to_value(M_c, cidx, code))
+    else:
+      ret.append(code)
+  return tuple(ret)

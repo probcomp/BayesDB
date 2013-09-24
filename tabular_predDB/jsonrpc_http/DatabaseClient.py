@@ -21,8 +21,9 @@ import prettytable
 import re
 import os
 import time
+import ast
 
-from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine
+from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine, is_int, column_string_splitter
 middleware_engine = MiddlewareEngine()
 
 class DatabaseClient(object):
@@ -170,7 +171,7 @@ class DatabaseClient(object):
             \s*with\s+confidence\s+(?P<confidence>[^\s]+)
             (\s+limit\s+(?P<limit>[^\s]+))?
             (\s+numsamples\s+(?P<numsamples>[^\s]+))?
-        """, orig.lower(), re.VERBOSE)
+        """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'infer':
                 print 'Did you mean: INFER col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
@@ -206,21 +207,22 @@ class DatabaseClient(object):
         pattern = r"""
             (order\s+by\s+(?P<orderbyclause>.*?((?=limit)|$)))
         """ 
-        match = re.search(pattern, orig.lower(), re.VERBOSE)
+        match = re.search(pattern, orig, re.VERBOSE | re.IGNORECASE)
         if match:
             order_by_clause = match.group('orderbyclause')
             ret = list()
             orderables = list()
-            for orderable in order_by_clause.split(','):
+            for orderable in column_string_splitter(order_by_clause):
+                print orderable
                 ## Check for DESC
-                desc = re.search(r'\s+desc($|\s|,|(?=limit))', orderable.lower())
-                orderable = re.sub(r'\s+desc($|\s|,|(?=limit))', '', orderable.lower())
+                desc = re.search(r'\s+desc($|\s|,|(?=limit))', orderable, re.IGNORECASE)
+                orderable = re.sub(r'\s+desc($|\s|,|(?=limit))', '', orderable, re.IGNORECASE)
                 ## Check for similarity
                 pattern = r"""
                     similarity\s+to\s+(?P<rowid>[^\s]+)
                     (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
                 """
-                match = re.search(pattern, orderable.lower(), re.VERBOSE)
+                match = re.search(pattern, orderable, re.VERBOSE | re.IGNORECASE)
                 if match:
                     rowid = int(match.group('rowid').strip())
                     if match.group('column'):
@@ -229,8 +231,27 @@ class DatabaseClient(object):
                         column = None
                     orderables.append(('similarity', {'desc': desc, 'target_row_id': rowid, 'target_column': column}))
                 else:
-                    orderables.append(('column', {'desc': desc, 'column': orderable.strip()}))
-            orig = re.sub(pattern, '', orig.lower(), flags=re.VERBOSE)
+                    match = re.search(r"""
+                          similarity_to\s*\(\s*
+                          (?P<rowid>[^,]+)
+                          (\s*,\s*(?P<column>[^\s]+)\s*)?
+                          \s*\)
+                      """, orderable, re.VERBOSE | re.IGNORECASE) 
+                    if match:
+                        if match.group('column'):
+                            column = match.group('column').strip()
+                        else:
+                            column = None
+                        rowid = match.group('rowid').strip()
+                        if is_int(rowid):
+                            target_row_id = int(rowid)
+                        else:
+                            target_row_id = rowid
+                        orderables.append(('similarity', {'desc': desc, 'target_row_id': target_row_id, 'target_column': column}))
+
+                    else:
+                        orderables.append(('column', {'desc': desc, 'column': orderable.strip()}))
+            orig = re.sub(pattern, '', orig, flags=re.VERBOSE | re.IGNORECASE)
             return (orig, orderables)
         else:
             return (orig, False)
@@ -254,7 +275,7 @@ class DatabaseClient(object):
             (?P<btable>[^s]+)
             \s+to\s+
             (?P<pklpath>[^\s]+)
-        """, orig.lower(), re.VERBOSE)
+        """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'export':
                 print 'Did you mean: EXPORT SAMPLES FROM <btable> TO <pklpath>;?'
@@ -280,7 +301,7 @@ class DatabaseClient(object):
             into\s+
             (?P<btable>[^\s]+)
             (\s+iterations\s+(?P<iterations>[^\s]+))?
-        """, orig.lower(), re.VERBOSE)
+        """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'import':
                 print 'Did you mean: IMPORT SAMPLES <pklpath> INTO <btable> [ITERATIONS <iterations>]'
@@ -311,7 +332,7 @@ class DatabaseClient(object):
             \s*from\s+(?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
             (\s*limit\s+(?P<limit>[^\s]+))?
-        """, orig.lower(), re.VERBOSE)
+        """, orig, re.VERBOSE | re.IGNORECASE)
         ## (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)
         if match is None:
             if words[0] == 'select':
@@ -366,7 +387,7 @@ class DatabaseClient(object):
             (\s+with\s+confidence\s+(?P<confidence>[^\s]+))?
             (\s+limit\s+(?P<limit>[^\s]+))?
             (\s+save\s+to\s+(?P<filename>[^\s]+))?
-        """, orig.lower(), re.VERBOSE)
+        """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'estimate':
                 print 'Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]] [SAVE TO <file>]'
@@ -397,7 +418,7 @@ class DatabaseClient(object):
             update\s+datatypes\s+from\s+
             (?P<btable>[^\s]+)\s+
             set\s+(?P<mappings>[^;]*);?
-        """, orig.lower(), re.VERBOSE)
+        """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'update':
                 print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical|key|ignore];?'
