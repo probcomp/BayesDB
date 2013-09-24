@@ -30,6 +30,7 @@ import psycopg2
 import matplotlib.cm
 from collections import defaultdict
 #
+import tabular_predDB.python_utils.inference_utils as iu
 import tabular_predDB.python_utils.api_utils as au
 import tabular_predDB.python_utils.data_utils as du
 import tabular_predDB.python_utils.sample_utils as su
@@ -584,6 +585,24 @@ class MiddlewareEngine(object):
         c_idx = M_c['name_to_idx'][column]
         conds.append((c_idx, op, val))
 
+    def column_string_splitter(columnstring):
+      paren_level = 0
+      output = []
+      current_column = []
+      for c in columnstring:
+        if c == '(':
+          paren_level += 1
+        elif c == ')':
+          paren_level -= 1
+
+        if c == ',' and paren_level == 0:
+            output.append(''.join(current_column))
+            current_column = []
+        else:
+          current_column.append(c)
+      output.append(''.join(current_column))
+      return output
+
     ## Iterate through the columnstring portion of the input, and generate the query list.
     ## queries is a list of (query_type, query) tuples, where query_type is: row_id, column, probability, similarity.
     ## For row_id: query is ignored (so it is None).
@@ -600,7 +619,8 @@ class MiddlewareEngine(object):
         queries.append(('column', idx))
         query_colnames.append(M_c['idx_to_name'][str(idx)])
     else:
-      query_colnames = [colname.strip() for colname in columnstring.split(',')]
+#      query_colnames = [colname.strip() for colname in columnstring.split(',')]
+      query_colnames = [colname.strip() for colname in column_string_splitter(columnstring)]
       queries = []
       for idx, colname in enumerate(query_colnames):
         ## Check if probability query
@@ -687,9 +707,10 @@ class MiddlewareEngine(object):
             (?P<col2>[^\s]+)
             \s*\)
         """, colname.lower(), re.VERBOSE)
-        if row_anomalousness_match:
-            col1 = row_anomalousness_match
-            queries.append(('mutual_information', (column1, column2)))
+        if mutual_information_match:
+            col1 = mutual_information_match.group('col1')
+            col2 = mutual_information_match.group('col2')
+            queries.append(('mutual_information', (M_c['name_to_idx'][col1], M_c['name_to_idx'][col2])))
             mutual_information_query = True
             continue
 
@@ -811,9 +832,13 @@ class MiddlewareEngine(object):
           anom = su.column_structural_anomalousness(X_L_list, c_idx)
           ret_row.append(anom)
         elif query_type == 'predictive_anomalousness':
+          ## TODO
           pass
         elif query_type == 'mutual_information':
-          pass
+          c_idx1, c_idx2 = query
+          mutual_info, linfoot = iu.mutual_information(M_c, X_L_list, X_D_list, [(c_idx1, c_idx2)])
+          mutual_info = numpy.mean(mutual_info)
+          ret_row.append(mutual_info)
 
       data.append(tuple(ret_row))
       row_count += 1
