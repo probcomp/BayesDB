@@ -140,6 +140,13 @@ class LocalEngine(EngineTemplate.EngineTemplate):
         samples = _do_simple_predictive_sample(M_c, X_L, X_D, Y, Q, n, get_next_seed)
         return samples
 
+    def simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q, epsilon=.001):
+        """
+        Returns the simple predictive probability averaged over each latent state.
+        See simple_predicitive_probabilit.
+        """
+        return su.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q, epsilon)
+
     def simple_predictive_probability(self, M_c, X_L, X_D, Y, Q, epsilon=0.001):
         """Calculate the probability of a cell taking a value within epsilon of 
         the specified values given a latent state

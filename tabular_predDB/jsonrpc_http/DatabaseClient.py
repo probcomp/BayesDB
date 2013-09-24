@@ -212,6 +212,9 @@ class DatabaseClient(object):
             ret = list()
             orderables = list()
             for orderable in order_by_clause.split(','):
+                ## Check for DESC
+                desc = re.search(r'\s+desc($|\s|,|(?=limit))', orderable.lower())
+                orderable = re.sub(r'\s+desc($|\s|,|(?=limit))', '', orderable.lower())
                 ## Check for similarity
                 pattern = r"""
                     similarity\s+to\s+(?P<rowid>[^\s]+)
@@ -224,9 +227,9 @@ class DatabaseClient(object):
                         column = match.group('column').strip()
                     else:
                         column = None
-                    orderables.append(('similarity', {'target_row_id': rowid, 'target_column': column}))
+                    orderables.append(('similarity', {'desc': desc, 'target_row_id': rowid, 'target_column': column}))
                 else:
-                    orderables.append(('column', {'column': orderable.strip()}))
+                    orderables.append(('column', {'desc': desc, 'column': orderable.strip()}))
             orig = re.sub(pattern, '', orig.lower(), flags=re.VERBOSE)
             return (orig, orderables)
         else:
@@ -336,7 +339,7 @@ class DatabaseClient(object):
             from\s+(?P<btable>[^\s]+)\s+
             (where\s+(?P<whereclause>.*(?=times)))?
             times\s+(?P<times>[^\s]+)
-        """, orig.lower(), re.VERBOSE)
+        """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'simulate':
                 print 'Did you mean: SIMULATE col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times> '+\
@@ -397,7 +400,7 @@ class DatabaseClient(object):
         """, orig.lower(), re.VERBOSE)
         if match is None:
             if words[0] == 'update':
-                print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical[(k)]]+;?'
+                print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical|key|ignore];?'
                 return False
             else:
                 return None
@@ -415,10 +418,12 @@ class DatabaseClient(object):
                         datatype = int(m.group('num'))
                     else:
                         datatype = 'multinomial'
+                elif 'key' in vals[1]:
+                    datatype = 'key'
                 elif 'ignore' in vals[1]:
                     datatype = 'ignore'
                 else:
-                    print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical[(k)]]+;?'
+                    print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical|key|ignore];?'
                     return False
                 mappings[vals[0]] = datatype
             return self.update_datatypes(tablename, mappings)

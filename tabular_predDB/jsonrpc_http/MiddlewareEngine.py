@@ -22,6 +22,7 @@ import re
 import operator
 import copy
 import math
+import ast
 #
 import pylab
 import numpy
@@ -162,7 +163,7 @@ class MiddlewareEngine(object):
     mappings is a dict of column name to 'continuous', 'multinomial',
     or an int, which signifies multinomial of a specific type.
     TODO: FIX HACKS. Current works by reloading all the data from csv,
-    and you it ignores multinomials of specific types.
+    and it ignores multinomials' specific number of outcomes.
     Also, disastrous things may happen if you update a schema after creating models.
     """
     # First, get existing cctypes, and T, M_c, and M_r.
@@ -356,10 +357,10 @@ class MiddlewareEngine(object):
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       cur.execute("SELECT t, m_r, m_c FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      t_json, m_r_json, m_c_json = cur.fetchone()
-      t = json.loads(t_json)
-      m_r = json.loads(m_r_json)
-      m_c = json.loads(m_c_json)
+      T_json, M_r_json, M_c_json = cur.fetchone()
+      T = json.loads(T_json)
+      M_r = json.loads(M_r_json)
+      M_c = json.loads(M_c_json)
       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
       tableid = cur.fetchone()[0]
       cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
@@ -378,11 +379,12 @@ class MiddlewareEngine(object):
     # Call initialize on backend
     states_by_chain = list()
     args_dict = dict()
-    args_dict['M_c'] = m_c
-    args_dict['M_r'] = m_r
-    args_dict['T'] = t
+    args_dict['M_c'] = M_c
+    args_dict['M_r'] = M_r
+    args_dict['T'] = T
     for chain_index in range(max_chainid, n_chains + max_chainid):
-      out, id = au.call('initialize', args_dict, self.BACKEND_URI)
+      out = engine.initialize(M_c, M_r, T)
+      #out, id = au.call('initialize', args_dict, self.BACKEND_URI)
       x_l_prime, x_d_prime = out
       states_by_chain.append((x_l_prime, x_d_prime))
     
@@ -426,7 +428,7 @@ class MiddlewareEngine(object):
       chainid_iteration_info = list()
       for chainid in chainids:
         iters = analyze_helper(tableid, M_c, T, chainid, iterations, self.BACKEND_URI)
-        chainid_iteration_info.append('Chain %d: %d iterations', (chainid, iters))
+        chainid_iteration_info.append('Chain %d: %d iterations' % (chainid, iters))
       #   from multiprocessing import Process
       #   p = Process(target=analyze_helper,
       #               args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
@@ -459,7 +461,7 @@ class MiddlewareEngine(object):
       tableid, M_c_json, t_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       t = json.loads(t_json)
-      cur.execute("SELECT COUNT(*) FROM %s;", (tablename,))
+      cur.execute("SELECT COUNT(*) FROM %s;" % tablename)
       numrows = cur.fetchone()[0]
       cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
       chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
@@ -511,7 +513,6 @@ class MiddlewareEngine(object):
     for q in Q:
       args_dict['Q'] = q # querys
       #out, id = au.call('impute_and_confidence', args_dict, self.BACKEND_URI)
-      # TODO: call with whole X_L_list and X_D_list once multistate impute implemented
       out = engine.impute_and_confidence(M_c, X_L_list, X_D_list, Y, [q], numsamples)
       value, conf = out
       if conf >= confidence:
@@ -566,7 +567,18 @@ class MiddlewareEngine(object):
             break
         vals = condition.split(op_str)
         column = vals[0].strip()
-        val = int(vals[1].strip())
+
+        ## Determine what type the value is
+        raw_val = vals[1].strip()
+        if is_int(raw_val):
+          val = int(raw_val)
+        elif is_float(raw_val):
+          val = float(raw_val)
+        else:
+          ## val could have matching single or double quotes, which we can safely eliminate
+          ## with the following safe (string literal only) implementation of eval
+          val = ast.literal_eval(raw_val).lower()
+
         c_idx = M_c['name_to_idx'][column]
         conds.append((c_idx, op, val))
 
@@ -610,14 +622,65 @@ class MiddlewareEngine(object):
             (?P<rowid>[^\s]+)
             (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
         """, colname.lower(), re.VERBOSE)
+        ## Try 2nd type of similarity syntax. Add "contextual similarity" for when cols are present?
+        if not similarity_match:
+          similarity_match = re.search(r"""
+              similarity_to\s*\(\s*
+              (?P<rowid>[^\s]+)
+              (\s+,\s*(?P<column>[^s]+)\s*)?
+              \s*\)
+          """, colname.lower(), re.VERBOSE)
         if similarity_match:
-            target_row_id = int(similarity_match.group('rowid').strip())
+            rowid = similarity_match.group('rowid').strip()
+            if is_int(rowid):
+              target_row_id = int(rowid)
+            else:
+              ## Instead of specifying an integer for rowid, you can specify a where clause.
+              target_row_whereclause = rowid
+              ### TODO: demo: PARSE THIS COLUMN VALUE (IT MUST BE FOR THE REFCOL/KEY/ID COL)
+              
             if similarity_match.group('column'):
                 target_column = similarity_match.group('column').strip()
             else:
                 target_column = None
+                
             queries.append(('similarity', (target_row_id, target_column)))
             similarity_query = True
+            continue
+
+        ## Check if row structural anomalousness/typicality query
+        row_anomalousness_match = re.search(r"""
+            row_anomalousness
+        """, colname.lower(), re.VERBOSE)
+        if row_anomalousness_match:
+            queries.append(('row_anomalousness', None))
+            continue
+
+        ## Check if col structural anomalousness/typicality query
+        col_anomalousness_match = re.search(r"""
+            col_anomalousness\s*\(\s*
+            (?P<column>[^\s]+)
+            \s*\)
+        """, colname.lower(), re.VERBOSE)
+        if col_anomalousness_match:
+            colname = col_anomalousness_match.group('column').strip()
+            queries.append(('col_anomalousness', M_c['name_to_idx'][colname]))
+            continue
+            
+        ## Check if predictive anomalousness query
+        ## TODO: demo (last priority)
+
+        ## Check if mutual information query - AGGREGATE
+        mutual_information_match = re.search(r"""
+            mutual_information\s*\(\s*
+            (?P<col1>[^\s]+)
+            \s*,\s*
+            (?P<col2>[^\s]+)
+            \s*\)
+        """, colname.lower(), re.VERBOSE)
+        if row_anomalousness_match:
+            col1 = row_anomalousness_match
+            queries.append(('mutual_information', (column1, column2)))
             continue
 
         ## If none of above query types matched, then this is a normal column query.
@@ -631,8 +694,10 @@ class MiddlewareEngine(object):
     ## Helper function that applies WHERE conditions to row, returning True if row satisfies where clause.
     def is_row_valid(idx, row):
       for (c_idx, op, val) in conds:
-        if not op(row[c_idx], val):
-          return False
+        if type(row[c_idx]) == str or type(row[c_idx]) == unicode:
+          return op(row[c_idx].lower(), val)
+        else:
+          return op(row[c_idx], val)
       return True
 
     ## If probability query: get latent states, and simple predictive probability givens (Y).
@@ -694,6 +759,8 @@ class MiddlewareEngine(object):
         argnames = inspect.getargspec(method)[0]
         args = [args_dict[argname] for argname in argnames if argname in args_dict]
         function = method(*args)
+        if args_dict['desc']:
+          function = lambda row_id, data_values: -1 * function(row_id, data_values)
         function_list.append(function)          
       ## Step 2: call order by.
       filtered_values = self.order_by(filtered_values, function_list)
@@ -717,6 +784,7 @@ class MiddlewareEngine(object):
           else:
             val = value
           Q = [(len(X_D_list[0][0])+1, c_idx, val)] ## row is set to 1 + max row, instead of this row.
+#          prob = math.exp(engine.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
           prob = math.exp(engine.simple_predictive_probability(M_c, X_L_list[0], X_D_list[0], Y, Q))
           ret_row.append(prob)
         elif query_type == 'similarity':
@@ -805,9 +873,9 @@ class MiddlewareEngine(object):
       tableid, M_c_json, t_json = cur.fetchone()
       M_c = json.loads(M_c_json)
       t = json.loads(t_json)
-      cur.execute("SELECT COUNT(*) FROM %s;", (tablename,))
+      cur.execute("SELECT COUNT(*) FROM %s;" % tablename)
       numrows = int(cur.fetchone()[0])
-      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%s;", (tableid))
+      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
       chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
       chainids = map(int, chainids)
       X_L_list = list()
@@ -835,7 +903,13 @@ class MiddlewareEngine(object):
       Y = None
     else:
       varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
-      Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
+      Y = []
+      for colname, colval in varlist:
+        if type(colval) == str or type(colval) == unicode:
+          colval = ast.literal_eval(colval)
+        Y.append((numrows+1, name_to_idx[colname], colval))
+      #Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
+
       # map values to codes
       Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
 
@@ -846,7 +920,8 @@ class MiddlewareEngine(object):
     args_dict['Y'] = Y
     args_dict['Q'] = Q
     args_dict['n'] = numpredictions
-    out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
+    out = engine.simple_predictive_sample(M_c, X_L_list, X_D_list, Y, Q, numpredictions)
+#    out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
 
     """
     # convert to coordinate format so it can be mapped to original codes
@@ -1024,11 +1099,10 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
   try:
     conn = psycopg2.connect(psycopg_connect_str)
     cur = conn.cursor()
-    exec_str = ("SELECT x_l, x_d, iterations FROM preddb.models"
+    cur.execute("SELECT x_l, x_d, iterations FROM preddb.models"
                 + " WHERE tableid=%s AND chainid=%s"
                 + " AND iterations=("
                 + " SELECT MAX(iterations) FROM preddb.models WHERE tableid=%s AND chainid=%s);", (tableid, chainid, tableid, chainid))
-    cur.execute(exec_str)
       
     X_L_prime_json, X_D_prime_json, prev_iterations = cur.fetchone()
     X_L_prime = json.loads(X_L_prime_json)
@@ -1198,3 +1272,17 @@ def write_json_for_table(t_dict, M_c, X_L_list, X_D_list, M_r=None):
       jsonify_and_dump(X_D_i, filename)
     json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
     jsonify_and_dump(json_indices_dict, "json_indices")
+
+def is_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False    
+
+def is_float(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
