@@ -549,6 +549,8 @@ class MiddlewareEngine(object):
     probability_query = False ## probability_query is True if at least one of the queries is for probability.
     data_query = False ## data_query is True if at least one of the queries is for raw data.
     similarity_query = False
+    anomalousness_query = False
+    mutual_information_query = False
     M_c, M_r, T = self.get_metadata_and_table(tablename)
 
     ## Create conds: the list of conditions in the whereclause.
@@ -611,7 +613,12 @@ class MiddlewareEngine(object):
         if prob_match:
           column = prob_match.group('column')
           c_idx = M_c['name_to_idx'][column]
-          value = int(prob_match.group('value'))
+          value = prob_match.group('value')
+          if is_int(value):
+            value = int(value)
+          elif is_float(value):
+            value = float(value)
+          ## TODO: need to escape strings here with ast.eval... call?
           queries.append(('probability', (c_idx, value)))
           probability_query = True
           continue
@@ -654,6 +661,7 @@ class MiddlewareEngine(object):
         """, colname.lower(), re.VERBOSE)
         if row_anomalousness_match:
             queries.append(('row_anomalousness', None))
+            anomalousness_query = True
             continue
 
         ## Check if col structural anomalousness/typicality query
@@ -665,6 +673,7 @@ class MiddlewareEngine(object):
         if col_anomalousness_match:
             colname = col_anomalousness_match.group('column').strip()
             queries.append(('col_anomalousness', M_c['name_to_idx'][colname]))
+            anomalousness_query = True
             continue
             
         ## Check if predictive anomalousness query
@@ -681,6 +690,7 @@ class MiddlewareEngine(object):
         if row_anomalousness_match:
             col1 = row_anomalousness_match
             queries.append(('mutual_information', (column1, column2)))
+            mutual_information_query = True
             continue
 
         ## If none of above query types matched, then this is a normal column query.
@@ -702,7 +712,7 @@ class MiddlewareEngine(object):
 
     ## If probability query: get latent states, and simple predictive probability givens (Y).
     ## TODO: Pretty sure this is the wrong way to get Y.
-    if probability_query or similarity_query or order_by:
+    if probability_query or similarity_query or order_by or anomalousness_query or mutual_information_query:
       X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
     if probability_query:
       #if whereclause=="" or '=' not in whereclause:
@@ -726,10 +736,12 @@ class MiddlewareEngine(object):
           ret.append(code)
       return tuple(ret)
 
-    ## If there are only probability values, then only return one row.
+    ## If there are only aggregate values, then only return one row.
     ## TODO: is this actually right? Or is probability also a function of row? If so: get rid of this.
-    probabilities_only = reduce(lambda v,q: q[0] == 'probability' and v, queries[1:], True)
-    if probabilities_only:
+    aggregates_only = reduce(lambda v,q: (q[0] == 'probability' or \
+                                          q[0] == 'col_anomalousness' or \
+                                          q[0] == 'mutual_information') and v, queries[1:], True)
+    if aggregates_only:
       limit = 1
 
     ## Iterate through all rows of T, convert codes to values, filter by all predicates in where clause,
@@ -791,6 +803,18 @@ class MiddlewareEngine(object):
           target_row_id, target_column = query
           sim = su.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
           ret_row.append(sim)
+        elif query_type == 'row_anomalousness':
+          anom = su.row_structural_anomalousness(X_L_list, X_D_list, row_id)
+          ret_row.append(anom)
+        elif query_type == 'col_anomalousness':
+          c_idx = query
+          anom = su.column_structural_anomalousness(X_L_list, c_idx)
+          ret_row.append(anom)
+        elif query_type == 'predictive_anomalousness':
+          pass
+        elif query_type == 'mutual_information':
+          pass
+
       data.append(tuple(ret_row))
       row_count += 1
       if row_count >= limit:
