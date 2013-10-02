@@ -213,7 +213,6 @@ class DatabaseClient(object):
             ret = list()
             orderables = list()
             for orderable in column_string_splitter(order_by_clause):
-                print orderable
                 ## Check for DESC
                 desc = re.search(r'\s+desc($|\s|,|(?=limit))', orderable, re.IGNORECASE)
                 orderable = re.sub(r'\s+desc($|\s|,|(?=limit))', '', orderable, re.IGNORECASE)

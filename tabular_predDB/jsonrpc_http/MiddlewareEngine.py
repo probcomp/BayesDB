@@ -285,7 +285,6 @@ class MiddlewareEngine(object):
       conn = psycopg2.connect(psycopg_connect_str)
       cur = conn.cursor()
       query = "CREATE TABLE %s (%s);" % (tablename, colstring)
-      print query
       cur.execute(query)
       with open(clean_csv_abs_path) as fh:
         cur.copy_from(fh, '%s' % tablename, sep=',')
@@ -879,7 +878,6 @@ class MiddlewareEngine(object):
       where_colname = where_vals[0]
       where_val = where_vals[1]
       if type(where_val) == str:
-        print where_val
         where_val = ast.literal_eval(where_val)
       ## Look up the row_id where this column has this value!
       c_idx = M_c['name_to_idx'][where_colname.lower()]
