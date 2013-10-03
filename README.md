@@ -1,4 +1,4 @@
-tabular-predDB
+BayesDB
 ==============
 
 The [wiki](http://probcomp.csail.mit.edu/preddb/index.php?title=BayesDB) is the primary source of documentation.
