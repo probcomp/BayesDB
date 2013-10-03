@@ -8,3 +8,4 @@
 *.DS_Store
 *.jar
 .ropeproject
+server_logs
