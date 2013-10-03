@@ -1,4 +1,4 @@
-from DatabaseClient import DatabaseClient
+from tabular_predDB.jsonrpc_http.DatabaseClient import DatabaseClient
 client = DatabaseClient(hostname=None)
 #print client.execute('start from scratch;')
 

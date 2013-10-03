@@ -21,7 +21,7 @@ import pickle
 import sys
 import numpy
 
-filename =  'dha_story_results_record.pkl'
+filename =  'regression_test_output/dha_story_results_record.pkl'
 dha_story_results = []
 
 if len(sys.argv) > 1 and sys.argv[1] == 'record':
