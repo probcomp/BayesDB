@@ -44,12 +44,9 @@ dbname = 'sgeadmin'
 user = os.environ['USER']
 psycopg_connect_str = 'dbname=%s user=%s' % (dbname, user)
 
-class MiddlewareEngine(object):
+class BayesDBEngine(object):
   """
   Possible ideas for refactoring:
-  0. Re-architect classes. DatabaseClient should be a light client that simply sends the query string
-  to the middleware. Middleware should have a query parsing module.
-  
   1. Have a query class. Created when a complex query (like select) is received, and is able
   to set state on itself including X_L_list, X_D_list, etc. as necessary.
   2. Have separate classes for select, etc.
@@ -60,7 +57,7 @@ class MiddlewareEngine(object):
     self.BACKEND_URI = 'http://' + backend_hostname + ':' + str(backend_uri)
 
   def ping(self):
-    return "MIDDLEWARE GOT PING"
+    return "BAYESDB GOT PING"
 
   def runsql(self, sql_command, order_by=False):
     """Run an arbitrary sql command. Returns the query results for select; 0 if not select."""
@@ -1122,23 +1119,6 @@ class MiddlewareEngine(object):
         conn.close()
     return json.loads(cctypes)
 
-# helper functions
-get_name = lambda x: getattr(x, '__name__')
-get_Middleware_Engine_attr = lambda x: getattr(MiddlewareEngine, x)
-is_Middleware_Engine_method_name = lambda x: inspect.ismethod(get_Middleware_Engine_attr(x))
-#
-def get_method_names():
-    return filter(is_Middleware_Engine_method_name, dir(MiddlewareEngine))
-#
-def get_method_name_to_args():
-    method_names = get_method_names()
-    method_name_to_args = dict()
-    for method_name in method_names:
-        method = MiddlewareEngine.__dict__[method_name]
-        arg_str_list = inspect.getargspec(method).args[1:]
-        method_name_to_args[method_name] = arg_str_list
-    return method_name_to_args
-
 def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
   """Only for one chain."""
   try:
@@ -1362,3 +1342,20 @@ def convert_row(row, M_c):
     else:
       ret.append(code)
   return tuple(ret)
+
+# helper functions
+get_name = lambda x: getattr(x, '__name__')
+get_BayesDB_Engine_attr = lambda x: getattr(BayesDBEngine, x)
+is_BayesDB_Engine_method_name = lambda x: inspect.ismethod(get_BayesDB_Engine_attr(x))
+#
+def get_method_names():
+    return filter(is_BayesDB_Engine_method_name, dir(BayesDBEngine))
+#
+def get_method_name_to_args():
+    method_names = get_method_names()
+    method_name_to_args = dict()
+    for method_name in method_names:
+        method = BayesDBEngine.__dict__[method_name]
+        arg_str_list = inspect.getargspec(method).args[1:]
+        method_name_to_args[method_name] = arg_str_list
+    return method_name_to_args

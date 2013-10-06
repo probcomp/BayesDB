@@ -1,0 +1,436 @@
+#
+# Copyright 2013 Baxter, Lovell, Mangsingkha, Saeedi
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+
+from bayesdb.engine.BayesDBEngine import get_method_name_to_args, get_method_names
+
+
+class Parser(object):
+    def parse(self, sql_string):
+        if sql_string[-1] == ';':
+            sql_string = sql_string[:-1]
+        words = sql_string.lower().split()
+        for method_name in get_method_names():
+            import pdb; pdb.set_trace()
+
+    def parse_set_hostname(self, words, orig):
+        if len(words) >= 3:
+            if words[0] == 'set' and words[1] == 'hostname':
+                return self.set_hostname(words[2])
+
+    def parse_get_hostname(self, words, orig):
+        if len(words) >= 2 and words[0] == 'get' and words[1] == 'hostname':
+            return self.get_hostname()
+
+    def parse_ping(self, words, orig):
+        if len(words) >= 1 and words[0] == 'ping':
+            return self.ping()
+
+    def parse_start_from_scratch(self, words, orig):
+        if len(words) >= 3:
+            if words[0] == 'start' and words[1] == 'from' and words[2] == 'scratch':
+                return self.start_from_scratch()
+
+    def parse_drop_and_load_db(self, words, orig):
+        if len(words) >= 2:
+            if words[0] == 'drop' and words[1] == 'and' and words[2] == 'load':
+                if len(words) == 3:
+                    return self.drop_and_load_db(words[3])
+                else:
+                    print 'Did you mean: DROP AND LOAD <filename>;?'
+                    return False
+
+    def parse_create_model(self, words, orig):
+        n_chains = 10
+        if len(words) >= 1:
+            if words[0] == 'create':
+                if len(words) >= 4 and words[1] == 'model' or words[1] == 'models':
+                    if words[2] == 'for':
+                        tablename = words[3]
+                        if len(words) >= 7:
+                            if words[4] == 'with' and self.is_int(words[5]) and words[6] == 'explanations':
+                                n_chains = int(words[5])
+                        result = self.create_model(tablename, n_chains)
+                        print 'Created %d models for btable %s' % (n_chains, tablename)
+                        return result
+                    else:
+                        print 'Did you mean: CREATE MODELS FOR <btable> [WITH <n_chains> EXPLANATIONS];?'
+                        return False
+                elif len(words) >= 3 and self.is_int(words[1]):
+                    n_chains = int(words[1])
+                    assert n_chains > 0
+                    if words[2] == 'model' or words[2] == 'models':
+                        if len(words) >= 5 and words[3] == 'for':
+                            tablename = words[4]
+                            result = self.create_model(tablename, n_chains)
+                            print 'Created %d models for btable %s' % (n_chains, tablename)
+                            return result
+                        else:
+                            print 'Did you mean: CREATE <n_chains> MODELS FOR <btable>;?'
+                            return False
+                else:
+                    print 'Did you mean: CREATE <n_chains> MODELS FOR <btable> or CREATE BTABLE <btable> FROM <csvfile>;?'
+                    return False
+
+    def parse_upload_data_table(self, words, orig):
+        crosscat_column_types = None
+        if len(words) >= 2:
+            if (words[0] == 'upload' or words[0] == 'create') and (words[1] == 'ptable' or words[1] == 'btable'):
+                if len(words) >= 5:
+                    tablename = words[2]
+                    if words[3] == 'from':
+                        try:
+                            f = open(orig.split()[4], 'r')
+                            csv = f.read()
+                            result = self.upload_data_table(tablename, csv, crosscat_column_types)
+                            #print 'Created btable %s' % tablename
+                            return result
+                        except Exception as e:
+                            print str(e)
+                            return False
+                else:
+                    print 'Did you mean: CREATE BTABLE <tablename> FROM <filename>;?'
+                    return False
+
+    def parse_drop_tablename(self, words, orig):
+        if len(words) >= 3:
+            if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
+                return self.drop_tablename(words[2])
+
+    def parse_delete_chain(self, words, orig):
+        if len(words) >= 3:
+            if words[0] == 'delete':
+                if words[1] == 'chain' and self.is_int(words[2]):
+                    chain_index = int(words[2])
+                    if words[3] == 'from':
+                        tablename = words[4]
+                        return self.delete_chain(tablename, chain_index)
+                elif len(words) >= 6 and words[2] == 'all' and words[3] == 'chains' and words[4] == 'from':
+                    chain_index = 'all'
+                    tablename = words[5]
+                    return self.delete_chain(tablename, chain_index)
+                else:
+                    print 'Did you mean: DELETE CHAIN <chain_index> FROM <tablename>;?'
+                    return False
+
+    def parse_analyze(self, words, orig):
+        chain_index = 'all'
+        iterations = 2
+        wait = False
+        if len(words) >= 1 and words[0] == 'analyze':
+            if len(words) >= 2:
+                tablename = words[1]
+            else:
+                print 'Did you mean: ANALYZE <btable> [CHAIN INDEX <chain_index>] [FOR <iterations> ITERATIONS];?'
+                return False
+            idx = 2
+            if words[idx] == "chain" and words[idx+1] == 'index':
+                chain_index = words[idx+2]
+                idx += 3
+            ## TODO: check length here
+            if words[idx] == "for" and words[idx+2] == 'iterations':
+                iterations = int(words[idx+1])
+            return self.analyze(tablename, chain_index, iterations, wait=False)
+
+    def parse_infer(self, words, orig):
+        match = re.search(r"""
+            infer\s+
+            (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
+            from\s+(?P<btable>[^\s]+)\s+
+            (where\s+(?P<whereclause>.*(?=with)))?
+            \s*with\s+confidence\s+(?P<confidence>[^\s]+)
+            (\s+limit\s+(?P<limit>[^\s]+))?
+            (\s+numsamples\s+(?P<numsamples>[^\s]+))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'infer':
+                print 'Did you mean: INFER col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
+                    'WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]];?'
+                return False
+            else:
+                return None
+        else:
+            columnstring = match.group('columnstring').strip()
+            tablename = match.group('btable')
+            whereclause = match.group('whereclause')
+            if whereclause is None:
+                whereclause = ''
+            else:
+                whereclause = whereclause.strip()
+            confidence = float(match.group('confidence'))
+            limit = match.group('limit')
+            if limit is None:
+                limit = float("inf")
+            else:
+                limit = int(limit)
+            numsamples = match.group('numsamples')
+            if numsamples is None:
+                numsamples = 1
+            else:
+                numsamples = int(numsamples)
+            newtablename = '' # For INTO
+            orig, order_by = self.extract_order_by(orig)
+            return self.infer(tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by)
+
+
+    def extract_order_by(self, orig):
+        pattern = r"""
+            (order\s+by\s+(?P<orderbyclause>.*?((?=limit)|$)))
+        """ 
+        match = re.search(pattern, orig, re.VERBOSE | re.IGNORECASE)
+        if match:
+            order_by_clause = match.group('orderbyclause')
+            ret = list()
+            orderables = list()
+            for orderable in column_string_splitter(order_by_clause):
+                ## Check for DESC
+                desc = re.search(r'\s+desc($|\s|,|(?=limit))', orderable, re.IGNORECASE)
+                orderable = re.sub(r'\s+desc($|\s|,|(?=limit))', '', orderable, re.IGNORECASE)
+                ## Check for similarity
+                pattern = r"""
+                    similarity\s+to\s+(?P<rowid>[^\s]+)
+                    (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
+                """
+                match = re.search(pattern, orderable, re.VERBOSE | re.IGNORECASE)
+                if match:
+                    rowid = int(match.group('rowid').strip())
+                    if match.group('column'):
+                        column = match.group('column').strip()
+                    else:
+                        column = None
+                    orderables.append(('similarity', {'desc': desc, 'target_row_id': rowid, 'target_column': column}))
+                else:
+                    match = re.search(r"""
+                          similarity_to\s*\(\s*
+                          (?P<rowid>[^,]+)
+                          (\s*,\s*(?P<column>[^\s]+)\s*)?
+                          \s*\)
+                      """, orderable, re.VERBOSE | re.IGNORECASE) 
+                    if match:
+                        if match.group('column'):
+                            column = match.group('column').strip()
+                        else:
+                            column = None
+                        rowid = match.group('rowid').strip()
+                        if is_int(rowid):
+                            target_row_id = int(rowid)
+                        else:
+                            target_row_id = rowid
+                        orderables.append(('similarity', {'desc': desc, 'target_row_id': target_row_id, 'target_column': column}))
+
+                    else:
+                        orderables.append(('column', {'desc': desc, 'column': orderable.strip()}))
+            orig = re.sub(pattern, '', orig, flags=re.VERBOSE | re.IGNORECASE)
+            return (orig, orderables)
+        else:
+            return (orig, False)
+
+
+
+    def extract_limit(self, orig):
+        pattern = r'limit\s+(?P<limit>\d+)'
+        match = re.search(pattern, orig.lower())
+        if match:
+            limit = int(match.group('limit').strip())
+            return limit
+        else:
+            return float('inf')
+
+    def parse_export_samples(self, words, orig):
+        match = re.search(r"""
+            export\s+
+            (samples\s+)?
+            from\s+
+            (?P<btable>[^s]+)
+            \s+to\s+
+            (?P<pklpath>[^\s]+)
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'export':
+                print 'Did you mean: EXPORT SAMPLES FROM <btable> TO <pklpath>;?'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable')
+            pklpath = match.group('pklpath')
+            if pklpath[-7:] != '.pkl.gz':
+                pklpath = pklpath + ".pkl.gz"
+            M_c, M_r, T, X_L_list, X_D_list = self.export_samples(tablename)
+            samples_dict = dict(M_c=M_c, M_r=M_r, T=T, X_L_list=X_L_list, X_D_list=X_D_list)
+            samples_file = gzip.GzipFile(pklpath, 'w')
+            pickle.dump(samples_dict, samples_file)
+            return "Successfully exported the samples to %s" % pklpath
+
+    def parse_import_samples(self, words, orig):
+        match = re.search(r"""
+            import\s+
+            (samples\s+)?
+            (?P<pklpath>[^\s]+)\s+
+            into\s+
+            (?P<btable>[^\s]+)
+            (\s+iterations\s+(?P<iterations>[^\s]+))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'import':
+                print 'Did you mean: IMPORT SAMPLES <pklpath> INTO <btable> [ITERATIONS <iterations>]'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable')
+            pklpath = match.group('pklpath')
+            if pklpath[-3:] == '.gz':
+                samples = pickle.load(gzip.open(pklpath, 'rb'))
+            else:
+                samples = pickle.load(open(pklpath, 'rb'))
+            X_L_list = samples['X_L_list']
+            X_D_list = samples['X_D_list']
+            M_c = samples['M_c']
+            T = samples['T']
+            if match.group('iterations'):
+                iterations = int(match.group('iterations').strip())
+            else:
+                iterations = 0
+            return self.import_samples(tablename, X_L_list, X_D_list, M_c, T, iterations)
+        
+    def parse_select(self, words, orig):
+        match = re.search(r"""
+            select\s+
+            (?P<columnstring>.*?((?=from)))
+            \s*from\s+(?P<btable>[^\s]+)\s*
+            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
+            (\s*limit\s+(?P<limit>[^\s]+))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        ## (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)
+        if match is None:
+            if words[0] == 'select':
+                print 'Did you mean: SELECT col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
+                    '[ORDER BY SIMILARITY TO <rowid> [WITH RESPECT TO <column>]] [LIMIT <limit>];?'
+                return False
+            else:
+                return None
+        else:
+            columnstring = match.group('columnstring').strip()
+            tablename = match.group('btable')
+            whereclause = match.group('whereclause')
+            if whereclause is None:
+                whereclause = ''
+            else:
+                whereclause = whereclause.strip()
+            limit = self.extract_limit(orig)
+            orig, order_by = self.extract_order_by(orig)
+            return self.select(tablename, columnstring, whereclause, limit, order_by)
+
+    def parse_predict(self, words, orig):
+        match = re.search(r"""
+            simulate\s+
+            (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
+            from\s+(?P<btable>[^\s]+)\s+
+            (where\s+(?P<whereclause>.*(?=times)))?
+            times\s+(?P<times>[^\s]+)
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'simulate':
+                print 'Did you mean: SIMULATE col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times> '+\
+                    '[ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]];?'
+                return False
+            else:
+                return None
+        else:
+            columnstring = match.group('columnstring').strip()
+            tablename = match.group('btable')
+            whereclause = match.group('whereclause').strip()
+            if whereclause is None:
+                whereclause = ''
+            numpredictions = int(match.group('times'))
+            newtablename = '' # For INTO
+            orig, order_by = self.extract_order_by(orig)
+            return self.predict(tablename, columnstring, newtablename, whereclause, numpredictions, order_by)
+
+    def parse_estimate_dependence_probabilities(self, words, orig):
+        match = re.search(r"""
+            estimate\s+dependence\s+probabilities\s+from\s+
+            (?P<btable>[^\s]+)
+            ((\s+referencing\s+(?P<refcol>[^\s]+))|(\s+for\s+(?P<forcol>[^\s]+)))?
+            (\s+with\s+confidence\s+(?P<confidence>[^\s]+))?
+            (\s+limit\s+(?P<limit>[^\s]+))?
+            (\s+save\s+to\s+(?P<filename>[^\s]+))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'estimate':
+                print 'Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]] [SAVE TO <file>]'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable').strip()
+            if match.group('refcol'):
+                col = match.group('refcol')
+                submatrix = True
+            else:
+                col = match.group('forcol')
+                submatrix = False
+            confidence = match.group('confidence')
+            if match.group('limit'):
+                limit = int(match.group('limit'))
+            else:
+                limit = float("inf")
+            if match.group('filename'):
+                filename = os.path.join('../../www/', match.group('filename'))
+            else:
+                filename = None
+            return self.estimate_dependence_probabilities(tablename, col, confidence, limit, filename, submatrix)
+
+    def parse_update_datatypes(self, words, orig):
+        match = re.search(r"""
+            update\s+datatypes\s+from\s+
+            (?P<btable>[^\s]+)\s+
+            set\s+(?P<mappings>[^;]*);?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'update':
+                print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical|key|ignore];?'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable').strip()
+            mapping_string = match.group('mappings').strip()
+            mappings = dict()
+            for mapping in mapping_string.split(','):
+                vals = mapping.split('=')
+                if 'continuous' in vals[1] or 'numerical' in vals[1]:
+                    datatype = 'continuous'
+                elif 'multinomial' in vals[1] or 'categorical' in vals[1]:
+                    m = re.search(r'\((?P<num>[^\)]+)\)', vals[1])
+                    if m:
+                        datatype = int(m.group('num'))
+                    else:
+                        datatype = 'multinomial'
+                elif 'key' in vals[1]:
+                    datatype = 'key'
+                elif 'ignore' in vals[1]:
+                    datatype = 'ignore'
+                else:
+                    print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical|key|ignore];?'
+                    return False
+                mappings[vals[0]] = datatype
+            return self.update_datatypes(tablename, mappings)
+
+    def parse_write_json_for_table(self, words, orig):
+        if len(words) >= 5:
+            if words[0] == 'write' and words[1] == 'json' and words[2] == 'for' and words[3] == 'table':
+                return {'tablename': words[4]}
