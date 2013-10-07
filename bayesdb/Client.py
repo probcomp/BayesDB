@@ -13,8 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-## TODO: move import to bayesdb project
-import tabular_predDB.python_utils.api_utils as au
+import crosscat.utils.api_utils as au
 import inspect
 import pickle
 import gzip
@@ -24,8 +23,8 @@ import os
 import time
 import ast
 
-from bayesdb.engine.BayesDBEngine import BayesDBEngine, is_int, column_string_splitter
-from bayesdb.parser import Parser
+from bayesdb.Engine import BayesDBEngine, is_int, column_string_splitter
+from bayesdb.Parser import Parser
 bayesdb_engine = BayesDBEngine()
 parser = Parser()
 

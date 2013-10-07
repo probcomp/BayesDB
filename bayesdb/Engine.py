@@ -26,23 +26,18 @@ import ast
 #
 import pylab
 import numpy
-import psycopg2
 import matplotlib.cm
 from collections import defaultdict
 #
-import tabular_predDB.python_utils.inference_utils as iu
-import tabular_predDB.python_utils.api_utils as au
-import tabular_predDB.python_utils.data_utils as du
-import tabular_predDB.python_utils.sample_utils as su
-import tabular_predDB.settings as S
+import crosscat.utils.inference_utils as iu
+import crosscat.utils.api_utils as au
+import crosscat.utils.data_utils as du
+import crosscat.utils.sample_utils as su
+import bayesdb.settings as S
 
-# For testing
-from crosscat.tabular_predDB.LocalEngine import LocalEngine as Engine
-engine = Engine()
-
-dbname = 'sgeadmin'
-user = os.environ['USER']
-psycopg_connect_str = 'dbname=%s user=%s' % (dbname, user)
+from crosscat.CrossCatClient import get_CrossCatClient
+from bayesdb.engine.persistence_layer import PersistenceLayer
+import utils
 
 class BayesDBEngine(object):
   """
@@ -52,109 +47,28 @@ class BayesDBEngine(object):
   2. Have separate classes for select, etc.
   3. Have user defined functions all sitting in their own module? Or importable from somewhere?
   """
-  def __init__(self, backend_hostname='localhost', backend_uri=8007):
-    self.backend_hostname = backend_hostname
-    self.BACKEND_URI = 'http://' + backend_hostname + ':' + str(backend_uri)
+  def __init__(self, engine_type, **kwargs):
+    self.backend = get_CrossCatClient(engine_type, **kwargs)
+    self.persistence_layer = PersistenceLayer()
 
   def ping(self):
-    return "BAYESDB GOT PING"
-
-  def runsql(self, sql_command, order_by=False):
-    """Run an arbitrary sql command. Returns the query results for select; 0 if not select."""
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute(sql_command)
-      try:
-        data = cur.fetchall()
-        col_metadata = cur.description
-        colnames = [coltuple[0] for coltuple in col_metadata]
-        ret = {'data':data, 'columns':colnames}
-      except psycopg2.ProgrammingError:
-        ret = 0
-      if order_by:
-        # GET X_L AND X_D
-        tablename = re.search(r'from\s+(?P<tablename>[^\s]+)', sql_command).group('tablename').strip()
-        X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-        ret = self.order_by_similarity(colnames, ret, X_L_list, X_D_list, M_c, order_by)
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)      
-      return e
-    finally:
-      conn.close()
-    return ret
-
+    return "BayesDBEngine received ping."
 
   def start_from_scratch(self):
-    # drop
-    cmd_str = 'dropdb -U %s %s' % (user, dbname)
-    os.system(cmd_str)
-    # create
-    cmd_str = 'createdb -U %s %s' % (user, dbname)
-    os.system(cmd_str)
-    #
-    script_filename = os.path.join(S.path.this_repo_dir,
-                                   'install_scripts/table_setup.sql')
-    cmd_str = 'psql %s %s -f %s' % (dbname, user, script_filename)
-    os.system(cmd_str)
-    return 'STARTED FROM SCRATCH'
+    self.persistence_layer.start_from_scratch()
+    return 'Started db from scratch.'
 
   def drop_and_load_db(self, filename):
-    if not os.path.isfile(filename):
-      raise_str = 'drop_and_load_db(%s): filename does not exist' % filename
-      raise Exception(raise_str)
-    # drop
-    cmd_str = 'dropdb %s' % dbname
-    os.system(cmd_str)
-    # create
-    cmd_str = 'createdb %s' % dbname
-    os.system(cmd_str)
-    # load
-    if filename.endswith('.gz'):
-      cmd_str = 'gunzip -c %s | psql %s %s' % (filename, dbname, user)
-    else:
-      cmd_str = 'psql %s %s < %s' % (dbname, user, filename)
-    os.system(cmd_str)
+    self.persistence_layer.drop_and_load_db(filename)
+    return 'Dropped and loaded DB.'
 
   def drop_tablename(self, tablename):
     """Delete table by tablename."""
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute('DROP TABLE %s' % tablename)
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      tableids = cur.fetchall()
-      for tid in tableids:
-        tableid = tid[0]
-        cur.execute("DELETE FROM preddb.models WHERE tableid=%s;", (tableid,))
-        cur.execute("DELETE FROM preddb.table_index WHERE tableid=%s;", (tableid,))
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)      
-      return e
-    finally:
-      conn.close()
-    return 0
+    return self.persistence_layer.drop_btable(tablename)
 
   def delete_chain(self, tablename, chain_index):
      """Delete one chain."""
-     try:
-       conn = psycopg2.connect(psycopg_connect_str)
-       cur = conn.cursor()
-       cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-       tableids = cur.fetchall()
-       for tid in tableids:
-         tableid = tid[0]
-         cur.execute("DELETE FROM preddb.models WHERE tableid=%s;", (tableid,))
-         cur.execute("DELETE FROM preddb.table_index WHERE tableid=%s;", (tableid,))
-       conn.commit()
-     except psycopg2.DatabaseError, e:
-       print('Error %s' % e)      
-       return e
-     finally:
-       conn.close()
-     return 0
+     return self.persistence_layer.delete_chain(tablename)
 
   def update_datatypes(self, tablename, mappings):
     """
@@ -164,29 +78,14 @@ class BayesDBEngine(object):
     and it ignores multinomials' specific number of outcomes.
     Also, disastrous things may happen if you update a schema after creating models.
     """
-    # First, get existing cctypes, and T, M_c, and M_r.
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      tableid = cur.fetchone()[0]
-      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
-      max_chainid = cur.fetchone()[0]
-      cur.execute("SELECT cctypes, t, m_r, m_c, path FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      cctypes_json, t_json, m_r_json, m_c_json, csv_abs_path = cur.fetchone()
-      cctypes = json.loads(cctypes_json)
-      t = json.loads(t_json)
-      m_r = json.loads(m_r_json)
-      m_c = json.loads(m_c_json)
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return 'Caught DB Error: ' + str(e)
-    finally:
-      conn.close()
+    max_chainid = self.persistence_layer.get_max_chain_id(tablename)
     if max_chainid is not None:
       return 'Error: cannot update datatypes after models have already been created. Please create a new table.'
-
+    
+    # First, get existing cctypes, and T, M_c, and M_r.    
+    cctypes = self.persistence_layer.get_cctypes(tablename)
+    m_c, m_r, t = self.persistence_layer.get_metadata_and_table(tablename)
+    
     # Now, update cctypes, T, M_c, and M_r
     for col, mapping in mappings.items():
       ## TODO: fix this hack! See method's docstring.
@@ -196,63 +95,17 @@ class BayesDBEngine(object):
     t, m_r, m_c, header = du.read_data_objects(csv_abs_path, cctypes=cctypes)
 
     # Now, put cctypes, T, M_c, and M_r back into the DB
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute("UPDATE preddb.table_index SET cctypes=%s, m_r=%s, m_c=%s, t=%s WHERE tablename=%s;", (json.dumps(cctypes), json.dumps(m_r), json.dumps(m_c), json.dumps(t), tablename))
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return 'Caught DB Error: ' + str(e)
-    finally:
-      conn.close()
+    self.persistence_layer.update_cctypes(tablename, cctypes)
+    self.persistence_layer.update_metadata_and_table(tablename, M_r, M_c, T)
+
     colnames = [m_c['idx_to_name'][str(idx)] for idx in range(len(m_c['idx_to_name']))]
     return dict(columns=colnames, data=[cctypes])
-      
-  def upload_data_table(self, tablename, csv, crosscat_column_types):
-    """Upload a csv table to the predictive db.
-    Crosscat_column_types must be a dictionary mapping column names
-    to either 'ignore', 'continuous', or 'multinomial'. Not every
-    column name must be present in the dictionary: default is continuous."""
-    # First, test if table with this name already exists, and fail if it does
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute("select exists(select * from information_schema.tables where table_name=%s);", (tablename,))
-      if cur.fetchone()[0]:
-        return "Error: table with that name already exists."
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return 'Caught DB Error: ' + str(e)
-    finally:
-      conn.close()
 
-    # Write csv to file
-    cur_dir = os.path.dirname(os.path.abspath(__file__))
-    f = open('%s/../../www/data/%s.csv' % (cur_dir, tablename), 'w')
-    csv_abs_path = os.path.abspath(f.name)
-    f.write(csv)
-    f.close()
-    os.chmod(csv_abs_path, 0755)
-    
-    # Write csv to a file, with colnames (first row) removed
-    clean_csv = csv[csv.index('\n')+1:]
-    f = open('%s/../../www/data/%s_clean.csv' % (cur_dir, tablename), 'w')
-    clean_csv_abs_path = os.path.abspath(f.name)
-    f.write(clean_csv)
-    f.close()
-    os.chmod(clean_csv_abs_path, 0755)
-    
-    # Parse column names to create table
-    csv = csv.replace('\r', '')
-    colnames = csv.split('\n')[0].split(',')
-    
+  def _guess_schema(self, header, values, crosscat_column_types):
     # Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes
     # Also make the corresponding postgres column types.
     postgres_coltypes = []
     cctypes = []
-    header, values = du.read_csv(csv_abs_path, has_header=True)
     column_data_lookup = dict(zip(header, numpy.array(values).T))
     have_column_tpes = type(crosscat_column_types) == dict
     for colname in colnames:
@@ -269,109 +122,45 @@ class BayesDBEngine(object):
         postgres_coltypes.append('float8')
       elif cctype == 'multinomial':
         postgres_coltypes.append('varchar(1000)')
+      return postgres_coltypes, cctypes
         
-    # TODO: warning: m_r and m_c have 0-indexed indices
-    #       but the db has 1-indexed keys
-    t, m_r, m_c, header = du.read_data_objects(csv_abs_path, cctypes=cctypes)
-    colstring = ', '.join([
-        ' '.join(tup)
-        for tup in zip(colnames, postgres_coltypes)
-        ])
-    # Execute queries
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      query = "CREATE TABLE %s (%s);" % (tablename, colstring)
-      cur.execute(query)
-      with open(clean_csv_abs_path) as fh:
-        cur.copy_from(fh, '%s' % tablename, sep=',')
-      curtime = datetime.datetime.now().ctime()
-      cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes, path) VALUES (%s, %s, %s, NULL, %s, %s, %s, %s, %s);", (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes), csv_abs_path))
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return 'Caught DB Error: ' + str(e)
-    finally:
-      if conn:
-        conn.close()    
+  def upload_data_table(self, tablename, csv, crosscat_column_types):
+    """Upload a csv table to the predictive db.
+    Crosscat_column_types must be a dictionary mapping column names
+    to either 'ignore', 'continuous', or 'multinomial'. Not every
+    column name must be present in the dictionary: default is continuous."""
+    # First, test if table with this name already exists, and fail if it does
+    if self.persistence_layer.check_if_table_exists(tablename):
+      return 'Error: btable with that name already exists.'
+    
+    self.persistence_layer.write_csv(tablename, csv)
+    
+    # Parse column names to create table
+    csv = csv.replace('\r', '')
+    colnames = csv.split('\n')[0].split(',')
+
+    # Guess schema and create table
+    header, values = du.read_csv(csv_abs_path, has_header=True)
+    postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types)
+    self.persistence_layer.create_btable_from_csv(tablename, clean_csv_abs_path, t, m_r, m_c, cctypes, postgres_coltypes)
+    
     return dict(columns=colnames, data=[cctypes])
 
   def export_samples(self, tablename):
     """Opposite of import samples! Save a pickled version of X_L_list, X_D_list, M_c, and T."""
-    X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
-    M_c, M_r, T = self.get_metadata_and_table(tablename)
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     return M_c, M_r, T, X_L_list, X_D_list
 
   def import_samples(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
     """Import these samples as if they are new chains"""
-    # Get t, m_c, and m_r, and tableid
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute("SELECT t, m_r, m_c FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      t_json, m_r_json, m_c_json = cur.fetchone()
-      t = json.loads(t_json)
-      m_r = json.loads(m_r_json)
-      m_c = json.loads(m_c_json)
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      tableid = cur.fetchone()[0]
-      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
-      max_chainid = cur.fetchone()[0]
-      if max_chainid is None: max_chainid = -1
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return e
-    except psycopg2.ProgrammingError:
-      conn.commit()
-    finally:
-      if conn:
-        conn.close()
-
-    # Insert states for each chain into the middleware db
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      curtime = datetime.datetime.now().ctime()
-      ## TODO: This is dangerous. We're using the new M_c, but cctypes will be out of date. Need to update cctypes.
-      cur.execute("UPDATE preddb.table_index SET m_c=%s, t=%s WHERE tablename=%s;", (json.dumps(M_c), json.dumps(T), tablename))
-      for idx, (X_L, X_D) in enumerate(zip(X_L_list, X_D_list)):
-        chain_index = max_chainid + 1 + idx
-        cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%s, %s, %s, %s, %s, %s);", (tableid, json.dumps(X_L), json.dumps(X_D), curtime, chain_index, iterations))
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return e
-    finally:
-      if conn:
-        conn.close()
-    return 0
+    self.persistence_layer.add_samples(tablename, X_L_list, X_D_list, iterations)
     
   def create_model(self, tablename, n_chains):
     """Call initialize n_chains times."""
     # Get t, m_c, and m_r, and tableid
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute("SELECT t, m_r, m_c FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      T_json, M_r_json, M_c_json = cur.fetchone()
-      T = json.loads(T_json)
-      M_r = json.loads(M_r_json)
-      M_c = json.loads(M_c_json)
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      tableid = cur.fetchone()[0]
-      cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
-      max_chainid = cur.fetchone()[0]
-      if max_chainid is None: max_chainid = 0
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return e
-    except psycopg2.ProgrammingError:
-      conn.commit()
-    finally:
-      if conn:
-        conn.close()
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    max_chainid = self.persistence_layer.get_max_chain_id(tablename)
 
     # Call initialize on backend
     states_by_chain = list()
@@ -380,66 +169,36 @@ class BayesDBEngine(object):
     args_dict['M_r'] = M_r
     args_dict['T'] = T
     for chain_index in range(max_chainid, n_chains + max_chainid):
-      out = engine.initialize(M_c, M_r, T)
-      #out, id = au.call('initialize', args_dict, self.BACKEND_URI)
-      x_l_prime, x_d_prime = out
+      x_l_prime, x_d_prime = self.backend.initialize(M_c, M_r, T)
       states_by_chain.append((x_l_prime, x_d_prime))
-    
-    # Insert initial states for each chain into the middleware db
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      curtime = datetime.datetime.now().ctime()
-      for chain_index in range(n_chains):
-        cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%s, %s, %s, %s, %s, 0);", (tableid, json.dumps(x_l_prime), json.dumps(x_d_prime), curtime, chain_index))        
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return e
-    finally:
-      if conn:
-        conn.close()
-    return 0
+
+    # Insert results into persistence layer
+    self.persistence_layer.insert_models(tablename, x_l_prime, x_d_prime)
 
   def analyze(self, tablename, chain_index=1, iterations=2, wait=False):
     """Run analyze for the selected table. chain_index may be 'all'."""
     # Get M_c, T, X_L, and X_D from database
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      tableid = int(cur.fetchone()[0])
-      cur.execute("SELECT m_c, t FROM preddb.table_index WHERE tableid=%s;", (tableid,))
-      M_c_json, T_json = cur.fetchone()
-      M_c = json.loads(M_c_json)
-      T = json.loads(T_json)
-      if (str(chain_index).upper() == 'ALL'):
-        cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
-        chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
-        chainids = map(int, chainids)
-        print('chainids: %s' % chainids)
-      else:
-        chainids = [chain_index]
-      conn.commit()
-      p_list = []
-      chainid_iteration_info = list()
-      for chainid in chainids:
-        iters = analyze_helper(tableid, M_c, T, chainid, iterations, self.BACKEND_URI)
-        chainid_iteration_info.append('Chain %d: %d iterations' % (chainid, iters))
-      #   from multiprocessing import Process
-      #   p = Process(target=analyze_helper,
-      #               args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
-      #   p_list.append(p)
-      #   p.start()
-      # if wait:
-      #   for p in p_list:
-      #     p.join()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return e
-    finally:
-      if conn:
-        conn.close()
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    
+    if (str(chain_index).upper() == 'ALL'):
+      chainids = self.persistence_layer.get_chain_ids(tablename)
+      print('chainids: %s' % chainids)
+    else:
+      chainids = [chain_index]
+
+    chainid_iteration_info = list()
+    # p_list = []
+    for chainid in chainids:
+      iters = analyze_helper(tableid, M_c, T, chainid, iterations)
+      chainid_iteration_info.append('Chain %d: %d iterations' % (chainid, iters))
+    #   from multiprocessing import Process
+    #   p = Process(target=analyze_helper,
+    #               args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
+    #   p_list.append(p)
+    #   p.start()
+    # if wait:
+    #   for p in p_list:
+    #     p.join()
     return ', '.join(chainid_iteration_info)
 
   def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False):
@@ -448,36 +207,10 @@ class BayesDBEngine(object):
     Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
     Argument newtablename == null/emptystring if we don't want to do INTO
     """
-    # TODO: actually read newtablename.
     # TODO: actually impute only missing values, instead of all values.
-    # Get M_c, X_L, and X_D from database
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute("SELECT tableid, m_c, t FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      tableid, M_c_json, t_json = cur.fetchone()
-      M_c = json.loads(M_c_json)
-      t = json.loads(t_json)
-      cur.execute("SELECT COUNT(*) FROM %s;" % tablename)
-      numrows = cur.fetchone()[0]
-      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
-      chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
-      chainids = map(int, chainids)
-      X_L_list = list()
-      X_D_list = list()
-      for chainid in chainids:
-        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%s AND chainid=%s AND " 
-                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%s AND chainid=%s);", (tableid, chainid, tableid, chainid))
-        X_L_prime_json, X_D_prime_json = cur.fetchone()
-        X_L_list.append(json.loads(X_L_prime_json))
-        X_D_list.append(json.loads(X_D_prime_json))
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return e
-    finally:
-      if conn:
-        conn.close()
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    numrows = len(T)
 
     t_array = numpy.array(t, dtype=float)
     name_to_idx = M_c['name_to_idx']
@@ -499,6 +232,7 @@ class BayesDBEngine(object):
       # map values to codes
       Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
 
+    # Call backend
     args_dict = dict()
     args_dict['M_c'] = M_c
     args_dict['X_L'] = X_L_list
@@ -509,8 +243,7 @@ class BayesDBEngine(object):
     ret = []
     for q in Q:
       args_dict['Q'] = q # querys
-      #out, id = au.call('impute_and_confidence', args_dict, self.BACKEND_URI)
-      out = engine.impute_and_confidence(M_c, X_L_list, X_D_list, Y, [q], numsamples)
+      out = self.backend.impute_and_confidence(M_c, X_L_list, X_D_list, Y, [q], numsamples)
       value, conf = out
       if conf >= confidence:
         row_idx = q[0]
@@ -526,7 +259,6 @@ class BayesDBEngine(object):
     for r,c,val in imputations_list:
       imputations_dict[r][c] = val
     ret = self.select(tablename, columnstring, whereclause, limit, order_by=order_by, imputations_dict=imputations_dict)
-    #ret['data'] = self.order_by_similarity(ret['columns'], ret['data'], X_L_list, X_D_list, M_c, order_by)
     return ret
 
   def select(self, tablename, columnstring, whereclause, limit, order_by, imputations_dict=None):
@@ -548,7 +280,7 @@ class BayesDBEngine(object):
     similarity_query = False
     typicality_query = False
     mutual_information_query = False
-    M_c, M_r, T = self.get_metadata_and_table(tablename)
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
 
     ## Create conds: the list of conditions in the whereclause.
     ## List of (c_idx, op, val) tuples.
@@ -569,9 +301,9 @@ class BayesDBEngine(object):
 
         ## Determine what type the value is
         raw_val = vals[1].strip()
-        if is_int(raw_val):
+        if utils.is_int(raw_val):
           val = int(raw_val)
-        elif is_float(raw_val):
+        elif utils.is_float(raw_val):
           val = float(raw_val)
         else:
           ## val could have matching single or double quotes, which we can safely eliminate
@@ -598,7 +330,7 @@ class BayesDBEngine(object):
         query_colnames.append(M_c['idx_to_name'][str(idx)])
     else:
 #      query_colnames = [colname.strip() for colname in columnstring.split(',')]
-      query_colnames = [colname.strip() for colname in column_string_splitter(columnstring)]
+      query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring)]
       queries = []
       for idx, colname in enumerate(query_colnames):
         ## Check if probability query
@@ -612,9 +344,9 @@ class BayesDBEngine(object):
           column = prob_match.group('column')
           c_idx = M_c['name_to_idx'][column]
           value = prob_match.group('value')
-          if is_int(value):
+          if utils.is_int(value):
             value = int(value)
-          elif is_float(value):
+          elif utils.is_float(value):
             value = float(value)
           ## TODO: need to escape strings here with ast.eval... call?
           queries.append(('probability', (c_idx, value)))
@@ -638,7 +370,7 @@ class BayesDBEngine(object):
           
         if similarity_match:
             rowid = similarity_match.group('rowid').strip()
-            if is_int(rowid):
+            if utils.is_int(rowid):
               target_row_id = int(rowid)
             else:
               ## Instead of specifying an integer for rowid, you can specify a where clause.
@@ -650,7 +382,7 @@ class BayesDBEngine(object):
               ## Look up the row_id where this column has this value!
               c_idx = M_c['name_to_idx'][where_colname.lower()]
               for row_id, T_row in enumerate(T):
-                row_values = convert_row(T_row, M_c)
+                row_values = utils.convert_row(T_row, M_c)
                 if row_values[c_idx] == where_val:
                   target_row_id = row_id
                   break
@@ -723,7 +455,7 @@ class BayesDBEngine(object):
     ## If probability query: get latent states, and simple predictive probability givens (Y).
     ## TODO: Pretty sure this is the wrong way to get Y.
     if probability_query or similarity_query or order_by or typicality_query or mutual_information_query:
-      X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
+      X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     if probability_query:
       #if whereclause=="" or '=' not in whereclause:
       Y = None
@@ -747,7 +479,7 @@ class BayesDBEngine(object):
     ## and fill in imputed values.
     filtered_values = list()
     for row_id, T_row in enumerate(T):
-      row_values = convert_row(T_row, M_c) ## Convert row from codes to values
+      row_values = utils.convert_row(T_row, M_c) ## Convert row from codes to values
       if is_row_valid(row_id, row_values): ## Where clause filtering.
         if imputations_dict and len(imputations_dict[row_id]) > 0:
           ## Fill in any imputed values.
@@ -796,8 +528,8 @@ class BayesDBEngine(object):
           else:
             val = value
           Q = [(len(X_D_list[0][0])+1, c_idx, val)] ## row is set to 1 + max row, instead of this row.
-#          prob = math.exp(engine.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
-          prob = math.exp(engine.simple_predictive_probability(M_c, X_L_list[0], X_D_list[0], Y, Q))
+#          prob = math.exp(self.backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
+          prob = math.exp(self.backend.simple_predictive_probability(M_c, X_L_list[0], X_D_list[0], Y, Q))
           ret_row.append(prob)
         elif query_type == 'similarity':
           target_row_id, target_column = query
@@ -879,7 +611,7 @@ class BayesDBEngine(object):
       ## Look up the row_id where this column has this value!
       c_idx = M_c['name_to_idx'][where_colname.lower()]
       for row_id, T_row in enumerate(T):
-        row_values = convert_row(T_row, M_c)
+        row_values = utils.convert_row(T_row, M_c)
         if row_values[c_idx] == where_val:
           target_row_id = row_id
           break
@@ -906,35 +638,8 @@ class BayesDBEngine(object):
 
   def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
-    # TODO: Actually read newtablename.
-    # Get M_c, X_L, and X_D from database
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute("SELECT tableid, m_c, t FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      tableid, M_c_json, t_json = cur.fetchone()
-      M_c = json.loads(M_c_json)
-      t = json.loads(t_json)
-      cur.execute("SELECT COUNT(*) FROM %s;" % tablename)
-      numrows = int(cur.fetchone()[0])
-      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
-      chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
-      chainids = map(int, chainids)
-      X_L_list = list()
-      X_D_list = list()
-      for chainid in chainids:
-        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%s AND chainid=%s AND "
-                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%s AND chainid=%s);", (tableid, chainid, tableid, chainid))
-        X_L_prime_json, X_D_prime_json = cur.fetchone()
-        X_L_list.append(json.loads(X_L_prime_json))
-        X_D_list.append(json.loads(X_D_prime_json))
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Database Error: %s' % e)
-      return e
-    finally:
-      if conn:
-        conn.close()
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
 
     name_to_idx = M_c['name_to_idx']
     colnames = [colname.strip() for colname in columnstring.split(',')]
@@ -962,8 +667,7 @@ class BayesDBEngine(object):
     args_dict['Y'] = Y
     args_dict['Q'] = Q
     args_dict['n'] = numpredictions
-    out = engine.simple_predictive_sample(M_c, X_L_list, X_D_list, Y, Q, numpredictions)
-#    out, id = au.call('simple_predictive_sample', args_dict, self.BACKEND_URI)
+    out = self.backend.simple_predictive_sample(M_c, X_L_list, X_D_list, Y, Q, numpredictions)
 
     """
     # convert to coordinate format so it can be mapped to original codes
@@ -990,8 +694,8 @@ class BayesDBEngine(object):
     return ret
 
   def write_json_for_table(self, tablename):
-    M_c, M_r, t_dict = self.get_metadata_and_table(tablename)
-    X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
+    M_c, M_r, t_dict = self.persistence_layer.get_metadata_and_table(tablename)
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     write_json_for_table(t_dict, M_c, X_L_list, X_D_list, M_r)
 
   def create_histogram(self, M_c, data, columns, mc_col_indices, filename):
@@ -1024,64 +728,8 @@ class BayesDBEngine(object):
     pylab.tight_layout()
     pylab.savefig(full_filename)
 
-  def get_metadata_and_table(self, tablename):
-    """Return M_c and M_r and T"""
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute("SELECT m_c, m_r, t FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      M_c_json, M_r_json, t_json = cur.fetchone()
-      conn.commit()
-      M_c = json.loads(M_c_json)
-      M_r = json.loads(M_r_json)
-      t = json.loads(t_json)
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return e
-    finally:
-      if conn:
-        conn.close()
-    # # map T to json object
-    # table = []
-    # for row_idx, row in enumerate(t):
-    #   for col_idx, value in enumerate(row):
-    #     row_name = M_r['idx_to_name'][str(row_idx)]
-    #     col_name = M_c['idx_to_name'][str(col_idx)]
-    #     element = dict(i=row_idx, j=col_idx, value=int(value!=0), row=row_name, col=col_name)
-    #     table.append(element)
-    # # t_dict = dict(table=table)
-    return M_c, M_r, t
-
-  def get_latent_states(self, tablename):
-    """Return x_l_list and x_d_list"""
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute("SELECT tableid, m_c FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      tableid, M_c_json = cur.fetchone()
-      M_c = json.loads(M_c_json)
-      cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
-      chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
-      chainids = map(int, chainids)
-      X_L_list = list()
-      X_D_list = list()
-      for chainid in chainids:
-        cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%s AND chainid=%s AND " 
-                  + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%s AND chainid=%s);", (tableid, chainid, tableid, chainid))
-        X_L_prime_json, X_D_prime_json = cur.fetchone()
-        X_L_list.append(json.loads(X_L_prime_json))
-        X_D_list.append(json.loads(X_D_prime_json))
-  #      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return e
-    finally:
-      if conn:
-        conn.close()
-    return (X_L_list, X_D_list, M_c)
-
   def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename, submatrix):
-    X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     return do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, filename, col, confidence, limit, submatrix)
 
   def gen_feature_z(self, tablename, filename=None,
@@ -1089,7 +737,7 @@ class BayesDBEngine(object):
     if filename is None:
       filename = tablename + '_feature_z'
     full_filename = os.path.join(dir, filename)
-    X_L_list, X_D_list, M_c = self.get_latent_states(tablename)
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     return do_gen_feature_z(X_L_list, X_D_list, M_c,
                             tablename, full_filename)
 
@@ -1102,44 +750,11 @@ class BayesDBEngine(object):
     os.system(cmd_str)
     return 0
 
-  def guessschema(self, tablename, csv):
-    """Guess crosscat types. Returns a list indicating each columns type: 'ignore',
-    'continuous', or 'multinomial'."""
-    try:
-      conn = psycopg2.connect(psycopg_connect_str)
-      cur = conn.cursor()
-      cur.execute("SELECT cctypes FROM preddb.table_index WHERE tablename=%s;", (tablename,))
-      cctypes = cur.fetchone()[0]
-      conn.commit()
-    except psycopg2.DatabaseError, e:
-      print('Error %s' % e)
-      return e
-    finally:
-      if conn:
-        conn.close()
-    return json.loads(cctypes)
 
-def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
+def analyze_helper(tableid, M_c, T, chainid, iterations):
   """Only for one chain."""
-  try:
-    conn = psycopg2.connect(psycopg_connect_str)
-    cur = conn.cursor()
-    cur.execute("SELECT x_l, x_d, iterations FROM preddb.models"
-                + " WHERE tableid=%s AND chainid=%s"
-                + " AND iterations=("
-                + " SELECT MAX(iterations) FROM preddb.models WHERE tableid=%s AND chainid=%s);", (tableid, chainid, tableid, chainid))
-      
-    X_L_prime_json, X_D_prime_json, prev_iterations = cur.fetchone()
-    X_L_prime = json.loads(X_L_prime_json)
-    X_D_prime = json.loads(X_D_prime_json)
-    conn.commit()
-  except psycopg2.DatabaseError, e:
-    print('psycopg2.DatabaseError %s' % e)
-    return e
-  finally:
-    if conn:
-      conn.close()
-
+  X_L_prime, X_D_prime, prev_iterations = self.persistence_layer.get_chain(tablename, chainid)
+  
   # Call analyze on backend      
   args_dict = dict()
   args_dict['M_c'] = M_c
@@ -1153,25 +768,9 @@ def analyze_helper(tableid, M_c, T, chainid, iterations, BACKEND_URI):
   args_dict['r'] = () # Currently ignored by analyze
   args_dict['max_iterations'] = -1 # Currently ignored by analyze
   args_dict['max_time'] = -1 # Currently ignored by analyze
-#  out, id = au.call('analyze', args_dict, BACKEND_URI)
-  out = engine.analyze(M_c, T, X_L_prime, X_D_prime, (), iterations)
-  X_L_prime, X_D_prime = out
+  X_L_prime, X_D_prime = self.backend.analyze(M_c, T, X_L_prime, X_D_prime, (), iterations)
 
-  # Store X_L_prime, X_D_prime
-  try:
-    conn = psycopg2.connect(psycopg_connect_str)
-    cur = conn.cursor()
-    curtime = datetime.datetime.now().ctime()
-    cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) " + \
-                "VALUES (%s, %s, %s, %s, %s, %s);",
-                  (tableid, json.dumps(X_L_prime), json.dumps(X_D_prime), curtime, chainid, prev_iterations + iterations))
-    conn.commit()
-  except psycopg2.DatabaseError, e:
-    print('Error %s' % e)
-    return e
-  finally:
-    if conn:
-      conn.close()      
+  self.persistence_layer.add_samples(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, chainid)
   return (prev_iterations + iterations)
 
 
@@ -1298,50 +897,6 @@ def write_json_for_table(t_dict, M_c, X_L_list, X_D_list, M_r=None):
     json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
     jsonify_and_dump(json_indices_dict, "json_indices")
 
-def is_int(s):
-    try:
-        int(s)
-        return True
-    except ValueError:
-        return False    
-
-def is_float(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
-
-def column_string_splitter(columnstring):
-    paren_level = 0
-    output = []
-    current_column = []
-    for c in columnstring:
-      if c == '(':
-        paren_level += 1
-      elif c == ')':
-        paren_level -= 1
-
-      if c == ',' and paren_level == 0:
-          output.append(''.join(current_column))
-          current_column = []
-      else:
-        current_column.append(c)
-    output.append(''.join(current_column))
-    return output
-
-def convert_row(row, M_c):
-  """
-  Helper function to convert a row from its 'code' (as it's stored in T) to its 'value'
-  (the human-understandable value).
-  """
-  ret = []
-  for cidx, code in enumerate(row): 
-    if not numpy.isnan(code) and not code=='nan':
-      ret.append(du.convert_code_to_value(M_c, cidx, code))
-    else:
-      ret.append(code)
-  return tuple(ret)
 
 # helper functions
 get_name = lambda x: getattr(x, '__name__')
