@@ -29,17 +29,18 @@ import numpy
 import matplotlib.cm
 from collections import defaultdict
 #
-import crosscat.utils.inference_utils as iu
+# TODO: add back
+#import crosscat.utils.inference_utils as iu
 import crosscat.utils.api_utils as au
 import crosscat.utils.data_utils as du
 import crosscat.utils.sample_utils as su
 import bayesdb.settings as S
 
 from crosscat.CrossCatClient import get_CrossCatClient
-from bayesdb.engine.persistence_layer import PersistenceLayer
+from bayesdb.PersistenceLayer import PersistenceLayer
 import utils
 
-class BayesDBEngine(object):
+class Engine(object):
   """
   Possible ideas for refactoring:
   1. Have a query class. Created when a complex query (like select) is received, and is able
@@ -189,10 +190,10 @@ class BayesDBEngine(object):
     chainid_iteration_info = list()
     # p_list = []
     for chainid in chainids:
-      iters = analyze_helper(tableid, M_c, T, chainid, iterations)
+      iters = _analyze_helper(tableid, M_c, T, chainid, iterations)
       chainid_iteration_info.append('Chain %d: %d iterations' % (chainid, iters))
     #   from multiprocessing import Process
-    #   p = Process(target=analyze_helper,
+    #   p = Process(target=_analyze_helper,
     #               args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
     #   p_list.append(p)
     #   p.start()
@@ -499,7 +500,8 @@ class BayesDBEngine(object):
         args_dict['X_L_list'] = X_L_list
         args_dict['X_D_list'] = X_D_list
         args_dict['T'] = T
-        method = getattr(self, 'get_%s_function' % function_name)
+        ## TODO: use something more understandable and less brittle than getattr here.
+        method = getattr(self, '_get_%s_function' % function_name)
         argnames = inspect.getargspec(method)[0]
         args = [args_dict[argname] for argname in argnames if argname in args_dict]
         function = method(*args)
@@ -507,7 +509,7 @@ class BayesDBEngine(object):
           function = lambda row_id, data_values: -1 * function(row_id, data_values)
         function_list.append(function)          
       ## Step 2: call order by.
-      filtered_values = self.order_by(filtered_values, function_list)
+      filtered_values = self._order_by(filtered_values, function_list)
 
     ## Now: generate result set by getting the desired elements of each row, iterating through queries.
     data = []
@@ -547,9 +549,10 @@ class BayesDBEngine(object):
           pass
         elif query_type == 'mutual_information':
           c_idx1, c_idx2 = query
-          mutual_info, linfoot = iu.mutual_information(M_c, X_L_list, X_D_list, [(c_idx1, c_idx2)])
-          mutual_info = numpy.mean(mutual_info)
-          ret_row.append(mutual_info)
+          ## TODO URGENT: uncomment once iu is back
+#          mutual_info, linfoot = iu.mutual_information(M_c, X_L_list, X_D_list, [(c_idx1, c_idx2)])
+#         mutual_info = numpy.mean(mutual_info)
+#          ret_row.append(mutual_info)
 
       data.append(tuple(ret_row))
       row_count += 1
@@ -560,44 +563,14 @@ class BayesDBEngine(object):
     ret = {'data': data, 'columns': query_colnames}
     return ret
 
-  def order_by_similarity(self, colnames, data_tuples, X_L_list, X_D_list, M_c, order_by):
-    """
-    Legacy version of order by similarity. To be phased out by order_by and similarity.
-    Return the original data tuples, but sorted by similarity to the given row_id
-    By default, average the similarity over columns, unless one particular column id is specified.
-    """
-    if len(data_tuples) == 0 or not order_by:
-      return data_tuples
-    target_row_id = order_by['rowid']
-    target_column = order_by['column']
-    if target_column:
-      col_idxs = [M_c['name_to_idx'][target_column]]
-    else:
-      col_idxs = range(len(data_tuples[0])-1)
-    
-    scored_data_tuples = list() ## Entries are (score, data_tuple)
-    for idx, data_tuple in enumerate(data_tuples):
-      score = 0
-      ## Assume row is first value in returned data.
-      rowid = data_tuple[0]
-      for X_L, X_D in zip(X_L_list, X_D_list):
-        for col_idx in col_idxs:
-          view_idx = X_L['column_partition']['assignments'][col_idx]
-          if X_D[view_idx][rowid] == X_D[view_idx][target_row_id]:
-            score += 1
-      scored_data_tuples.append((score, data_tuple))
-    scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
-    #print [tup[0] for tup in scored_data_tuples] # print similarities
-    return [tup[1] for tup in scored_data_tuples]
-
-  def get_column_function(self, column, M_c):
+  def _get_column_function(self, column, M_c):
     """
     Returns a function of the form required by order_by that returns the column value.
     """
     col_idx = M_c['name_to_idx'][column]
     return lambda row_id, data_values: data_values[col_idx]
 
-  def get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c, T):
+  def _get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c, T):
     """
     Call this function to get a version of similarity as a function of only (row_id, data_values).
     """
@@ -617,7 +590,7 @@ class BayesDBEngine(object):
           break
     return lambda row_id, data_values: su.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
 
-  def order_by(self, filtered_values, functions):
+  def _order_by(self, filtered_values, functions):
     """
     Return the original data tuples, but sorted by the given functions.
     functions is an iterable of functions that take only data_tuple as an argument.
@@ -696,7 +669,41 @@ class BayesDBEngine(object):
   def write_json_for_table(self, tablename):
     M_c, M_r, t_dict = self.persistence_layer.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    write_json_for_table(t_dict, M_c, X_L_list, X_D_list, M_r)
+    dir=S.path.web_resources_data_dir
+    os.system('rm %s/*.json' % dir)
+    if M_r is None:
+      num_rows = len(X_D_list[0][0])
+      row_indices = range(num_rows)
+      row_names = map(str, row_indices)
+      name_to_idx = dict(zip(row_names, row_indices))
+      idx_to_name = dict(zip(row_indices, row_names))
+      M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
+    #
+    for name in M_c['name_to_idx']:
+      M_c['name_to_idx'][name] += 1
+    M_c = dict(labelToIndex=M_c['name_to_idx'])
+    for name in M_r['name_to_idx']:
+      M_r['name_to_idx'][name] += 1
+      M_r['name_to_idx'][name]  = M_r['name_to_idx'][name]
+    M_r = dict(labelToIndex=M_r['name_to_idx'])
+    #
+    jsonify_and_dump(M_c, 'M_c.json')
+    jsonify_and_dump(M_r, 'M_r.json')
+    jsonify_and_dump(t_dict, 'T.json')
+    #
+    for idx, X_L_i in enumerate(X_L_list):
+      filename = 'X_L_%s.json' % idx
+      X_L_i = (numpy.array(X_L_i['column_partition']['assignments'])+1).tolist()
+      X_L_i = dict(columnPartitionAssignments=X_L_i)
+      jsonify_and_dump(X_L_i, filename)
+    for idx, X_D_i in enumerate(X_D_list):
+      filename = 'X_D_%s.json' % idx
+      X_D_i = (numpy.array(X_D_i)+1).tolist()
+      X_D_i = dict(rowPartitionAssignments=X_D_i)
+      jsonify_and_dump(X_D_i, filename)
+    json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
+    jsonify_and_dump(json_indices_dict, "json_indices")
+
 
   def create_histogram(self, M_c, data, columns, mc_col_indices, filename):
     dir=S.path.web_resources_data_dir
@@ -730,7 +737,7 @@ class BayesDBEngine(object):
 
   def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename, submatrix):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    return do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, filename, col, confidence, limit, submatrix)
+    return _do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, filename, col, confidence, limit, submatrix)
 
   def gen_feature_z(self, tablename, filename=None,
                     dir=S.path.web_resources_dir):
@@ -751,27 +758,27 @@ class BayesDBEngine(object):
     return 0
 
 
-def analyze_helper(tableid, M_c, T, chainid, iterations):
-  """Only for one chain."""
-  X_L_prime, X_D_prime, prev_iterations = self.persistence_layer.get_chain(tablename, chainid)
-  
-  # Call analyze on backend      
-  args_dict = dict()
-  args_dict['M_c'] = M_c
-  args_dict['T'] = T
-  args_dict['X_L'] = X_L_prime
-  args_dict['X_D'] = X_D_prime
-  # FIXME: allow specification of kernel_list
-  args_dict['kernel_list'] = ()
-  args_dict['n_steps'] = iterations
-  args_dict['c'] = () # Currently ignored by analyze
-  args_dict['r'] = () # Currently ignored by analyze
-  args_dict['max_iterations'] = -1 # Currently ignored by analyze
-  args_dict['max_time'] = -1 # Currently ignored by analyze
-  X_L_prime, X_D_prime = self.backend.analyze(M_c, T, X_L_prime, X_D_prime, (), iterations)
+  def _analyze_helper(tableid, M_c, T, chainid, iterations):
+    """Only for one chain."""
+    X_L_prime, X_D_prime, prev_iterations = self.persistence_layer.get_chain(tablename, chainid)
 
-  self.persistence_layer.add_samples(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, chainid)
-  return (prev_iterations + iterations)
+    # Call analyze on backend      
+    args_dict = dict()
+    args_dict['M_c'] = M_c
+    args_dict['T'] = T
+    args_dict['X_L'] = X_L_prime
+    args_dict['X_D'] = X_D_prime
+    # FIXME: allow specification of kernel_list
+    args_dict['kernel_list'] = ()
+    args_dict['n_steps'] = iterations
+    args_dict['c'] = () # Currently ignored by analyze
+    args_dict['r'] = () # Currently ignored by analyze
+    args_dict['max_iterations'] = -1 # Currently ignored by analyze
+    args_dict['max_time'] = -1 # Currently ignored by analyze
+    X_L_prime, X_D_prime = self.backend.analyze(M_c, T, X_L_prime, X_D_prime, (), iterations)
+
+    self.persistence_layer.add_samples(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, chainid)
+    return (prev_iterations + iterations)
 
 
 def jsonify_and_dump(to_dump, filename):
@@ -787,7 +794,7 @@ def jsonify_and_dump(to_dump, filename):
     print e
   return 0
 
-def do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
+def _do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
     num_cols = len(X_L_list[0]['column_partition']['assignments'])
     column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
     column_names = numpy.array(column_names)
@@ -860,42 +867,6 @@ def do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=N
       column_names_reordered=column_names_reordered,
       )
     return ret_dict
-
-def write_json_for_table(t_dict, M_c, X_L_list, X_D_list, M_r=None):
-    dir=S.path.web_resources_data_dir
-    os.system('rm %s/*.json' % dir)
-    if M_r is None:
-      num_rows = len(X_D_list[0][0])
-      row_indices = range(num_rows)
-      row_names = map(str, row_indices)
-      name_to_idx = dict(zip(row_names, row_indices))
-      idx_to_name = dict(zip(row_indices, row_names))
-      M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
-    #
-    for name in M_c['name_to_idx']:
-      M_c['name_to_idx'][name] += 1
-    M_c = dict(labelToIndex=M_c['name_to_idx'])
-    for name in M_r['name_to_idx']:
-      M_r['name_to_idx'][name] += 1
-      M_r['name_to_idx'][name]  = M_r['name_to_idx'][name]
-    M_r = dict(labelToIndex=M_r['name_to_idx'])
-    #
-    jsonify_and_dump(M_c, 'M_c.json')
-    jsonify_and_dump(M_r, 'M_r.json')
-    jsonify_and_dump(t_dict, 'T.json')
-    #
-    for idx, X_L_i in enumerate(X_L_list):
-      filename = 'X_L_%s.json' % idx
-      X_L_i = (numpy.array(X_L_i['column_partition']['assignments'])+1).tolist()
-      X_L_i = dict(columnPartitionAssignments=X_L_i)
-      jsonify_and_dump(X_L_i, filename)
-    for idx, X_D_i in enumerate(X_D_list):
-      filename = 'X_D_%s.json' % idx
-      X_D_i = (numpy.array(X_D_i)+1).tolist()
-      X_D_i = dict(rowPartitionAssignments=X_D_i)
-      jsonify_and_dump(X_D_i, filename)
-    json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
-    jsonify_and_dump(json_indices_dict, "json_indices")
 
 
 # helper functions

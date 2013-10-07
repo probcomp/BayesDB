@@ -17,6 +17,8 @@
 import numpy
 import crosscat.utils.data_utils as du
 
+
+
 def is_int(s):
     try:
         int(s)

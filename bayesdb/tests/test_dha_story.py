@@ -1,5 +1,5 @@
-from bayesdb.engine.DatabaseClient import DatabaseClient
-client = DatabaseClient(hostname=None)
+from bayesdb.Client import Client
+client = Client()
 
 cmd_list = [
     'DROP PTABLE dha_demo;',

@@ -14,14 +14,14 @@
 #   limitations under the License.
 #
 
-from bayesdb.engine.BayesDBEngine import get_method_name_to_args, get_method_names
-
+from bayesdb.Engine import get_method_name_to_args, get_method_names
 
 class Parser(object):
     def parse(self, sql_string):
         if sql_string[-1] == ';':
             sql_string = sql_string[:-1]
         words = sql_string.lower().split()
+        
         for method_name in get_method_names():
             import pdb; pdb.set_trace()
 

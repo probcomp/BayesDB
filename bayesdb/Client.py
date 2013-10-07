@@ -23,51 +23,30 @@ import os
 import time
 import ast
 
-from bayesdb.Engine import BayesDBEngine, is_int, column_string_splitter
+from bayesdb.Engine import Engine
 from bayesdb.Parser import Parser
-bayesdb_engine = BayesDBEngine()
-parser = Parser()
 
 class DatabaseClient(object):
     def __init__(self, hostname='localhost', port=8008):
         if hostname is None or hostname=='localhost':
             self.online = False
+            self.engine = Engine('local')
         else:
             self.online = True
             self.hostname = hostname
             self.port = port
             self.URI = 'http://' + hostname + ':%d' % port
+        self.parser = Parser()
 
-
-    def set_hostname(self, hostname):
-        self.hostname = hostname
-        self.URI = 'http://' + self.hostname + ':%d' % self.port
-
-    def get_hostname(self):
-        return self.hostname
-
-    def pretty_print(self, query_obj, presql_command=None):
-        """If presql_command is None, we must guess"""
-        result = ""
-        if type(query_obj) == dict and 'data' in query_obj and 'columns' in query_obj:
-            pt = prettytable.PrettyTable()
-            pt.field_names = query_obj['columns']
-            for row in query_obj['data']:
-                pt.add_row(row)
-            result = pt
-        elif type(query_obj) == list and type(query_obj[0]) == tuple:
-            pt = prettytable.PrettyTable()
-        elif type(query_obj) == dict and 'column_names_reordered' in query_obj:
-            colnames = query_obj['column_names_reordered']
-            zmatrix = query_obj['z_matrix_reordered']
-            pt = prettytable.PrettyTable(hrules=prettytable.ALL, vrules=prettytable.ALL, header=False)
-            pt.add_row([''] + list(colnames))
-            for row, colname in zip(zmatrix, list(colnames)):
-                pt.add_row([colname] + list(row))
-            result = pt
-        else:
-            result = str(query_obj)
-        return result
+    def call(self, method_name, args_dict):
+      if self.online:
+        out, id = au.call(method_name, args_dict, self.URI)
+      else:
+        method = getattr(self.engine, method_name)
+        argnames = inspect.getargspec(method)[0]
+        args = [args_dict[argname] for argname in argnames if argname in args_dict]
+        out = method(*args)
+      return out
 
     def __call__(self, sql_string, pretty=True, timing=False):
         return self.execute(sql_string, pretty)
@@ -82,7 +61,7 @@ class DatabaseClient(object):
         """
         if timing:
             start_time = time.time()
-        asdf = parser.parse(sql_string)
+        asdf = self.parser.parse(sql_string)
         if sql_string[-1] == ';':
             sql_string = sql_string[:-1]
         words = sql_string.lower().split()
@@ -132,22 +111,32 @@ class DatabaseClient(object):
             print result
             return result
 
-    def is_int(self, s):
-        try:
-            int(s)
-            return True
-        except ValueError:
-            return False
-        
-    def call(self, method_name, args_dict):
-      if self.online:
-        out, id = au.call(method_name, args_dict, self.URI)
-      else:
-        method = getattr(bayesdb_engine, method_name)
-        argnames = inspect.getargspec(method)[0]
-        args = [args_dict[argname] for argname in argnames if argname in args_dict]
-        out = method(*args)
-      return out
+    def pretty_print(self, query_obj, presql_command=None):
+        """If presql_command is None, we must guess"""
+        result = ""
+        if type(query_obj) == dict and 'data' in query_obj and 'columns' in query_obj:
+            pt = prettytable.PrettyTable()
+            pt.field_names = query_obj['columns']
+            for row in query_obj['data']:
+                pt.add_row(row)
+            result = pt
+        elif type(query_obj) == list and type(query_obj[0]) == tuple:
+            pt = prettytable.PrettyTable()
+        elif type(query_obj) == dict and 'column_names_reordered' in query_obj:
+            colnames = query_obj['column_names_reordered']
+            zmatrix = query_obj['z_matrix_reordered']
+            pt = prettytable.PrettyTable(hrules=prettytable.ALL, vrules=prettytable.ALL, header=False)
+            pt.add_row([''] + list(colnames))
+            for row, colname in zip(zmatrix, list(colnames)):
+                pt.add_row([colname] + list(row))
+            result = pt
+        else:
+            result = str(query_obj)
+        return result
+
+
+
+    
 
     def ping(self):
         return self.call('ping', {})
