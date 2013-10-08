@@ -58,9 +58,6 @@ class Engine(object):
     '''Parses and executes the given bql command.'''
     return self.parser.parse(bql)
 
-  def ping(self):
-    return "BayesDBEngine received ping."
-
   def start_from_scratch(self):
     self.persistence_layer.start_from_scratch()
     return 'Started db from scratch.'
@@ -131,7 +128,7 @@ class Engine(object):
         postgres_coltypes.append('varchar(1000)')
     return postgres_coltypes, cctypes
         
-  def upload_data_table(self, tablename, csv, crosscat_column_types):
+  def create_btable(self, tablename, csv, crosscat_column_types):
     """Upload a csv table to the predictive db.
     Crosscat_column_types must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
@@ -163,7 +160,7 @@ class Engine(object):
     """Import these samples as if they are new chains"""
     self.persistence_layer.add_samples(tablename, X_L_list, X_D_list, iterations)
     
-  def create_model(self, tablename, n_chains):
+  def create_models(self, tablename, n_chains):
     """Call initialize n_chains times."""
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
@@ -615,7 +612,7 @@ class Engine(object):
     return [tup[1] for tup in scored_data_tuples]
 
 
-  def predict(self, tablename, columnstring, newtablename, whereclause, numpredictions):
+  def simulate(self, tablename, columnstring, newtablename, whereclause, numpredictions):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)

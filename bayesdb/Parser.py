@@ -80,7 +80,7 @@ class Parser(object):
                     print 'Did you mean: DROP AND LOAD <filename>;?'
                     return False
 
-    def parse_create_model(self, words, orig):
+    def parse_create_models(self, words, orig):
         n_chains = 10
         if len(words) >= 1:
             if words[0] == 'create' and (utils.is_int(words[1]) or words[1] == 'model' or words[1] == 'models'):
@@ -112,7 +112,7 @@ class Parser(object):
                     print 'Did you mean: CREATE <n_chains> MODELS FOR <btable>;?'
                     return False
 
-    def parse_upload_data_table(self, words, orig):
+    def parse_create_btable(self, words, orig):
         crosscat_column_types = None
         if len(words) >= 2:
             if (words[0] == 'upload' or words[0] == 'create') and (words[1] == 'ptable' or words[1] == 'btable'):
@@ -121,7 +121,7 @@ class Parser(object):
                     if words[3] == 'from':
                         f = open(orig.split()[4], 'r')
                         csv = f.read()
-                        result = self.engine.upload_data_table(tablename, csv, crosscat_column_types)
+                        result = self.engine.create_btable(tablename, csv, crosscat_column_types)
                         return result
                 else:
                     print 'Did you mean: CREATE BTABLE <tablename> FROM <filename>;?'
@@ -357,7 +357,7 @@ class Parser(object):
             orig, order_by = self.extract_order_by(orig)
             return self.engine.select(tablename, columnstring, whereclause, limit, order_by)
 
-    def parse_predict(self, words, orig):
+    def parse_simulate(self, words, orig):
         match = re.search(r"""
             simulate\s+
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
@@ -381,7 +381,7 @@ class Parser(object):
             numpredictions = int(match.group('times'))
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-            return self.engine.predict(tablename, columnstring, newtablename, whereclause, numpredictions, order_by)
+            return self.engine.simulate(tablename, columnstring, newtablename, whereclause, numpredictions, order_by)
 
     def parse_estimate_dependence_probabilities(self, words, orig):
         match = re.search(r"""
