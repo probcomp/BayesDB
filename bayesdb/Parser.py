@@ -14,40 +14,68 @@
 #   limitations under the License.
 #
 
-from bayesdb.Engine import get_method_name_to_args, get_method_names
+import Engine as be
+import re
+import pickle
+import gzip
+import utils
 
 class Parser(object):
     def parse(self, sql_string):
         if sql_string[-1] == ';':
             sql_string = sql_string[:-1]
         words = sql_string.lower().split()
-        
-        for method_name in get_method_names():
-            import pdb; pdb.set_trace()
+
+        for method_name in self.method_names:
+            parse_method = getattr(self, 'parse_' + method_name)
+            result = parse_method(words, sql_string)
+            if result is None:
+                continue
+            elif result == False:
+                return
+            elif result == True:
+                return result
+
+    def __init__(self, engine):
+        self.engine = engine
+        self.engine_method_names = [method_name for method_name in be.get_method_names() if method_name[0] != '_']
+        self.parser_method_names = [method_name[6:] for method_name in dir(Parser) if method_name[:6] == 'parse_']
+        self.method_names = set(self.engine_method_names).intersection(self.parser_method_names)
+        self.method_name_to_args = be.get_method_name_to_args()
+
+    def call_bayesdb_engine(self, method_name, args_dict):
+      if self.online:
+        out, id = au.call(method_name, args_dict, self.URI)
+      else:
+        method = getattr(self.bayesdb_engine, method_name)
+        argnames = inspect.getargspec(method)[0]
+        args = [args_dict[argname] for argname in argnames if argname in args_dict]
+        out = method(*args)
+      return out
 
     def parse_set_hostname(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'set' and words[1] == 'hostname':
-                return self.set_hostname(words[2])
+                return self.engine.set_hostname(words[2])
 
     def parse_get_hostname(self, words, orig):
         if len(words) >= 2 and words[0] == 'get' and words[1] == 'hostname':
-            return self.get_hostname()
+            return self.engine.get_hostname()
 
     def parse_ping(self, words, orig):
         if len(words) >= 1 and words[0] == 'ping':
-            return self.ping()
+            return self.engine.ping()
 
     def parse_start_from_scratch(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'start' and words[1] == 'from' and words[2] == 'scratch':
-                return self.start_from_scratch()
+                return self.engine.start_from_scratch()
 
     def parse_drop_and_load_db(self, words, orig):
         if len(words) >= 2:
             if words[0] == 'drop' and words[1] == 'and' and words[2] == 'load':
                 if len(words) == 3:
-                    return self.drop_and_load_db(words[3])
+                    return self.engine.drop_and_load_db(words[3])
                 else:
                     print 'Did you mean: DROP AND LOAD <filename>;?'
                     return False
@@ -55,33 +83,33 @@ class Parser(object):
     def parse_create_model(self, words, orig):
         n_chains = 10
         if len(words) >= 1:
-            if words[0] == 'create':
+            if words[0] == 'create' and (utils.is_int(words[1]) or words[1] == 'model' or words[1] == 'models'):
                 if len(words) >= 4 and words[1] == 'model' or words[1] == 'models':
                     if words[2] == 'for':
                         tablename = words[3]
                         if len(words) >= 7:
-                            if words[4] == 'with' and self.is_int(words[5]) and words[6] == 'explanations':
+                            if words[4] == 'with' and utils.is_int(words[5]) and words[6] == 'explanations':
                                 n_chains = int(words[5])
-                        result = self.create_model(tablename, n_chains)
+                        result = self.engine.create_model(tablename, n_chains)
                         print 'Created %d models for btable %s' % (n_chains, tablename)
                         return result
                     else:
                         print 'Did you mean: CREATE MODELS FOR <btable> [WITH <n_chains> EXPLANATIONS];?'
                         return False
-                elif len(words) >= 3 and self.is_int(words[1]):
+                elif len(words) >= 3 and utils.is_int(words[1]):
                     n_chains = int(words[1])
                     assert n_chains > 0
                     if words[2] == 'model' or words[2] == 'models':
                         if len(words) >= 5 and words[3] == 'for':
                             tablename = words[4]
-                            result = self.create_model(tablename, n_chains)
+                            result = self.engine.create_model(tablename, n_chains)
                             print 'Created %d models for btable %s' % (n_chains, tablename)
                             return result
                         else:
                             print 'Did you mean: CREATE <n_chains> MODELS FOR <btable>;?'
                             return False
                 else:
-                    print 'Did you mean: CREATE <n_chains> MODELS FOR <btable> or CREATE BTABLE <btable> FROM <csvfile>;?'
+                    print 'Did you mean: CREATE <n_chains> MODELS FOR <btable>;?'
                     return False
 
     def parse_upload_data_table(self, words, orig):
@@ -91,15 +119,10 @@ class Parser(object):
                 if len(words) >= 5:
                     tablename = words[2]
                     if words[3] == 'from':
-                        try:
-                            f = open(orig.split()[4], 'r')
-                            csv = f.read()
-                            result = self.upload_data_table(tablename, csv, crosscat_column_types)
-                            #print 'Created btable %s' % tablename
-                            return result
-                        except Exception as e:
-                            print str(e)
-                            return False
+                        f = open(orig.split()[4], 'r')
+                        csv = f.read()
+                        result = self.engine.upload_data_table(tablename, csv, crosscat_column_types)
+                        return result
                 else:
                     print 'Did you mean: CREATE BTABLE <tablename> FROM <filename>;?'
                     return False
@@ -107,20 +130,20 @@ class Parser(object):
     def parse_drop_tablename(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
-                return self.drop_tablename(words[2])
+                return self.engine.drop_tablename(words[2])
 
     def parse_delete_chain(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'delete':
-                if words[1] == 'chain' and self.is_int(words[2]):
+                if words[1] == 'chain' and utils.is_int(words[2]):
                     chain_index = int(words[2])
                     if words[3] == 'from':
                         tablename = words[4]
-                        return self.delete_chain(tablename, chain_index)
+                        return self.engine.delete_chain(tablename, chain_index)
                 elif len(words) >= 6 and words[2] == 'all' and words[3] == 'chains' and words[4] == 'from':
                     chain_index = 'all'
                     tablename = words[5]
-                    return self.delete_chain(tablename, chain_index)
+                    return self.engine.delete_chain(tablename, chain_index)
                 else:
                     print 'Did you mean: DELETE CHAIN <chain_index> FROM <tablename>;?'
                     return False
@@ -142,7 +165,7 @@ class Parser(object):
             ## TODO: check length here
             if words[idx] == "for" and words[idx+2] == 'iterations':
                 iterations = int(words[idx+1])
-            return self.analyze(tablename, chain_index, iterations, wait=False)
+            return self.engine.analyze(tablename, chain_index, iterations, wait=False)
 
     def parse_infer(self, words, orig):
         match = re.search(r"""
@@ -182,7 +205,7 @@ class Parser(object):
                 numsamples = int(numsamples)
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-            return self.infer(tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by)
+            return self.engine.infer(tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by)
 
 
     def extract_order_by(self, orig):
@@ -194,7 +217,7 @@ class Parser(object):
             order_by_clause = match.group('orderbyclause')
             ret = list()
             orderables = list()
-            for orderable in column_string_splitter(order_by_clause):
+            for orderable in utils.column_string_splitter(order_by_clause):
                 ## Check for DESC
                 desc = re.search(r'\s+desc($|\s|,|(?=limit))', orderable, re.IGNORECASE)
                 orderable = re.sub(r'\s+desc($|\s|,|(?=limit))', '', orderable, re.IGNORECASE)
@@ -224,7 +247,7 @@ class Parser(object):
                         else:
                             column = None
                         rowid = match.group('rowid').strip()
-                        if is_int(rowid):
+                        if utils.is_int(rowid):
                             target_row_id = int(rowid)
                         else:
                             target_row_id = rowid
@@ -268,7 +291,7 @@ class Parser(object):
             pklpath = match.group('pklpath')
             if pklpath[-7:] != '.pkl.gz':
                 pklpath = pklpath + ".pkl.gz"
-            M_c, M_r, T, X_L_list, X_D_list = self.export_samples(tablename)
+            M_c, M_r, T, X_L_list, X_D_list = self.engine.export_samples(tablename)
             samples_dict = dict(M_c=M_c, M_r=M_r, T=T, X_L_list=X_L_list, X_D_list=X_D_list)
             samples_file = gzip.GzipFile(pklpath, 'w')
             pickle.dump(samples_dict, samples_file)
@@ -304,7 +327,7 @@ class Parser(object):
                 iterations = int(match.group('iterations').strip())
             else:
                 iterations = 0
-            return self.import_samples(tablename, X_L_list, X_D_list, M_c, T, iterations)
+            return self.engine.import_samples(tablename, X_L_list, X_D_list, M_c, T, iterations)
         
     def parse_select(self, words, orig):
         match = re.search(r"""
@@ -332,7 +355,7 @@ class Parser(object):
                 whereclause = whereclause.strip()
             limit = self.extract_limit(orig)
             orig, order_by = self.extract_order_by(orig)
-            return self.select(tablename, columnstring, whereclause, limit, order_by)
+            return self.engine.select(tablename, columnstring, whereclause, limit, order_by)
 
     def parse_predict(self, words, orig):
         match = re.search(r"""
@@ -358,7 +381,7 @@ class Parser(object):
             numpredictions = int(match.group('times'))
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-            return self.predict(tablename, columnstring, newtablename, whereclause, numpredictions, order_by)
+            return self.engine.predict(tablename, columnstring, newtablename, whereclause, numpredictions, order_by)
 
     def parse_estimate_dependence_probabilities(self, words, orig):
         match = re.search(r"""
@@ -392,7 +415,7 @@ class Parser(object):
                 filename = os.path.join('../../www/', match.group('filename'))
             else:
                 filename = None
-            return self.estimate_dependence_probabilities(tablename, col, confidence, limit, filename, submatrix)
+            return self.engine.estimate_dependence_probabilities(tablename, col, confidence, limit, filename, submatrix)
 
     def parse_update_datatypes(self, words, orig):
         match = re.search(r"""
@@ -428,7 +451,7 @@ class Parser(object):
                     print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical|key|ignore];?'
                     return False
                 mappings[vals[0]] = datatype
-            return self.update_datatypes(tablename, mappings)
+            return self.engine.update_datatypes(tablename, mappings)
 
     def parse_write_json_for_table(self, words, orig):
         if len(words) >= 5:

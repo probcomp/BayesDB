@@ -37,7 +37,8 @@ import crosscat.utils.sample_utils as su
 import bayesdb.settings as S
 
 from crosscat.CrossCatClient import get_CrossCatClient
-from bayesdb.PersistenceLayer import PersistenceLayer
+from PersistenceLayer import PersistenceLayer
+from Parser import Parser
 import utils
 
 class Engine(object):
@@ -51,6 +52,11 @@ class Engine(object):
   def __init__(self, engine_type, **kwargs):
     self.backend = get_CrossCatClient(engine_type, **kwargs)
     self.persistence_layer = PersistenceLayer()
+    self.parser = Parser(self)
+
+  def execute(self, bql):
+    '''Parses and executes the given bql command.'''
+    return self.parser.parse(bql)
 
   def ping(self):
     return "BayesDBEngine received ping."
@@ -100,9 +106,9 @@ class Engine(object):
     self.persistence_layer.update_metadata_and_table(tablename, M_r, M_c, T)
 
     colnames = [m_c['idx_to_name'][str(idx)] for idx in range(len(m_c['idx_to_name']))]
-    return dict(columns=colnames, data=[cctypes])
+    return dict(columns=colnames, data=[cctypes], message='Updated schema:\n')
 
-  def _guess_schema(self, header, values, crosscat_column_types):
+  def _guess_schema(self, header, values, crosscat_column_types, colnames):
     # Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes
     # Also make the corresponding postgres column types.
     postgres_coltypes = []
@@ -123,7 +129,7 @@ class Engine(object):
         postgres_coltypes.append('float8')
       elif cctype == 'multinomial':
         postgres_coltypes.append('varchar(1000)')
-      return postgres_coltypes, cctypes
+    return postgres_coltypes, cctypes
         
   def upload_data_table(self, tablename, csv, crosscat_column_types):
     """Upload a csv table to the predictive db.
@@ -132,20 +138,20 @@ class Engine(object):
     column name must be present in the dictionary: default is continuous."""
     # First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
-      return 'Error: btable with that name already exists.'
+      raise Exception('Error: btable with that name already exists.')
     
-    self.persistence_layer.write_csv(tablename, csv)
-    
+    csv_abs_path = self.persistence_layer.write_csv(tablename, csv)
+
     # Parse column names to create table
     csv = csv.replace('\r', '')
     colnames = csv.split('\n')[0].split(',')
 
     # Guess schema and create table
     header, values = du.read_csv(csv_abs_path, has_header=True)
-    postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types)
-    self.persistence_layer.create_btable_from_csv(tablename, clean_csv_abs_path, t, m_r, m_c, cctypes, postgres_coltypes)
-    
-    return dict(columns=colnames, data=[cctypes])
+    postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types, colnames)
+    self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, cctypes, postgres_coltypes, colnames)
+
+    return dict(columns=colnames, data=[cctypes], message='Created btable %s. Inferred schema:\n' % tablename)
 
   def export_samples(self, tablename):
     """Opposite of import samples! Save a pickled version of X_L_list, X_D_list, M_c, and T."""
@@ -777,7 +783,7 @@ class Engine(object):
     args_dict['max_time'] = -1 # Currently ignored by analyze
     X_L_prime, X_D_prime = self.backend.analyze(M_c, T, X_L_prime, X_D_prime, (), iterations)
 
-    self.persistence_layer.add_samples(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, chainid)
+    self.persistence_layer.add_samples_for_chain(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, chainid)
     return (prev_iterations + iterations)
 
 
@@ -871,17 +877,17 @@ def _do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=
 
 # helper functions
 get_name = lambda x: getattr(x, '__name__')
-get_BayesDB_Engine_attr = lambda x: getattr(BayesDBEngine, x)
-is_BayesDB_Engine_method_name = lambda x: inspect.ismethod(get_BayesDB_Engine_attr(x))
+get_Engine_attr = lambda x: getattr(Engine, x)
+is_Engine_method_name = lambda x: inspect.ismethod(get_Engine_attr(x))
 #
 def get_method_names():
-    return filter(is_BayesDB_Engine_method_name, dir(BayesDBEngine))
+    return filter(is_Engine_method_name, dir(Engine))
 #
 def get_method_name_to_args():
     method_names = get_method_names()
     method_name_to_args = dict()
     for method_name in method_names:
-        method = BayesDBEngine.__dict__[method_name]
+        method = Engine.__dict__[method_name]
         arg_str_list = inspect.getargspec(method).args[1:]
         method_name_to_args[method_name] = arg_str_list
     return method_name_to_args

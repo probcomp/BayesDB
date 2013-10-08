@@ -17,6 +17,10 @@
 from contextlib import contextmanager
 import os
 import psycopg2
+import sys
+import crosscat.utils.data_utils as du
+import datetime
+import json
 
 import bayesdb.settings as S
 
@@ -28,19 +32,16 @@ class PersistenceLayer(object):
         self.psycopg_connect_str = 'dbname=%s user=%s' % (self.dbname, self.user)
 
     @contextmanager
-    def open_db_connection(connection_string, commit=False):
+    def open_db_connection(self, commit=False):
         conn = psycopg2.connect(self.psycopg_connect_str)
         cur = conn.cursor()
         try:
             yield cur
-        except psycopg2.DatabaseError as err:
-            error, = err.args
-            sys.stderr.write('Database Error\n' + error.message)
-            cursor.execute("ROLLBACK")
-            raise err
-        else:
             if commit:
-                conn.commit()
+                conn.commit()            
+        except psycopg2.DatabaseError, e:
+            sys.stderr.write('Database Error in PersistenceLayer:\n' + str(e))
+            raise e
         finally:
             conn.close()
     
@@ -76,15 +77,14 @@ class PersistenceLayer(object):
 
     def drop_btable(self, tablename):
         with self.open_db_connection(commit=True) as cur:
-            cur.execute('DROP TABLE %s' % tablename)
+            cur.execute('DROP TABLE IF EXISTS %s' % tablename)
             cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
             tableids = cur.fetchall()
             for tid in tableids:
                 tableid = tid[0]
                 cur.execute("DELETE FROM preddb.models WHERE tableid=%s;", (tableid,))
                 cur.execute("DELETE FROM preddb.table_index WHERE tableid=%s;", (tableid,))
-            return 0
-        return 1
+        return 0
 
     def delete_chain(self, tablename, chain_index):
         with self.open_db_connection(commit=True) as cur:
@@ -94,8 +94,7 @@ class PersistenceLayer(object):
                 tableid = tid[0]
                 cur.execute("DELETE FROM preddb.models WHERE tableid=%s;", (tableid,))
                 cur.execute("DELETE FROM preddb.table_index WHERE tableid=%s;", (tableid,))
-            return 0
-        return 1
+        return 0
             
     def get_latent_states(self, tablename):
         """Return X_L_list, X_D_list, and M_c"""
@@ -114,7 +113,7 @@ class PersistenceLayer(object):
             X_L_prime_json, X_D_prime_json = cur.fetchone()
             X_L_list.append(json.loads(X_L_prime_json))
             X_D_list.append(json.loads(X_D_prime_json))
-          return (X_L_list, X_D_list, M_c)
+        return (X_L_list, X_D_list, M_c)
         
     def get_metadata_and_table(self, tablename):
         """Return M_c and M_r and T"""
@@ -124,7 +123,7 @@ class PersistenceLayer(object):
             M_c = json.loads(M_c_json)
             M_r = json.loads(M_r_json)
             T = json.loads(t_json)
-            return M_c, M_r, T
+        return M_c, M_r, T
 
     def get_max_chain_id(self, tablename):
         with self.open_db_connection() as cur:
@@ -132,14 +131,14 @@ class PersistenceLayer(object):
             tableid = cur.fetchone()[0]
             cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
             max_chainid = cur.fetchone()[0]
-            return max_chainid
+        return max_chainid
 
     def get_cctypes(self, tablename):
         with self.open_db_connection() as cur:
             cur.execute("SELECT cctypes, t, m_r, m_c, path FROM preddb.table_index WHERE tablename=%s;", (tablename,))
             cctypes_json = cur.fetchone()
             cctypes = json.loads(cctypes_json)
-            return cctypes
+        return cctypes
 
     def update_cctypes(self, tablename, cctypes):
         with self.open_db_connection(commit=True) as cur:
@@ -157,48 +156,35 @@ class PersistenceLayer(object):
                 cur.execute(sql_string)
 
     def check_if_table_exists(self, tablename):
+        ret = False
         with self.open_db_connection() as cur:
             cur.execute("select exists(select * from information_schema.tables where table_name=%s);", (tablename,))
             if cur.fetchone()[0]:
-                return True
-            return False
+                ret = True
+        return ret
 
     def write_csv(self, tablename, csv):
         # Write csv to file
         cur_dir = os.path.dirname(os.path.abspath(__file__))
-        f = open('%s/../../www/data/%s.csv' % (cur_dir, tablename), 'w')
+        f = open('%s/data/%s.csv' % (cur_dir, tablename), 'w')
         csv_abs_path = os.path.abspath(f.name)
         f.write(csv)
         f.close()
         os.chmod(csv_abs_path, 0755)
     
-        # Write csv to a file, with colnames (first row) removed
-        clean_csv = csv[csv.index('\n')+1:]
-        f = open('%s/../../www/data/%s_clean.csv' % (cur_dir, tablename), 'w')
-        clean_csv_abs_path = os.path.abspath(f.name)
-        f.write(clean_csv)
-        f.close()
-        os.chmod(clean_csv_abs_path, 0755)
+        return csv_abs_path
 
-    def create_btable_from_csv(self, tablename, csv_path, t, m_r, m_c, cctypes, postgres_coltypes):
+    def create_btable_from_csv(self, tablename, csv_path, cctypes, postgres_coltypes, colnames):
         with self.open_db_connection(commit=True) as cur:
             ## TODO: warning: m_r and m_c have 0-indexed indices
             ##       but the db has 1-indexed keys
             t, m_r, m_c, header = du.read_data_objects(csv_path, cctypes=cctypes)
-            colstring = ', '.join([
-                    ' '.join(tup)
-                    for tup in zip(colnames, postgres_coltypes)
-                    ])
-            query = "CREATE TABLE %s (%s);" % (tablename, colstring)
-            cur.execute(query)
-            with open(clean_csv_abs_path) as fh:
-                cur.copy_from(fh, '%s' % tablename, sep=',')
-                curtime = datetime.datetime.now().ctime()
-                cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes, path) VALUES (%s, %s, %s, NULL, %s, %s, %s, %s, %s);", (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes), csv_abs_path))
+            curtime = datetime.datetime.now().ctime()
+            cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes, path) VALUES (%s, %s, %s, NULL, %s, %s, %s, %s, %s);", (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes), csv_path))
 
     def add_samples(self, tablename, X_L_list, X_D_list, iterations):
         tableid = self.get_table_id(tablename)
-        max_chain_id = self.get_max_chain_id(tablename)
+        max_chainid = self.get_max_chain_id(tablename)
         if max_chainid is None: max_chainid = -1
         with self.open_db_connection(commit=True) as cur:
             curtime = datetime.datetime.now().ctime()
@@ -208,7 +194,7 @@ class PersistenceLayer(object):
                 chain_index = max_chainid + 1 + idx
                 cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%s, %s, %s, %s, %s, %s);", (tableid, json.dumps(X_L), json.dumps(X_D), curtime, chain_index, iterations))
 
-    def add_samples(self, tablename, X_L, X_D, iterations, chainid):
+    def add_samples_for_chain(self, tablename, X_L, X_D, iterations, chainid):
         tableid = self.get_table_id(tablename)
         with self.open_db_connection(commit=True) as cur:
             curtime = datetime.datetime.now().ctime()
@@ -228,7 +214,7 @@ class PersistenceLayer(object):
         with self.open_db_connection() as cur:
             cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
             tableid = int(cur.fetchone()[0])
-            return tableid
+        return tableid
 
     def get_chain(self, tablename, chainid):
         tableid = self.get_table_id(tablename)
@@ -241,7 +227,7 @@ class PersistenceLayer(object):
             X_L_prime_json, X_D_prime_json, prev_iterations = cur.fetchone()
             X_L_prime = json.loads(X_L_prime_json)
             X_D_prime = json.loads(X_D_prime_json)
-            return X_L_prime, X_D_prime, prev_iterations
+        return X_L_prime, X_D_prime, prev_iterations
 
     def get_chain_ids(self, tablename):
         tableid = self.get_table_id(tablename)
@@ -249,5 +235,5 @@ class PersistenceLayer(object):
             cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
             chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
             chainids = map(int, chainids)
-            return chainids
+        return chainids
             

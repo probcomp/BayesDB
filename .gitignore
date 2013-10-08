@@ -9,3 +9,4 @@
 *.jar
 .ropeproject
 server_logs
+bayesdb/data
