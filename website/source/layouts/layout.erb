@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title><%= data.page.title || "BayesDB" %></title>
+    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet">
+    
+    <%= stylesheet_link_tag "bootstrap", "simple-sidebar" %>
+  </head>
+  
+  <body class="<%= page_classes %>" style="margin-top: 50px;">
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html">BayesDB</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+          <ul class="nav navbar-nav">
+            <li><%= link_to 'Intro', '/intro' %></li>
+            <li><%= link_to 'Docs', '/docs'%></li>
+            <li><%= link_to 'About', '/about'%></li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container -->
+    </nav>
+
+    <div id="wrapper">
+      <%= yield %>
+    </div>
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="javascripts/jquery.js"></script>
+    <script src="javascripts/bootstrap.js"></script>
+    <!-- Put this into a custom JavaScript file to make things more organized -->
+    <%= javascript_include_tag  "all" %>
+    <script>
+    $("#menu-toggle").click(function(e) {
+        e.preventDefault();
+        $("#wrapper").toggleClass("active");
+    });
+    </script>
+
+  </body>
+</html>

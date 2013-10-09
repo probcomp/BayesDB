@@ -10,3 +10,4 @@
 .ropeproject
 server_logs
 bayesdb/data
+website/build
