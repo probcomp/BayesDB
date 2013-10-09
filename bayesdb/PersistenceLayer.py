@@ -131,6 +131,8 @@ class PersistenceLayer(object):
             tableid = cur.fetchone()[0]
             cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
             max_chainid = cur.fetchone()[0]
+            if max_chainid is None:
+                max_chainid = 0
         return max_chainid
 
     def get_cctypes(self, tablename):
@@ -200,7 +202,7 @@ class PersistenceLayer(object):
             curtime = datetime.datetime.now().ctime()
             cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) " + \
                             "VALUES (%s, %s, %s, %s, %s, %s);",
-                        (tableid, json.dumps(X_L_prime), json.dumps(X_D_prime), curtime, chainid, prev_iterations + iterati))
+                        (tableid, json.dumps(X_L), json.dumps(X_D), curtime, chainid, iterations))
 
     def insert_models(self, tablename, states_by_chain):
         tableid = self.get_table_id(tablename)

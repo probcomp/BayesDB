@@ -46,47 +46,27 @@ class Client(object):
         out = method(*args)
       return out
 
-    def __call__(self, sql_string, pretty=True, timing=False):
-        return self.execute(sql_string, pretty)
+    def __call__(self, bql_string, pretty=True, timing=False):
+        return self.execute(bql_string, pretty)
 
-    def execute(self, sql_string, pretty=True, timing=False):
+    def execute(self, bql_string, pretty=True, timing=False):
         if timing:
             start_time = time.time()
             
-        result = self.call_bayesdb_engine('execute', dict(bql=sql_string))
+        result = self.call_bayesdb_engine('execute', dict(bql=bql_string))
         
         if timing:
             end_time = time.time()
             print 'Elapsed time: %.2f seconds.' % (end_time - start_time)
             
         if pretty:
-            pp = self.pretty_print(result, presql_command)
+            pp = self.pretty_print(result)
             print pp
             return pp
         else:
             return result
         
-        '''
-        presql_commands = ['ping',
-                           'drop_and_load_db',
-                           'drop_tablename',
-                           'set_hostname',
-                           'get_hostname',
-                           'start_from_scratch',
-                           'predict',
-                           'infer',
-                           'analyze',
-                           'upload_data_table',
-                           'create_model',
-                           'update_datatypes',
-                           'select',
-                           'import_samples',
-                           'export_samples',
-                           'estimate_dependence_probabilities']
-         '''
-        
-    def pretty_print(self, query_obj, presql_command=None):
-        """If presql_command is None, we must guess"""
+    def pretty_print(self, query_obj):
         result = ""
         if type(query_obj) == dict and 'data' in query_obj and 'columns' in query_obj:
             pt = prettytable.PrettyTable()

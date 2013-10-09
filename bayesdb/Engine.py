@@ -49,7 +49,7 @@ class Engine(object):
   2. Have separate classes for select, etc.
   3. Have user defined functions all sitting in their own module? Or importable from somewhere?
   """
-  def __init__(self, engine_type, **kwargs):
+  def __init__(self, engine_type='local', **kwargs):
     self.backend = get_CrossCatClient(engine_type, **kwargs)
     self.persistence_layer = PersistenceLayer()
     self.parser = Parser(self)
@@ -177,7 +177,7 @@ class Engine(object):
       states_by_chain.append((x_l_prime, x_d_prime))
 
     # Insert results into persistence layer
-    self.persistence_layer.insert_models(tablename, x_l_prime, x_d_prime)
+    self.persistence_layer.insert_models(tablename, states_by_chain)
 
   def analyze(self, tablename, chain_index=1, iterations=2, wait=False):
     """Run analyze for the selected table. chain_index may be 'all'."""
@@ -193,10 +193,10 @@ class Engine(object):
     chainid_iteration_info = list()
     # p_list = []
     for chainid in chainids:
-      iters = _analyze_helper(tableid, M_c, T, chainid, iterations)
+      iters = self._analyze_helper(tablename, M_c, T, chainid, iterations)
       chainid_iteration_info.append('Chain %d: %d iterations' % (chainid, iters))
     #   from multiprocessing import Process
-    #   p = Process(target=_analyze_helper,
+    #   p = Process(target=self._analyze_helper,
     #               args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
     #   p_list.append(p)
     #   p.start()
@@ -612,11 +612,12 @@ class Engine(object):
     return [tup[1] for tup in scored_data_tuples]
 
 
-  def simulate(self, tablename, columnstring, newtablename, whereclause, numpredictions):
+  def simulate(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
 
+    numrows = len(M_r['idx_to_name'])
     name_to_idx = M_c['name_to_idx']
     colnames = [colname.strip() for colname in columnstring.split(',')]
     col_indices = [name_to_idx[colname] for colname in colnames]
@@ -634,7 +635,10 @@ class Engine(object):
       #Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
 
       # map values to codes
-      Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
+      try:
+        Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
+      except:
+        import pytest; pytest.set_trace()
 
     args_dict = dict()
     args_dict['M_c'] = M_c
@@ -761,7 +765,7 @@ class Engine(object):
     return 0
 
 
-  def _analyze_helper(tableid, M_c, T, chainid, iterations):
+  def _analyze_helper(self, tablename, M_c, T, chainid, iterations):
     """Only for one chain."""
     X_L_prime, X_D_prime, prev_iterations = self.persistence_layer.get_chain(tablename, chainid)
 

@@ -19,6 +19,7 @@ import re
 import pickle
 import gzip
 import utils
+import os
 
 class Parser(object):
     def parse(self, sql_string):
@@ -90,7 +91,7 @@ class Parser(object):
                         if len(words) >= 7:
                             if words[4] == 'with' and utils.is_int(words[5]) and words[6] == 'explanations':
                                 n_chains = int(words[5])
-                        result = self.engine.create_model(tablename, n_chains)
+                        result = self.engine.create_models(tablename, n_chains)
                         print 'Created %d models for btable %s' % (n_chains, tablename)
                         return result
                     else:
@@ -102,7 +103,7 @@ class Parser(object):
                     if words[2] == 'model' or words[2] == 'models':
                         if len(words) >= 5 and words[3] == 'for':
                             tablename = words[4]
-                            result = self.engine.create_model(tablename, n_chains)
+                            result = self.engine.create_models(tablename, n_chains)
                             print 'Created %d models for btable %s' % (n_chains, tablename)
                             return result
                         else:

@@ -13,9 +13,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-"""
-A python client that simulates the frontend.
-"""
 
 import time
 import inspect
@@ -23,10 +20,8 @@ import psycopg2
 import pickle
 import os
 
-import tabular_predDB.python_utils.data_utils as du
-import tabular_predDB.python_utils.api_utils as au
-from tabular_predDB.jsonrpc_http.MiddlewareEngine import MiddlewareEngine
-middleware_engine = MiddlewareEngine()
+from bayesdb.Engine import Engine
+engine = Engine('local')
 
 def run_test(hostname='localhost', middleware_port=8008, online=False):
   URI = 'http://' + hostname + ':%d' % middleware_port
@@ -36,16 +31,6 @@ def run_test(hostname='localhost', middleware_port=8008, online=False):
   for tablename in test_tablenames:
     table_csv = open('%s/../../www/data/%s.csv' % (cur_dir, tablename), 'r').read()
     run_test_with(tablename, table_csv, URI, online)
-
-def call(method_name, args_dict, URI, online):
-  if online:
-    out, id = au.call(method_name, args_dict, URI)
-  else:
-    method = getattr(middleware_engine, method_name)
-    argnames = inspect.getargspec(method)[0]
-    args = [args_dict[argname] for argname in argnames if argname in args_dict]
-    out = method(*args)
-  return out
 
 def run_test_with(tablename, table_csv, URI, crosscat_column_types="None", online=False):
   call('start_from_scratch', {}, URI, online)
