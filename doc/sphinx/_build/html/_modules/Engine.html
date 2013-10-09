@@ -6,38 +6,38 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>bayesdb.Engine &mdash; BayesDB 0.1.0 documentation</title>
+    <title>Engine &mdash; BayesDB 0.1.0 documentation</title>
     
-    <link rel="stylesheet" href="../../_static/rtd.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/rtd.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../',
+        URL_ROOT:    '../',
         VERSION:     '0.1.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="BayesDB 0.1.0 documentation" href="../../index.html" />
-    <link rel="up" title="Module code" href="../index.html" /> 
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="BayesDB 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="../../genindex.html" title="General Index"
+          <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="../../py-modindex.html" title="Python Module Index"
+          <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
-          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+        <li><a href="../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -46,7 +46,7 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <h1>Source code for bayesdb.Engine</h1><div class="highlight"><pre>
+  <h1>Source code for Engine</h1><div class="highlight"><pre>
 <span class="c">#</span>
 <span class="c"># COPYRIGHT 2013 Baxter, Lovell, Mangsingkha, Saeedi</span>
 <span class="c">#</span>
@@ -90,7 +90,7 @@
 <span class="kn">from</span> <span class="nn">Parser</span> <span class="kn">import</span> <span class="n">Parser</span>
 <span class="kn">import</span> <span class="nn">utils</span>
 
-<div class="viewcode-block" id="Engine"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine">[docs]</a><span class="k">class</span> <span class="nc">Engine</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Engine"><a class="viewcode-back" href="../index.html#Engine.Engine">[docs]</a><span class="k">class</span> <span class="nc">Engine</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Possible ideas for refactoring:</span>
 <span class="sd">  1. Have a query class. Created when a complex query (like select) is received, and is able</span>
@@ -103,27 +103,27 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span> <span class="o">=</span> <span class="n">PersistenceLayer</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">Parser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Engine.execute"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.execute">[docs]</a>  <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bql</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bql</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;Parses and executes the given bql command.&#39;&#39;&#39;</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">bql</span><span class="p">)</span>
-</div>
-<div class="viewcode-block" id="Engine.start_from_scratch"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.start_from_scratch">[docs]</a>  <span class="k">def</span> <span class="nf">start_from_scratch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">start_from_scratch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">start_from_scratch</span><span class="p">()</span>
     <span class="k">return</span> <span class="s">&#39;Started db from scratch.&#39;</span>
-</div>
-<div class="viewcode-block" id="Engine.drop_and_load_db"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.drop_and_load_db">[docs]</a>  <span class="k">def</span> <span class="nf">drop_and_load_db</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">drop_and_load_db</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">drop_and_load_db</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
     <span class="k">return</span> <span class="s">&#39;Dropped and loaded DB.&#39;</span>
-</div>
-<div class="viewcode-block" id="Engine.drop_tablename"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.drop_tablename">[docs]</a>  <span class="k">def</span> <span class="nf">drop_tablename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">drop_tablename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Delete table by tablename.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">drop_btable</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
-</div>
-<div class="viewcode-block" id="Engine.delete_chain"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.delete_chain">[docs]</a>  <span class="k">def</span> <span class="nf">delete_chain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">chain_index</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">delete_chain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">chain_index</span><span class="p">):</span>
      <span class="sd">&quot;&quot;&quot;Delete one chain.&quot;&quot;&quot;</span>
      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">delete_chain</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
-</div>
-<div class="viewcode-block" id="Engine.update_datatypes"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.update_datatypes">[docs]</a>  <span class="k">def</span> <span class="nf">update_datatypes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">mappings</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">update_datatypes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">mappings</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    mappings is a dict of column name to &#39;continuous&#39;, &#39;multinomial&#39;,</span>
 <span class="sd">    or an int, which signifies multinomial of a specific type.</span>
@@ -153,7 +153,7 @@
 
     <span class="n">colnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">m_c</span><span class="p">[</span><span class="s">&#39;idx_to_name&#39;</span><span class="p">][</span><span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="p">)]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m_c</span><span class="p">[</span><span class="s">&#39;idx_to_name&#39;</span><span class="p">]))]</span>
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">colnames</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="n">cctypes</span><span class="p">],</span> <span class="n">message</span><span class="o">=</span><span class="s">&#39;Updated schema:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
-</div>
+
   <span class="k">def</span> <span class="nf">_guess_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">crosscat_column_types</span><span class="p">,</span> <span class="n">colnames</span><span class="p">):</span>
     <span class="c"># Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes</span>
     <span class="c"># Also make the corresponding postgres column types.</span>
@@ -177,7 +177,7 @@
         <span class="n">postgres_coltypes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;varchar(1000)&#39;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">postgres_coltypes</span><span class="p">,</span> <span class="n">cctypes</span>
         
-<div class="viewcode-block" id="Engine.create_btable"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.create_btable">[docs]</a>  <span class="k">def</span> <span class="nf">create_btable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">csv</span><span class="p">,</span> <span class="n">crosscat_column_types</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">create_btable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">csv</span><span class="p">,</span> <span class="n">crosscat_column_types</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Upload a csv table to the predictive db.</span>
 <span class="sd">    Crosscat_column_types must be a dictionary mapping column names</span>
 <span class="sd">    to either &#39;ignore&#39;, &#39;continuous&#39;, or &#39;multinomial&#39;. Not every</span>
@@ -198,18 +198,18 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">create_btable_from_csv</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">csv_abs_path</span><span class="p">,</span> <span class="n">cctypes</span><span class="p">,</span> <span class="n">postgres_coltypes</span><span class="p">,</span> <span class="n">colnames</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">colnames</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="n">cctypes</span><span class="p">],</span> <span class="n">message</span><span class="o">=</span><span class="s">&#39;Created btable </span><span class="si">%s</span><span class="s">. Inferred schema:</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">tablename</span><span class="p">)</span>
-</div>
-<div class="viewcode-block" id="Engine.export_samples"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.export_samples">[docs]</a>  <span class="k">def</span> <span class="nf">export_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">export_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Opposite of import samples! Save a pickled version of X_L_list, X_D_list, M_c, and T.&quot;&quot;&quot;</span>
     <span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">get_latent_states</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
     <span class="n">M_c</span><span class="p">,</span> <span class="n">M_r</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">get_metadata_and_table</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">M_c</span><span class="p">,</span> <span class="n">M_r</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span>
-</div>
-<div class="viewcode-block" id="Engine.import_samples"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.import_samples">[docs]</a>  <span class="k">def</span> <span class="nf">import_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">import_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Import these samples as if they are new chains&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">add_samples</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">iterations</span><span class="p">)</span>
-    </div>
-<div class="viewcode-block" id="Engine.create_models"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.create_models">[docs]</a>  <span class="k">def</span> <span class="nf">create_models</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">n_chains</span><span class="p">):</span>
+    
+  <span class="k">def</span> <span class="nf">create_models</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">n_chains</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Call initialize n_chains times.&quot;&quot;&quot;</span>
     <span class="c"># Get t, m_c, and m_r, and tableid</span>
     <span class="n">M_c</span><span class="p">,</span> <span class="n">M_r</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">get_metadata_and_table</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
@@ -227,8 +227,8 @@
 
     <span class="c"># Insert results into persistence layer</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">insert_models</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">states_by_chain</span><span class="p">)</span>
-</div>
-<div class="viewcode-block" id="Engine.analyze"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.analyze">[docs]</a>  <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">chain_index</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">chain_index</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Run analyze for the selected table. chain_index may be &#39;all&#39;.&quot;&quot;&quot;</span>
     <span class="c"># Get M_c, T, X_L, and X_D from database</span>
     <span class="n">M_c</span><span class="p">,</span> <span class="n">M_r</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">get_metadata_and_table</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
@@ -253,8 +253,8 @@
     <span class="c">#   for p in p_list:</span>
     <span class="c">#     p.join()</span>
     <span class="k">return</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chainid_iteration_info</span><span class="p">)</span>
-</div>
-<div class="viewcode-block" id="Engine.infer"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.infer">[docs]</a>  <span class="k">def</span> <span class="nf">infer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">columnstring</span><span class="p">,</span> <span class="n">newtablename</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">whereclause</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">numsamples</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">infer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">columnstring</span><span class="p">,</span> <span class="n">newtablename</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">whereclause</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">numsamples</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Impute missing values.</span>
 <span class="sd">    Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;</span>
 <span class="sd">    Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;</span>
@@ -313,8 +313,8 @@
       <span class="n">imputations_dict</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">columnstring</span><span class="p">,</span> <span class="n">whereclause</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="n">order_by</span><span class="p">,</span> <span class="n">imputations_dict</span><span class="o">=</span><span class="n">imputations_dict</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ret</span>
-</div>
-<div class="viewcode-block" id="Engine.select"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.select">[docs]</a>  <span class="k">def</span> <span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">columnstring</span><span class="p">,</span> <span class="n">whereclause</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">order_by</span><span class="p">,</span> <span class="n">imputations_dict</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">columnstring</span><span class="p">,</span> <span class="n">whereclause</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">order_by</span><span class="p">,</span> <span class="n">imputations_dict</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Our own homebrewed select query.</span>
 <span class="sd">    First, reads codes from T and converts them to values.</span>
@@ -614,7 +614,7 @@
     <span class="c">## Prepare for return</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="s">&#39;columns&#39;</span><span class="p">:</span> <span class="n">query_colnames</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">ret</span>
-</div>
+
   <span class="k">def</span> <span class="nf">_get_column_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">M_c</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns a function of the form required by order_by that returns the column value.</span>
@@ -661,7 +661,7 @@
     <span class="k">return</span> <span class="p">[</span><span class="n">tup</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">scored_data_tuples</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="Engine.simulate"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.simulate">[docs]</a>  <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">columnstring</span><span class="p">,</span> <span class="n">newtablename</span><span class="p">,</span> <span class="n">whereclause</span><span class="p">,</span> <span class="n">numpredictions</span><span class="p">,</span> <span class="n">order_by</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">columnstring</span><span class="p">,</span> <span class="n">newtablename</span><span class="p">,</span> <span class="n">whereclause</span><span class="p">,</span> <span class="n">numpredictions</span><span class="p">,</span> <span class="n">order_by</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Simple predictive samples. Returns one row per prediction, with all the given and predicted variables.&quot;&quot;&quot;</span>
     <span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">get_latent_states</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
     <span class="n">M_c</span><span class="p">,</span> <span class="n">M_r</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">get_metadata_and_table</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
@@ -721,8 +721,8 @@
     <span class="c">#data = numpy.round(data, 1)</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;columns&#39;</span><span class="p">:</span> <span class="n">columns</span><span class="p">,</span> <span class="s">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">ret</span>
-</div>
-<div class="viewcode-block" id="Engine.write_json_for_table"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.write_json_for_table">[docs]</a>  <span class="k">def</span> <span class="nf">write_json_for_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">write_json_for_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">):</span>
     <span class="n">M_c</span><span class="p">,</span> <span class="n">M_r</span><span class="p">,</span> <span class="n">t_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">get_metadata_and_table</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
     <span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">get_latent_states</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
     <span class="nb">dir</span><span class="o">=</span><span class="n">S</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">web_resources_data_dir</span>
@@ -760,8 +760,8 @@
     <span class="n">json_indices_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ids</span><span class="o">=</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_D_list</span><span class="p">))))</span>
     <span class="n">jsonify_and_dump</span><span class="p">(</span><span class="n">json_indices_dict</span><span class="p">,</span> <span class="s">&quot;json_indices&quot;</span><span class="p">)</span>
 
-</div>
-<div class="viewcode-block" id="Engine.create_histogram"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.create_histogram">[docs]</a>  <span class="k">def</span> <span class="nf">create_histogram</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">M_c</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">mc_col_indices</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">create_histogram</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">M_c</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">mc_col_indices</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
     <span class="nb">dir</span><span class="o">=</span><span class="n">S</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">web_resources_data_dir</span>
     <span class="n">full_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
     <span class="n">num_rows</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -790,12 +790,12 @@
         <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">(</span><span class="n">unique_labels</span><span class="p">)</span>
     <span class="n">pylab</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
     <span class="n">pylab</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">full_filename</span><span class="p">)</span>
-</div>
-<div class="viewcode-block" id="Engine.estimate_dependence_probabilities"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.estimate_dependence_probabilities">[docs]</a>  <span class="k">def</span> <span class="nf">estimate_dependence_probabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">submatrix</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">estimate_dependence_probabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">submatrix</span><span class="p">):</span>
     <span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">get_latent_states</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">_do_gen_feature_z</span><span class="p">(</span><span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">submatrix</span><span class="p">)</span>
-</div>
-<div class="viewcode-block" id="Engine.gen_feature_z"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.gen_feature_z">[docs]</a>  <span class="k">def</span> <span class="nf">gen_feature_z</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+
+  <span class="k">def</span> <span class="nf">gen_feature_z</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                     <span class="nb">dir</span><span class="o">=</span><span class="n">S</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">web_resources_dir</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
       <span class="n">filename</span> <span class="o">=</span> <span class="n">tablename</span> <span class="o">+</span> <span class="s">&#39;_feature_z&#39;</span>
@@ -803,8 +803,8 @@
     <span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">get_latent_states</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">do_gen_feature_z</span><span class="p">(</span><span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span><span class="p">,</span>
                             <span class="n">tablename</span><span class="p">,</span> <span class="n">full_filename</span><span class="p">)</span>
-</div>
-<div class="viewcode-block" id="Engine.dump_db"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.Engine.dump_db">[docs]</a>  <span class="k">def</span> <span class="nf">dump_db</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="nb">dir</span><span class="o">=</span><span class="n">S</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">web_resources_dir</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">dump_db</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="nb">dir</span><span class="o">=</span><span class="n">S</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">web_resources_dir</span><span class="p">):</span>
     <span class="n">full_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.gz&#39;</span><span class="p">):</span>
       <span class="n">cmd_str</span> <span class="o">=</span> <span class="s">&#39;pg_dump </span><span class="si">%s</span><span class="s"> | gzip &gt; </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dbname</span><span class="p">,</span> <span class="n">full_filename</span><span class="p">)</span>
@@ -813,7 +813,7 @@
     <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">cmd_str</span><span class="p">)</span>
     <span class="k">return</span> <span class="mi">0</span>
 
-</div>
+
   <span class="k">def</span> <span class="nf">_analyze_helper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">M_c</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">chainid</span><span class="p">,</span> <span class="n">iterations</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Only for one chain.&quot;&quot;&quot;</span>
     <span class="n">X_L_prime</span><span class="p">,</span> <span class="n">X_D_prime</span><span class="p">,</span> <span class="n">prev_iterations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persistence_layer</span><span class="o">.</span><span class="n">get_chain</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">chainid</span><span class="p">)</span>
@@ -837,7 +837,7 @@
     <span class="k">return</span> <span class="p">(</span><span class="n">prev_iterations</span> <span class="o">+</span> <span class="n">iterations</span><span class="p">)</span>
 
 </div>
-<div class="viewcode-block" id="jsonify_and_dump"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.jsonify_and_dump">[docs]</a><span class="k">def</span> <span class="nf">jsonify_and_dump</span><span class="p">(</span><span class="n">to_dump</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">jsonify_and_dump</span><span class="p">(</span><span class="n">to_dump</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
   <span class="nb">dir</span><span class="o">=</span><span class="n">S</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">web_resources_data_dir</span>
   <span class="n">full_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
   <span class="k">print</span> <span class="n">full_filename</span>
@@ -849,7 +849,7 @@
   <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
     <span class="k">print</span> <span class="n">e</span>
   <span class="k">return</span> <span class="mi">0</span>
-</div>
+
 <span class="k">def</span> <span class="nf">_do_gen_feature_z</span><span class="p">(</span><span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span><span class="p">,</span> <span class="n">tablename</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">confidence</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">submatrix</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="n">num_cols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_L_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;column_partition&#39;</span><span class="p">][</span><span class="s">&#39;assignments&#39;</span><span class="p">])</span>
     <span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">M_c</span><span class="p">[</span><span class="s">&#39;idx_to_name&#39;</span><span class="p">][</span><span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="p">)]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_cols</span><span class="p">)]</span>
@@ -930,17 +930,17 @@
 <span class="n">get_Engine_attr</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">Engine</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
 <span class="n">is_Engine_method_name</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">inspect</span><span class="o">.</span><span class="n">ismethod</span><span class="p">(</span><span class="n">get_Engine_attr</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
 <span class="c">#</span>
-<div class="viewcode-block" id="get_method_names"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.get_method_names">[docs]</a><span class="k">def</span> <span class="nf">get_method_names</span><span class="p">():</span>
+<span class="k">def</span> <span class="nf">get_method_names</span><span class="p">():</span>
     <span class="k">return</span> <span class="nb">filter</span><span class="p">(</span><span class="n">is_Engine_method_name</span><span class="p">,</span> <span class="nb">dir</span><span class="p">(</span><span class="n">Engine</span><span class="p">))</span>
-<span class="c">#</span></div>
-<div class="viewcode-block" id="get_method_name_to_args"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Engine.get_method_name_to_args">[docs]</a><span class="k">def</span> <span class="nf">get_method_name_to_args</span><span class="p">():</span>
+<span class="c">#</span>
+<span class="k">def</span> <span class="nf">get_method_name_to_args</span><span class="p">():</span>
     <span class="n">method_names</span> <span class="o">=</span> <span class="n">get_method_names</span><span class="p">()</span>
     <span class="n">method_name_to_args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">method_name</span> <span class="ow">in</span> <span class="n">method_names</span><span class="p">:</span>
         <span class="n">method</span> <span class="o">=</span> <span class="n">Engine</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">method_name</span><span class="p">]</span>
         <span class="n">arg_str_list</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span><span class="n">method</span><span class="p">)</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
         <span class="n">method_name_to_args</span><span class="p">[</span><span class="n">method_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">arg_str_list</span>
-    <span class="k">return</span> <span class="n">method_name_to_args</span></div>
+    <span class="k">return</span> <span class="n">method_name_to_args</span>
 </pre></div>
 
           </div>
@@ -950,7 +950,7 @@
         <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
-    <form class="search" action="../../search.html" method="get">
+    <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
@@ -969,13 +969,13 @@
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="../../genindex.html" title="General Index"
+          <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="../../py-modindex.html" title="Python Module Index"
+          <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
-          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+        <li><a href="../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

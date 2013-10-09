@@ -6,21 +6,15 @@
 Welcome to BayesDB's documentation!
 ===================================
 
-Contents:
-
 .. toctree::
    :maxdepth: 2
 
-.. automodule:: Engine
-
-.. automodule:: Parser
-
-.. autoclass:: Parser
-
-.. automodule:: Client
-
-.. autoclass:: Client
-   :members
+   installation.rst
+   gettingstarted.rst
+   bql.rst
+   examples.rst
+   dev.rst
+   
 
 Indices and tables
 ==================

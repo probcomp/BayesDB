@@ -6,38 +6,38 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>bayesdb.Client &mdash; BayesDB 0.1.0 documentation</title>
+    <title>Client &mdash; BayesDB 0.1.0 documentation</title>
     
-    <link rel="stylesheet" href="../../_static/rtd.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/rtd.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../',
+        URL_ROOT:    '../',
         VERSION:     '0.1.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="BayesDB 0.1.0 documentation" href="../../index.html" />
-    <link rel="up" title="Module code" href="../index.html" /> 
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="BayesDB 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="../../genindex.html" title="General Index"
+          <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="../../py-modindex.html" title="Python Module Index"
+          <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
-          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+        <li><a href="../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -46,7 +46,7 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <h1>Source code for bayesdb.Client</h1><div class="highlight"><pre>
+  <h1>Source code for Client</h1><div class="highlight"><pre>
 <span class="c">#</span>
 <span class="c"># Copyright 2013 Baxter, Lovell, Mangsingkha, Saeedi</span>
 <span class="c">#</span>
@@ -74,7 +74,7 @@
 
 <span class="kn">from</span> <span class="nn">bayesdb.Engine</span> <span class="kn">import</span> <span class="n">Engine</span>
 
-<div class="viewcode-block" id="Client"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Client.Client">[docs]</a><span class="k">class</span> <span class="nc">Client</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Client"><a class="viewcode-back" href="../index.html#Client.Client">[docs]</a><span class="k">class</span> <span class="nc">Client</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8008</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">hostname</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">hostname</span><span class="o">==</span><span class="s">&#39;localhost&#39;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">online</span> <span class="o">=</span> <span class="bp">False</span>
@@ -85,7 +85,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">port</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">URI</span> <span class="o">=</span> <span class="s">&#39;http://&#39;</span> <span class="o">+</span> <span class="n">hostname</span> <span class="o">+</span> <span class="s">&#39;:</span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">port</span>
 
-<div class="viewcode-block" id="Client.call_bayesdb_engine"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Client.Client.call_bayesdb_engine">[docs]</a>    <span class="k">def</span> <span class="nf">call_bayesdb_engine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">call_bayesdb_engine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">):</span>
       <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">online</span><span class="p">:</span>
         <span class="n">out</span><span class="p">,</span> <span class="nb">id</span> <span class="o">=</span> <span class="n">au</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">URI</span><span class="p">)</span>
       <span class="k">else</span><span class="p">:</span>
@@ -94,11 +94,11 @@
         <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">args_dict</span><span class="p">[</span><span class="n">argname</span><span class="p">]</span> <span class="k">for</span> <span class="n">argname</span> <span class="ow">in</span> <span class="n">argnames</span> <span class="k">if</span> <span class="n">argname</span> <span class="ow">in</span> <span class="n">args_dict</span><span class="p">]</span>
         <span class="n">out</span> <span class="o">=</span> <span class="n">method</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
       <span class="k">return</span> <span class="n">out</span>
-</div>
+
     <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bql_string</span><span class="p">,</span> <span class="n">pretty</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">bql_string</span><span class="p">,</span> <span class="n">pretty</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Client.execute"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Client.Client.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bql_string</span><span class="p">,</span> <span class="n">pretty</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bql_string</span><span class="p">,</span> <span class="n">pretty</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">timing</span><span class="p">:</span>
             <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
             
@@ -114,8 +114,8 @@
             <span class="k">return</span> <span class="n">pp</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">result</span>
-        </div>
-<div class="viewcode-block" id="Client.pretty_print"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.Client.Client.pretty_print">[docs]</a>    <span class="k">def</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_obj</span><span class="p">):</span>
+        
+    <span class="k">def</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_obj</span><span class="p">):</span>
         <span class="n">result</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">query_obj</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span> <span class="ow">and</span> <span class="s">&#39;data&#39;</span> <span class="ow">in</span> <span class="n">query_obj</span> <span class="ow">and</span> <span class="s">&#39;columns&#39;</span> <span class="ow">in</span> <span class="n">query_obj</span><span class="p">:</span>
             <span class="n">pt</span> <span class="o">=</span> <span class="n">prettytable</span><span class="o">.</span><span class="n">PrettyTable</span><span class="p">()</span>
@@ -136,7 +136,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">query_obj</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span>
-</pre></div></div></div>
+</pre></div></div>
 
           </div>
         </div>
@@ -145,7 +145,7 @@
         <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
-    <form class="search" action="../../search.html" method="get">
+    <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
@@ -164,13 +164,13 @@
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="../../genindex.html" title="General Index"
+          <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="../../py-modindex.html" title="Python Module Index"
+          <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
-          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+        <li><a href="../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
