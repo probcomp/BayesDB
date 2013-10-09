@@ -11,6 +11,13 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+.. automodule:: Engine
+
+.. autoclass:: Parser
+
+.. autoclass:: Client
+   :members
+
 Indices and tables
 ==================
 
