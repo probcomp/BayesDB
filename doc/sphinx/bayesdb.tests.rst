@@ -1,27 +1,38 @@
-tests Package
-=============
+bayesdb.tests package
+=====================
 
-:mod:`middleware_stub_client` Module
-------------------------------------
+Submodules
+----------
 
-.. automodule:: bayesdb.tests.middleware_stub_client
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`test_dha_story` Module
-----------------------------
+bayesdb.tests.test_dha_story module
+-----------------------------------
 
 .. automodule:: bayesdb.tests.test_dha_story
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`test_flights` Module
---------------------------
+bayesdb.tests.test_engine module
+--------------------------------
+
+.. automodule:: bayesdb.tests.test_engine
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+bayesdb.tests.test_flights module
+---------------------------------
 
 .. automodule:: bayesdb.tests.test_flights
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: bayesdb.tests
+    :members:
+    :undoc-members:
+    :show-inheritance:

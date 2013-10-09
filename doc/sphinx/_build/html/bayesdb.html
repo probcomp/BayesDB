@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -8,14 +6,14 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>bayesdb Package &mdash; BayesDB 0.1.0 documentation</title>
+    <title>bayesdb package &mdash; BayesDB 0.1.0 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
+        URL_ROOT:    './',
         VERSION:     '0.1.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -47,21 +45,343 @@
           <div class="body">
             
   <div class="section" id="bayesdb-package">
-<h1>bayesdb Package<a class="headerlink" href="#bayesdb-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="client-module">
-<h2><tt class="xref py py-mod docutils literal"><span class="pre">Client</span></tt> Module<a class="headerlink" href="#client-module" title="Permalink to this headline">¶</a></h2>
+<h1>bayesdb package<a class="headerlink" href="#bayesdb-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="bayesdb.tests.html">bayesdb.tests package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="bayesdb.tests.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayesdb.tests.html#module-bayesdb.tests.test_dha_story">bayesdb.tests.test_dha_story module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayesdb.tests.html#module-bayesdb.tests.test_engine">bayesdb.tests.test_engine module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayesdb.tests.html#module-bayesdb.tests.test_flights">bayesdb.tests.test_flights module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayesdb.tests.html#module-bayesdb.tests">Module contents</a></li>
+</ul>
+</li>
+</ul>
 </div>
-<div class="section" id="engine-module">
-<h2><tt class="xref py py-mod docutils literal"><span class="pre">Engine</span></tt> Module<a class="headerlink" href="#engine-module" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="parser-module">
-<h2><tt class="xref py py-mod docutils literal"><span class="pre">Parser</span></tt> Module<a class="headerlink" href="#parser-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-bayesdb.Client">
+<span id="bayesdb-client-module"></span><h2>bayesdb.Client module<a class="headerlink" href="#module-bayesdb.Client" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="bayesdb.Client.Client">
+<em class="property">class </em><tt class="descclassname">bayesdb.Client.</tt><tt class="descname">Client</tt><big>(</big><em>hostname=None</em>, <em>port=8008</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Client.html#Client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Client.Client" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dl class="method">
+<dt id="bayesdb.Client.Client.call_bayesdb_engine">
+<tt class="descname">call_bayesdb_engine</tt><big>(</big><em>method_name</em>, <em>args_dict</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Client.html#Client.call_bayesdb_engine"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Client.Client.call_bayesdb_engine" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Client.Client.execute">
+<tt class="descname">execute</tt><big>(</big><em>bql_string</em>, <em>pretty=True</em>, <em>timing=False</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Client.html#Client.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Client.Client.execute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Client.Client.pretty_print">
+<tt class="descname">pretty_print</tt><big>(</big><em>query_obj</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Client.html#Client.pretty_print"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Client.Client.pretty_print" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-bayesdb.Engine">
+<span id="bayesdb-engine-module"></span><h2>bayesdb.Engine module<a class="headerlink" href="#module-bayesdb.Engine" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="bayesdb.Engine.Engine">
+<em class="property">class </em><tt class="descclassname">bayesdb.Engine.</tt><tt class="descname">Engine</tt><big>(</big><em>engine_type='local'</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>Possible ideas for refactoring:
+1. Have a query class. Created when a complex query (like select) is received, and is able
+to set state on itself including X_L_list, X_D_list, etc. as necessary.
+2. Have separate classes for select, etc.
+3. Have user defined functions all sitting in their own module? Or importable from somewhere?</p>
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.analyze">
+<tt class="descname">analyze</tt><big>(</big><em>tablename</em>, <em>chain_index=1</em>, <em>iterations=2</em>, <em>wait=False</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.analyze"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.analyze" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run analyze for the selected table. chain_index may be &#8216;all&#8217;.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.create_btable">
+<tt class="descname">create_btable</tt><big>(</big><em>tablename</em>, <em>csv</em>, <em>crosscat_column_types</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.create_btable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.create_btable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upload a csv table to the predictive db.
+Crosscat_column_types must be a dictionary mapping column names
+to either &#8216;ignore&#8217;, &#8216;continuous&#8217;, or &#8216;multinomial&#8217;. Not every
+column name must be present in the dictionary: default is continuous.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.create_histogram">
+<tt class="descname">create_histogram</tt><big>(</big><em>M_c</em>, <em>data</em>, <em>columns</em>, <em>mc_col_indices</em>, <em>filename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.create_histogram"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.create_histogram" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.create_models">
+<tt class="descname">create_models</tt><big>(</big><em>tablename</em>, <em>n_chains</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.create_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.create_models" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call initialize n_chains times.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.delete_chain">
+<tt class="descname">delete_chain</tt><big>(</big><em>tablename</em>, <em>chain_index</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.delete_chain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.delete_chain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete one chain.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.drop_and_load_db">
+<tt class="descname">drop_and_load_db</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.drop_and_load_db"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.drop_and_load_db" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.drop_tablename">
+<tt class="descname">drop_tablename</tt><big>(</big><em>tablename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.drop_tablename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.drop_tablename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete table by tablename.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.dump_db">
+<tt class="descname">dump_db</tt><big>(</big><em>filename</em>, <em>dir='/home/sgeadmin/BayesDB/www'</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.dump_db"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.dump_db" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.estimate_dependence_probabilities">
+<tt class="descname">estimate_dependence_probabilities</tt><big>(</big><em>tablename</em>, <em>col</em>, <em>confidence</em>, <em>limit</em>, <em>filename</em>, <em>submatrix</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.estimate_dependence_probabilities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.estimate_dependence_probabilities" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.execute">
+<tt class="descname">execute</tt><big>(</big><em>bql</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses and executes the given bql command.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.export_samples">
+<tt class="descname">export_samples</tt><big>(</big><em>tablename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.export_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.export_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opposite of import samples! Save a pickled version of X_L_list, X_D_list, M_c, and T.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.gen_feature_z">
+<tt class="descname">gen_feature_z</tt><big>(</big><em>tablename</em>, <em>filename=None</em>, <em>dir='/home/sgeadmin/BayesDB/www'</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.gen_feature_z"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.gen_feature_z" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.import_samples">
+<tt class="descname">import_samples</tt><big>(</big><em>tablename</em>, <em>X_L_list</em>, <em>X_D_list</em>, <em>M_c</em>, <em>T</em>, <em>iterations=0</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.import_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.import_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import these samples as if they are new chains</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.infer">
+<tt class="descname">infer</tt><big>(</big><em>tablename</em>, <em>columnstring</em>, <em>newtablename</em>, <em>confidence</em>, <em>whereclause</em>, <em>limit</em>, <em>numsamples</em>, <em>order_by=False</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.infer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.infer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Impute missing values.
+Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
+Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
+Argument newtablename == null/emptystring if we don&#8217;t want to do INTO</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.select">
+<tt class="descname">select</tt><big>(</big><em>tablename</em>, <em>columnstring</em>, <em>whereclause</em>, <em>limit</em>, <em>order_by</em>, <em>imputations_dict=None</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.select"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.select" title="Permalink to this definition">¶</a></dt>
+<dd><p>Our own homebrewed select query.
+First, reads codes from T and converts them to values.
+Then, filters the values based on the where clause.
+Then, fills in all imputed values, if applicable.
+Then, orders by the given order_by functions.
+Then, computes the queried values requested by the column string.</p>
+<p>One refactoring option: you could try generating a list of all functions that will be needed, either
+for selecting or for ordering. Then compute those and add them to the data tuples. Then just do the
+order by as if you&#8217;re doing it exclusively on columns. The only downside is that now if there isn&#8217;t an
+order by, but there is a limit, then we computed a large number of extra functions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.simulate">
+<tt class="descname">simulate</tt><big>(</big><em>tablename</em>, <em>columnstring</em>, <em>newtablename</em>, <em>whereclause</em>, <em>numpredictions</em>, <em>order_by</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.simulate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.simulate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple predictive samples. Returns one row per prediction, with all the given and predicted variables.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.start_from_scratch">
+<tt class="descname">start_from_scratch</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.start_from_scratch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.start_from_scratch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.update_datatypes">
+<tt class="descname">update_datatypes</tt><big>(</big><em>tablename</em>, <em>mappings</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.update_datatypes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.update_datatypes" title="Permalink to this definition">¶</a></dt>
+<dd><p>mappings is a dict of column name to &#8216;continuous&#8217;, &#8216;multinomial&#8217;,
+or an int, which signifies multinomial of a specific type.
+TODO: FIX HACKS. Current works by reloading all the data from csv,
+and it ignores multinomials&#8217; specific number of outcomes.
+Also, disastrous things may happen if you update a schema after creating models.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Engine.Engine.write_json_for_table">
+<tt class="descname">write_json_for_table</tt><big>(</big><em>tablename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#Engine.write_json_for_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.Engine.write_json_for_table" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="bayesdb.Engine.get_Engine_attr">
+<tt class="descclassname">bayesdb.Engine.</tt><tt class="descname">get_Engine_attr</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#bayesdb.Engine.get_Engine_attr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="bayesdb.Engine.get_method_name_to_args">
+<tt class="descclassname">bayesdb.Engine.</tt><tt class="descname">get_method_name_to_args</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#get_method_name_to_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.get_method_name_to_args" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="bayesdb.Engine.get_method_names">
+<tt class="descclassname">bayesdb.Engine.</tt><tt class="descname">get_method_names</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#get_method_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.get_method_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="bayesdb.Engine.get_name">
+<tt class="descclassname">bayesdb.Engine.</tt><tt class="descname">get_name</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#bayesdb.Engine.get_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="bayesdb.Engine.is_Engine_method_name">
+<tt class="descclassname">bayesdb.Engine.</tt><tt class="descname">is_Engine_method_name</tt><big>(</big><em>x</em><big>)</big><a class="headerlink" href="#bayesdb.Engine.is_Engine_method_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="bayesdb.Engine.jsonify_and_dump">
+<tt class="descclassname">bayesdb.Engine.</tt><tt class="descname">jsonify_and_dump</tt><big>(</big><em>to_dump</em>, <em>filename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Engine.html#jsonify_and_dump"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Engine.jsonify_and_dump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-bayesdb.Parser">
+<span id="bayesdb-parser-module"></span><h2>bayesdb.Parser module<a class="headerlink" href="#module-bayesdb.Parser" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="bayesdb.Parser.Parser">
+<em class="property">class </em><tt class="descclassname">bayesdb.Parser.</tt><tt class="descname">Parser</tt><big>(</big><em>engine</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.call_bayesdb_engine">
+<tt class="descname">call_bayesdb_engine</tt><big>(</big><em>method_name</em>, <em>args_dict</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.call_bayesdb_engine"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.call_bayesdb_engine" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.extract_limit">
+<tt class="descname">extract_limit</tt><big>(</big><em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.extract_limit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.extract_limit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.extract_order_by">
+<tt class="descname">extract_order_by</tt><big>(</big><em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.extract_order_by"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.extract_order_by" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse">
+<tt class="descname">parse</tt><big>(</big><em>sql_string</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_analyze">
+<tt class="descname">parse_analyze</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_analyze"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_analyze" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_create_btable">
+<tt class="descname">parse_create_btable</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_create_btable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_create_btable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_create_models">
+<tt class="descname">parse_create_models</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_create_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_create_models" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_delete_chain">
+<tt class="descname">parse_delete_chain</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_delete_chain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_delete_chain" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_drop_and_load_db">
+<tt class="descname">parse_drop_and_load_db</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_drop_and_load_db"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_drop_and_load_db" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_drop_tablename">
+<tt class="descname">parse_drop_tablename</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_drop_tablename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_drop_tablename" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_estimate_dependence_probabilities">
+<tt class="descname">parse_estimate_dependence_probabilities</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_estimate_dependence_probabilities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_estimate_dependence_probabilities" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_export_samples">
+<tt class="descname">parse_export_samples</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_export_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_export_samples" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_get_hostname">
+<tt class="descname">parse_get_hostname</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_get_hostname"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_get_hostname" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_import_samples">
+<tt class="descname">parse_import_samples</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_import_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_import_samples" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_infer">
+<tt class="descname">parse_infer</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_infer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_infer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_ping">
+<tt class="descname">parse_ping</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_ping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_ping" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_select">
+<tt class="descname">parse_select</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_select"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_select" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_set_hostname">
+<tt class="descname">parse_set_hostname</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_set_hostname"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_set_hostname" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_simulate">
+<tt class="descname">parse_simulate</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_simulate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_simulate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_start_from_scratch">
+<tt class="descname">parse_start_from_scratch</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_start_from_scratch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_start_from_scratch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_update_datatypes">
+<tt class="descname">parse_update_datatypes</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_update_datatypes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_update_datatypes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.Parser.Parser.parse_write_json_for_table">
+<tt class="descname">parse_write_json_for_table</tt><big>(</big><em>words</em>, <em>orig</em><big>)</big><a class="reference internal" href="_modules/bayesdb/Parser.html#Parser.parse_write_json_for_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.Parser.Parser.parse_write_json_for_table" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="module-bayesdb.PersistenceLayer">
-<span id="persistencelayer-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">PersistenceLayer</span></tt> Module<a class="headerlink" href="#module-bayesdb.PersistenceLayer" title="Permalink to this headline">¶</a></h2>
+<span id="bayesdb-persistencelayer-module"></span><h2>bayesdb.PersistenceLayer module<a class="headerlink" href="#module-bayesdb.PersistenceLayer" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="bayesdb.PersistenceLayer.PersistenceLayer">
-<em class="property">class </em><tt class="descclassname">bayesdb.PersistenceLayer.</tt><tt class="descname">PersistenceLayer</tt><big>(</big><em>dbname='sgeadmin'</em>, <em>user='jbaxter'</em><big>)</big><a class="reference internal" href="_modules/bayesdb/PersistenceLayer.html#PersistenceLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.PersistenceLayer.PersistenceLayer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">bayesdb.PersistenceLayer.</tt><tt class="descname">PersistenceLayer</tt><big>(</big><em>dbname='sgeadmin'</em>, <em>user='sgeadmin'</em><big>)</big><a class="reference internal" href="_modules/bayesdb/PersistenceLayer.html#PersistenceLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.PersistenceLayer.PersistenceLayer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <dl class="method">
 <dt id="bayesdb.PersistenceLayer.PersistenceLayer.add_samples">
@@ -174,7 +494,7 @@
 
 </div>
 <div class="section" id="module-bayesdb.settings">
-<span id="settings-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">settings</span></tt> Module<a class="headerlink" href="#module-bayesdb.settings" title="Permalink to this headline">¶</a></h2>
+<span id="bayesdb-settings-module"></span><h2>bayesdb.settings module<a class="headerlink" href="#module-bayesdb.settings" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="bayesdb.settings.Hadoop">
 <em class="property">class </em><tt class="descclassname">bayesdb.settings.</tt><tt class="descname">Hadoop</tt><a class="reference internal" href="_modules/bayesdb/settings.html#Hadoop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.settings.Hadoop" title="Permalink to this definition">¶</a></dt>
@@ -285,7 +605,7 @@
 
 <dl class="attribute">
 <dt id="bayesdb.settings.Hadoop.default_table_filename">
-<tt class="descname">default_table_filename</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB/www/data/dha.csv'</em><a class="headerlink" href="#bayesdb.settings.Hadoop.default_table_filename" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">default_table_filename</tt><em class="property"> = '/home/sgeadmin/BayesDB/www/data/dha.csv'</em><a class="headerlink" href="#bayesdb.settings.Hadoop.default_table_filename" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -330,7 +650,7 @@
 <em class="property">class </em><tt class="descclassname">bayesdb.settings.</tt><tt class="descname">gdocs</tt><a class="reference internal" href="_modules/bayesdb/settings.html#gdocs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.settings.gdocs" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="attribute">
 <dt id="bayesdb.settings.gdocs.auth_file">
-<tt class="descname">auth_file</tt><em class="property"> = '/Users/jbaxter/mh_gdocs_auth'</em><a class="headerlink" href="#bayesdb.settings.gdocs.auth_file" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">auth_file</tt><em class="property"> = '/home/sgeadmin/mh_gdocs_auth'</em><a class="headerlink" href="#bayesdb.settings.gdocs.auth_file" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -369,23 +689,28 @@
 <dt id="bayesdb.settings.path">
 <em class="property">class </em><tt class="descclassname">bayesdb.settings.</tt><tt class="descname">path</tt><a class="reference internal" href="_modules/bayesdb/settings.html#path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.settings.path" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="attribute">
+<dt id="bayesdb.settings.path.e">
+<tt class="descname">e</tt><em class="property"> = OSError(17, 'File exists')</em><a class="headerlink" href="#bayesdb.settings.path.e" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="bayesdb.settings.path.install_boost_script">
-<tt class="descname">install_boost_script</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB/install_scripts/install_boost.sh'</em><a class="headerlink" href="#bayesdb.settings.path.install_boost_script" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">install_boost_script</tt><em class="property"> = '/home/sgeadmin/BayesDB/install_scripts/install_boost.sh'</em><a class="headerlink" href="#bayesdb.settings.path.install_boost_script" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="bayesdb.settings.path.install_script_dir">
-<tt class="descname">install_script_dir</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB/install_scripts'</em><a class="headerlink" href="#bayesdb.settings.path.install_script_dir" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">install_script_dir</tt><em class="property"> = '/home/sgeadmin/BayesDB/install_scripts'</em><a class="headerlink" href="#bayesdb.settings.path.install_script_dir" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="bayesdb.settings.path.install_ubuntu_script">
-<tt class="descname">install_ubuntu_script</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB/install_scripts/install_ubuntu_packages.sh'</em><a class="headerlink" href="#bayesdb.settings.path.install_ubuntu_script" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">install_ubuntu_script</tt><em class="property"> = '/home/sgeadmin/BayesDB/install_scripts/install_ubuntu_packages.sh'</em><a class="headerlink" href="#bayesdb.settings.path.install_ubuntu_script" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="bayesdb.settings.path.postgres_setup_script">
-<tt class="descname">postgres_setup_script</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB/install_scripts/postgres_setup.sh'</em><a class="headerlink" href="#bayesdb.settings.path.postgres_setup_script" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">postgres_setup_script</tt><em class="property"> = '/home/sgeadmin/BayesDB/install_scripts/postgres_setup.sh'</em><a class="headerlink" href="#bayesdb.settings.path.postgres_setup_script" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -395,42 +720,42 @@
 
 <dl class="attribute">
 <dt id="bayesdb.settings.path.run_server_script">
-<tt class="descname">run_server_script</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB/run_server.sh'</em><a class="headerlink" href="#bayesdb.settings.path.run_server_script" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">run_server_script</tt><em class="property"> = '/home/sgeadmin/BayesDB/run_server.sh'</em><a class="headerlink" href="#bayesdb.settings.path.run_server_script" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="bayesdb.settings.path.run_webserver_script">
-<tt class="descname">run_webserver_script</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB/run_simplehttpserver.sh'</em><a class="headerlink" href="#bayesdb.settings.path.run_webserver_script" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">run_webserver_script</tt><em class="property"> = '/home/sgeadmin/BayesDB/run_simplehttpserver.sh'</em><a class="headerlink" href="#bayesdb.settings.path.run_webserver_script" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="bayesdb.settings.path.this_dir">
-<tt class="descname">this_dir</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB/bayesdb'</em><a class="headerlink" href="#bayesdb.settings.path.this_dir" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">this_dir</tt><em class="property"> = '/home/sgeadmin/BayesDB/bayesdb'</em><a class="headerlink" href="#bayesdb.settings.path.this_dir" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="bayesdb.settings.path.this_repo_dir">
-<tt class="descname">this_repo_dir</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB'</em><a class="headerlink" href="#bayesdb.settings.path.this_repo_dir" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">this_repo_dir</tt><em class="property"> = '/home/sgeadmin/BayesDB'</em><a class="headerlink" href="#bayesdb.settings.path.this_repo_dir" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="bayesdb.settings.path.user_home_dir">
-<tt class="descname">user_home_dir</tt><em class="property"> = '/Users/jbaxter'</em><a class="headerlink" href="#bayesdb.settings.path.user_home_dir" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">user_home_dir</tt><em class="property"> = '/home/sgeadmin'</em><a class="headerlink" href="#bayesdb.settings.path.user_home_dir" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="bayesdb.settings.path.virtualenv_setup_script">
-<tt class="descname">virtualenv_setup_script</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB/install_scripts/virtualenv_setup.sh'</em><a class="headerlink" href="#bayesdb.settings.path.virtualenv_setup_script" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">virtualenv_setup_script</tt><em class="property"> = '/home/sgeadmin/BayesDB/install_scripts/virtualenv_setup.sh'</em><a class="headerlink" href="#bayesdb.settings.path.virtualenv_setup_script" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="bayesdb.settings.path.web_resources_data_dir">
-<tt class="descname">web_resources_data_dir</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB/www/data'</em><a class="headerlink" href="#bayesdb.settings.path.web_resources_data_dir" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">web_resources_data_dir</tt><em class="property"> = '/home/sgeadmin/BayesDB/www/data'</em><a class="headerlink" href="#bayesdb.settings.path.web_resources_data_dir" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="bayesdb.settings.path.web_resources_dir">
-<tt class="descname">web_resources_dir</tt><em class="property"> = '/Users/jbaxter/class/probcomp/BayesDB/www'</em><a class="headerlink" href="#bayesdb.settings.path.web_resources_dir" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">web_resources_dir</tt><em class="property"> = '/home/sgeadmin/BayesDB/www'</em><a class="headerlink" href="#bayesdb.settings.path.web_resources_dir" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -450,14 +775,14 @@
 
 <dl class="attribute">
 <dt id="bayesdb.settings.s3.ec2_credentials_file">
-<tt class="descname">ec2_credentials_file</tt><em class="property"> = '/Users/jbaxter/.boto'</em><a class="headerlink" href="#bayesdb.settings.s3.ec2_credentials_file" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">ec2_credentials_file</tt><em class="property"> = '/home/sgeadmin/.boto'</em><a class="headerlink" href="#bayesdb.settings.s3.ec2_credentials_file" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 </div>
 <div class="section" id="module-bayesdb.utils">
-<span id="utils-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">utils</span></tt> Module<a class="headerlink" href="#module-bayesdb.utils" title="Permalink to this headline">¶</a></h2>
+<span id="bayesdb-utils-module"></span><h2>bayesdb.utils module<a class="headerlink" href="#module-bayesdb.utils" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="bayesdb.utils.column_string_splitter">
 <tt class="descclassname">bayesdb.utils.</tt><tt class="descname">column_string_splitter</tt><big>(</big><em>columnstring</em><big>)</big><a class="reference internal" href="_modules/bayesdb/utils.html#column_string_splitter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.utils.column_string_splitter" title="Permalink to this definition">¶</a></dt>
@@ -481,18 +806,8 @@
 <dd></dd></dl>
 
 </div>
-<div class="section" id="subpackages">
-<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="bayesdb.tests.html">tests Package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="bayesdb.tests.html#middleware-stub-client-module"><tt class="docutils literal"><span class="pre">middleware_stub_client</span></tt> Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bayesdb.tests.html#test-dha-story-module"><tt class="docutils literal"><span class="pre">test_dha_story</span></tt> Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bayesdb.tests.html#test-flights-module"><tt class="docutils literal"><span class="pre">test_flights</span></tt> Module</a></li>
-</ul>
-</li>
-</ul>
-</div>
+<div class="section" id="module-bayesdb">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-bayesdb" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -504,16 +819,18 @@
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">bayesdb Package</a><ul>
-<li><a class="reference internal" href="#client-module"><tt class="docutils literal"><span class="pre">Client</span></tt> Module</a></li>
-<li><a class="reference internal" href="#engine-module"><tt class="docutils literal"><span class="pre">Engine</span></tt> Module</a></li>
-<li><a class="reference internal" href="#parser-module"><tt class="docutils literal"><span class="pre">Parser</span></tt> Module</a></li>
-<li><a class="reference internal" href="#module-bayesdb.PersistenceLayer"><tt class="docutils literal"><span class="pre">PersistenceLayer</span></tt> Module</a></li>
-<li><a class="reference internal" href="#module-bayesdb.settings"><tt class="docutils literal"><span class="pre">settings</span></tt> Module</a></li>
-<li><a class="reference internal" href="#module-bayesdb.utils"><tt class="docutils literal"><span class="pre">utils</span></tt> Module</a></li>
+<li><a class="reference internal" href="#">bayesdb package</a><ul>
 <li><a class="reference internal" href="#subpackages">Subpackages</a><ul>
 </ul>
 </li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-bayesdb.Client">bayesdb.Client module</a></li>
+<li><a class="reference internal" href="#module-bayesdb.Engine">bayesdb.Engine module</a></li>
+<li><a class="reference internal" href="#module-bayesdb.Parser">bayesdb.Parser module</a></li>
+<li><a class="reference internal" href="#module-bayesdb.PersistenceLayer">bayesdb.PersistenceLayer module</a></li>
+<li><a class="reference internal" href="#module-bayesdb.settings">bayesdb.settings module</a></li>
+<li><a class="reference internal" href="#module-bayesdb.utils">bayesdb.utils module</a></li>
+<li><a class="reference internal" href="#module-bayesdb">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -554,7 +871,7 @@
     </div>
     <div class="footer">
         &copy; Copyright 2013, Jay Baxter, Dan Lovell, Vikash Mansinghka, Pat Shafto, Baxter Eaves.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
     </div>
   </body>
 </html>

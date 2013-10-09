@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>bayesdb.tests.test_engine &mdash; BayesDB 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="BayesDB 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for bayesdb.tests.test_engine</h1><div class="highlight"><pre>
+<span class="c">#</span>
+<span class="c"># Copyright 2013 Baxter, Lovell, Mangsingkha, Saeedi</span>
+<span class="c">#</span>
+<span class="c">#   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c">#   you may not use this file except in compliance with the License.</span>
+<span class="c">#   You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#       http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c">#   Unless required by applicable law or agreed to in writing, software</span>
+<span class="c">#   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c">#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c">#   See the License for the specific language governing permissions and</span>
+<span class="c">#   limitations under the License.</span>
+<span class="c">#</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">psycopg2</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">bayesdb.Engine</span> <span class="kn">import</span> <span class="n">Engine</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="n">Engine</span><span class="p">(</span><span class="s">&#39;local&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="run_test"><a class="viewcode-back" href="../../../bayesdb.tests.html#bayesdb.tests.test_engine.run_test">[docs]</a><span class="k">def</span> <span class="nf">run_test</span><span class="p">(</span><span class="n">hostname</span><span class="o">=</span><span class="s">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">middleware_port</span><span class="o">=</span><span class="mi">8008</span><span class="p">,</span> <span class="n">online</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+  <span class="n">URI</span> <span class="o">=</span> <span class="s">&#39;http://&#39;</span> <span class="o">+</span> <span class="n">hostname</span> <span class="o">+</span> <span class="s">&#39;:</span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">middleware_port</span>
+  <span class="n">cur_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">__file__</span><span class="p">))</span>  
+  <span class="n">test_tablenames</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;dha_small&#39;</span><span class="p">,</span> <span class="s">&#39;anneal_small&#39;</span><span class="p">]</span>
+  
+  <span class="k">for</span> <span class="n">tablename</span> <span class="ow">in</span> <span class="n">test_tablenames</span><span class="p">:</span>
+    <span class="n">table_csv</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">/../../www/data/</span><span class="si">%s</span><span class="s">.csv&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cur_dir</span><span class="p">,</span> <span class="n">tablename</span><span class="p">),</span> <span class="s">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">run_test_with</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">table_csv</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="run_test_with"><a class="viewcode-back" href="../../../bayesdb.tests.html#bayesdb.tests.test_engine.run_test_with">[docs]</a><span class="k">def</span> <span class="nf">run_test_with</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">table_csv</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">crosscat_column_types</span><span class="o">=</span><span class="s">&quot;None&quot;</span><span class="p">,</span> <span class="n">online</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+  <span class="n">call</span><span class="p">(</span><span class="s">&#39;start_from_scratch&#39;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+
+  <span class="c"># test upload_data_table</span>
+  <span class="k">print</span> <span class="s">&#39;uploading data table </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">tablename</span>
+  <span class="n">method_name</span> <span class="o">=</span> <span class="s">&#39;upload_data_table&#39;</span>
+  <span class="n">args_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+  <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;tablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tablename</span>
+  <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;csv&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">table_csv</span> 
+  <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;crosscat_column_types&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">crosscat_column_types</span>
+  <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+  <span class="n">acceptable_out</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span>
+      <span class="mi">0</span><span class="p">,</span>
+      <span class="s">&quot;Error: table with that name already exists.&quot;</span><span class="p">,</span>
+      <span class="s">&#39;Caught DB Error: relation &quot;dha_small&quot; already exists</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span>
+      <span class="p">])</span>
+  <span class="k">assert</span> <span class="p">(</span><span class="n">out</span> <span class="ow">in</span> <span class="n">acceptable_out</span><span class="p">)</span>
+  <span class="c"># TODO: Test that table was created</span>
+  <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="s">&#39;runsql&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;sql_command&#39;</span><span class="p">:</span> <span class="s">&quot;SELECT tableid FROM preddb.table_index WHERE tablename=&#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="n">tablename</span><span class="p">},</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+  <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="s">&#39;dha&#39;</span> <span class="ow">in</span> <span class="n">tablename</span><span class="p">:</span>
+    <span class="c"># test runsql</span>
+    <span class="n">method_name</span> <span class="o">=</span> <span class="s">&#39;runsql&#39;</span>
+    <span class="n">args_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;sql_command&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;CREATE TABLE IF NOT EXISTS bob(id INT PRIMARY KEY, num INT);&#39;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">==</span><span class="mi">0</span>
+    <span class="n">call</span><span class="p">(</span><span class="s">&#39;runsql&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;sql_command&#39;</span><span class="p">:</span> <span class="s">&#39;DROP TABLE bob;&#39;</span><span class="p">},</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;sql_command&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;SELECT * FROM preddb_data.dha_small;&#39;</span>
+    
+    <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="p">[</span><span class="s">&#39;columns&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s">u&#39;n_death_ill&#39;</span><span class="p">,</span> <span class="s">u&#39;ttl_mdcr_spnd&#39;</span><span class="p">,</span> <span class="s">u&#39;mdcr_spnd_inp&#39;</span><span class="p">,</span> <span class="s">u&#39;mdcr_spnd_outp&#39;</span><span class="p">,</span> <span class="s">u&#39;mdcr_spnd_ltc&#39;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">type</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="nb">list</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="c"># test createmodel</span>
+  <span class="n">method_name</span> <span class="o">=</span> <span class="s">&#39;create_model&#39;</span>
+  <span class="n">args_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+  <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;tablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tablename</span>
+  <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;n_chains&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span> <span class="c"># default is 10</span>
+  <span class="k">print</span> <span class="s">&#39;creating model with </span><span class="si">%d</span><span class="s"> chains&#39;</span> <span class="o">%</span> <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;n_chains&#39;</span><span class="p">]</span>
+  <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>  
+  <span class="k">assert</span> <span class="n">out</span><span class="o">==</span><span class="mi">0</span>
+  <span class="c"># Test that one model was created</span>
+  <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="s">&#39;runsql&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;sql_command&#39;</span><span class="p">:</span> <span class="s">&quot;SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE &quot;</span> \
+                 <span class="o">+</span> <span class="s">&quot;preddb.models.tableid=preddb.table_index.tableid AND tablename=&#39;</span><span class="si">%s</span><span class="s">&#39;;&quot;</span> <span class="o">%</span> <span class="n">tablename</span><span class="p">},</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+  <span class="k">assert</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+  <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="s">&#39;runsql&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;sql_command&#39;</span><span class="p">:</span> <span class="s">&quot;SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE &quot;</span> \
+                 <span class="o">+</span> <span class="s">&quot;preddb.models.tableid=preddb.table_index.tableid AND tablename=&#39;</span><span class="si">%s</span><span class="s">&#39; AND chainid=1;&quot;</span> <span class="o">%</span> <span class="n">tablename</span><span class="p">},</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+  <span class="k">assert</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+  <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="c"># test analyze</span>
+  <span class="n">method_name</span> <span class="o">=</span> <span class="s">&#39;analyze&#39;</span>
+  <span class="n">args_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+  <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;tablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tablename</span>
+  <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;chain_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;all&#39;</span>
+  <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;wait&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span> <span class="c"># wait for analyze to finish</span>
+  <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;iterations&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+  <span class="k">print</span> <span class="s">&#39;running analyze for </span><span class="si">%d</span><span class="s"> iterations on all chains&#39;</span> <span class="o">%</span> <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;iterations&#39;</span><span class="p">]</span>
+  <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+  <span class="k">assert</span> <span class="p">(</span><span class="n">out</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span>
+  <span class="c"># Test that inference was started - there should now be two rows of latent states once analyze is finished running.</span>
+  <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="s">&#39;runsql&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;sql_command&#39;</span><span class="p">:</span> <span class="s">&quot;SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE &quot;</span> \
+                 <span class="o">+</span> <span class="s">&quot;preddb.models.tableid=preddb.table_index.tableid AND tablename=&#39;</span><span class="si">%s</span><span class="s">&#39;;&quot;</span> <span class="o">%</span> <span class="n">tablename</span><span class="p">},</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+  <span class="k">assert</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">6</span><span class="p">)</span>
+  <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="c"># test get_latent_states</span>
+  <span class="p">(</span><span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span><span class="p">)</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="s">&#39;get_latent_states&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tablename</span><span class="o">=</span><span class="n">tablename</span><span class="p">),</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+  <span class="kn">import</span> <span class="nn">json</span>
+  <span class="n">json_states</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">X_L_list</span><span class="o">=</span><span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="o">=</span><span class="n">X_D_list</span><span class="p">))</span>
+  <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">&#39;json_states&#39;</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+    <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json_states</span><span class="p">)</span>
+  <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="c"># test gen_feature_z</span>
+  <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="s">&#39;gen_feature_z&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tablename</span><span class="o">=</span><span class="n">tablename</span><span class="p">),</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="s">&#39;anneal&#39;</span> <span class="ow">in</span> <span class="n">tablename</span><span class="p">:</span>
+    <span class="c"># TODO: test infer</span>
+    <span class="n">method_name</span> <span class="o">=</span> <span class="s">&#39;infer&#39;</span>
+    <span class="n">args_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;tablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tablename</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;columnstring&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;temper_rolling, condition&quot;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;newtablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;anneal_predict&quot;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;whereclause&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;steel=A&quot;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;confidence&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;limit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;numsamples&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span> <span class="c"># should do 10 or 100</span>
+    <span class="k">print</span> <span class="s">&#39;running infer&#39;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;infer out:&#39;</span><span class="p">,</span> <span class="n">out</span>
+    <span class="c"># TODO</span>
+    <span class="c"># Test that missing values are filled in</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c"># TODO: test predict</span>
+    <span class="n">method_name</span> <span class="o">=</span> <span class="s">&#39;predict&#39;</span>
+    <span class="n">args_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;tablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tablename</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;columnstring&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;temper_rolling, condition&quot;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;newtablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;anneal_predict&quot;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;whereclause&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;steel=A AND product_type=C&quot;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;numpredictions&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="k">print</span> <span class="s">&#39;running predict&#39;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;predict out:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span><span class="n">out</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="p">[</span><span class="s">&#39;columns&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s">u&#39;temper_rolling&#39;</span><span class="p">,</span> <span class="s">u&#39;condition&#39;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">10</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s">&#39;columns&#39;</span><span class="p">])</span>    
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="s">&#39;dha&#39;</span> <span class="ow">in</span> <span class="n">tablename</span><span class="p">:</span>
+    <span class="c"># TODO: test infer</span>
+    <span class="n">method_name</span> <span class="o">=</span> <span class="s">&#39;infer&#39;</span>
+    <span class="n">args_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;tablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tablename</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;columnstring&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;N_DEATH_ILL, MDCR_SPND_INP&quot;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;newtablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;whereclause&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;MDCR_SPND_LTC=6331&#39;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;confidence&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;limit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;numsamples&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span> <span class="c"># should do 10 or 100</span>
+    <span class="k">print</span> <span class="s">&#39;running infer&#39;</span>
+    <span class="c">#out = middleware_engine.infer(tablename, &quot;N_DEATH_ILL, MDCR_SPND_INP&quot;, &quot;&quot;, 0, &#39;MDCR_SPND_LTC=6331&#39;, 8, 10)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+    <span class="c"># TODO: Test that missing values are filled in</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c"># TODO: test predict</span>
+    <span class="n">method_name</span> <span class="o">=</span> <span class="s">&#39;predict&#39;</span>
+    <span class="n">args_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;tablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tablename</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;columnstring&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;N_DEATH_ILL, MDCR_SPND_INP&quot;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;newtablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;whereclause&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;MDCR_SPND_LTC=6331&#39;</span>
+    <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;numpredictions&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="k">print</span> <span class="s">&#39;running predict&#39;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">out</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="p">[</span><span class="s">&#39;columns&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s">u&#39;N_DEATH_ILL&#39;</span><span class="p">,</span> <span class="s">u&#39;MDCR_SPND_INP&#39;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">10</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s">&#39;columns&#39;</span><span class="p">])</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="c"># test delete_chain</span>
+  <span class="n">method_name</span> <span class="o">=</span> <span class="s">&#39;delete_chain&#39;</span>
+  <span class="n">args_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+  <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;tablename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tablename</span>
+  <span class="n">args_dict</span><span class="p">[</span><span class="s">&#39;chain_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="k">print</span> <span class="s">&#39;deleting chain 0&#39;</span>
+  <span class="n">out</span> <span class="o">=</span> <span class="n">call</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+  <span class="k">assert</span> <span class="n">out</span><span class="o">==</span><span class="mi">0</span>
+  <span class="c"># TODO: Test to make sure there&#39;s one less chain</span>
+  <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="c"># drop tablename</span>
+  <span class="k">print</span> <span class="s">&#39;dropping tablename&#39;</span>
+  <span class="n">call</span><span class="p">(</span><span class="s">&#39;drop_tablename&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;tablename&#39;</span><span class="p">:</span> <span class="n">tablename</span><span class="p">},</span> <span class="n">URI</span><span class="p">,</span> <span class="n">online</span><span class="p">)</span>
+
+  </div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">run_test</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Jay Baxter, Dan Lovell, Vikash Mansinghka, Pat Shafto, Baxter Eaves.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

@@ -1,53 +1,5 @@
-bayesdb Package
+bayesdb package
 ===============
-
-:mod:`Client` Module
---------------------
-
-.. automodule:: bayesdb.Client
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`Engine` Module
---------------------
-
-.. automodule:: bayesdb.Engine
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`Parser` Module
---------------------
-
-.. automodule:: bayesdb.Parser
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`PersistenceLayer` Module
-------------------------------
-
-.. automodule:: bayesdb.PersistenceLayer
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`settings` Module
-----------------------
-
-.. automodule:: bayesdb.settings
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`utils` Module
--------------------
-
-.. automodule:: bayesdb.utils
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 Subpackages
 -----------
@@ -56,3 +8,62 @@ Subpackages
 
     bayesdb.tests
 
+Submodules
+----------
+
+bayesdb.Client module
+---------------------
+
+.. automodule:: bayesdb.Client
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+bayesdb.Engine module
+---------------------
+
+.. automodule:: bayesdb.Engine
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+bayesdb.Parser module
+---------------------
+
+.. automodule:: bayesdb.Parser
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+bayesdb.PersistenceLayer module
+-------------------------------
+
+.. automodule:: bayesdb.PersistenceLayer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+bayesdb.settings module
+-----------------------
+
+.. automodule:: bayesdb.settings
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+bayesdb.utils module
+--------------------
+
+.. automodule:: bayesdb.utils
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: bayesdb
+    :members:
+    :undoc-members:
+    :show-inheritance:

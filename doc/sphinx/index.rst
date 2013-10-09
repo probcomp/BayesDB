@@ -13,7 +13,11 @@ Contents:
 
 .. automodule:: Engine
 
+.. automodule:: Parser
+
 .. autoclass:: Parser
+
+.. automodule:: Client
 
 .. autoclass:: Client
    :members
