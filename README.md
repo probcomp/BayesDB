@@ -1,18 +1,11 @@
 BayesDB
 ==============
 
-The [wiki](http://probcomp.csail.mit.edu/preddb/index.php?title=BayesDB) is the primary source of documentation.
+BayesDB is an open-source implementation of a predictive database table. It introduces the Bayesian Query Language (BQL), which provides predictive extensions to SQL that enable users to query the implications of their data --- predict missing entries, identify predictive relationships between columns, and examine synthetic populations --- based on a Bayesian machine learning system in the backend.
 
-Below are the links to the wiki corresponding to commons README sections.
+The [BayesDB website](http://probcomp.csail.mit.edu/bayesdb) is the primary source of information about BayesDB.
 
-[Installation](http://probcomp.csail.mit.edu/preddb/index.php?title=Installation_overview)
-==============
 
-["Hello, World"/Use Cases](http://probcomp.csail.mit.edu/preddb/index.php?title=Use_Case_Examples_(Local_CrossCat_Engine\))
-============
 
-[Docs/API](http://probcomp.csail.mit.edu/preddb/index.php?title=API)
-============
 
-[Platform-specific unit and integration tests](http://probcomp.csail.mit.edu/preddb/index.php?title=PredictiveDB#Tests)
-==============
+

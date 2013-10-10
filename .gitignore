@@ -7,7 +7,6 @@
 *#
 *.DS_Store
 *.jar
-.ropeproject
+*.ropeproject
 server_logs
 bayesdb/data
-website/build
