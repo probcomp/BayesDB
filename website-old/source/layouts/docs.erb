@@ -1,0 +1,13 @@
+<% wrap_layout :sidebar_layout do %>
+	<% content_for :sidebar do %>
+	  <div id="sidebar-wrapper">
+	    <ul class="sidebar-nav" style="position: relative;">
+	      <li><h2><a href="/docs/">Documentation</a></h2></li>
+	      <li><a href="/docs/installation.html">Installation</a></li>
+	      <li><a href="/docs/running_local_server.html">Running a local server</a></li>
+	      <li><a href="/docs/pushing_to_heroku.html">Pushing to heroku</a></li>
+            </ul>
+	  </div>
+	<% end %>
+	<%= yield %>
+<% end %>

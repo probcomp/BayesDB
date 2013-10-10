@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>BayesDB</title>
+    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet">
+    
+    <link href="/stylesheets/bootstrap.css" media="screen" rel="stylesheet" type="text/css" />
+<link href="/stylesheets/simple-sidebar.css" media="screen" rel="stylesheet" type="text/css" />
+  </head>
+  
+  <body class="intro intro_what" style="margin-top: 50px;">
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html">BayesDB</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+          <ul class="nav navbar-nav">
+            <li><!--<a href="intro">Intro</a>--><a href="/intro">Intro</a></li>
+            <li><!--<a href="docs">Docs</a>--><a href="/docs">Docs</a></li>
+            <li><!--<a href="about">About</a>--><a href="/about">About</a></li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container -->
+    </nav>
+
+    <div id="wrapper">
+           <div id="sidebar-wrapper">
+	 
+	  <div id="sidebar-wrapper">
+	    <ul class="sidebar-nav" style="position: relative;">
+	      <li><h2><a href="/intro/">Intro</a></h2></li>
+	      <li><a href="/intro/what.html">What</a></li>
+	      <li><a href="/intro/why.html">Why</a></li>
+	      <li><a href="/intro/how.html">How</a></li>
+            </ul>
+	  </div>
+	
+     </div>
+     	
+	<h2 id='what_is_websitearchetype'>What is website-archetype?</h2>
+
+<p>website-archetype uses <a href='http://www.middlemanapp.com'>Middleman</a> and a modified version of <a href='http://startbootstrap.com'>startbootstrap&#8217;s</a> simple-sidebar template to create stylish websites that are simple to manage.</p>
+
+<p>Page content can be in markdown or html. This combination allows nice design with minimal effort to create new pages.</p>
+
+<p>Combined with a heroku account, updating a project website can be achieved with modification to some markdown and a git push.</p>
+
+
+    </div>
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="javascripts/jquery.js"></script>
+    <script src="javascripts/bootstrap.js"></script>
+    <!-- Put this into a custom JavaScript file to make things more organized -->
+    <script src="/javascripts/all.js" type="text/javascript"></script>
+    <script>
+    $("#menu-toggle").click(function(e) {
+        e.preventDefault();
+        $("#wrapper").toggleClass("active");
+    });
+    </script>
+
+  </body>
+</html>

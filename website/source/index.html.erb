@@ -1,39 +1,66 @@
 ---
-title: BayesDB
+title: Welcome to CrossCat
 ---
-     
-  <!-- Page content -->
-  <div id="page-content-wrapper" style="margin-left: -250px; text-align: center;">
-    <div class="content-header">
-      <h1>
-        <a id="menu-toggle" href="/" class="btn btn-default"><i class="icon-reorder"></i></a>
-	BayesDB
-      </h1>
-    </div>
-    <!-- Keep all page content within the page-content inset div! -->
-    <div class="page-content inset">
-      <div class="row">
-        <div class="col-md-12">
-		<p class="lead">website-archetype is a template for ProbComp project websites.  This front page is defined in html, but it could be in markdown like the <a href="/intro/">intro</a> page.</p>
-		<p class="lead">Below material from the startbootstrap simple-sidebar index.html page.  Look at the <a href="/intro/">intro</a> page for more info on how to modify website-archetype for your project.</p>
-		<p class="lead">This simple sidebar template has a hint of JavaScript to make the template responsive. It also includes Font Awesome icon fonts.</p>
-        </div>
 
-        <div class="col-md-6">
-          <p class="well">The template still uses the default Bootstrap rows and columns.</p>
-        </div>
-        <div class="col-md-6">
-          <p class="well">But the full-width layout means that you wont be using containers.</p>
-        </div>
-        <div class="col-md-4">
-          <p class="well">Three Column Example</p>
-        </div>
-        <div class="col-md-4">
-          <p class="well">Three Column Example</p>
-        </div>
-        <div class="col-md-4">
-          <p class="well">You get the idea! Do whatever you want in the page content area!</p>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="row">
+	<div class="col-md-12">
+		<a id="Overview"></a><h1>Overview</h1>
+		<p class="lead">CrossCat is a fully Bayesian nonparametric method for analyzing heterogenous, high dimensional data. It yields an estimate of the underlying full joint distribution, including the dependencies between variables, along with efficient samplers for every conditional distribution. The method is domain general, unsupervised and has no free parameters that require tuning. Thus, CrossCat provides a generic method for analyzing these data, where the output can be queried to answer an extremely wide array questions about the rows and attributes. Unlike standard statistical approaches, CrossCat does not make restrictive assumptions---such as linearity---and therefore provides reliable inferences without specific training in statistics. </p>
+
+		<p class="lead">The ability to analyze large, heterogenous high-dimensional datasets is critical across fields. Typically these datasets take the form of tables with rows representing entities and columns representing entity attributes and can be as large as millions of rows and hundreds of columns. One such data source may be a medical records database, the entities are individual persons and their attributes are health/medical related information about them such as height, weight, bmi, common complaints, etc.</p>
+	</div>
+</div>
+
+
+<div class="row">
+	<div class="col-md-3">
+		<h2 class="text-center">Exemplar dataset</h2>
+		A dataset of variables related to airline flights
+	</div>
+	<div class="col-md-9" >
+		<img src="/images/Flight_data_subset.png" height=66px width=660px>
+	</div>
+</div>
+	
+	
+<div class="row">	
+	<div class="col-md-3">
+		<img src="/images/Flight_data_subset_feature_z.png" height=160px width=213px>
+	</div>
+	<div class="col-md-9">
+		<h2 class="text-center">Visualization of attribute dependencies</h2>
+		<p>One may be interested querying such data to get answers regarding which attributes are dependent, which rows are similar, likely values of unobserved cells, probable but not-previously-observed instances, and more.</p>
+		<p>Aggregating statistics on the models CrossCat generates of the underlying data, we can draw conclusions about the likelihood of dependence between data table columns.</p>
+	</div>
+</div>
+
+
+<div class="row">
+	<div class="col-md-12">
+		<a id="Download"></a><h1>Get it</h1>
+		<p>Information about how to get [download] crosscat goes here.</p>
+		
+		<a id="Publications"></a><h1>Publications</h1>
+		<p>Publications information goes here.</p>
+		
+		
+		<a id="About"></a><h1>About</h1>
+		<p>About information goes here</p>
+	</div>
+</div>
+
+
+<div class="row">
+    <div class="col-md-12" style="margin-top: 140px; padding-top: 140px;">
+		<p class="text-center">Don't forget to check out these other great ProbComp projects!</p>
+		<div class="col-md-4">
+			<p class="well text-center"><a href="http://venture.csail.mit.edu/wiki/index.php5?title=Venture">Venture</a></p>
+		</div>
+		<div class="col-md-4">
+			<p class="well text-center"><a href="http://probcomp.csail.mit.edu/preddb/index.php?title=Overview">CrossCat</a></p>
+		</div>
+		<div class="col-md-4">
+			<p class="well text-center"><a href="http://probcomp.csail.mit.edu/preddb/index.php?title=BayesDB">BayesDB</a>: CrossCat inside (TM)</p>
+		</div>		
+	</div>		
+</div>
