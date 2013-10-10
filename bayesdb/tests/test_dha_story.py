@@ -40,7 +40,7 @@ def test_dha_story_demo():
 
     for i, cmd in enumerate(cmd_list):
         print cmd
-        result = client.execute(cmd, timing=False, pretty=False)
+        result = client.execute(cmd, timing=False, pretty=True)
         if record:
             dha_story_results.append(result)
         else:

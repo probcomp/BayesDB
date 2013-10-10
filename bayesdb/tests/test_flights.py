@@ -33,5 +33,6 @@ def test_flights():
 
     for cmd in cmds:
         print '>>> %s' % cmd
-        client.execute(cmd, timing=True)    
+        result = client.execute(cmd, timing=True)
+        print result
 
