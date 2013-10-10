@@ -26,14 +26,25 @@ import utils
 import os
 
 class Parser(object):
-    def parse(self, sql_string):
-        if sql_string[-1] == ';':
-            sql_string = sql_string[:-1]
-        words = sql_string.lower().split()
+    def parse(self, bql_string):
+        if len(bql_string) == 0:
+            return
+        lines = bql_string.split(';')
+        for line in lines:
+            if '--' in line:
+                line = line[:line.index('--')]
+            self.parse_line(line.strip())
+    
+    def parse_line(self, bql_string):
+        if len(bql_string) == 0:
+            return
+        if bql_string[-1] == ';':
+            bql_string = bql_string[:-1]
+        words = bql_string.lower().split()
 
         for method_name in self.method_names:
             parse_method = getattr(self, 'parse_' + method_name)
-            result = parse_method(words, sql_string)
+            result = parse_method(words, bql_string)
             if result is None:
                 continue
             elif result == False:
