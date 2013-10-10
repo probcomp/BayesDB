@@ -1,11 +1,15 @@
 #
-# Copyright 2013 Baxter, Lovell, Mangsingkha, Saeedi
+#   Copyright (c) 2010-2013, MIT Probabilistic Computing Project
+#
+#   Lead Developers: Jay Baxter and Dan Lovell
+#   Authors: Jay Baxter, Dan Lovell, Baxter Eaves, Vikash Mansinghka
+#   Research Leads: Vikash Mansinghka, Patrick Shafto
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
 #   Unless required by applicable law or agreed to in writing, software
 #   distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +17,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
+
 import crosscat.utils.api_utils as au
 import inspect
 import pickle
