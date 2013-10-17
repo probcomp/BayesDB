@@ -43,7 +43,6 @@ import bayesdb.settings as S
 
 from crosscat.CrossCatClient import get_CrossCatClient
 from PersistenceLayer import PersistenceLayer
-from Parser import Parser
 import utils
 
 class Engine(object):
@@ -57,11 +56,6 @@ class Engine(object):
   def __init__(self, engine_type='local', **kwargs):
     self.backend = get_CrossCatClient(engine_type, **kwargs)
     self.persistence_layer = PersistenceLayer()
-    self.parser = Parser(self)
-
-  def execute(self, bql):
-    '''Parses and executes the given bql command.'''
-    return self.parser.parse(bql)
 
   def start_from_scratch(self):
     self.persistence_layer.start_from_scratch()

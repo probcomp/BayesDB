@@ -27,13 +27,17 @@ import os
 
 class Parser(object):
     def parse(self, bql_string):
+        ret_lines = []
         if len(bql_string) == 0:
             return
         lines = bql_string.split(';')
         for line in lines:
             if '--' in line:
                 line = line[:line.index('--')]
-            self.parse_line(line.strip())
+            line = line.strip()
+            if line is not None and len(line) > 0:
+                ret_lines.append(line)
+        return ret_lines
     
     def parse_line(self, bql_string):
         if len(bql_string) == 0:
@@ -49,7 +53,7 @@ class Parser(object):
                 continue
             elif result == False:
                 return
-            elif result == True:
+            elif result:
                 return result
 
     def __init__(self, engine):
@@ -58,16 +62,6 @@ class Parser(object):
         self.parser_method_names = [method_name[6:] for method_name in dir(Parser) if method_name[:6] == 'parse_']
         self.method_names = set(self.engine_method_names).intersection(self.parser_method_names)
         self.method_name_to_args = be.get_method_name_to_args()
-
-    def call_bayesdb_engine(self, method_name, args_dict):
-      if self.online:
-        out, id = au.call(method_name, args_dict, self.URI)
-      else:
-        method = getattr(self.bayesdb_engine, method_name)
-        argnames = inspect.getargspec(method)[0]
-        args = [args_dict[argname] for argname in argnames if argname in args_dict]
-        out = method(*args)
-      return out
 
     def parse_set_hostname(self, words, orig):
         if len(words) >= 3:

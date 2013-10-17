@@ -28,15 +28,14 @@ import os
 import time
 import ast
 
-from Parser import Parser
-from Engine import Engine
+from bayesdb import Parser
+from bayesdb import Engine
 
 class Client(object):
     def __init__(self, hostname=None, port=8008):
         if hostname is None or hostname=='localhost':
             self.online = False
             self.bayesdb_engine = Engine('local')
-            self.parser = Parser(self.bayesdb_engine)
         else:
             self.online = True
             self.hostname = hostname
@@ -53,26 +52,14 @@ class Client(object):
         out = method(*args)
       return out
 
-    def __call__(self, bql_string, pretty=True, timing=False, wait=False):
+    def __call__(self, bql_string, pretty=True, timing=False):
         return self.execute(bql_string, pretty)
 
-    def execute(self, bql_string, pretty=True, timing=False, wait=False):
-        lines = self.parser.parse(bql_string)
-        for line in lines:
-            print '> %s' % line
-            if wait:
-                user_input = raw_input()
-                if len(user_input) > 0 and user_input[0] == 'q':
-                    return
-            self.execute_line(line, pretty, timing)
-            print
-
-    def execute_line(self, bql_string, pretty=True, timing=False):
+    def execute(self, bql_string, pretty=True, timing=False):
         if timing:
             start_time = time.time()
-
-        result = self.parser.parse_line(bql_string) ## Calls Engine
-        #result = self.call_bayesdb_engine('execute', dict(bql=bql_string))
+            
+        result = self.call_bayesdb_engine('execute', dict(bql=bql_string))
         
         if timing:
             end_time = time.time()
