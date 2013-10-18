@@ -199,6 +199,7 @@ class PersistenceLayer(object):
             for idx, (X_L, X_D) in enumerate(zip(X_L_list, X_D_list)):
                 chain_index = max_chainid + 1 + idx
                 cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%s, %s, %s, %s, %s, %s);", (tableid, json.dumps(X_L), json.dumps(X_D), curtime, chain_index, iterations))
+        return 0
 
     def add_samples_for_chain(self, tablename, X_L, X_D, iterations, chainid):
         tableid = self.get_table_id(tablename)

@@ -19,8 +19,41 @@
 #
 
 import numpy
+import os
 import crosscat.utils.data_utils as du
 
+import pylab
+import matplotlib.cm
+
+
+def plot_feature_z(z_matrix_reordered, column_names_reordered, title='', filename=None):
+    # actually create figure
+    fig = pylab.figure()
+    fig.set_size_inches(16, 12)
+    pylab.imshow(z_matrix_reordered, interpolation='none',
+                 cmap=matplotlib.cm.gray_r)
+    pylab.colorbar()
+    if len(column_names_reordered) < 14:
+        pylab.gca().set_yticks(range(len(column_names_reordered)))
+        pylab.gca().set_yticklabels(column_names_reordered, size='small')
+        pylab.gca().set_xticks(range(len(column_names_reordered)))
+        pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
+    else:
+        pylab.gca().set_yticks(range(len(column_names_reordered))[::2])
+        pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
+        pylab.gca().set_xticks(range(len(column_names_reordered))[1::2])
+        pylab.gca().set_xticklabels(column_names_reordered[1::2],
+                                    rotation=90, size='small')
+    pylab.title(title)
+    if filename:
+        pylab.savefig(filename)
+    elif 'DISPLAY' in os.environ.keys():
+        fig.show()
+    else:
+        print "No GUI available to display graphics: please enter the filename where the graphics should be saved as a PDF."
+        filename = raw_input()
+        pylab.savefig(filename)
+        
 
 
 def is_int(s):

@@ -18,7 +18,7 @@
 #   limitations under the License.
 #
 
-import Engine as be
+import engine as be
 import re
 import pickle
 import gzip
@@ -56,12 +56,25 @@ class Parser(object):
             elif result:
                 return result
 
+    def set_root_dir(self, root_dir):
+        self.root_directory = root_dir
+
+    def reset_root_dir(self):
+        self.root_directory = os.path.dirname(os.path.abspath(__file__))
+
+    def get_absolute_path(self, relative_path):
+        if os.path.isabs(relative_path):
+            return relative_path
+        else:
+            return os.path.join(self.root_directory, relative_path)
+
     def __init__(self, engine):
         self.engine = engine
         self.engine_method_names = [method_name for method_name in be.get_method_names() if method_name[0] != '_']
         self.parser_method_names = [method_name[6:] for method_name in dir(Parser) if method_name[:6] == 'parse_']
         self.method_names = set(self.engine_method_names).intersection(self.parser_method_names)
         self.method_name_to_args = be.get_method_name_to_args()
+        self.root_directory = os.path.dirname(os.path.abspath(__file__))
 
     def parse_set_hostname(self, words, orig):
         if len(words) >= 3:
@@ -120,7 +133,7 @@ class Parser(object):
                             return False
                 else:
                     print 'Did you mean: CREATE <n_chains> MODELS FOR <btable>;?'
-                    return False
+                    return False        
 
     def parse_create_btable(self, words, orig):
         crosscat_column_types = None
@@ -129,7 +142,7 @@ class Parser(object):
                 if len(words) >= 5:
                     tablename = words[2]
                     if words[3] == 'from':
-                        f = open(orig.split()[4], 'r')
+                        f = open(self.get_absolute_path(orig.split()[4]), 'r')
                         csv = f.read()
                         result = self.engine.create_btable(tablename, csv, crosscat_column_types)
                         return result
@@ -286,7 +299,7 @@ class Parser(object):
             export\s+
             (samples\s+)?
             from\s+
-            (?P<btable>[^s]+)
+            (?P<btable>[^\s]+)
             \s+to\s+
             (?P<pklpath>[^\s]+)
         """, orig, re.VERBOSE | re.IGNORECASE)
@@ -301,11 +314,10 @@ class Parser(object):
             pklpath = match.group('pklpath')
             if pklpath[-7:] != '.pkl.gz':
                 pklpath = pklpath + ".pkl.gz"
-            M_c, M_r, T, X_L_list, X_D_list = self.engine.export_samples(tablename)
-            samples_dict = dict(M_c=M_c, M_r=M_r, T=T, X_L_list=X_L_list, X_D_list=X_D_list)
+            samples_dict = self.engine.export_samples(tablename)
             samples_file = gzip.GzipFile(pklpath, 'w')
             pickle.dump(samples_dict, samples_file)
-            return "Successfully exported the samples to %s" % pklpath
+            return dict(message="Successfully exported the samples to %s" % pklpath)
 
     def parse_import_samples(self, words, orig):
         match = re.search(r"""
@@ -326,9 +338,9 @@ class Parser(object):
             tablename = match.group('btable')
             pklpath = match.group('pklpath')
             if pklpath[-3:] == '.gz':
-                samples = pickle.load(gzip.open(pklpath, 'rb'))
+                samples = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
             else:
-                samples = pickle.load(open(pklpath, 'rb'))
+                samples = pickle.load(open(self.get_absolute_path(pklpath), 'rb'))
             X_L_list = samples['X_L_list']
             X_D_list = samples['X_D_list']
             M_c = samples['M_c']

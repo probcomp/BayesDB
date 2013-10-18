@@ -42,7 +42,7 @@ import crosscat.utils.sample_utils as su
 import bayesdb.settings as S
 
 from crosscat.CrossCatClient import get_CrossCatClient
-from PersistenceLayer import PersistenceLayer
+from persistence_layer import PersistenceLayer
 import utils
 
 class Engine(object):
@@ -147,17 +147,21 @@ class Engine(object):
     postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types, colnames)
     self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, cctypes, postgres_coltypes, colnames)
 
-    return dict(columns=colnames, data=[cctypes], message='Created btable %s. Inferred schema:\n' % tablename)
+    return dict(columns=colnames, data=[cctypes], message='Created btable %s. Inferred schema:' % tablename)
 
   def export_samples(self, tablename):
     """Opposite of import samples! Save a pickled version of X_L_list, X_D_list, M_c, and T."""
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    return M_c, M_r, T, X_L_list, X_D_list
+    return dict(M_c=M_c, M_r=M_r, T=T, X_L_list=X_L_list, X_D_list=X_D_list)
 
   def import_samples(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
     """Import these samples as if they are new chains"""
-    self.persistence_layer.add_samples(tablename, X_L_list, X_D_list, iterations)
+    result = self.persistence_layer.add_samples(tablename, X_L_list, X_D_list, iterations)
+    if result == 0:
+      return dict(message="Successfully imported %d samples." % len(X_L_list))
+    else:
+      return dict(message="Error importing samples.")
     
   def create_models(self, tablename, n_chains):
     """Call initialize n_chains times."""
@@ -202,7 +206,7 @@ class Engine(object):
     # if wait:
     #   for p in p_list:
     #     p.join()
-    return ', '.join(chainid_iteration_info)
+    return dict(message=', '.join(chainid_iteration_info))
 
   def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False):
     """Impute missing values.
@@ -215,10 +219,15 @@ class Engine(object):
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     numrows = len(T)
 
-    t_array = numpy.array(t, dtype=float)
+    t_array = numpy.array(T, dtype=float)
     name_to_idx = M_c['name_to_idx']
-    colnames = [colname.strip() for colname in columnstring.split(',')]
-    col_indices = [name_to_idx[colname] for colname in colnames]
+
+    if '*' in columnstring:
+      col_indices = name_to_idx.values()
+    else:
+      colnames = [colname.strip() for colname in columnstring.split(',')]
+      col_indices = [name_to_idx[colname] for colname in colnames]
+      
     Q = []
     for row_idx in range(numrows):
       for col_idx in col_indices:
@@ -562,7 +571,7 @@ class Engine(object):
         break
 
     ## Prepare for return
-    ret = {'data': data, 'columns': query_colnames}
+    ret = dict(message='', data=data, columns=query_colnames)
     return ret
 
   def _get_column_function(self, column, M_c):
@@ -669,7 +678,7 @@ class Engine(object):
     #data = numpy.array(out, dtype=float).reshape((numpredictions, len(colnames)))
     # FIXME: REMOVE WHEN DONE DEMO
     #data = numpy.round(data, 1)
-    ret = {'columns': columns, 'data': data}
+    ret = {'message': 'Simulated data:', 'columns': columns, 'data': data}
     return ret
 
   def write_json_for_table(self, tablename):
@@ -751,8 +760,8 @@ class Engine(object):
       filename = tablename + '_feature_z'
     full_filename = os.path.join(dir, filename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    return do_gen_feature_z(X_L_list, X_D_list, M_c,
-                            tablename, full_filename)
+    return _do_gen_feature_z(X_L_list, X_D_list, M_c,
+                             tablename, full_filename)
 
   def dump_db(self, filename, dir=S.path.web_resources_dir):
     full_filename = os.path.join(dir, filename)
@@ -761,7 +770,7 @@ class Engine(object):
     else:
       cmd_str = 'pg_dump %s > %s' % (dbname, full_filename)
     os.system(cmd_str)
-    return 0
+    return dict(message='Database successfully dumped to %s' % full_filename)
 
 
   def _analyze_helper(self, tablename, M_c, T, chainid, iterations):
@@ -798,7 +807,7 @@ def jsonify_and_dump(to_dump, filename):
       fh.write(json_str)
   except Exception, e:
     print e
-  return 0
+  return dict(message="Database successfuly dumped as JSON to %s" % filename)
 
 def _do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
     num_cols = len(X_L_list[0]['column_partition']['assignments'])
@@ -846,34 +855,17 @@ def _do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=
       # REORDER! 
       z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
       column_names_reordered = column_names[reorder_indices]
-
+      
+    title = 'Column Dependencies for: %s' % tablename
     if filename:
-      # actually create figure
-      fig = pylab.figure()
-      fig.set_size_inches(16, 12)
-      pylab.imshow(z_matrix_reordered, interpolation='none',
-                   cmap=matplotlib.cm.gray_r)
-      pylab.colorbar()
-      if len(column_names_reordered) < 14:
-        pylab.gca().set_yticks(range(len(column_names_reordered)))
-        pylab.gca().set_yticklabels(column_names_reordered, size='small')
-        pylab.gca().set_xticks(range(len(column_names_reordered)))
-        pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
-      else:
-        pylab.gca().set_yticks(range(len(column_names_reordered))[::2])
-        pylab.gca().set_yticklabels(column_names_reordered[::2], size='small')
-        pylab.gca().set_xticks(range(len(column_names_reordered))[1::2])
-        pylab.gca().set_xticklabels(column_names_reordered[1::2],
-                                    rotation=90, size='small')
-      pylab.title('column dependencies for: %s' % tablename)
-      pylab.savefig(filename)
-      #
-    ret_dict = dict(
+      utils.plot_feature_z(z_matrix_reordered, column_names_reordered, title, filename)
+      
+    return dict(
       z_matrix_reordered=z_matrix_reordered,
       column_names_reordered=column_names_reordered,
+      title=title,
+      message = "Created column dependency matrix."
       )
-    return ret_dict
-
 
 # helper functions
 get_name = lambda x: getattr(x, '__name__')
