@@ -31,7 +31,7 @@ def plot_feature_z(z_matrix_reordered, column_names_reordered, title='', filenam
     fig = pylab.figure()
     fig.set_size_inches(16, 12)
     pylab.imshow(z_matrix_reordered, interpolation='none',
-                 cmap=matplotlib.cm.gray_r)
+                 cmap=matplotlib.cm.gray_r, vmin=0, vmax=1)
     pylab.colorbar()
     if len(column_names_reordered) < 14:
         pylab.gca().set_yticks(range(len(column_names_reordered)))
