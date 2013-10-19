@@ -18,7 +18,7 @@
 --   limitations under the License.
 --
 
--- Create a fresh btable for the demo, and load in pre-existing samples;
+-- Create a fresh btable for the demo, and load in pre-existing samples
 SELECT * FROM flights_missing ORDER BY arrdelay;
 ESTIMATE DEPENDENCE PROBABILITIES FROM flights_missing;
 INFER * FROM flights_missing WITH CONFIDENCE 0.9 ORDER BY arrdelay;

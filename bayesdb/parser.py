@@ -30,6 +30,7 @@ class Parser(object):
         ret_lines = []
         if len(bql_string) == 0:
             return
+        bql_string = re.sub(r'--.*?\n', '', bql_string)
         lines = bql_string.split(';')
         for line in lines:
             if '--' in line:
