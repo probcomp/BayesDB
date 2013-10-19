@@ -24,7 +24,7 @@ import psycopg2
 import pickle
 import os
 
-from bayesdb.Engine import Engine
+from bayesdb.engine import Engine
 engine = Engine('local')
 
 def run_test(hostname='localhost', middleware_port=8008, online=False):

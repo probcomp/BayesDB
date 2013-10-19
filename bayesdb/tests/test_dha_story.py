@@ -18,7 +18,7 @@
 #   limitations under the License.
 #
 
-from bayesdb.Client import Client
+from bayesdb.client import Client
 import os
 import pickle
 import sys

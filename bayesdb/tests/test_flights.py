@@ -18,7 +18,7 @@
 #   limitations under the License.
 #
 
-from bayesdb.Client import Client
+from bayesdb.client import Client
 
 
 def test_flights():
@@ -27,7 +27,6 @@ def test_flights():
     cmds = []
     cmds.append('drop ptable jayt;')
     cmds.append('create ptable jayt from /home/sgeadmin/tabular_predDB/Examples/flight_data_subset.csv;')
-    #cmds.append('update datatypes from jayt set deptime=categorical(7);')
     cmds.append('create 2 models for jayt;')
     cmds.append('analyze jayt for 1 iterations;')
     cmds.append('select dayofweek, deptime, crsdeptime, actualelapsedtime from jayt where distance > 800 limit 20;')
@@ -56,3 +55,5 @@ def test_flights():
         result = client.execute(cmd, timing=True)
         print result
 
+if __name__ == '__main__':
+    test_flights()

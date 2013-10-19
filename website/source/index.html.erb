@@ -2,15 +2,41 @@
 title: BayesDB
 ---
 
+<div class="spacer" height="40px"></div>
+<div class="row">
+	<div class="col-md-12">
+		<p class="lead">BayesDB, a Bayesian database, lets users query the probable implications of their data as easily as a SQL database lets them query the data itself. Using the built-in Bayesian Query Language (BQL), users with no statistics training can solve basic data science problems, such as detecting predictive relationships between variables, inferring missing values, simulating probable observations, and identifying statistically similar database entries.</p>
+
+		<p class="lead">BayesDB is suitable for analyzing complex, heterogeneous data tables with up to tens of thousands of rows and hundreds of variables. No preprocessing or parameter adjustment is required, though experts can override BayesDB's default assumptions when appropriate.</p>
+
+		<p class="lead">BayesDB's inferences are based in part on <a href="http://crosscat.herokuapp.com">CrossCat</a>, a new, nonparametric Bayesian machine learning method, that automatically estimates the full joint distribution behind arbitrary data tables.</p>
+	</div>
+</div>
+
+<hr>
+
+<div class="row">
+	<div class="col-md-12">
+		<a id="Examples"></a><h1>Examples</h1>
+		<code>INFER salary FROM mytable WHERE age > 30;</code>
+		<p class="lead">Fill in missing data with the INFER command. Unlike a traditional regression model, where you need to separately train a supervised model for each column you're interested in predicting, INFER statements are flexible and work with any set of columns to predict.</p>
+
+		<code>SIMULATE salary FROM mytable WHERE age > 30;</code>
+		<p class="lead">Easily simulate new probable observations.</p>
+	</div>
+</div>
+
+<hr>
+
 <div class="row">
 	<div class="col-md-12">
 		<a id="Overview"></a><h1>Overview</h1>
-		<p class="lead">BayesDB is an open-source implementation of a predictive database table. It provides predictive extensions to SQL that enable users to query the implications of their data --- predict missing entries, identify predictive relationships between columns, and examine synthetic populations --- based on a Bayesian machine learning system in the backend.</p>
+		<p class="lead">TODO: explain how it works</p>
 	</div>
 </div>
 
 
-<div class="row">
+<!--<div class="row">
 	<div class="col-md-3">
 		<h2 class="text-center">Exemplar dataset</h2>
 		A dataset of variables related to airline flights
@@ -30,8 +56,9 @@ title: BayesDB
 		<p>One may be interested querying such data to get answers regarding which attributes are dependent, which rows are similar, likely values of unobserved cells, probable but not-previously-observed instances, and more.</p>
 		<p>Aggregating statistics on the models CrossCat generates of the underlying data, we can draw conclusions about the likelihood of dependence between data table columns.</p>
 	</div>
-</div>
+</div>-->
 
+<hr>
 
 <div class="row">
 	<div class="col-md-12">
@@ -39,21 +66,26 @@ title: BayesDB
 		<a href="https://github.com/mit-probabilistic-computing-project/BayesDB">BayesDB 0.1.0-alpha on Github</a>
 	</div>
 </div>
+
+<hr>
 		
 <div class="row">
         <div class="col-md-12">
 		<a id="About"></a><h1>About</h1>
 		<p>BayesDB and its sister project, CrossCat, are being developed by Jay Baxter, Dan Lovell, and Vikash Mansinghka at Massuchusetts Institute of Technology and by Pat Shafto and Baxter Eaves at University of Louisville.</p>
 
-		<p>If you have any comments or questions, please feel free to email us at jbaxter [AT] mit.edu.</p>
+		<p>If you have any comments or questions, please feel free to email us at bayesdb [AT] mit.edu.</p>
 
 		<p>This research and development is supported in part by the DARPA XDATA program.</p>
 	</div>
 </div>
 
+<hr>
+
 
 <div class="row">
     <div class="col-md-8" style="margin-top: 140px; padding-top: 140px;">
+      <hr>
 		<p class="text-center">Don't forget to check out these other great ProbComp projects!</p>
 		<div class="col-md-4">
 			<p class="well text-center"><a href="http://venture.csail.mit.edu/wiki/index.php5?title=Venture">Venture</a></p>
