@@ -19,12 +19,15 @@
 #
 
 import os
-from bayesdb.Client import Client
+import sys
+from bayesdb.client import Client
 
 def run_example():
     client = Client()
-    bql = open('dha_analysis.bql', 'r').read()
-    client(bql)
+    cur_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(cur_dir, 'dha_analysis.bql')
+    print "\nA series of BQL commands will be displayed. Hit <Enter> to execute the displayed command.\n"
+    client(open(file_path, 'r'), wait=True)
 
 if __name__ == '__main__':
     run_example()
