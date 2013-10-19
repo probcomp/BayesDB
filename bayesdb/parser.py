@@ -397,9 +397,11 @@ class Parser(object):
         else:
             columnstring = match.group('columnstring').strip()
             tablename = match.group('btable')
-            whereclause = match.group('whereclause').strip()
+            whereclause = match.group('whereclause')
             if whereclause is None:
                 whereclause = ''
+            else:
+                whereclause = whereclause.strip()
             numpredictions = int(match.group('times'))
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)

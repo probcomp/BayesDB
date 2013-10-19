@@ -55,16 +55,16 @@ class Client(object):
         out = method(*args)
       return out
 
-    def __call__(self, user_input, pretty=True, timing=False, wait=False, plots=None):
-        return self.execute(user_input, pretty, timing, wait, plots)
+    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None):
+        return self.execute(call_input, pretty, timing, wait, plots)
 
-    def execute(self, user_input, pretty=True, timing=False, wait=False, plots=None):
-        if type(user_input) == file:
-            bql_string = user_input.read()
-            path = os.path.abspath(user_input.name)
+    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None):
+        if type(call_input) == file:
+            bql_string = call_input.read()
+            path = os.path.abspath(call_input.name)
             self.parser.set_root_dir(os.path.dirname(path))
-        elif type(user_input) == str:
-            bql_string = user_input
+        elif type(call_input) == str:
+            bql_string = call_input
         else:
             print "Invalid input type: expected file or string."
 
@@ -76,7 +76,7 @@ class Client(object):
             
         lines = self.parser.parse(bql_string)
         for line in lines:
-            if type(user_input) == file:
+            if type(call_input) == file:
                 print '> %s' % line
             if wait:
                 user_input = raw_input()
@@ -85,7 +85,7 @@ class Client(object):
             result = self.execute_line(line, pretty, timing)
             if not pretty:
                 return_list.append(result)
-            if type(user_input) == file:
+            if type(call_input) == file:
                 print
 
         self.parser.reset_root_dir()
