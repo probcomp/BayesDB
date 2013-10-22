@@ -16,7 +16,7 @@ We provide a [VirtualBox VM](https://docs.google.com/file/d/0B_CtKGJ4pH2TX2VaTXR
 **Note**: The VM is only meant to provide an out-of-the-box usable system setup.  Its resources are limited and large jobs will fail due to memory errors.  To run larger jobs, increase the VM resources or install directly to your system.
 
 ### Local (Ubuntu)
-BayesDB depends on CrossCat, so first install CrossCat by following its local installation instructions <a href="https://github.com/mit-probabilistic-computing-project/crosscat/blob/master/README.md>here</a>.
+BayesDB depends on CrossCat, so first install CrossCat by following its local installation instructions [here](https://github.com/mit-probabilistic-computing-project/crosscat/blob/master/README.md).
 
 BayesDB can be installed locally on Ubuntu systems with
 
