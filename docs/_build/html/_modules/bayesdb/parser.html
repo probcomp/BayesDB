@@ -1,0 +1,576 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>bayesdb.parser &mdash; BayesDB 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/rtd.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="BayesDB 0.1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for bayesdb.parser</h1><div class="highlight"><pre>
+<span class="c">#</span>
+<span class="c">#   Copyright (c) 2010-2013, MIT Probabilistic Computing Project</span>
+<span class="c">#</span>
+<span class="c">#   Lead Developers: Jay Baxter and Dan Lovell</span>
+<span class="c">#   Authors: Jay Baxter, Dan Lovell, Baxter Eaves, Vikash Mansinghka</span>
+<span class="c">#   Research Leads: Vikash Mansinghka, Patrick Shafto</span>
+<span class="c">#</span>
+<span class="c">#   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c">#   you may not use this file except in compliance with the License.</span>
+<span class="c">#   You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c">#   Unless required by applicable law or agreed to in writing, software</span>
+<span class="c">#   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c">#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c">#   See the License for the specific language governing permissions and</span>
+<span class="c">#   limitations under the License.</span>
+<span class="c">#</span>
+
+<span class="kn">import</span> <span class="nn">engine</span> <span class="kn">as</span> <span class="nn">be</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">utils</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<div class="viewcode-block" id="Parser"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser">[docs]</a><span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Parser.parse"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bql_string</span><span class="p">):</span>
+        <span class="n">ret_lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">bql_string</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">bql_string</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&#39;--.*?\n&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">bql_string</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">bql_string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;;&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;--&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[:</span><span class="n">line</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;--&#39;</span><span class="p">)]</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">line</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ret_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret_lines</span>
+    </div>
+<div class="viewcode-block" id="Parser.parse_line"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_line">[docs]</a>    <span class="k">def</span> <span class="nf">parse_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bql_string</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">bql_string</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">bql_string</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;;&#39;</span><span class="p">:</span>
+            <span class="n">bql_string</span> <span class="o">=</span> <span class="n">bql_string</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="n">bql_string</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">method_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">method_names</span><span class="p">:</span>
+            <span class="n">parse_method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;parse_&#39;</span> <span class="o">+</span> <span class="n">method_name</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">parse_method</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="n">bql_string</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="n">result</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="k">elif</span> <span class="n">result</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">result</span>
+</div>
+<div class="viewcode-block" id="Parser.set_root_dir"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.set_root_dir">[docs]</a>    <span class="k">def</span> <span class="nf">set_root_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root_dir</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root_directory</span> <span class="o">=</span> <span class="n">root_dir</span>
+</div>
+<div class="viewcode-block" id="Parser.reset_root_dir"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.reset_root_dir">[docs]</a>    <span class="k">def</span> <span class="nf">reset_root_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">__file__</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Parser.get_absolute_path"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.get_absolute_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_absolute_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">relative_path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">relative_path</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">relative_path</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root_directory</span><span class="p">,</span> <span class="n">relative_path</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">engine</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">engine</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">engine_method_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">method_name</span> <span class="k">for</span> <span class="n">method_name</span> <span class="ow">in</span> <span class="n">be</span><span class="o">.</span><span class="n">get_method_names</span><span class="p">()</span> <span class="k">if</span> <span class="n">method_name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s">&#39;_&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser_method_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">method_name</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span> <span class="k">for</span> <span class="n">method_name</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">Parser</span><span class="p">)</span> <span class="k">if</span> <span class="n">method_name</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;parse_&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">engine_method_names</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser_method_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method_name_to_args</span> <span class="o">=</span> <span class="n">be</span><span class="o">.</span><span class="n">get_method_name_to_args</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">__file__</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Parser.parse_set_hostname"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_set_hostname">[docs]</a>    <span class="k">def</span> <span class="nf">parse_set_hostname</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;set&#39;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;hostname&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">set_hostname</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_get_hostname"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_get_hostname">[docs]</a>    <span class="k">def</span> <span class="nf">parse_get_hostname</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;get&#39;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;hostname&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">get_hostname</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_ping"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_ping">[docs]</a>    <span class="k">def</span> <span class="nf">parse_ping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;ping&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_start_from_scratch"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_start_from_scratch">[docs]</a>    <span class="k">def</span> <span class="nf">parse_start_from_scratch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;start&#39;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;from&#39;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;scratch&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">start_from_scratch</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_drop_and_load_db"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_drop_and_load_db">[docs]</a>    <span class="k">def</span> <span class="nf">parse_drop_and_load_db</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;drop&#39;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;and&#39;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;load&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">drop_and_load_db</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&#39;Did you mean: DROP AND LOAD &lt;filename&gt;;?&#39;</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_create_models"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_create_models">[docs]</a>    <span class="k">def</span> <span class="nf">parse_create_models</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">n_chains</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;create&#39;</span> <span class="ow">and</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">is_int</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="ow">or</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;model&#39;</span> <span class="ow">or</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;models&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">4</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;model&#39;</span> <span class="ow">or</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;models&#39;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;for&#39;</span><span class="p">:</span>
+                        <span class="n">tablename</span> <span class="o">=</span> <span class="n">words</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">7</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;with&#39;</span> <span class="ow">and</span> <span class="n">utils</span><span class="o">.</span><span class="n">is_int</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;explanations&#39;</span><span class="p">:</span>
+                                <span class="n">n_chains</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span>
+                        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">create_models</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">n_chains</span><span class="p">)</span>
+                        <span class="k">print</span> <span class="s">&#39;Created </span><span class="si">%d</span><span class="s"> models for btable </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">n_chains</span><span class="p">,</span> <span class="n">tablename</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="n">result</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&#39;Did you mean: CREATE MODELS FOR &lt;btable&gt; [WITH &lt;n_chains&gt; EXPLANATIONS];?&#39;</span>
+                        <span class="k">return</span> <span class="bp">False</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">utils</span><span class="o">.</span><span class="n">is_int</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                    <span class="n">n_chains</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="k">assert</span> <span class="n">n_chains</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                    <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;model&#39;</span> <span class="ow">or</span> <span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;models&#39;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">5</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;for&#39;</span><span class="p">:</span>
+                            <span class="n">tablename</span> <span class="o">=</span> <span class="n">words</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">create_models</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">n_chains</span><span class="p">)</span>
+                            <span class="k">print</span> <span class="s">&#39;Created </span><span class="si">%d</span><span class="s"> models for btable </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">n_chains</span><span class="p">,</span> <span class="n">tablename</span><span class="p">)</span>
+                            <span class="k">return</span> <span class="n">result</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">print</span> <span class="s">&#39;Did you mean: CREATE &lt;n_chains&gt; MODELS FOR &lt;btable&gt;;?&#39;</span>
+                            <span class="k">return</span> <span class="bp">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&#39;Did you mean: CREATE &lt;n_chains&gt; MODELS FOR &lt;btable&gt;;?&#39;</span>
+                    <span class="k">return</span> <span class="bp">False</span>        
+</div>
+<div class="viewcode-block" id="Parser.parse_create_btable"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_create_btable">[docs]</a>    <span class="k">def</span> <span class="nf">parse_create_btable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">crosscat_column_types</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;upload&#39;</span> <span class="ow">or</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;create&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;ptable&#39;</span> <span class="ow">or</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;btable&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span>
+                    <span class="n">tablename</span> <span class="o">=</span> <span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;from&#39;</span><span class="p">:</span>
+                        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_absolute_path</span><span class="p">(</span><span class="n">orig</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">4</span><span class="p">]),</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+                        <span class="n">csv</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">create_btable</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">csv</span><span class="p">,</span> <span class="n">crosscat_column_types</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="n">result</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&#39;Did you mean: CREATE BTABLE &lt;tablename&gt; FROM &lt;filename&gt;;?&#39;</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_drop_tablename"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_drop_tablename">[docs]</a>    <span class="k">def</span> <span class="nf">parse_drop_tablename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;drop&#39;</span> <span class="ow">and</span> <span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;tablename&#39;</span> <span class="ow">or</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;ptable&#39;</span> <span class="ow">or</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;btable&#39;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">drop_tablename</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_delete_chain"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_delete_chain">[docs]</a>    <span class="k">def</span> <span class="nf">parse_delete_chain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;delete&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;chain&#39;</span> <span class="ow">and</span> <span class="n">utils</span><span class="o">.</span><span class="n">is_int</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">]):</span>
+                    <span class="n">chain_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;from&#39;</span><span class="p">:</span>
+                        <span class="n">tablename</span> <span class="o">=</span> <span class="n">words</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">delete_chain</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">chain_index</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">6</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;all&#39;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;chains&#39;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;from&#39;</span><span class="p">:</span>
+                    <span class="n">chain_index</span> <span class="o">=</span> <span class="s">&#39;all&#39;</span>
+                    <span class="n">tablename</span> <span class="o">=</span> <span class="n">words</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">delete_chain</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">chain_index</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&#39;Did you mean: DELETE CHAIN &lt;chain_index&gt; FROM &lt;tablename&gt;;?&#39;</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_analyze"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_analyze">[docs]</a>    <span class="k">def</span> <span class="nf">parse_analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">chain_index</span> <span class="o">=</span> <span class="s">&#39;all&#39;</span>
+        <span class="n">iterations</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">wait</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;analyze&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">tablename</span> <span class="o">=</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Did you mean: ANALYZE &lt;btable&gt; [CHAIN INDEX &lt;chain_index&gt;] [FOR &lt;iterations&gt; ITERATIONS];?&#39;</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;chain&quot;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;index&#39;</span><span class="p">:</span>
+                <span class="n">chain_index</span> <span class="o">=</span> <span class="n">words</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">idx</span> <span class="o">+=</span> <span class="mi">3</span>
+            <span class="c">## TODO: check length here</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;for&quot;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;iterations&#39;</span><span class="p">:</span>
+                <span class="n">iterations</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">analyze</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">chain_index</span><span class="p">,</span> <span class="n">iterations</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_infer"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_infer">[docs]</a>    <span class="k">def</span> <span class="nf">parse_infer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">r&quot;&quot;&quot;</span>
+<span class="s">            infer\s+</span>
+<span class="s">            (?P&lt;columnstring&gt;[^\s,]+(?:,\s*[^\s,]+)*)\s+</span>
+<span class="s">            from\s+(?P&lt;btable&gt;[^\s]+)\s+</span>
+<span class="s">            (where\s+(?P&lt;whereclause&gt;.*(?=with)))?</span>
+<span class="s">            \s*with\s+confidence\s+(?P&lt;confidence&gt;[^\s]+)</span>
+<span class="s">            (\s+limit\s+(?P&lt;limit&gt;[^\s]+))?</span>
+<span class="s">            (\s+numsamples\s+(?P&lt;numsamples&gt;[^\s]+))?</span>
+<span class="s">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">orig</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;infer&#39;</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Did you mean: INFER col0, [col1, ...] FROM &lt;btable&gt; [WHERE &lt;whereclause&gt;] &#39;</span><span class="o">+</span>\
+                    <span class="s">&#39;WITH CONFIDENCE &lt;confidence&gt; [LIMIT &lt;limit&gt;] [NUMSAMPLES &lt;numsamples&gt;] [ORDER BY SIMILARITY TO &lt;row_id&gt; [WITH RESPECT TO &lt;column&gt;]];?&#39;</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">columnstring</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;columnstring&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">tablename</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;btable&#39;</span><span class="p">)</span>
+            <span class="n">whereclause</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;whereclause&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">whereclause</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">whereclause</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">whereclause</span> <span class="o">=</span> <span class="n">whereclause</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">confidence</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;confidence&#39;</span><span class="p">))</span>
+            <span class="n">limit</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;limit&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">limit</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">limit</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s">&quot;inf&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">limit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit</span><span class="p">)</span>
+            <span class="n">numsamples</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;numsamples&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">numsamples</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">numsamples</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">numsamples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">numsamples</span><span class="p">)</span>
+            <span class="n">newtablename</span> <span class="o">=</span> <span class="s">&#39;&#39;</span> <span class="c"># For INTO</span>
+            <span class="n">orig</span><span class="p">,</span> <span class="n">order_by</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_order_by</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">columnstring</span><span class="p">,</span> <span class="n">newtablename</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">whereclause</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">numsamples</span><span class="p">,</span> <span class="n">order_by</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Parser.extract_order_by"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.extract_order_by">[docs]</a>    <span class="k">def</span> <span class="nf">extract_order_by</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="s">r&quot;&quot;&quot;</span>
+<span class="s">            (order\s+by\s+(?P&lt;orderbyclause&gt;.*?((?=limit)|$)))</span>
+<span class="s">        &quot;&quot;&quot;</span> 
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">orig</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+            <span class="n">order_by_clause</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;orderbyclause&#39;</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="n">orderables</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">orderable</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">column_string_splitter</span><span class="p">(</span><span class="n">order_by_clause</span><span class="p">):</span>
+                <span class="c">## Check for DESC</span>
+                <span class="n">desc</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">r&#39;\s+desc($|\s|,|(?=limit))&#39;</span><span class="p">,</span> <span class="n">orderable</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+                <span class="n">orderable</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&#39;\s+desc($|\s|,|(?=limit))&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">orderable</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+                <span class="c">## Check for similarity</span>
+                <span class="n">pattern</span> <span class="o">=</span> <span class="s">r&quot;&quot;&quot;</span>
+<span class="s">                    similarity\s+to\s+(?P&lt;rowid&gt;[^\s]+)</span>
+<span class="s">                    (\s+with\s+respect\s+to\s+(?P&lt;column&gt;[^\s]+))?</span>
+<span class="s">                &quot;&quot;&quot;</span>
+                <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">orderable</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                    <span class="n">rowid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;rowid&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                    <span class="k">if</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;column&#39;</span><span class="p">):</span>
+                        <span class="n">column</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;column&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">column</span> <span class="o">=</span> <span class="bp">None</span>
+                    <span class="n">orderables</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;similarity&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;desc&#39;</span><span class="p">:</span> <span class="n">desc</span><span class="p">,</span> <span class="s">&#39;target_row_id&#39;</span><span class="p">:</span> <span class="n">rowid</span><span class="p">,</span> <span class="s">&#39;target_column&#39;</span><span class="p">:</span> <span class="n">column</span><span class="p">}))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">r&quot;&quot;&quot;</span>
+<span class="s">                          similarity_to\s*\(\s*</span>
+<span class="s">                          (?P&lt;rowid&gt;[^,]+)</span>
+<span class="s">                          (\s*,\s*(?P&lt;column&gt;[^\s]+)\s*)?</span>
+<span class="s">                          \s*\)</span>
+<span class="s">                      &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">orderable</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span> 
+                    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;column&#39;</span><span class="p">):</span>
+                            <span class="n">column</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;column&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">column</span> <span class="o">=</span> <span class="bp">None</span>
+                        <span class="n">rowid</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;rowid&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">is_int</span><span class="p">(</span><span class="n">rowid</span><span class="p">):</span>
+                            <span class="n">target_row_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rowid</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">target_row_id</span> <span class="o">=</span> <span class="n">rowid</span>
+                        <span class="n">orderables</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;similarity&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;desc&#39;</span><span class="p">:</span> <span class="n">desc</span><span class="p">,</span> <span class="s">&#39;target_row_id&#39;</span><span class="p">:</span> <span class="n">target_row_id</span><span class="p">,</span> <span class="s">&#39;target_column&#39;</span><span class="p">:</span> <span class="n">column</span><span class="p">}))</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">orderables</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;column&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;desc&#39;</span><span class="p">:</span> <span class="n">desc</span><span class="p">,</span> <span class="s">&#39;column&#39;</span><span class="p">:</span> <span class="n">orderable</span><span class="o">.</span><span class="n">strip</span><span class="p">()}))</span>
+            <span class="n">orig</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">orig</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">orig</span><span class="p">,</span> <span class="n">orderables</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">orig</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+
+</div>
+<div class="viewcode-block" id="Parser.extract_limit"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.extract_limit">[docs]</a>    <span class="k">def</span> <span class="nf">extract_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="s">r&#39;limit\s+(?P&lt;limit&gt;\d+)&#39;</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">orig</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+            <span class="n">limit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;limit&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">limit</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s">&#39;inf&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_export_samples"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_export_samples">[docs]</a>    <span class="k">def</span> <span class="nf">parse_export_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">r&quot;&quot;&quot;</span>
+<span class="s">            export\s+</span>
+<span class="s">            (samples\s+)?</span>
+<span class="s">            from\s+</span>
+<span class="s">            (?P&lt;btable&gt;[^\s]+)</span>
+<span class="s">            \s+to\s+</span>
+<span class="s">            (?P&lt;pklpath&gt;[^\s]+)</span>
+<span class="s">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">orig</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;export&#39;</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Did you mean: EXPORT SAMPLES FROM &lt;btable&gt; TO &lt;pklpath&gt;;?&#39;</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tablename</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;btable&#39;</span><span class="p">)</span>
+            <span class="n">pklpath</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;pklpath&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pklpath</span><span class="p">[</span><span class="o">-</span><span class="mi">7</span><span class="p">:]</span> <span class="o">!=</span> <span class="s">&#39;.pkl.gz&#39;</span><span class="p">:</span>
+                <span class="n">pklpath</span> <span class="o">=</span> <span class="n">pklpath</span> <span class="o">+</span> <span class="s">&quot;.pkl.gz&quot;</span>
+            <span class="n">samples_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">export_samples</span><span class="p">(</span><span class="n">tablename</span><span class="p">)</span>
+            <span class="n">samples_file</span> <span class="o">=</span> <span class="n">gzip</span><span class="o">.</span><span class="n">GzipFile</span><span class="p">(</span><span class="n">pklpath</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">samples_dict</span><span class="p">,</span> <span class="n">samples_file</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s">&quot;Successfully exported the samples to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">pklpath</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_import_samples"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_import_samples">[docs]</a>    <span class="k">def</span> <span class="nf">parse_import_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">r&quot;&quot;&quot;</span>
+<span class="s">            import\s+</span>
+<span class="s">            (samples\s+)?</span>
+<span class="s">            (?P&lt;pklpath&gt;[^\s]+)\s+</span>
+<span class="s">            into\s+</span>
+<span class="s">            (?P&lt;btable&gt;[^\s]+)</span>
+<span class="s">            (\s+iterations\s+(?P&lt;iterations&gt;[^\s]+))?</span>
+<span class="s">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">orig</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;import&#39;</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Did you mean: IMPORT SAMPLES &lt;pklpath&gt; INTO &lt;btable&gt; [ITERATIONS &lt;iterations&gt;]&#39;</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tablename</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;btable&#39;</span><span class="p">)</span>
+            <span class="n">pklpath</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;pklpath&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pklpath</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span> <span class="o">==</span> <span class="s">&#39;.gz&#39;</span><span class="p">:</span>
+                <span class="n">samples</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_absolute_path</span><span class="p">(</span><span class="n">pklpath</span><span class="p">),</span> <span class="s">&#39;rb&#39;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">samples</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_absolute_path</span><span class="p">(</span><span class="n">pklpath</span><span class="p">),</span> <span class="s">&#39;rb&#39;</span><span class="p">))</span>
+            <span class="n">X_L_list</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="s">&#39;X_L_list&#39;</span><span class="p">]</span>
+            <span class="n">X_D_list</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="s">&#39;X_D_list&#39;</span><span class="p">]</span>
+            <span class="n">M_c</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="s">&#39;M_c&#39;</span><span class="p">]</span>
+            <span class="n">T</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="s">&#39;T&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;iterations&#39;</span><span class="p">):</span>
+                <span class="n">iterations</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;iterations&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">iterations</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">import_samples</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">X_L_list</span><span class="p">,</span> <span class="n">X_D_list</span><span class="p">,</span> <span class="n">M_c</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">iterations</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="Parser.parse_select"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_select">[docs]</a>    <span class="k">def</span> <span class="nf">parse_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">r&quot;&quot;&quot;</span>
+<span class="s">            select\s+</span>
+<span class="s">            (?P&lt;columnstring&gt;.*?((?=from)))</span>
+<span class="s">            \s*from\s+(?P&lt;btable&gt;[^\s]+)\s*</span>
+<span class="s">            (where\s+(?P&lt;whereclause&gt;.*?((?=limit)|(?=order)|$)))?</span>
+<span class="s">            (\s*limit\s+(?P&lt;limit&gt;[^\s]+))?</span>
+<span class="s">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">orig</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+        <span class="c">## (?P&lt;columnstring&gt;[^\s,]+(?:,\s*[^\s,]+)*)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;select&#39;</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Did you mean: SELECT col0, [col1, ...] FROM &lt;btable&gt; [WHERE &lt;whereclause&gt;] &#39;</span><span class="o">+</span>\
+                    <span class="s">&#39;[ORDER BY SIMILARITY TO &lt;rowid&gt; [WITH RESPECT TO &lt;column&gt;]] [LIMIT &lt;limit&gt;];?&#39;</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">columnstring</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;columnstring&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">tablename</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;btable&#39;</span><span class="p">)</span>
+            <span class="n">whereclause</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;whereclause&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">whereclause</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">whereclause</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">whereclause</span> <span class="o">=</span> <span class="n">whereclause</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_limit</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span>
+            <span class="n">orig</span><span class="p">,</span> <span class="n">order_by</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_order_by</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">columnstring</span><span class="p">,</span> <span class="n">whereclause</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">order_by</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_simulate"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_simulate">[docs]</a>    <span class="k">def</span> <span class="nf">parse_simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">r&quot;&quot;&quot;</span>
+<span class="s">            simulate\s+</span>
+<span class="s">            (?P&lt;columnstring&gt;[^\s,]+(?:,\s*[^\s,]+)*)\s+</span>
+<span class="s">            from\s+(?P&lt;btable&gt;[^\s]+)\s+</span>
+<span class="s">            (where\s+(?P&lt;whereclause&gt;.*(?=times)))?</span>
+<span class="s">            times\s+(?P&lt;times&gt;[^\s]+)</span>
+<span class="s">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">orig</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;simulate&#39;</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Did you mean: SIMULATE col0, [col1, ...] FROM &lt;btable&gt; [WHERE &lt;whereclause&gt;] TIMES &lt;times&gt; &#39;</span><span class="o">+</span>\
+                    <span class="s">&#39;[ORDER BY SIMILARITY TO &lt;row_id&gt; [WITH RESPECT TO &lt;column&gt;]];?&#39;</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">columnstring</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;columnstring&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">tablename</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;btable&#39;</span><span class="p">)</span>
+            <span class="n">whereclause</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;whereclause&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">whereclause</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">whereclause</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">whereclause</span> <span class="o">=</span> <span class="n">whereclause</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">numpredictions</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;times&#39;</span><span class="p">))</span>
+            <span class="n">newtablename</span> <span class="o">=</span> <span class="s">&#39;&#39;</span> <span class="c"># For INTO</span>
+            <span class="n">orig</span><span class="p">,</span> <span class="n">order_by</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_order_by</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">columnstring</span><span class="p">,</span> <span class="n">newtablename</span><span class="p">,</span> <span class="n">whereclause</span><span class="p">,</span> <span class="n">numpredictions</span><span class="p">,</span> <span class="n">order_by</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_estimate_dependence_probabilities"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_estimate_dependence_probabilities">[docs]</a>    <span class="k">def</span> <span class="nf">parse_estimate_dependence_probabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">r&quot;&quot;&quot;</span>
+<span class="s">            estimate\s+dependence\s+probabilities\s+from\s+</span>
+<span class="s">            (?P&lt;btable&gt;[^\s]+)</span>
+<span class="s">            ((\s+referencing\s+(?P&lt;refcol&gt;[^\s]+))|(\s+for\s+(?P&lt;forcol&gt;[^\s]+)))?</span>
+<span class="s">            (\s+with\s+confidence\s+(?P&lt;confidence&gt;[^\s]+))?</span>
+<span class="s">            (\s+limit\s+(?P&lt;limit&gt;[^\s]+))?</span>
+<span class="s">            (\s+save\s+to\s+(?P&lt;filename&gt;[^\s]+))?</span>
+<span class="s">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">orig</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;estimate&#39;</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM &lt;btable&gt; [[REFERENCING &lt;col&gt;] [WITH CONFIDENCE &lt;prob&gt;] [LIMIT &lt;k&gt;]] [SAVE TO &lt;file&gt;]&#39;</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tablename</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;btable&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;refcol&#39;</span><span class="p">):</span>
+                <span class="n">col</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;refcol&#39;</span><span class="p">)</span>
+                <span class="n">submatrix</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">col</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;forcol&#39;</span><span class="p">)</span>
+                <span class="n">submatrix</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="n">confidence</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;confidence&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;limit&#39;</span><span class="p">):</span>
+                <span class="n">limit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;limit&#39;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">limit</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s">&quot;inf&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">):</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;../../www/&#39;</span><span class="p">,</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">estimate_dependence_probabilities</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">submatrix</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_update_datatypes"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_update_datatypes">[docs]</a>    <span class="k">def</span> <span class="nf">parse_update_datatypes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">r&quot;&quot;&quot;</span>
+<span class="s">            update\s+datatypes\s+from\s+</span>
+<span class="s">            (?P&lt;btable&gt;[^\s]+)\s+</span>
+<span class="s">            set\s+(?P&lt;mappings&gt;[^;]*);?</span>
+<span class="s">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">orig</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;update&#39;</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Did you mean: UPDATE DATATYPES FROM &lt;btable&gt; SET [col0=numerical|categorical|key|ignore];?&#39;</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tablename</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;btable&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">mapping_string</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;mappings&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">mappings</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">mapping</span> <span class="ow">in</span> <span class="n">mapping_string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">):</span>
+                <span class="n">vals</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;=&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s">&#39;continuous&#39;</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">or</span> <span class="s">&#39;numerical&#39;</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">datatype</span> <span class="o">=</span> <span class="s">&#39;continuous&#39;</span>
+                <span class="k">elif</span> <span class="s">&#39;multinomial&#39;</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">or</span> <span class="s">&#39;categorical&#39;</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">r&#39;\((?P&lt;num&gt;[^\)]+)\)&#39;</span><span class="p">,</span> <span class="n">vals</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+                        <span class="n">datatype</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s">&#39;num&#39;</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">datatype</span> <span class="o">=</span> <span class="s">&#39;multinomial&#39;</span>
+                <span class="k">elif</span> <span class="s">&#39;key&#39;</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">datatype</span> <span class="o">=</span> <span class="s">&#39;key&#39;</span>
+                <span class="k">elif</span> <span class="s">&#39;ignore&#39;</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">datatype</span> <span class="o">=</span> <span class="s">&#39;ignore&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&#39;Did you mean: UPDATE DATATYPES FROM &lt;btable&gt; SET [col0=numerical|categorical|key|ignore];?&#39;</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+                <span class="n">mappings</span><span class="p">[</span><span class="n">vals</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">datatype</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">update_datatypes</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">mappings</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Parser.parse_write_json_for_table"><a class="viewcode-back" href="../../bayesdb.html#bayesdb.parser.Parser.parse_write_json_for_table">[docs]</a>    <span class="k">def</span> <span class="nf">parse_write_json_for_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">words</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;write&#39;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;json&#39;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;for&#39;</span> <span class="ow">and</span> <span class="n">words</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;table&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s">&#39;tablename&#39;</span><span class="p">:</span> <span class="n">words</span><span class="p">[</span><span class="mi">4</span><span class="p">]}</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">BayesDB 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Jay Baxter, Dan Lovell, Vikash Mansinghka, Pat Shafto, Baxter Eaves.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

@@ -14,7 +14,7 @@ Submodules
 bayesdb.Client module
 ---------------------
 
-.. automodule:: bayesdb.Client
+.. automodule:: bayesdb.client
     :members:
     :undoc-members:
     :show-inheritance:
@@ -22,7 +22,7 @@ bayesdb.Client module
 bayesdb.Engine module
 ---------------------
 
-.. automodule:: bayesdb.Engine
+.. automodule:: bayesdb.engine
     :members:
     :undoc-members:
     :show-inheritance:
@@ -30,7 +30,7 @@ bayesdb.Engine module
 bayesdb.Parser module
 ---------------------
 
-.. automodule:: bayesdb.Parser
+.. automodule:: bayesdb.parser
     :members:
     :undoc-members:
     :show-inheritance:
@@ -38,7 +38,7 @@ bayesdb.Parser module
 bayesdb.PersistenceLayer module
 -------------------------------
 
-.. automodule:: bayesdb.PersistenceLayer
+.. automodule:: bayesdb.persistenceLayer
     :members:
     :undoc-members:
     :show-inheritance:
