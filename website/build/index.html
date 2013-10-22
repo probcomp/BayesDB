@@ -38,13 +38,10 @@
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse navbar-ex1-collapse">
           <ul class="nav navbar-nav">
-
+	    <li><a href="#Overview">Overview</a></li>
 	    <li><a href="#Examples">Examples</a></li>
-            <li><a href="#Get Started">Get Started</a></li>	    
+            <li><a href="#Download">Download</a></li>	    
             <li><a href="#About">About</a></li>
-	    <li class="divider-vertical"></li>
-	    <li><a href="docs">Documentation</a></li>
-	    <li class="pull-right"><a class="pull-right" href="http://github.com/mit-probabilistic-computing-project/BayesDB">Github</a></li>
           </ul>
         </div><!-- /.navbar-collapse -->
       </div><!-- /.container -->
@@ -52,24 +49,37 @@
 
 	<div class="container">
 		<center>
+		  <span style="padding: 50px">
+		  <img src="images/MIT_Seal.svg" height="100px" alt="Massachusetts Institute of Technology">
+		    <img src="images/UofLouisvilleMinervaSeal.png" height="100px" alt="University of Louisville">
+		    <span style="padding: 80px">
+		    <font class="abc" style="font-size: 100px; font-weight: normal" face="Helvetica Neue">BayesDB</font>
+		    <span style="padding: 50px">
 		    <img src="images/mit_csail_logo.png" height="100px" alt="MIT CSAIL">		      
-		    <img src="http://bcs.mit.edu/images/logo_off.gif" style="height:100px height:auto" alt="MIT BCS"> 
-		    <span style="padding: 50px">
-		    <font class="abc" style="font-size: 100px; font-weight: normal"  face="Helvetica Neue">BayesDB</font>
-		    <span style="padding: 50px">
-		    <img src="images/MIT_Seal.svg" height="100px" alt="Massachusetts Institute of Technology">
-		    <img src="images/UofLouisvilleMinervaSeal.png" height="100px" alt="University of Louisville">		</center>
+		    <img src="images/logo_bcs.gif" style="height:100px height:auto" alt="MIT BCS">
+		</center>
 	</div>
 	<br>
     <div class="container">
       <div class="spacer" height="40px"></div>
+
+<p class="lead">
+  Query the probable implications of your data as easily as a SQL database lets you query the data itself.
+</p>
+
+<div class="alert alert-info" align="center">
+	<button type="button" class="close" data-dismiss="alert">×</button>
+	<h3><a href="https://github.com/mit-probabilistic-computing-project/BayesDB" target="_blank">BayesDB Developer Alpha 0.1.0 Released!</a></h3>
+</div>
+
 <div class="row">
 	<div class="col-md-12">
-		<p class="lead">BayesDB, a Bayesian database, lets users query the probable implications of their data as easily as a SQL database lets them query the data itself. Using the built-in Bayesian Query Language (BQL), users with no statistics training can solve basic data science problems, such as detecting predictive relationships between variables, inferring missing values, simulating probable observations, and identifying statistically similar database entries.</p>
+	  <a id="Overview"></a><h1>Overview</h1>
+		<p >BayesDB, a Bayesian database table, lets users query the probable implications of their data as easily as a SQL database lets them query the data itself. Using the built-in Bayesian Query Language (BQL), users with no statistics training can solve basic data science problems, such as detecting predictive relationships between variables, inferring missing values, simulating probable observations, and identifying statistically similar database entries.</p>
 
-		<p class="lead">BayesDB is suitable for analyzing complex, heterogeneous data tables with up to tens of thousands of rows and hundreds of variables. No preprocessing or parameter adjustment is required, though experts can override BayesDB's default assumptions when appropriate.</p>
+		<p >BayesDB is suitable for analyzing complex, heterogeneous data tables with up to tens of thousands of rows and hundreds of variables. No preprocessing or parameter adjustment is required, though experts can override BayesDB's default assumptions when appropriate.</p>
 
-		<p class="lead">BayesDB's inferences are based in part on <a href="http://crosscat.herokuapp.com">CrossCat</a>, a new, nonparametric Bayesian machine learning method, that automatically estimates the full joint distribution behind arbitrary data tables.</p>
+		<p >BayesDB's inferences are based in part on <a href="http://probcomp.csail.mit.edu/crosscat">CrossCat</a>, a new, nonparametric Bayesian machine learning method, that automatically estimates the full joint distribution behind arbitrary data tables.</p>
 	</div>
 </div>
 
@@ -80,52 +90,27 @@
 		<a id="Examples"></a><h1>Examples</h1>
 		<code>INFER salary FROM mytable WHERE age > 30;</code>
 		<p></p>
-		<p class="lead">Fill in missing data with the INFER command. Unlike a traditional regression model, where you need to separately train a supervised model for each column you're interested in predicting, INFER statements are flexible and work with any set of columns to predict.</p>
+		<p >Fill in missing data with the INFER command. Unlike a traditional regression model, where you need to separately train a supervised model for each column you're interested in predicting, INFER statements are flexible and work with any set of columns to predict.</p>
 		<hr>
 		<code>SIMULATE salary FROM mytable WHERE age > 30;</code>
 		<p></p>
-		<p class="lead">Easily simulate new probable observations based on CrossCat's estimate of the joint density of the data.</p>
+		<p >Easily simulate new probable observations based on CrossCat's estimate of the joint density of the data.</p>
 		<hr>
 		<code>ESTIMATE PAIRWISE DEPENDENCE PROBABILITIES FROM mytable;</code>
 		<p></p>
-		<p class="lead">With just one command, estimate any pairwise function of columns, including the probability that the two columns are statistically dependent, the mutual information between columns, and their correlation.
+		<p >With just one command, estimate any pairwise function of columns, including the probability that the two columns are statistically dependent, the mutual information between columns, and their correlation.
 	</div>
 </div>
-
-
-
-<!--<div class="row">
-	<div class="col-md-3">
-		<h2 class="text-center">Exemplar dataset</h2>
-		A dataset of variables related to airline flights
-	</div>
-	<div class="col-md-9" >
-		<img src="/images/Flight_data_subset.png" height=66px width=660px>
-	</div>
-</div>
-	
-	
-<div class="row">	
-	<div class="col-md-3">
-		<img src="/images/Flight_data_subset_feature_z.png" height=160px width=213px>
-	</div>
-	<div class="col-md-9">
-		<h2 class="text-center">Visualization of attribute dependencies</h2>
-		<p>One may be interested querying such data to get answers regarding which attributes are dependent, which rows are similar, likely values of unobserved cells, probable but not-previously-observed instances, and more.</p>
-		<p>Aggregating statistics on the models CrossCat generates of the underlying data, we can draw conclusions about the likelihood of dependence between data table columns.</p>
-	</div>
-</div>-->
 
 <hr>
 
 <div class="row">
 	<div class="col-md-12">
-		<a id="Get Started"></a><h1>Get Started</h1>
-		<p class="lead">
-		<a href="https://github.com/mit-probabilistic-computing-project/BayesDB">BayesDB 0.1.0-alpha on Github</a>
-		</p>
+		<a id="Download"></a><h1>Download</h1>
+		<p>VM Quickstart: [<a href="downloads/bayesdb-v0.1-alpha-virtualbox_20131020.tgz">VirtualBox VM</a>] [<a href="https://www.virtualbox.org/wiki/Downloads">VirtualBox Player</a>]</p>
+		<p>Documentation: [<a href="docs">User Documentation</a>] [<a href="https://github.com/mit-probabilistic-computing-project/vm-install-bayesdb/blob/master/VM_README.md">VM README</a>]</p>
+		<p>Source Code: [<a href="https://github.com/mit-probabilistic-computing-project/bayesdb">Github</a>]</p>
 
-		<p class="lead"><a href="docs">User Documentation</a></p>
 	</div>
 </div>
 

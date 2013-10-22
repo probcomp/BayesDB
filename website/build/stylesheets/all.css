@@ -5,6 +5,14 @@
 a:hover{
 	text-decoration: none;
 }
+p.lead{
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    }
+p {
+    font-size: 18px;
+    }
 img{
 	max-width: 100%;
 	margin:0 auto;
