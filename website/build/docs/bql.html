@@ -1,0 +1,267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Bayesian Query Language (BQL) Spec &mdash; BayesDB 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/rtd.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="BayesDB 0.1.0 documentation" href="index.html" />
+    <link rel="next" title="Example Analyses" href="examples.html" />
+    <link rel="prev" title="Getting Started" href="gettingstarted.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="examples.html" title="Example Analyses"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gettingstarted.html" title="Getting Started"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">BayesDB 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="bayesian-query-language-bql-spec">
+<h1>Bayesian Query Language (BQL) Spec<a class="headerlink" href="#bayesian-query-language-bql-spec" title="Permalink to this headline">¶</a></h1>
+<p>Bayesian Query Language is an extension of SQL that adds support for running inference and executing predictive queries based on a bayesian model of the data.</p>
+<div class="section" id="loading-data">
+<h2>Loading data<a class="headerlink" href="#loading-data" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="create-btable">
+<h3>CREATE BTABLE<a class="headerlink" href="#create-btable" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>CREATE BTABLE &lt;btable&gt; FROM &lt;filename&gt;</pre>
+</div>
+</div>
+<div class="section" id="update-datatypes">
+<h3>UPDATE DATATYPES<a class="headerlink" href="#update-datatypes" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>UPDATE DATATYPES FROM &lt;btable&gt; SET &lt;col1&gt;=&lt;type1&gt;[,&lt;col2&gt;=&lt;type2&gt;...]</pre>
+</div>
+<p>(Types are categorical (multinomial), continuous, ignore, and key. “Key” types are ignored for inference, but can be used lower to uniquely identify rows instead of using ID. Note that datatypes cannot be updated once the model has been analyzed: should it throw an error message or be more graceful?)</p>
+</div>
+</div>
+<div class="section" id="creating-models-and-running-analysis-generating-samples">
+<h2>Creating models and running analysis (generating samples)<a class="headerlink" href="#creating-models-and-running-analysis-generating-samples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="create-models">
+<h3>CREATE MODELS<a class="headerlink" href="#create-models" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>CREATE [&lt;num_models&gt;] MODELS FOR &lt;btable&gt;</pre>
+</div>
+</div>
+<div class="section" id="analyze">
+<h3>ANALYZE<a class="headerlink" href="#analyze" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>ANALYZE &lt;btable&gt;
+[CHAIN INDEX[ES] &lt;chain_index1&gt;[,&lt;chain_index2&gt;,...]] (you may specify ranges)
+[FOR &lt;num_iterations&gt; ITERATIONS] | [FOR &lt;num_seconds&gt; SECONDS]</pre>
+</div>
+</div>
+</div>
+<div class="section" id="importing-and-exporting-samples">
+<h2>Importing and exporting samples<a class="headerlink" href="#importing-and-exporting-samples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="import-samples">
+<h3>IMPORT SAMPLES<a class="headerlink" href="#import-samples" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>IMPORT SAMPLES &lt;filename&gt; INTO &lt;btable&gt;</pre>
+</div>
+</div>
+<div class="section" id="export-samples">
+<h3>EXPORT SAMPLES<a class="headerlink" href="#export-samples" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>EXPORT SAMPLES FROM &lt;btable&gt; TO &lt;filename&gt;</pre>
+</div>
+</div>
+</div>
+<div class="section" id="deleting">
+<h2>Deleting<a class="headerlink" href="#deleting" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="drop-btable">
+<h3>DROP BTABLE<a class="headerlink" href="#drop-btable" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>DROP BTABLE &lt;btable&gt;</pre>
+</div>
+</div>
+<div class="section" id="delete-models">
+<h3>DELETE MODELS<a class="headerlink" href="#delete-models" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>DELETE MODELS &lt;chain_indexes&gt; FROM &lt;btable&gt;</pre>
+</div>
+</div>
+</div>
+<div class="section" id="querying">
+<h2>Querying<a class="headerlink" href="#querying" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="select">
+<h3>SELECT<a class="headerlink" href="#select" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>SELECT &lt;columns&gt; FROM &lt;btable&gt; [WHERE &lt;whereclause&gt;] [LIMIT &lt;limit&gt;] [ORDER BY &lt;columns&gt;]</pre>
+</div>
+</div>
+<div class="section" id="infer">
+<h3>INFER<a class="headerlink" href="#infer" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>INFER &lt;columns&gt; FROM &lt;btable&gt; [WHERE &lt;whereclause&gt;] [WITH CONFIDENCE &lt;confidence&gt;] [LIMIT &lt;limit&gt;] [WITH &lt;numsamples&gt; SAMPLES] [ORDER</pre>
+</div>
+</div>
+<div class="section" id="simulate">
+<h3>SIMULATE<a class="headerlink" href="#simulate" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>SIMULATE &lt;columns&gt; FROM &lt;btable&gt; [WHERE &lt;whereclause&gt;] TIMES &lt;times&gt; [ORDER BY &lt;columns&gt;]</pre>
+</div>
+</div>
+<div class="section" id="estimate-pairwise-dependence-strength">
+<h3>ESTIMATE PAIRWISE DEPENDENCE STRENGTH<a class="headerlink" href="#estimate-pairwise-dependence-strength" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>ESTIMATE PAIRWISE DEPENDENCE STRENGTH FOR &lt;btable&gt;</pre>
+</div>
+</div>
+</div>
+<div class="section" id="derived-quantities">
+<h2>Derived Quantities<a class="headerlink" href="#derived-quantities" title="Permalink to this headline">¶</a></h2>
+<p>Every derived quantity that outputs a column takes row as an implicit argument; the other arguments are explicit. Every derived quantity that outputs a scalar is similar to a SQL aggregate. Derived quantities that output a column are the things that you can SELECT or ORDER BY. Quantities that output a scalar can be SELECTed, and will return the same value for every row returned, but they cannot be ORDERed BY.</p>
+<p>To specify a row (currently similarity_to is the only derived quantity where this is necessary), either the row_id or the uniquely identifying value of the key field may be specified.</p>
+<div class="section" id="similarity-to">
+<h3>SIMILARITY TO<a class="headerlink" href="#similarity-to" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>similarity_to(row [, columns]): column (r, c, target_row [, target_columns] -&gt; value). probability that the cells in this row are in the same view and category as the target row</pre>
+</div>
+</div>
+<div class="section" id="row-typicality">
+<h3>ROW TYPICALITY<a class="headerlink" href="#row-typicality" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>row_typicality: column (r -&gt; value). typicality(row [, columns]) probability that a col is in the same category as a random other row (weighting views appropriately)</pre>
+</div>
+</div>
+</div>
+<div class="section" id="column-aggregate-derived-quantities">
+<h2>Column-aggregate derived quantities<a class="headerlink" href="#column-aggregate-derived-quantities" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="column-centrality">
+<h3>COLUMN CENTRALITY<a class="headerlink" href="#column-centrality" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>col_centrality(col): scalar (c -&gt; value). probability that col is in the same view as a random other column (just 1 - prob_dependence averaged over all target columns)</pre>
+</div>
+</div>
+<div class="section" id="mutual-information">
+<h3>MUTUAL INFORMATION<a class="headerlink" href="#mutual-information" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>mutual_information(col1, col2): scalar (c1, c2 -&gt; value)</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Bayesian Query Language (BQL) Spec</a><ul>
+<li><a class="reference internal" href="#loading-data">Loading data</a><ul>
+<li><a class="reference internal" href="#create-btable">CREATE BTABLE</a></li>
+<li><a class="reference internal" href="#update-datatypes">UPDATE DATATYPES</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#creating-models-and-running-analysis-generating-samples">Creating models and running analysis (generating samples)</a><ul>
+<li><a class="reference internal" href="#create-models">CREATE MODELS</a></li>
+<li><a class="reference internal" href="#analyze">ANALYZE</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#importing-and-exporting-samples">Importing and exporting samples</a><ul>
+<li><a class="reference internal" href="#import-samples">IMPORT SAMPLES</a></li>
+<li><a class="reference internal" href="#export-samples">EXPORT SAMPLES</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#deleting">Deleting</a><ul>
+<li><a class="reference internal" href="#drop-btable">DROP BTABLE</a></li>
+<li><a class="reference internal" href="#delete-models">DELETE MODELS</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#querying">Querying</a><ul>
+<li><a class="reference internal" href="#select">SELECT</a></li>
+<li><a class="reference internal" href="#infer">INFER</a></li>
+<li><a class="reference internal" href="#simulate">SIMULATE</a></li>
+<li><a class="reference internal" href="#estimate-pairwise-dependence-strength">ESTIMATE PAIRWISE DEPENDENCE STRENGTH</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#derived-quantities">Derived Quantities</a><ul>
+<li><a class="reference internal" href="#similarity-to">SIMILARITY TO</a></li>
+<li><a class="reference internal" href="#row-typicality">ROW TYPICALITY</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#column-aggregate-derived-quantities">Column-aggregate derived quantities</a><ul>
+<li><a class="reference internal" href="#column-centrality">COLUMN CENTRALITY</a></li>
+<li><a class="reference internal" href="#mutual-information">MUTUAL INFORMATION</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gettingstarted.html"
+                        title="previous chapter">Getting Started</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="examples.html"
+                        title="next chapter">Example Analyses</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/bql.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="examples.html" title="Example Analyses"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gettingstarted.html" title="Getting Started"
+             >previous</a> |</li>
+        <li><a href="index.html">BayesDB 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Jay Baxter, Dan Lovell, Vikash Mansinghka, Pat Shafto, Baxter Eaves.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>
