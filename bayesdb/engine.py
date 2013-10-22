@@ -627,10 +627,9 @@ class Engine(object):
 
     numrows = len(M_r['idx_to_name'])
     name_to_idx = M_c['name_to_idx']
-    colnames = [colname.strip() for colname in columnstring.split(',')]
-    col_indices = [name_to_idx[colname] for colname in colnames]
-    Q = [(numrows+1, col_idx) for col_idx in col_indices]
+
     # parse whereclause
+    where_col_idxs_to_vals = dict()
     if whereclause=="" or '=' not in whereclause:
       Y = None
     else:
@@ -639,14 +638,17 @@ class Engine(object):
       for colname, colval in varlist:
         if type(colval) == str or type(colval) == unicode:
           colval = ast.literal_eval(colval)
+        where_col_idxs_to_vals[name_to_idx[colname]] = colval
         Y.append((numrows+1, name_to_idx[colname], colval))
-      #Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
 
       # map values to codes
-      try:
-        Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
-      except:
-        import pytest; pytest.set_trace()
+      Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
+
+    ## Parse queried columns.
+    colnames = [colname.strip() for colname in columnstring.split(',')]
+    col_indices = [name_to_idx[colname] for colname in colnames]
+    query_col_indices = [idx for idx in col_indices if idx not in where_col_idxs_to_vals.keys()]
+    Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
 
     args_dict = dict()
     args_dict['M_c'] = M_c
@@ -657,28 +659,22 @@ class Engine(object):
     args_dict['n'] = numpredictions
     out = self.backend.simple_predictive_sample(M_c, X_L_list, X_D_list, Y, Q, numpredictions)
 
-    """
-    # convert to coordinate format so it can be mapped to original codes
-    # output is [[row1,col1,value1],[row2,col2,value2],...]
-    new_out = []
-    new_row_indices = range(numrows, numrows + numpredictions)
-    for new_row_idx, row_values in zip(new_row_indices, out):
-      for col_idx, cell_value in zip(col_indices, row_values):
-        new_row = [new_row_idx, col_idx, cell_value]
-        new_out.append(new_row)
-    new_out = du.map_from_T_with_M_c(new_out, M_c)
-    """
-
     # convert to data, columns dict output format
-    columns = colnames
     # map codes to original values
     ## TODO: Add histogram call back in, but on Python client locally!
     #self.create_histogram(M_c, numpy.array(out), columns, col_indices, tablename+'_histogram')
-    data = [[du.convert_code_to_value(M_c, cidx, code) for cidx,code in zip(col_indices,vals)] for vals in out]
-    #data = numpy.array(out, dtype=float).reshape((numpredictions, len(colnames)))
-    # FIXME: REMOVE WHEN DONE DEMO
-    #data = numpy.round(data, 1)
-    ret = {'message': 'Simulated data:', 'columns': columns, 'data': data}
+    data = []
+    for vals in out:
+      row = []
+      i = 0
+      for idx in col_indices:
+        if idx in where_col_idxs_to_vals:
+          row.append(where_col_idxs_to_vals[idx])
+        else:
+          row.append(du.convert_code_to_value(M_c, idx, vals[i]))
+          i += 1
+      data.append(row)
+    ret = {'message': 'Simulated data:', 'columns': colnames, 'data': data}
     return ret
 
   def write_json_for_table(self, tablename):
