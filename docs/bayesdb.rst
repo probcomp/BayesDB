@@ -38,7 +38,7 @@ bayesdb.Parser module
 bayesdb.PersistenceLayer module
 -------------------------------
 
-.. automodule:: bayesdb.persistenceLayer
+.. automodule:: bayesdb.persistence_layer
     :members:
     :undoc-members:
     :show-inheritance:

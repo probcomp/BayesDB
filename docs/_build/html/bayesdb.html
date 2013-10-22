@@ -391,8 +391,121 @@ Also, disastrous things may happen if you update a schema after creating models.
 </dd></dl>
 
 </div>
-<div class="section" id="bayesdb-persistencelayer-module">
-<h2>bayesdb.PersistenceLayer module<a class="headerlink" href="#bayesdb-persistencelayer-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-bayesdb.persistence_layer">
+<span id="bayesdb-persistencelayer-module"></span><h2>bayesdb.PersistenceLayer module<a class="headerlink" href="#module-bayesdb.persistence_layer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="bayesdb.persistence_layer.PersistenceLayer">
+<em class="property">class </em><tt class="descclassname">bayesdb.persistence_layer.</tt><tt class="descname">PersistenceLayer</tt><big>(</big><em>dbname='sgeadmin'</em>, <em>user='sgeadmin'</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.add_samples">
+<tt class="descname">add_samples</tt><big>(</big><em>tablename</em>, <em>X_L_list</em>, <em>X_D_list</em>, <em>iterations</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.add_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.add_samples" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.add_samples_for_chain">
+<tt class="descname">add_samples_for_chain</tt><big>(</big><em>tablename</em>, <em>X_L</em>, <em>X_D</em>, <em>iterations</em>, <em>chainid</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.add_samples_for_chain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.add_samples_for_chain" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.check_if_table_exists">
+<tt class="descname">check_if_table_exists</tt><big>(</big><em>tablename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.check_if_table_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.check_if_table_exists" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.create_btable_from_csv">
+<tt class="descname">create_btable_from_csv</tt><big>(</big><em>tablename</em>, <em>csv_path</em>, <em>cctypes</em>, <em>postgres_coltypes</em>, <em>colnames</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.create_btable_from_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.create_btable_from_csv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.delete_chain">
+<tt class="descname">delete_chain</tt><big>(</big><em>tablename</em>, <em>chain_index</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.delete_chain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.delete_chain" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.drop_and_load_db">
+<tt class="descname">drop_and_load_db</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.drop_and_load_db"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.drop_and_load_db" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.drop_btable">
+<tt class="descname">drop_btable</tt><big>(</big><em>tablename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.drop_btable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.drop_btable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.execute_sql">
+<tt class="descname">execute_sql</tt><big>(</big><em>sql_string</em>, <em>args=None</em>, <em>commit=False</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.execute_sql"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.execute_sql" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.get_cctypes">
+<tt class="descname">get_cctypes</tt><big>(</big><em>tablename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.get_cctypes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.get_cctypes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.get_chain">
+<tt class="descname">get_chain</tt><big>(</big><em>tablename</em>, <em>chainid</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.get_chain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.get_chain" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.get_chain_ids">
+<tt class="descname">get_chain_ids</tt><big>(</big><em>tablename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.get_chain_ids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.get_chain_ids" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.get_latent_states">
+<tt class="descname">get_latent_states</tt><big>(</big><em>tablename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.get_latent_states"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.get_latent_states" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return X_L_list, X_D_list, and M_c</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.get_max_chain_id">
+<tt class="descname">get_max_chain_id</tt><big>(</big><em>tablename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.get_max_chain_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.get_max_chain_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.get_metadata_and_table">
+<tt class="descname">get_metadata_and_table</tt><big>(</big><em>tablename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.get_metadata_and_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.get_metadata_and_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return M_c and M_r and T</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.get_table_id">
+<tt class="descname">get_table_id</tt><big>(</big><em>tablename</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.get_table_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.get_table_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.insert_models">
+<tt class="descname">insert_models</tt><big>(</big><em>tablename</em>, <em>states_by_chain</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.insert_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.insert_models" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.open_db_connection">
+<tt class="descname">open_db_connection</tt><big>(</big><em>*args</em>, <em>**kwds</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.open_db_connection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.open_db_connection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.start_from_scratch">
+<tt class="descname">start_from_scratch</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.start_from_scratch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.start_from_scratch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.update_cctypes">
+<tt class="descname">update_cctypes</tt><big>(</big><em>tablename</em>, <em>cctypes</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.update_cctypes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.update_cctypes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.update_metadata_and_table">
+<tt class="descname">update_metadata_and_table</tt><big>(</big><em>tablename</em>, <em>M_r</em>, <em>M_c</em>, <em>T</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.update_metadata_and_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.update_metadata_and_table" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="bayesdb.persistence_layer.PersistenceLayer.write_csv">
+<tt class="descname">write_csv</tt><big>(</big><em>tablename</em>, <em>csv</em><big>)</big><a class="reference internal" href="_modules/bayesdb/persistence_layer.html#PersistenceLayer.write_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bayesdb.persistence_layer.PersistenceLayer.write_csv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="module-bayesdb.settings">
 <span id="bayesdb-settings-module"></span><h2>bayesdb.settings module<a class="headerlink" href="#module-bayesdb.settings" title="Permalink to this headline">¶</a></h2>
@@ -733,7 +846,7 @@ Also, disastrous things may happen if you update a schema after creating models.
 <li><a class="reference internal" href="#module-bayesdb.client">bayesdb.Client module</a></li>
 <li><a class="reference internal" href="#module-bayesdb.engine">bayesdb.Engine module</a></li>
 <li><a class="reference internal" href="#module-bayesdb.parser">bayesdb.Parser module</a></li>
-<li><a class="reference internal" href="#bayesdb-persistencelayer-module">bayesdb.PersistenceLayer module</a></li>
+<li><a class="reference internal" href="#module-bayesdb.persistence_layer">bayesdb.PersistenceLayer module</a></li>
 <li><a class="reference internal" href="#module-bayesdb.settings">bayesdb.settings module</a></li>
 <li><a class="reference internal" href="#module-bayesdb.utils">bayesdb.utils module</a></li>
 <li><a class="reference internal" href="#module-bayesdb">Module contents</a></li>

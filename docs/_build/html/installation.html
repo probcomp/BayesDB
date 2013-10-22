@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="BayesDB 0.1.0 documentation" href="index.html" />
-    <link rel="next" title="bayesdb" href="modules.html" />
+    <link rel="next" title="Getting Started" href="gettingstarted.html" />
     <link rel="prev" title="Welcome to BayesDB’s documentation!" href="index.html" /> 
   </head>
   <body>
@@ -38,7 +38,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="modules.html" title="bayesdb"
+          <a href="gettingstarted.html" title="Getting Started"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="Welcome to BayesDB’s documentation!"
@@ -54,18 +54,64 @@
             
   <div class="section" id="installing-bayesdb">
 <h1>Installing BayesDB<a class="headerlink" href="#installing-bayesdb" title="Permalink to this headline">¶</a></h1>
-<p>Here are some install instructions!</p>
-<p><tt class="docutils literal"><span class="pre">code</span></tt></p>
-<p>hi again</p>
-<div class="section" id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>hi</p>
+<p>To get started using BayesDB as fast as possible, the <a class="reference internal" href="#vm-install"><em>VM Installation</em></a> is recommended. Note that the VM is not suited to memory intensive tasks, but it is perfect as a way to try BayesDB that is guaranteed to work out-of-the-box. If you are interested in installing BayesDB to perform any medium to large scale analyses, please use either the <a class="reference internal" href="#manual-install"><em>Manual Installation</em></a> or <a class="reference internal" href="#ec2-install"><em>Amazon EC2 Starcluster Install</em></a> (coming soon).</p>
+<div class="section" id="vm-installation">
+<span id="vm-install"></span><h2>VM Installation<a class="headerlink" href="#vm-installation" title="Permalink to this headline">¶</a></h2>
+<p><strong>NOTE</strong>: The VM is only meant to provide an out-of-the-box usable system setup.  Its resources are limited and large jobs will cause memory errors.  To run larger jobs, increase the VM resources or install directly to your system.</p>
+<div class="section" id="overview">
+<h3>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h3>
+<p>After downloading the VM, working with the VM for the first time requires</p>
+<ol class="arabic simple">
+<li>Uncompressing the VM</li>
+<li>Importing the VM</li>
+<li>Starting the VM</li>
+<li>Logging into the VM</li>
+</ol>
 </div>
-<div class="section" id="vm-install">
-<h2>VM Install<a class="headerlink" href="#vm-install" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="uncompressing-the-vm">
+<h3>Uncompressing the VM<a class="headerlink" href="#uncompressing-the-vm" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Mac: double click the tgz file</li>
+<li>Linux: right click the tgz file, select extract here</li>
+</ul>
+</div>
+<div class="section" id="importing-the-vm">
+<h3>Importing the VM<a class="headerlink" href="#importing-the-vm" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>double click the extracted ovf file</li>
+<li>click import in the VirtualBox GUI</li>
+</ol>
+<p>See [VirtualBox Manual](<a class="reference external" href="https://www.virtualbox.org/manual/ch01.html#ovf">https://www.virtualbox.org/manual/ch01.html#ovf</a>) for more info</p>
+</div>
+<div class="section" id="starting-the-vm">
+<h3>Starting the VM<a class="headerlink" href="#starting-the-vm" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>click Start in the VirtualBox GUI</li>
+</ul>
+</div>
+<div class="section" id="logging-into-the-vm">
+<h3>Logging into the VM<a class="headerlink" href="#logging-into-the-vm" title="Permalink to this headline">¶</a></h3>
+<p>At the prompt in the VM GUI</p>
+<ul class="simple">
+<li>login/username: bayesdb</li>
+<li>password: bayesdb</li>
+</ul>
+</div>
+<div class="section" id="log-in-via-ssh">
+<h3>Log in via SSH<a class="headerlink" href="#log-in-via-ssh" title="Permalink to this headline">¶</a></h3>
+<p>You can log in via ssh with (tested on Ubuntu and Mac OSX):</p>
+<div class="highlight-python"><pre>&gt; ssh-keygen -f ~/.ssh/known_hosts -R [localhost]:2222
+&gt; ssh -i vm_guest_id_rsa -p 2222 -o StrictHostKeyChecking=no bayesdb@localhost</pre>
+</div>
+</div>
+</div>
+<div class="section" id="manual-installation">
+<span id="manual-install"></span><h2>Manual Installation<a class="headerlink" href="#manual-installation" title="Permalink to this headline">¶</a></h2>
+<p>ihadsf</p>
 </div>
 <div class="section" id="amazon-ec2-starcluster-install">
-<h2>Amazon EC2 Starcluster Install<a class="headerlink" href="#amazon-ec2-starcluster-install" title="Permalink to this headline">¶</a></h2>
+<span id="ec2-install"></span><h2>Amazon EC2 Starcluster Install<a class="headerlink" href="#amazon-ec2-starcluster-install" title="Permalink to this headline">¶</a></h2>
+<p>Coming soon!</p>
 </div>
 </div>
 
@@ -78,8 +124,16 @@
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Installing BayesDB</a><ul>
-<li><a class="reference internal" href="#introduction">Introduction</a></li>
-<li><a class="reference internal" href="#vm-install">VM Install</a></li>
+<li><a class="reference internal" href="#vm-installation">VM Installation</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#uncompressing-the-vm">Uncompressing the VM</a></li>
+<li><a class="reference internal" href="#importing-the-vm">Importing the VM</a></li>
+<li><a class="reference internal" href="#starting-the-vm">Starting the VM</a></li>
+<li><a class="reference internal" href="#logging-into-the-vm">Logging into the VM</a></li>
+<li><a class="reference internal" href="#log-in-via-ssh">Log in via SSH</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#manual-installation">Manual Installation</a></li>
 <li><a class="reference internal" href="#amazon-ec2-starcluster-install">Amazon EC2 Starcluster Install</a></li>
 </ul>
 </li>
@@ -89,8 +143,8 @@
   <p class="topless"><a href="index.html"
                         title="previous chapter">Welcome to BayesDB&#8217;s documentation!</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="modules.html"
-                        title="next chapter">bayesdb</a></p>
+  <p class="topless"><a href="gettingstarted.html"
+                        title="next chapter">Getting Started</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/installation.txt"
@@ -123,7 +177,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="modules.html" title="bayesdb"
+          <a href="gettingstarted.html" title="Getting Started"
              >next</a> |</li>
         <li class="right" >
           <a href="index.html" title="Welcome to BayesDB’s documentation!"

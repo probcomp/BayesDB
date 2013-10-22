@@ -59,6 +59,7 @@
  | <a href="#I"><strong>I</strong></a>
  | <a href="#J"><strong>J</strong></a>
  | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
@@ -73,11 +74,19 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="bayesdb.html#bayesdb.engine.Engine.analyze">analyze() (bayesdb.engine.Engine method)</a>
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.add_samples">add_samples() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.add_samples_for_chain">add_samples_for_chain() (bayesdb.persistence_layer.PersistenceLayer method)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="bayesdb.html#bayesdb.engine.Engine.analyze">analyze() (bayesdb.engine.Engine method)</a>
+  </dt>
+
       
   <dt><a href="bayesdb.html#bayesdb.settings.gdocs.auth_file">auth_file (bayesdb.settings.gdocs attribute)</a>
   </dt>
@@ -105,6 +114,10 @@
   </dt>
 
       
+  <dt><a href="bayesdb.html#module-bayesdb.persistence_layer">bayesdb.persistence_layer (module)</a>
+  </dt>
+
+      
   <dt><a href="bayesdb.html#module-bayesdb.settings">bayesdb.settings (module)</a>
   </dt>
 
@@ -112,12 +125,12 @@
   <dt><a href="bayesdb.tests.html#module-bayesdb.tests">bayesdb.tests (module)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="bayesdb.tests.html#module-bayesdb.tests.test_dha_story">bayesdb.tests.test_dha_story (module)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="bayesdb.tests.html#module-bayesdb.tests.test_engine">bayesdb.tests.test_engine (module)</a>
   </dt>
@@ -157,6 +170,10 @@
   </dt>
 
       
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.check_if_table_exists">check_if_table_exists() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      
   <dt><a href="bayesdb.html#bayesdb.client.Client">Client (class in bayesdb.client)</a>
   </dt>
 
@@ -172,6 +189,10 @@
 
       
   <dt><a href="bayesdb.html#bayesdb.engine.Engine.create_btable">create_btable() (bayesdb.engine.Engine method)</a>
+  </dt>
+
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.create_btable_from_csv">create_btable_from_csv() (bayesdb.persistence_layer.PersistenceLayer method)</a>
   </dt>
 
       
@@ -302,8 +323,24 @@
   <dt><a href="bayesdb.html#bayesdb.engine.Engine.delete_chain">delete_chain() (bayesdb.engine.Engine method)</a>
   </dt>
 
+      <dd><dl>
+        
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.delete_chain">(bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      </dl></dd>
       
   <dt><a href="bayesdb.html#bayesdb.engine.Engine.drop_and_load_db">drop_and_load_db() (bayesdb.engine.Engine method)</a>
+  </dt>
+
+      <dd><dl>
+        
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.drop_and_load_db">(bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      </dl></dd>
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.drop_btable">drop_btable() (bayesdb.persistence_layer.PersistenceLayer method)</a>
   </dt>
 
       
@@ -347,6 +384,10 @@
   </dt>
 
       
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.execute_sql">execute_sql() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      
   <dt><a href="bayesdb.html#bayesdb.engine.Engine.export_samples">export_samples() (bayesdb.engine.Engine method)</a>
   </dt>
 
@@ -381,11 +422,35 @@
   </dt>
 
       
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.get_cctypes">get_cctypes() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.get_chain">get_chain() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.get_chain_ids">get_chain_ids() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      
   <dt><a href="bayesdb.html#bayesdb.engine.get_Engine_attr">get_Engine_attr() (in module bayesdb.engine)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.get_latent_states">get_latent_states() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.get_max_chain_id">get_max_chain_id() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.get_metadata_and_table">get_metadata_and_table() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
       
   <dt><a href="bayesdb.html#bayesdb.engine.get_method_name_to_args">get_method_name_to_args() (in module bayesdb.engine)</a>
   </dt>
@@ -396,6 +461,10 @@
 
       
   <dt><a href="bayesdb.html#bayesdb.engine.get_name">get_name() (in module bayesdb.engine)</a>
+  </dt>
+
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.get_table_id">get_table_id() (bayesdb.persistence_layer.PersistenceLayer method)</a>
   </dt>
 
       
@@ -431,15 +500,19 @@
   </dt>
 
       
-  <dt><a href="bayesdb.html#bayesdb.settings.path.install_boost_script">install_boost_script (bayesdb.settings.path attribute)</a>
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.insert_models">insert_models() (bayesdb.persistence_layer.PersistenceLayer method)</a>
   </dt>
 
       
-  <dt><a href="bayesdb.html#bayesdb.settings.path.install_script_dir">install_script_dir (bayesdb.settings.path attribute)</a>
+  <dt><a href="bayesdb.html#bayesdb.settings.path.install_boost_script">install_boost_script (bayesdb.settings.path attribute)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="bayesdb.html#bayesdb.settings.path.install_script_dir">install_script_dir (bayesdb.settings.path attribute)</a>
+  </dt>
+
       
   <dt><a href="bayesdb.html#bayesdb.settings.path.install_ubuntu_script">install_ubuntu_script (bayesdb.settings.path attribute)</a>
   </dt>
@@ -474,6 +547,16 @@
   <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="gettingstarted.html#term-numerical"><strong>numerical</strong></a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.open_db_connection">open_db_connection() (bayesdb.persistence_layer.PersistenceLayer method)</a>
   </dt>
 
   </dl></td>
@@ -573,6 +656,10 @@
   </dt>
 
       
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer">PersistenceLayer (class in bayesdb.persistence_layer)</a>
+  </dt>
+
+      
   <dt><a href="bayesdb.html#bayesdb.utils.plot_feature_z">plot_feature_z() (in module bayesdb.utils)</a>
   </dt>
 
@@ -656,6 +743,12 @@
   <dt><a href="bayesdb.html#bayesdb.engine.Engine.start_from_scratch">start_from_scratch() (bayesdb.engine.Engine method)</a>
   </dt>
 
+      <dd><dl>
+        
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.start_from_scratch">(bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      </dl></dd>
   </dl></td>
 </tr></table>
 
@@ -687,11 +780,19 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.update_cctypes">update_cctypes() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
+      
   <dt><a href="bayesdb.html#bayesdb.engine.Engine.update_datatypes">update_datatypes() (bayesdb.engine.Engine method)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.update_metadata_and_table">update_metadata_and_table() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
       
   <dt><a href="bayesdb.html#bayesdb.settings.path.user_home_dir">user_home_dir (bayesdb.settings.path attribute)</a>
   </dt>
@@ -722,6 +823,10 @@
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="bayesdb.html#bayesdb.persistence_layer.PersistenceLayer.write_csv">write_csv() (bayesdb.persistence_layer.PersistenceLayer method)</a>
+  </dt>
+
       
   <dt><a href="bayesdb.html#bayesdb.engine.Engine.write_json_for_table">write_json_for_table() (bayesdb.engine.Engine method)</a>
   </dt>
