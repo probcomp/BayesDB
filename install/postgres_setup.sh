@@ -1,10 +1,15 @@
 #!/bin/bash
 
 
+# determine some locations
+my_abs_path=$(readlink -f "$0")
+my_dirname=$(dirname $my_abs_path)
+
+
 # set default values
 user=sgeadmin
 database=sgeadmin
-script=table_setup.sql
+script=$my_dirname/table_setup.sql
 
 
 # print script usage
