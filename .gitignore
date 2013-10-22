@@ -1,8 +1,6 @@
 *.o
 *.pyc
-*.png
 *.so
-*.pdf
 *~
 *#
 *.DS_Store
