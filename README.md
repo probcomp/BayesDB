@@ -16,16 +16,19 @@ We provide a [VirtualBox VM](https://docs.google.com/file/d/0B_CtKGJ4pH2TX2VaTXR
 **Note**: The VM is only meant to provide an out-of-the-box usable system setup.  Its resources are limited and large jobs will fail due to memory errors.  To run larger jobs, increase the VM resources or install directly to your system.
 
 ### Local (Ubuntu)
+BayesDB depends on CrossCat, so first install CrossCat by following its local installation instructions <a href="https://github.com/mit-probabilistic-computing-project/crosscat/blob/master/README.md>here</a>.
+
 BayesDB can be installed locally on Ubuntu systems with
 
-    git clone https://github.com/mit-probabilistic-computing-project/crosscat.git
-    sudo bash crosscat/scripts/install_scripts/install.sh
-    cd crosscat && PYTHONPATH=$PYTHONPATH:$(pwd) make cython
+    git clone https://github.com/mit-probabilistic-computing-project/BayesDB.git
+    sudo bash BayesDB/install/install.sh
+    cd BayesDB && PYTHONPATH=$PYTHONPATH:$(pwd)
 
-Don't forget to add crosscat to your python path.  For bash, this can be accomplished by substituting the correct value for <CROSSCAT_DIR> and running
+Don't forget to add BayesDB to your python path.  For bash, this can be accomplished with
 
+    cd BayesDB
     cat -- >> ~/.bashrc <<EOF
-    export PYTHONPATH=\$PYTHONPATH:<CROSSCAT_DIR>
+    export PYTHONPATH=\$PYTHONPATH:$(pwd)
     EOF
 
 # Documentation
@@ -42,7 +45,7 @@ run\_dha\_example.py ([github](https://github.com/mit-probabilistic-computing-pr
 
 # License
 
-[Apache License, Version 2.0](https://github.com/mit-probabilistic-computing-project/crosscat/blob/master/LICENSE)
+[Apache License, Version 2.0](https://github.com/mit-probabilistic-computing-project/bayesdb/blob/master/LICENSE)
 
 
 
