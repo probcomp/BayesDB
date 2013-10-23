@@ -442,6 +442,56 @@ class Parser(object):
                 filename = None
             return self.engine.estimate_dependence_probabilities(tablename, col, confidence, limit, filename, submatrix)
 
+    def extract_columns(self, orig):
+        pattern = r"""
+            (\s*estimate\s+columns\s+where\s+
+            (?P<limit>\d+)
+        """
+        match = re.search(pattern, orig.lower(), re.VERBOSE | re.IGNORECASE)
+        if match:
+            limit = int(match.group('limit').strip())
+            return limit
+        else:
+            return float('inf')
+
+
+    def parse_estimate_pairwise(self, words, orig):
+        match = re.search(r"""
+            estimate\s+pairwise\s+
+            (?P<function>.*?((?=\sfrom)))
+            \s*from\s+
+            (?P<btable>[^\s]+)
+            ((\s+referencing\s+(?P<refcol>[^\s]+))|(\s+for\s+(?P<forcol>[^\s]+)))?
+            (\s+with\s+confidence\s+(?P<confidence>[^\s]+))?
+            (\s+limit\s+(?P<limit>[^\s]+))?
+            (\s+save\s+to\s+(?P<filename>[^\s]+))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'estimate':
+                print 'Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]] [SAVE TO <file>]'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable').strip()
+            if match.group('refcol'):
+                col = match.group('refcol')
+                submatrix = True
+            else:
+                col = match.group('forcol')
+                submatrix = False
+            confidence = match.group('confidence')
+            if match.group('limit'):
+                limit = int(match.group('limit'))
+            else:
+                limit = float("inf")
+            if match.group('filename'):
+                filename = match.group('filename')
+            else:
+                filename = None
+            return self.engine.estimate_dependence_probabilities(tablename, col, confidence, limit, filename, submatrix)
+
+        
     def parse_update_datatypes(self, words, orig):
         match = re.search(r"""
             update\s+datatypes\s+from\s+

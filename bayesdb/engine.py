@@ -749,6 +749,9 @@ class Engine(object):
     pylab.tight_layout()
     pylab.savefig(full_filename)
 
+  def estimate_pairwise(self, tablename, confidence):
+    pass
+
   def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename, submatrix):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     return _do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, filename, col, confidence, limit, submatrix)
