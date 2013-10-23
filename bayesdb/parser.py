@@ -437,7 +437,7 @@ class Parser(object):
             else:
                 limit = float("inf")
             if match.group('filename'):
-                filename = os.path.join('../../www/', match.group('filename'))
+                filename = match.group('filename')
             else:
                 filename = None
             return self.engine.estimate_dependence_probabilities(tablename, col, confidence, limit, filename, submatrix)

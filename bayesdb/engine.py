@@ -857,10 +857,11 @@ def _do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=
       utils.plot_feature_z(z_matrix_reordered, column_names_reordered, title, filename)
       
     return dict(
-      z_matrix_reordered=z_matrix_reordered,
-      column_names_reordered=column_names_reordered,
+      matrix=z_matrix_reordered,
+      column_names=column_names_reordered,
       title=title,
-      message = "Created column dependency matrix."
+      filename=filename,
+      message = "Created column dependency matrix for %s." % tablename
       )
 
 # helper functions

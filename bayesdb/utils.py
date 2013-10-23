@@ -26,28 +26,22 @@ import pylab
 import matplotlib.cm
 
 
-def plot_feature_z(z_matrix_reordered, column_names_reordered, title='', filename=None):
+def plot_matrix(matrix, column_names, title='', filename=None):
     # actually create figure
     fig = pylab.figure()
     fig.set_size_inches(16, 12)
-    pylab.imshow(z_matrix_reordered, interpolation='none',
+    pylab.imshow(matrix, interpolation='none',
                  cmap=matplotlib.cm.gray_r, vmin=0, vmax=1)
     pylab.colorbar()
-    pylab.gca().set_yticks(range(len(column_names_reordered)))
-    pylab.gca().set_yticklabels(column_names_reordered, size='small')
-    pylab.gca().set_xticks(range(len(column_names_reordered)))
-    pylab.gca().set_xticklabels(column_names_reordered, rotation=90, size='small')
+    pylab.gca().set_yticks(range(len(column_names)))
+    pylab.gca().set_yticklabels(column_names, size='small')
+    pylab.gca().set_xticks(range(len(column_names)))
+    pylab.gca().set_xticklabels(column_names, rotation=90, size='small')
     pylab.title(title)
-    if filename:
+    if filename or 'DISPLAY' not in os.environ.keys():
         pylab.savefig(filename)
-    elif 'DISPLAY' in os.environ.keys():
-        fig.show()
     else:
-        print "No GUI available to display graphics: please enter the filename where the graphics should be saved as a PDF."
-        filename = raw_input()
-        pylab.savefig(filename)
-        
-
+        fig.show()
 
 def is_int(s):
     try:
