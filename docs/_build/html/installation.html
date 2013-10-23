@@ -81,7 +81,7 @@
 <li>double click the extracted ovf file</li>
 <li>click import in the VirtualBox GUI</li>
 </ol>
-<p>See [VirtualBox Manual](<a class="reference external" href="https://www.virtualbox.org/manual/ch01.html#ovf">https://www.virtualbox.org/manual/ch01.html#ovf</a>) for more info</p>
+<p>See <a class="reference external" href="https://www.virtualbox.org/manual/ch01.html#ovf">VirtualBox Manual</a> for more info</p>
 </div>
 <div class="section" id="starting-the-vm">
 <h3>Starting the VM<a class="headerlink" href="#starting-the-vm" title="Permalink to this headline">¶</a></h3>
@@ -107,7 +107,19 @@
 </div>
 <div class="section" id="manual-installation">
 <span id="manual-install"></span><h2>Manual Installation<a class="headerlink" href="#manual-installation" title="Permalink to this headline">¶</a></h2>
-<p>ihadsf</p>
+<p><strong>Note: Only Ubuntu is currently supported. A Mac OS X install may be coming soon.</strong></p>
+<p>BayesDB depends on CrossCat, so first install CrossCat by following its local installation instructions <a class="reference external" href="https://github.com/mit-probabilistic-computing-project/crosscat/blob/master/README.md">here</a>.</p>
+<p>BayesDB can be installed locally on Ubuntu systems with:</p>
+<div class="highlight-python"><pre>git clone https://github.com/mit-probabilistic-computing-project/BayesDB.git
+sudo bash BayesDB/install/install.sh
+cd BayesDB &amp;&amp; PYTHONPATH=$PYTHONPATH:$(pwd)</pre>
+</div>
+<p>Don&#8217;t forget to add BayesDB to your python path.  For bash, this can be accomplished with:</p>
+<div class="highlight-python"><pre>cd BayesDB
+cat -- &gt;&gt; ~/.bashrc &lt;&lt;EOF
+export PYTHONPATH=\$PYTHONPATH:$(pwd)
+EOF</pre>
+</div>
 </div>
 <div class="section" id="amazon-ec2-starcluster-install">
 <span id="ec2-install"></span><h2>Amazon EC2 Starcluster Install<a class="headerlink" href="#amazon-ec2-starcluster-install" title="Permalink to this headline">¶</a></h2>

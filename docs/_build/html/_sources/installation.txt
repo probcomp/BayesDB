@@ -31,7 +31,7 @@ Importing the VM
 #. double click the extracted ovf file
 #. click import in the VirtualBox GUI
 
-See [VirtualBox Manual](https://www.virtualbox.org/manual/ch01.html#ovf) for more info
+See `VirtualBox Manual <https://www.virtualbox.org/manual/ch01.html#ovf>`_ for more info
 
 Starting the VM
 ---------------
@@ -59,7 +59,23 @@ You can log in via ssh with (tested on Ubuntu and Mac OSX)::
 
 Manual Installation
 ~~~~~~~~~~~~~~~~~~~
-ihadsf
+**Note: Only Ubuntu is currently supported. A Mac OS X install may be coming soon.**
+
+BayesDB depends on CrossCat, so first install CrossCat by following its local installation instructions `here <https://github.com/mit-probabilistic-computing-project/crosscat/blob/master/README.md>`_.
+
+BayesDB can be installed locally on Ubuntu systems with::
+
+    git clone https://github.com/mit-probabilistic-computing-project/BayesDB.git
+    sudo bash BayesDB/install/install.sh
+    cd BayesDB && PYTHONPATH=$PYTHONPATH:$(pwd)
+
+Don't forget to add BayesDB to your python path.  For bash, this can be accomplished with::
+
+    cd BayesDB
+    cat -- >> ~/.bashrc <<EOF
+    export PYTHONPATH=\$PYTHONPATH:$(pwd)
+    EOF
+			    
 
 .. _ec2-install:
 
