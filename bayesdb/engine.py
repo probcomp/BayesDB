@@ -38,7 +38,6 @@ from collections import defaultdict
 #import crosscat.utils.inference_utils as iu
 import crosscat.utils.api_utils as au
 import crosscat.utils.data_utils as du
-import crosscat.utils.sample_utils as su
 import bayesdb.settings as S
 
 from crosscat.CrossCatClient import get_CrossCatClient
@@ -468,9 +467,10 @@ class Engine(object):
     ## TODO: Pretty sure this is the wrong way to get Y.
     if probability_query or similarity_query or order_by or typicality_query or mutual_information_query:
       X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    if probability_query:
+    Y = None
+    #if probability_query:
       #if whereclause=="" or '=' not in whereclause:
-      Y = None
+          #Y = None
       '''
       else:
         varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
@@ -541,29 +541,32 @@ class Engine(object):
           else:
             val = value
           Q = [(len(X_D_list[0][0])+1, c_idx, val)] ## row is set to 1 + max row, instead of this row.
-#          prob = math.exp(self.backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
-          prob = math.exp(self.backend.simple_predictive_probability(M_c, X_L_list[0], X_D_list[0], Y, Q))
+          prob = math.exp(self.backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
           ret_row.append(prob)
         elif query_type == 'similarity':
           target_row_id, target_column = query
-          sim = su.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
+          sim = self.backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
           ret_row.append(sim)
         elif query_type == 'row_typicality':
-          anom = su.row_structural_typicality(X_L_list, X_D_list, row_id)
+          anom = self.backend.row_structural_typicality(X_L_list, X_D_list, row_id)
           ret_row.append(anom)
         elif query_type == 'col_typicality':
           c_idx = query
-          anom = su.column_structural_typicality(X_L_list, c_idx)
+          anom = self.backend.column_structural_typicality(X_L_list, c_idx)
           ret_row.append(anom)
-        elif query_type == 'predictive_typicality':
-          ## TODO
-          pass
+        elif query_type == 'predictive_probability':
+          c_idx = query
+          ## WARNING: this backend call doesn't work for multinomial
+          ## TODO: need to test
+          Q = [(row_id, c_idx, du.convert_value_to_code(M_c, c_idx, T[row_id][c_idx]))]
+          Y = []
+          prob = math.exp(self.backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
+          ret_row.append(prob)
         elif query_type == 'mutual_information':
           c_idx1, c_idx2 = query
-          ## TODO URGENT: uncomment once iu is back
-#          mutual_info, linfoot = iu.mutual_information(M_c, X_L_list, X_D_list, [(c_idx1, c_idx2)])
-#         mutual_info = numpy.mean(mutual_info)
-#          ret_row.append(mutual_info)
+          mutual_info, linfoot = self.backend.mutual_information(M_c, X_L_list, X_D_list, [(c_idx1, c_idx2)])
+          mutual_info = numpy.mean(mutual_info)
+          ret_row.append(mutual_info)
 
       data.append(tuple(ret_row))
       row_count += 1
@@ -599,7 +602,7 @@ class Engine(object):
         if row_values[c_idx] == where_val:
           target_row_id = row_id
           break
-    return lambda row_id, data_values: su.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
+    return lambda row_id, data_values: self.backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
 
   def _order_by(self, filtered_values, functions):
     """
