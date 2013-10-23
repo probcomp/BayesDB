@@ -3,7 +3,7 @@
 
 # set default values
 jenkins_home=/var/lib/jenkins/
-user=sgeadmin
+user=$(whoami)
 
 
 # print script usage

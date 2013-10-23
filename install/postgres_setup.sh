@@ -7,8 +7,8 @@ my_dirname=$(dirname $my_abs_path)
 
 
 # set default values
-user=sgeadmin
-database=sgeadmin
+user=$(whoami)
+database=$(whoami)
 script=$my_dirname/table_setup.sql
 
 
