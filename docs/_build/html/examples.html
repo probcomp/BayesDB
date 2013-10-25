@@ -24,7 +24,6 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="BayesDB 0.1.0 documentation" href="index.html" />
-    <link rel="next" title="Developer Reference" href="dev.html" />
     <link rel="prev" title="Bayesian Query Language (BQL) Spec" href="bql.html" /> 
   </head>
   <body>
@@ -37,9 +36,6 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="dev.html" title="Developer Reference"
-             accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="bql.html" title="Bayesian Query Language (BQL) Spec"
              accesskey="P">previous</a> |</li>
@@ -54,21 +50,21 @@
             
   <div class="section" id="example-analyses">
 <h1>Example Analyses<a class="headerlink" href="#example-analyses" title="Permalink to this headline">¶</a></h1>
-<p>This document provides detailed walkthroughs of analysis on real datasets. The datasets are provided in the source code, under <cite>bayesdb/tests/data</cite>.</p>
+<p>This document provides detailed walkthroughs of analysis on real datasets. The datasets are provided in the source code, under <cite>BayesDB/examples</cite>.</p>
 <div class="section" id="dartmouth-health-atlas-dataset">
 <h2>Dartmouth Health Atlas Dataset<a class="headerlink" href="#dartmouth-health-atlas-dataset" title="Permalink to this headline">¶</a></h2>
 <p>The Dartmouth Health Atlas dataset is a compilation of information about hospitals, such as quality of care and cost of care.</p>
 <div class="section" id="getting-set-up">
 <h3>Getting set up<a class="headerlink" href="#getting-set-up" title="Permalink to this headline">¶</a></h3>
 <p>First, create the btable:</p>
-<div class="highlight-python"><pre>CREATE BTABLE dha FROM tests/data/dha.csv</pre>
+<div class="highlight-python"><pre>CREATE BTABLE dha FROM dha/dha.csv</pre>
 </div>
 <p>Then, analyze the data:</p>
 <div class="highlight-python"><pre>CREATE 20 MODELS FOR dha
 ANALYZE dha FOR 500 ITERATIONS</pre>
 </div>
 <p>Or, if you want to proceed to the next step immediately, you can import already-generated samples:</p>
-<div class="highlight-python"><pre>IMPORT SAMPLES samples/dha_samples.pkl.gz INTO dha</pre>
+<div class="highlight-python"><pre>IMPORT SAMPLES dha/dha_samples.pkl.gz INTO dha</pre>
 </div>
 </div>
 <div class="section" id="investigating-the-data">
@@ -78,9 +74,27 @@ ANALYZE dha FOR 500 ITERATIONS</pre>
        hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd
 FROM dha_demo LIMIT 10</pre>
 </div>
+<p>The above SELECT query is a standard SQL command which lets us view our data:</p>
+<div class="highlight-python"><pre>+--------+-------------------+------------+-----------+--------------------+---------------+------------------+------------------+----------------+-----------------+
+| row_id |        name       | qual_score | ami_score | pymt_p_visit_ratio | ttl_mdcr_spnd | hosp_reimb_ratio | hosp_reimb_p_dcd | md_copay_p_dcd | ttl_copay_p_dcd |
++--------+-------------------+------------+-----------+--------------------+---------------+------------------+------------------+----------------+-----------------+
+|   0    |     Abilene TX    |    79.2    |    81.8   |        0.9         |    39677.0    |       0.8        |     17502.0      |     1911.0     |      2308.0     |
+|   1    |      Akron OH     |    89.1    |    95.7   |        1.0         |    44895.0    |       0.9        |     20966.0      |     2194.0     |      2472.0     |
+|   2    | Alameda County CA |    87.1    |    93.5   |        1.2         |    59140.0    |       1.4        |     32049.0      |     2546.0     |      2873.0     |
+|   3    |     Albany NY     |    87.8    |    94.2   |        1.0         |    40775.0    |       0.9        |     19474.0      |     2408.0     |      2697.0     |
+|   4    |     Albany GA     |    81.4    |    86.1   |        0.9         |    39735.0    |       0.9        |     21010.0      |     1680.0     |      2088.0     |
+|   5    |   Albuquerque NM  |    84.8    |    91.4   |        1.0         |    37608.0    |       0.8        |     17125.0      |     1696.0     |      2075.0     |
+|   6    |   Alexandria LA   |    87.3    |    91.4   |        0.8         |    51216.0    |       1.0        |     22494.0      |     2352.0     |      2922.0     |
+|   7    |    Allentown PA   |    87.7    |    91.5   |        1.0         |    47157.0    |       1.0        |     22567.0      |     2557.0     |      2844.0     |
+|   8    |     Altoona PA    |    84.5    |    88.7   |        0.9         |    41063.0    |       0.8        |     18519.0      |     2110.0     |      2411.0     |
+|   9    |    Amarillo TX    |    85.7    |    94.4   |        0.9         |    42301.0    |       0.8        |     18898.0      |     2047.0     |      2495.0     |
++--------+-------------------+------------+-----------+--------------------+---------------+------------------+------------------+----------------+-----------------+</pre>
+</div>
 <p>We can see which columns are related:</p>
 <div class="highlight-python"><pre>ESTIMATE DEPENDENCE PROBABILITIES FROM dha_demo</pre>
 </div>
+<p>Which generates the following image output:</p>
+<img alt="_images/dha_prob_dependences1.png" src="_images/dha_prob_dependences1.png" />
 <p>There&#8217;s a lot of uncessary information in the full column matrix, so let&#8217;s just look at the 6 columns most related to the qual_score column (quality of care):</p>
 <div class="highlight-python"><pre>ESTIMATE DEPENDENCE PROBABILITIES FROM dha_demo REFERENCING qual_score LIMIT 6</pre>
 </div>
@@ -134,9 +148,6 @@ LIMIT 10</pre>
   <h4>Previous topic</h4>
   <p class="topless"><a href="bql.html"
                         title="previous chapter">Bayesian Query Language (BQL) Spec</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="dev.html"
-                        title="next chapter">Developer Reference</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/examples.txt"
@@ -168,9 +179,6 @@ LIMIT 10</pre>
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="dev.html" title="Developer Reference"
-             >next</a> |</li>
         <li class="right" >
           <a href="bql.html" title="Bayesian Query Language (BQL) Spec"
              >previous</a> |</li>
