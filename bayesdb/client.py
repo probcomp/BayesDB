@@ -111,13 +111,13 @@ class Client(object):
                 filename = raw_input()
                 if len(filename) > 0:
                     result['filename'] = filename
-                    utils.plot_feature_z(result['matrix'], result['column_names'], title=result['title'], filename=result['bfilename'])
+                    utils.plot_matrix(result['matrix'], result['column_names'], title=result['title'], filename=result['filename'])
                 else:
                     pp = self.pretty_print(result)
                     print pp
                     return pp
             else:
-                utils.plot_feature_z(result['matrix'], result['column_names'], title=result['message'], filename=result['filename'])
+                utils.plot_matrix(result['matrix'], result['column_names'], title=result['message'], filename=result['filename'])
         elif pretty:
             if type(result) == dict and 'message' in result.keys():
                 print result['message']

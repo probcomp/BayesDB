@@ -442,6 +442,50 @@ class Parser(object):
                 filename = None
             return self.engine.estimate_dependence_probabilities(tablename, col, confidence, limit, filename, submatrix)
 
+    def extract_columns(self, orig):
+        """TODO"""
+        pattern = r"""
+            \(\s*
+            (estimate\s+)?
+            columns\s+where\s+
+            (?P<columnstring>\d+
+            \)
+        """
+        match = re.search(pattern, orig.lower(), re.VERBOSE | re.IGNORECASE)
+        if match:
+            limit = int(match.group('limit').strip())
+            return limit
+        else:
+            return float('inf')
+
+
+    def parse_estimate_pairwise(self, words, orig):
+        match = re.search(r"""
+            estimate\s+pairwise\s+
+            (?P<functionname>.*?((?=\sfrom)))
+            \s*from\s+
+            (?P<btable>[^\s]+)
+            (\s+save\s+to\s+(?P<filename>[^\s]+))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'estimate' and words[1] == 'pairwise':
+                print 'Did you mean: ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [SAVE TO <file>]'
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable').strip()
+            function_name = match.group('functionname').strip().lower()
+            if function_name not in ["mutual information", "correlation", "dependence probability"]:
+                print 'Did you mean: ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [SAVE TO <file>]'
+                return False
+            if match.group('filename'):
+                filename = match.group('filename')
+            else:
+                filename = None
+            return self.engine.estimate_pairwise(tablename, function_name, filename)
+
+        
     def parse_update_datatypes(self, words, orig):
         match = re.search(r"""
             update\s+datatypes\s+from\s+
