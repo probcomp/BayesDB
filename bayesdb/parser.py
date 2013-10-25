@@ -443,9 +443,13 @@ class Parser(object):
             return self.engine.estimate_dependence_probabilities(tablename, col, confidence, limit, filename, submatrix)
 
     def extract_columns(self, orig):
+        """TODO"""
         pattern = r"""
-            (\s*estimate\s+columns\s+where\s+
-            (?P<limit>\d+)
+            \(\s*
+            (estimate\s+)?
+            columns\s+where\s+
+            (?P<columnstring>\d+
+            \)
         """
         match = re.search(pattern, orig.lower(), re.VERBOSE | re.IGNORECASE)
         if match:
@@ -458,38 +462,28 @@ class Parser(object):
     def parse_estimate_pairwise(self, words, orig):
         match = re.search(r"""
             estimate\s+pairwise\s+
-            (?P<function>.*?((?=\sfrom)))
+            (?P<functionname>.*?((?=\sfrom)))
             \s*from\s+
             (?P<btable>[^\s]+)
-            ((\s+referencing\s+(?P<refcol>[^\s]+))|(\s+for\s+(?P<forcol>[^\s]+)))?
-            (\s+with\s+confidence\s+(?P<confidence>[^\s]+))?
-            (\s+limit\s+(?P<limit>[^\s]+))?
             (\s+save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
-            if words[0] == 'estimate':
-                print 'Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]] [SAVE TO <file>]'
+            if words[0] == 'estimate' and words[1] == 'pairwise':
+                print 'Did you mean: ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [SAVE TO <file>]'
                 return False
             else:
                 return None
         else:
             tablename = match.group('btable').strip()
-            if match.group('refcol'):
-                col = match.group('refcol')
-                submatrix = True
-            else:
-                col = match.group('forcol')
-                submatrix = False
-            confidence = match.group('confidence')
-            if match.group('limit'):
-                limit = int(match.group('limit'))
-            else:
-                limit = float("inf")
+            function_name = match.group('functionname').strip().lower()
+            if function_name not in ["mutual information", "correlation", "dependence probability"]:
+                print 'Did you mean: ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [SAVE TO <file>]'
+                return False
             if match.group('filename'):
                 filename = match.group('filename')
             else:
                 filename = None
-            return self.engine.estimate_dependence_probabilities(tablename, col, confidence, limit, filename, submatrix)
+            return self.engine.estimate_pairwise(tablename, function_name, filename)
 
         
     def parse_update_datatypes(self, words, orig):

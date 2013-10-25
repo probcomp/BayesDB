@@ -18,6 +18,7 @@
 #   limitations under the License.
 #
 
+import time
 import inspect
 import os
 import pickle
@@ -32,10 +33,9 @@ import ast
 import pylab
 import numpy
 import matplotlib.cm
+from scipy.stats import pearsonr
 from collections import defaultdict
 #
-# TODO: add back
-#import crosscat.utils.inference_utils as iu
 import crosscat.utils.api_utils as au
 import crosscat.utils.data_utils as du
 import bayesdb.settings as S
@@ -471,13 +471,13 @@ class Engine(object):
     #if probability_query:
       #if whereclause=="" or '=' not in whereclause:
           #Y = None
-      '''
+    '''
       else:
         varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
         Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
         # map values to codes
         Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
-      '''
+    '''
 
     ## If there are only aggregate values, then only return one row.
     ## TODO: is this actually right? Or is probability also a function of row? If so: get rid of this.
@@ -749,12 +749,14 @@ class Engine(object):
     pylab.tight_layout()
     pylab.savefig(full_filename)
 
-  def estimate_pairwise(self, tablename, confidence):
-    pass
+  def estimate_pairwise(self, tablename, function_name, filename):
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    return self._do_gen_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename, filename)
 
   def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename, submatrix):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    return _do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, filename, col, confidence, limit, submatrix)
+    return self._do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, filename, col, confidence, limit, submatrix)
 
   def gen_feature_z(self, tablename, filename=None,
                     dir=S.path.web_resources_dir):
@@ -762,7 +764,7 @@ class Engine(object):
       filename = tablename + '_feature_z'
     full_filename = os.path.join(dir, filename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    return _do_gen_feature_z(X_L_list, X_D_list, M_c,
+    return self._do_gen_feature_z(X_L_list, X_D_list, M_c,
                              tablename, full_filename)
 
   def dump_db(self, filename, dir=S.path.web_resources_dir):
@@ -797,6 +799,95 @@ class Engine(object):
     self.persistence_layer.add_samples_for_chain(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, chainid)
     return (prev_iterations + iterations)
 
+  def dependence_probability(self, col1, col2, X_L_list, X_D_list, M_c, T):
+    prob_dep = 0
+    for X_L in X_L_list:
+      assignments = X_L['column_partition']['assignments']
+      if assignments[col1] == assignments[col2]:
+        prob_dep += 1
+    prob_dep /= float(len(X_L_list))
+    return prob_dep
+
+  def mutual_information(self, col1, col2, X_L_list, X_D_list, M_c, T):
+    t = time.time()
+    Q = [(col1, col2)]
+    ## Returns list of lists.
+    ## First list: same length as Q, so we just take first.
+    ## Second list: MI, linfoot. we take MI.
+    results_by_sample = self.backend.mutual_information(M_c, X_L_list, X_D_list, Q)[0][0]
+    ## Report the average mutual information over each sample.
+    mi = float(sum(results_by_sample)) / len(results_by_sample)
+    print time.time() - t
+    return mi
+
+  def correlation(self, col1, col2, X_L_list, X_D_list, M_c, T):
+    t_array = numpy.array(T, dtype=float)
+    correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
+    return correlation
+
+  def _do_gen_matrix(self, col_function, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
+      if col_function == 'mutual information':
+        col_function = getattr(self, 'mutual_information')
+      elif col_function == 'dependence probability':
+        col_function = getattr(self, 'dependence_probability')
+      elif col_function == 'correlation':
+        col_function = getattr(self, 'correlation')
+      else:
+        raise Exception('Invalid column function')
+
+      num_cols = len(X_L_list[0]['column_partition']['assignments'])
+      column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
+      column_names = numpy.array(column_names)
+      # extract unordered z_matrix
+      num_latent_states = len(X_L_list)
+      z_matrix = numpy.zeros((num_cols, num_cols))
+      for i in range(num_cols):
+        for j in range(num_cols):
+          z_matrix[i][j] = col_function(i, j, X_L_list, X_D_list, M_c, T)
+
+      if col:
+        z_column = list(z_matrix[M_c['name_to_idx'][col]])
+        data_tuples = zip(z_column, range(num_cols))
+        data_tuples.sort(reverse=True)
+        if confidence:
+          data_tuples = filter(lambda tup: tup[0] >= float(confidence), data_tuples)
+        if limit and limit != float("inf"):
+          data_tuples = data_tuples[:int(limit)]
+        data = [tuple([d[0] for d in data_tuples])]
+        columns = [d[1] for d in data_tuples]
+        column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]      
+        column_names = numpy.array(column_names)
+        column_names_reordered = column_names[columns]
+        if submatrix:
+          z_matrix = z_matrix[columns,:][:,columns]
+          z_matrix_reordered = z_matrix
+        else:
+          return {'data': data, 'columns': column_names_reordered}
+      else:
+        # hierachically cluster z_matrix
+        import hcluster
+        Y = hcluster.pdist(z_matrix)
+        Z = hcluster.linkage(Y)
+        pylab.figure()
+        hcluster.dendrogram(Z)
+        intify = lambda x: int(x.get_text())
+        reorder_indices = map(intify, pylab.gca().get_xticklabels())
+        pylab.close()
+        # REORDER! 
+        z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
+        column_names_reordered = column_names[reorder_indices]
+
+      title = 'Pairwise column %s for %s' % (function_name, tablename)
+      if filename:
+        utils.plot_feature_z(z_matrix_reordered, column_names_reordered, title, filename)
+
+      return dict(
+        matrix=z_matrix_reordered,
+        column_names=column_names_reordered,
+        title=title,
+        filename=filename,
+        message = "Created " + title
+        )
 
 def jsonify_and_dump(to_dump, filename):
   dir=S.path.web_resources_data_dir
@@ -811,64 +902,6 @@ def jsonify_and_dump(to_dump, filename):
     print e
   return dict(message="Database successfuly dumped as JSON to %s" % filename)
 
-def _do_gen_feature_z(X_L_list, X_D_list, M_c, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
-    num_cols = len(X_L_list[0]['column_partition']['assignments'])
-    column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
-    column_names = numpy.array(column_names)
-    # extract unordered z_matrix
-    num_latent_states = len(X_L_list)
-    z_matrix = numpy.zeros((num_cols, num_cols))
-    for X_L in X_L_list:
-      assignments = X_L['column_partition']['assignments']
-      for i in range(num_cols):
-        for j in range(num_cols):
-          if assignments[i] == assignments[j]:
-            z_matrix[i, j] += 1
-    z_matrix /= float(num_latent_states)
-    
-    if col:
-      z_column = list(z_matrix[M_c['name_to_idx'][col]])
-      data_tuples = zip(z_column, range(num_cols))
-      data_tuples.sort(reverse=True)
-      if confidence:
-        data_tuples = filter(lambda tup: tup[0] >= float(confidence), data_tuples)
-      if limit and limit != float("inf"):
-        data_tuples = data_tuples[:int(limit)]
-      data = [tuple([d[0] for d in data_tuples])]
-      columns = [d[1] for d in data_tuples]
-      column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]      
-      column_names = numpy.array(column_names)
-      column_names_reordered = column_names[columns]
-      if submatrix:
-        z_matrix = z_matrix[columns,:][:,columns]
-        z_matrix_reordered = z_matrix
-      else:
-        return {'data': data, 'columns': column_names_reordered}
-    else:
-      # hierachically cluster z_matrix
-      import hcluster
-      Y = hcluster.pdist(z_matrix)
-      Z = hcluster.linkage(Y)
-      pylab.figure()
-      hcluster.dendrogram(Z)
-      intify = lambda x: int(x.get_text())
-      reorder_indices = map(intify, pylab.gca().get_xticklabels())
-      pylab.close()
-      # REORDER! 
-      z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
-      column_names_reordered = column_names[reorder_indices]
-      
-    title = 'Column Dependencies for: %s' % tablename
-    if filename:
-      utils.plot_feature_z(z_matrix_reordered, column_names_reordered, title, filename)
-      
-    return dict(
-      matrix=z_matrix_reordered,
-      column_names=column_names_reordered,
-      title=title,
-      filename=filename,
-      message = "Created column dependency matrix for %s." % tablename
-      )
 
 # helper functions
 get_name = lambda x: getattr(x, '__name__')
