@@ -756,7 +756,7 @@ class Engine(object):
 
   def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename, submatrix):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    return self._do_gen_feature_z(X_L_list, X_D_list, M_c, tablename, filename, col, confidence, limit, submatrix)
+    return self._do_gen_matrix("dependence probability", X_L_list, X_D_list, M_c, tablename, filename, col=col, confidence=confidence, limit=limit, submatrix=submatrix)
 
   def gen_feature_z(self, tablename, filename=None,
                     dir=S.path.web_resources_dir):
@@ -825,12 +825,12 @@ class Engine(object):
     correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
     return correlation
 
-  def _do_gen_matrix(self, col_function, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
-      if col_function == 'mutual information':
+  def _do_gen_matrix(self, col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
+      if col_function_name == 'mutual information':
         col_function = getattr(self, 'mutual_information')
-      elif col_function == 'dependence probability':
+      elif col_function_name == 'dependence probability':
         col_function = getattr(self, 'dependence_probability')
-      elif col_function == 'correlation':
+      elif col_function_name == 'correlation':
         col_function = getattr(self, 'correlation')
       else:
         raise Exception('Invalid column function')
@@ -877,9 +877,9 @@ class Engine(object):
         z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
         column_names_reordered = column_names[reorder_indices]
 
-      title = 'Pairwise column %s for %s' % (function_name, tablename)
+      title = 'Pairwise column %s for %s' % (col_function_name, tablename)
       if filename:
-        utils.plot_feature_z(z_matrix_reordered, column_names_reordered, title, filename)
+        utils.plot_matrix(z_matrix_reordered, column_names_reordered, title, filename)
 
       return dict(
         matrix=z_matrix_reordered,
