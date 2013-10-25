@@ -471,13 +471,13 @@ class Engine(object):
     #if probability_query:
       #if whereclause=="" or '=' not in whereclause:
           #Y = None
-      '''
+    '''
       else:
         varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
         Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
         # map values to codes
         Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
-      '''
+    '''
 
     ## If there are only aggregate values, then only return one row.
     ## TODO: is this actually right? Or is probability also a function of row? If so: get rid of this.
