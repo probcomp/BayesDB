@@ -801,6 +801,19 @@ class Engine(object):
 
   def dependence_probability(self, col1, col2, X_L_list, X_D_list, M_c, T):
     prob_dep = 0
+    for X_L, X_D in zip(X_L_list, X_D_list):
+      assignments = X_L['column_partition']['assignments']
+      ## Columns dependent if in same view, and the view has greater than 1 category
+      ## Future work can investigate whether more advanced probability of dependence measures
+      ## that attempt to take into account the number of outliers do better.
+      if (assignments[col1] == assignments[col2]):
+        if len(numpy.unique(X_D[assignments[col1]])) > 1:
+          prob_dep += 1
+    prob_dep /= float(len(X_L_list))
+    return prob_dep
+
+  def view_similarity(self, col1, col2, X_L_list, X_D_list, M_c, T):
+    prob_dep = 0
     for X_L in X_L_list:
       assignments = X_L['column_partition']['assignments']
       if assignments[col1] == assignments[col2]:
@@ -832,6 +845,8 @@ class Engine(object):
         col_function = getattr(self, 'dependence_probability')
       elif col_function_name == 'correlation':
         col_function = getattr(self, 'correlation')
+      elif col_function_name == 'view_similarity':
+        col_function = getattr(self, 'view_similarity')
       else:
         raise Exception('Invalid column function')
 
