@@ -172,7 +172,10 @@ class PersistenceLayer(object):
     def write_csv(self, tablename, csv):
         # Write csv to file
         cur_dir = os.path.dirname(os.path.abspath(__file__))
-        f = open('%s/data/%s.csv' % (cur_dir, tablename), 'w')
+        data_dir = os.path.join(cur_dir, 'data')
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        f = open(os.path.join(data_dir, '%s.csv' % tablename), 'w')
         csv_abs_path = os.path.abspath(f.name)
         f.write(csv)
         f.close()
