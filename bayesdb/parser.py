@@ -61,7 +61,7 @@ class Parser(object):
         self.root_directory = root_dir
 
     def reset_root_dir(self):
-        self.root_directory = os.path.dirname(os.path.abspath(__file__))
+        self.root_directory = os.getcwd() #os.path.dirname(os.path.abspath(__file__))
 
     def get_absolute_path(self, relative_path):
         if os.path.isabs(relative_path):
@@ -75,7 +75,7 @@ class Parser(object):
         self.parser_method_names = [method_name[6:] for method_name in dir(Parser) if method_name[:6] == 'parse_']
         self.method_names = set(self.engine_method_names).intersection(self.parser_method_names)
         self.method_name_to_args = be.get_method_name_to_args()
-        self.root_directory = os.path.dirname(os.path.abspath(__file__))
+        self.reset_root_dir()
 
     def parse_set_hostname(self, words, orig):
         if len(words) >= 3:
