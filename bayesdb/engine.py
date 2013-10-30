@@ -52,8 +52,8 @@ class Engine(object):
   2. Have separate classes for select, etc.
   3. Have user defined functions all sitting in their own module? Or importable from somewhere?
   """
-  def __init__(self, engine_type='local', **kwargs):
-    self.backend = get_CrossCatClient(engine_type, **kwargs)
+  def __init__(self, crosscat_engine_type='local', **kwargs):
+    self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
     self.persistence_layer = PersistenceLayer()
 
   def start_from_scratch(self):
