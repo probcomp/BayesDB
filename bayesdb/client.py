@@ -94,7 +94,11 @@ class Client(object):
         if timing:
             start_time = time.time()
 
-        result = self.parser.parse_line(bql_string) ## Calls Engine
+        #result = self.parser.parse_line(bql_string) ## Calls Engine
+        method_name, args_dict  = self.parser.parse_line(bql_string)
+        result = self.call_bayesdb_engine(method_name, args_dict)
+        result = self.callback(method_name, args_dict, result)
+        
         #result = self.call_bayesdb_engine('execute', dict(bql=bql_string))
         
         if timing:
@@ -127,6 +131,15 @@ class Client(object):
         else:
             if type(result) == dict and 'message' in result.keys():
                 print result['message']
+            return result
+
+    def callback(self, method_name, args_dict, result):
+        if method_name == 'export_samples':
+            samples_dict = result
+            samples_file = gzip.GzipFile(args_dict['pkl_path'], 'w')
+            pickle.dump(samples_dict, samples_file)
+            return dict(message="Successfully exported the samples to %s" % pklpath)
+        else:
             return result
         
     def pretty_print(self, query_obj):

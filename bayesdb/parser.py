@@ -70,36 +70,23 @@ class Parser(object):
             return os.path.join(self.root_directory, relative_path)
 
     def __init__(self, engine):
-        self.engine = engine
+        #self.engine = engine
         self.engine_method_names = [method_name for method_name in be.get_method_names() if method_name[0] != '_']
         self.parser_method_names = [method_name[6:] for method_name in dir(Parser) if method_name[:6] == 'parse_']
         self.method_names = set(self.engine_method_names).intersection(self.parser_method_names)
         self.method_name_to_args = be.get_method_name_to_args()
         self.reset_root_dir()
 
-    def parse_set_hostname(self, words, orig):
-        if len(words) >= 3:
-            if words[0] == 'set' and words[1] == 'hostname':
-                return self.engine.set_hostname(words[2])
-
-    def parse_get_hostname(self, words, orig):
-        if len(words) >= 2 and words[0] == 'get' and words[1] == 'hostname':
-            return self.engine.get_hostname()
-
-    def parse_ping(self, words, orig):
-        if len(words) >= 1 and words[0] == 'ping':
-            return self.engine.ping()
-
     def parse_start_from_scratch(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'start' and words[1] == 'from' and words[2] == 'scratch':
-                return self.engine.start_from_scratch()
+                return 'start_from_scratch', dict()
 
     def parse_drop_and_load_db(self, words, orig):
         if len(words) >= 2:
             if words[0] == 'drop' and words[1] == 'and' and words[2] == 'load':
                 if len(words) == 3:
-                    return self.engine.drop_and_load_db(words[3])
+                    return 'drop_and_load_db', dict(filename=words[3])
                 else:
                     print 'Did you mean: DROP AND LOAD <filename>;?'
                     return False
@@ -114,7 +101,7 @@ class Parser(object):
                         if len(words) >= 7:
                             if words[4] == 'with' and utils.is_int(words[5]) and words[6] == 'explanations':
                                 n_chains = int(words[5])
-                        result = self.engine.create_models(tablename, n_chains)
+                        result = 'create_models', dict(tablename=tablename, n_chains=n_chains)
                         print 'Created %d models for btable %s' % (n_chains, tablename)
                         return result
                     else:
@@ -126,7 +113,7 @@ class Parser(object):
                     if words[2] == 'model' or words[2] == 'models':
                         if len(words) >= 5 and words[3] == 'for':
                             tablename = words[4]
-                            result = self.engine.create_models(tablename, n_chains)
+                            result = 'create_models', dict(tablename=tablename, n_chains=n_chains)
                             print 'Created %d models for btable %s' % (n_chains, tablename)
                             return result
                         else:
@@ -145,7 +132,9 @@ class Parser(object):
                     if words[3] == 'from':
                         f = open(self.get_absolute_path(orig.split()[4]), 'r')
                         csv = f.read()
-                        result = self.engine.create_btable(tablename, csv, crosscat_column_types)
+                        result = ('create_btable',
+                                 dict(tablename=tablename, csv=csv,
+                                      crosscat_column_types=crosscat_column_types))
                         return result
                 else:
                     print 'Did you mean: CREATE BTABLE <tablename> FROM <filename>;?'
@@ -154,7 +143,7 @@ class Parser(object):
     def parse_drop_tablename(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
-                return self.engine.drop_tablename(words[2])
+                return 'drop_tablename', dict(tablename=words[2])
 
     def parse_delete_chain(self, words, orig):
         if len(words) >= 3:
@@ -163,11 +152,11 @@ class Parser(object):
                     chain_index = int(words[2])
                     if words[3] == 'from':
                         tablename = words[4]
-                        return self.engine.delete_chain(tablename, chain_index)
+                        return 'delete_chain', dict(tablename=tablename, chain_index=chain_index)
                 elif len(words) >= 6 and words[2] == 'all' and words[3] == 'chains' and words[4] == 'from':
                     chain_index = 'all'
                     tablename = words[5]
-                    return self.engine.delete_chain(tablename, chain_index)
+                    return 'delete_chain', dict(tablename=tablename, chain_index=chain_index)
                 else:
                     print 'Did you mean: DELETE CHAIN <chain_index> FROM <tablename>;?'
                     return False
@@ -189,7 +178,8 @@ class Parser(object):
             ## TODO: check length here
             if words[idx] == "for" and words[idx+2] == 'iterations':
                 iterations = int(words[idx+1])
-            return self.engine.analyze(tablename, chain_index, iterations, wait=False)
+            return 'analyze', dict(tablename=tablename, chain_index=chain_index,
+                                   iterations=iterations, wait=False)
 
     def parse_infer(self, words, orig):
         match = re.search(r"""
@@ -229,7 +219,9 @@ class Parser(object):
                 numsamples = int(numsamples)
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-            return self.engine.infer(tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by)
+            return 'infer', dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
+                                 confidence=confidence, whereclause=whereclause, limit=limit,
+                                 numsamples=numsamples, order_by=order_by)
 
 
     def extract_order_by(self, orig):
@@ -315,10 +307,7 @@ class Parser(object):
             pklpath = match.group('pklpath')
             if pklpath[-7:] != '.pkl.gz':
                 pklpath = pklpath + ".pkl.gz"
-            samples_dict = self.engine.export_samples(tablename)
-            samples_file = gzip.GzipFile(pklpath, 'w')
-            pickle.dump(samples_dict, samples_file)
-            return dict(message="Successfully exported the samples to %s" % pklpath)
+            return 'export_samples', dict(tablename=tablename, pkl_path=pklpath)
 
     def parse_import_samples(self, words, orig):
         match = re.search(r"""
@@ -350,7 +339,8 @@ class Parser(object):
                 iterations = int(match.group('iterations').strip())
             else:
                 iterations = 0
-            return self.engine.import_samples(tablename, X_L_list, X_D_list, M_c, T, iterations)
+            return 'import_samples', dict(tablename=tablename, X_L_list=X_L_list, X_D_list=X_D_list,
+                                          M_c=M_c, T=T, iterations=iterations)
         
     def parse_select(self, words, orig):
         match = re.search(r"""
@@ -378,7 +368,8 @@ class Parser(object):
                 whereclause = whereclause.strip()
             limit = self.extract_limit(orig)
             orig, order_by = self.extract_order_by(orig)
-            return self.engine.select(tablename, columnstring, whereclause, limit, order_by)
+            return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
+                                  limit=limit, ordery_by=order_by)
 
     def parse_simulate(self, words, orig):
         match = re.search(r"""
@@ -406,7 +397,8 @@ class Parser(object):
             numpredictions = int(match.group('times'))
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-            return self.engine.simulate(tablename, columnstring, newtablename, whereclause, numpredictions, order_by)
+            return 'simulate', dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
+                                    whereclause=whereclause, numpredictions=numpredictions, order_by=order_by)
 
     def parse_estimate_dependence_probabilities(self, words, orig):
         match = re.search(r"""
@@ -440,7 +432,8 @@ class Parser(object):
                 filename = match.group('filename')
             else:
                 filename = None
-            return self.engine.estimate_dependence_probabilities(tablename, col, confidence, limit, filename, submatrix)
+            return 'estimate_dependence_probabilities', dict(tablename=tablename, col=col, confidence=confidence,
+                                                             limit=limit, filename=filename, submatrix=submatrix)
 
     def extract_columns(self, orig):
         """TODO"""
@@ -483,7 +476,7 @@ class Parser(object):
                 filename = match.group('filename')
             else:
                 filename = None
-            return self.engine.estimate_pairwise(tablename, function_name, filename)
+            return 'estimate_pairwise', dict(tablename=tablename, function_name=function_name, filename=filename)
 
         
     def parse_update_datatypes(self, words, orig):
@@ -520,9 +513,9 @@ class Parser(object):
                     print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical|key|ignore];?'
                     return False
                 mappings[vals[0]] = datatype
-            return self.engine.update_datatypes(tablename, mappings)
+            return 'update_datatypes', dict(tablename=tablename, mappings=mappings)
 
     def parse_write_json_for_table(self, words, orig):
         if len(words) >= 5:
             if words[0] == 'write' and words[1] == 'json' and words[2] == 'for' and words[3] == 'table':
-                return {'tablename': words[4]}
+                return 'write_json_for_table', {'tablename': words[4]}

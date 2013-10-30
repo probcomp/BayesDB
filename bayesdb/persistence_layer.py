@@ -90,6 +90,12 @@ class PersistenceLayer(object):
                 cur.execute("DELETE FROM preddb.table_index WHERE tableid=%s;", (tableid,))
         return 0
 
+    def list_btables(self):
+        with self.open_db_connection(commit=True) as cur:
+            cur.execute("SELECT tablename FROM preddb.table_index;")
+            tablenames = cur.fetchall()
+        return tablenames
+
     def delete_chain(self, tablename, chain_index):
         with self.open_db_connection(commit=True) as cur:
             cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))

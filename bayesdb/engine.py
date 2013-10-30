@@ -68,6 +68,10 @@ class Engine(object):
     """Delete table by tablename."""
     return self.persistence_layer.drop_btable(tablename)
 
+  def list_btables(self):
+    """Return names of all btables."""
+    return self.persistence_layer.list_btables()
+
   def delete_chain(self, tablename, chain_index):
      """Delete one chain."""
      return self.persistence_layer.delete_chain(tablename)
@@ -665,7 +669,7 @@ class Engine(object):
     # convert to data, columns dict output format
     # map codes to original values
     ## TODO: Add histogram call back in, but on Python client locally!
-    #self.create_histogram(M_c, numpy.array(out), columns, col_indices, tablename+'_histogram')
+    #self._create_histogram(M_c, numpy.array(out), columns, col_indices, tablename+'_histogram')
     data = []
     for vals in out:
       row = []
@@ -719,7 +723,7 @@ class Engine(object):
     jsonify_and_dump(json_indices_dict, "json_indices")
 
 
-  def create_histogram(self, M_c, data, columns, mc_col_indices, filename):
+  def _create_histogram(self, M_c, data, columns, mc_col_indices, filename):
     dir=S.path.web_resources_data_dir
     full_filename = os.path.join(dir, filename)
     num_rows = data.shape[0]
@@ -799,7 +803,7 @@ class Engine(object):
     self.persistence_layer.add_samples_for_chain(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, chainid)
     return (prev_iterations + iterations)
 
-  def dependence_probability(self, col1, col2, X_L_list, X_D_list, M_c, T):
+  def _dependence_probability(self, col1, col2, X_L_list, X_D_list, M_c, T):
     prob_dep = 0
     for X_L, X_D in zip(X_L_list, X_D_list):
       assignments = X_L['column_partition']['assignments']
@@ -812,7 +816,7 @@ class Engine(object):
     prob_dep /= float(len(X_L_list))
     return prob_dep
 
-  def view_similarity(self, col1, col2, X_L_list, X_D_list, M_c, T):
+  def _view_similarity(self, col1, col2, X_L_list, X_D_list, M_c, T):
     prob_dep = 0
     for X_L in X_L_list:
       assignments = X_L['column_partition']['assignments']
@@ -821,7 +825,7 @@ class Engine(object):
     prob_dep /= float(len(X_L_list))
     return prob_dep
 
-  def mutual_information(self, col1, col2, X_L_list, X_D_list, M_c, T):
+  def _mutual_information(self, col1, col2, X_L_list, X_D_list, M_c, T):
     t = time.time()
     Q = [(col1, col2)]
     ## Returns list of lists.
@@ -833,20 +837,20 @@ class Engine(object):
     print time.time() - t
     return mi
 
-  def correlation(self, col1, col2, X_L_list, X_D_list, M_c, T):
+  def _correlation(self, col1, col2, X_L_list, X_D_list, M_c, T):
     t_array = numpy.array(T, dtype=float)
     correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
     return correlation
 
   def _do_gen_matrix(self, col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
       if col_function_name == 'mutual information':
-        col_function = getattr(self, 'mutual_information')
+        col_function = getattr(self, '_mutual_information')
       elif col_function_name == 'dependence probability':
-        col_function = getattr(self, 'dependence_probability')
+        col_function = getattr(self, '_dependence_probability')
       elif col_function_name == 'correlation':
-        col_function = getattr(self, 'correlation')
+        col_function = getattr(self, '_correlation')
       elif col_function_name == 'view_similarity':
-        col_function = getattr(self, 'view_similarity')
+        col_function = getattr(self, '_view_similarity')
       else:
         raise Exception('Invalid column function')
 
