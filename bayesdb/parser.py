@@ -82,6 +82,11 @@ class Parser(object):
             if words[0] == 'start' and words[1] == 'from' and words[2] == 'scratch':
                 return 'start_from_scratch', dict()
 
+    def parse_list_btables(self, words, orig):
+        if len(words) >= 2:
+            if words[0] == 'list' and words[1] == 'btables':
+                return 'list_btables', dict()
+
     def parse_drop_and_load_db(self, words, orig):
         if len(words) >= 2:
             if words[0] == 'drop' and words[1] == 'and' and words[2] == 'load':
