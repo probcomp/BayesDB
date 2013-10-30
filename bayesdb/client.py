@@ -152,6 +152,8 @@ class Client(object):
             result = pt
         elif type(query_obj) == list and type(query_obj[0]) == tuple:
             pt = prettytable.PrettyTable()
+            ## TODO
+            return "TODO"
         elif type(query_obj) == dict and 'column_names' in query_obj:
             colnames = query_obj['column_names']
             zmatrix = query_obj['matrix']

@@ -374,7 +374,7 @@ class Parser(object):
             limit = self.extract_limit(orig)
             orig, order_by = self.extract_order_by(orig)
             return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                  limit=limit, ordery_by=order_by)
+                                  limit=limit, order_by=order_by)
 
     def parse_simulate(self, words, orig):
         match = re.search(r"""

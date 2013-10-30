@@ -94,7 +94,7 @@ class PersistenceLayer(object):
         with self.open_db_connection(commit=True) as cur:
             cur.execute("SELECT tablename FROM preddb.table_index;")
             tablenames = cur.fetchall()
-        return tablenames
+        return [t[0] for t in tablenames]
 
     def delete_chain(self, tablename, chain_index):
         with self.open_db_connection(commit=True) as cur:
