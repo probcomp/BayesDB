@@ -60,10 +60,6 @@ class Engine(object):
     self.persistence_layer.start_from_scratch()
     return 'Started db from scratch.'
 
-  def drop_and_load_db(self, filename):
-    self.persistence_layer.drop_and_load_db(filename)
-    return 'Dropped and loaded DB.'
-
   def drop_tablename(self, tablename):
     """Delete table by tablename."""
     return self.persistence_layer.drop_btable(tablename)
@@ -683,45 +679,6 @@ class Engine(object):
       data.append(row)
     ret = {'message': 'Simulated data:', 'columns': colnames, 'data': data}
     return ret
-
-  def write_json_for_table(self, tablename):
-    M_c, M_r, t_dict = self.persistence_layer.get_metadata_and_table(tablename)
-    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    dir=S.path.web_resources_data_dir
-    os.system('rm %s/*.json' % dir)
-    if M_r is None:
-      num_rows = len(X_D_list[0][0])
-      row_indices = range(num_rows)
-      row_names = map(str, row_indices)
-      name_to_idx = dict(zip(row_names, row_indices))
-      idx_to_name = dict(zip(row_indices, row_names))
-      M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
-    #
-    for name in M_c['name_to_idx']:
-      M_c['name_to_idx'][name] += 1
-    M_c = dict(labelToIndex=M_c['name_to_idx'])
-    for name in M_r['name_to_idx']:
-      M_r['name_to_idx'][name] += 1
-      M_r['name_to_idx'][name]  = M_r['name_to_idx'][name]
-    M_r = dict(labelToIndex=M_r['name_to_idx'])
-    #
-    jsonify_and_dump(M_c, 'M_c.json')
-    jsonify_and_dump(M_r, 'M_r.json')
-    jsonify_and_dump(t_dict, 'T.json')
-    #
-    for idx, X_L_i in enumerate(X_L_list):
-      filename = 'X_L_%s.json' % idx
-      X_L_i = (numpy.array(X_L_i['column_partition']['assignments'])+1).tolist()
-      X_L_i = dict(columnPartitionAssignments=X_L_i)
-      jsonify_and_dump(X_L_i, filename)
-    for idx, X_D_i in enumerate(X_D_list):
-      filename = 'X_D_%s.json' % idx
-      X_D_i = (numpy.array(X_D_i)+1).tolist()
-      X_D_i = dict(rowPartitionAssignments=X_D_i)
-      jsonify_and_dump(X_D_i, filename)
-    json_indices_dict = dict(ids=map(str, range(len(X_D_list))))
-    jsonify_and_dump(json_indices_dict, "json_indices")
-
 
   def _create_histogram(self, M_c, data, columns, mc_col_indices, filename):
     dir=S.path.web_resources_data_dir

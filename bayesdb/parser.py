@@ -47,13 +47,20 @@ class Parser(object):
             bql_string = bql_string[:-1]
         words = bql_string.lower().split()
 
+        if len(words) >= 1 and words[0] == 'help':
+            print "Welcome to BQL help. Here is a list of BQL commands and their syntax:\n"
+            for method_name in sorted(self.method_names):
+                help_method = getattr(self, 'help_' +  method_name)
+                print help_method()
+            return False
+
         for method_name in self.method_names:
             parse_method = getattr(self, 'parse_' + method_name)
             result = parse_method(words, bql_string)
             if result is None:
                 continue
             elif result == False:
-                return
+                return False
             elif result:
                 return result
 
@@ -61,7 +68,7 @@ class Parser(object):
         self.root_directory = root_dir
 
     def reset_root_dir(self):
-        self.root_directory = os.getcwd() #os.path.dirname(os.path.abspath(__file__))
+        self.root_directory = os.getcwd()
 
     def get_absolute_path(self, relative_path):
         if os.path.isabs(relative_path):
@@ -70,31 +77,30 @@ class Parser(object):
             return os.path.join(self.root_directory, relative_path)
 
     def __init__(self, engine):
-        #self.engine = engine
         self.engine_method_names = [method_name for method_name in be.get_method_names() if method_name[0] != '_']
         self.parser_method_names = [method_name[6:] for method_name in dir(Parser) if method_name[:6] == 'parse_']
         self.method_names = set(self.engine_method_names).intersection(self.parser_method_names)
         self.method_name_to_args = be.get_method_name_to_args()
         self.reset_root_dir()
 
+    def help_start_from_scratch(self):
+        return "START FROM SCRATCH: drop all btables."
+
     def parse_start_from_scratch(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'start' and words[1] == 'from' and words[2] == 'scratch':
                 return 'start_from_scratch', dict()
+
+    def help_list_btables(self):
+        return "LIST BTABLES: view the list of all btable names."
 
     def parse_list_btables(self, words, orig):
         if len(words) >= 2:
             if words[0] == 'list' and words[1] == 'btables':
                 return 'list_btables', dict()
 
-    def parse_drop_and_load_db(self, words, orig):
-        if len(words) >= 2:
-            if words[0] == 'drop' and words[1] == 'and' and words[2] == 'load':
-                if len(words) == 3:
-                    return 'drop_and_load_db', dict(filename=words[3])
-                else:
-                    print 'Did you mean: DROP AND LOAD <filename>;?'
-                    return False
+    def help_create_models(self):
+        return "CREATE MODELS FOR <btable> [WITH <n_chains> EXPLANATIONS]: the step to perform before analyze."
 
     def parse_create_models(self, words, orig):
         n_chains = 10
@@ -110,7 +116,7 @@ class Parser(object):
                         print 'Created %d models for btable %s' % (n_chains, tablename)
                         return result
                     else:
-                        print 'Did you mean: CREATE MODELS FOR <btable> [WITH <n_chains> EXPLANATIONS];?'
+                        print self.help_create_models()
                         return False
                 elif len(words) >= 3 and utils.is_int(words[1]):
                     n_chains = int(words[1])
@@ -122,11 +128,14 @@ class Parser(object):
                             print 'Created %d models for btable %s' % (n_chains, tablename)
                             return result
                         else:
-                            print 'Did you mean: CREATE <n_chains> MODELS FOR <btable>;?'
+                            print self.help_create_models()
                             return False
                 else:
-                    print 'Did you mean: CREATE <n_chains> MODELS FOR <btable>;?'
-                    return False        
+                    print self.help_create_models()
+                    return False
+
+    def help_create_btable(self):
+        return "CREATE BTABLE <tablename> FROM <filename>: create a table from a csv file"
 
     def parse_create_btable(self, words, orig):
         crosscat_column_types = None
@@ -142,13 +151,19 @@ class Parser(object):
                                       crosscat_column_types=crosscat_column_types))
                         return result
                 else:
-                    print 'Did you mean: CREATE BTABLE <tablename> FROM <filename>;?'
+                    print self.help_create_btable()
                     return False
+
+    def help_drop_tablename(self):
+        return "DROP BTABLE <tablename>: drop table."
 
     def parse_drop_tablename(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
                 return 'drop_tablename', dict(tablename=words[2])
+
+    def help_delete_chain(self):
+        return "DELETE CHAIN <chain_index> FROM <tablename>: delete the specified chain (model). chain_index may be 'all'."
 
     def parse_delete_chain(self, words, orig):
         if len(words) >= 3:
@@ -163,8 +178,11 @@ class Parser(object):
                     tablename = words[5]
                     return 'delete_chain', dict(tablename=tablename, chain_index=chain_index)
                 else:
-                    print 'Did you mean: DELETE CHAIN <chain_index> FROM <tablename>;?'
+                    print self.help_delete_chain()
                     return False
+
+    def help_analyze(self):
+        return "ANALYZE <btable> [CHAIN INDEX <chain_index>] [FOR <iterations> ITERATIONS]: perform inference."
 
     def parse_analyze(self, words, orig):
         chain_index = 'all'
@@ -174,7 +192,7 @@ class Parser(object):
             if len(words) >= 2:
                 tablename = words[1]
             else:
-                print 'Did you mean: ANALYZE <btable> [CHAIN INDEX <chain_index>] [FOR <iterations> ITERATIONS];?'
+                print self.help_analyze()
                 return False
             idx = 2
             if words[idx] == "chain" and words[idx+1] == 'index':
@@ -186,6 +204,9 @@ class Parser(object):
             return 'analyze', dict(tablename=tablename, chain_index=chain_index,
                                    iterations=iterations, wait=False)
 
+    def help_infer(self):
+        return "INFER col0, [col1, ...] FROM <btable> [WHERE <whereclause>] WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]]: like select, but infers (fills in) missing values."
+        
     def parse_infer(self, words, orig):
         match = re.search(r"""
             infer\s+
@@ -198,8 +219,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'infer':
-                print 'Did you mean: INFER col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
-                    'WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]];?'
+                print self.help_infer()
                 return False
             else:
                 return None
@@ -292,6 +312,9 @@ class Parser(object):
         else:
             return float('inf')
 
+    def help_export_samples(self):
+        return "EXPORT SAMPLES FROM <btable> TO <pklpath>: export your samples (aka models, chains) to a pickle file."
+
     def parse_export_samples(self, words, orig):
         match = re.search(r"""
             export\s+
@@ -303,7 +326,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'export':
-                print 'Did you mean: EXPORT SAMPLES FROM <btable> TO <pklpath>;?'
+                print self.help_export_samples()
                 return False
             else:
                 return None
@@ -313,6 +336,9 @@ class Parser(object):
             if pklpath[-7:] != '.pkl.gz':
                 pklpath = pklpath + ".pkl.gz"
             return 'export_samples', dict(tablename=tablename, pkl_path=pklpath)
+
+    def help_import_samples(self):
+        return "IMPORT SAMPLES <pklpath> INTO <btable> [ITERATIONS <iterations>]: import samples from a pickle file."
 
     def parse_import_samples(self, words, orig):
         match = re.search(r"""
@@ -325,7 +351,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'import':
-                print 'Did you mean: IMPORT SAMPLES <pklpath> INTO <btable> [ITERATIONS <iterations>]'
+                print self.help_import_samples()
                 return False
             else:
                 return None
@@ -346,6 +372,10 @@ class Parser(object):
                 iterations = 0
             return 'import_samples', dict(tablename=tablename, X_L_list=X_L_list, X_D_list=X_D_list,
                                           M_c=M_c, T=T, iterations=iterations)
+
+    def help_select(self):
+        return 'SELECT col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
+            '[ORDER BY SIMILARITY TO <rowid> [WITH RESPECT TO <column>]] [LIMIT <limit>]: like SQL select.'
         
     def parse_select(self, words, orig):
         match = re.search(r"""
@@ -358,8 +388,7 @@ class Parser(object):
         ## (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)
         if match is None:
             if words[0] == 'select':
-                print 'Did you mean: SELECT col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
-                    '[ORDER BY SIMILARITY TO <rowid> [WITH RESPECT TO <column>]] [LIMIT <limit>];?'
+                print self.help_select()
                 return False
             else:
                 return None
@@ -376,6 +405,9 @@ class Parser(object):
             return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
                                   limit=limit, order_by=order_by)
 
+    def help_simulate(self):
+        return "SIMULATE col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times> [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]]: simulate new datapoints based on the underlying model."
+
     def parse_simulate(self, words, orig):
         match = re.search(r"""
             simulate\s+
@@ -386,8 +418,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'simulate':
-                print 'Did you mean: SIMULATE col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times> '+\
-                    '[ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]];?'
+                print self.help_simulate()
                 return False
             else:
                 return None
@@ -405,6 +436,9 @@ class Parser(object):
             return 'simulate', dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
                                     whereclause=whereclause, numpredictions=numpredictions, order_by=order_by)
 
+    def help_estimate_dependence_probabilities(self):
+        return "ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]] [SAVE TO <file>]: get probabilities of column dependence."
+
     def parse_estimate_dependence_probabilities(self, words, orig):
         match = re.search(r"""
             estimate\s+dependence\s+probabilities\s+from\s+
@@ -416,7 +450,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'estimate':
-                print 'Did you mean: ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]] [SAVE TO <file>]'
+                print self.help_estimate_dependence_probabilities()
                 return False
             else:
                 return None
@@ -456,7 +490,9 @@ class Parser(object):
         else:
             return float('inf')
 
-
+    def help_estimate_pairwise(self):
+        return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [SAVE TO <file>]: estimate a pairwise function of columns."
+        
     def parse_estimate_pairwise(self, words, orig):
         match = re.search(r"""
             estimate\s+pairwise\s+
@@ -467,7 +503,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'estimate' and words[1] == 'pairwise':
-                print 'Did you mean: ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [SAVE TO <file>]'
+                print self.help_estimate_pairwise()
                 return False
             else:
                 return None
@@ -483,6 +519,8 @@ class Parser(object):
                 filename = None
             return 'estimate_pairwise', dict(tablename=tablename, function_name=function_name, filename=filename)
 
+    def help_update_datatypes(self):
+        return "UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical|key|ignore]: must be done before creating models or analyzing."
         
     def parse_update_datatypes(self, words, orig):
         match = re.search(r"""
@@ -492,7 +530,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'update':
-                print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical|key|ignore];?'
+                print self.help_update_datatypes()
                 return False
             else:
                 return None
@@ -515,12 +553,8 @@ class Parser(object):
                 elif 'ignore' in vals[1]:
                     datatype = 'ignore'
                 else:
-                    print 'Did you mean: UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical|key|ignore];?'
+                    print self.help_update_datatypes()
                     return False
                 mappings[vals[0]] = datatype
             return 'update_datatypes', dict(tablename=tablename, mappings=mappings)
 
-    def parse_write_json_for_table(self, words, orig):
-        if len(words) >= 5:
-            if words[0] == 'write' and words[1] == 'json' and words[2] == 'for' and words[3] == 'table':
-                return 'write_json_for_table', {'tablename': words[4]}

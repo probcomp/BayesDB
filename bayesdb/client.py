@@ -94,12 +94,15 @@ class Client(object):
         if timing:
             start_time = time.time()
 
-        #result = self.parser.parse_line(bql_string) ## Calls Engine
-        method_name, args_dict  = self.parser.parse_line(bql_string)
+        out  = self.parser.parse_line(bql_string)
+        if out is None:
+            print "Could not parse command. Try typing 'help' for a list of all commands."
+            return
+        elif not out:
+            return
+        method_name, args_dict = out
         result = self.call_bayesdb_engine(method_name, args_dict)
         result = self.callback(method_name, args_dict, result)
-        
-        #result = self.call_bayesdb_engine('execute', dict(bql=bql_string))
         
         if timing:
             end_time = time.time()
@@ -154,6 +157,8 @@ class Client(object):
             pt = prettytable.PrettyTable()
             ## TODO
             return "TODO"
+        elif type(query_obj) == list:
+            result = str(query_obj)
         elif type(query_obj) == dict and 'column_names' in query_obj:
             colnames = query_obj['column_names']
             zmatrix = query_obj['matrix']
