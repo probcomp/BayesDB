@@ -34,11 +34,11 @@ from parser import Parser
 from engine import Engine
 
 class Client(object):
-    def __init__(self, hostname=None, port=8008):
+    def __init__(self, hostname=None, port=8008, crosscat_engine_type='multiprocessing'):
+        self.engine = Engine(crosscat_engine_type)
+        self.parser = Parser(self.engine)
         if hostname is None or hostname=='localhost':
             self.online = False
-            self.engine = Engine('local')
-            self.parser = Parser(self.engine)
         else:
             self.online = True
             self.hostname = hostname
@@ -94,8 +94,15 @@ class Client(object):
         if timing:
             start_time = time.time()
 
-        result = self.parser.parse_line(bql_string) ## Calls Engine
-        #result = self.call_bayesdb_engine('execute', dict(bql=bql_string))
+        out  = self.parser.parse_line(bql_string)
+        if out is None:
+            print "Could not parse command. Try typing 'help' for a list of all commands."
+            return
+        elif not out:
+            return
+        method_name, args_dict = out
+        result = self.call_bayesdb_engine(method_name, args_dict)
+        result = self.callback(method_name, args_dict, result)
         
         if timing:
             end_time = time.time()
@@ -111,13 +118,13 @@ class Client(object):
                 filename = raw_input()
                 if len(filename) > 0:
                     result['filename'] = filename
-                    utils.plot_feature_z(result['matrix'], result['column_names'], title=result['title'], filename=result['bfilename'])
+                    utils.plot_matrix(result['matrix'], result['column_names'], title=result['title'], filename=result['filename'])
                 else:
                     pp = self.pretty_print(result)
                     print pp
                     return pp
             else:
-                utils.plot_feature_z(result['matrix'], result['column_names'], title=result['message'], filename=result['filename'])
+                utils.plot_matrix(result['matrix'], result['column_names'], title=result['message'], filename=result['filename'])
         elif pretty:
             if type(result) == dict and 'message' in result.keys():
                 print result['message']
@@ -127,6 +134,15 @@ class Client(object):
         else:
             if type(result) == dict and 'message' in result.keys():
                 print result['message']
+            return result
+
+    def callback(self, method_name, args_dict, result):
+        if method_name == 'export_samples':
+            samples_dict = result
+            samples_file = gzip.GzipFile(args_dict['pkl_path'], 'w')
+            pickle.dump(samples_dict, samples_file)
+            return dict(message="Successfully exported the samples to %s" % pklpath)
+        else:
             return result
         
     def pretty_print(self, query_obj):
@@ -139,6 +155,10 @@ class Client(object):
             result = pt
         elif type(query_obj) == list and type(query_obj[0]) == tuple:
             pt = prettytable.PrettyTable()
+            ## TODO
+            return "TODO"
+        elif type(query_obj) == list:
+            result = str(query_obj)
         elif type(query_obj) == dict and 'column_names' in query_obj:
             colnames = query_obj['column_names']
             zmatrix = query_obj['matrix']

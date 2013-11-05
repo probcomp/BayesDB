@@ -19,9 +19,14 @@
 --
 
 -- Create a fresh btable for the demo, and load in pre-existing samples
-SELECT * FROM flights_missing ORDER BY arrdelay;
-ESTIMATE DEPENDENCE PROBABILITIES FROM flights_missing;
-INFER * FROM flights_missing WITH CONFIDENCE 0.9 ORDER BY arrdelay;
-SELECT *, similarity_to(4) FROM flights_missing ORDER BY similarity_to(4);
---SIMULATE arrdelay FROM flights_missing TIMES 20;
+DROP BTABLE flights;
+CREATE BTABLE flights FROM flights.csv;
+IMPORT SAMPLES flights_samples.pkl.gz INTO flights;
+
+-- Do analysis
+SELECT * FROM flights ORDER BY arrdelay;
+ESTIMATE DEPENDENCE PROBABILITIES FROM flights;
+INFER * FROM flights WITH CONFIDENCE 0.9 ORDER BY arrdelay;
+SELECT *, similarity_to(4) FROM flights ORDER BY similarity_to(4);
+--SIMULATE arrdelay FROM flights TIMES 20;
 

@@ -90,6 +90,12 @@ class PersistenceLayer(object):
                 cur.execute("DELETE FROM preddb.table_index WHERE tableid=%s;", (tableid,))
         return 0
 
+    def list_btables(self):
+        with self.open_db_connection(commit=True) as cur:
+            cur.execute("SELECT tablename FROM preddb.table_index;")
+            tablenames = cur.fetchall()
+        return [t[0] for t in tablenames]
+
     def delete_chain(self, tablename, chain_index):
         with self.open_db_connection(commit=True) as cur:
             cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
@@ -172,7 +178,10 @@ class PersistenceLayer(object):
     def write_csv(self, tablename, csv):
         # Write csv to file
         cur_dir = os.path.dirname(os.path.abspath(__file__))
-        f = open('%s/data/%s.csv' % (cur_dir, tablename), 'w')
+        data_dir = os.path.join(cur_dir, 'data')
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        f = open(os.path.join(data_dir, '%s.csv' % tablename), 'w')
         csv_abs_path = os.path.abspath(f.name)
         f.write(csv)
         f.close()
