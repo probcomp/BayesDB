@@ -360,7 +360,6 @@ class Parser(object):
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
             (\s*limit\s+(?P<limit>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
-        ## (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)
         if match is None:
             if words[0] == 'select':
                 print 'Did you mean: SELECT col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\

@@ -34,8 +34,6 @@ import numpy
 import matplotlib.cm
 from collections import defaultdict
 #
-# TODO: add back
-#import crosscat.utils.inference_utils as iu
 import crosscat.utils.api_utils as au
 import crosscat.utils.data_utils as du
 import bayesdb.settings as S
@@ -45,13 +43,6 @@ from persistence_layer import PersistenceLayer
 import utils
 
 class Engine(object):
-  """
-  Possible ideas for refactoring:
-  1. Have a query class. Created when a complex query (like select) is received, and is able
-  to set state on itself including X_L_list, X_D_list, etc. as necessary.
-  2. Have separate classes for select, etc.
-  3. Have user defined functions all sitting in their own module? Or importable from somewhere?
-  """
   def __init__(self, engine_type='local', **kwargs):
     self.backend = get_CrossCatClient(engine_type, **kwargs)
     self.persistence_layer = PersistenceLayer()
@@ -104,8 +95,8 @@ class Engine(object):
     return dict(columns=colnames, data=[cctypes], message='Updated schema:\n')
 
   def _guess_schema(self, header, values, crosscat_column_types, colnames):
-    # Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes
-    # Also make the corresponding postgres column types.
+    """Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes
+    Also make the corresponding postgres column types."""
     postgres_coltypes = []
     cctypes = []
     column_data_lookup = dict(zip(header, numpy.array(values).T))
@@ -235,12 +226,12 @@ class Engine(object):
 
     # FIXME: the purpose of the whereclause is to specify 'given'
     #        p(missing_value | X_L, X_D, whereclause)
+    ## TODO: should all observed values besides the ones being imputed be givens?
     if whereclause=="" or '=' not in whereclause:
       Y = None
     else:
       varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
       Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
-      # map values to codes
       Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
 
     # Call backend
@@ -263,7 +254,6 @@ class Engine(object):
         counter += 1
         if counter >= limit:
           break
-    #ret = du.map_from_T_with_M_c(ret, M_c)
     imputations_list = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in ret]
     ## Convert into dict with r,c keys
     imputations_dict = defaultdict(dict)
@@ -331,7 +321,7 @@ class Engine(object):
     ## For probability: query is a (c_idx, value) tuple.
     ## For similarity: query is a (target_row_id, target_column) tuple.
     ##
-    ## TODOSpecial case for SELECT *: should this be refactored to support selecting * as well as other functions?
+    ## TODO: Special case for SELECT *: should this be refactored to support selecting * as well as other functions?
     if '*' in columnstring:
       query_colnames = []
       queries = []
@@ -340,7 +330,6 @@ class Engine(object):
         queries.append(('column', idx))
         query_colnames.append(M_c['idx_to_name'][str(idx)])
     else:
-#      query_colnames = [colname.strip() for colname in columnstring.split(',')]
       query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring)]
       queries = []
       for idx, colname in enumerate(query_colnames):
@@ -428,7 +417,7 @@ class Engine(object):
             typicality_query = True
             continue
             
-        ## Check if predictive typicality query
+        ## Check if predictive probability query
         ## TODO: demo (last priority)
 
         ## Check if mutual information query - AGGREGATE
