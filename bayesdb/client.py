@@ -35,10 +35,10 @@ from engine import Engine
 
 class Client(object):
     def __init__(self, hostname=None, port=8008, crosscat_engine_type='multiprocessing'):
-        self.engine = Engine(crosscat_engine_type)
-        self.parser = Parser(self.engine)
+        self.parser = Parser()
         if hostname is None or hostname=='localhost':
             self.online = False
+            self.engine = Engine(crosscat_engine_type)
         else:
             self.online = True
             self.hostname = hostname

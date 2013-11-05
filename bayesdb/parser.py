@@ -26,6 +26,13 @@ import utils
 import os
 
 class Parser(object):
+    def __init__(self):
+        self.engine_method_names = [method_name for method_name in be.get_method_names() if method_name[0] != '_']
+        self.parser_method_names = [method_name[6:] for method_name in dir(Parser) if method_name[:6] == 'parse_']
+        self.method_names = set(self.engine_method_names).intersection(self.parser_method_names)
+        self.method_name_to_args = be.get_method_name_to_args()
+        self.reset_root_dir()
+    
     def parse(self, bql_string):
         ret_lines = []
         if len(bql_string) == 0:
@@ -75,13 +82,6 @@ class Parser(object):
             return relative_path
         else:
             return os.path.join(self.root_directory, relative_path)
-
-    def __init__(self, engine):
-        self.engine_method_names = [method_name for method_name in be.get_method_names() if method_name[0] != '_']
-        self.parser_method_names = [method_name[6:] for method_name in dir(Parser) if method_name[:6] == 'parse_']
-        self.method_names = set(self.engine_method_names).intersection(self.parser_method_names)
-        self.method_name_to_args = be.get_method_name_to_args()
-        self.reset_root_dir()
 
     def help_start_from_scratch(self):
         return "START FROM SCRATCH: drop all btables."
