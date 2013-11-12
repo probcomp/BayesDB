@@ -154,10 +154,10 @@ class Parser(object):
                     print self.help_create_btable()
                     return False
 
-    def help_drop_tablename(self):
+    def help_drop_btable(self):
         return "DROP BTABLE <tablename>: drop table."
 
-    def parse_drop_tablename(self, words, orig):
+    def parse_drop_btable(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
                 return 'drop_tablename', dict(tablename=words[2])

@@ -53,7 +53,7 @@ class Engine(object):
     self.persistence_layer.start_from_scratch()
     return 'Started db from scratch.'
 
-  def drop_tablename(self, tablename):
+  def drop_btable(self, tablename):
     """Delete table by tablename."""
     return self.persistence_layer.drop_btable(tablename)
 
