@@ -120,7 +120,7 @@ class Engine(object):
     return postgres_coltypes, cctypes
         
   def create_btable(self, tablename, csv, crosscat_column_types):
-    """Upload a csv table to the predictive db.
+    """Uplooad a csv table to the predictive db.
     Crosscat_column_types must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
     column name must be present in the dictionary: default is continuous."""

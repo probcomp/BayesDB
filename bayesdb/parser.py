@@ -259,9 +259,10 @@ class Parser(object):
             ret = list()
             orderables = list()
             for orderable in utils.column_string_splitter(order_by_clause):
-                ## Check for DESC
-                desc = re.search(r'\s+desc($|\s|,|(?=limit))', orderable, re.IGNORECASE)
-                orderable = re.sub(r'\s+desc($|\s|,|(?=limit))', '', orderable, re.IGNORECASE)
+                ## Check for DESC/ASC
+                desc = re.search(r'\s+(desc|asc)($|\s|,|(?=limit))', orderable, re.IGNORECASE)
+                desc = not desc ## TODO: need to switch desc!!!!
+                orderable = re.sub(r'\s+(desc|asc)desc($|\s|,|(?=limit))', '', orderable, re.IGNORECASE)
                 ## Check for similarity
                 pattern = r"""
                     similarity\s+to\s+(?P<rowid>[^\s]+)

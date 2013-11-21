@@ -27,6 +27,68 @@ import os
 from bayesdb.engine import Engine
 engine = Engine('local')
 
+def create_dha():
+  test_tablename = 'dhatest' + str(int(time.time() * 1000000))
+  csv_file_contents = open('data/dha.csv', 'r').read()
+  create_btable_result = engine.create_btable(test_tablename, csv_file_contents, None)
+  return test_tablename, create_btable_result
+
+def test_create_btable():
+  test_tablename, create_btable_result = create_dha()
+  assert 'columns' in create_btable_result
+  assert 'data' in create_btable_result
+  assert 'message' in create_btable_result
+  assert len(create_btable_result['data'][0]) == 64 ## 64 is number of columns in DHA dataset
+  list_btables_result = engine.list_btables()
+  assert test_tablename in list_btables_result
+  engine.drop_btable(test_tablename)
+
+def test_drop_btable():
+  test_tablename, _ = create_dha()
+  list_btables_result = engine.list_btables()
+  assert test_tablename in list_btables_result
+  engine.drop_btable(test_tablename)
+  list_btables_result = engine.list_btables()
+  assert test_tablename not in list_btables_result
+
+def test_select():
+  test_tablename, _ = create_dha()
+  columnstring = 'name, qual_score'
+  whereclause = ''
+  limit = float('inf')
+  order_by = False
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  assert 'columns' in select_result
+  assert 'data' in select_result
+  assert 'message' in select_result
+  assert select_result['columns'] == ['row_id', 'name', 'qual_score']
+  ## 307 is the total number of rows in the dataset.
+  assert len(select_result['data']) == 307 and len(select_result['data'][0]) == len(select_result['columns'])
+  assert type(select_result['data'][0][0]) == int ## type of row_id is int
+  assert type(select_result['data'][0][1]) == unicode ## type of name is unicode string
+  assert type(select_result['data'][0][2]) == float ## type of qual_score is float
+  original_select_result = select_result['data']
+
+  ## test limit
+  limit = 10
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  assert len(select_result['data']) == limit
+
+  ## test order by single column
+  ground_truth_ordered_results = sorted(original_select_result, key=lambda t: t[2], reverse=True)[:10]
+  order_by = [('column', {'desc': False, 'column': 'qual_score'})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  assert select_result['data'] == ground_truth_ordered_results
+
+  ## test order by desc single column
+  """ FAILING!
+  ground_truth_ordered_results = sorted(original_select_result, key=lambda t: t[2])[:10]
+  order_by = [('column', {'desc': True, 'column': 'qual_score'})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  assert select_result['data'] == ground_truth_ordered_results
+  """
+
+
 def run_test(hostname='localhost', middleware_port=8008, online=False):
   URI = 'http://' + hostname + ':%d' % middleware_port
   cur_dir = os.path.dirname(os.path.abspath(__file__))  

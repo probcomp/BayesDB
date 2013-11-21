@@ -94,6 +94,10 @@ class ExampleServer(ServerEvents):
                         ret_str += '; result: %s' % str(response.result)
                   else:
                         ret_str += '; error: %s' % str(response.error)
+                        for at in dir(response):
+                              if not at.startswith('__'):
+                                    print(at + ": " + str(getattr(response, at)))
+                        print("response:\n" + str(dir(response)))
             return ret_str
       
       
