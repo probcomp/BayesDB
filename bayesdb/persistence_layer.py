@@ -28,7 +28,7 @@ class PersistenceLayer(object):
     def list_btables(self):
         raise NotImplementedError()
     
-    def delete_chain(self, tablename, chain_index):
+    def delete_model(self, tablename, model_index):
         raise NotImplementedError()
             
     def get_latent_states(self, tablename):
@@ -37,7 +37,7 @@ class PersistenceLayer(object):
     def get_metadata_and_table(self, tablename):
         raise NotImplementedError()
 
-    def get_max_chain_id(self, tablename):
+    def get_max_model_id(self, tablename):
         raise NotImplementedError()
     
     def get_cctypes(self, tablename):
@@ -58,21 +58,21 @@ class PersistenceLayer(object):
     def create_btable_from_csv(self, tablename, csv_path, cctypes, postgres_coltypes, colnames):
         raise NotImplementedError()
 
-    def add_samples(self, tablename, X_L_list, X_D_list, iterations):
+    def add_models(self, tablename, X_L_list, X_D_list, iterations):
         raise NotImplementedError()
 
-    def add_samples_for_chain(self, tablename, X_L, X_D, iterations, chainid):
+    def update_model(self, tablename, X_L, X_D, iterations, modelid):
         raise NotImplementedError()
     
-    def insert_models(self, tablename, states_by_chain):
+    def insert_models(self, tablename, states_by_model):
         raise NotImplementedError()
 
     def get_table_id(self, tablename):
         raise NotImplementedError()
 
-    def get_chain(self, tablename, chainid):
+    def get_model(self, tablename, modelid):
         raise NotImplementedError()
 
-    def get_chain_ids(self, tablename):
+    def get_model_ids(self, tablename):
         raise NotImplementedError()
             

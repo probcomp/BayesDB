@@ -80,7 +80,7 @@ class PostgresPersistenceLayer(PersistenceLayer):
             tablenames = cur.fetchall()
         return [t[0] for t in tablenames]
 
-    def delete_chain(self, tablename, chain_index):
+    def delete_model(self, tablename, model_index):
         with self.open_db_connection(commit=True) as cur:
             cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
             tableids = cur.fetchall()
@@ -97,13 +97,13 @@ class PostgresPersistenceLayer(PersistenceLayer):
           tableid, M_c_json = cur.fetchone()
           M_c = json.loads(M_c_json)
           cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
-          chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
-          chainids = map(int, chainids)
+          modelids = [my_tuple[0] for my_tuple in cur.fetchall()]
+          modelids = map(int, modelids)
           X_L_list = list()
           X_D_list = list()
-          for chainid in chainids:
+          for modelid in modelids:
             cur.execute("SELECT x_l, x_d FROM preddb.models WHERE tableid=%s AND chainid=%s AND " 
-                      + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%s AND chainid=%s);", (tableid, chainid, tableid, chainid))
+                      + "iterations=(SELECT MAX(iterations) FROM preddb.models WHERE tableid=%s AND chainid=%s);", (tableid, modelid, tableid, modelid))
             X_L_prime_json, X_D_prime_json = cur.fetchone()
             X_L_list.append(json.loads(X_L_prime_json))
             X_D_list.append(json.loads(X_D_prime_json))
@@ -119,15 +119,15 @@ class PostgresPersistenceLayer(PersistenceLayer):
             T = json.loads(t_json)
         return M_c, M_r, T
 
-    def get_max_chain_id(self, tablename):
+    def get_max_model_id(self, tablename):
         with self.open_db_connection() as cur:
             cur.execute("SELECT tableid FROM preddb.table_index WHERE tablename=%s;", (tablename,))
             tableid = cur.fetchone()[0]
             cur.execute("SELECT MAX(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
-            max_chainid = cur.fetchone()[0]
-            if max_chainid is None:
-                max_chainid = 0
-        return max_chainid
+            max_modelid = cur.fetchone()[0]
+            if max_modelid is None:
+                max_modelid = 0
+        return max_modelid
 
     def get_cctypes(self, tablename):
         with self.open_db_connection() as cur:
@@ -181,33 +181,33 @@ class PostgresPersistenceLayer(PersistenceLayer):
             curtime = datetime.datetime.now().ctime()
             cur.execute("INSERT INTO preddb.table_index (tablename, numsamples, uploadtime, analyzetime, t, m_r, m_c, cctypes, path) VALUES (%s, %s, %s, NULL, %s, %s, %s, %s, %s);", (tablename, 0, curtime, json.dumps(t), json.dumps(m_r), json.dumps(m_c), json.dumps(cctypes), csv_path))
 
-    def add_samples(self, tablename, X_L_list, X_D_list, iterations):
+    def add_models(self, tablename, X_L_list, X_D_list, iterations):
         tableid = self.get_table_id(tablename)
-        max_chainid = self.get_max_chain_id(tablename)
-        if max_chainid is None: max_chainid = -1
+        max_modelid = self.get_max_model_id(tablename)
+        if max_modelid is None: max_modelid = -1
         with self.open_db_connection(commit=True) as cur:
             curtime = datetime.datetime.now().ctime()
             ## TODO: This is dangerous. M_c and cctypes will be out of date. Need to update cctypes.
             #cur.execute("UPDATE preddb.table_index SET m_c=%s, t=%s WHERE tablename=%s;", (json.dumps(M_c), json.dumps(T), tablename))
             for idx, (X_L, X_D) in enumerate(zip(X_L_list, X_D_list)):
-                chain_index = max_chainid + 1 + idx
-                cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%s, %s, %s, %s, %s, %s);", (tableid, json.dumps(X_L), json.dumps(X_D), curtime, chain_index, iterations))
+                model_index = max_modelid + 1 + idx
+                cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%s, %s, %s, %s, %s, %s);", (tableid, json.dumps(X_L), json.dumps(X_D), curtime, model_index, iterations))
         return 0
 
-    def add_samples_for_chain(self, tablename, X_L, X_D, iterations, chainid):
+    def update_model(self, tablename, X_L, X_D, iterations, modelid):
         tableid = self.get_table_id(tablename)
         with self.open_db_connection(commit=True) as cur:
             curtime = datetime.datetime.now().ctime()
             cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) " + \
                             "VALUES (%s, %s, %s, %s, %s, %s);",
-                        (tableid, json.dumps(X_L), json.dumps(X_D), curtime, chainid, iterations))
+                        (tableid, json.dumps(X_L), json.dumps(X_D), curtime, modelid, iterations))
 
-    def insert_models(self, tablename, states_by_chain):
+    def create_models(self, tablename, states_by_model):
         tableid = self.get_table_id(tablename)
         with self.open_db_connection(commit=True) as cur:
             curtime = datetime.datetime.now().ctime()
-            for chain_index, (x_l_prime, x_d_prime) in enumerate(states_by_chain):
-                cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%s, %s, %s, %s, %s, 0);", (tableid, json.dumps(x_l_prime), json.dumps(x_d_prime), curtime, chain_index))
+            for model_index, (x_l_prime, x_d_prime) in enumerate(states_by_model):
+                cur.execute("INSERT INTO preddb.models (tableid, X_L, X_D, modeltime, chainid, iterations) VALUES (%s, %s, %s, %s, %s, 0);", (tableid, json.dumps(x_l_prime), json.dumps(x_d_prime), curtime, model_index))
                          
 
     def get_table_id(self, tablename):
@@ -216,24 +216,24 @@ class PostgresPersistenceLayer(PersistenceLayer):
             tableid = int(cur.fetchone()[0])
         return tableid
 
-    def get_chain(self, tablename, chainid):
+    def get_model(self, tablename, modelid):
         tableid = self.get_table_id(tablename)
         with self.open_db_connection() as cur:
             cur.execute("SELECT x_l, x_d, iterations FROM preddb.models"
                         + " WHERE tableid=%s AND chainid=%s"
                         + " AND iterations=("
-                        + " SELECT MAX(iterations) FROM preddb.models WHERE tableid=%s AND chainid=%s);", (tableid, chainid, tableid, chainid))
+                        + " SELECT MAX(iterations) FROM preddb.models WHERE tableid=%s AND chainid=%s);", (tableid, modelid, tableid, modelid))
       
             X_L_prime_json, X_D_prime_json, prev_iterations = cur.fetchone()
             X_L_prime = json.loads(X_L_prime_json)
             X_D_prime = json.loads(X_D_prime_json)
         return X_L_prime, X_D_prime, prev_iterations
 
-    def get_chain_ids(self, tablename):
+    def get_model_ids(self, tablename):
         tableid = self.get_table_id(tablename)
         with self.open_db_connection() as cur:
             cur.execute("SELECT DISTINCT(chainid) FROM preddb.models WHERE tableid=%s;", (tableid,))
-            chainids = [my_tuple[0] for my_tuple in cur.fetchall()]
-            chainids = map(int, chainids)
-        return chainids
+            modelids = [my_tuple[0] for my_tuple in cur.fetchall()]
+            modelids = map(int, modelids)
+        return modelids
             

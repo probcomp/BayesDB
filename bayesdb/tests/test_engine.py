@@ -27,9 +27,9 @@ import os
 from bayesdb.engine import Engine
 engine = Engine('local')
 
-def create_dha():
+def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000))
-  csv_file_contents = open('data/dha.csv', 'r').read()
+  csv_file_contents = open(path, 'r').read()
   create_btable_result = engine.create_btable(test_tablename, csv_file_contents, None)
   return test_tablename, create_btable_result
 
@@ -88,178 +88,118 @@ def test_select():
   assert select_result['data'] == ground_truth_ordered_results
   """
 
+def test_delete_chain():
+  pass
 
-def run_test(hostname='localhost', middleware_port=8008, online=False):
-  URI = 'http://' + hostname + ':%d' % middleware_port
-  cur_dir = os.path.dirname(os.path.abspath(__file__))  
-  test_tablenames = ['dha_small', 'anneal_small']
+def test_update_datatypes():
+  test_tablename, _ = create_dha()
+  m_c, m_r, t = engine.persistence_layer.get_metadata_and_table(test_tablename)
+  cctypes = engine.persistence_layer.get_cctypes(test_tablename)
+  assert cctypes[m_c['idx_to_name']['qual_score']] == 'continuous'
+  assert cctypes[m_c['idx_to_name']['name']] == 'multinomial'
   
-  for tablename in test_tablenames:
-    table_csv = open('%s/../../www/data/%s.csv' % (cur_dir, tablename), 'r').read()
-    run_test_with(tablename, table_csv, URI, online)
+  mappings = dict(qual_score='multinomial', name='continuous')
+  engine.update_datatypes(test_tablename, mappings)
+  cctypes = engine.persistence_layer.get_cctypes(test_tablename)
+  assert cctypes[m_c['idx_to_name']['qual_score']] == 'multinomial'
+  assert cctypes[m_c['idx_to_name']['qual_score']] == 'continuous'
 
-def run_test_with(tablename, table_csv, URI, crosscat_column_types="None", online=False):
-  call('start_from_scratch', {}, URI, online)
+def test_export_and_import_samples():
+  pass
 
-  # test upload_data_table
-  print 'uploading data table %s' % tablename
-  method_name = 'upload_data_table'
-  args_dict = dict()
-  args_dict['tablename'] = tablename
-  args_dict['csv'] = table_csv 
-  args_dict['crosscat_column_types'] = crosscat_column_types
-  out = call(method_name, args_dict, URI, online)
-  acceptable_out = set([
-      0,
-      "Error: table with that name already exists.",
-      'Caught DB Error: relation "dha_small" already exists\n',
-      ])
-  assert (out in acceptable_out)
-  # TODO: Test that table was created
-  out = call('runsql', {'sql_command': "SELECT tableid FROM preddb.table_index WHERE tablename='%s'" % tablename}, URI, online)
-  time.sleep(1)
+def test_create_models():
+  test_tablename, _ = create_dha()
+  engine.create_models(test_tablename, 10)
+  model_ids = engine.persistence_layer.get_model_ids(test_tablename)
+  assert sorted(model_ids) == range(10)
+  for i in range(10):
+    X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
+    assert iters == 0
 
-  if 'dha' in tablename:
-    # test runsql
-    method_name = 'runsql'
-    args_dict = dict()
-    args_dict['sql_command'] = 'CREATE TABLE IF NOT EXISTS bob(id INT PRIMARY KEY, num INT);'
-    out = call(method_name, args_dict, URI, online)
-    assert out==0
-    call('runsql', {'sql_command': 'DROP TABLE bob;'}, URI, online)
-    args_dict['sql_command'] = 'SELECT * FROM preddb_data.dha_small;'
-    
-    out = call(method_name, args_dict, URI, online)
-    assert out['columns'] == [u'n_death_ill', u'ttl_mdcr_spnd', u'mdcr_spnd_inp', u'mdcr_spnd_outp', u'mdcr_spnd_ltc']
-    assert type(out['data']) == list
-    time.sleep(1)
+def test_analyze():
+  test_tablename, _ = create_dha()
+  engine.create_models(test_tablename, 2)
 
-  # test createmodel
-  method_name = 'create_model'
-  args_dict = dict()
-  args_dict['tablename'] = tablename
-  args_dict['n_chains'] = 3 # default is 10
-  print 'creating model with %d chains' % args_dict['n_chains']
-  out = call(method_name, args_dict, URI, online)  
-  assert out==0
-  # Test that one model was created
-  out = call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
-                 + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI, online)
-  assert(out['data'][0][0] == 3)
-  out = call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
-                 + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s' AND chainid=1;" % tablename}, URI, online)
-  assert(out['data'][0][0] == 1)
-  time.sleep(1)
+  for it in (1,2):
+    engine.analyze(test_tablename, model_index='all', iterations=1)
+    model_ids = engine.persistence_layer.get_model_ids(test_tablename)
+    assert sorted(model_ids) == range(10)
+    for i in range(10):
+      X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
+      assert iters == it
 
-  # test analyze
-  method_name = 'analyze'
-  args_dict = dict()
-  args_dict['tablename'] = tablename
-  args_dict['chain_index'] = 'all'
-  args_dict['wait'] = True # wait for analyze to finish
-  args_dict['iterations'] = 2
-  print 'running analyze for %d iterations on all chains' % args_dict['iterations']
-  out = call(method_name, args_dict, URI, online)
-  assert (out==0)
-  # Test that inference was started - there should now be two rows of latent states once analyze is finished running.
-  out = call('runsql', {'sql_command': "SELECT COUNT(*) FROM preddb.models, preddb.table_index WHERE " \
-                 + "preddb.models.tableid=preddb.table_index.tableid AND tablename='%s';" % tablename}, URI, online)
-  assert(out['data'][0][0] == 6)
-  time.sleep(1)
+def test_infer():
+  ## TODO: whereclauses
+  test_tablename, _ = create_dha(path='data/dha_missing.csv')
+  ## dha_missing has missing qual_score in first 5 rows, and missing name in rows 6-10.
+  engine.create_models(test_tablename, 2)
 
-  # test get_latent_states
-  (X_L_list, X_D_list, M_c) = call('get_latent_states', dict(tablename=tablename), URI, online)
-  import json
-  json_states = json.dumps(dict(X_L_list=X_L_list, X_D_list=X_D_list))
-  with open('json_states', 'w') as fh:
-    fh.write(json_states)
-  time.sleep(1)
+  columnstring = 'name, qual_score'
+  whereclause = ''
+  limit = float('inf')
+  order_by = False
+  numsamples = 30
+  confidence = 0
+  infer_result = engine.infer(test_tablename, columnstring, '', confidence, whereclause, limit, numsamples, order_by)
+  assert 'columns' in infer_result
+  assert 'data' in infer_result
+  assert 'message' in infer_result
+  assert infer_result['columns'] == ['row_id', 'name', 'qual_score']
+  ## 307 is the total number of rows in the dataset.
+  assert len(infer_result['data']) == 307 and len(infer_result['data'][0]) == len(infer_result['columns'])
+  assert type(infer_result['data'][0][0]) == int ## type of row_id is int
+  assert type(infer_result['data'][0][1]) == unicode ## type of name is unicode string
+  assert type(infer_result['data'][0][2]) == float ## type of qual_score is float
 
-  # test gen_feature_z
-  out = call('gen_feature_z', dict(tablename=tablename), URI, online)
+  all_possible_names = [infer_result['data'][row][1] for row in range(5) + range(10, 307)]
+  all_observed_qual_scores = [qual_score['data'][row][2] for row in range(5,307)]
 
-  if 'anneal' in tablename:
-    # TODO: test infer
-    method_name = 'infer'
-    args_dict = dict()
-    args_dict['tablename'] = tablename
-    args_dict['columnstring'] = "temper_rolling, condition"
-    args_dict['newtablename'] = "anneal_predict"
-    args_dict['whereclause'] = "steel=A"
-    args_dict['confidence'] = 0
-    args_dict['limit'] = 8
-    args_dict['numsamples'] = 10 # should do 10 or 100
-    print 'running infer'
-    out = call(method_name, args_dict, URI, online)
-    print 'infer out:', out
-    # TODO
-    # Test that missing values are filled in
-    time.sleep(1)
+  for row in range(5):
+    inferred_name = infer_result['data'][row+5][1]
+    inferred_qual_score = infer_result['data'][row][2]
+    assert inferred_name in all_possible_names
+    assert type(inferred_qual_score) == type(1.2)
+    assert inferred_qual_score > min(all_observed_qual_scores)
+    assert inferred_qual_score < max(all_observed_qual_scores)
 
-    # TODO: test predict
-    method_name = 'predict'
-    args_dict = dict()
-    args_dict['tablename'] = tablename
-    args_dict['columnstring'] = "temper_rolling, condition"
-    args_dict['newtablename'] = "anneal_predict"
-    args_dict['whereclause'] = "steel=A AND product_type=C"
-    args_dict['numpredictions'] = 10
-    print 'running predict'
-    out = call(method_name, args_dict, URI, online)
-    print 'predict out:\n',out
-    assert out['columns'] == [u'temper_rolling', u'condition']
-    assert len(out['data']) == 10
-    assert len(out['data'][0]) == len(out['columns'])    
-    time.sleep(1)
+  ## Now, try infer with higher confidence, and make sure that name isn't inferred anymore.
+  confidence = 0.9
+  infer_result = engine.infer(test_tablename, columnstring, '', confidence, whereclause, limit, numsamples, order_by)
 
-  if 'dha' in tablename:
-    # TODO: test infer
-    method_name = 'infer'
-    args_dict = dict()
-    args_dict['tablename'] = tablename
-    args_dict['columnstring'] = "N_DEATH_ILL, MDCR_SPND_INP"
-    args_dict['newtablename'] = ""
-    args_dict['whereclause'] = 'MDCR_SPND_LTC=6331'
-    args_dict['confidence'] = 0
-    args_dict['limit'] = 8
-    args_dict['numsamples'] = 10 # should do 10 or 100
-    print 'running infer'
-    #out = middleware_engine.infer(tablename, "N_DEATH_ILL, MDCR_SPND_INP", "", 0, 'MDCR_SPND_LTC=6331', 8, 10)
-    out = call(method_name, args_dict, URI, online)
-    # TODO: Test that missing values are filled in
-    time.sleep(1)
+  for row in range(5):
+    ## TODO: what do missing values look like? these should be missing
+    inferred_name = infer_result['data'][row+5][1]
+    inferred_qual_score = infer_result['data'][row][2]
+    assert inferred_name not in all_possible_names
+    assert type(inferred_qual_score) != type(1.2)
 
-    # TODO: test predict
-    method_name = 'predict'
-    args_dict = dict()
-    args_dict['tablename'] = tablename
-    args_dict['columnstring'] = "N_DEATH_ILL, MDCR_SPND_INP"
-    args_dict['newtablename'] = ""
-    args_dict['whereclause'] = 'MDCR_SPND_LTC=6331'
-    args_dict['numpredictions'] = 10
-    print 'running predict'
-    out = call(method_name, args_dict, URI, online)
-    print out
-    assert out['columns'] == [u'N_DEATH_ILL', u'MDCR_SPND_INP']
-    assert len(out['data']) == 10
-    assert len(out['data'][0]) == len(out['columns'])
-    time.sleep(1)
 
-  # test delete_chain
-  method_name = 'delete_chain'
-  args_dict = dict()
-  args_dict['tablename'] = tablename
-  args_dict['chain_index'] = 0
-  print 'deleting chain 0'
-  out = call(method_name, args_dict, URI, online)
-  assert out==0
-  # TODO: Test to make sure there's one less chain
-  time.sleep(1)
+def test_simulate():
+  ## TODO: whereclauses
+  test_tablename, _ = create_dha()
+  ## dha_missing has missing qual_score in first 5 rows, and missing name in rows 6-10.
+  engine.create_models(test_tablename, 2)
+  
+  columnstring = 'name, qual_score'
+  whereclause = ''
+  order_by = False
+  numpredictions = 10
+  simulate_result = engine.simulate(test_tablename, columnstring, '', whereclause, numpredictions, order_by)
+  assert 'columns' in simulate_result
+  assert 'data' in simulate_result
+  assert 'message' in simulate_result
+  assert simulate_result['columns'] == ['name', 'qual_score']
 
-  # drop tablename
-  print 'dropping tablename'
-  call('drop_tablename', {'tablename': tablename}, URI, online)
+  assert len(simulate_result['data']) == 10 and len(simulate_result['data'][0]) == len(simulate_result['columns'])
+  for row in range(numpredictions):
+    assert type(simulate_result['data'][row][0]) == unicode
+    assert type(simulate_result['data'][row][1]) == float
 
+def test_estimate_pairwise():
+  pass
+
+def test_estimate_dependence_probabilities():
+  pass
   
 if __name__ == '__main__':
     run_test()

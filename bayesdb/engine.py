@@ -62,9 +62,9 @@ class Engine(object):
     """Return names of all btables."""
     return self.persistence_layer.list_btables()
 
-  def delete_chain(self, tablename, chain_index):
-     """Delete one chain."""
-     return self.persistence_layer.delete_chain(tablename)
+  def delete_model(self, tablename, model_index):
+     """Delete one model."""
+     return self.persistence_layer.delete_model(tablename)
 
   def update_datatypes(self, tablename, mappings):
     """
@@ -74,8 +74,8 @@ class Engine(object):
     and it ignores multinomials' specific number of outcomes.
     Also, disastrous things may happen if you update a schema after creating models.
     """
-    max_chainid = self.persistence_layer.get_max_chain_id(tablename)
-    if max_chainid is not None:
+    max_modelid = self.persistence_layer.get_max_model_id(tablename)
+    if max_modelid is not None:
       return 'Error: cannot update datatypes after models have already been created. Please create a new table.'
     
     # First, get existing cctypes, and T, M_c, and M_r.    
@@ -142,64 +142,64 @@ class Engine(object):
 
     return dict(columns=colnames, data=[cctypes], message='Created btable %s. Inferred schema:' % tablename)
 
-  def export_samples(self, tablename):
-    """Opposite of import samples! Save a pickled version of X_L_list, X_D_list, M_c, and T."""
+  def export_models(self, tablename):
+    """Opposite of import models! Save a pickled version of X_L_list, X_D_list, M_c, and T."""
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     return dict(M_c=M_c, M_r=M_r, T=T, X_L_list=X_L_list, X_D_list=X_D_list)
 
-  def import_samples(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
-    """Import these samples as if they are new chains"""
-    result = self.persistence_layer.add_samples(tablename, X_L_list, X_D_list, iterations)
+  def import_models(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
+    """Import these models as if they are new models"""
+    result = self.persistence_layer.add_models(tablename, X_L_list, X_D_list, iterations)
     if result == 0:
-      return dict(message="Successfully imported %d samples." % len(X_L_list))
+      return dict(message="Successfully imported %d models." % len(X_L_list))
     else:
-      return dict(message="Error importing samples.")
+      return dict(message="Error importing models.")
     
-  def create_models(self, tablename, n_chains):
-    """Call initialize n_chains times."""
+  def create_models(self, tablename, n_models):
+    """Call initialize n_models times."""
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    max_chainid = self.persistence_layer.get_max_chain_id(tablename)
+    max_modelid = self.persistence_layer.get_max_model_id(tablename)
 
     # Call initialize on backend
-    states_by_chain = list()
+    states_by_model = list()
     args_dict = dict()
     args_dict['M_c'] = M_c
     args_dict['M_r'] = M_r
     args_dict['T'] = T
-    for chain_index in range(max_chainid, n_chains + max_chainid):
+    for model_index in range(max_modelid, n_models + max_modelid):
       x_l_prime, x_d_prime = self.backend.initialize(M_c, M_r, T)
-      states_by_chain.append((x_l_prime, x_d_prime))
+      states_by_model.append((x_l_prime, x_d_prime))
 
     # Insert results into persistence layer
-    self.persistence_layer.insert_models(tablename, states_by_chain)
+    self.persistence_layer.create_models(tablename, states_by_model)
 
-  def analyze(self, tablename, chain_index=1, iterations=2, wait=False):
-    """Run analyze for the selected table. chain_index may be 'all'."""
+  def analyze(self, tablename, model_index='all', iterations=2, wait=False):
+    """Run analyze for the selected table. model_index may be 'all'."""
     # Get M_c, T, X_L, and X_D from database
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
-    if (str(chain_index).upper() == 'ALL'):
-      chainids = self.persistence_layer.get_chain_ids(tablename)
-      print('chainids: %s' % chainids)
+    if (str(model_index).upper() == 'ALL'):
+      modelids = self.persistence_layer.get_model_ids(tablename)
+      print('modelids: %s' % modelids)
     else:
-      chainids = [chain_index]
+      modelids = [model_index]
 
-    chainid_iteration_info = list()
+    modelid_iteration_info = list()
     # p_list = []
-    for chainid in chainids:
-      iters = self._analyze_helper(tablename, M_c, T, chainid, iterations)
-      chainid_iteration_info.append('Chain %d: %d iterations' % (chainid, iters))
+    for modelid in modelids:
+      iters = self._analyze_helper(tablename, M_c, T, modelid, iterations)
+      modelid_iteration_info.append('Model %d: %d iterations' % (modelid, iters))
     #   from multiprocessing import Process
     #   p = Process(target=self._analyze_helper,
-    #               args=(tableid, M_c, T, chainid, iterations, self.BACKEND_URI))
+    #               args=(tableid, M_c, T, modelid, iterations, self.BACKEND_URI))
     #   p_list.append(p)
     #   p.start()
     # if wait:
     #   for p in p_list:
     #     p.join()
-    return dict(message=', '.join(chainid_iteration_info))
+    return dict(message=', '.join(modelid_iteration_info))
 
   def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False):
     """Impute missing values.
@@ -720,19 +720,9 @@ class Engine(object):
     return self._do_gen_feature_z(X_L_list, X_D_list, M_c,
                              tablename, full_filename)
 
-  def dump_db(self, filename, dir=S.path.web_resources_dir):
-    full_filename = os.path.join(dir, filename)
-    if filename.endswith('.gz'):
-      cmd_str = 'pg_dump %s | gzip > %s' % (dbname, full_filename)
-    else:
-      cmd_str = 'pg_dump %s > %s' % (dbname, full_filename)
-    os.system(cmd_str)
-    return dict(message='Database successfully dumped to %s' % full_filename)
-
-
-  def _analyze_helper(self, tablename, M_c, T, chainid, iterations):
-    """Only for one chain."""
-    X_L_prime, X_D_prime, prev_iterations = self.persistence_layer.get_chain(tablename, chainid)
+  def _analyze_helper(self, tablename, M_c, T, modelid, iterations):
+    """Only for one model."""
+    X_L_prime, X_D_prime, prev_iterations = self.persistence_layer.get_model(tablename, modelid)
 
     # Call analyze on backend      
     args_dict = dict()
@@ -749,7 +739,7 @@ class Engine(object):
     args_dict['max_time'] = -1 # Currently ignored by analyze
     X_L_prime, X_D_prime = self.backend.analyze(M_c, T, X_L_prime, X_D_prime, (), iterations)
 
-    self.persistence_layer.add_samples_for_chain(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, chainid)
+    self.persistence_layer.add_samples_for_model(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, modelid)
     return (prev_iterations + iterations)
 
   def _dependence_probability(self, col1, col2, X_L_list, X_D_list, M_c, T):
@@ -780,9 +770,9 @@ class Engine(object):
     ## Returns list of lists.
     ## First list: same length as Q, so we just take first.
     ## Second list: MI, linfoot. we take MI.
-    results_by_sample = self.backend.mutual_information(M_c, X_L_list, X_D_list, Q)[0][0]
-    ## Report the average mutual information over each sample.
-    mi = float(sum(results_by_sample)) / len(results_by_sample)
+    results_by_model = self.backend.mutual_information(M_c, X_L_list, X_D_list, Q)[0][0]
+    ## Report the average mutual information over each model.
+    mi = float(sum(results_by_model)) / len(results_by_model)
     print time.time() - t
     return mi
 

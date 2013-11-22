@@ -72,10 +72,10 @@ class FilePersistenceLayer(PersistenceLayer):
         """Return a list of all btable names."""
         return self.btable_names
 
-    def delete_chain(self, tablename, chain_index):
-        """Delete a single chain(model)"""
+    def delete_model(self, tablename, model_index):
+        """Delete a single model"""
         models = pickle.load(open(os.path.jsoin(self.data_dir, tablename, 'models.pkl'), 'r'))
-        del models[chain_index]
+        del models[model_index]
         return 0
             
     def get_latent_states(self, tablename):
@@ -95,8 +95,8 @@ class FilePersistenceLayer(PersistenceLayer):
         T = metadata['T']
         return M_c, M_r, T
 
-    def get_max_chain_id(self, tablename, models=None):
-        """Get the highest chain(model) id."""
+    def get_max_model_id(self, tablename, models=None):
+        """Get the highest model id."""
         if models is None:
             models = self.get_models(tablename)
         iter_list = [model['iterations'] for model in model.values()]
@@ -144,36 +144,36 @@ class FilePersistenceLayer(PersistenceLayer):
         pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
         self.btable_names.add(tablename)
 
-    def add_samples(self, tablename, X_L_list, X_D_list, iterations):
+    def add_models(self, tablename, X_L_list, X_D_list, iterations):
         assert len(X_L_list) == len(X_D_list)
         f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'rw')
         models = pickle.load(f)
-        max_chain_id = self.get_max_chain_id(tablename, models)
+        max_model_id = self.get_max_model_id(tablename, models)
         for i in range(len(X_L_list)):
-            models[max_chain_id + 1 + i] = dict(X_L=X_L_list[i], X_D=X_D_list[i], iterations=iterations)
+            models[max_model_id + 1 + i] = dict(X_L=X_L_list[i], X_D=X_D_list[i], iterations=iterations)
         pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)
         return 0
 
-    def add_samples_for_chain(self, tablename, X_L, X_D, iterations, chainid):
+    def update_model(self, tablename, X_L, X_D, iterations, modelid):
         f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'rw')
         models = pickle.load(f)
-        models[chainid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
+        models[modelid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
         pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)
 
-    def insert_models(self, tablename, states_by_chain)
+    def create_models(self, tablename, states_by_model)
         f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'rw')
         models = pickle.load(f)
-        models[chainid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
+        models[modelid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
         pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)
-        for chain_index, (x_l_prime, x_d_prime) in enumerate(states_by_chain):
-            models[chain_index] = dict(X_L=X_L, X_D=X_D, iterations=0)
+        for model_index, (x_l_prime, x_d_prime) in enumerate(states_by_model):
+            models[model_index] = dict(X_L=X_L, X_D=X_D, iterations=0)
 
-    def get_chain(self, tablename, chainid):
+    def get_model(self, tablename, modelid):
         models = self.get_models(tablename)
-        m = models[chainid]
+        m = models[modelid]
         return m['X_L'], m['X_D'], m['iterations']
 
-    def get_chain_ids(self, tablename):
+    def get_model_ids(self, tablename):
         models = self.get_models(tablename)
         return models.keys()
             

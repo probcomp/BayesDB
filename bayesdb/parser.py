@@ -100,10 +100,10 @@ class Parser(object):
                 return 'list_btables', dict()
 
     def help_create_models(self):
-        return "CREATE MODELS FOR <btable> [WITH <n_chains> EXPLANATIONS]: the step to perform before analyze."
+        return "CREATE MODELS FOR <btable> [WITH <n_models> EXPLANATIONS]: the step to perform before analyze."
 
     def parse_create_models(self, words, orig):
-        n_chains = 10
+        n_models = 10
         if len(words) >= 1:
             if words[0] == 'create' and (utils.is_int(words[1]) or words[1] == 'model' or words[1] == 'models'):
                 if len(words) >= 4 and words[1] == 'model' or words[1] == 'models':
@@ -111,21 +111,21 @@ class Parser(object):
                         tablename = words[3]
                         if len(words) >= 7:
                             if words[4] == 'with' and utils.is_int(words[5]) and words[6] == 'explanations':
-                                n_chains = int(words[5])
-                        result = 'create_models', dict(tablename=tablename, n_chains=n_chains)
-                        print 'Created %d models for btable %s' % (n_chains, tablename)
+                                n_models = int(words[5])
+                        result = 'create_models', dict(tablename=tablename, n_models=n_models)
+                        print 'Created %d models for btable %s' % (n_models, tablename)
                         return result
                     else:
                         print self.help_create_models()
                         return False
                 elif len(words) >= 3 and utils.is_int(words[1]):
-                    n_chains = int(words[1])
-                    assert n_chains > 0
+                    n_models = int(words[1])
+                    assert n_models > 0
                     if words[2] == 'model' or words[2] == 'models':
                         if len(words) >= 5 and words[3] == 'for':
                             tablename = words[4]
-                            result = 'create_models', dict(tablename=tablename, n_chains=n_chains)
-                            print 'Created %d models for btable %s' % (n_chains, tablename)
+                            result = 'create_models', dict(tablename=tablename, n_models=n_models)
+                            print 'Created %d models for btable %s' % (n_models, tablename)
                             return result
                         else:
                             print self.help_create_models()
@@ -162,30 +162,30 @@ class Parser(object):
             if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
                 return 'drop_tablename', dict(tablename=words[2])
 
-    def help_delete_chain(self):
-        return "DELETE CHAIN <chain_index> FROM <tablename>: delete the specified chain (model). chain_index may be 'all'."
+    def help_delete_model(self):
+        return "DELETE MODEL <model_index> FROM <tablename>: delete the specified model (model). model_index may be 'all'."
 
-    def parse_delete_chain(self, words, orig):
+    def parse_delete_model(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'delete':
-                if words[1] == 'chain' and utils.is_int(words[2]):
-                    chain_index = int(words[2])
+                if words[1] == 'model' and utils.is_int(words[2]):
+                    model_index = int(words[2])
                     if words[3] == 'from':
                         tablename = words[4]
-                        return 'delete_chain', dict(tablename=tablename, chain_index=chain_index)
-                elif len(words) >= 6 and words[2] == 'all' and words[3] == 'chains' and words[4] == 'from':
-                    chain_index = 'all'
+                        return 'delete_model', dict(tablename=tablename, model_index=model_index)
+                elif len(words) >= 6 and words[2] == 'all' and words[3] == 'models' and words[4] == 'from':
+                    model_index = 'all'
                     tablename = words[5]
-                    return 'delete_chain', dict(tablename=tablename, chain_index=chain_index)
+                    return 'delete_model', dict(tablename=tablename, model_index=model_index)
                 else:
-                    print self.help_delete_chain()
+                    print self.help_delete_model()
                     return False
 
     def help_analyze(self):
-        return "ANALYZE <btable> [CHAIN INDEX <chain_index>] [FOR <iterations> ITERATIONS]: perform inference."
+        return "ANALYZE <btable> [MODEL INDEX <model_index>] [FOR <iterations> ITERATIONS]: perform inference."
 
     def parse_analyze(self, words, orig):
-        chain_index = 'all'
+        model_index = 'all'
         iterations = 2
         wait = False
         if len(words) >= 1 and words[0] == 'analyze':
@@ -195,13 +195,13 @@ class Parser(object):
                 print self.help_analyze()
                 return False
             idx = 2
-            if words[idx] == "chain" and words[idx+1] == 'index':
-                chain_index = words[idx+2]
+            if words[idx] == "model" and words[idx+1] == 'index':
+                model_index = words[idx+2]
                 idx += 3
             ## TODO: check length here
             if words[idx] == "for" and words[idx+2] == 'iterations':
                 iterations = int(words[idx+1])
-            return 'analyze', dict(tablename=tablename, chain_index=chain_index,
+            return 'analyze', dict(tablename=tablename, model_index=model_index,
                                    iterations=iterations, wait=False)
 
     def help_infer(self):
@@ -313,13 +313,13 @@ class Parser(object):
         else:
             return float('inf')
 
-    def help_export_samples(self):
-        return "EXPORT SAMPLES FROM <btable> TO <pklpath>: export your samples (aka models, chains) to a pickle file."
+    def help_export_models(self):
+        return "EXPORT MODELS FROM <btable> TO <pklpath>: export your models to a pickle file."
 
-    def parse_export_samples(self, words, orig):
+    def parse_export_models(self, words, orig):
         match = re.search(r"""
             export\s+
-            (samples\s+)?
+            (models\s+)?
             from\s+
             (?P<btable>[^\s]+)
             \s+to\s+
@@ -327,7 +327,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'export':
-                print self.help_export_samples()
+                print self.help_export_models()
                 return False
             else:
                 return None
@@ -336,15 +336,15 @@ class Parser(object):
             pklpath = match.group('pklpath')
             if pklpath[-7:] != '.pkl.gz':
                 pklpath = pklpath + ".pkl.gz"
-            return 'export_samples', dict(tablename=tablename, pkl_path=pklpath)
+            return 'export_models', dict(tablename=tablename, pkl_path=pklpath)
 
-    def help_import_samples(self):
-        return "IMPORT SAMPLES <pklpath> INTO <btable> [ITERATIONS <iterations>]: import samples from a pickle file."
+    def help_import_models(self):
+        return "IMPORT MODELS <pklpath> INTO <btable> [ITERATIONS <iterations>]: import models from a pickle file."
 
-    def parse_import_samples(self, words, orig):
+    def parse_import_models(self, words, orig):
         match = re.search(r"""
             import\s+
-            (samples\s+)?
+            (models\s+)?
             (?P<pklpath>[^\s]+)\s+
             into\s+
             (?P<btable>[^\s]+)
@@ -352,7 +352,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'import':
-                print self.help_import_samples()
+                print self.help_import_models()
                 return False
             else:
                 return None
@@ -360,18 +360,18 @@ class Parser(object):
             tablename = match.group('btable')
             pklpath = match.group('pklpath')
             if pklpath[-3:] == '.gz':
-                samples = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
+                models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
             else:
-                samples = pickle.load(open(self.get_absolute_path(pklpath), 'rb'))
-            X_L_list = samples['X_L_list']
-            X_D_list = samples['X_D_list']
-            M_c = samples['M_c']
-            T = samples['T']
+                models = pickle.load(open(self.get_absolute_path(pklpath), 'rb'))
+            X_L_list = models['X_L_list']
+            X_D_list = models['X_D_list']
+            M_c = models['M_c']
+            T = models['T']
             if match.group('iterations'):
                 iterations = int(match.group('iterations').strip())
             else:
                 iterations = 0
-            return 'import_samples', dict(tablename=tablename, X_L_list=X_L_list, X_D_list=X_D_list,
+            return 'import_models', dict(tablename=tablename, X_L_list=X_L_list, X_D_list=X_D_list,
                                           M_c=M_c, T=T, iterations=iterations)
 
     def help_select(self):
