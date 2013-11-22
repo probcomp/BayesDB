@@ -41,13 +41,14 @@ import crosscat.utils.data_utils as du
 import bayesdb.settings as S
 
 from crosscat.CrossCatClient import get_CrossCatClient
-from persistence_layer import PersistenceLayer
+from _file_persistence_layer import FilePersistenceLayer
+from _postgres_persistence_layer import PostgresPersistenceLayer
 import utils
 
 class Engine(object):
   def __init__(self, crosscat_engine_type='local', **kwargs):
     self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
-    self.persistence_layer = PersistenceLayer()
+    self.persistence_layer = FilePersistenceLayer()
 
   def start_from_scratch(self):
     self.persistence_layer.start_from_scratch()
@@ -124,17 +125,17 @@ class Engine(object):
     Crosscat_column_types must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
     column name must be present in the dictionary: default is continuous."""
-    # First, test if table with this name already exists, and fail if it does
+    ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
       raise Exception('Error: btable with that name already exists.')
     
     csv_abs_path = self.persistence_layer.write_csv(tablename, csv)
 
-    # Parse column names to create table
+    ## Parse column names to create table
     csv = csv.replace('\r', '')
     colnames = csv.split('\n')[0].split(',')
 
-    # Guess schema and create table
+    ## Guess schema and create table
     header, values = du.read_csv(csv_abs_path, has_header=True)
     postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types, colnames)
     self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, cctypes, postgres_coltypes, colnames)
