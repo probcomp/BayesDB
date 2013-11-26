@@ -21,7 +21,6 @@
 import time
 import inspect
 import os
-import pickle
 import json
 import datetime
 import re
@@ -279,299 +278,30 @@ class Engine(object):
     order by as if you're doing it exclusively on columns. The only downside is that now if there isn't an
     order by, but there is a limit, then we computed a large number of extra functions.
     """
-    probability_query = False ## probability_query is True if at least one of the queries is for probability.
-    data_query = False ## data_query is True if at least one of the queries is for raw data.
-    similarity_query = False
-    typicality_query = False
-    mutual_information_query = False
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    Y = None ## Simple predictive probability givens.
+    
+    queries, query_colnames, aggregates_only = utils.get_queries_from_columnstring(columnstring)
+    where_conditions = utils.get_conditions_from_whereclause(whereclause)      
 
-    ## Create conds: the list of conditions in the whereclause.
-    ## List of (c_idx, op, val) tuples.
-    conds = list() 
-    if len(whereclause) > 0:
-      conditions = whereclause.split(',')
-      ## Order matters: need <= and >= before < and > and =.
-      operator_list = ['<=', '>=', '=', '>', '<']
-      operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
-      for condition in conditions:
-        for operator_str in operator_list:
-          if operator_str in condition:
-            op_str = operator_str
-            op = operator_map[op_str]
-            break
-        vals = condition.split(op_str)
-        column = vals[0].strip()
+    filtered_rows = utils.filter_and_impute_rows(T, M_c, imputations_dict)
 
-        ## Determine what type the value is
-        raw_val = vals[1].strip()
-        if utils.is_int(raw_val):
-          val = int(raw_val)
-        elif utils.is_float(raw_val):
-          val = float(raw_val)
-        else:
-          ## val could have matching single or double quotes, which we can safely eliminate
-          ## with the following safe (string literal only) implementation of eval
-          val = ast.literal_eval(raw_val).lower()
+    ## TODO: In order to avoid double-calling functions when we both select them and order by them,
+    ## we should augment filtered_rows here with all functions that are going to be selected
+    ## (and maybe temporarily augmented with all functions that will be ordered only)
+    ## If only being selected: then want to compute after ordering...
+    
+    filtered_rows = utils.order_rows(filtered_rows, order_by)
 
-        c_idx = M_c['name_to_idx'][column]
-        conds.append((c_idx, op, val))
+    data = compute_result_and_limit(filtered_rows, limit, queries, M_c, self.backend)
 
-    ## Iterate through the columnstring portion of the input, and generate the query list.
-    ## queries is a list of (query_type, query) tuples, where query_type is: row_id, column, probability, similarity.
-    ## For row_id: query is ignored (so it is None).
-    ## For column: query is a c_idx.
-    ## For probability: query is a (c_idx, value) tuple.
-    ## For similarity: query is a (target_row_id, target_column) tuple.
-    ##
-    ## TODO: Special case for SELECT *: should this be refactored to support selecting * as well as other functions?
-    if '*' in columnstring:
-      query_colnames = []
-      queries = []
-      data_query = True
-      for idx in range(len(M_c['name_to_idx'].keys())):
-        queries.append(('column', idx))
-        query_colnames.append(M_c['idx_to_name'][str(idx)])
-    else:
-      query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring)]
-      queries = []
-      for idx, colname in enumerate(query_colnames):
-        ## Check if probability query
-        prob_match = re.search(r"""
-            probability\s*
-            \(\s*
-            (?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)
-            \s*\)
-        """, colname, re.VERBOSE | re.IGNORECASE)
-        if prob_match:
-          column = prob_match.group('column')
-          c_idx = M_c['name_to_idx'][column]
-          value = prob_match.group('value')
-          if utils.is_int(value):
-            value = int(value)
-          elif utils.is_float(value):
-            value = float(value)
-          ## TODO: need to escape strings here with ast.eval... call?
-          queries.append(('probability', (c_idx, value)))
-          probability_query = True
-          continue
-
-        ## Check if similarity query
-        similarity_match = re.search(r"""
-            similarity\s+to\s+
-            (?P<rowid>[^\s]+)
-            (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
-        """, colname, re.VERBOSE | re.IGNORECASE)
-        ## Try 2nd type of similarity syntax. Add "contextual similarity" for when cols are present?
-        if not similarity_match:
-          similarity_match = re.search(r"""
-              similarity_to\s*\(\s*
-              (?P<rowid>[^,]+)
-              (\s*,\s*(?P<column>[^\s]+)\s*)?
-              \s*\)
-          """, colname, re.VERBOSE | re.IGNORECASE) 
-          
-        if similarity_match:
-            rowid = similarity_match.group('rowid').strip()
-            if utils.is_int(rowid):
-              target_row_id = int(rowid)
-            else:
-              ## Instead of specifying an integer for rowid, you can specify a where clause.
-              where_vals = rowid.split('=')
-              where_colname = where_vals[0]
-              where_val = where_vals[1]
-              if type(where_val) == str or type(where_val) == unicode:
-                where_val = ast.literal_eval(where_val)
-              ## Look up the row_id where this column has this value!
-              c_idx = M_c['name_to_idx'][where_colname.lower()]
-              for row_id, T_row in enumerate(T):
-                row_values = utils.convert_row(T_row, M_c)
-                if row_values[c_idx] == where_val:
-                  target_row_id = row_id
-                  break
-              
-            if similarity_match.group('column'):
-                target_column = similarity_match.group('column').strip()
-            else:
-                target_column = None
-                
-            queries.append(('similarity', (target_row_id, target_column)))
-            similarity_query = True
-            continue
-
-        ## Check if row structural anomalousness/typicality query
-        row_typicality_match = re.search(r"""
-            row_typicality
-        """, colname, re.VERBOSE | re.IGNORECASE)
-        if row_typicality_match:
-            queries.append(('row_typicality', None))
-            typicality_query = True
-            continue
-
-        ## Check if col structural typicality/typicality query
-        col_typicality_match = re.search(r"""
-            col_typicality\s*\(\s*
-            (?P<column>[^\s]+)
-            \s*\)
-        """, colname, re.VERBOSE | re.IGNORECASE)
-        if col_typicality_match:
-            colname = col_typicality_match.group('column').strip()
-            queries.append(('col_typicality', M_c['name_to_idx'][colname]))
-            typicality_query = True
-            continue
-            
-        ## Check if predictive probability query
-        ## TODO: demo (last priority)
-
-        ## Check if mutual information query - AGGREGATE
-        mutual_information_match = re.search(r"""
-            mutual_information\s*\(\s*
-            (?P<col1>[^\s]+)
-            \s*,\s*
-            (?P<col2>[^\s]+)
-            \s*\)
-        """, colname, re.VERBOSE | re.IGNORECASE)
-        if mutual_information_match:
-            col1 = mutual_information_match.group('col1')
-            col2 = mutual_information_match.group('col2')
-            queries.append(('mutual_information', (M_c['name_to_idx'][col1], M_c['name_to_idx'][col2])))
-            mutual_information_query = True
-            continue
-
-        ## If none of above query types matched, then this is a normal column query.
-        queries.append(('column', M_c['name_to_idx'][colname]))
-        data_query = True
-
-    ## Always return row_id as the first column.
-    query_colnames = ['row_id'] + query_colnames
-    queries = [('row_id', None)] + queries
-
-    ## Helper function that applies WHERE conditions to row, returning True if row satisfies where clause.
-    def is_row_valid(idx, row):
-      for (c_idx, op, val) in conds:
-        if type(row[c_idx]) == str or type(row[c_idx]) == unicode:
-          return op(row[c_idx].lower(), val)
-        else:
-          return op(row[c_idx], val)
-      return True
-
-    ## If probability query: get latent states, and simple predictive probability givens (Y).
-    ## TODO: Pretty sure this is the wrong way to get Y.
-    if probability_query or similarity_query or order_by or typicality_query or mutual_information_query:
-      X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    Y = None
-    #if probability_query:
-      #if whereclause=="" or '=' not in whereclause:
-          #Y = None
-    '''
-      else:
-        varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
-        Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
-        # map values to codes
-        Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
-    '''
-
-    ## If there are only aggregate values, then only return one row.
-    ## TODO: is this actually right? Or is probability also a function of row? If so: get rid of this.
-    aggregates_only = reduce(lambda v,q: (q[0] == 'probability' or \
-                                          q[0] == 'col_typicality' or \
-                                          q[0] == 'mutual_information') and v, queries[1:], True)
-    if aggregates_only:
-      limit = 1
-
-    ## Iterate through all rows of T, convert codes to values, filter by all predicates in where clause,
-    ## and fill in imputed values.
-    filtered_values = list()
-    for row_id, T_row in enumerate(T):
-      row_values = utils.convert_row(T_row, M_c) ## Convert row from codes to values
-      if is_row_valid(row_id, row_values): ## Where clause filtering.
-        if imputations_dict and len(imputations_dict[row_id]) > 0:
-          ## Fill in any imputed values.
-          for col_idx, value in imputations_dict[row_id].items():
-            row_values = list(row_values)
-            row_values[col_idx] = '*' + str(value)
-            row_values = tuple(row_values)
-        filtered_values.append((row_id, row_values))
-
-    ## Apply order by, if applicable.
-    if order_by:
-      ## Step 1: get appropriate functions. Examples are 'column' and 'similarity'.
-      function_list = list()
-      for orderable in order_by:
-        function_name, args_dict = orderable
-        args_dict['M_c'] = M_c
-        args_dict['X_L_list'] = X_L_list
-        args_dict['X_D_list'] = X_D_list
-        args_dict['T'] = T
-        ## TODO: use something more understandable and less brittle than getattr here.
-        method = getattr(self, '_get_%s_function' % function_name)
-        argnames = inspect.getargspec(method)[0]
-        args = [args_dict[argname] for argname in argnames if argname in args_dict]
-        function = method(*args)
-        if args_dict['desc']:
-          function = lambda row_id, data_values: -1 * function(row_id, data_values)
-        function_list.append(function)          
-      ## Step 2: call order by.
-      filtered_values = self._order_by(filtered_values, function_list)
-
-    ## Now: generate result set by getting the desired elements of each row, iterating through queries.
-    data = []
-    row_count = 0
-    for row_id, row_values in filtered_values:
-      ret_row = []
-      for (query_type, query) in queries:
-        if query_type == 'row_id':
-          ret_row.append(row_id)
-        elif query_type == 'column':
-          col_idx = query
-          val = row_values[col_idx]
-          ret_row.append(val)
-        elif query_type == 'probability':
-          c_idx, value = query
-          if M_c['column_metadata'][c_idx]['code_to_value']:
-            val = float(M_c['column_metadata'][c_idx]['code_to_value'][str(value)])
-          else:
-            val = value
-          Q = [(len(X_D_list[0][0])+1, c_idx, val)] ## row is set to 1 + max row, instead of this row.
-          prob = math.exp(self.backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
-          ret_row.append(prob)
-        elif query_type == 'similarity':
-          target_row_id, target_column = query
-          sim = self.backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
-          ret_row.append(sim)
-        elif query_type == 'row_typicality':
-          anom = self.backend.row_structural_typicality(X_L_list, X_D_list, row_id)
-          ret_row.append(anom)
-        elif query_type == 'col_typicality':
-          c_idx = query
-          anom = self.backend.column_structural_typicality(X_L_list, c_idx)
-          ret_row.append(anom)
-        elif query_type == 'predictive_probability':
-          c_idx = query
-          ## WARNING: this backend call doesn't work for multinomial
-          ## TODO: need to test
-          Q = [(row_id, c_idx, du.convert_value_to_code(M_c, c_idx, T[row_id][c_idx]))]
-          Y = []
-          prob = math.exp(self.backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
-          ret_row.append(prob)
-        elif query_type == 'mutual_information':
-          c_idx1, c_idx2 = query
-          mutual_info, linfoot = self.backend.mutual_information(M_c, X_L_list, X_D_list, [(c_idx1, c_idx2)])
-          mutual_info = numpy.mean(mutual_info)
-          ret_row.append(mutual_info)
-
-      data.append(tuple(ret_row))
-      row_count += 1
-      if row_count >= limit:
-        break
-
-    ## Prepare for return
-    ret = dict(message='', data=data, columns=query_colnames)
-    return ret
+    return dict(message='', data=data, columns=query_colnames)
 
   def _get_column_function(self, column, M_c):
     """
     Returns a function of the form required by order_by that returns the column value.
+    data_values is one row
     """
     col_idx = M_c['name_to_idx'][column]
     return lambda row_id, data_values: data_values[col_idx]
@@ -579,6 +309,7 @@ class Engine(object):
   def _get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c, T):
     """
     Call this function to get a version of similarity as a function of only (row_id, data_values).
+    data_values is one row
     """
     if type(target_row_id) == str or type(target_row_id) == unicode:
       ## Instead of specifying an integer for rowid, you can specify a where clause.
@@ -599,7 +330,7 @@ class Engine(object):
   def _order_by(self, filtered_values, functions):
     """
     Return the original data tuples, but sorted by the given functions.
-    functions is an iterable of functions that take only data_tuple as an argument.
+    functions is an iterable of functions that take only row_id and data_tuple as an argument.
     The data_tuples must contain all __original__ data because you can order by
     data that won't end up in the final result set.
     """
@@ -702,7 +433,13 @@ class Engine(object):
     pylab.tight_layout()
     pylab.savefig(full_filename)
 
-  def estimate_pairwise(self, tablename, function_name, filename):
+  def estimate_columns(self, tablename, whereclause, limit, order_by, name=None):
+    raise NotImplementedError()
+  
+  def estimate_pairwise(self, tablename, function_name, filename, column_list=None):
+    ## TODO: implement functionality with column_list
+    if column_list is not None:
+      raise NotImplementedError()
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     return self._do_gen_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename, filename)
