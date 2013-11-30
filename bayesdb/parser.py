@@ -105,7 +105,7 @@ class Parser(object):
     def parse_create_models(self, words, orig):
         n_models = 10
         if len(words) >= 1:
-            if words[0] == 'create' and (utils.is_int(words[1]) or words[1] == 'model' or words[1] == 'models'):
+            if (words[0] == 'create' or words[0] == 'initialize') and (utils.is_int(words[1]) or words[1] == 'model' or words[1] == 'models'):
                 if len(words) >= 4 and words[1] == 'model' or words[1] == 'models':
                     if words[2] == 'for':
                         tablename = words[3]
