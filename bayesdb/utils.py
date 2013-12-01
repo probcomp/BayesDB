@@ -20,6 +20,9 @@
 
 import numpy
 import os
+import re
+import inspect
+import ast
 import crosscat.utils.data_utils as du
 
 import pylab
@@ -90,9 +93,9 @@ def parse_probability(colname, M_c):
     column = prob_match.group('column')
     c_idx = M_c['name_to_idx'][column]
     value = prob_match.group('value')
-    if utils.is_int(value):
+    if is_int(value):
       value = int(value)
-    elif utils.is_float(value):
+    elif is_float(value):
       value = float(value)
     ## TODO: need to escape strings here with ast.eval... call?
     return c_idx, value
@@ -116,7 +119,7 @@ def parse_similarity(colname, M_c, T):
 
   if similarity_match:
       rowid = similarity_match.group('rowid').strip()
-      if utils.is_int(rowid):
+      if is_int(rowid):
         target_row_id = int(rowid)
       else:
         ## Instead of specifying an integer for rowid, you can specify a where clause.
@@ -128,7 +131,7 @@ def parse_similarity(colname, M_c, T):
         ## Look up the row_id where this column has this value!
         c_idx = M_c['name_to_idx'][where_colname.lower()]
         for row_id, T_row in enumerate(T):
-          row_values = utils.convert_row(T_row, M_c)
+          row_values = convert_row(T_row, M_c)
           if row_values[c_idx] == where_val:
             target_row_id = row_id
             break
@@ -151,7 +154,7 @@ def parse_row_typicality(colname):
     else:
         return None
 
-def parse_col_typicality(colname, M_c):
+def parse_column_typicality(colname, M_c):
   col_typicality_match = re.search(r"""
       col_typicality\s*\(\s*
       (?P<column>[^\s]+)
@@ -197,9 +200,9 @@ def get_conditions_from_whereclause(whereclause):
 
       ## Determine what type the value is
       raw_val = vals[1].strip()
-      if utils.is_int(raw_val):
+      if is_int(raw_val):
         val = int(raw_val)
-      elif utils.is_float(raw_val):
+      elif is_float(raw_val):
         val = float(raw_val)
       else:
         ## val could have matching single or double quotes, which we can safely eliminate
@@ -211,7 +214,7 @@ def get_conditions_from_whereclause(whereclause):
   return conds
 
 def is_row_valid(idx, row, where_conditions):
- """Helper function that applies WHERE conditions to row, returning True if row satisfies where clause."""
+  """Helper function that applies WHERE conditions to row, returning True if row satisfies where clause."""
   for (c_idx, op, val) in where_conditions:
     if type(row[c_idx]) == str or type(row[c_idx]) == unicode:
       return op(row[c_idx].lower(), val)
@@ -219,7 +222,7 @@ def is_row_valid(idx, row, where_conditions):
       return op(row[c_idx], val)
   return True
 
-def get_queries_from_columnstring(columnstring):
+def get_queries_from_columnstring(columnstring, M_c, T):
     """
     Iterate through the columnstring portion of the input, and generate the query list.
     queries is a list of (query_type, query) tuples, where query_type is: row_id, column, probability, similarity.
@@ -232,7 +235,7 @@ def get_queries_from_columnstring(columnstring):
     queries = []
     aggregates_only = True
     for idx, colname in enumerate(query_colnames):
-      p = parse_probability(colname)
+      p = parse_probability(colname, M_c)
       if p is not None:
         queries.append(('probability', p))
         continue
@@ -286,13 +289,13 @@ def convert_row(row, M_c):
       ret.append(code)
   return tuple(ret)
 
-def filter_and_impute_rows(T, M_c, imputations_dict):
+def filter_and_impute_rows(T, M_c, imputations_dict, where_conditions):
     ## Iterate through all rows of T, convert codes to values, filter by all predicates in where clause,
     ## and fill in imputed values.
     filtered_rows = list()
     for row_id, T_row in enumerate(T):
-      row_values = utils.convert_row(T_row, M_c) ## Convert row from codes to values
-      if utils.is_row_valid(row_id, row_values, where_conditions): ## Where clause filtering.
+      row_values = convert_row(T_row, M_c) ## Convert row from codes to values
+      if is_row_valid(row_id, row_values, where_conditions): ## Where clause filtering.
         if imputations_dict and len(imputations_dict[row_id]) > 0:
           ## Fill in any imputed values.
           for col_idx, value in imputations_dict[row_id].items():
@@ -300,8 +303,9 @@ def filter_and_impute_rows(T, M_c, imputations_dict):
             row_values[col_idx] = '*' + str(value)
             row_values = tuple(row_values)
         filtered_rows.append((row_id, row_values))
+    return filtered_rows
 
-def order_rows(rows, order_by):
+def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
   """Input: rows are list of (row_id, row_values) tuples."""
   if not order_by:
       return rows
@@ -313,22 +317,74 @@ def order_rows(rows, order_by):
     args_dict['X_L_list'] = X_L_list
     args_dict['X_D_list'] = X_D_list
     args_dict['T'] = T
-    ## TODO: use something more understandable and less brittle than getattr here.
-    method = getattr(self, '_get_%s_function' % function_name)
+    args_dict['backend'] = backend
+    
+    if function_name == 'column':
+        method = _get_column_function
+    elif function_name == 'similarity':
+        method = _get_similarity_function
     argnames = inspect.getargspec(method)[0]
     args = [args_dict[argname] for argname in argnames if argname in args_dict]
     function = method(*args)
     if args_dict['desc']:
-      function = lambda row_id, data_values: -1 * function(row_id, data_values)
-    function_list.append(function)
+      f = lambda row_id, data_values: -1 * function(row_id, data_values)
+    function_list.append(f)
   ## Step 2: call order by.
-  rows = self._order_by(rows, function_list)
-  return rows  
+  rows = _order_by(rows, function_list)
+  return rows
 
-def compute_result_and_limit(rows, limit, queries, M_c, backend):
+def _get_column_function(column, M_c):
+  """
+  Returns a function of the form required by order_by that returns the column value.
+  data_values is one row
+  """
+  col_idx = M_c['name_to_idx'][column]
+  return lambda row_id, data_values: data_values[col_idx]
+
+def _get_similarity_function(target_column, target_row_id, X_L_list, X_D_list, M_c, T, backend):
+  """
+  Call this function to get a version of similarity as a function of only (row_id, data_values).
+  data_values is one row
+  """
+  if type(target_row_id) == str or type(target_row_id) == unicode:
+    ## Instead of specifying an integer for rowid, you can specify a where clause.
+    where_vals = target_row_id.split('=')
+    where_colname = where_vals[0]
+    where_val = where_vals[1]
+    if type(where_val) == str:
+      where_val = ast.literal_eval(where_val)
+    ## Look up the row_id where this column has this value!
+    c_idx = M_c['name_to_idx'][where_colname.lower()]
+    for row_id, T_row in enumerate(T):
+      row_values = convert_row(T_row, M_c)
+      if row_values[c_idx] == where_val:
+        target_row_id = row_id
+        break
+  return lambda row_id, data_values: backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
+
+def _order_by(filtered_values, functions):
+  """
+  Return the original data tuples, but sorted by the given functions.
+  functions is an iterable of functions that take only row_id and data_tuple as an argument.
+  The data_tuples must contain all __original__ data because you can order by
+  data that won't end up in the final result set.
+  """
+  if len(filtered_values) == 0 or not functions:
+    return filtered_values
+
+  scored_data_tuples = list() ## Entries are (score, data_tuple)
+  for row_id, data_tuple in filtered_values:
+    ## Apply each function to each data_tuple to get a #functions-length tuple of scores.
+    scores = tuple([func(row_id, data_tuple) for func in functions])
+    scored_data_tuples.append((scores, (row_id, data_tuple)))
+  scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
+  return [tup[1] for tup in scored_data_tuples]
+
+
+def compute_result_and_limit(rows, limit, queries, M_c, X_L_list, X_D_list, backend):
   data = []
   row_count = 0
-  for row_id, row_values in filtered_rows:
+  for row_id, row_values in rows:
     ret_row = []
     for (query_type, query) in queries:
       if query_type == 'row_id':
@@ -344,18 +400,18 @@ def compute_result_and_limit(rows, limit, queries, M_c, backend):
         else:
           val = value
         Q = [(len(X_D_list[0][0])+1, c_idx, val)] ## row is set to 1 + max row, instead of this row.
-        prob = math.exp(self.backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
+        prob = math.exp(backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
         ret_row.append(prob)
       elif query_type == 'similarity':
         target_row_id, target_column = query
-        sim = self.backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
+        sim = backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
         ret_row.append(sim)
       elif query_type == 'row_typicality':
-        anom = self.backend.row_structural_typicality(X_L_list, X_D_list, row_id)
+        anom = backend.row_structural_typicality(X_L_list, X_D_list, row_id)
         ret_row.append(anom)
       elif query_type == 'col_typicality':
         c_idx = query
-        anom = self.backend.column_structural_typicality(X_L_list, c_idx)
+        anom = backend.column_structural_typicality(X_L_list, c_idx)
         ret_row.append(anom)
       elif query_type == 'predictive_probability':
         c_idx = query
@@ -363,11 +419,11 @@ def compute_result_and_limit(rows, limit, queries, M_c, backend):
         ## TODO: need to test
         Q = [(row_id, c_idx, du.convert_value_to_code(M_c, c_idx, T[row_id][c_idx]))]
         Y = []
-        prob = math.exp(self.backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
+        prob = math.exp(backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
         ret_row.append(prob)
       elif query_type == 'mutual_information':
         c_idx1, c_idx2 = query
-        mutual_info, linfoot = self.backend.mutual_information(M_c, X_L_list, X_D_list, [(c_idx1, c_idx2)])
+        mutual_info, linfoot = backend.mutual_information(M_c, X_L_list, X_D_list, [(c_idx1, c_idx2)])
         mutual_info = numpy.mean(mutual_info)
         ret_row.append(mutual_info)
 
@@ -375,4 +431,4 @@ def compute_result_and_limit(rows, limit, queries, M_c, backend):
     row_count += 1
     if row_count >= limit:
       break
-
+  return data

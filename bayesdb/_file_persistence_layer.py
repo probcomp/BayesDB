@@ -23,6 +23,7 @@ import sys
 import crosscat.utils.data_utils as du
 import datetime
 import json
+import pickle
 
 from bayesdb.persistence_layer import PersistenceLayer
 import bayesdb.settings as S
@@ -110,7 +111,7 @@ class FilePersistenceLayer(PersistenceLayer):
         return metadata['cctypes']
 
     def update_cctypes(self, tablename, cctypes):
-        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'rw'))
+        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'rw')
         metadata = pickle.load(f)
         metadata['cctypes'] = cctypes
         pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
@@ -160,7 +161,7 @@ class FilePersistenceLayer(PersistenceLayer):
         models[modelid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
         pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)
 
-    def create_models(self, tablename, states_by_model)
+    def create_models(self, tablename, states_by_model):
         f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'rw')
         models = pickle.load(f)
         models[modelid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)

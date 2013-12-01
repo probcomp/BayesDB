@@ -47,7 +47,8 @@ import utils
 class Engine(object):
   def __init__(self, crosscat_engine_type='local', **kwargs):
     self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
-    self.persistence_layer = FilePersistenceLayer()
+    #self.persistence_layer = FilePersistenceLayer()
+    self.persistence_layer = PostgresPersistenceLayer()
 
   def start_from_scratch(self):
     self.persistence_layer.start_from_scratch()
@@ -281,70 +282,20 @@ class Engine(object):
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     Y = None ## Simple predictive probability givens.
-    
-    queries, query_colnames, aggregates_only = utils.get_queries_from_columnstring(columnstring)
+
+    queries, query_colnames, aggregates_only = utils.get_queries_from_columnstring(columnstring, M_c, T)
     where_conditions = utils.get_conditions_from_whereclause(whereclause)      
 
-    filtered_rows = utils.filter_and_impute_rows(T, M_c, imputations_dict)
+    filtered_rows = utils.filter_and_impute_rows(T, M_c, imputations_dict, where_conditions)
 
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
     ## (and maybe temporarily augmented with all functions that will be ordered only)
     ## If only being selected: then want to compute after ordering...
     
-    filtered_rows = utils.order_rows(filtered_rows, order_by)
-
-    data = compute_result_and_limit(filtered_rows, limit, queries, M_c, self.backend)
-
+    filtered_rows = utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self.backend)
+    data = utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, self.backend)
     return dict(message='', data=data, columns=query_colnames)
-
-  def _get_column_function(self, column, M_c):
-    """
-    Returns a function of the form required by order_by that returns the column value.
-    data_values is one row
-    """
-    col_idx = M_c['name_to_idx'][column]
-    return lambda row_id, data_values: data_values[col_idx]
-
-  def _get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c, T):
-    """
-    Call this function to get a version of similarity as a function of only (row_id, data_values).
-    data_values is one row
-    """
-    if type(target_row_id) == str or type(target_row_id) == unicode:
-      ## Instead of specifying an integer for rowid, you can specify a where clause.
-      where_vals = target_row_id.split('=')
-      where_colname = where_vals[0]
-      where_val = where_vals[1]
-      if type(where_val) == str:
-        where_val = ast.literal_eval(where_val)
-      ## Look up the row_id where this column has this value!
-      c_idx = M_c['name_to_idx'][where_colname.lower()]
-      for row_id, T_row in enumerate(T):
-        row_values = utils.convert_row(T_row, M_c)
-        if row_values[c_idx] == where_val:
-          target_row_id = row_id
-          break
-    return lambda row_id, data_values: self.backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
-
-  def _order_by(self, filtered_values, functions):
-    """
-    Return the original data tuples, but sorted by the given functions.
-    functions is an iterable of functions that take only row_id and data_tuple as an argument.
-    The data_tuples must contain all __original__ data because you can order by
-    data that won't end up in the final result set.
-    """
-    if len(filtered_values) == 0 or not functions:
-      return filtered_values
-    
-    scored_data_tuples = list() ## Entries are (score, data_tuple)
-    for row_id, data_tuple in filtered_values:
-      ## Apply each function to each data_tuple to get a #functions-length tuple of scores.
-      scores = tuple([func(row_id, data_tuple) for func in functions])
-      scored_data_tuples.append((scores, (row_id, data_tuple)))
-    scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
-    return [tup[1] for tup in scored_data_tuples]
-
 
   def simulate(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
