@@ -47,8 +47,8 @@ import utils
 class Engine(object):
   def __init__(self, crosscat_engine_type='local', **kwargs):
     self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
-    #self.persistence_layer = FilePersistenceLayer()
-    self.persistence_layer = PostgresPersistenceLayer()
+    self.persistence_layer = FilePersistenceLayer()
+    #self.persistence_layer = PostgresPersistenceLayer()
 
   def start_from_scratch(self):
     self.persistence_layer.start_from_scratch()
@@ -138,7 +138,7 @@ class Engine(object):
     ## Guess schema and create table
     header, values = du.read_csv(csv_abs_path, has_header=True)
     postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types, colnames)
-    self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, cctypes, postgres_coltypes, colnames)
+    self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, csv, cctypes, postgres_coltypes, colnames)
 
     return dict(columns=colnames, data=[cctypes], message='Created btable %s. Inferred schema:' % tablename)
 
@@ -151,10 +151,7 @@ class Engine(object):
   def import_models(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
     """Import these models as if they are new models"""
     result = self.persistence_layer.add_models(tablename, X_L_list, X_D_list, iterations)
-    if result == 0:
-      return dict(message="Successfully imported %d models." % len(X_L_list))
-    else:
-      return dict(message="Error importing models.")
+    return dict(message="Successfully imported %d models." % len(X_L_list))
     
   def create_models(self, tablename, n_models):
     """Call initialize n_models times."""
@@ -281,7 +278,6 @@ class Engine(object):
     """
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    Y = None ## Simple predictive probability givens.
 
     queries, query_colnames, aggregates_only = utils.get_queries_from_columnstring(columnstring, M_c, T)
     where_conditions = utils.get_conditions_from_whereclause(whereclause)      

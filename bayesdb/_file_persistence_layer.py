@@ -84,8 +84,8 @@ class FilePersistenceLayer(PersistenceLayer):
         metadata = self.get_metadata(tablename)
         models = self.get_models(tablename)
         M_c = metadata['M_c']
-        X_L_list = [model['X_L_list'] for model in models.values()]
-        X_D_list = [model['X_D_list'] for model in models.values()]
+        X_L_list = [model['X_L'] for model in models.values()]
+        X_D_list = [model['X_D'] for model in models.values()]
         return (X_L_list, X_D_list, M_c)
         
     def get_metadata_and_table(self, tablename):
@@ -100,7 +100,7 @@ class FilePersistenceLayer(PersistenceLayer):
         """Get the highest model id."""
         if models is None:
             models = self.get_models(tablename)
-        iter_list = [model['iterations'] for model in model.values()]
+        iter_list = [model['iterations'] for model in models.values()]
         if len(iter_list) == 0:
             return 0
         else:
@@ -128,41 +128,48 @@ class FilePersistenceLayer(PersistenceLayer):
         return tablename in self.btable_names
 
     def write_csv(self, tablename, csv):
+        if not os.path.exists(os.path.join(self.data_dir, tablename)):
+            os.mkdir(os.path.join(self.data_dir, tablename))        
         f = open(os.path.join(self.data_dir, tablename, 'data.csv'), 'w')
         csv_abs_path = os.path.abspath(f.name)
         f.write(csv)
         f.close()
         return csv_abs_path
 
-    def create_btable_from_csv(self, tablename, csv_path, cctypes, postgres_coltypes, colnames):
+    def create_btable_from_csv(self, tablename, csv_path, csv, cctypes, postgres_coltypes, colnames):
         t, m_r, m_c, header = du.read_data_objects(csv_path, cctypes=cctypes)
+        if not os.path.exists(os.path.join(self.data_dir, tablename)):
+            os.mkdir(os.path.join(self.data_dir, tablename))        
         self.write_csv(tablename, csv)
         metadata = dict()
         metadata['M_c'] = m_c
         metadata['M_r'] = m_r
         metadata['T'] = t
-        metadata_f = open(os.path.join(self.data_dir, tablane, 'metadata.pkl'), 'w')
+        metadata_f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'w')
         pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
         self.btable_names.add(tablename)
 
     def add_models(self, tablename, X_L_list, X_D_list, iterations):
         assert len(X_L_list) == len(X_D_list)
-        f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'rw')
-        models = pickle.load(f)
+        if os.path.exists(os.path.join(self.data_dir, tablename, 'models.pkl')):
+            f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r+w')                        
+            models = pickle.load(f)
+        else:
+            f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'w')                        
+            models = {}
         max_model_id = self.get_max_model_id(tablename, models)
         for i in range(len(X_L_list)):
             models[max_model_id + 1 + i] = dict(X_L=X_L_list[i], X_D=X_D_list[i], iterations=iterations)
         pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)
-        return 0
 
     def update_model(self, tablename, X_L, X_D, iterations, modelid):
-        f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'rw')
+        f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r+w')
         models = pickle.load(f)
         models[modelid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
         pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)
 
     def create_models(self, tablename, states_by_model):
-        f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'rw')
+        f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r+w')
         models = pickle.load(f)
         models[modelid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
         pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)

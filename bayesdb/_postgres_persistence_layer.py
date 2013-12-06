@@ -173,7 +173,7 @@ class PostgresPersistenceLayer(PersistenceLayer):
     
         return csv_abs_path
 
-    def create_btable_from_csv(self, tablename, csv_path, cctypes, postgres_coltypes, colnames):
+    def create_btable_from_csv(self, tablename, csv_path, csv, cctypes, postgres_coltypes, colnames):
         with self.open_db_connection(commit=True) as cur:
             ## TODO: warning: m_r and m_c have 0-indexed indices
             ##       but the db has 1-indexed keys
