@@ -163,10 +163,6 @@ class Engine(object):
 
     # Call initialize on backend
     states_by_model = list()
-    args_dict = dict()
-    args_dict['M_c'] = M_c
-    args_dict['M_r'] = M_r
-    args_dict['T'] = T
     for model_index in range(max_modelid, n_models + max_modelid):
       x_l_prime, x_d_prime = self.backend.initialize(M_c, M_r, T)
       states_by_model.append((x_l_prime, x_d_prime))
@@ -186,19 +182,17 @@ class Engine(object):
       modelids = [model_index]
 
     modelid_iteration_info = list()
-    # p_list = []
     for modelid in modelids:
       iters = self._analyze_helper(tablename, M_c, T, modelid, iterations)
       modelid_iteration_info.append('Model %d: %d iterations' % (modelid, iters))
-    #   from multiprocessing import Process
-    #   p = Process(target=self._analyze_helper,
-    #               args=(tableid, M_c, T, modelid, iterations, self.BACKEND_URI))
-    #   p_list.append(p)
-    #   p.start()
-    # if wait:
-    #   for p in p_list:
-    #     p.join()
     return dict(message=', '.join(modelid_iteration_info))
+
+  def _analyze_helper(self, tablename, M_c, T, modelid, iterations):
+    """Only for one model."""
+    X_L_prime, X_D_prime, prev_iterations = self.persistence_layer.get_model(tablename, modelid)
+    X_L_prime, X_D_prime = self.backend.analyze(M_c, T, X_L, X_D, n_steps=iterations)
+    self.persistence_layer.add_samples_for_model(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, modelid)
+    return (prev_iterations + iterations)
 
   def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False):
     """Impute missing values.
@@ -236,17 +230,9 @@ class Engine(object):
       Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
       Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
 
-    # Call backend
-    args_dict = dict()
-    args_dict['M_c'] = M_c
-    args_dict['X_L'] = X_L_list
-    args_dict['X_D'] = X_D_list
-    args_dict['Y'] = Y # givens
-    args_dict['n'] = numsamples
     counter = 0
     ret = []
     for q in Q:
-      args_dict['Q'] = q # querys
       out = self.backend.impute_and_confidence(M_c, X_L_list, X_D_list, Y, [q], numsamples)
       value, conf = out
       if conf >= confidence:
@@ -282,50 +268,22 @@ class Engine(object):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     Y = None ## Simple predictive probability givens.
     
-    queries, query_colnames, aggregates_only = utils.get_queries_from_columnstring(columnstring)
-    where_conditions = utils.get_conditions_from_whereclause(whereclause)      
+    queries, query_colnames, aggregates_only = select_utils.get_queries_from_columnstring(columnstring)
+    where_conditions = select_utils.get_conditions_from_whereclause(whereclause)      
 
-    filtered_rows = utils.filter_and_impute_rows(T, M_c, imputations_dict)
+    filtered_rows = select_utils.filter_and_impute_rows(T, M_c, imputations_dict)
 
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
     ## (and maybe temporarily augmented with all functions that will be ordered only)
     ## If only being selected: then want to compute after ordering...
     
-    filtered_rows = utils.order_rows(filtered_rows, order_by)
+    filtered_rows = select_utils.order_rows(filtered_rows, order_by)
 
-    data = compute_result_and_limit(filtered_rows, limit, queries, M_c, self.backend)
+    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, self.backend)
 
     return dict(message='', data=data, columns=query_colnames)
 
-  def _get_column_function(self, column, M_c):
-    """
-    Returns a function of the form required by order_by that returns the column value.
-    data_values is one row
-    """
-    col_idx = M_c['name_to_idx'][column]
-    return lambda row_id, data_values: data_values[col_idx]
-
-  def _get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c, T):
-    """
-    Call this function to get a version of similarity as a function of only (row_id, data_values).
-    data_values is one row
-    """
-    if type(target_row_id) == str or type(target_row_id) == unicode:
-      ## Instead of specifying an integer for rowid, you can specify a where clause.
-      where_vals = target_row_id.split('=')
-      where_colname = where_vals[0]
-      where_val = where_vals[1]
-      if type(where_val) == str:
-        where_val = ast.literal_eval(where_val)
-      ## Look up the row_id where this column has this value!
-      c_idx = M_c['name_to_idx'][where_colname.lower()]
-      for row_id, T_row in enumerate(T):
-        row_values = utils.convert_row(T_row, M_c)
-        if row_values[c_idx] == where_val:
-          target_row_id = row_id
-          break
-    return lambda row_id, data_values: self.backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
 
   def _order_by(self, filtered_values, functions):
     """
@@ -376,19 +334,10 @@ class Engine(object):
     query_col_indices = [idx for idx in col_indices if idx not in where_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
 
-    args_dict = dict()
-    args_dict['M_c'] = M_c
-    args_dict['X_L'] = X_L_list
-    args_dict['X_D'] = X_D_list
-    args_dict['Y'] = Y
-    args_dict['Q'] = Q
-    args_dict['n'] = numpredictions
     out = self.backend.simple_predictive_sample(M_c, X_L_list, X_D_list, Y, Q, numpredictions)
 
     # convert to data, columns dict output format
     # map codes to original values
-    ## TODO: Add histogram call back in, but on Python client locally!
-    #self._create_histogram(M_c, numpy.array(out), columns, col_indices, tablename+'_histogram')
     data = []
     for vals in out:
       row = []
@@ -402,36 +351,6 @@ class Engine(object):
       data.append(row)
     ret = {'message': 'Simulated data:', 'columns': colnames, 'data': data}
     return ret
-
-  def _create_histogram(self, M_c, data, columns, mc_col_indices, filename):
-    dir=S.path.web_resources_data_dir
-    full_filename = os.path.join(dir, filename)
-    num_rows = data.shape[0]
-    num_cols = data.shape[1]
-    #
-    pylab.figure()
-    # col_i goes from 0 to number of predicted columns
-    # mc_col_idx is the original column's index in M_c
-    for col_i in range(num_cols):
-      mc_col_idx = mc_col_indices[col_i]
-      data_i = data[:, col_i]
-      ax = pylab.subplot(1, num_cols, col_i, title=columns[col_i])
-      if M_c['column_metadata'][mc_col_idx]['modeltype'] == 'normal_inverse_gamma':
-        pylab.hist(data_i, orientation='horizontal')
-      else:
-        str_data = [du.convert_code_to_value(M_c, mc_col_idx, code) for code in data_i]
-        unique_labels = list(set(str_data))
-        np_str_data = numpy.array(str_data)
-        counts = []
-        for label in unique_labels:
-          counts.append(sum(np_str_data==label))
-        num_vals = len(M_c['column_metadata'][mc_col_idx]['code_to_value'])
-        rects = pylab.barh(range(num_vals), counts)
-        heights = numpy.array([rect.get_height() for rect in rects])
-        ax.set_yticks(numpy.arange(num_vals) + heights/2)
-        ax.set_yticklabels(unique_labels)
-    pylab.tight_layout()
-    pylab.savefig(full_filename)
 
   def estimate_columns(self, tablename, whereclause, limit, order_by, name=None):
     raise NotImplementedError()
@@ -447,156 +366,7 @@ class Engine(object):
   def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename, submatrix):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     return self._do_gen_matrix("dependence probability", X_L_list, X_D_list, M_c, tablename, filename, col=col, confidence=confidence, limit=limit, submatrix=submatrix)
-
-  def gen_feature_z(self, tablename, filename=None,
-                    dir=S.path.web_resources_dir):
-    if filename is None:
-      filename = tablename + '_feature_z'
-    full_filename = os.path.join(dir, filename)
-    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    return self._do_gen_feature_z(X_L_list, X_D_list, M_c,
-                             tablename, full_filename)
-
-  def _analyze_helper(self, tablename, M_c, T, modelid, iterations):
-    """Only for one model."""
-    X_L_prime, X_D_prime, prev_iterations = self.persistence_layer.get_model(tablename, modelid)
-
-    # Call analyze on backend      
-    args_dict = dict()
-    args_dict['M_c'] = M_c
-    args_dict['T'] = T
-    args_dict['X_L'] = X_L_prime
-    args_dict['X_D'] = X_D_prime
-    # FIXME: allow specification of kernel_list
-    args_dict['kernel_list'] = ()
-    args_dict['n_steps'] = iterations
-    args_dict['c'] = () # Currently ignored by analyze
-    args_dict['r'] = () # Currently ignored by analyze
-    args_dict['max_iterations'] = -1 # Currently ignored by analyze
-    args_dict['max_time'] = -1 # Currently ignored by analyze
-    X_L_prime, X_D_prime = self.backend.analyze(M_c, T, X_L_prime, X_D_prime, (), iterations)
-
-    self.persistence_layer.add_samples_for_model(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, modelid)
-    return (prev_iterations + iterations)
-
-  def _dependence_probability(self, col1, col2, X_L_list, X_D_list, M_c, T):
-    prob_dep = 0
-    for X_L, X_D in zip(X_L_list, X_D_list):
-      assignments = X_L['column_partition']['assignments']
-      ## Columns dependent if in same view, and the view has greater than 1 category
-      ## Future work can investigate whether more advanced probability of dependence measures
-      ## that attempt to take into account the number of outliers do better.
-      if (assignments[col1] == assignments[col2]):
-        if len(numpy.unique(X_D[assignments[col1]])) > 1:
-          prob_dep += 1
-    prob_dep /= float(len(X_L_list))
-    return prob_dep
-
-  def _view_similarity(self, col1, col2, X_L_list, X_D_list, M_c, T):
-    prob_dep = 0
-    for X_L in X_L_list:
-      assignments = X_L['column_partition']['assignments']
-      if assignments[col1] == assignments[col2]:
-        prob_dep += 1
-    prob_dep /= float(len(X_L_list))
-    return prob_dep
-
-  def _mutual_information(self, col1, col2, X_L_list, X_D_list, M_c, T):
-    t = time.time()
-    Q = [(col1, col2)]
-    ## Returns list of lists.
-    ## First list: same length as Q, so we just take first.
-    ## Second list: MI, linfoot. we take MI.
-    results_by_model = self.backend.mutual_information(M_c, X_L_list, X_D_list, Q)[0][0]
-    ## Report the average mutual information over each model.
-    mi = float(sum(results_by_model)) / len(results_by_model)
-    print time.time() - t
-    return mi
-
-  def _correlation(self, col1, col2, X_L_list, X_D_list, M_c, T):
-    t_array = numpy.array(T, dtype=float)
-    correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
-    return correlation
-
-  def _do_gen_matrix(self, col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
-      if col_function_name == 'mutual information':
-        col_function = getattr(self, '_mutual_information')
-      elif col_function_name == 'dependence probability':
-        col_function = getattr(self, '_dependence_probability')
-      elif col_function_name == 'correlation':
-        col_function = getattr(self, '_correlation')
-      elif col_function_name == 'view_similarity':
-        col_function = getattr(self, '_view_similarity')
-      else:
-        raise Exception('Invalid column function')
-
-      num_cols = len(X_L_list[0]['column_partition']['assignments'])
-      column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
-      column_names = numpy.array(column_names)
-      # extract unordered z_matrix
-      num_latent_states = len(X_L_list)
-      z_matrix = numpy.zeros((num_cols, num_cols))
-      for i in range(num_cols):
-        for j in range(num_cols):
-          z_matrix[i][j] = col_function(i, j, X_L_list, X_D_list, M_c, T)
-
-      if col:
-        z_column = list(z_matrix[M_c['name_to_idx'][col]])
-        data_tuples = zip(z_column, range(num_cols))
-        data_tuples.sort(reverse=True)
-        if confidence:
-          data_tuples = filter(lambda tup: tup[0] >= float(confidence), data_tuples)
-        if limit and limit != float("inf"):
-          data_tuples = data_tuples[:int(limit)]
-        data = [tuple([d[0] for d in data_tuples])]
-        columns = [d[1] for d in data_tuples]
-        column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]      
-        column_names = numpy.array(column_names)
-        column_names_reordered = column_names[columns]
-        if submatrix:
-          z_matrix = z_matrix[columns,:][:,columns]
-          z_matrix_reordered = z_matrix
-        else:
-          return {'data': data, 'columns': column_names_reordered}
-      else:
-        # hierachically cluster z_matrix
-        import hcluster
-        Y = hcluster.pdist(z_matrix)
-        Z = hcluster.linkage(Y)
-        pylab.figure()
-        hcluster.dendrogram(Z)
-        intify = lambda x: int(x.get_text())
-        reorder_indices = map(intify, pylab.gca().get_xticklabels())
-        pylab.close()
-        # REORDER! 
-        z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
-        column_names_reordered = column_names[reorder_indices]
-
-      title = 'Pairwise column %s for %s' % (col_function_name, tablename)
-      if filename:
-        utils.plot_matrix(z_matrix_reordered, column_names_reordered, title, filename)
-
-      return dict(
-        matrix=z_matrix_reordered,
-        column_names=column_names_reordered,
-        title=title,
-        filename=filename,
-        message = "Created " + title
-        )
-
-def jsonify_and_dump(to_dump, filename):
-  dir=S.path.web_resources_data_dir
-  full_filename = os.path.join(dir, filename)
-  print full_filename
-  try:
-    with open(full_filename, 'w') as fh:
-      json_str = json.dumps(to_dump)
-      json_str = json_str.replace("NaN", "0")
-      fh.write(json_str)
-  except Exception, e:
-    print e
-  return dict(message="Database successfuly dumped as JSON to %s" % filename)
-
+  
 
 # helper functions
 get_name = lambda x: getattr(x, '__name__')
