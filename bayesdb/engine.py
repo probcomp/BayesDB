@@ -48,6 +48,7 @@ class Engine(object):
   def __init__(self, crosscat_engine_type='local', **kwargs):
     self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
     self.persistence_layer = FilePersistenceLayer()
+    #self.persistence_layer = PostgresPersistenceLayer()
 
   def start_from_scratch(self):
     self.persistence_layer.start_from_scratch()
@@ -137,7 +138,7 @@ class Engine(object):
     ## Guess schema and create table
     header, values = du.read_csv(csv_abs_path, has_header=True)
     postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types, colnames)
-    self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, cctypes, postgres_coltypes, colnames)
+    self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, csv, cctypes, postgres_coltypes, colnames)
 
     return dict(columns=colnames, data=[cctypes], message='Created btable %s. Inferred schema:' % tablename)
 
@@ -150,10 +151,7 @@ class Engine(object):
   def import_models(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
     """Import these models as if they are new models"""
     result = self.persistence_layer.add_models(tablename, X_L_list, X_D_list, iterations)
-    if result == 0:
-      return dict(message="Successfully imported %d models." % len(X_L_list))
-    else:
-      return dict(message="Error importing models.")
+    return dict(message="Successfully imported %d models." % len(X_L_list))
     
   def create_models(self, tablename, n_models):
     """Call initialize n_models times."""
@@ -266,43 +264,22 @@ class Engine(object):
     """
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    Y = None ## Simple predictive probability givens.
     
-    queries, query_colnames, aggregates_only = select_utils.get_queries_from_columnstring(columnstring)
+    queries, query_colnames, aggregates_only = select_utils.get_queries_from_columnstring(columnstring, M_c, T)
     where_conditions = select_utils.get_conditions_from_whereclause(whereclause)      
 
-    filtered_rows = select_utils.filter_and_impute_rows(T, M_c, imputations_dict)
+    filtered_rows = select_utils.filter_and_impute_rows(T, M_c, imputations_dict, where_conditions)
 
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
     ## (and maybe temporarily augmented with all functions that will be ordered only)
     ## If only being selected: then want to compute after ordering...
     
-    filtered_rows = select_utils.order_rows(filtered_rows, order_by)
+    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self.backend)
 
-    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, self.backend)
+    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, self.backend)
 
     return dict(message='', data=data, columns=query_colnames)
-
-
-  def _order_by(self, filtered_values, functions):
-    """
-    Return the original data tuples, but sorted by the given functions.
-    functions is an iterable of functions that take only row_id and data_tuple as an argument.
-    The data_tuples must contain all __original__ data because you can order by
-    data that won't end up in the final result set.
-    """
-    if len(filtered_values) == 0 or not functions:
-      return filtered_values
-    
-    scored_data_tuples = list() ## Entries are (score, data_tuple)
-    for row_id, data_tuple in filtered_values:
-      ## Apply each function to each data_tuple to get a #functions-length tuple of scores.
-      scores = tuple([func(row_id, data_tuple) for func in functions])
-      scored_data_tuples.append((scores, (row_id, data_tuple)))
-    scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
-    return [tup[1] for tup in scored_data_tuples]
-
 
   def simulate(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""

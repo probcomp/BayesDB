@@ -20,6 +20,9 @@
 
 import numpy
 import os
+import re
+import inspect
+import ast
 import crosscat.utils.data_utils as du
 
 import pylab
@@ -165,6 +168,3 @@ def column_string_splitter(columnstring):
         current_column.append(c)
     output.append(''.join(current_column))
     return output
-
-##############################################################
-

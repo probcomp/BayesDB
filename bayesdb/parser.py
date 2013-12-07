@@ -160,7 +160,7 @@ class Parser(object):
     def parse_drop_btable(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
-                return 'drop_tablename', dict(tablename=words[2])
+                return 'drop_btable', dict(tablename=words[2])
 
     def help_delete_model(self):
         return "DELETE MODEL <model_index> FROM <tablename>: delete the specified model (model). model_index may be 'all'."
@@ -344,7 +344,7 @@ class Parser(object):
     def parse_import_models(self, words, orig):
         match = re.search(r"""
             import\s+
-            (models\s+)?
+            (models\s+)|(samples\s+)
             (?P<pklpath>[^\s]+)\s+
             into\s+
             (?P<btable>[^\s]+)

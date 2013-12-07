@@ -68,7 +68,7 @@ def is_row_valid(idx, row, where_conditions):
       return op(row[c_idx], val)
   return True
 
-def get_queries_from_columnstring(columnstring):
+def get_queries_from_columnstring(columnstring, M_c, T):
     """
     Iterate through the columnstring portion of the input, and generate the query list.
     queries is a list of (query_type, query) tuples, where query_type is: row_id, column, probability, similarity.
@@ -135,7 +135,7 @@ def convert_row(row, M_c):
       ret.append(code)
   return tuple(ret)
 
-def filter_and_impute_rows(T, M_c, imputations_dict):
+def filter_and_impute_rows(T, M_c, imputations_dict, where_conditions):
     ## Iterate through all rows of T, convert codes to values, filter by all predicates in where clause,
     ## and fill in imputed values.
     filtered_rows = list()
@@ -149,8 +149,9 @@ def filter_and_impute_rows(T, M_c, imputations_dict):
             row_values[col_idx] = '*' + str(value)
             row_values = tuple(row_values)
         filtered_rows.append((row_id, row_values))
+    return filtered_rows
 
-def order_rows(rows, order_by):
+def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
   """Input: rows are list of (row_id, row_values) tuples."""
   if not order_by:
       return rows
@@ -162,17 +163,41 @@ def order_rows(rows, order_by):
     args_dict['X_L_list'] = X_L_list
     args_dict['X_D_list'] = X_D_list
     args_dict['T'] = T
-    ## TODO: use something more understandable and less brittle than getattr here.
-    method = getattr(self, '_get_%s_function' % function_name)
+    args_dict['backend'] = backend
+
+    if function_name == 'column':
+      method = _get_column_function
+    elif function_name == 'similarity':
+      method = _get_similarity_function
+    
     argnames = inspect.getargspec(method)[0]
     args = [args_dict[argname] for argname in argnames if argname in args_dict]
     function = method(*args)
     if args_dict['desc']:
-      function = lambda row_id, data_values: -1 * function(row_id, data_values)
-    function_list.append(function)
+      f = lambda row_id, data_values: -1 * function(row_id, data_values)
+    function_list.append(f)
   ## Step 2: call order by.
-  rows = self._order_by(rows, function_list)
-  return rows  
+  rows = _order_by(rows, function_list)
+  return rows
+
+def _order_by(self, filtered_values, functions):
+  """
+  Return the original data tuples, but sorted by the given functions.
+  functions is an iterable of functions that take only row_id and data_tuple as an argument.
+  The data_tuples must contain all __original__ data because you can order by
+  data that won't end up in the final result set.
+  """
+  if len(filtered_values) == 0 or not functions:
+    return filtered_values
+
+  scored_data_tuples = list() ## Entries are (score, data_tuple)
+  for row_id, data_tuple in filtered_values:
+    ## Apply each function to each data_tuple to get a #functions-length tuple of scores.
+    scores = tuple([func(row_id, data_tuple) for func in functions])
+    scored_data_tuples.append((scores, (row_id, data_tuple)))
+  scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
+  return [tup[1] for tup in scored_data_tuples]
+
 
 def compute_result_and_limit(rows, limit, queries, M_c, backend):
   data = []
@@ -224,6 +249,7 @@ def compute_result_and_limit(rows, limit, queries, M_c, backend):
     row_count += 1
     if row_count >= limit:
       break
+  return data
 
 #################################
 # function parsing code
