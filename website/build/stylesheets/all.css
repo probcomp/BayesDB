@@ -30,3 +30,5 @@ code {
 @media (max-width: 600px) {
   #logo-text{ font-size: 50px; }
 }
+
+a.anchor { position: relative; top: -40px; }
