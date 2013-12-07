@@ -20,3 +20,13 @@ img{
 code {
     font-size: 30px;
 }    
+
+#logo-text{
+	font-size: 100px; 
+	font-weight: normal;
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+@media (max-width: 600px) {
+  #logo-text{ font-size: 50px; }
+}
