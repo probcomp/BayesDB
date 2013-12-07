@@ -59,76 +59,76 @@ function of col1, col2, X_L_list, X_D_list, M_c, T
 
 ########################################################################
 
-  def _get_column_function(self, column, M_c):
-    """
-    Returns a function of the form required by order_by that returns the column value.
-    data_values is one row
-    """
-    col_idx = M_c['name_to_idx'][column]
-    return lambda row_id, data_values: data_values[col_idx]
+def _get_column_function(self, column, M_c):
+  """
+  Returns a function of the form required by order_by that returns the column value.
+  data_values is one row
+  """
+  col_idx = M_c['name_to_idx'][column]
+  return lambda row_id, data_values: data_values[col_idx]
 
-  def _get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c, T):
-    """
-    Call this function to get a version of similarity as a function of only (row_id, data_values).
-    data_values is one row
-    """
-    if type(target_row_id) == str or type(target_row_id) == unicode:
-      ## Instead of specifying an integer for rowid, you can specify a where clause.
-      where_vals = target_row_id.split('=')
-      where_colname = where_vals[0]
-      where_val = where_vals[1]
-      if type(where_val) == str:
-        where_val = ast.literal_eval(where_val)
-      ## Look up the row_id where this column has this value!
-      c_idx = M_c['name_to_idx'][where_colname.lower()]
-      for row_id, T_row in enumerate(T):
-        row_values = utils.convert_row(T_row, M_c)
-        if row_values[c_idx] == where_val:
-          target_row_id = row_id
-          break
-    return lambda row_id, data_values: self.backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
+def _get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c, T):
+  """
+  Call this function to get a version of similarity as a function of only (row_id, data_values).
+  data_values is one row
+  """
+  if type(target_row_id) == str or type(target_row_id) == unicode:
+    ## Instead of specifying an integer for rowid, you can specify a where clause.
+    where_vals = target_row_id.split('=')
+    where_colname = where_vals[0]
+    where_val = where_vals[1]
+    if type(where_val) == str:
+      where_val = ast.literal_eval(where_val)
+    ## Look up the row_id where this column has this value!
+    c_idx = M_c['name_to_idx'][where_colname.lower()]
+    for row_id, T_row in enumerate(T):
+      row_values = utils.convert_row(T_row, M_c)
+      if row_values[c_idx] == where_val:
+        target_row_id = row_id
+        break
+  return lambda row_id, data_values: self.backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
 
 
 ########################################################################
 
-  def _dependence_probability(self, col1, col2, X_L_list, X_D_list, M_c, T):
-    prob_dep = 0
-    for X_L, X_D in zip(X_L_list, X_D_list):
-      assignments = X_L['column_partition']['assignments']
-      ## Columns dependent if in same view, and the view has greater than 1 category
-      ## Future work can investigate whether more advanced probability of dependence measures
-      ## that attempt to take into account the number of outliers do better.
-      if (assignments[col1] == assignments[col2]):
-        if len(numpy.unique(X_D[assignments[col1]])) > 1:
-          prob_dep += 1
-    prob_dep /= float(len(X_L_list))
-    return prob_dep
-
-  def _view_similarity(self, col1, col2, X_L_list, X_D_list, M_c, T):
-    prob_dep = 0
-    for X_L in X_L_list:
-      assignments = X_L['column_partition']['assignments']
-      if assignments[col1] == assignments[col2]:
+def _dependence_probability(self, col1, col2, X_L_list, X_D_list, M_c, T):
+  prob_dep = 0
+  for X_L, X_D in zip(X_L_list, X_D_list):
+    assignments = X_L['column_partition']['assignments']
+    ## Columns dependent if in same view, and the view has greater than 1 category
+    ## Future work can investigate whether more advanced probability of dependence measures
+    ## that attempt to take into account the number of outliers do better.
+    if (assignments[col1] == assignments[col2]):
+      if len(numpy.unique(X_D[assignments[col1]])) > 1:
         prob_dep += 1
-    prob_dep /= float(len(X_L_list))
-    return prob_dep
+  prob_dep /= float(len(X_L_list))
+  return prob_dep
 
-  def _mutual_information(self, col1, col2, X_L_list, X_D_list, M_c, T):
-    t = time.time()
-    Q = [(col1, col2)]
-    ## Returns list of lists.
-    ## First list: same length as Q, so we just take first.
-    ## Second list: MI, linfoot. we take MI.
-    results_by_model = self.backend.mutual_information(M_c, X_L_list, X_D_list, Q)[0][0]
-    ## Report the average mutual information over each model.
-    mi = float(sum(results_by_model)) / len(results_by_model)
-    print time.time() - t
-    return mi
+def _view_similarity(self, col1, col2, X_L_list, X_D_list, M_c, T):
+  prob_dep = 0
+  for X_L in X_L_list:
+    assignments = X_L['column_partition']['assignments']
+    if assignments[col1] == assignments[col2]:
+      prob_dep += 1
+  prob_dep /= float(len(X_L_list))
+  return prob_dep
 
-  def _correlation(self, col1, col2, X_L_list, X_D_list, M_c, T):
-    t_array = numpy.array(T, dtype=float)
-    correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
-    return correlation
+def _mutual_information(self, col1, col2, X_L_list, X_D_list, M_c, T):
+  t = time.time()
+  Q = [(col1, col2)]
+  ## Returns list of lists.
+  ## First list: same length as Q, so we just take first.
+  ## Second list: MI, linfoot. we take MI.
+  results_by_model = self.backend.mutual_information(M_c, X_L_list, X_D_list, Q)[0][0]
+  ## Report the average mutual information over each model.
+  mi = float(sum(results_by_model)) / len(results_by_model)
+  print time.time() - t
+  return mi
+
+def _correlation(self, col1, col2, X_L_list, X_D_list, M_c, T):
+  t_array = numpy.array(T, dtype=float)
+  correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
+  return correlation
 
 
 ########################################################################        

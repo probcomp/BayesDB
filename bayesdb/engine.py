@@ -43,6 +43,7 @@ from crosscat.CrossCatClient import get_CrossCatClient
 from _file_persistence_layer import FilePersistenceLayer
 from _postgres_persistence_layer import PostgresPersistenceLayer
 import utils
+import select_utils
 
 class Engine(object):
   def __init__(self, crosscat_engine_type='local', **kwargs):

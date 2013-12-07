@@ -18,6 +18,8 @@
 #   limitations under the License.
 #
 
+import re
+import utils
 import numpy
 import os
 import crosscat.utils.data_utils as du
@@ -60,7 +62,7 @@ def get_conditions_from_whereclause(whereclause):
   return conds
 
 def is_row_valid(idx, row, where_conditions):
- """Helper function that applies WHERE conditions to row, returning True if row satisfies where clause."""
+  """Helper function that applies WHERE conditions to row, returning True if row satisfies where clause."""
   for (c_idx, op, val) in where_conditions:
     if type(row[c_idx]) == str or type(row[c_idx]) == unicode:
       return op(row[c_idx].lower(), val)
@@ -77,11 +79,11 @@ def get_queries_from_columnstring(columnstring, M_c, T):
     For probability: query is a (c_idx, value) tuple.
     For similarity: query is a (target_row_id, target_column) tuple.
     """
-    query_colnames = [colname.strip() for colname in column_string_splitter(columnstring)]
+    query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring)]
     queries = []
     aggregates_only = True
     for idx, colname in enumerate(query_colnames):
-      p = parse_probability(colname)
+      p = parse_probability(colname, M_c)
       if p is not None:
         queries.append(('probability', p))
         continue
@@ -327,7 +329,7 @@ def parse_row_typicality(colname):
     else:
         return None
 
-def parse_col_typicality(colname, M_c):
+def parse_column_typicality(colname, M_c):
   col_typicality_match = re.search(r"""
       col_typicality\s*\(\s*
       (?P<column>[^\s]+)
