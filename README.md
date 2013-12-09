@@ -11,7 +11,7 @@ BayesDB's inferences are based in part on CrossCat, a new, nonparametric Bayesia
 
 ### VM
 
-We provide a [VirtualBox VM](https://docs.google.com/file/d/0B_CtKGJ4pH2TX2VaTXRkMWFOeGM/edit?usp=drive_web) ([VM_README](https://github.com/mit-probabilistic-computing-project/vm-install-crosscat/blob/master/VM_README.md)) for small scale testing of BayesDB.
+We provide a [VirtualBox VM](http://probcomp.csail.mit.edu/bayesdb/downloads/bayesdb-v0.1-alpha-virtualbox_20131020.tgz) ([VM_README](https://github.com/mit-probabilistic-computing-project/vm-install-bayesdb/blob/master/VM_README.md)) for small scale testing of BayesDB.
 
 **Note**: The VM is only meant to provide an out-of-the-box usable system setup.  Its resources are limited and large jobs will fail due to memory errors.  To run larger jobs, increase the VM resources or install directly to your system.
 
