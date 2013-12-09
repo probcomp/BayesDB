@@ -25,9 +25,10 @@ code {
 	font-size: 100px; 
 	font-weight: normal;
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	text-align:center;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 500px) {
   #logo-text{ font-size: 50px; }
 }
 
