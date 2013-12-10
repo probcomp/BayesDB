@@ -29,15 +29,15 @@ title: BayesDB
 <div class="row">
 	<div class="col-md-12">
 		<a id="Examples" class="anchor">&nbsp;</a><h1>Examples</h1>
-		<p><pre><code>INFER salary FROM mytable WHERE age > 30;</code></pre></p>
+		<p><code>INFER salary FROM mytable WHERE age > 30;</code></p>
 
 		<p >Fill in missing data with the <code>INFER</code> command. Unlike a traditional regression model, where you need to separately train a supervised model for each column you're interested in predicting, <code>INFER</code> statements are flexible and work with any set of columns to predict.</p>
 		<hr>
-		<p><pre><code>SIMULATE salary FROM mytable WHERE age > 30;</code></pre></p>
+		<p><code>SIMULATE salary FROM mytable WHERE age > 30;</code></p>
 
 		<p >Easily simulate new probable observations based on CrossCat's estimate of the joint density of the data.</p>
 		<hr>
-		<p><pre><code>ESTIMATE PAIRWISE DEPENDENCE PROBABILITIES FROM mytable;</code></pre></p>
+		<p><code>ESTIMATE PAIRWISE DEPENDENCE PROBABILITIES FROM mytable;</code></p>
 
 		<p >With just one command, estimate any pairwise function of columns, including the probability that the two columns are statistically dependent, the mutual information between columns, and their correlation.</p>
 	</div>
