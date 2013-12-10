@@ -47,9 +47,9 @@
 #   end
 # end
 
-set :css_dir, 'bayesdb/stylesheets'
+set :css_dir, 'stylesheets'
 
-set :js_dir, 'bayesdb/javascripts'
+set :js_dir, 'javascripts'
 
 set :images_dir, 'bayesdb/images'
 
