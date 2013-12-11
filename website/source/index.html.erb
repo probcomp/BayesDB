@@ -5,7 +5,7 @@ title: BayesDB
 <div class="spacer" height="40px"></div>
 
 <p class="lead">
-  Query the probable implications of your data as easily as a SQL database lets you query the data itself.
+  Query the probable implications of your tabular data as easily as an SQL database lets you query the data itself.
 </p>
 
 <div class="alert alert-info" align="center">
@@ -20,7 +20,7 @@ title: BayesDB
 
 		<p >BayesDB is suitable for analyzing complex, heterogeneous data tables with up to tens of thousands of rows and hundreds of variables. No preprocessing or parameter adjustment is required, though experts can override BayesDB's default assumptions when appropriate.</p>
 
-		<p >BayesDB's inferences are based in part on <a href="http://probcomp.csail.mit.edu/crosscat">CrossCat</a>, a new, nonparametric Bayesian machine learning method, that automatically estimates the full joint distribution behind arbitrary data tables.</p>
+		<p> BayesDB assumes that each row of your table is a sample from some fixed population or generative process, and estimates the joint distribution over the columns. BQL then allows you to draw Bayesian inferences about individuals and about the overall population or process. The estimates are currently provided by <a href="http://probcomp.csail.mit.edu/crosscat">CrossCat</a>, a new nonparametric Bayesian method for analyzing high-dimensional data tables.</p>
 	</div>
 </div>
 
@@ -29,7 +29,7 @@ title: BayesDB
 <div class="row">
 	<div class="col-md-12">
 		<a id="Examples" class="anchor">&nbsp;</a><h1>Examples</h1>
-		<p><code>INFER salary FROM mytable WHERE age > 30;</code></p>
+		<p><code>INFER salary FROM mytable WHERE age > 30 WITH CONFIDENCE 0.95;</code></p>
 
 		<p >Fill in missing data with the <code>INFER</code> command. Unlike a traditional regression model, where you need to separately train a supervised model for each column you're interested in predicting, <code>INFER</code> statements are flexible and work with any set of columns to predict.</p>
 		<hr>
@@ -51,8 +51,8 @@ title: BayesDB
 		<h2>Who and what is BayesDB for?</h2>
 <p>BayesDB is aimed at:</p>
 <ol>
-	<li><p>People without statistics expertise but who have tabular data and questions they'd like to answer.</p></li>
-	<li><p>People with statistics expertise and data who either have a problem that doesn't fit the standard supervised templates (e.g. the data is too sparse) or who want to analyze a dataset but don't have the time or inclination for custom modeling.</p></li>
+	<li><p>Users without statistics training but who have tabular data and questions they'd like to answer.</p></li>
+	<li><p>Users with statistics expertise who either have a problem that doesn't fit the standard supervised templates (e.g. the data is too sparse) or who want to analyze a tabular dataset but don't have the time or inclination for custom modeling.</p></li>
 </ol>
 <p>
 The main goal is to broaden access to analytics and increase productivity. We also hope it will increase the reliability of the empirical reasoning performed by non-experts, who currently lack the ability to build good models or critique the simplistic models that they do have access to.
@@ -76,12 +76,12 @@ Just as traditional SQL-based DBMSs are specialized for different data shapes an
 </p>
 <h2>How mature is BayesDB?</h2>
 <div class="alert alert-danger">
-<p><B>WARNING:</B> BayesDB is rapidly-evolving, <B>alpha-quality</B> research software. Some key ideas behind its design and implementation have yet to be published, documentation is currently sparse, our release engineering is rough. We are sure there are critical bugs everywhere, including in the inference backend.</p></div>
+<p><B>WARNING:</B> BayesDB is rapidly-evolving, <B>alpha-quality</B> research software. Some key ideas behind its design and implementation have yet to be published, documentation is currently sparse, our release engineering is rough, and there may well be front-end and back-end bugs.</p></div>
 <p>
-We are also humbled and excited by the interest in the project, and are working to improve the situation. If you have feature requests or ideas for applications, please let us know.
+We are humbled and excited by the interest in the project, and are working hard to improve BayesDB's maturity
 </p>
 <p>
-Also, if you think you might be interested in alpha testing, collaborating, or contributing, please write us! We'd love to hear from you at bayesdb [AT] mit.edu.
+Please send us your application ideas, bug reports, and feature requests. Also, if you think you might be interested in alpha testing, collaborating, or contributing, please write us! We'd love to hear from you at bayesdb [AT] mit.edu.
 </p>
 <h2>What kinds of data and problems is it good for?</h2>
 <p>Versions of BayesDB (and CrossCat) have been tried on datasets including surveys, performance metrics for hospitals, branches of nonprofits, econometric tables, feature vectors extracted from text/images, voting records, and gene expression microarrays. 
@@ -158,11 +158,12 @@ A wide range of datatypes are possible, both by remaining within the exponential
 
 <h2>Why do you call it BayesDB? How is it Bayesian?</h2>
 <p>
-BayesDB had a nice ring to it&mdash;better than CatDB, CrossDB, DBCat, etc.
+Some Bayesian priors are about precisely expressing ignorance. This is what CrossCat is doing inside BayesDB: encoding a very broad prior over generative processes that admits possibilities ranging from near determinism to unpredictability.
 </p>
 <p>
-The idea behind BQL is that we can formalize many data analysis tasks using Bayesian queries against a posterior distribution over a hypothesis space that itself consists of models of the full joint distribution over the variables in the table. We thought this mathematical notion might let us define a coherent interface to the implications of data that retained the clarity, simplicity and flexibility of SQL. In some sense, it is our analogue of the relational algebra.
-</p><p>
+That said, BQL does allow users to encode some of their prior knowledge, via schema design. Currently this means deciding what the columns and rows in the table are, and what the datatypes are for each column. Going forward, we plan to support additional user-level configurability.
+</p>
+<p>
 Our current BayesDB implementation takes this idea literally. A single probabilistic model, called CrossCat, is estimated from the data, where (ignoring any bugs) each sample produced by <code>ANALYZE</code> is independently drawn from a distribution between the CrossCat prior and the true posterior given the data in the table. The more runtime you give <code>ANALYZE</code>, the closer to the true posterior BayesDB becomes. The more samples you get, the more accurately you can resolve posterior uncertainty.
 </p>
 
@@ -184,6 +185,11 @@ If it survives, BQL will likely evolve towards becoming a general-purpose probab
 <div class="row">
 	<div class="col-md-12">
 		<a id="Download" class="anchor">&nbsp;</a><h1>Download</h1>
+		
+		<div class="alert alert-danger">
+		  <p><B>WARNING:</B> BayesDB is rapidly-evolving, <B>alpha-quality</B> research software. Some key ideas behind its design and implementation have yet to be published, documentation is currently sparse, our release engineering is rough, and there may well be front-end and back-end bugs.</p>
+		</div>
+		
 		<h3>Developer Alpha v0.1.0</h3>
 		<p>VM Quickstart: [<a href="downloads/bayesdb-v0.1-alpha-virtualbox_20131020.tgz">VirtualBox VM</a>] [<a href="https://www.virtualbox.org/wiki/Downloads">VirtualBox Player</a>]</p>
 		<p>Documentation: [<a href="docs">User Documentation</a>] [<a href="https://github.com/mit-probabilistic-computing-project/vm-install-bayesdb/blob/master/VM_README.md">VM README</a>]</p>
