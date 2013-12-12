@@ -94,10 +94,13 @@ FROM dha_demo LIMIT 10</pre>
 <div class="highlight-python"><pre>ESTIMATE DEPENDENCE PROBABILITIES FROM dha_demo</pre>
 </div>
 <p>Which generates the following image output:</p>
-<img alt="_images/dha_prob_dependences1.png" src="_images/dha_prob_dependences1.png" />
-<p>There&#8217;s a lot of uncessary information in the full column matrix, so let&#8217;s just look at the 6 columns most related to the qual_score column (quality of care):</p>
+<p><a class="reference external" href="images/dha_prob_dependences1.png">DHA dependency matrix</a>
+.. image:: images/dha_prob_dependences1.png</p>
+<p>While the output is a large matrix (#columns x #columns), an insight about the dependency structure in the data immediately jumps out at us: variables related to quality of healthcare are unrelated to variables related to the cost of healthcare!</p>
+<p>Now, to zoom in on parts of this matrix, we can just look at the 6 columns most related to the qual_score column (quality of care):</p>
 <div class="highlight-python"><pre>ESTIMATE DEPENDENCE PROBABILITIES FROM dha_demo REFERENCING qual_score LIMIT 6</pre>
 </div>
+<p>Which gives the following output:</p>
 <p>Adding a confidence threshold of 0.9 to this query doesn&#8217;t change the results, because we were already very confident:</p>
 <div class="highlight-python"><pre>ESTIMATE DEPENDENCE PROBABILITIES FROM dha_demo REFERENCING qual_score WITH CONFIDENCE 0.9</pre>
 </div>

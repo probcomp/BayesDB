@@ -10,7 +10,7 @@ Create a Client
 
 In Python (either at a prompt, or in your own module), create a Client::
 
-     from bayesdb.Client import Client
+     from bayesdb.client import Client
      client = Client()
 
 The client defaults to looking for a local BayesDB Engine, which is the most common setup. However, if you want to connect to a remote BayesDB Engine, just pass the hostname and port (default 8008) to the Client's constructor::
