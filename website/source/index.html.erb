@@ -103,7 +103,7 @@ BayesDB and CrossCat are alpha-quality software; there are likely to be bugs tha
 Modulo bugs, we feel that BayesDB is reliable enough to trust as a first pass on typical data tables. This is because CrossCat has some unusual properties that we think make it a reasonable general-purpose model:
 </p>
 <ol>
-	<li><p>CrossCat contains various simpler, standard black box models as hypothesis&mdash;including Dirichlet processs mixtures and a form of naive Bayes. Modulo bugs, this means that with enough inference, CrossCat shouldn't perform essentially worse than these simpler methods, and is likely to perform better.</p></li>
+	<li><p>CrossCat contains various simpler, standard black box models as hypotheses in its hypothesis space&mdash;including Dirichlet processs mixtures and a form of naive Bayes. Modulo bugs, this means that with enough inference, CrossCat shouldn't perform essentially worse than these simpler methods, and is likely to perform better.</p></li>
 	<li><p>CrossCat includes many hypotheses that correspond to versions of the claim "I can find no signal in this part of the dataset", and is quite happy to report broad predictive distributions when it is uncertain. Although there might actually be signal that another method could have found, we think this is a good direction to err in. Some versions have been tested with the kinds of small N, high-D, extremely noisy datasets that confuse many standard methods and performed surprisingly well, though we have more empirical work to do there.</p></li>
 	
 	<li><p>There are theoretical results that suggest CrossCat is an asymptotically consistent estimator of the joint distribution. This has actually been proved for Dirichlet process mixture models with various component models, and we do not think the increased flexibility of CrossCat interferes (as N &rarr; infinity, though there is a subtlety if D &rarr; infinity). This roughly means that for a surprisingly broad class of distributions, if you run inference long enough and have enough data, CrossCat will infer a model that predicts equivalently with the 'true' model.</p></li>
@@ -158,10 +158,10 @@ A wide range of datatypes are possible, both by remaining within the exponential
 
 <h2>Why do you call it BayesDB? How is it Bayesian?</h2>
 <p>
-Some Bayesian priors are about precisely expressing ignorance. This is what CrossCat is doing inside BayesDB: encoding a very broad prior over generative processes that admits possibilities ranging from near determinism to unpredictability.
+  BayesDB had a nice ring to it&mdash;better than CatDB, CrossDB, DBCat, etc. (names based on CrossCat).
 </p>
 <p>
-That said, BQL does allow users to encode some of their prior knowledge, via schema design. Currently this means deciding what the columns and rows in the table are, and what the datatypes are for each column. Going forward, we plan to support additional user-level configurability.
+The idea behind BQL is that we can formalize many data analysis tasks using Bayesian queries against a posterior distribution over a hypothesis space that itself consists of models of the full joint distribution over the variables in the table. We thought this mathematical notion might let us define a coherent interface to the implications of data that retained the clarity, simplicity and flexibility of SQL. In some sense, it is our analogue of the relational algebra.  
 </p>
 <p>
 Our current BayesDB implementation takes this idea literally. A single probabilistic model, called CrossCat, is estimated from the data, where (ignoring any bugs) each sample produced by <code>ANALYZE</code> is independently drawn from a distribution between the CrossCat prior and the true posterior given the data in the table. The more runtime you give <code>ANALYZE</code>, the closer to the true posterior BayesDB becomes. The more samples you get, the more accurately you can resolve posterior uncertainty.
@@ -169,10 +169,10 @@ Our current BayesDB implementation takes this idea literally. A single probabili
 
 <h2>Isn't the real strength of Bayesian modeling about incorporating prior knowledge, which you don't allow users to do?</h2>
 <p>
-Bayesian models can be used to precisely describe complex states of uncertainty&mdash;including many variations on  "I have very little idea what is going on, but almost anything is possible".
+Some Bayesian priors are about precisely expressing ignorance. This is what CrossCat is doing inside BayesDB: encoding a very broad prior over generative processes that admits possibilities ranging from near determinism to unpredictability.
 </p>
 <p>
-In BQL, much like in traditional DBMSs, we see schema design (both choosing how to organize raw data into a table and choosing its types) as an avenue for users to articulate their prior knowledge. Right now the mechanisms for doing so are relatively limited, but we anticipate that this will change. 
+That said, BQL does allow users to encode some of their prior knowledge, via schema design. Currently this means deciding what the columns and rows in the table are, and what the datatypes are for each column. Going forward, we plan to support additional user-level configurability.
 </p>
 <p>
 If it survives, BQL will likely evolve towards becoming a general-purpose probabilistic programming language, perhaps even one like <link>Venture</link> or Church. From this perspective, the current CrossCat backend corresponds to a simple kind of Bayesian probabilistic program synthesis, where the class of probabilistic programs it is learning is extremely simple.
