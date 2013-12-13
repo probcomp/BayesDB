@@ -54,8 +54,7 @@ We can see which columns are related::
 
 Which generates the following image output:
 
-`DHA dependency matrix <images/dha_prob_dependences1.png>`_
-.. image:: images/dha_prob_dependences1.png
+`DHA dependency matrix <_images/dha_prob_dependences1.png>`_
 
 While the output is a large matrix (#columns x #columns), an insight about the dependency structure in the data immediately jumps out at us: variables related to quality of healthcare are unrelated to variables related to the cost of healthcare!
 
