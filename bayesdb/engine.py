@@ -44,6 +44,7 @@ from _file_persistence_layer import FilePersistenceLayer
 from _postgres_persistence_layer import PostgresPersistenceLayer
 import utils
 import select_utils
+import plotting_utils
 
 class Engine(object):
   def __init__(self, crosscat_engine_type='local', **kwargs):
@@ -339,11 +340,11 @@ class Engine(object):
       raise NotImplementedError()
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    return self._do_gen_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename, filename)
+    return plotting_utils._do_gen_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename, filename)
 
   def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename, submatrix):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    return self._do_gen_matrix("dependence probability", X_L_list, X_D_list, M_c, tablename, filename, col=col, confidence=confidence, limit=limit, submatrix=submatrix)
+    return plotting_utils._do_gen_matrix("dependence probability", X_L_list, X_D_list, M_c, tablename, filename, col=col, confidence=confidence, limit=limit, submatrix=submatrix)
   
 
 # helper functions

@@ -22,11 +22,12 @@ import re
 import utils
 import numpy
 import os
-import crosscat.utils.data_utils as du
-
 import pylab
 import matplotlib.cm
+import inspect
 
+import utils
+import crosscat.utils.data_utils as du
 
 def get_conditions_from_whereclause(whereclause):
   ## Create conds: the list of conditions in the whereclause.
@@ -142,8 +143,8 @@ def filter_and_impute_rows(T, M_c, imputations_dict, where_conditions):
     ## and fill in imputed values.
     filtered_rows = list()
     for row_id, T_row in enumerate(T):
-      row_values = utils.convert_row(T_row, M_c) ## Convert row from codes to values
-      if utils.is_row_valid(row_id, row_values, where_conditions): ## Where clause filtering.
+      row_values = convert_row(T_row, M_c) ## Convert row from codes to values
+      if is_row_valid(row_id, row_values, where_conditions): ## Where clause filtering.
         if imputations_dict and len(imputations_dict[row_id]) > 0:
           ## Fill in any imputed values.
           for col_idx, value in imputations_dict[row_id].items():
@@ -168,9 +169,9 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
     args_dict['backend'] = backend
 
     if function_name == 'column':
-      method = _get_column_function
+      method = utils._get_column_function
     elif function_name == 'similarity':
-      method = _get_similarity_function
+      method = utils._get_similarity_function
     
     argnames = inspect.getargspec(method)[0]
     args = [args_dict[argname] for argname in argnames if argname in args_dict]
@@ -182,7 +183,7 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
   rows = _order_by(rows, function_list)
   return rows
 
-def _order_by(self, filtered_values, functions):
+def _order_by(filtered_values, functions):
   """
   Return the original data tuples, but sorted by the given functions.
   functions is an iterable of functions that take only row_id and data_tuple as an argument.
@@ -201,10 +202,10 @@ def _order_by(self, filtered_values, functions):
   return [tup[1] for tup in scored_data_tuples]
 
 
-def compute_result_and_limit(rows, limit, queries, M_c, backend):
+def compute_result_and_limit(rows, limit, queries, M_c, X_L_list, X_D_list, backend):
   data = []
   row_count = 0
-  for row_id, row_values in filtered_rows:
+  for row_id, row_values in rows:
     ret_row = []
     for (query_type, query) in queries:
       if query_type == 'row_id':
@@ -220,18 +221,18 @@ def compute_result_and_limit(rows, limit, queries, M_c, backend):
         else:
           val = value
         Q = [(len(X_D_list[0][0])+1, c_idx, val)] ## row is set to 1 + max row, instead of this row.
-        prob = math.exp(self.backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
+        prob = math.exp(backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
         ret_row.append(prob)
       elif query_type == 'similarity':
         target_row_id, target_column = query
-        sim = self.backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
+        sim = backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
         ret_row.append(sim)
       elif query_type == 'row_typicality':
-        anom = self.backend.row_structural_typicality(X_L_list, X_D_list, row_id)
+        anom = backend.row_structural_typicality(X_L_list, X_D_list, row_id)
         ret_row.append(anom)
       elif query_type == 'col_typicality':
         c_idx = query
-        anom = self.backend.column_structural_typicality(X_L_list, c_idx)
+        anom = backend.column_structural_typicality(X_L_list, c_idx)
         ret_row.append(anom)
       elif query_type == 'predictive_probability':
         c_idx = query
@@ -239,11 +240,11 @@ def compute_result_and_limit(rows, limit, queries, M_c, backend):
         ## TODO: need to test
         Q = [(row_id, c_idx, du.convert_value_to_code(M_c, c_idx, T[row_id][c_idx]))]
         Y = []
-        prob = math.exp(self.backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
+        prob = math.exp(backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
         ret_row.append(prob)
       elif query_type == 'mutual_information':
         c_idx1, c_idx2 = query
-        mutual_info, linfoot = self.backend.mutual_information(M_c, X_L_list, X_D_list, [(c_idx1, c_idx2)])
+        mutual_info, linfoot = backend.mutual_information(M_c, X_L_list, X_D_list, [(c_idx1, c_idx2)])
         mutual_info = numpy.mean(mutual_info)
         ret_row.append(mutual_info)
 
@@ -306,7 +307,7 @@ def parse_similarity(colname, M_c, T):
         ## Look up the row_id where this column has this value!
         c_idx = M_c['name_to_idx'][where_colname.lower()]
         for row_id, T_row in enumerate(T):
-          row_values = utils.convert_row(T_row, M_c)
+          row_values = convert_row(T_row, M_c)
           if row_values[c_idx] == where_val:
             target_row_id = row_id
             break

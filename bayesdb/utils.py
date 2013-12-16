@@ -23,10 +23,11 @@ import os
 import re
 import inspect
 import ast
-import crosscat.utils.data_utils as du
-
 import pylab
 import matplotlib.cm
+
+import crosscat.utils.data_utils as du
+import select_utils
 
 ''' Derived quantities
 --orderables (function of a row,col):
@@ -59,7 +60,7 @@ function of col1, col2, X_L_list, X_D_list, M_c, T
 
 ########################################################################
 
-def _get_column_function(self, column, M_c):
+def _get_column_function(column, M_c):
   """
   Returns a function of the form required by order_by that returns the column value.
   data_values is one row
@@ -67,7 +68,7 @@ def _get_column_function(self, column, M_c):
   col_idx = M_c['name_to_idx'][column]
   return lambda row_id, data_values: data_values[col_idx]
 
-def _get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_list, M_c, T):
+def _get_similarity_function(target_column, target_row_id, X_L_list, X_D_list, M_c, T, backend):
   """
   Call this function to get a version of similarity as a function of only (row_id, data_values).
   data_values is one row
@@ -82,16 +83,18 @@ def _get_similarity_function(self, target_column, target_row_id, X_L_list, X_D_l
     ## Look up the row_id where this column has this value!
     c_idx = M_c['name_to_idx'][where_colname.lower()]
     for row_id, T_row in enumerate(T):
-      row_values = utils.convert_row(T_row, M_c)
+      row_values = select_utils.convert_row(T_row, M_c)
       if row_values[c_idx] == where_val:
         target_row_id = row_id
         break
-  return lambda row_id, data_values: self.backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
+  return lambda row_id, data_values: backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
 
 
+#########################################################################
+## TWO COLUMN FUNCTIONS
 ########################################################################
 
-def _dependence_probability(self, col1, col2, X_L_list, X_D_list, M_c, T):
+def _dependence_probability(col1, col2, X_L_list, X_D_list, M_c, T):
   prob_dep = 0
   for X_L, X_D in zip(X_L_list, X_D_list):
     assignments = X_L['column_partition']['assignments']
@@ -104,7 +107,7 @@ def _dependence_probability(self, col1, col2, X_L_list, X_D_list, M_c, T):
   prob_dep /= float(len(X_L_list))
   return prob_dep
 
-def _view_similarity(self, col1, col2, X_L_list, X_D_list, M_c, T):
+def _view_similarity(col1, col2, X_L_list, X_D_list, M_c, T):
   prob_dep = 0
   for X_L in X_L_list:
     assignments = X_L['column_partition']['assignments']
@@ -113,7 +116,7 @@ def _view_similarity(self, col1, col2, X_L_list, X_D_list, M_c, T):
   prob_dep /= float(len(X_L_list))
   return prob_dep
 
-def _mutual_information(self, col1, col2, X_L_list, X_D_list, M_c, T):
+def _mutual_information(col1, col2, X_L_list, X_D_list, M_c, T):
   t = time.time()
   Q = [(col1, col2)]
   ## Returns list of lists.
@@ -125,7 +128,7 @@ def _mutual_information(self, col1, col2, X_L_list, X_D_list, M_c, T):
   print time.time() - t
   return mi
 
-def _correlation(self, col1, col2, X_L_list, X_D_list, M_c, T):
+def _correlation(col1, col2, X_L_list, X_D_list, M_c, T):
   t_array = numpy.array(T, dtype=float)
   correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
   return correlation

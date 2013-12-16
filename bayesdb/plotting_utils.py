@@ -20,11 +20,11 @@
 
 import numpy
 import os
-import crosscat.utils.data_utils as du
-
 import pylab
 import matplotlib.cm
 
+import utils
+import crosscat.utils.data_utils as du
 
 def plot_matrix(matrix, column_names, title='', filename=None):
     # actually create figure
@@ -44,7 +44,7 @@ def plot_matrix(matrix, column_names, title='', filename=None):
         fig.show()
 
 
-def _create_histogram(self, M_c, data, columns, mc_col_indices, filename):
+def _create_histogram(M_c, data, columns, mc_col_indices, filename):
   dir=S.path.web_resources_data_dir
   full_filename = os.path.join(dir, filename)
   num_rows = data.shape[0]
@@ -74,17 +74,7 @@ def _create_histogram(self, M_c, data, columns, mc_col_indices, filename):
   pylab.tight_layout()
   pylab.savefig(full_filename)
 
-def gen_feature_z(self, tablename, filename=None,
-                  dir=S.path.web_resources_dir):
-  if filename is None:
-    filename = tablename + '_feature_z'
-  full_filename = os.path.join(dir, filename)
-  X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-  return self._do_gen_feature_z(X_L_list, X_D_list, M_c,
-                           tablename, full_filename)
-
-
-def _do_gen_matrix(self, col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
+def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
     if col_function_name == 'mutual information':
       col_function = utils._mutual_information
     elif col_function_name == 'dependence probability':
@@ -94,7 +84,7 @@ def _do_gen_matrix(self, col_function_name, X_L_list, X_D_list, M_c, T, tablenam
     elif col_function_name == 'view_similarity':
       col_function = utils._view_similarity
     else:
-      raise Exception('Invalid column function')
+      raise Exception('Invalid column function: %s' % col_function_name)
 
     num_cols = len(X_L_list[0]['column_partition']['assignments'])
     column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
