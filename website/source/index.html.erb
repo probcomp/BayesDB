@@ -184,7 +184,16 @@ That said, BQL does allow users to encode some of their prior knowledge, via sch
 </p>
 <p>
 If it survives, BQL will likely evolve towards becoming a general-purpose probabilistic programming language, perhaps even one like <link>Venture</link> or Church. From this perspective, the current CrossCat backend corresponds to a simple kind of Bayesian probabilistic program synthesis, where the class of probabilistic programs it is learning is extremely simple.
+</p>
+
+<h2>How do BayesDB and CrossCat relate to Navia Systems and/or Prior Knowledge?</h2>>
 <p>
+CrossCat came out of work by Mansinghka and Shafto in Josh Tenenbaum's computational cognitive science group in a series of academic publications starting in 2006. A fast commercial implementation was built by Navia Systems/Prior Knowledge, ultimately acquired by Salesforce. CrossCat was used to power a prediction API called Veritable (in the spirit of Google Predict, with a nonparametric Bayesian twist) aimed at making it easier for developers to build smarter applications.
+</p>
+<p>
+BayesDB, the Bayesian Query Language, and our current open-source CrossCat implementation, were funded starting in 2012 by the DARPA XDATA program and Google's "Rethinking AI" project. The audience is analysts with SQL expertise and workflows involving exploratory analysis, confirmatory analysis and predictive modeling. The research question is whether it is possible to do for data science what the relational model did for data management. Accordingly, we expect BQL to evolve in the direction of a general-purpose <a href="http://probabilistic-programming.org/wiki/Home">probabilistic programming</a> language like <a href="http://probcomp.csail.mit.edu/venture/">Venture</a>, with our current CrossCat backend one of many but a reasonable place to start, analogous to a default indexing scheme in a SQL database.
+</p>
+
 	</div>
 </div>
 
