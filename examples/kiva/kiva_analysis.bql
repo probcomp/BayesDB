@@ -32,5 +32,3 @@ SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 16 WITH RESPE
 
 SELECT partner_rating, loan_amount, paid_date, default_rate FROM kiva LIMIT 20;
 INFER partner_rating, loan_amount, paid_date, default_rate FROM kiva WITH CONFIDENCE 0.96 LIMIT 20;
-
-SIMULATE partner_status, partner_rating, delinquent, default_rate, loan_amount, gender_ratio FROM kiva WHERE loan_amount = 4000 TIMES 10;
