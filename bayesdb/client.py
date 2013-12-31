@@ -30,6 +30,7 @@ import ast
 import crosscat.utils.api_utils as au
 
 import utils
+import plotting_utils
 from parser import Parser
 from engine import Engine
 
@@ -109,7 +110,8 @@ class Client(object):
             print 'Elapsed time: %.2f seconds.' % (end_time - start_time)
 
         if plots is None:
-            plots = 'DISPLAY' in os.environ.keys()
+            #plots = 'DISPLAY' in os.environ.keys()
+            plots = False
 
         if bql_string.lower().strip().startswith('estimate'):
             ## Special logic to display matrices.
