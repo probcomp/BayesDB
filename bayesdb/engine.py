@@ -332,7 +332,28 @@ class Engine(object):
     return ret
 
   def estimate_columns(self, tablename, whereclause, limit, order_by, name=None):
-    raise NotImplementedError()
+    """
+    Return all the column names from the specified table as a list.
+    First, columns are filtered based on whether they match the whereclause.
+      The whereclause must consist of functions of a single column only.
+    Next, the columns are ordered by other functions of a single column.
+    Finally, the columns are limited to the specified number.
+    """
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    column_names = list(M_c['name_to_idx'].keys())
+    
+    ## filter: TODO
+
+    ## order: TODO
+    
+    # limit
+    if limit == float('inf'):
+      return column_names
+    else:
+      return column_names[:limit]
+    return {'columns': column_names}
+
   
   def estimate_pairwise(self, tablename, function_name, filename, column_list=None):
     ## TODO: implement functionality with column_list

@@ -436,6 +436,35 @@ class Parser(object):
             return 'simulate', dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
                                     whereclause=whereclause, numpredictions=numpredictions, order_by=order_by)
 
+    def help_estimate_columns(self):
+        return "ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>]"
+
+    def parse_estimate_columns(self, words, orig):
+        ## TODO: add "as <name>". could use pyparsing.
+        match = re.search(r"""
+            estimate\s+columns\s+from\s+
+            (?P<btable>[^\s]+)
+            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'estimate' and words[2] == 'columns':
+                print self.help_estimate_columns()
+                return False
+            else:
+                return None
+        else:
+            tablename = match.group('btable').strip()
+            whereclause = match.group('whereclause')
+            if whereclause is None:
+                whereclause = ''
+            else:
+                whereclause = whereclause.strip()
+            limit = self.extract_limit(orig)                
+            orig, order_by = self.extract_order_by(orig)
+            return 'estimate_columns', dict(tablename=tablename, whereclause=whereclause, limit=limit,
+                                            order_by=order_by, name=None)
+            
+
     def help_estimate_dependence_probabilities(self):
         return "ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]] [SAVE TO <file>]: get probabilities of column dependence."
 
@@ -449,7 +478,7 @@ class Parser(object):
             (\s+save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
-            if words[0] == 'estimate':
+            if words[0] == 'estimate' and words[1] == 'dependence':
                 print self.help_estimate_dependence_probabilities()
                 return False
             else:

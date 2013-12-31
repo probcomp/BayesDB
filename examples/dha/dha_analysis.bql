@@ -23,6 +23,8 @@ DROP BTABLE dha_demo;
 CREATE BTABLE dha_demo FROM dha.csv;
 IMPORT SAMPLES dha_samples.pkl.gz INTO dha_demo;
 
+ESTIMATE COLUMNS FROM dha_demo WHERE dependence probability to 'name' > 0.05 ORDER BY centrality LIMIT 10;
+
 -- Examine column dependencies
 SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo LIMIT 10;
 ESTIMATE DEPENDENCE PROBABILITIES FROM dha_demo;

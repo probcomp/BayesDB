@@ -113,7 +113,7 @@ class Client(object):
             #plots = 'DISPLAY' in os.environ.keys()
             plots = False
 
-        if bql_string.lower().strip().startswith('estimate'):
+        if 'matrix' in result:
             ## Special logic to display matrices.
             if not (result['filename'] or plots):
                 print "No GUI available to display graphics: please enter the filename where the graphics should be saved, with the extension indicating the filetype (e.g. .png or .pdf). Enter a blank filename to instead view the matrix as text."
