@@ -1,3 +1,7 @@
+# CrossCat must be installed first. Not available on pypi.
+# See probcomp.csail.mit.edu/crosscat for installation instructions.
+# crosscat>=0.1
+
 # yolk is for looking at python packages available
 yolk==0.4.3
 
@@ -6,9 +10,6 @@ jsonrpc==1.2
 requests==1.0.3
 Twisted==12.3.0
 pyOpenSSL==0.13
-
-# C++ engine wrapping
-cython==0.17.1
 
 # numerics and plotting
 numpy==1.7.0
