@@ -104,6 +104,7 @@ class Client(object):
         method_name, args_dict = out
         result = self.call_bayesdb_engine(method_name, args_dict)
         result = self.callback(method_name, args_dict, result)
+        assert type(result) != int
         
         if timing:
             end_time = time.time()
