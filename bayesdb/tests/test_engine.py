@@ -125,13 +125,14 @@ def test_create_models():
 
 def test_analyze():
   test_tablename, _ = create_dha()
-  engine.create_models(test_tablename, 2)
+  num_models = 3
+  engine.create_models(test_tablename, num_models)
 
   for it in (1,2):
     engine.analyze(test_tablename, model_index='all', iterations=1)
     model_ids = engine.persistence_layer.get_model_ids(test_tablename)
-    assert sorted(model_ids) == range(10)
-    for i in range(10):
+    assert sorted(model_ids) == range(num_models)
+    for i in range(num_models):
       X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
       assert iters == it
 

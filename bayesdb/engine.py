@@ -175,7 +175,7 @@ class Engine(object):
 
   def _analyze_helper(self, tablename, M_c, T, modelid, iterations):
     """Only for one model."""
-    X_L_prime, X_D_prime, prev_iterations = self.persistence_layer.get_model(tablename, modelid)
+    X_L, X_D, prev_iterations = self.persistence_layer.get_model(tablename, modelid)
     X_L_prime, X_D_prime = self.backend.analyze(M_c, T, X_L, X_D, n_steps=iterations)
     self.persistence_layer.update_model(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, modelid)
     return (prev_iterations + iterations)
