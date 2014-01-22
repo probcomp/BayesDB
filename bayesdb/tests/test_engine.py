@@ -23,6 +23,7 @@ import inspect
 import psycopg2
 import pickle
 import os
+import numpy
 
 from bayesdb.engine import Engine
 engine = Engine('local')
@@ -65,7 +66,8 @@ def test_select():
   ## 307 is the total number of rows in the dataset.
   assert len(select_result['data']) == 307 and len(select_result['data'][0]) == len(select_result['columns'])
   assert type(select_result['data'][0][0]) == int ## type of row_id is int
-  assert type(select_result['data'][0][1]) == unicode ## type of name is unicode string
+  t = type(select_result['data'][0][1]) 
+  assert (t == unicode) or (t == str) or (t == numpy.string_) ## type of name is unicode or string
   assert type(select_result['data'][0][2]) == float ## type of qual_score is float
   original_select_result = select_result['data']
 

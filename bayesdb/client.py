@@ -140,6 +140,11 @@ class Client(object):
             return result
 
     def callback(self, method_name, args_dict, result):
+        """
+        This method is meant to be called after receiving the result of a
+        call to the BayesDB engine, and modifies the output before it is displayed
+        to the user.
+        """
         if method_name == 'export_samples':
             samples_dict = result
             samples_file = gzip.GzipFile(args_dict['pkl_path'], 'w')
@@ -149,8 +154,12 @@ class Client(object):
             return result
         
     def pretty_print(self, query_obj):
+        """
+        Return a pretty string representing the output object.
+        """
         result = ""
         if type(query_obj) == dict and 'data' in query_obj and 'columns' in query_obj:
+            """ Pretty-print data table """
             pt = prettytable.PrettyTable()
             pt.field_names = query_obj['columns']
             for row in query_obj['data']:
@@ -161,8 +170,10 @@ class Client(object):
             ## TODO
             return "TODO"
         elif type(query_obj) == list:
+            """ Pretty-print lists """
             result = str(query_obj)
         elif type(query_obj) == dict and 'column_names' in query_obj:
+            """ Pretty-print cctypes """
             colnames = query_obj['column_names']
             zmatrix = query_obj['matrix']
             pt = prettytable.PrettyTable(hrules=prettytable.ALL, vrules=prettytable.ALL, header=False)

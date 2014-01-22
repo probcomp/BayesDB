@@ -24,6 +24,7 @@ import crosscat.utils.data_utils as du
 import datetime
 import json
 import pickle
+import shutil
 
 from bayesdb.persistence_layer import PersistenceLayer
 import bayesdb.settings as S
@@ -33,10 +34,14 @@ class FilePersistenceLayer(PersistenceLayer):
     """
     Stores btables in the following format in the "data" directory:
     bayesdb/data/
-      tablename1/
+      <tablename>/
         data.csv
         metadata.pkl
         models.pkl
+
+    metadata.pkl: dict. keys: M_r, M_c, T, cctypes
+    models.pkl: dict[model_idx] -> (X_L, X_D). Idx starting at 1.
+    data.csv: the raw csv file that the data was loaded from.
     """
     
     def __init__(self):
@@ -59,13 +64,13 @@ class FilePersistenceLayer(PersistenceLayer):
     def start_from_scratch(self):
         """Delete all tables and all data."""
         ## TODO: prompt user to confirm
-        os.rmdir(self.data_dir)
+        shutil.rmtree(self.data_dir)
         os.makedirs(self.data_dir)
 
     def drop_btable(self, tablename):
         """Delete a single btable."""
         if tablename in self.btable_names:
-            os.rmdir(os.path.join(self.data_dir, tablename))
+            shutil.rmtree(os.path.join(self.data_dir, tablename))
             self.btable_names.remove(tablename)
         return 0
 
@@ -97,7 +102,8 @@ class FilePersistenceLayer(PersistenceLayer):
         return M_c, M_r, T
 
     def get_max_model_id(self, tablename, models=None):
-        """Get the highest model id."""
+        """Get the highest model id, and 0 if there are no models.
+        Model indexing starts at 1 when models exist."""
         if models is None:
             models = self.get_models(tablename)
         iter_list = [model['iterations'] for model in models.values()]
@@ -107,27 +113,38 @@ class FilePersistenceLayer(PersistenceLayer):
             return max(iter_list)
 
     def get_cctypes(self, tablename):
+        """Access the table's current cctypes."""
         metadata = self.get_metadata(tablename)
         return metadata['cctypes']
 
     def update_cctypes(self, tablename, cctypes):
+        """Overwrite cctypes (part of the metadata)."""
         f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'rw')
         metadata = pickle.load(f)
         metadata['cctypes'] = cctypes
         pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
 
-    def update_metadata_and_table(self, tablename, M_r, M_c, T):
+    def update_metadata_and_table(self, tablename, M_r=None, M_c=None, T=None):
+        """Overwrite M_r, M_c, and T (not cctypes) for the table."""
         f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'rw')
         metadata = pickle.load(f)
-        metadata['M_r'] = M_r
-        metadata['M_c'] = M_c
-        metadata['T'] = T
+        if M_r:
+            metadata['M_r'] = M_r
+        if M_c:
+            metadata['M_c'] = M_c
+        if T:
+            metadata['T'] = T
         pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
 
     def check_if_table_exists(self, tablename):
+        """Return true iff this tablename exists in the persistence layer."""
         return tablename in self.btable_names
 
     def write_csv(self, tablename, csv):
+        """
+        Input: csv is the raw csv data, which gets persisted as data.csv.
+        Called by create_btable_from_csv as a helper function.
+        """
         if not os.path.exists(os.path.join(self.data_dir, tablename)):
             os.mkdir(os.path.join(self.data_dir, tablename))        
         f = open(os.path.join(self.data_dir, tablename, 'data.csv'), 'w')
@@ -137,19 +154,43 @@ class FilePersistenceLayer(PersistenceLayer):
         return csv_abs_path
 
     def create_btable_from_csv(self, tablename, csv_path, csv, cctypes, postgres_coltypes, colnames):
-        t, m_r, m_c, header = du.read_data_objects(csv_path, cctypes=cctypes)
+        """
+        This function is called to create a btable.
+        It creates the table's persistence directory, saves data.csv and metadata.pkl.
+        Creates models.pkl as empty dict.
+        """
+        # Make directory for table
         if not os.path.exists(os.path.join(self.data_dir, tablename)):
             os.mkdir(os.path.join(self.data_dir, tablename))        
+
+        # Write csv
         self.write_csv(tablename, csv)
+
+        # Write metadata
+        t, m_r, m_c, header = du.read_data_objects(csv_path, cctypes=cctypes)
         metadata = dict()
         metadata['M_c'] = m_c
         metadata['M_r'] = m_r
         metadata['T'] = t
         metadata_f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'w')
         pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
+
+        # Write models
+        models = dict()
+        models_f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'w')
+        pickle.dump(models, models_f, pickle.HIGHEST_PROTOCOL)
+
+        # Add to btable name index
         self.btable_names.add(tablename)
 
     def add_models(self, tablename, X_L_list, X_D_list, iterations):
+        """
+        Add a set of models (X_Ls and X_Ds) to a table (the table does not need to
+        already have models).
+        
+        It is required that they all have the same number of iterations. If they have
+        different numbers of iterations, call add_models multiple times.
+        """
         assert len(X_L_list) == len(X_D_list)
         if os.path.exists(os.path.join(self.data_dir, tablename, 'models.pkl')):
             f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r+w')                        
@@ -158,30 +199,39 @@ class FilePersistenceLayer(PersistenceLayer):
             f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'w')                        
             models = {}
         max_model_id = self.get_max_model_id(tablename, models)
+
+        ## Model indexing starts at 1 when models exist.
         for i in range(len(X_L_list)):
             models[max_model_id + 1 + i] = dict(X_L=X_L_list[i], X_D=X_D_list[i], iterations=iterations)
         pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)
 
     def update_model(self, tablename, X_L, X_D, iterations, modelid):
+        """ Overwrite a certain model by id. """
         f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r+w')
         models = pickle.load(f)
         models[modelid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
         pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)
 
     def create_models(self, tablename, states_by_model):
+        """
+        Input: states_by_model is a list of (X_L, X_D).
+        It is assumed that iterations=0, since this function should be called for new models only.
+        Assumes that there are no models currently.
+        """
         f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r+w')
         models = pickle.load(f)
-        models[modelid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
-        pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)
         for model_index, (x_l_prime, x_d_prime) in enumerate(states_by_model):
             models[model_index] = dict(X_L=X_L, X_D=X_D, iterations=0)
+        pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)            
 
     def get_model(self, tablename, modelid):
+        """ Retrieve an individual (X_L, X_D, iteration) tuple, by modelid. """
         models = self.get_models(tablename)
         m = models[modelid]
         return m['X_L'], m['X_D'], m['iterations']
 
     def get_model_ids(self, tablename):
+        """ Receive a list of all model ids for the table. """
         models = self.get_models(tablename)
         return models.keys()
             

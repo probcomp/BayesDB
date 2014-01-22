@@ -178,6 +178,8 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
     function = method(*args)
     if args_dict['desc']:
       f = lambda row_id, data_values: -1 * function(row_id, data_values)
+    else:
+      f = function
     function_list.append(f)
   ## Step 2: call order by.
   rows = _order_by(rows, function_list)

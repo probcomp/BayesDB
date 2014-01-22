@@ -59,7 +59,7 @@ class Engine(object):
   def drop_btable(self, tablename):
     """Delete table by tablename."""
     self.persistence_layer.drop_btable(tablename)
-    return {'message':''}
+    return ''
 
   def list_btables(self):
     """Return names of all btables."""
