@@ -146,13 +146,15 @@ class Engine(object):
     max_modelid = self.persistence_layer.get_max_model_id(tablename)
 
     # Call initialize on backend
-    states_by_model = list()
+    X_L_list = list()
+    X_D_list = list()
     for model_index in range(max_modelid, n_models + max_modelid):
-      x_l_prime, x_d_prime = self.backend.initialize(M_c, M_r, T)
-      states_by_model.append((x_l_prime, x_d_prime))
+      X_L, X_D = self.backend.initialize(M_c, M_r, T)
+      X_L_list.append(X_L)
+      X_D_list.append(X_D)
 
     # Insert results into persistence layer
-    self.persistence_layer.create_models(tablename, states_by_model)
+    self.persistence_layer.add_models(tablename, X_L_list, X_D_list)
 
   def analyze(self, tablename, model_index='all', iterations=2, wait=False):
     """Run analyze for the selected table. model_index may be 'all'."""
@@ -175,7 +177,7 @@ class Engine(object):
     """Only for one model."""
     X_L_prime, X_D_prime, prev_iterations = self.persistence_layer.get_model(tablename, modelid)
     X_L_prime, X_D_prime = self.backend.analyze(M_c, T, X_L, X_D, n_steps=iterations)
-    self.persistence_layer.add_samples_for_model(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, modelid)
+    self.persistence_layer.update_model(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, modelid)
     return (prev_iterations + iterations)
 
   def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False):
