@@ -20,11 +20,13 @@
 
 import os
 import sys
-import crosscat.utils.data_utils as du
 import datetime
 import json
 import pickle
 import shutil
+import contextlib
+
+import crosscat.utils.data_utils as du
 
 from bayesdb.persistence_layer import PersistenceLayer
 import bayesdb.settings as S
@@ -52,14 +54,37 @@ class FilePersistenceLayer(PersistenceLayer):
             os.makedirs(self.data_dir)
         self.btable_names = set()
 
+    '''
+    @contextlib.contextmanager
+    def pickle_open(self, path):
+        f = open(path)
+        yield pickle.load(f)
+        f.close()
+        
+    @contextlib.contextmanager
     def get_metadata(self, tablename):
-        return pickle.load(open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'r'))
+        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'r')
+        yield pickle.load(f)
+        f.close()
+    '''
+    
+    def get_metadata(self, tablename):
+        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'r')
+        metadata = pickle.load(f)
+        f.close()
+        return metadata
 
     def get_models(self, tablename):
-        return pickle.load(open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r'))
+        f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r')
+        models = pickle.load(f)
+        f.close()
+        return models
 
     def get_csv(self, tablename):
-        return open(os.path.join(self.data_dir, tablename, 'data.csv'), 'r').read()
+        f = open(os.path.join(self.data_dir, tablename, 'data.csv'), 'r')
+        text = f.read()
+        f.close()
+        return text
 
     def start_from_scratch(self):
         """Delete all tables and all data."""
@@ -80,7 +105,7 @@ class FilePersistenceLayer(PersistenceLayer):
 
     def delete_model(self, tablename, model_index):
         """Delete a single model"""
-        models = pickle.load(open(os.path.jsoin(self.data_dir, tablename, 'models.pkl'), 'r'))
+        models = pickle.load(open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r'))
         del models[model_index]
         return 0
             
@@ -117,24 +142,51 @@ class FilePersistenceLayer(PersistenceLayer):
         metadata = self.get_metadata(tablename)
         return metadata['cctypes']
 
-    def update_cctypes(self, tablename, cctypes):
-        """Overwrite cctypes (part of the metadata)."""
-        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'rw')
-        metadata = pickle.load(f)
-        metadata['cctypes'] = cctypes
-        pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
+    def update_datatypes(self, tablename, mappings):
+        """
+        mappings is a dict of column name to 'continuous', 'multinomial',
+        or an int, which signifies multinomial of a specific type.
+        TODO: FIX HACKS. Current works by reloading all the data from csv,
+        and it ignores multinomials' specific number of outcomes.
+        Also, disastrous things may happen if you update a schema after creating models.
+        """
+        max_modelid = self.get_max_model_id(tablename)
+        if max_modelid is not None and max_modelid > 0:
+          return 'Error: cannot update datatypes after models have already been created. Please create a new table.'
+          
+        metadata = self.get_metadata(tablename)
+        cctypes = metadata['cctypes']
+        M_c = metadata['M_c']
+        M_r = metadata['M_r']
+        T = metadata['T']
 
-    def update_metadata_and_table(self, tablename, M_r=None, M_c=None, T=None):
+        # Now, update cctypes, T, M_c, and M_r
+        for col, mapping in mappings.items():
+          ## TODO: fix this hack! See method's docstring.
+          if type(mapping) == int:
+            mapping = 'multinomial'
+          cctypes[M_c['name_to_idx'][col]] = mapping
+        T, M_r, M_c, header = du.read_data_objects(os.path.join(self.data_dir, tablename, 'data.csv'), cctypes=cctypes)
+
+        # Now, put cctypes, T, M_c, and M_r back into the DB
+        self.update_metadata(tablename, M_r, M_c, T, cctypes)
+        
+        return self.get_metadata(tablename)
+
+    def update_metadata(self, tablename, M_r=None, M_c=None, T=None, cctypes=None):
         """Overwrite M_r, M_c, and T (not cctypes) for the table."""
-        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'rw')
-        metadata = pickle.load(f)
+        metadata = self.get_metadata(tablename)
         if M_r:
             metadata['M_r'] = M_r
         if M_c:
             metadata['M_c'] = M_c
         if T:
             metadata['T'] = T
+        if cctypes:
+            metadata['cctypes'] = cctypes
+        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'w')            
         pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
+        f.close()
 
     def check_if_table_exists(self, tablename):
         """Return true iff this tablename exists in the persistence layer."""
@@ -167,18 +219,17 @@ class FilePersistenceLayer(PersistenceLayer):
         self.write_csv(tablename, csv)
 
         # Write metadata
-        t, m_r, m_c, header = du.read_data_objects(csv_path, cctypes=cctypes)
-        metadata = dict()
-        metadata['M_c'] = m_c
-        metadata['M_r'] = m_r
-        metadata['T'] = t
+        T, M_r, M_c, header = du.read_data_objects(csv_path, cctypes=cctypes)
+        metadata = {'M_c': M_c, 'M_r': M_r, 'T': T, 'cctypes': cctypes}
         metadata_f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'w')
         pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
+        metadata_f.close()
 
         # Write models
-        models = dict()
+        models = {}
         models_f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'w')
         pickle.dump(models, models_f, pickle.HIGHEST_PROTOCOL)
+        models_f.close()
 
         # Add to btable name index
         self.btable_names.add(tablename)
@@ -195,9 +246,11 @@ class FilePersistenceLayer(PersistenceLayer):
         if os.path.exists(os.path.join(self.data_dir, tablename, 'models.pkl')):
             f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r+w')                        
             models = pickle.load(f)
+            f.close()
         else:
             f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'w')                        
             models = {}
+            f.close()
         max_model_id = self.get_max_model_id(tablename, models)
 
         ## Model indexing starts at 1 when models exist.
@@ -211,6 +264,7 @@ class FilePersistenceLayer(PersistenceLayer):
         models = pickle.load(f)
         models[modelid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
         pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)
+        f.close()
 
     def create_models(self, tablename, states_by_model):
         """
@@ -222,7 +276,8 @@ class FilePersistenceLayer(PersistenceLayer):
         models = pickle.load(f)
         for model_index, (x_l_prime, x_d_prime) in enumerate(states_by_model):
             models[model_index] = dict(X_L=X_L, X_D=X_D, iterations=0)
-        pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)            
+        pickle.dump(models, f, pickle.HIGHEST_PROTOCOL)
+        f.close()
 
     def get_model(self, tablename, modelid):
         """ Retrieve an individual (X_L, X_D, iteration) tuple, by modelid. """

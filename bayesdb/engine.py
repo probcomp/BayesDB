@@ -77,26 +77,9 @@ class Engine(object):
     and it ignores multinomials' specific number of outcomes.
     Also, disastrous things may happen if you update a schema after creating models.
     """
-    max_modelid = self.persistence_layer.get_max_model_id(tablename)
-    if max_modelid is not None:
-      return 'Error: cannot update datatypes after models have already been created. Please create a new table.'
-    
-    # First, get existing cctypes, and T, M_c, and M_r.    
-    cctypes = self.persistence_layer.get_cctypes(tablename)
-    m_c, m_r, t = self.persistence_layer.get_metadata_and_table(tablename)
-    
-    # Now, update cctypes, T, M_c, and M_r
-    for col, mapping in mappings.items():
-      ## TODO: fix this hack! See method's docstring.
-      if type(mapping) == int:
-        mapping = 'multinomial'
-      cctypes[m_c['name_to_idx'][col]] = mapping
-    t, m_r, m_c, header = du.read_data_objects(csv_abs_path, cctypes=cctypes)
-
-    # Now, put cctypes, T, M_c, and M_r back into the DB
-    self.persistence_layer.update_cctypes(tablename, cctypes)
-    self.persistence_layer.update_metadata_and_table(tablename, M_r, M_c, T)
-
+    metadata = self.persistence_layer.update_datatypes(tablename, mappings)
+    m_c = metadata['M_c']
+    cctypes = metadata['cctypes']
     colnames = [m_c['idx_to_name'][str(idx)] for idx in range(len(m_c['idx_to_name']))]
     return dict(columns=colnames, data=[cctypes], message='Updated schema:\n')
 

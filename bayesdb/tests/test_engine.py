@@ -24,6 +24,7 @@ import psycopg2
 import pickle
 import os
 import numpy
+import pytest
 
 from bayesdb.engine import Engine
 engine = Engine('local')
@@ -97,14 +98,18 @@ def test_update_datatypes():
   test_tablename, _ = create_dha()
   m_c, m_r, t = engine.persistence_layer.get_metadata_and_table(test_tablename)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
-  assert cctypes[m_c['idx_to_name']['qual_score']] == 'continuous'
-  assert cctypes[m_c['idx_to_name']['name']] == 'multinomial'
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'continuous'
+  assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
   
-  mappings = dict(qual_score='multinomial', name='continuous')
+  mappings = dict(qual_score='multinomial')
   engine.update_datatypes(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
-  assert cctypes[m_c['idx_to_name']['qual_score']] == 'multinomial'
-  assert cctypes[m_c['idx_to_name']['qual_score']] == 'continuous'
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
+
+  ## Now test that it doesn't allow name to be continuous
+  mappings = dict(name='continuous')
+  with pytest.raises(ValueError):
+    engine.update_datatypes(test_tablename, mappings)
 
 def test_export_and_import_samples():
   pass
