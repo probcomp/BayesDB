@@ -156,7 +156,8 @@ def test_infer():
   ## 307 is the total number of rows in the dataset.
   assert len(infer_result['data']) == 307 and len(infer_result['data'][0]) == len(infer_result['columns'])
   assert type(infer_result['data'][0][0]) == int ## type of row_id is int
-  assert type(infer_result['data'][0][1]) == unicode ## type of name is unicode string
+  t = type(infer_result['data'][0][1])
+  assert (t == unicode) or (t == numpy.string_) ## type of name is string
   assert type(infer_result['data'][0][2]) == float ## type of qual_score is float
 
   all_possible_names = [infer_result['data'][row][1] for row in range(5) + range(10, 307)]
@@ -200,7 +201,8 @@ def test_simulate():
 
   assert len(simulate_result['data']) == 10 and len(simulate_result['data'][0]) == len(simulate_result['columns'])
   for row in range(numpredictions):
-    assert type(simulate_result['data'][row][0]) == unicode
+    t = type(simulate_result['data'][row][0])
+    assert (t == unicode) or (t == numpy.string_)
     assert type(simulate_result['data'][row][1]) == float
 
 def test_estimate_pairwise():
