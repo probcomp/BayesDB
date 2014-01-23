@@ -20,17 +20,17 @@
 
 import time
 import inspect
-import psycopg2
 import pickle
 import os
 import numpy
 import pytest
+import random
 
 from bayesdb.engine import Engine
 engine = Engine('local')
 
 def create_dha(path='data/dha.csv'):
-  test_tablename = 'dhatest' + str(int(time.time() * 1000000))
+  test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
   create_btable_result = engine.create_btable(test_tablename, csv_file_contents, None)
   return test_tablename, create_btable_result
@@ -136,9 +136,23 @@ def test_analyze():
       X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
       assert iters == it
 
+def test_nan_handling():
+  ## column with missing values is forced to multinomial
+  #dha1 = open('data/dha_missing.csv').read().split('\r\n')
+  #dha2 = open('data/dha_missing_nan.csv').read().split('\n')
+  ## only 10 rows are different, as they should be.
+
+  test_tablename1, _ = create_dha(path='data/dha_missing.csv') 
+  test_tablename2, _ = create_dha(path='data/dha_missing_nan.csv')
+  m1 = engine.persistence_layer.get_metadata(test_tablename1)
+  ## 1: first column's T doesn't include 5
+  ## 2: first column's T doesn't include 254
+  m2 = engine.persistence_layer.get_metadata(test_tablename2)
+  assert m1 == m2
+
 def test_infer():
   ## TODO: whereclauses
-  test_tablename, _ = create_dha(path='data/dha_missing.csv')
+  test_tablename, _ = create_dha(path='data/dha_missing_small.csv')
   ## dha_missing has missing qual_score in first 5 rows, and missing name in rows 6-10.
   engine.create_models(test_tablename, 2)
 
