@@ -21,7 +21,7 @@
 -- Create a fresh btable for the demo, and load in pre-existing samples
 DROP BTABLE dha_demo;
 CREATE BTABLE dha_demo FROM dha.csv;
-IMPORT SAMPLES dha_samples.pkl.gz INTO dha_demo;
+LOAD SAMPLES dha_samples.pkl.gz INTO dha_demo;
 
 SHOW SCHEMA FOR dha_demo;
 -- load a file that updates the schema
