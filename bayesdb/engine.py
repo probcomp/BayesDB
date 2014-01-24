@@ -129,6 +129,13 @@ class Engine(object):
 
     return dict(columns=colnames, data=[cctypes], message='Created btable %s. Inferred schema:' % tablename)
 
+  def show_schema(self, tablename):
+    metadata = self.persistence_layer.get_metadata(tablename)
+    colname_to_idx_dict = metadata['M_c']['name_to_idx']
+    colnames = map(lambda tup: tup[0], sorted(colname_to_idx_dict.items(), key=lambda tup: tup[1]))
+    cctypes = metadata['cctypes']
+    return dict(columns=colnames, data=[cctypes], message='')
+
   def export_models(self, tablename):
     """Opposite of import models! Save a pickled version of X_L_list, X_D_list, M_c, and T."""
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)

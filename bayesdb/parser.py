@@ -145,8 +145,17 @@ class Parser(object):
             else:
                 print self.help_execute_file()
                 return False
-        else:
-            return False
+
+    def help_show_schema(self):
+        return "SHOW SCHEMA FOR <btable>: show the datatype schema for the btable."
+
+    def parse_show_schema(self, words, orig):
+        if len(words) >= 4 and words[0] == 'show' and words[1] == 'schema':
+            if words[2] == 'for':
+                return 'show_schema', dict(tablename=words[3])
+            else:
+                print self.help_show_schema()
+                return False
 
                 
     def help_create_models(self):

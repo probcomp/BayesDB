@@ -23,6 +23,10 @@ DROP BTABLE dha_demo;
 CREATE BTABLE dha_demo FROM dha.csv;
 IMPORT SAMPLES dha_samples.pkl.gz INTO dha_demo;
 
+SHOW SCHEMA FOR dha_demo;
+-- load a file that updates the schema
+-- EXECUTE FILE dha_datatypes.bql
+
 ESTIMATE COLUMNS FROM dha_demo WHERE dependence probability to 'name' > 0.05 ORDER BY centrality LIMIT 10;
 
 -- Examine column dependencies
