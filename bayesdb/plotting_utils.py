@@ -123,7 +123,7 @@ def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', 
       hcluster.dendrogram(Z)
       intify = lambda x: int(x.get_text())
       reorder_indices = map(intify, pylab.gca().get_xticklabels())
-      pylab.close()
+      pylab.clf() ## use instead of close to avoid error spam
       # REORDER! 
       z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
       column_names_reordered = column_names[reorder_indices]

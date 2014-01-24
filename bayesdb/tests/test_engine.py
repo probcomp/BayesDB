@@ -106,6 +106,10 @@ def test_select():
   assert select_result['data'] == ground_truth_ordered_results
   """
 
+  # TODO: test similarity
+  # TODO: test all other single-column functions
+  # TODO: test ordering by functions
+
 def test_delete_chain():
   pass
 
@@ -230,9 +234,7 @@ def test_simulate():
     assert type(simulate_result['data'][row][1]) == float
 
 def test_estimate_pairwise():
-  pass
-
-def test_estimate_dependence_probabilities():
+  ## TODO: test all two-column functions
   pass
   
 if __name__ == '__main__':

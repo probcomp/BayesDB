@@ -36,6 +36,11 @@ from engine import Engine
 
 class Client(object):
     def __init__(self, hostname=None, port=8008, crosscat_engine_type='multiprocessing'):
+        """
+        Create a client object. The client creates a parser, that is uses to parse all commands,
+        and an engine, which is uses to execute all commands. The engine can be remote or local.
+        If local, the engine will be created.
+        """
         self.parser = Parser()
         if hostname is None or hostname=='localhost':
             self.online = False
@@ -47,19 +52,34 @@ class Client(object):
             self.URI = 'http://' + hostname + ':%d' % port
 
     def call_bayesdb_engine(self, method_name, args_dict):
-      if self.online:
-        out, id = au.call(method_name, args_dict, self.URI)
-      else:
-        method = getattr(self.engine, method_name)
-        argnames = inspect.getargspec(method)[0]
-        args = [args_dict[argname] for argname in argnames if argname in args_dict]
-        out = method(*args)
-      return out
+        """
+        Helper function used to call the BayesDB engine, whether it is remote or local.
+        Accepts method name and arguments for that method as input.
+        """
+        if self.online:
+            out, id = au.call(method_name, args_dict, self.URI)
+        else:
+            method = getattr(self.engine, method_name)
+            argnames = inspect.getargspec(method)[0]
+            args = [args_dict[argname] for argname in argnames if argname in args_dict]
+            out = method(*args)
+        return out
 
     def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None):
+        """Wrapper around execute."""
         return self.execute(call_input, pretty, timing, wait, plots)
 
     def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None):
+        """
+        Execute a chunk of BQL. This method breaks a large chunk of BQL (like a file)
+        consisting of possibly many BQL statements, breaks them up into individual statements,
+        then passes each individual line to self.execute_statement() as a string.
+        
+        param call_input: may be either a file object, or a string.
+        If the input is a file, then we load the inputs of the file, and use those as a string.
+
+        See self.execute_statement() for an explanation of arguments.
+        """
         if type(call_input) == file:
             bql_string = call_input.read()
             path = os.path.abspath(call_input.name)
@@ -73,15 +93,22 @@ class Client(object):
             return_list = []
             
         lines = self.parser.parse(bql_string)
-        for line in lines:
+        # Iterate through lines with while loop so we can append within loop.
+        while len(lines) > 0:
+            line = lines.pop(0)
             if type(call_input) == file:
                 print '> %s' % line
             if wait:
                 user_input = raw_input()
                 if len(user_input) > 0 and (user_input[0] == 'q' or user_input[0] == 's'):
                     continue
-            result = self.execute_line(line, pretty, timing)
-            if not pretty:
+            result = self.execute_statement(line, pretty, timing)
+
+            if type(result) == dict and result['message'] == 'execute_file':
+                ## special case for one command: execute_file
+                new_lines = self.parser.parse(result['bql_string'])
+                lines += new_lines
+            elif not pretty:
                 return_list.append(result)
             if type(call_input) == file:
                 print
@@ -91,17 +118,33 @@ class Client(object):
         if not pretty:
             return return_list
 
-    def execute_line(self, bql_string, pretty=True, timing=False, plots=None):
+    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None):
+        """
+        Accepts a SINGLE BQL STATEMENT as input, parses it, and executes it if it was parsed
+        successfully.
+
+        If pretty=True, then the command output will be pretty-printed as a string.
+        If pretty=False, then the command output will be returned as a python object.
+
+        timing=True prints out how long the command took to execute.
+
+        For commands that have visual results, plots=True will cause those to be displayed
+        by matplotlib as graphics rather than being pretty-printed as text.
+        (Note that the graphics will also be saved if the user added SAVE TO <filename> to the BQL.)
+        """
         if timing:
             start_time = time.time()
 
-        out  = self.parser.parse_line(bql_string)
+        out  = self.parser.parse_statement(bql_statement_string)
         if out is None:
             print "Could not parse command. Try typing 'help' for a list of all commands."
             return
         elif not out:
             return
+            
         method_name, args_dict = out
+        if method_name == 'execute_file':
+            return dict(message='execute_file', bql_string=open(filename, 'r').read())
         result = self.call_bayesdb_engine(method_name, args_dict)
         result = self.callback(method_name, args_dict, result)
         assert type(result) != int
@@ -111,23 +154,18 @@ class Client(object):
             print 'Elapsed time: %.2f seconds.' % (end_time - start_time)
 
         if plots is None:
+            # TODO: should this be commented or not?
             #plots = 'DISPLAY' in os.environ.keys()
             plots = False
 
         if 'matrix' in result:
             ## Special logic to display matrices.
-            if not (result['filename'] or plots):
-                print "No GUI available to display graphics: please enter the filename where the graphics should be saved, with the extension indicating the filetype (e.g. .png or .pdf). Enter a blank filename to instead view the matrix as text."
-                filename = raw_input()
-                if len(filename) > 0:
-                    result['filename'] = filename
-                    plotting_utils.plot_matrix(result['matrix'], result['column_names'], title=result['title'], filename=result['filename'])
-                else:
-                    pp = self.pretty_print(result)
-                    print pp
-                    return pp
+            if plots:
+                plotting_utils.plot_matrix(result['matrix'], result['column_names'], title=result['title'], filename=None)                            
             else:
-                plotting_utils.plot_matrix(result['matrix'], result['column_names'], title=result['message'], filename=result['filename'])
+                pp = self.pretty_print(result)
+                print pp
+                return pp
         elif pretty:
             if type(result) == dict and 'message' in result.keys():
                 print result['message']
