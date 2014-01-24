@@ -28,20 +28,19 @@ import operator
 import copy
 import math
 import ast
-#
+
 import pylab
 import numpy
 import matplotlib.cm
 from scipy.stats import pearsonr
 from collections import defaultdict
-#
+
 import crosscat.utils.api_utils as au
 import crosscat.utils.data_utils as du
 import bayesdb.settings as S
 
 from crosscat.CrossCatClient import get_CrossCatClient
 from _file_persistence_layer import FilePersistenceLayer
-from _postgres_persistence_layer import PostgresPersistenceLayer
 import utils
 import select_utils
 import plotting_utils
@@ -50,7 +49,6 @@ class Engine(object):
   def __init__(self, crosscat_engine_type='local', **kwargs):
     self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
     self.persistence_layer = FilePersistenceLayer()
-    #self.persistence_layer = PostgresPersistenceLayer()
 
   def start_from_scratch(self):
     self.persistence_layer.start_from_scratch()
@@ -84,6 +82,8 @@ class Engine(object):
     return dict(columns=colnames, data=[cctypes], message='Updated schema:\n')
 
   def _guess_schema(self, header, values, crosscat_column_types, colnames):
+    # TODO: should this be deleted in favor of using crosscat's datatype guessing?
+    # If so, then call du.read_model_data_from_csv(...) in create_btable instead of du.read_csv(...)
     """Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes
     Also make the corresponding postgres column types."""
     postgres_coltypes = []
@@ -123,6 +123,7 @@ class Engine(object):
 
     ## Guess schema and create table
     header, values = du.read_csv(csv_abs_path, has_header=True)
+    values = du.convert_nans(values)
     postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types, colnames)
     self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, csv, cctypes, postgres_coltypes, colnames)
 

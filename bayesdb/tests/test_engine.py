@@ -137,22 +137,18 @@ def test_analyze():
       assert iters == it
 
 def test_nan_handling():
-  ## column with missing values is forced to multinomial
-  #dha1 = open('data/dha_missing.csv').read().split('\r\n')
-  #dha2 = open('data/dha_missing_nan.csv').read().split('\n')
-  ## only 10 rows are different, as they should be.
-
   test_tablename1, _ = create_dha(path='data/dha_missing.csv') 
   test_tablename2, _ = create_dha(path='data/dha_missing_nan.csv')
   m1 = engine.persistence_layer.get_metadata(test_tablename1)
-  ## 1: first column's T doesn't include 5
-  ## 2: first column's T doesn't include 254
   m2 = engine.persistence_layer.get_metadata(test_tablename2)
-  assert m1 == m2
+  assert m1['M_c'] == m2['M_c']
+  assert m1['M_r'] == m2['M_r']
+  assert m1['cctypes'] == m2['cctypes']
+  numpy.testing.assert_equal(numpy.array(m1['T']), numpy.array(m2['T']))
 
 def test_infer():
   ## TODO: whereclauses
-  test_tablename, _ = create_dha(path='data/dha_missing_small.csv')
+  test_tablename, _ = create_dha(path='data/dha_missing.csv')
   ## dha_missing has missing qual_score in first 5 rows, and missing name in rows 6-10.
   engine.create_models(test_tablename, 2)
 
