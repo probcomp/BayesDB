@@ -29,10 +29,25 @@ import random
 from bayesdb.engine import Engine
 engine = Engine('local')
 
+test_tablenames = None
+
+def setup_function(function):
+  global test_tablenames
+  test_tablenames = []
+
+def teardown_function(function):
+  global tablename
+  for test_tablename in test_tablenames:
+    engine.drop_btable(test_tablename)
+
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
   create_btable_result = engine.create_btable(test_tablename, csv_file_contents, None)
+  
+  global test_tablenames
+  test_tablenames.append(test_tablename)
+  
   return test_tablename, create_btable_result
 
 def test_create_btable():
