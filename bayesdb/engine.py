@@ -50,10 +50,6 @@ class Engine(object):
     self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
     self.persistence_layer = FilePersistenceLayer()
 
-  def start_from_scratch(self):
-    self.persistence_layer.start_from_scratch()
-    return 'Started db from scratch.'
-
   def drop_btable(self, tablename):
     """Delete table by tablename."""
     self.persistence_layer.drop_btable(tablename)
@@ -136,18 +132,18 @@ class Engine(object):
     cctypes = metadata['cctypes']
     return dict(columns=colnames, data=[cctypes], message='')
 
-  def export_models(self, tablename):
-    """Opposite of import models! Save a pickled version of X_L_list, X_D_list, M_c, and T."""
+  def save_models(self, tablename):
+    """Opposite of load models! Save a pickled version of X_L_list, X_D_list, M_c, and T."""
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    M_c, M_r, T, cctypes = self.persistence_layer.get_metadata(tablename)
     return dict(M_c=M_c, M_r=M_r, T=T, X_L_list=X_L_list, X_D_list=X_D_list)
 
-  def import_models(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
-    """Import these models as if they are new models"""
+  def load_models(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
+    """Load these models as if they are new models"""
     result = self.persistence_layer.add_models(tablename, X_L_list, X_D_list, iterations)
-    return dict(message="Successfully imported %d models." % len(X_L_list))
+    return dict(message="Successfully loaded %d models." % len(X_L_list))
     
-  def create_models(self, tablename, n_models):
+  def initialize_models(self, tablename, n_models):
     """Call initialize n_models times."""
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
@@ -163,6 +159,14 @@ class Engine(object):
 
     # Insert results into persistence layer
     self.persistence_layer.add_models(tablename, X_L_list, X_D_list)
+
+  def show_models(self, tablename):
+    """Return the current models and their iteration counts."""
+    models = self.persistence_layer.get_models(tablename)
+    modelid_iteration_info = list()
+    for modelid, model in sorted(models.items(), key=lambda t:t[0]):
+      modelid_iteration_info.append('Model %d: %d iterations' % (modelid, model['iterations']))
+    return dict(message=', '.join(modelid_iteration_info))
 
   def analyze(self, tablename, model_index='all', iterations=2, wait=False):
     """Run analyze for the selected table. model_index may be 'all'."""

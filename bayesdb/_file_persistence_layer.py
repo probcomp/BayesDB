@@ -42,7 +42,7 @@ class FilePersistenceLayer(PersistenceLayer):
         models.pkl
 
     metadata.pkl: dict. keys: M_r, M_c, T, cctypes
-    models.pkl: dict[model_idx] -> (X_L, X_D). Idx starting at 1.
+    models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations]. Idx starting at 1.
     data.csv: the raw csv file that the data was loaded from.
     """
     
@@ -94,12 +94,6 @@ class FilePersistenceLayer(PersistenceLayer):
         f.write(csv)
         f.close()
         return csv_abs_path
-
-    def start_from_scratch(self):
-        """Delete all tables and all data."""
-        ## TODO: prompt user to confirm
-        shutil.rmtree(self.data_dir)
-        os.makedirs(self.data_dir)
 
     def drop_btable(self, tablename):
         """Delete a single btable."""

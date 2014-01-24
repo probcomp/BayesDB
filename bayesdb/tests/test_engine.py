@@ -108,10 +108,21 @@ def test_select():
 
   # TODO: test similarity
   # TODO: test all other single-column functions
+  # PROBABILITY <col>=<val>
+  # SIMILARITY TO <row> [WITH RESPECT TO <col>]
+  # TYPICALITY (of row)
+  # PREDICTIVE PROBABILITY
+
+  # TODO: test all single-column aggregate functions
+  # TYPICALITY (of whole column)
+  # DEPENDENCE PROBABILITY TO <col>
+  # MUTUAL INFORMATION WITH <col>
+  # CORRELATION WITH <col>
+  
   # TODO: test ordering by functions
 
-def test_delete_chain():
-  pass
+def test_delete_model():
+  pass #TODO
 
 def test_update_datatypes():
   test_tablename, _ = create_dha()
@@ -130,12 +141,12 @@ def test_update_datatypes():
   with pytest.raises(ValueError):
     engine.update_datatypes(test_tablename, mappings)
 
-def test_export_and_import_samples():
-  pass
+def test_save_and_load_models():
+  pass #TODO
 
-def test_create_models():
+def test_initialize_models():
   test_tablename, _ = create_dha()
-  engine.create_models(test_tablename, 10)
+  engine.initialize_models(test_tablename, 10)
   model_ids = engine.persistence_layer.get_model_ids(test_tablename)
   assert sorted(model_ids) == range(10)
   for i in range(10):
@@ -145,7 +156,7 @@ def test_create_models():
 def test_analyze():
   test_tablename, _ = create_dha()
   num_models = 3
-  engine.create_models(test_tablename, num_models)
+  engine.initialize_models(test_tablename, num_models)
 
   for it in (1,2):
     engine.analyze(test_tablename, model_index='all', iterations=1)
@@ -169,7 +180,7 @@ def test_infer():
   ## TODO: whereclauses
   test_tablename, _ = create_dha(path='data/dha_missing.csv')
   ## dha_missing has missing qual_score in first 5 rows, and missing name in rows 6-10.
-  engine.create_models(test_tablename, 2)
+  engine.initialize_models(test_tablename, 2)
 
   columnstring = 'name, qual_score'
   whereclause = ''
@@ -215,7 +226,7 @@ def test_simulate():
   ## TODO: whereclauses
   test_tablename, _ = create_dha()
   ## dha_missing has missing qual_score in first 5 rows, and missing name in rows 6-10.
-  engine.create_models(test_tablename, 2)
+  engine.initialize_models(test_tablename, 2)
   
   columnstring = 'name, qual_score'
   whereclause = ''
@@ -234,8 +245,29 @@ def test_simulate():
     assert type(simulate_result['data'][row][1]) == float
 
 def test_estimate_pairwise():
-  ## TODO: test all two-column functions
+  ## TODO: test all two-column functions:
+  # MUTUAL INFORMATION
+  # DEPENDENCE PROBABILITY
+  # CORRELATION
   pass
+
+def test_list_btables():
+  pass #TODO
+
+def test_execute_file():
+  pass #TODO
+
+def test_show_schema():
+  pass #TODO
+
+def test_show_models():
+  pass #TODO
+
+def test_show_diagnostics():
+  pass #TODO
+
+def test_drop_models():
+  pass #TODO
   
 if __name__ == '__main__':
     run_test()

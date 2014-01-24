@@ -26,6 +26,7 @@ IMPORT SAMPLES dha_samples.pkl.gz INTO dha_demo;
 SHOW SCHEMA FOR dha_demo;
 -- load a file that updates the schema
 -- EXECUTE FILE dha_datatypes.bql
+SHOW MODELS FOR dha_demo;
 
 ESTIMATE COLUMNS FROM dha_demo WHERE dependence probability to 'name' > 0.05 ORDER BY centrality LIMIT 10;
 

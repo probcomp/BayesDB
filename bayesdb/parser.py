@@ -115,16 +115,6 @@ class Parser(object):
 # Methods to parse individual commands (and the associated help method with each)
 ##################################################################################
 
-    def help_start_from_scratch(self):
-        return "START FROM SCRATCH: drop all btables."
-
-    def parse_start_from_scratch(self, words, orig):
-        if len(words) >= 3:
-            if words[0] == 'start' and words[1] == 'from' and words[2] == 'scratch':
-                return 'start_from_scratch', dict()
-
-                
-
     def help_list_btables(self):
         return "LIST BTABLES: view the list of all btable names."
 
@@ -146,6 +136,7 @@ class Parser(object):
                 print self.help_execute_file()
                 return False
 
+                
     def help_show_schema(self):
         return "SHOW SCHEMA FOR <btable>: show the datatype schema for the btable."
 
@@ -158,25 +149,62 @@ class Parser(object):
                 return False
 
                 
-    def help_create_models(self):
-        return "CREATE MODELS FOR <btable> [WITH <n_models> EXPLANATIONS]: the step to perform before analyze."
+    def help_show_models(self):
+        return "SHOW MODELS FOR <btable>: show the models and iterations stored for btable."
 
-    def parse_create_models(self, words, orig):
+    def parse_show_models(self, words, orig):
+        if len(words) >= 4 and words[0] == 'show' and words[1] == 'models':
+            if words[2] == 'for':
+                return 'show_models', dict(tablename=words[3])
+            else:
+                print self.help_show_models()
+                return False
+
+                
+    def help_show_diagnostics(self):
+        return "SHOW DIAGNOSTICS FOR <btable>: show diagnostics for this btable's models."
+
+    def parse_show_diagnostics(self, words, orig):
+        if len(words) >= 4 and words[0] == 'show' and words[1] == 'diagnostics':
+            if words[2] == 'for':
+                return 'show_diagnostics', dict(tablename=words[3])
+            else:
+                print self.help_show_diagnostics()
+                return False
+
+
+    def help_drop_models(self):
+        return "DROP MODELS [<min> TO <max>] FOR <btable>: drop the models specified by the given ids."
+
+    def parse_drop_models(self, words, orig):
+        ## TODO: parse min to max
+        if len(words) >= 4 and words[0] == 'models' and words[1] == 'drop':
+            if words[2] == 'for':
+                return 'show_diagnostics', dict(tablename=words[3])
+            else:
+                print self.help_show_diagnostics()
+                return False
+                
+                
+    def help_initialize_models(self):
+        return "INITIALIZE MODELS FOR <btable> [WITH <n_models> EXPLANATIONS]: the step to perform before analyze."
+
+    def parse_initialize_models(self, words, orig):
         n_models = 10
         if len(words) >= 1:
-            if (words[0] == 'create' or words[0] == 'initialize') and (utils.is_int(words[1]) or words[1] == 'model' or words[1] == 'models'):
+            if words[0] == 'initialize' and (utils.is_int(words[1]) or words[1] == 'model' or words[1] == 'models'):
                 if len(words) >= 4 and words[1] == 'model' or words[1] == 'models':
                     if words[2] == 'for':
                         tablename = words[3]
                         if len(words) >= 7:
                             if words[4] == 'with' and utils.is_int(words[5]) and words[6] == 'explanations':
                                 n_models = int(words[5])
-                        result = 'create_models', dict(tablename=tablename, n_models=n_models)
+                        result = 'initialize_models', dict(tablename=tablename, n_models=n_models)
                         # TODO: factor this print statement into callback in client
                         print 'Created %d models for btable %s' % (n_models, tablename)
                         return result
                     else:
-                        print self.help_create_models()
+                        print self.help_initialize_models()
                         return False
                 elif len(words) >= 3 and utils.is_int(words[1]):
                     n_models = int(words[1])
@@ -184,14 +212,14 @@ class Parser(object):
                     if words[2] == 'model' or words[2] == 'models':
                         if len(words) >= 5 and words[3] == 'for':
                             tablename = words[4]
-                            result = 'create_models', dict(tablename=tablename, n_models=n_models)
+                            result = 'initialize_models', dict(tablename=tablename, n_models=n_models)
                             print 'Created %d models for btable %s' % (n_models, tablename)
                             return result
                         else:
-                            print self.help_create_models()
+                            print self.help_initialize_models()
                             return False
                 else:
-                    print self.help_create_models()
+                    print self.help_initialize_models()
                     return False
 
 
@@ -320,12 +348,12 @@ class Parser(object):
 
             
             
-    def help_export_models(self):
-        return "EXPORT MODELS FROM <btable> TO <pklpath>: export your models to a pickle file."
+    def help_save_models(self):
+        return "SAVE MODELS FROM <btable> TO <pklpath>: save your models to a pickle file."
 
-    def parse_export_models(self, words, orig):
+    def parse_save_models(self, words, orig):
         match = re.search(r"""
-            export\s+
+            save\s+
             (models\s+)?
             from\s+
             (?P<btable>[^\s]+)
@@ -333,8 +361,8 @@ class Parser(object):
             (?P<pklpath>[^\s]+)
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
-            if words[0] == 'export':
-                print self.help_export_models()
+            if words[0] == 'save':
+                print self.help_save_models()
                 return False
             else:
                 return None
@@ -343,16 +371,16 @@ class Parser(object):
             pklpath = match.group('pklpath')
             if pklpath[-7:] != '.pkl.gz':
                 pklpath = pklpath + ".pkl.gz"
-            return 'export_models', dict(tablename=tablename, pkl_path=pklpath)
+            return 'save_models', dict(tablename=tablename, pkl_path=pklpath)
 
 
             
-    def help_import_models(self):
-        return "IMPORT MODELS <pklpath> INTO <btable> [ITERATIONS <iterations>]: import models from a pickle file."
+    def help_load_models(self):
+        return "LOAD MODELS <pklpath> INTO <btable> [ITERATIONS <iterations>]: load models from a pickle file."
         
-    def parse_import_models(self, words, orig):
+    def parse_load_models(self, words, orig):
         match = re.search(r"""
-            import\s+
+            load\s+
             (models\s+)|(samples\s+)
             (?P<pklpath>[^\s]+)\s+
             into\s+
@@ -360,8 +388,8 @@ class Parser(object):
             (\s+iterations\s+(?P<iterations>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
-            if words[0] == 'import':
-                print self.help_import_models()
+            if words[0] == 'load':
+                print self.help_load_models()
                 return False
             else:
                 return None
@@ -380,7 +408,7 @@ class Parser(object):
                 iterations = int(match.group('iterations').strip())
             else:
                 iterations = 0
-            return 'import_models', dict(tablename=tablename, X_L_list=X_L_list, X_D_list=X_D_list,
+            return 'load_models', dict(tablename=tablename, X_L_list=X_L_list, X_D_list=X_D_list,
                                           M_c=M_c, T=T, iterations=iterations)
 
 
@@ -480,10 +508,11 @@ class Parser(object):
                                             order_by=order_by, name=None)
             
 
-            
+    # TODO: delete this command once ESTIMATE PAIRWISE is done
     def help_estimate_dependence_probabilities(self):
         return "ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]] [SAVE TO <file>]: get probabilities of column dependence."
-
+        
+    # TODO: delete this command once ESTIMATE PAIRWISE is done
     def parse_estimate_dependence_probabilities(self, words, orig):
         match = re.search(r"""
             estimate\s+dependence\s+probabilities\s+from\s+

@@ -19,9 +19,6 @@
 #
 
 class PersistenceLayer(object):
-    def start_from_scratch(self):
-        raise NotImplementedError()
-
     def drop_btable(self, tablename):
         raise NotImplementedError()
 
@@ -34,7 +31,7 @@ class PersistenceLayer(object):
     def get_latent_states(self, tablename):
         raise NotImplementedError()
         
-    def get_metadata_and_table(self, tablename):
+    def get_metadata(self, tablename):
         raise NotImplementedError()
 
     def get_max_model_id(self, tablename):
@@ -46,7 +43,7 @@ class PersistenceLayer(object):
     def update_cctypes(self, tablename, cctypes):
         raise NotImplementedError()
     
-    def update_metadata_and_table(self, tablename, M_r, M_c, T):
+    def update_metadata(self, tablename, M_r, M_c, T):
         raise NotImplementedError()
     
     def check_if_table_exists(self, tablename):
