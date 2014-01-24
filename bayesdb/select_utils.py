@@ -149,7 +149,7 @@ def filter_and_impute_rows(T, M_c, imputations_dict, where_conditions):
           ## Fill in any imputed values.
           for col_idx, value in imputations_dict[row_id].items():
             row_values = list(row_values)
-            row_values[col_idx] = '*' + str(value)
+            row_values[col_idx] = value
             row_values = tuple(row_values)
         filtered_rows.append((row_id, row_values))
     return filtered_rows

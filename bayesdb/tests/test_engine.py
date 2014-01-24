@@ -186,7 +186,7 @@ def test_infer():
   assert type(infer_result['data'][0][2]) == float ## type of qual_score is float
 
   all_possible_names = [infer_result['data'][row][1] for row in range(5) + range(10, 307)]
-  all_observed_qual_scores = [qual_score['data'][row][2] for row in range(5,307)]
+  all_observed_qual_scores = [infer_result['data'][row][2] for row in range(5,307)]
 
   for row in range(5):
     inferred_name = infer_result['data'][row+5][1]
@@ -204,9 +204,8 @@ def test_infer():
     ## TODO: what do missing values look like? these should be missing
     inferred_name = infer_result['data'][row+5][1]
     inferred_qual_score = infer_result['data'][row][2]
-    assert inferred_name not in all_possible_names
-    assert type(inferred_qual_score) != type(1.2)
-
+    assert numpy.isnan(inferred_name)
+    assert numpy.isnan(inferred_qual_score)
 
 def test_simulate():
   ## TODO: whereclauses
