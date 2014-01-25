@@ -135,7 +135,7 @@ def test_update_datatypes():
   engine.update_datatypes(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
-
+  
   ## Now test that it doesn't allow name to be continuous
   mappings = dict(name='continuous')
   with pytest.raises(ValueError):
@@ -282,7 +282,26 @@ def test_execute_file():
   pass #TODO
 
 def test_show_schema():
-  pass #TODO
+  test_tablename, _ = create_dha()
+  m_c, m_r, t = engine.persistence_layer.get_metadata_and_table(test_tablename)
+  cctypes = engine.persistence_layer.get_cctypes(test_tablename)
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'continuous'
+  assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
+
+  schema = engine.show_schema(test_tablename)
+  assert schema['columns'][0] == 'name'
+  assert schema['columns'][-4] == 'qual_score'
+  assert sorted(schema['data'][0]) == sorted(cctypes)  
+  
+  mappings = dict(qual_score='multinomial')
+  engine.update_datatypes(test_tablename, mappings)
+  cctypes = engine.persistence_layer.get_cctypes(test_tablename)
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
+  
+  schema = engine.show_schema(test_tablename)
+  assert schema['columns'][0] == 'name'
+  assert schema['columns'][-4] == 'qual_score'
+  assert sorted(schema['data'][0]) == sorted(cctypes)
 
 def test_show_models():
   pass #TODO
