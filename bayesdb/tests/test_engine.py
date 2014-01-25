@@ -252,7 +252,31 @@ def test_estimate_pairwise():
   pass
 
 def test_list_btables():
-  pass #TODO
+  list_btables_result = engine.list_btables()  
+  assert type(list_btables_result) == set
+  assert len(list_btables_result) == 0
+  
+  test_tablename1, create_btable_result = create_dha()
+  test_tablename2, create_btable_result = create_dha()
+
+  list_btables_result = engine.list_btables()
+  assert test_tablename1 in list_btables_result
+  assert test_tablename2 in list_btables_result
+  assert len(list_btables_result) == 2
+  
+  engine.drop_btable(test_tablename1)
+  test_tablename3, create_btable_result = create_dha()
+  list_btables_result = engine.list_btables()  
+  assert test_tablename1 not in list_btables_result
+  assert test_tablename3 in list_btables_result
+  assert test_tablename2 in list_btables_result
+
+  engine.drop_btable(test_tablename2)
+  engine.drop_btable(test_tablename3)
+
+  list_btables_result = engine.list_btables()  
+  assert len(list_btables_result) == 0
+
 
 def test_execute_file():
   pass #TODO
