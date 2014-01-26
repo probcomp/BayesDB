@@ -225,7 +225,6 @@ def test_infer():
 def test_simulate():
   ## TODO: whereclauses
   test_tablename, _ = create_dha()
-  ## dha_missing has missing qual_score in first 5 rows, and missing name in rows 6-10.
   engine.initialize_models(test_tablename, 2)
   
   columnstring = 'name, qual_score'
@@ -244,12 +243,28 @@ def test_simulate():
     assert (t == unicode) or (t == numpy.string_)
     assert type(simulate_result['data'][row][1]) == float
 
-def test_estimate_pairwise():
-  ## TODO: test all two-column functions:
-  # MUTUAL INFORMATION
-  # DEPENDENCE PROBABILITY
-  # CORRELATION
-  pass
+def test_estimate_pairwise_dependence_probability():
+  test_tablename, _ = create_dha()
+  engine.initialize_models(test_tablename, 2)
+  dep_mat = engine.estimate_pairwise(test_tablename, 'dependence probability')
+
+@pytest.mark.slow
+def test_estimate_pairwise_mutual_information():
+  ## TODO: speedup! Takes 27 seconds, and this is with 1 sample to estimate mutual information.
+  # It definitely takes many more samples to get a good estimate - at least 100.
+  test_tablename, _ = create_dha()
+  engine.initialize_models(test_tablename, 2)
+  mi_mat = engine.estimate_pairwise(test_tablename, 'mutual information')
+
+def test_estimate_pairwise_correlation():
+  test_tablename, _ = create_dha()
+  engine.initialize_models(test_tablename, 2)
+  cor_mat = engine.estimate_pairwise(test_tablename, 'correlation')
+
+def test_estimate_pairwise_view_similarity():
+  test_tablename, _ = create_dha()
+  engine.initialize_models(test_tablename, 2)
+  vs_mat = engine.estimate_pairwise(test_tablename, 'view similarity')  
 
 def test_list_btables():
   list_btables_result = engine.list_btables()  
@@ -304,7 +319,26 @@ def test_show_schema():
   assert sorted(schema['data'][0]) == sorted(cctypes)
 
 def test_show_models():
-  pass #TODO
+  test_tablename, _ = create_dha()
+  num_models = 3
+  engine.initialize_models(test_tablename, num_models)
+
+  for it in (1,2):
+    analyze_out = engine.analyze(test_tablename, model_index='all', iterations=1)
+    model_ids = engine.persistence_layer.get_model_ids(test_tablename)
+    assert sorted(model_ids) == range(num_models)
+    for i in range(num_models):
+      X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
+      assert iters == it
+
+    ## models should be a list of (id, iterations) tuples.
+    models = engine.show_models(test_tablename)['models']
+    assert analyze_out['models'] == models
+    assert len(models) == num_models
+    for iter_id, m in enumerate(models):
+      assert iter_id == m[0]
+      assert it == m[1]
+  
 
 def test_show_diagnostics():
   pass #TODO

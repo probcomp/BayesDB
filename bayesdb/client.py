@@ -219,6 +219,11 @@ class Client(object):
             for row, colname in zip(zmatrix, list(colnames)):
                 pt.add_row([colname] + list(row))
             result = pt
+        elif type(query_obj) == dict and 'models' in query_obj:
+            """ Prety-print model info. """
+            m = query_obj['models']
+            output_list = ['Model %d: %d iterations' % (id, iterations) for id,iterations in m]
+            result = ', '.join(output_list)
         return result
 
 

@@ -142,9 +142,14 @@ class Engine(object):
     """Load these models as if they are new models"""
     result = self.persistence_layer.add_models(tablename, X_L_list, X_D_list, iterations)
     return dict(message="Successfully loaded %d models." % len(X_L_list))
+
+  def drop_models(self, tablename, model_ids=None):
+    """Drop the specified models. If model_ids is None, drop all models."""
+    #TODO
+    pass
     
   def initialize_models(self, tablename, n_models):
-    """Call initialize n_models times."""
+    """Call CrossCat's initialize method n_models times."""
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     max_modelid = self.persistence_layer.get_max_model_id(tablename)
@@ -165,8 +170,8 @@ class Engine(object):
     models = self.persistence_layer.get_models(tablename)
     modelid_iteration_info = list()
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
-      modelid_iteration_info.append('Model %d: %d iterations' % (modelid, model['iterations']))
-    return dict(message=', '.join(modelid_iteration_info))
+      modelid_iteration_info.append((modelid, model['iterations']))
+    return dict(message='', models=modelid_iteration_info)
 
   def analyze(self, tablename, model_index='all', iterations=2, wait=False):
     """Run analyze for the selected table. model_index may be 'all'."""
@@ -182,8 +187,8 @@ class Engine(object):
     modelid_iteration_info = list()
     for modelid in modelids:
       iters = self._analyze_helper(tablename, M_c, T, modelid, iterations)
-      modelid_iteration_info.append('Model %d: %d iterations' % (modelid, iters))
-    return dict(message=', '.join(modelid_iteration_info))
+      modelid_iteration_info.append((modelid, iters))
+    return dict(message='', models=modelid_iteration_info)
 
   def _analyze_helper(self, tablename, M_c, T, modelid, iterations):
     """Only for one model."""
@@ -353,13 +358,15 @@ class Engine(object):
     return {'columns': column_names}
 
   
-  def estimate_pairwise(self, tablename, function_name, filename, column_list=None):
+  def estimate_pairwise(self, tablename, function_name, filename=None, column_list=None):
     ## TODO: implement functionality with column_list
     if column_list is not None:
       raise NotImplementedError()
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    return plotting_utils._do_gen_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename, filename)
+    return plotting_utils._do_gen_matrix(function_name,
+                                         X_L_list, X_D_list, M_c, T, tablename,
+                                         filename, backend=self.backend)
 
   def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename, submatrix):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)

@@ -74,14 +74,16 @@ def _create_histogram(M_c, data, columns, mc_col_indices, filename):
   pylab.tight_layout()
   pylab.savefig(full_filename)
 
-def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False):
+def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False, backend=None):
+    """ Compute a matrix. If using a function that requires backend (currently only
+    mutual information), backend must not be None. """
     if col_function_name == 'mutual information':
       col_function = utils._mutual_information
     elif col_function_name == 'dependence probability':
       col_function = utils._dependence_probability
     elif col_function_name == 'correlation':
       col_function = utils._correlation
-    elif col_function_name == 'view_similarity':
+    elif col_function_name == 'view similarity':
       col_function = utils._view_similarity
     else:
       raise Exception('Invalid column function: %s' % col_function_name)
@@ -94,7 +96,7 @@ def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', 
     z_matrix = numpy.zeros((num_cols, num_cols))
     for i in range(num_cols):
       for j in range(num_cols):
-        z_matrix[i][j] = col_function(i, j, X_L_list, X_D_list, M_c, T)
+        z_matrix[i][j] = col_function(i, j, X_L_list, X_D_list, M_c, T, backend)
 
     if col:
       z_column = list(z_matrix[M_c['name_to_idx'][col]])

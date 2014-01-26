@@ -25,6 +25,8 @@ import inspect
 import ast
 import pylab
 import matplotlib.cm
+import time
+from scipy.stats import pearsonr
 
 import crosscat.utils.data_utils as du
 import select_utils
@@ -94,7 +96,7 @@ def _get_similarity_function(target_column, target_row_id, X_L_list, X_D_list, M
 ## TWO COLUMN FUNCTIONS
 ########################################################################
 
-def _dependence_probability(col1, col2, X_L_list, X_D_list, M_c, T):
+def _dependence_probability(col1, col2, X_L_list, X_D_list, M_c, T, backend=None):
   prob_dep = 0
   for X_L, X_D in zip(X_L_list, X_D_list):
     assignments = X_L['column_partition']['assignments']
@@ -107,7 +109,7 @@ def _dependence_probability(col1, col2, X_L_list, X_D_list, M_c, T):
   prob_dep /= float(len(X_L_list))
   return prob_dep
 
-def _view_similarity(col1, col2, X_L_list, X_D_list, M_c, T):
+def _view_similarity(col1, col2, X_L_list, X_D_list, M_c, T, backend=None):
   prob_dep = 0
   for X_L in X_L_list:
     assignments = X_L['column_partition']['assignments']
@@ -116,19 +118,17 @@ def _view_similarity(col1, col2, X_L_list, X_D_list, M_c, T):
   prob_dep /= float(len(X_L_list))
   return prob_dep
 
-def _mutual_information(col1, col2, X_L_list, X_D_list, M_c, T):
-  t = time.time()
+def _mutual_information(col1, col2, X_L_list, X_D_list, M_c, T, backend):
   Q = [(col1, col2)]
   ## Returns list of lists.
   ## First list: same length as Q, so we just take first.
   ## Second list: MI, linfoot. we take MI.
-  results_by_model = self.backend.mutual_information(M_c, X_L_list, X_D_list, Q)[0][0]
+  results_by_model = backend.mutual_information(M_c, X_L_list, X_D_list, Q, n_samples=1)[0][0]
   ## Report the average mutual information over each model.
   mi = float(sum(results_by_model)) / len(results_by_model)
-  print time.time() - t
   return mi
 
-def _correlation(col1, col2, X_L_list, X_D_list, M_c, T):
+def _correlation(col1, col2, X_L_list, X_D_list, M_c, T, backend=None):
   t_array = numpy.array(T, dtype=float)
   correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
   return correlation
