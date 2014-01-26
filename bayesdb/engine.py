@@ -162,6 +162,7 @@ class Engine(object):
 
     # Insert results into persistence layer
     self.persistence_layer.add_models(tablename, model_list)
+    return self.show_models(tablename)
 
   def show_models(self, tablename):
     """Return the current models and their iteration counts."""

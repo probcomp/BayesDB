@@ -25,6 +25,7 @@ import os
 import numpy
 import pytest
 import random
+import shutil
 
 from bayesdb.client import Client
 from bayesdb.engine import Engine
@@ -32,16 +33,22 @@ engine = Engine('local')
 
 test_tablenames = None
 client = None
+test_filenames = None
 
 def setup_function(function):
-  global test_tablenames, client
+  global test_tablenames, client, test_filenames
   test_tablenames = []
+  test_filenames = []
   client = Client()
 
 def teardown_function(function):
   global tablename
   for test_tablename in test_tablenames:
     engine.drop_btable(test_tablename)
+
+  for test_filename in test_filenames:
+    if os.path.exists(test_filename):
+        os.remove(test_filename)
 
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
@@ -53,14 +60,14 @@ def create_dha(path='data/dha.csv'):
   
   return test_tablename
     
-
 def test_save_and_load_models():
   test_tablename1 = create_dha()
   test_tablename2 = create_dha()
-  global client
+  global client, test_filenames
   client('initialize 2 models for %s' % (test_tablename1))
-  client('analyze %s for 1 iteration' % (test_tablename1))
-  pkl_path = 'test_models.pkl'
+  #client('analyze %s for 1 iteration' % (test_tablename1))
+  pkl_path = 'test_models.pkl.gz'
+  test_filenames.append(pkl_path)
   client('save models for %s to %s' % (test_tablename1, pkl_path))
   original_models = engine.save_models(test_tablename1)
   

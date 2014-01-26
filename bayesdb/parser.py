@@ -355,7 +355,7 @@ class Parser(object):
         match = re.search(r"""
             save\s+
             (models\s+)?
-            from\s+
+            ((from\s+)|(for\s+))
             (?P<btable>[^\s]+)
             \s+to\s+
             (?P<pklpath>[^\s]+)
@@ -370,7 +370,10 @@ class Parser(object):
             tablename = match.group('btable')
             pklpath = match.group('pklpath')
             if pklpath[-7:] != '.pkl.gz':
-                pklpath = pklpath + ".pkl.gz"
+                if pklpath[-4:] == '.pkl':
+                    pklpath = pklpath + ".gz"
+                else:
+                    pklpath = pklpath + ".pkl.gz"
             return 'save_models', dict(tablename=tablename, pkl_path=pklpath)
 
 
@@ -381,11 +384,10 @@ class Parser(object):
     def parse_load_models(self, words, orig):
         match = re.search(r"""
             load\s+
-            (models\s+)|(samples\s+)
+            models\s+
             (?P<pklpath>[^\s]+)\s+
-            into\s+
+            ((into\s+)|(for\s+))
             (?P<btable>[^\s]+)
-            (\s+iterations\s+(?P<iterations>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'load':
@@ -396,12 +398,18 @@ class Parser(object):
         else:
             tablename = match.group('btable')
             pklpath = match.group('pklpath')
-            if pklpath[-3:] == '.gz':
-                ## TODO: remove this code that actually does stuff from the parser...
-                models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
-            else:
+            try:
                 ## TODO: remove this code that actually does stuff from the parser...                
-                models = pickle.load(open(self.get_absolute_path(pklpath), 'rb'))
+                models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
+            except IOError as e:
+                if pklpath[-7:] != '.pkl.gz':
+                    if pklpath[-4:] == '.pkl':
+                        pklpath = pklpath + ".gz"
+                    else:
+                        pklpath = pklpath + ".pkl.gz"
+                    models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
+                else:
+                    raise e
             return 'load_models', dict(tablename=tablename, models=models)
 
 

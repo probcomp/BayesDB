@@ -188,7 +188,7 @@ class Client(object):
             ## Here is where the models get saved.
             samples_file = gzip.GzipFile(args_dict['pkl_path'], 'w')
             pickle.dump(samples_dict, samples_file)
-            return dict(message="Successfully saved the samples to %s" % pklpath)
+            return dict(message="Successfully saved the samples to %s" % args_dict['pkl_path'])
         else:
             return result
         
