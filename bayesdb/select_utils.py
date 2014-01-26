@@ -200,7 +200,7 @@ def _order_by(filtered_values, functions):
     ## Apply each function to each data_tuple to get a #functions-length tuple of scores.
     scores = tuple([func(row_id, data_tuple) for func in functions])
     scored_data_tuples.append((scores, (row_id, data_tuple)))
-  scored_data_tuples.sort(key=lambda tup: tup[0], reverse=True)
+  scored_data_tuples.sort(key=lambda tup: tup[0], reverse=False)
   return [tup[1] for tup in scored_data_tuples]
 
 

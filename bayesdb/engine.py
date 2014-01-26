@@ -254,7 +254,8 @@ class Engine(object):
 
   def select(self, tablename, columnstring, whereclause, limit, order_by, imputations_dict=None):
     """
-    Our own homebrewed select query.
+    BQL's version of the SQL SELECT query.
+    
     First, reads codes from T and converts them to values.
     Then, filters the values based on the where clause.
     Then, fills in all imputed values, if applicable.
@@ -266,6 +267,7 @@ class Engine(object):
     order by as if you're doing it exclusively on columns. The only downside is that now if there isn't an
     order by, but there is a limit, then we computed a large number of extra functions.
     """
+    
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     
@@ -287,6 +289,7 @@ class Engine(object):
 
   def simulate(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
+    
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
 
@@ -340,6 +343,13 @@ class Engine(object):
       The whereclause must consist of functions of a single column only.
     Next, the columns are ordered by other functions of a single column.
     Finally, the columns are limited to the specified number.
+
+    ## allowed functions:
+    # typicality(centrality)
+    # dependence probability to <col>
+    # mutual information with <col>
+    # correlation with <col>
+    
     """
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
@@ -359,6 +369,7 @@ class Engine(object):
     ## TODO: implement functionality with column_list
     if column_list is not None:
       raise NotImplementedError()
+      
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     return plotting_utils._do_gen_matrix(function_name,

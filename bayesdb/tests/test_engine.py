@@ -71,6 +71,9 @@ def test_drop_btable():
 
 def test_select():
   test_tablename, _ = create_dha()
+
+  # Test a simple query: select two columns, no limit, no order, no where.
+  # Check to make sure types of all inputs are correct, etc.
   columnstring = 'name, qual_score'
   whereclause = ''
   limit = float('inf')
@@ -88,24 +91,22 @@ def test_select():
   assert type(select_result['data'][0][2]) == float ## type of qual_score is float
   original_select_result = select_result['data']
 
-  ## test limit
+  ## Test limit: do the same query as before, but limit to 10
   limit = 10
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
   assert len(select_result['data']) == limit
 
-  ## test order by single column
+  ## Test order by single column: desc
   ground_truth_ordered_results = sorted(original_select_result, key=lambda t: t[2], reverse=True)[:10]
-  order_by = [('column', {'desc': False, 'column': 'qual_score'})]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
-  assert select_result['data'] == ground_truth_ordered_results
-
-  ## test order by desc single column
-  """ FAILING!
-  ground_truth_ordered_results = sorted(original_select_result, key=lambda t: t[2])[:10]
   order_by = [('column', {'desc': True, 'column': 'qual_score'})]
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
   assert select_result['data'] == ground_truth_ordered_results
-  """
+
+  ## Test order by single column: asc
+  ground_truth_ordered_results = sorted(original_select_result, key=lambda t: t[2])[:10]
+  order_by = [('column', {'desc': False, 'column': 'qual_score'})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  assert select_result['data'] == ground_truth_ordered_results
 
   # TODO: test similarity
   # TODO: test all other single-column functions
