@@ -345,6 +345,20 @@ def test_show_diagnostics():
 
 def test_drop_models():
   pass #TODO
+
+def test_estimate_columns():
+  #TODO: add nontrivial cases
+  test_tablename, _ = create_dha()
+  metadata = engine.persistence_layer.get_metadata(test_tablename)
+  all_columns = metadata['M_c']['name_to_idx'].keys()
+  engine.initialize_models(test_tablename, 2)
+  
+  whereclause = ''
+  limit = float('inf')
+  order_by = None
+  name = None
+  columns = engine.estimate_columns(test_tablename, whereclause, limit, order_by, name)['columns']
+  assert columns == all_columns
   
 if __name__ == '__main__':
     run_test()

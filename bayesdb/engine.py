@@ -32,7 +32,6 @@ import ast
 import pylab
 import numpy
 import matplotlib.cm
-from scipy.stats import pearsonr
 from collections import defaultdict
 
 import crosscat.utils.api_utils as au
@@ -351,10 +350,8 @@ class Engine(object):
     ## order: TODO
     
     # limit
-    if limit == float('inf'):
-      return column_names
-    else:
-      return column_names[:limit]
+    if limit != float('inf'):
+      column_names = column_names[:limit]
     return {'columns': column_names}
 
   
