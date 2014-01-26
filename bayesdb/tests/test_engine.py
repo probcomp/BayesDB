@@ -26,6 +26,7 @@ import numpy
 import pytest
 import random
 
+from bayesdb.client import Client
 from bayesdb.engine import Engine
 engine = Engine('local')
 
@@ -39,7 +40,7 @@ def teardown_function(function):
   global tablename
   for test_tablename in test_tablenames:
     engine.drop_btable(test_tablename)
-
+    
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
@@ -142,7 +143,16 @@ def test_update_datatypes():
     engine.update_datatypes(test_tablename, mappings)
 
 def test_save_and_load_models():
-  pass #TODO
+  test_tablename, _ = create_dha()
+  engine.initialize_models(test_tablename, 3)
+  engine.analyze(test_tablename, model_index='all', iterations=1)
+  ## note that this won't save the models, since we didn't call this from the client.
+  ## engine.save_models actually just turns the models.
+  original_models = engine.save_models(test_tablename)
+  
+  test_tablename2, _ = create_dha()
+  engine.load_models(test_tablename2, original_models)
+  assert engine.save_models(test_tablename2).values() == original_models.values()
 
 def test_initialize_models():
   test_tablename, _ = create_dha()

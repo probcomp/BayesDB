@@ -397,19 +397,12 @@ class Parser(object):
             tablename = match.group('btable')
             pklpath = match.group('pklpath')
             if pklpath[-3:] == '.gz':
+                ## TODO: remove this code that actually does stuff from the parser...
                 models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
             else:
+                ## TODO: remove this code that actually does stuff from the parser...                
                 models = pickle.load(open(self.get_absolute_path(pklpath), 'rb'))
-            X_L_list = models['X_L_list']
-            X_D_list = models['X_D_list']
-            M_c = models['M_c']
-            T = models['T']
-            if match.group('iterations'):
-                iterations = int(match.group('iterations').strip())
-            else:
-                iterations = 0
-            return 'load_models', dict(tablename=tablename, X_L_list=X_L_list, X_D_list=X_D_list,
-                                          M_c=M_c, T=T, iterations=iterations)
+            return 'load_models', dict(tablename=tablename, models=models)
 
 
             

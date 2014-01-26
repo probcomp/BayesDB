@@ -132,15 +132,16 @@ class Engine(object):
     return dict(columns=colnames, data=[cctypes], message='')
 
   def save_models(self, tablename):
-    """Opposite of load models! Save a pickled version of X_L_list, X_D_list, M_c, and T."""
-    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    M_c, M_r, T, cctypes = self.persistence_layer.get_metadata(tablename)
-    return dict(M_c=M_c, M_r=M_r, T=T, X_L_list=X_L_list, X_D_list=X_D_list)
+    """Opposite of load models! Returns the models, including the contents, which
+    the client then saves to disk (in a pickle file)."""
+    return self.persistence_layer.get_models(tablename)
 
-  def load_models(self, tablename, X_L_list, X_D_list, M_c, T, iterations=0):
+  def load_models(self, tablename, models):
     """Load these models as if they are new models"""
-    result = self.persistence_layer.add_models(tablename, X_L_list, X_D_list, iterations)
-    return dict(message="Successfully loaded %d models." % len(X_L_list))
+    # Models are stored in the format: dict[model_id] = dict[X_L, X_D, iterations].
+    # We just want to pass the values.
+    result = self.persistence_layer.add_models(tablename, models.values())
+    return dict(message="Successfully loaded %d models." % len(models))
 
   def drop_models(self, tablename, model_ids=None):
     """Drop the specified models. If model_ids is None, drop all models."""
@@ -154,15 +155,13 @@ class Engine(object):
     max_modelid = self.persistence_layer.get_max_model_id(tablename)
 
     # Call initialize on backend
-    X_L_list = list()
-    X_D_list = list()
+    model_list = list()
     for model_index in range(max_modelid, n_models + max_modelid):
       X_L, X_D = self.backend.initialize(M_c, M_r, T)
-      X_L_list.append(X_L)
-      X_D_list.append(X_D)
+      model_list.append(dict(X_L=X_L, X_D=X_D, iterations=0))
 
     # Insert results into persistence layer
-    self.persistence_layer.add_models(tablename, X_L_list, X_D_list)
+    self.persistence_layer.add_models(tablename, model_list)
 
   def show_models(self, tablename):
     """Return the current models and their iteration counts."""

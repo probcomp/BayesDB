@@ -220,23 +220,21 @@ class FilePersistenceLayer(PersistenceLayer):
         # Add to btable name index
         self.btable_names.add(tablename)
 
-    def add_models(self, tablename, X_L_list, X_D_list, iterations=0):
+    def add_models(self, tablename, model_list):
         """
         Add a set of models (X_Ls and X_Ds) to a table (the table does not need to
         already have models).
         
-        It is required that they all have the same number of iterations. If they have
-        different numbers of iterations, call add_models multiple times.
+        parameter model_list is a list of dicts, where each dict contains the keys
+        X_L, X_D, and iterations.
         """
-        assert len(X_L_list) == len(X_D_list)
-
         # Load from existing models file.
         models = self.get_models(tablename)
         
         ## Model indexing starts at 0 (and is -1 if none exist)
         max_model_id = self.get_max_model_id(tablename, models)        
-        for i, (X_L,X_D) in enumerate(zip(X_L_list, X_D_list)):
-            models[max_model_id + 1 + i] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
+        for i,m in enumerate(model_list):
+            models[max_model_id + 1 + i] = m
         self.write_models(tablename, models)
 
     def update_model(self, tablename, X_L, X_D, iterations, modelid):
