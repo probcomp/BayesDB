@@ -47,11 +47,11 @@ import select_utils
 import plotting_utils
 
 class Engine(object):
-  def __init__(self, crosscat_engine_type='local', seed=None, **kwargs):
-    if seed is None:
-      max_int = min(32767, sys.maxint) #32767 is 2^15 - 1, and is C's max int in general.
-      seed = random.randint(0, max_int)
-    self.backend = get_CrossCatClient(crosscat_engine_type, seed=seed, **kwargs)
+  def __init__(self, crosscat_engine_type='local', **kwargs):
+    """ One optional argument that you may find yourself using frequently is seed.
+    It defaults to random seed, but for testing/reproduceability purposes you may
+    want a deterministic one. """
+    self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
     self.persistence_layer = FilePersistenceLayer()
 
   def drop_btable(self, tablename):
