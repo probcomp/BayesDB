@@ -21,7 +21,7 @@
 -- Import the data and samples.
 DROP BTABLE kiva;
 CREATE BTABLE kiva FROM kiva.csv;
-LOAD SAMPLES kiva_flat_table_model_500.pkl.gz INTO kiva;
+LOAD MODELS kiva_flat_table_model_500.pkl.gz INTO kiva;
 
 SELECT journal_entries, num_borrowers, gender_ratio FROM kiva LIMIT 20;
 SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 0 FROM kiva LIMIT 20;
