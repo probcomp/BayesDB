@@ -21,7 +21,7 @@
 -- Create a fresh btable for the demo, and load in pre-existing samples
 DROP BTABLE dha_demo;
 CREATE BTABLE dha_demo FROM dha.csv;
-LOAD MODELS dha_samples.pkl.gz INTO dha_demo;
+LOAD MODELS dha_models.pkl.gz FOR dha_demo;
 
 SELECT qual_score FROM dha_demo ORDER BY qual_score LIMIT 5;
 SELECT qual_score FROM dha_demo ORDER BY qual_score DESC LIMIT 5;

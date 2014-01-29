@@ -140,6 +140,19 @@ class Engine(object):
     """Load these models as if they are new models"""
     # Models are stored in the format: dict[model_id] = dict[X_L, X_D, iterations].
     # We just want to pass the values.
+
+    # For backwards compatibility with v0.1, where models are stored in the format:
+    # dict[X_L_list, X_D_list, M_c, T]
+    if 'X_L_list' in models:
+      print """WARNING! The models you are currently importing are stored in an old format
+         (from version 0.1); it is deprecated and may not be supported in future releases.
+         Please use "SAVE MODELS" to create an updated copy of your models."""
+      
+      old_models = models
+      models = dict()
+      for id, (X_L, X_D) in enumerate(zip(old_models['X_L_list'], old_models['X_D_list'])):
+        models[id] = dict(X_L=X_L, X_D=X_D, iterations=500)
+      
     result = self.persistence_layer.add_models(tablename, models.values())
     return dict(message="Successfully loaded %d models." % len(models))
 

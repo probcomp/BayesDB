@@ -21,7 +21,7 @@
 -- Create a fresh btable for the demo, and load in pre-existing samples
 DROP BTABLE flights;
 CREATE BTABLE flights FROM flights.csv;
-LOAD MODELS flights_samples.pkl.gz INTO flights;
+LOAD MODELS flights_models.pkl.gz FOR flights;
 
 -- Do analysis
 SELECT * FROM flights ORDER BY arrdelay;
