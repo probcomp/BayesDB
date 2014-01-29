@@ -220,6 +220,11 @@ class Client(object):
             for row, colname in zip(zmatrix, list(colnames)):
                 pt.add_row([colname] + list(row))
             result = pt
+        elif type(query_obj) == dict and 'columns' in query_obj:
+            """ Pretty-print column list."""
+            pt = prettytable.PrettyTable()
+            pt.field_names = query_obj['columns']
+            result = pt
         elif type(query_obj) == dict and 'models' in query_obj:
             """ Prety-print model info. """
             m = query_obj['models']

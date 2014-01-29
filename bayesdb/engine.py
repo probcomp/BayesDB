@@ -170,7 +170,10 @@ class Engine(object):
     modelid_iteration_info = list()
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
       modelid_iteration_info.append((modelid, model['iterations']))
-    return dict(message='', models=modelid_iteration_info)
+    if len(models) == 0:
+      return dict(message="No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
+    else:
+      return dict(message='', models=modelid_iteration_info)
 
   def analyze(self, tablename, model_index='all', iterations=2, wait=False):
     """Run analyze for the selected table. model_index may be 'all'."""
@@ -272,7 +275,20 @@ class Engine(object):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     
     queries, query_colnames, aggregates_only = select_utils.get_queries_from_columnstring(columnstring, M_c, T)
-    where_conditions = select_utils.get_conditions_from_whereclause(whereclause)      
+    where_conditions = select_utils.get_conditions_from_whereclause(whereclause)
+
+    if len(X_L_list) == 0:
+      # If there are no models, make sure that we aren't using functions that require models.
+      # TODO: make this less hardcoded
+      blacklisted_functions = ['similarity', 'row_typicality', 'col_typicality', 'probability']
+      if order_by:
+        order_by_functions = [x[0] for x in order_by]
+      else:
+        order_by_functions = []
+      for bf in blacklisted_functions:
+        if bf in queries or bf in order_by_functions:
+          return {'message': 'You must initialize models before computing dependence probability.'}
+        
 
     filtered_rows = select_utils.filter_and_impute_rows(T, M_c, imputations_dict, where_conditions)
 

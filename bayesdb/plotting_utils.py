@@ -77,13 +77,21 @@ def _create_histogram(M_c, data, columns, mc_col_indices, filename):
 def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False, backend=None):
     """ Compute a matrix. If using a function that requires backend (currently only
     mutual information), backend must not be None. """
+
+    assert len(X_L_list) == len(X_D_list)
+    if len(X_L_list) == 0:
+        return {'message': 'You must initialize models before computing mutual information.'}    
     if col_function_name == 'mutual information':
       col_function = utils._mutual_information
     elif col_function_name == 'dependence probability':
+      if len(X_L_list) == 0:
+          return {'message': 'You must initialize models before computing dependence probability.'}
       col_function = utils._dependence_probability
     elif col_function_name == 'correlation':
       col_function = utils._correlation
     elif col_function_name == 'view similarity':
+      if len(X_L_list) == 0:
+          return {'message': 'You must initialize models before computing view similarity.'}        
       col_function = utils._view_similarity
     else:
       raise Exception('Invalid column function: %s' % col_function_name)

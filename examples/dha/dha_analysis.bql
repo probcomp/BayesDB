@@ -23,6 +23,10 @@ DROP BTABLE dha_demo;
 CREATE BTABLE dha_demo FROM dha.csv;
 LOAD SAMPLES dha_samples.pkl.gz INTO dha_demo;
 
+SELECT qual_score FROM dha_demo ORDER BY qual_score LIMIT 5;
+SELECT qual_score FROM dha_demo ORDER BY qual_score DESC LIMIT 5;
+SELECT qual_score FROM dha_demo ORDER BY qual_score ASC LIMIT 5;
+
 SHOW SCHEMA FOR dha_demo;
 -- load a file that updates the schema
 -- EXECUTE FILE dha_datatypes.bql
