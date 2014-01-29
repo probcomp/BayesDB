@@ -35,6 +35,8 @@ test_tablenames = None
 def setup_function(function):
   global test_tablenames
   test_tablenames = []
+  global engine
+  engine = Engine('local')
 
 def teardown_function(function):
   global tablename
@@ -45,6 +47,8 @@ def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
   create_btable_result = engine.create_btable(test_tablename, csv_file_contents, None)
+  metadata = engine.persistence_layer.get_metadata(test_tablename)
+  #import pytest; pytest.set_trace()
   
   global test_tablenames
   test_tablenames.append(test_tablename)
@@ -143,6 +147,7 @@ def test_update_datatypes():
   with pytest.raises(ValueError):
     engine.update_datatypes(test_tablename, mappings)
 
+@pytest.mark.slow
 def test_save_and_load_models():
   test_tablename, _ = create_dha()
   engine.initialize_models(test_tablename, 3)
@@ -156,14 +161,31 @@ def test_save_and_load_models():
   assert engine.save_models(test_tablename2).values() == original_models.values()
 
 def test_initialize_models():
-  test_tablename, _ = create_dha()
-  engine.initialize_models(test_tablename, 10)
+  test_tablename, _ = create_dha(path='data/dha_missing.csv')     
+  print test_tablename
+
+  engine = Engine(seed=0)
+  num_models = 5
+  engine.initialize_models(test_tablename, num_models)
+
   model_ids = engine.persistence_layer.get_model_ids(test_tablename)
-  assert sorted(model_ids) == range(10)
-  for i in range(10):
+  assert sorted(model_ids) == range(num_models)
+  for i in range(num_models):
     X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
     assert iters == 0
 
+  ## Check to make sure that models don't get created with deformed suffstats.
+  models = engine.persistence_layer.get_models(test_tablename)
+  for i, m in models.items():
+    view_state = m['X_L']['view_state']
+    for vs in view_state:
+      ccs = vs['column_component_suffstats']
+      for ccl in ccs:
+        for suffstats in ccs[0]:
+          assert not (len(suffstats) == 0 or 'N' not in suffstats)
+
+
+@pytest.mark.slow
 def test_analyze():
   test_tablename, _ = create_dha()
   num_models = 3
@@ -177,6 +199,7 @@ def test_analyze():
       X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
       assert iters == it
 
+@pytest.mark.slow#      
 def test_nan_handling():
   test_tablename1, _ = create_dha(path='data/dha_missing.csv') 
   test_tablename2, _ = create_dha(path='data/dha_missing_nan.csv')
@@ -190,8 +213,11 @@ def test_nan_handling():
 def test_infer():
   ## TODO: whereclauses
   test_tablename, _ = create_dha(path='data/dha_missing.csv')
+
+  print test_tablename
   ## dha_missing has missing qual_score in first 5 rows, and missing name in rows 6-10.
-  engine.initialize_models(test_tablename, 2)
+  engine = Engine(seed=0)
+  engine.initialize_models(test_tablename, 3)
 
   columnstring = 'name, qual_score'
   whereclause = ''
@@ -267,6 +293,7 @@ def test_estimate_pairwise_mutual_information():
   engine.initialize_models(test_tablename, 2)
   mi_mat = engine.estimate_pairwise(test_tablename, 'mutual information')
 
+@pytest.mark.slow
 def test_estimate_pairwise_correlation():
   test_tablename, _ = create_dha()
   engine.initialize_models(test_tablename, 2)
@@ -329,6 +356,7 @@ def test_show_schema():
   assert schema['columns'][-4] == 'qual_score'
   assert sorted(schema['data'][0]) == sorted(cctypes)
 
+@pytest.mark.slow
 def test_show_models():
   test_tablename, _ = create_dha()
   num_models = 3
