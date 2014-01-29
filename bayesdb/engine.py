@@ -126,8 +126,7 @@ class Engine(object):
 
   def show_schema(self, tablename):
     metadata = self.persistence_layer.get_metadata(tablename)
-    colname_to_idx_dict = metadata['M_c']['name_to_idx']
-    colnames = map(lambda tup: tup[0], sorted(colname_to_idx_dict.items(), key=lambda tup: tup[1]))
+    colnames = utils.get_all_column_names_in_original_order(metadata['M_c'])
     cctypes = metadata['cctypes']
     return dict(columns=colnames, data=[cctypes], message='')
 

@@ -150,24 +150,35 @@ def is_float(s):
     except ValueError:
         return False
 
-def column_string_splitter(columnstring):
+def get_all_column_names_in_original_order(M_c):
+    colname_to_idx_dict = M_c['name_to_idx']
+    colnames = map(lambda tup: tup[0], sorted(colname_to_idx_dict.items(), key=lambda tup: tup[1]))
+    return colnames
+
+def column_string_splitter(columnstring, M_c=None):
+    """If '*' is a possible input, M_c must not be None."""
     paren_level = 0
     output = []
     current_column = []
-    for c in columnstring:
+
+    def end_column(current_column, output):
+      if '*' in current_column:
+        assert M_c is not None
+        output += get_all_column_names_in_original_order(M_c)
+      else:
+        output.append(''.join(current_column))
+      return output
+    
+    for i,c in enumerate(columnstring):
       if c == '(':
         paren_level += 1
       elif c == ')':
         paren_level -= 1
 
-      if c == ',' and paren_level == 0:
-          if '*' in current_column:
-              for idx in range(len(M_c['name_to_idx'].keys())):
-                  output.append(M_c['idx_to_name'][str(idx)])
-          else:
-              output.append(''.join(current_column))
-          current_column = []
+      if (c == ',' and paren_level == 0):
+        output = end_column(current_column, output)
+        current_column = []
       else:
         current_column.append(c)
-    output.append(''.join(current_column))
+    output = end_column(current_column, output)
     return output

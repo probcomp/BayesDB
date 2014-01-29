@@ -80,7 +80,7 @@ def get_queries_from_columnstring(columnstring, M_c, T):
     For probability: query is a (c_idx, value) tuple.
     For similarity: query is a (target_row_id, target_column) tuple.
     """
-    query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring)]
+    query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c)]
     queries = []
     aggregates_only = True
     for idx, colname in enumerate(query_colnames):
