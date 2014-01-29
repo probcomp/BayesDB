@@ -66,10 +66,13 @@ class FilePersistenceLayer(PersistenceLayer):
         metadata_f.close()
 
     def get_models(self, tablename):
-        f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r')
-        models = pickle.load(f)
-        f.close()
-        return models
+        try:
+            f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r')
+            models = pickle.load(f)
+            f.close()
+            return models
+        except IOError:
+            return {}
 
     def write_models(self, tablename, models):
         models_f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'w')
