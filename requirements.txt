@@ -24,8 +24,10 @@ matplotlib==1.2.0
 Sphinx==1.2b1
 
 # bayesdb
-psycopg2==2.4.6
 prettytable==0.7.2
+
+# testing
+pytest>=2.5.1
 
 # starcluster, only necessary on local computer spinning up a cluster
 # Jinja2==2.6
