@@ -112,10 +112,42 @@ def test_select():
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
   assert select_result['data'] == ground_truth_ordered_results
 
-  # TODO: test similarity
+  columnstring = '*'
+  whereclause = 'qual_score > 6'
+  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': 1})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+
+  columnstring = '*'
+  # Albany NY's row id is 3
+  whereclause = "name='Albany NY'"
+  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': 1})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+
+  # SIMILARITY TO <row> [WITH RESPECT TO <col>]
+  # smoke tests
+  columnstring = 'name, qual_score, similarity to 5'
+  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': None})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+
+  columnstring = 'name, qual_score, similarity to 5'
+  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': 1})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+
+  columnstring = 'name, qual_score'
+  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': 5})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  
+  columnstring = 'name, qual_score, similarity to 5 with respect to 0'
+  order_by = [('similarity', {'desc': False, 'target_row_id': 5, 'target_column': None})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+
+  columnstring = "name, qual_score, similarity to 5 with respect to (name='Albany NY')"
+  order_by = [('similarity', {'desc': False, 'target_row_id': 5, 'target_column': None})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  
+  
   # TODO: test all other single-column functions
   # PROBABILITY <col>=<val>
-  # SIMILARITY TO <row> [WITH RESPECT TO <col>]
   # TYPICALITY (of row)
   # PREDICTIVE PROBABILITY
 
@@ -174,17 +206,6 @@ def test_initialize_models():
     X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
     assert iters == 0
 
-  ## Check to make sure that models don't get created with deformed suffstats.
-  models = engine.persistence_layer.get_models(test_tablename)
-  for i, m in models.items():
-    view_state = m['X_L']['view_state']
-    for vs in view_state:
-      ccs = vs['column_component_suffstats']
-      for ccl in ccs:
-        for suffstats in ccs[0]:
-          assert not (len(suffstats) == 0 or 'N' not in suffstats)
-
-
 @pytest.mark.slow
 def test_analyze():
   test_tablename, _ = create_dha()
@@ -199,7 +220,6 @@ def test_analyze():
       X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
       assert iters == it
 
-@pytest.mark.slow#      
 def test_nan_handling():
   test_tablename1, _ = create_dha(path='data/dha_missing.csv') 
   test_tablename2, _ = create_dha(path='data/dha_missing_nan.csv')
@@ -217,7 +237,7 @@ def test_infer():
   print test_tablename
   ## dha_missing has missing qual_score in first 5 rows, and missing name in rows 6-10.
   engine = Engine(seed=0)
-  engine.initialize_models(test_tablename, 3)
+  engine.initialize_models(test_tablename, 20)
 
   columnstring = 'name, qual_score'
   whereclause = ''

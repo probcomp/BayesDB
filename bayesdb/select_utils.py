@@ -25,11 +25,13 @@ import os
 import pylab
 import matplotlib.cm
 import inspect
+import operator
+import ast
 
 import utils
 import crosscat.utils.data_utils as du
 
-def get_conditions_from_whereclause(whereclause):
+def get_conditions_from_whereclause(whereclause, M_c):
   ## Create conds: the list of conditions in the whereclause.
   ## List of (c_idx, op, val) tuples.
   conds = list() 

@@ -292,7 +292,7 @@ class Engine(object):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     
     queries, query_colnames, aggregates_only = select_utils.get_queries_from_columnstring(columnstring, M_c, T)
-    where_conditions = select_utils.get_conditions_from_whereclause(whereclause)
+    where_conditions = select_utils.get_conditions_from_whereclause(whereclause, M_c)
 
     if len(X_L_list) == 0:
       # If there are no models, make sure that we aren't using functions that require models.
