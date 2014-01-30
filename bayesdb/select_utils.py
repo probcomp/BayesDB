@@ -86,6 +86,9 @@ def get_queries_from_columnstring(columnstring, M_c, T):
     queries = []
     aggregates_only = True
     for idx, colname in enumerate(query_colnames):
+      #####################
+      ## Normal functions (of a cell)
+      ######################
       p = parse_probability(colname, M_c)
       if p is not None:
         queries.append(('probability', p))
@@ -102,20 +105,27 @@ def get_queries_from_columnstring(columnstring, M_c, T):
         aggregates_only = False        
         continue
 
+      ## TODO: Check if predictive probability query
+
+      #####################
+      # Single column functions (aggregate)
+      #####################
       c = parse_column_typicality(colname, M_c)
       if c is not None:
         c_idx = c
         queries.append(('col_typicality', c_idx))
         continue
-
-      ## Check if predictive probability query
-      ## TODO: demo (last priority)
-
+        
       ## Check if mutual information query - AGGREGATE
       m = parse_mutual_information(colname, M_c)
       if m is not None:
         queries.append(('mutual_information', m))
         continue
+
+      ## TODO: Check if "dependence probability to <col>"
+
+      ## TODO: Check if "correlation with <col>"
+
 
       ## If none of above query types matched, then this is a normal column query.
       queries.append(('column', M_c['name_to_idx'][colname]))
@@ -174,6 +184,12 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
       method = utils._get_column_function
     elif function_name == 'similarity':
       method = utils._get_similarity_function
+    elif function_name == 'typicality':
+      method = utils._get_typicality_function
+    elif function_name == 'probability':
+      method = utils._get_probability_function
+    elif function_name == 'predictive_probability':
+      method = utils._get_predictive_probability_function
     
     argnames = inspect.getargspec(method)[0]
     args = [args_dict[argname] for argname in argnames if argname in args_dict]
@@ -262,6 +278,9 @@ def compute_result_and_limit(rows, limit, queries, M_c, X_L_list, X_D_list, back
 # function parsing code
 #################################
 
+# TODO
+# def parse_predictive_probability(colname,
+
 def parse_probability(colname, M_c):
   prob_match = re.search(r"""
       probability\s*
@@ -269,6 +288,11 @@ def parse_probability(colname, M_c):
       (?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)
       \s*\)
   """, colname, re.VERBOSE | re.IGNORECASE)
+  if not prob_match:
+    prob_match = re.search(r"""
+      PROBABILITY\s+OF\s+
+      (?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)
+    """, colname, re.VERBOSE | re.IGNORECASE)
   if prob_match:
     column = prob_match.group('column')
     c_idx = M_c['name_to_idx'][column]
@@ -327,7 +351,8 @@ def parse_similarity(colname, M_c, T):
 
 def parse_row_typicality(colname):
     row_typicality_match = re.search(r"""
-        row_typicality
+        ((row_typicality)|
+        (^\s*TYPICALITY\s*$))
     """, colname, re.VERBOSE | re.IGNORECASE)
     if row_typicality_match:
         return True
@@ -336,22 +361,37 @@ def parse_row_typicality(colname):
 
 def parse_column_typicality(colname, M_c):
   col_typicality_match = re.search(r"""
-      col_typicality\s*\(\s*
+      col_typicality
+      \s*
+      \(\s*
       (?P<column>[^\s]+)
       \s*\)
   """, colname, re.VERBOSE | re.IGNORECASE)
+  if not col_typicality_match:
+      col_typicality_match = re.search(r"""
+      COLUMN\s+TYPICALITY\s+OF\s+
+      (?P<column>[^\s]+)
+      """, colname, re.VERBOSE | re.IGNORECASE)
   if col_typicality_match:
       colname = col_typicality_match.group('column').strip()
       return M_c['name_to_idx'][colname]
 
 def parse_mutual_information(colname, M_c):
   mutual_information_match = re.search(r"""
-      mutual_information\s*\(\s*
+      mutual_information
+      \s*\(\s*
       (?P<col1>[^\s]+)
       \s*,\s*
       (?P<col2>[^\s]+)
       \s*\)
   """, colname, re.VERBOSE | re.IGNORECASE)
+  if not mutual_information_match:
+    mutual_information_match = re.search(r"""
+      MUTUAL\s+INFORMATION\s+OF\s+
+      (?P<col1>[^\s]+)
+      \s+(WITH|TO)\s+
+      (?P<col2>[^\s]+)
+    """, colname, re.VERBOSE | re.IGNORECASE)    
   if mutual_information_match:
       col1 = mutual_information_match.group('col1')
       col2 = mutual_information_match.group('col2')

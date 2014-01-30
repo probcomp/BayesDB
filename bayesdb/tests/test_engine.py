@@ -145,17 +145,38 @@ def test_select():
   order_by = [('similarity', {'desc': False, 'target_row_id': 5, 'target_column': None})]
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
   
+  # TYPICALITY (of row)
+  # smoke tests
+  columnstring = 'name, qual_score, typicality'
+  order_by = False
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  '''
+  columnstring = 'name, qual_score, typicality'
+  order_by = [('typicality', {'desc': True, 'target_row_id': 5, 'target_column': 1})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+
+  columnstring = 'name, qual_score'
+  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': 5})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
   
+  columnstring = 'name, qual_score, similarity to 5 with respect to 0'
+  order_by = [('similarity', {'desc': False, 'target_row_id': 5, 'target_column': None})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+
+  columnstring = "name, qual_score, similarity to 5 with respect to (name='Albany NY')"
+  order_by = [('similarity', {'desc': False, 'target_row_id': 5, 'target_column': None})]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  '''
   # TODO: test all other single-column functions
   # PROBABILITY <col>=<val>
-  # TYPICALITY (of row)
+
   # PREDICTIVE PROBABILITY
 
   # TODO: test all single-column aggregate functions
-  # TYPICALITY (of whole column)
-  # DEPENDENCE PROBABILITY TO <col>
-  # MUTUAL INFORMATION WITH <col>
-  # CORRELATION WITH <col>
+  # TYPICALITY OF <col>
+  # DEPENDENCE PROBABILITY OF <col> WITH <col> #DEPENDENCE PROBABILITY TO <col>
+  # MUTUAL INFORMATION OF <col> WITH <col> #MUTUAL INFORMATION WITH <col>
+  # CORRELATION OF <col> WITH <col>
   
   # TODO: test ordering by functions
 
