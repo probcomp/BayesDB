@@ -91,6 +91,14 @@ def _get_similarity_function(target_column, target_row_id, X_L_list, X_D_list, M
         break
   return lambda row_id, data_values: backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
 
+def _get_typicality_function(X_L_list, X_D_list, backend):
+  """
+  Call this function to get a version of typicality as a function of only (row_id, data_values).
+  data_values is one row.
+  """
+  return lambda row_id, data_values: backend.row_structural_typicality(X_L_list, X_D_List, row_id)
+
+
 
 #########################################################################
 ## TWO COLUMN FUNCTIONS

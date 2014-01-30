@@ -150,23 +150,11 @@ def test_select():
   columnstring = 'name, qual_score, typicality'
   order_by = False
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
-  '''
+
   columnstring = 'name, qual_score, typicality'
-  order_by = [('typicality', {'desc': True, 'target_row_id': 5, 'target_column': 1})]
+  order_by = [('typicality', {'desc': True})]
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
 
-  columnstring = 'name, qual_score'
-  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': 5})]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
-  
-  columnstring = 'name, qual_score, similarity to 5 with respect to 0'
-  order_by = [('similarity', {'desc': False, 'target_row_id': 5, 'target_column': None})]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
-
-  columnstring = "name, qual_score, similarity to 5 with respect to (name='Albany NY')"
-  order_by = [('similarity', {'desc': False, 'target_row_id': 5, 'target_column': None})]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
-  '''
   # TODO: test all other single-column functions
   # PROBABILITY <col>=<val>
 
