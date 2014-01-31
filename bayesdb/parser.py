@@ -508,49 +508,6 @@ class Parser(object):
             return 'estimate_columns', dict(tablename=tablename, whereclause=whereclause, limit=limit,
                                             order_by=order_by, name=None)
             
-
-    # TODO: delete this command once ESTIMATE PAIRWISE is done
-    def help_estimate_dependence_probabilities(self):
-        return "ESTIMATE DEPENDENCE PROBABILITIES FROM <btable> [[REFERENCING <col>] [WITH CONFIDENCE <prob>] [LIMIT <k>]] [SAVE TO <file>]: get probabilities of column dependence."
-        
-    # TODO: delete this command once ESTIMATE PAIRWISE is done
-    def parse_estimate_dependence_probabilities(self, words, orig):
-        match = re.search(r"""
-            estimate\s+dependence\s+probabilities\s+from\s+
-            (?P<btable>[^\s]+)
-            ((\s+referencing\s+(?P<refcol>[^\s]+))|(\s+for\s+(?P<forcol>[^\s]+)))?
-            (\s+with\s+confidence\s+(?P<confidence>[^\s]+))?
-            (\s+limit\s+(?P<limit>[^\s]+))?
-            (\s+save\s+to\s+(?P<filename>[^\s]+))?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'estimate' and words[1] == 'dependence':
-                print self.help_estimate_dependence_probabilities()
-                return False
-            else:
-                return None
-        else:
-            tablename = match.group('btable').strip()
-            if match.group('refcol'):
-                col = match.group('refcol')
-                submatrix = True
-            else:
-                col = match.group('forcol')
-                submatrix = False
-            confidence = match.group('confidence')
-            if match.group('limit'):
-                limit = int(match.group('limit'))
-            else:
-                limit = float("inf")
-            if match.group('filename'):
-                filename = match.group('filename')
-            else:
-                filename = None
-            return 'estimate_dependence_probabilities', dict(tablename=tablename, col=col, confidence=confidence,
-                                                             limit=limit, filename=filename, submatrix=submatrix)
-
-
-            
     def help_estimate_pairwise(self):
         return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [SAVE TO <file>]: estimate a pairwise function of columns."
         

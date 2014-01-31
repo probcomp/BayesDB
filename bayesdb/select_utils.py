@@ -223,7 +223,6 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
 def _order_by(filtered_values, function_list, M_c, X_L_list, X_D_list, T, backend):
   """
   Return the original data tuples, but sorted by the given functions.
-  functions is an iterable of functions that take only row_id and data_tuple as an argument.
   The data_tuples must contain all __original__ data because you can order by
   data that won't end up in the final result set.
   """

@@ -63,6 +63,7 @@ def _row_typicality(row_typicality_args, row_id, data_values, M_c, X_L_list, X_D
 
 def _predictive_probability(predictive_probability_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend):
     c_idx = predictive_probability_args
+    assert type(c_idx) == int    
     ## WARNING: this backend call doesn't work for multinomial
     ## TODO: need to test
     Q = [(row_id, c_idx, T[row_id][c_idx])]
@@ -72,6 +73,7 @@ def _predictive_probability(predictive_probability_args, row_id, data_values, M_
 
 def _probability(probability_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend):
     c_idx, value = probability_args
+    assert type(c_idx) == int
     observed = du.convert_value_to_code(M_c, c_idx, value)
     row_id = len(X_D_list[0][0]) + 1 ## row is set to 1 + max row, instead of this row.
     Q = [(row_id, c_idx, observed)]
@@ -86,6 +88,7 @@ def _probability(probability_args, row_id, data_values, M_c, X_L_list, X_D_list,
     
 def _col_typicality(col_typicality_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend):
     c_idx = col_typicality_args
+    assert type(c_idx) == int
     return backend.column_structural_typicality(X_L_list, c_idx)
 
 
@@ -316,3 +319,53 @@ def parse_correlation(colname, M_c):
       return None
 
         
+#########################
+# single-column versions
+#########################
+
+def parse_cfun_column_typicality(colname, M_c):
+  col_typicality_match = re.search(r"""
+      ^\s*
+      TYPICALITY
+      \s*$
+  """, colname, flags=re.VERBOSE | re.IGNORECASE)
+  if col_typicality_match:
+      return True
+  else:
+      return None
+
+def parse_cfun_mutual_information(colname, M_c):
+  mutual_information_match = re.search(r"""
+      MUTUAL\s+INFORMATION\s+
+      (WITH|TO)\s+
+      (?P<col1>[^\s]+)
+  """, colname, re.VERBOSE | re.IGNORECASE)    
+  if mutual_information_match:
+      col1 = mutual_information_match.group('col1')
+      return M_c['name_to_idx'][col1]
+  else:
+      return None
+
+def parse_cfun_dependence_probability(colname, M_c):
+  dependence_probability_match = re.search(r"""
+    DEPENDENCE\s+PROBABILITY\s+
+    (WITH|TO)\s+  
+    (?P<col1>[^\s]+)
+  """, colname, re.VERBOSE | re.IGNORECASE)    
+  if dependence_probability_match:
+      col1 = dependence_probability_match.group('col1')
+      return M_c['name_to_idx'][col1]      
+  else:
+      return None
+
+def parse_cfun_correlation(colname, M_c):
+  correlation_match = re.search(r"""
+    CORRELATION\s+
+    (WITH|TO)\s+
+    (?P<col1>[^\s]+)
+  """, colname, re.VERBOSE | re.IGNORECASE)    
+  if correlation_match:
+      col1 = correlation_match.group('col1')
+      return M_c['name_to_idx'][col1]      
+  else:
+      return None

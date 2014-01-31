@@ -76,6 +76,27 @@ def test_save_and_load_models():
 
   assert new_models.values() == original_models.values()
 
+def test_estimate_columns():
+  test_tablename = create_dha()
+  global client, test_filenames
+  client('initialize 2 models for %s' % (test_tablename))
+
+  client('estimate columns from %s' % test_tablename)
+
+  client('estimate columns from %s where typicality > 0' % test_tablename)
+  client('estimate columns from %s where typicality > 0 order by typicality' % test_tablename)
+  client('estimate columns from %s order by typicality limit 5' % test_tablename)
+
+  client('estimate columns from %s where dependence probability with qual_score > 0' % test_tablename)
+  client('estimate columns from %s order by dependence probability with qual_score' % test_tablename)
+  client('estimate columns from %s order by dependence probability with qual_score limit 5' % test_tablename)
+
+  client('estimate columns from %s order by correlation with qual_score limit 5' % test_tablename)
+  client('estimate columns from %s where correlation with qual_score > 0 order by correlation with qual_score limit 5' % test_tablename)  
+
+  client('estimate columns from %s order by mutual information with qual_score limit 5' % test_tablename)
+  client('estimate columns from %s where mutual information with qual_score > 0 order by typicality' % test_tablename)
+
 def test_select():
   test_tablename = create_dha()
   global client, test_filenames

@@ -402,17 +402,91 @@ class Engine(object):
     """
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    column_names = list(M_c['name_to_idx'].keys())
+    column_indices = list(M_c['name_to_idx'].values())
     
     ## filter: TODO
+    
 
     ## order: TODO
+    column_indices = _order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self.backend)
     
     # limit
     if limit != float('inf'):
-      column_names = column_names[:limit]
+      column_indices = column_indices[:limit]
+
+    # convert indices to names
+    column_names = [M_c['idx_to_name'][str(idx)] for idx in column_indices]
     return {'columns': column_names}
 
+def _order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, backend):
+  if not order_by:
+    return column_indices
+  # Step 1: get appropriate functions.
+  function_list = list()
+  for orderable in order_by:
+    assert type(orderable) == tuple and type(orderable[0]) == str and type(orderable[1]) == bool
+    raw_orderable_string = orderable[0]
+    desc = orderable[1]
+
+    ## function_list is a list of
+    ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, backend), args, desc)
+
+    t = functions.parse_cfun_column_typicality(raw_orderable_string, M_c)
+    if t:
+      function_list.append((functions._col_typicality, None, desc))
+      continue
+
+    d = functions.parse_cfun_dependence_probability(raw_orderable_string, M_c)
+    if d:
+      function_list.append((functions._dependence_probability, d, desc))
+      continue
+
+    m = functions.parse_cfun_mutual_information(raw_orderable_string, M_c)
+    if m is not None:
+      function_list.append((functions._mutual_information, m, desc))
+      continue
+
+    c= functions.parse_cfun_correlation(raw_orderable_string, M_c)
+    if c is not None:
+      function_list.append((functions._correlation, c, desc))
+      continue
+
+    raise Exception("Invalid query argument: could not parse '%s'" % raw_orderable_string)    
+
+  ## Step 2: call order by.
+  sorted_column_indices = _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, backend)
+  return sorted_column_indices
+
+def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, backend):
+  """
+  Return the original column indices, but sorted by the individual functions.
+  """
+  if len(column_indices) == 0 or not function_list:
+    return column_indices
+
+  scored_column_indices = list() ## Entries are (score, cidx)
+  for c_idx in column_indices:
+    ## Apply each function to each cidx to get a #functions-length tuple of scores.
+    scores = []
+    for (f, f_args, desc) in function_list:
+
+      # mutual_info, correlation, and dep_prob all take args=(i,j)
+      # col_typicality takes just args=i
+      # incoming f_args will be None for col_typicality, j for the three others
+      if f_args:
+        f_args = (f_args, c_idx)
+      else:
+        f_args = c_idx
+        
+      score = f(f_args, None, None, M_c, X_L_list, X_D_list, T, backend)
+      if desc:
+        score *= -1
+      scores.append(score)
+    scored_column_indices.append((tuple(scores), c_idx))
+  scored_column_indices.sort(key=lambda tup: tup[0], reverse=False)
+
+  return [tup[1] for tup in scored_column_indices]
+  
   
   def estimate_pairwise(self, tablename, function_name, filename=None, column_list=None):
     ## TODO: implement functionality with column_list
@@ -424,11 +498,6 @@ class Engine(object):
     return plotting_utils._do_gen_matrix(function_name,
                                          X_L_list, X_D_list, M_c, T, tablename,
                                          filename, backend=self.backend)
-
-  def estimate_dependence_probabilities(self, tablename, col, confidence, limit, filename, submatrix):
-    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    return plotting_utils._do_gen_matrix("dependence probability", X_L_list, X_D_list, M_c, tablename, filename, col=col, confidence=confidence, limit=limit, submatrix=submatrix)
-  
 
 # helper functions
 get_name = lambda x: getattr(x, '__name__')
