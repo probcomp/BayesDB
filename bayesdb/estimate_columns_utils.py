@@ -33,13 +33,21 @@ import functions
 import crosscat.utils.data_utils as du
 
 def filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, backend):
-  return [idx for idx in column_indices if _is_column_valid(idx, where_conditions, M_c, X_L_list, X_D_list, T, backend)]
+  return [c_idx for c_idx in column_indices if _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, backend)]
 
-def _is_column_valid(idx, where_conditions, M_c, X_L_list, X_D_list, T, backend):
-  for ((func, f_args), op, val) in where_conditions:
-    where_value = func(f_args, idx, row, M_c, X_L_list, X_D_list, T, backend)
-    return op(where_value, val)
-  return True
+def _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, backend):
+    for ((func, f_args), op, val) in where_conditions:
+        # mutual_info, correlation, and dep_prob all take args=(i,j)
+        # col_typicality takes just args=i
+        # incoming f_args will be None for col_typicality, j for the three others
+        if f_args:
+            f_args = (f_args, c_idx)
+        else:
+            f_args = c_idx
+      
+        where_value = func(f_args, None, None, M_c, X_L_list, X_D_list, T, backend)
+        return op(where_value, val)
+    return True
 
 def get_conditions_from_column_whereclause(whereclause, M_c, T):
   ## Create conds: the list of conditions in the whereclause.

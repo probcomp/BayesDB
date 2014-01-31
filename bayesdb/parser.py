@@ -487,7 +487,7 @@ class Parser(object):
         ## TODO: add "as <name>". could use pyparsing.
         match = re.search(r"""
             estimate\s+columns\s+from\s+
-            (?P<btable>[^\s]+)
+            (?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:

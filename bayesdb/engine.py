@@ -409,9 +409,6 @@ class Engine(object):
     where_conditions = estimate_columns_utils.get_conditions_from_column_whereclause(whereclause, M_c, T)
     column_indices = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self.backend)
     
-    if len(column_indices) < len(M_c['name_to_idx'].values()):
-      import pytest; pytest.set_trace()
-      
     ## order
     column_indices = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self.backend)
     
