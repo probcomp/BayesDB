@@ -97,6 +97,30 @@ def test_estimate_columns():
   client('estimate columns from %s order by mutual information with qual_score limit 5' % test_tablename)
   client('estimate columns from %s where mutual information with qual_score > 0 order by typicality' % test_tablename)
 
+def test_select_whereclause_functions():
+  test_tablename = create_dha()
+  global client, test_filenames
+  client('initialize 2 models for %s' % (test_tablename))
+
+  # similarity
+  client('select name from %s where similarity to 0 > 0' % (test_tablename))
+  client('select name from %s where similarity to 0 = 0 order by similarity to 0' % (test_tablename))      
+  client('select name from %s where similarity to 1 with respect to qual_score > 0.01' % (test_tablename))        
+
+  # row typicality
+  client('select * from %s where typicality > 0.04' % (test_tablename))
+  client('select *, typicality from %s where typicality > 0.06' % (test_tablename))  
+
+  # predictive probability
+  client("select qual_score from %s where predictive probability of qual_score > 0.01" % (test_tablename))
+  client("select qual_score from %s where predictive probability of name > 0.01" % (test_tablename))
+  
+  # probability
+  # TODO: these two tests are failing!
+  client('select qual_score from %s where probability of qual_score = 6 > 0.01' % (test_tablename))
+  client("select qual_score from %s where probability of name='Albany NY' > 0.01" % (test_tablename))  
+  
+
 def test_select():
   test_tablename = create_dha()
   global client, test_filenames

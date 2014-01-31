@@ -32,15 +32,20 @@ import utils
 import functions
 import crosscat.utils.data_utils as du
 
-def get_conditions_from_whereclause(whereclause, M_c):
+def get_conditions_from_whereclause(whereclause, M_c, T):
   ## Create conds: the list of conditions in the whereclause.
   ## List of (c_idx, op, val) tuples.
   conds = list() 
   if len(whereclause) > 0:
-    conditions = whereclause.split(',')
+    conditions = re.split(r'and', whereclause, flags=re.IGNORECASE)
     ## Order matters: need <= and >= before < and > and =.
     operator_list = ['<=', '>=', '=', '>', '<']
     operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
+
+    # TODO: parse this properly with pyparsing
+    # note that there can be more than one operator!
+    # if 1 total: we want that one. if 2 total: we want 2nd (assuming probably query on left). if 3 total: we want 2nd.
+    
     for condition in conditions:
       for operator_str in operator_list:
         if operator_str in condition:
@@ -61,17 +66,43 @@ def get_conditions_from_whereclause(whereclause, M_c):
         ## with the following safe (string literal only) implementation of eval
         val = ast.literal_eval(raw_val).lower()
 
-      c_idx = M_c['name_to_idx'][column]
-      conds.append((c_idx, op, val))
+
+      ## Get the column (function)
+      colname = column
+
+      p = functions.parse_probability(colname, M_c)
+      if p is not None:
+        conds.append(((functions._probability, p), op, val))
+        continue
+
+      s = functions.parse_similarity(colname, M_c, T)
+      if s is not None:
+        conds.append(((functions._similarity, s), op, val))
+        continue
+
+      t = functions.parse_row_typicality(colname)
+      if t is not None:
+        conds.append(((functions._row_typicality, None), op, val))
+        continue
+
+      p = functions.parse_predictive_probability(colname, M_c)
+      if p is not None:
+        conds.append(((functions._predictive_probability, p), op, val))
+        continue
+
+      ## If none of above query types matched, then this is a normal column query.
+      if colname in M_c['name_to_idx']:
+        conds.append(((functions._column, M_c['name_to_idx'][colname]), op, val))
+        continue
+        
+      raise Exception("Invalid where clause argument: could not parse '%s'" % colname)
   return conds
 
-def is_row_valid(idx, row, where_conditions):
+def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend):
   """Helper function that applies WHERE conditions to row, returning True if row satisfies where clause."""
-  for (c_idx, op, val) in where_conditions:
-    if type(row[c_idx]) == str or type(row[c_idx]) == unicode:
-      return op(row[c_idx].lower(), val)
-    else:
-      return op(row[c_idx], val)
+  for ((func, f_args), op, val) in where_conditions:
+    where_value = func(f_args, idx, row, M_c, X_L_list, X_D_list, T, backend)
+    return op(where_value, val)
   return True
 
 def get_queries_from_columnstring(columnstring, M_c, T):
@@ -140,7 +171,7 @@ def get_queries_from_columnstring(columnstring, M_c, T):
         continue
         
       raise Exception("Invalid query argument: could not parse '%s'" % colname)
-      
+
     ## Always return row_id as the first column.
     query_colnames = ['row_id'] + query_colnames
     queries = [(functions._row_id, None, False)] + queries
@@ -160,13 +191,13 @@ def convert_row_from_codes_to_values(row, M_c):
       ret.append(code)
   return tuple(ret)
 
-def filter_and_impute_rows(T, M_c, imputations_dict, where_conditions):
+def filter_and_impute_rows(imputations_dict, where_conditions, T, M_c, X_L_list, X_D_list, backend):
     ## Iterate through all rows of T, convert codes to values, filter by all predicates in where clause,
     ## and fill in imputed values.
     filtered_rows = list()
     for row_id, T_row in enumerate(T):
       row_values = convert_row_from_codes_to_values(T_row, M_c) ## Convert row from codes to values
-      if is_row_valid(row_id, row_values, where_conditions): ## Where clause filtering.
+      if is_row_valid(row_id, row_values, where_conditions, M_c, X_L_list, X_D_list, T, backend): ## Where clause filtering.
         if imputations_dict and len(imputations_dict[row_id]) > 0:
           ## Fill in any imputed values.
           for col_idx, value in imputations_dict[row_id].items():

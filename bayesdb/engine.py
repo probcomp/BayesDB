@@ -301,7 +301,7 @@ class Engine(object):
 
     # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
     # TODO: support functions in where_conditions. right now we only support actual column values.
-    where_conditions = select_utils.get_conditions_from_whereclause(whereclause, M_c)
+    where_conditions = select_utils.get_conditions_from_whereclause(whereclause, M_c, T)
 
     # If there are no models, make sure that we aren't using functions that require models.
     # TODO: make this less hardcoded
@@ -321,7 +321,7 @@ class Engine(object):
 
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
-    filtered_rows = select_utils.filter_and_impute_rows(T, M_c, imputations_dict, where_conditions)
+    filtered_rows = select_utils.filter_and_impute_rows(imputations_dict, where_conditions, T, M_c, X_L_list, X_D_list, self.backend)
 
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
@@ -407,7 +407,7 @@ class Engine(object):
     ## filter: TODO
     
 
-    ## order: TODO
+    ## order
     column_indices = _order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self.backend)
     
     # limit
