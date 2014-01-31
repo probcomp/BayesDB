@@ -60,49 +60,28 @@ two col syntax:
 function of col1, col2, X_L_list, X_D_list, M_c, T
 '''
 
-########################################################################
 
-def _get_column_function(column, M_c):
-  """
-  Returns a function of the form required by order_by that returns the column value.
-  data_values is one row
-  """
-  col_idx = M_c['name_to_idx'][column]
-  return lambda row_id, data_values: data_values[col_idx]
+###################################################################
+# NORMAL FUNCTIONS (of one cell: can ORDER BY, SELECT, etc.)
+###################################################################
+  
+def _column(column_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend):
+  column_name = column_args
+  col_idx = M_c['name_to_idx'][column_name]
+  return data_values[col_idx]
 
-def _get_similarity_function(target_column, target_row_id, X_L_list, X_D_list, M_c, T, backend):
-  """
-  Call this function to get a version of similarity as a function of only (row_id, data_values).
-  data_values is one row
-  """
-  if type(target_row_id) == str or type(target_row_id) == unicode:
-    ## Instead of specifying an integer for rowid, you can specify a where clause.
-    where_vals = target_row_id.split('=')
-    where_colname = where_vals[0]
-    where_val = where_vals[1]
-    if type(where_val) == str:
-      where_val = ast.literal_eval(where_val)
-    ## Look up the row_id where this column has this value!
-    c_idx = M_c['name_to_idx'][where_colname.lower()]
-    for row_id, T_row in enumerate(T):
-      row_values = select_utils.convert_row(T_row, M_c)
-      if row_values[c_idx] == where_val:
-        target_row_id = row_id
-        break
-  return lambda row_id, data_values: backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
+def _similarity(similarity_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend):
+  target_row_id, target_column = similarity_args
+  return backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
 
-def _get_typicality_function(X_L_list, X_D_list, backend):
-  """
-  Call this function to get a version of typicality as a function of only (row_id, data_values).
-  data_values is one row.
-  """
-  return lambda row_id, data_values: backend.row_structural_typicality(X_L_list, X_D_List, row_id)
+def _typicality(typicality_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend):
+  return backend.row_structural_typicality(X_L_list, X_D_list, row_id)
 
 
 
 #########################################################################
 ## TWO COLUMN FUNCTIONS
-########################################################################
+#########################################################################
 
 def _dependence_probability(col1, col2, X_L_list, X_D_list, M_c, T, backend=None):
   prob_dep = 0

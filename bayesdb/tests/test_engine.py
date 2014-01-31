@@ -102,48 +102,51 @@ def test_select():
 
   ## Test order by single column: desc
   ground_truth_ordered_results = sorted(original_select_result, key=lambda t: t[2], reverse=True)[:10]
-  order_by = [('column', {'desc': True, 'column': 'qual_score'})]
+  order_by = [('qual_score', True)]
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
   assert select_result['data'] == ground_truth_ordered_results
 
   ## Test order by single column: asc
   ground_truth_ordered_results = sorted(original_select_result, key=lambda t: t[2])[:10]
-  order_by = [('column', {'desc': False, 'column': 'qual_score'})]
+  order_by = [('qual_score', False)]
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
   assert select_result['data'] == ground_truth_ordered_results
 
+  engine.initialize_models(test_tablename, 4)  
+  
+  # SIMILARITY TO <row> [WITH RESPECT TO <col>]
+  # smoke tests
+  columnstring = 'name, qual_score, similarity to 5'
+  order_by = [('similarity to 5', True)]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+
+  columnstring = 'name, qual_score, similarity to 5'
+  order_by = [('similarity to 5 with respect to qual_score', True)]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+
+  columnstring = 'name, qual_score'
+  order_by = [('similarity to 5 with respect to qual_score', True, )]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  
+  columnstring = 'name, qual_score, similarity to 5 with respect to name'
+  order_by = [('similarity to 5', False)]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+
+  columnstring = "name, qual_score, similarity to (name='Albany NY') with respect to qual_score"
+  order_by = [('similarity to 5', False)]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+
   columnstring = '*'
   whereclause = 'qual_score > 6'
-  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': 1})]
+  order_by = [('similarity to 5 with respect to name', True)]
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
 
   columnstring = '*'
   # Albany NY's row id is 3
   whereclause = "name='Albany NY'"
-  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': 1})]
+  order_by = [('similarity to 5 with respect to name', True)]
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
 
-  # SIMILARITY TO <row> [WITH RESPECT TO <col>]
-  # smoke tests
-  columnstring = 'name, qual_score, similarity to 5'
-  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': None})]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
-
-  columnstring = 'name, qual_score, similarity to 5'
-  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': 1})]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
-
-  columnstring = 'name, qual_score'
-  order_by = [('similarity', {'desc': True, 'target_row_id': 5, 'target_column': 5})]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
-  
-  columnstring = 'name, qual_score, similarity to 5 with respect to 0'
-  order_by = [('similarity', {'desc': False, 'target_row_id': 5, 'target_column': None})]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
-
-  columnstring = "name, qual_score, similarity to 5 with respect to (name='Albany NY')"
-  order_by = [('similarity', {'desc': False, 'target_row_id': 5, 'target_column': None})]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
   
   # TYPICALITY (of row)
   # smoke tests
@@ -152,7 +155,7 @@ def test_select():
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
 
   columnstring = 'name, qual_score, typicality'
-  order_by = [('typicality', {'desc': True})]
+  order_by = [('typicality', True)]
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
 
   # TODO: test all other single-column functions

@@ -290,13 +290,21 @@ class Engine(object):
     
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    
+
+    # query_colnames is the list of the raw columns/functions from the columnstring, with row_id prepended
+    # queries is a list of (query_type, query) tuples, where query_type is:
+    #   row_id, column, probability, similarity, and query is data that depends on the query_type.
+    #   For example, row_id's query is None, column's query is a c_idx, similarity's query is (rowid, column).
+    # aggregates_only is True if only one row should be returned.
     queries, query_colnames, aggregates_only = select_utils.get_queries_from_columnstring(columnstring, M_c, T)
+
+    # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
+    # TODO: support functions in where_conditions. right now we only support actual column values.
     where_conditions = select_utils.get_conditions_from_whereclause(whereclause, M_c)
 
+    # If there are no models, make sure that we aren't using functions that require models.
+    # TODO: make this less hardcoded
     if len(X_L_list) == 0:
-      # If there are no models, make sure that we aren't using functions that require models.
-      # TODO: make this less hardcoded
       blacklisted_functions = ['similarity', 'row_typicality', 'col_typicality', 'probability']
       if order_by:
         order_by_functions = [x[0] for x in order_by]
@@ -305,17 +313,20 @@ class Engine(object):
       for bf in blacklisted_functions:
         if bf in queries or bf in order_by_functions:
           return {'message': 'You must initialize models before computing dependence probability.'}
-        
 
+    # List of rows; contains actual data values (not categorical codes, or functions),
+    # missing values imputed already, and rows that didn't satsify where clause filtered out.
     filtered_rows = select_utils.filter_and_impute_rows(T, M_c, imputations_dict, where_conditions)
 
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
     ## (and maybe temporarily augmented with all functions that will be ordered only)
     ## If only being selected: then want to compute after ordering...
-    
+
+    # Simply rearranges the order of the rows in filtered_rows according to the order_by query.
     filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self.backend)
 
+    # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, self.backend)
 
     return dict(message='', data=data, columns=query_colnames)

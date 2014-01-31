@@ -75,3 +75,29 @@ def test_save_and_load_models():
   new_models = engine.save_models(test_tablename1)         
 
   assert new_models.values() == original_models.values()
+
+def test_select():
+  test_tablename = create_dha()
+  global client, test_filenames
+  client('initialize 5 models for %s' % (test_tablename))
+  client('select name, qual_score from %s' % (test_tablename))
+  client('select name, qual_score from %s limit 10' % (test_tablename))
+  client('select name, qual_score from %s order by qual_score limit 10' % (test_tablename))
+  client('select name, qual_score from %s order by qual_score ASC limit 10' % (test_tablename))
+  client('select name, qual_score from %s order by qual_score DESC limit 10' % (test_tablename))
+  client('select * from %s order by qual_score DESC limit 10' % (test_tablename))
+  client('select name, qual_score from %s where qual_score > 6' % (test_tablename))
+  client('select * from %s where qual_score > 6' % (test_tablename))
+
+  # similarity
+  client('select name, similarity to 0 from %s' % (test_tablename))
+  client('select name from %s order by similarity to 0' % (test_tablename))      
+  client('select name, similarity to 0 from %s order by similarity to 0' % (test_tablename))
+  client('select name, similarity to 0 with respect to name from %s order by similarity to 1 with respect to qual_score' % (test_tablename))        
+  client('select name, similarity to 0 from %s order by similarity to 1 with respect to qual_score' % (test_tablename))      
+
+  # typicality
+  client('select typicality from %s' % (test_tablename))
+  client('select *, typicality from %s' % (test_tablename))  
+  client('select typicality from %s order by typicality limit 10' % (test_tablename))
+

@@ -651,6 +651,7 @@ class Parser(object):
             order_by_clause = match.group('orderbyclause')
             ret = list()
             orderables = list()
+            
             for orderable in utils.column_string_splitter(order_by_clause):
                 ## Check for DESC/ASC
                 desc = re.search(r'\s+(desc|asc)($|\s|,|(?=limit))', orderable, re.IGNORECASE)
@@ -660,47 +661,14 @@ class Parser(object):
                     desc = False
                 # re.IGNORECASE doesn't work for re.sub
                 orderable = re.sub(r'\s+(desc|asc)($|\s|,|(?=limit))', '', orderable.lower(), re.IGNORECASE)
-                ## Check for similarity
-                pattern = r"""
-                    similarity\s+to\s+(?P<rowid>[^\s]+)
-                    (\s+with\s+respect\s+to\s+(?P<column>[^\s]+))?
-                """
-                match = re.search(pattern, orderable, re.VERBOSE | re.IGNORECASE)
-                if match:
-                    rowid = int(match.group('rowid').strip())
-                    if match.group('column'):
-                        column = match.group('column').strip()
-                    else:
-                        column = None
-                    orderables.append(('similarity', {'desc': desc, 'target_row_id': rowid, 'target_column': column}))
-                else:
-                    match = re.search(r"""
-                          similarity_to\s*\(\s*
-                          (?P<rowid>[^,]+)
-                          (\s*,\s*(?P<column>[^\s]+)\s*)?
-                          \s*\)
-                      """, orderable, re.VERBOSE | re.IGNORECASE) 
-                    if match:
-                        if match.group('column'):
-                            column = match.group('column').strip()
-                        else:
-                            column = None
-                        rowid = match.group('rowid').strip()
-                        if utils.is_int(rowid):
-                            target_row_id = int(rowid)
-                        else:
-                            target_row_id = rowid
-                        orderables.append(('similarity', {'desc': desc, 'target_row_id': target_row_id, 'target_column': column}))
-
-                    else:
-                        orderables.append(('column', {'desc': desc, 'column': orderable.strip()}))
+                orderables.append((orderable.strip().lower(), desc))
+                
             orig = re.sub(pattern, '', orig, flags=re.VERBOSE | re.IGNORECASE)
             return (orig, orderables)
         else:
             return (orig, False)
 
-
-
+            
     def extract_limit(self, orig):
         pattern = r'limit\s+(?P<limit>\d+)'
         match = re.search(pattern, orig.lower())
