@@ -292,11 +292,11 @@ class Engine(object):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
 
     # query_colnames is the list of the raw columns/functions from the columnstring, with row_id prepended
-    # queries is a list of (query_function, query_args) tuples, where 'query_function' is
+    # queries is a list of (query_function, query_args, aggregate) tuples, where 'query_function' is
     #   a function like row_id, column, similarity, or typicality, and 'query_args' are the function-specific
     #   arguments that that function takes (in addition to the normal arguments, like M_c, X_L_list, etc).
-    # aggregates_only is True if only one row should be returned.
-    queries, query_colnames, aggregates_only = select_utils.get_queries_from_columnstring(columnstring, M_c, T)
+    #   aggregate specifies whether that individual function is aggregate or not
+    queries, query_colnames = select_utils.get_queries_from_columnstring(columnstring, M_c, T)
 
     # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
     # TODO: support functions in where_conditions. right now we only support actual column values.
@@ -305,14 +305,18 @@ class Engine(object):
     # If there are no models, make sure that we aren't using functions that require models.
     # TODO: make this less hardcoded
     if len(X_L_list) == 0:
-      blacklisted_functions = ['similarity', 'row_typicality', 'col_typicality', 'probability']
+      blacklisted_functions = [functions._similarity, functions._row_typicality, functions._col_typicality, functions._probability]
+      used_functions = [q[0] for q in queries]
+      for bf in blacklisted_functions:
+        if bf in queries:
+          return {'message': 'You must INITIALIZE MODELS (and preferably ANALYZE) before calling functions that require models.'}
       if order_by:
         order_by_functions = [x[0] for x in order_by]
-      else:
-        order_by_functions = []
-      for bf in blacklisted_functions:
-        if bf in queries or bf in order_by_functions:
-          return {'message': 'You must initialize models before computing dependence probability.'}
+        blacklisted_function_names = ['similarity', 'typicality', 'probability', 'predictive probability']        
+        for fname in blacklisted_function_names:
+          for order_by_f in order_by_functions:
+            if fname in order_by_f:
+              return {'message': 'You must INITIALIZE MODELS (and preferably ANALYZE) before calling functions that require models.'}
 
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.

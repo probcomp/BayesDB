@@ -107,13 +107,16 @@ def _dependence_probability(dependence_probability_args, row_id, data_values, M_
         prob_dep /= float(len(X_L_list))
     return prob_dep
 
-def _mutual_information(mutual_information_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend):
+def _mutual_information(mutual_information_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend, n_samples=None):
     col1, col2 = mutual_information_args
     Q = [(col1, col2)]
     ## Returns list of lists.
     ## First list: same length as Q, so we just take first.
     ## Second list: MI, linfoot. we take MI.
-    results_by_model = backend.mutual_information(M_c, X_L_list, X_D_list, Q)[0][0] #n_samples as another arg
+    if n_samples is None:
+        results_by_model = backend.mutual_information(M_c, X_L_list, X_D_list, Q)[0][0]
+    else:
+        results_by_model = backend.mutual_information(M_c, X_L_list, X_D_list, Q, n_samples=n_samples)[0][0]
     ## Report the average mutual information over each model.
     mi = float(sum(results_by_model)) / len(results_by_model)
 
@@ -250,10 +253,12 @@ def parse_column_typicality(colname, M_c):
       TYPICALITY\s+OF\s+
       (?P<column>[^\s]+)
       \s*$
-      """, colname, re.VERBOSE | re.IGNORECASE)
+      """, colname, flags=re.VERBOSE | re.IGNORECASE)
   if col_typicality_match:
       colname = col_typicality_match.group('column').strip()
       return M_c['name_to_idx'][colname]
+  else:
+      return None
 
 def parse_mutual_information(colname, M_c):
   mutual_information_match = re.search(r"""

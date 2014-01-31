@@ -135,6 +135,6 @@ def test_select():
 
   # column typicality
   client("select typicality of qual_score, typicality of name from %s" % (test_tablename))
-  client("select typicality of qual_score from %s order by typicality of name" % (test_tablename))
-  '''
+  client("select typicality of qual_score from %s" % (test_tablename))
+
   

@@ -77,7 +77,9 @@ def is_row_valid(idx, row, where_conditions):
 def get_queries_from_columnstring(columnstring, M_c, T):
     """
     Iterate through the columnstring portion of the input, and generate the query list.
-    queries is a list of (query_function, query_args) tuples, where query_function is: row_id, column, probability, similarity.
+    queries is a list of (query_function, query_args, aggregate) tuples,
+    where query_function is: row_id, column, probability, similarity.
+    
     For row_id: query_args is ignored (so it is None).
     For column: query_args is a c_idx.
     For probability: query_args is a (c_idx, value) tuple.
@@ -85,66 +87,61 @@ def get_queries_from_columnstring(columnstring, M_c, T):
     """
     query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c)]
     queries = []
-    aggregates_only = True
     for idx, colname in enumerate(query_colnames):
       #####################
       # Single column functions (aggregate)
       #####################
       c = functions.parse_column_typicality(colname, M_c)
       if c is not None:
-        queries.append((functions._col_typicality, c))
+        queries.append((functions._col_typicality, c, True))
         continue
         
       m = functions.parse_mutual_information(colname, M_c)
       if m is not None:
-        queries.append((functions._mutual_information, m))
+        queries.append((functions._mutual_information, m, True))
         continue
 
       d = functions.parse_dependence_probability(colname, M_c)
       if d is not None:
-        queries.append((functions._dependence_probability, d))
+        queries.append((functions._dependence_probability, d, True))
         continue
 
       c = functions.parse_correlation(colname, M_c)
       if c is not None:
-        queries.append((functions._correlation, c))
+        queries.append((functions._correlation, c, True))
         continue
 
-      # If none of the above aggregate functions matched, then there is at least one
-      # non-aggregate function in this query.
-      aggregates_only = False        
-      
       #####################
       ## Normal functions (of a cell)
       ######################
       p = functions.parse_probability(colname, M_c)
       if p is not None:
-        queries.append((functions._probability, p))
+        queries.append((functions._probability, p, False))
         continue
 
       s = functions.parse_similarity(colname, M_c, T)
       if s is not None:
-        queries.append((functions._similarity, s))
+        queries.append((functions._similarity, s, False))
         continue
 
       t = functions.parse_row_typicality(colname)
       if t is not None:
-        queries.append((functions._row_typicality, None))
+        queries.append((functions._row_typicality, None, False))
         continue
 
       p = functions.parse_predictive_probability(colname, M_c)
       if p is not None:
-        queries.append((functions._predictive_probability, p))
+        queries.append((functions._predictive_probability, p, False))
         continue
 
       ## If none of above query types matched, then this is a normal column query.
-      queries.append((functions._column, M_c['name_to_idx'][colname]))
+      queries.append((functions._column, M_c['name_to_idx'][colname], False))
       
     ## Always return row_id as the first column.
     query_colnames = ['row_id'] + query_colnames
-    queries = [(functions._row_id, None)] + queries
+    queries = [(functions._row_id, None, False)] + queries
     
-    return queries, query_colnames, aggregates_only
+    return queries, query_colnames
 
 def convert_row_from_codes_to_values(row, M_c):
   """
@@ -243,12 +240,26 @@ def _order_by(filtered_values, function_list, M_c, X_L_list, X_D_list, T, backen
 def compute_result_and_limit(rows, limit, queries, M_c, X_L_list, X_D_list, T, backend):
   data = []
   row_count = 0
+
+  # Compute aggregate functions just once, then cache them.
+  aggregate_cache = dict()
+  for query_idx, (query_function, query_args, aggregate) in enumerate(queries):
+    if aggregate:
+      aggregate_cache[query_idx] = query_function(query_args, None, None, M_c, X_L_list, X_D_list, T, backend)
+
+  # Only return one row if all aggregate functions (row_id will never be aggregate, so subtract 1 and don't return it).
+  assert queries[0][0] == functions._row_id
+  if len(aggregate_cache) == len(queries) - 1:
+    limit = 1
+
+  # Iterate through data table, calling each query_function to fill in the output values.
   for row_id, row_values in rows:
     ret_row = []
-    for (query_function, query_args) in queries:
-      ## new format: every query_function is a function that takes query args + standard args
-      ret_row.append(query_function(query_args, row_id, row_values, M_c, X_L_list, X_D_list, T, backend))
-
+    for query_idx, (query_function, query_args, aggregate) in enumerate(queries):
+      if aggregate:
+        ret_row.append(aggregate_cache[query_idx])
+      else:
+        ret_row.append(query_function(query_args, row_id, row_values, M_c, X_L_list, X_D_list, T, backend))
     data.append(tuple(ret_row))
     row_count += 1
     if row_count >= limit:
