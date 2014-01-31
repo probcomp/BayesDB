@@ -292,9 +292,9 @@ class Engine(object):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
 
     # query_colnames is the list of the raw columns/functions from the columnstring, with row_id prepended
-    # queries is a list of (query_type, query) tuples, where query_type is:
-    #   row_id, column, probability, similarity, and query is data that depends on the query_type.
-    #   For example, row_id's query is None, column's query is a c_idx, similarity's query is (rowid, column).
+    # queries is a list of (query_function, query_args) tuples, where 'query_function' is
+    #   a function like row_id, column, similarity, or typicality, and 'query_args' are the function-specific
+    #   arguments that that function takes (in addition to the normal arguments, like M_c, X_L_list, etc).
     # aggregates_only is True if only one row should be returned.
     queries, query_colnames, aggregates_only = select_utils.get_queries_from_columnstring(columnstring, M_c, T)
 
@@ -327,7 +327,7 @@ class Engine(object):
     filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self.backend)
 
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
-    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, self.backend)
+    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self.backend)
 
     return dict(message='', data=data, columns=query_colnames)
 

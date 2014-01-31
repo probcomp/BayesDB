@@ -29,6 +29,7 @@ import operator
 import ast
 
 import utils
+import functions
 import crosscat.utils.data_utils as du
 
 def get_conditions_from_whereclause(whereclause, M_c):
@@ -76,7 +77,7 @@ def is_row_valid(idx, row, where_conditions):
 def get_queries_from_columnstring(columnstring, M_c, T):
     """
     Iterate through the columnstring portion of the input, and generate the query list.
-    queries is a list of (query_type, query_args) tuples, where query_type is: row_id, column, probability, similarity.
+    queries is a list of (query_function, query_args) tuples, where query_function is: row_id, column, probability, similarity.
     For row_id: query_args is ignored (so it is None).
     For column: query_args is a c_idx.
     For probability: query_args is a (c_idx, value) tuple.
@@ -89,19 +90,20 @@ def get_queries_from_columnstring(columnstring, M_c, T):
       #####################
       ## Normal functions (of a cell)
       ######################
-      p = parse_probability(colname, M_c)
+      p = functions.parse_probability(colname, M_c)
       if p is not None:
-        queries.append(('probability', p))
-        continue
-
-      s = parse_similarity(colname, M_c, T)
-      if s is not None:
-        queries.append(('similarity', s))
+        queries.append((functions._probability, p))
         aggregates_only = False
         continue
 
-      if parse_row_typicality(colname):
-        queries.append(('row_typicality', None))
+      s = functions.parse_similarity(colname, M_c, T)
+      if s is not None:
+        queries.append((functions._similarity, s))
+        aggregates_only = False
+        continue
+
+      if functions.parse_row_typicality(colname):
+        queries.append((functions._row_typicality, None))
         aggregates_only = False        
         continue
 
@@ -110,16 +112,15 @@ def get_queries_from_columnstring(columnstring, M_c, T):
       #####################
       # Single column functions (aggregate)
       #####################
-      c = parse_column_typicality(colname, M_c)
+      c = functions.parse_column_typicality(colname, M_c)
       if c is not None:
         c_idx = c
-        queries.append(('col_typicality', c_idx))
+        queries.append((functions._col_typicality, c_idx))
         continue
         
-      ## Check if mutual information query - AGGREGATE
-      m = parse_mutual_information(colname, M_c)
+      m = functions.parse_mutual_information(colname, M_c)
       if m is not None:
-        queries.append(('mutual_information', m))
+        queries.append((functions._mutual_information, m))
         continue
 
       ## TODO: Check if "dependence probability to <col>"
@@ -128,12 +129,12 @@ def get_queries_from_columnstring(columnstring, M_c, T):
 
 
       ## If none of above query types matched, then this is a normal column query.
-      queries.append(('column', M_c['name_to_idx'][colname]))
+      queries.append((functions._column, M_c['name_to_idx'][colname]))
       aggregates_only = False
       
     ## Always return row_id as the first column.
     query_colnames = ['row_id'] + query_colnames
-    queries = [('row_id', None)] + queries
+    queries = [(functions._row_id, None)] + queries
     
     return queries, query_colnames, aggregates_only
 
@@ -173,27 +174,24 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
   ## Step 1: get appropriate functions. Examples are 'column' and 'similarity'.
   function_list = list()
   for orderable in order_by:
-    if type(orderable) == tuple and type(orderable[0]) == str and type(orderable[1]) == bool:
-      # (orderable, desc)
-      raw_orderable_string = orderable[0]
-      desc = orderable[1]
-    else:
-      raise Exception('please use new format for orderables') # TODO
+    assert type(orderable) == tuple and type(orderable[0]) == str and type(orderable[1]) == bool
+    raw_orderable_string = orderable[0]
+    desc = orderable[1]
 
     ## function_list is a list of
-    ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend), args, desc)
+    ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, backend), args, desc)
     
-    s = parse_similarity(raw_orderable_string, M_c, T)
+    s = functions.parse_similarity(raw_orderable_string, M_c, T)
     if s:
-      function_list.append((utils._similarity, s, desc))
+      function_list.append((functions._similarity, s, desc))
       continue
 
-    c = parse_row_typicality(raw_orderable_string)
+    c = functions.parse_row_typicality(raw_orderable_string)
     if c:
-      function_list.append((utils._typicality, c, desc))
+      function_list.append((functions._row_typicality, c, desc))
       continue
 
-    function_list.append((utils._column, raw_orderable_string, desc))
+    function_list.append((functions._column, M_c['name_to_idx'][raw_orderable_string], desc))
 
   ## Step 2: call order by.
   rows = _order_by(rows, function_list, M_c, X_L_list, X_D_list, T, backend)
@@ -223,195 +221,17 @@ def _order_by(filtered_values, function_list, M_c, X_L_list, X_D_list, T, backen
   return [tup[1] for tup in scored_data_tuples]
 
 
-def compute_result_and_limit(rows, limit, queries, M_c, X_L_list, X_D_list, backend):
+def compute_result_and_limit(rows, limit, queries, M_c, X_L_list, X_D_list, T, backend):
   data = []
   row_count = 0
   for row_id, row_values in rows:
     ret_row = []
-    for (query_type, query_args) in queries:
-      if query_type == 'row_id':
-        ret_row.append(row_id)
-      elif query_type == 'column':
-        col_idx = query_args
-        val = row_values[col_idx]
-        ret_row.append(val)
-      elif query_type == 'probability':
-        c_idx, value = query_args
-        if M_c['column_metadata'][c_idx]['code_to_value']:
-          val = float(M_c['column_metadata'][c_idx]['code_to_value'][str(value)])
-        else:
-          val = value
-        Q = [(len(X_D_list[0][0])+1, c_idx, val)] ## row is set to 1 + max row, instead of this row.
-        prob = math.exp(backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
-        ret_row.append(prob)
-      elif query_type == 'similarity':
-        target_row_id, target_column = query_args
-        sim = backend.similarity(M_c, X_L_list, X_D_list, row_id, target_row_id, target_column)
-        ret_row.append(sim)
-      elif query_type == 'row_typicality':
-        anom = backend.row_structural_typicality(X_L_list, X_D_list, row_id)
-        ret_row.append(anom)
-      elif query_type == 'col_typicality':
-        c_idx = query_args
-        anom = backend.column_structural_typicality(X_L_list, c_idx)
-        ret_row.append(anom)
-      elif query_type == 'predictive_probability':
-        c_idx = query_args
-        ## WARNING: this backend call doesn't work for multinomial
-        ## TODO: need to test
-        Q = [(row_id, c_idx, du.convert_value_to_code(M_c, c_idx, T[row_id][c_idx]))]
-        Y = []
-        prob = math.exp(backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
-        ret_row.append(prob)
-      elif query_type == 'mutual_information':
-        c_idx1, c_idx2 = query_args
-        mutual_info, linfoot = backend.mutual_information(M_c, X_L_list, X_D_list, [(c_idx1, c_idx2)])
-        mutual_info = numpy.mean(mutual_info)
-        ret_row.append(mutual_info)
+    for (query_function, query_args) in queries:
+      ## new format: every query_function is a function that takes query args + standard args
+      ret_row.append(query_function(query_args, row_id, row_values, M_c, X_L_list, X_D_list, T, backend))
 
     data.append(tuple(ret_row))
     row_count += 1
     if row_count >= limit:
       break
   return data
-
-#################################
-# function parsing code
-#################################
-
-# TODO
-# def parse_predictive_probability(colname,
-
-def parse_probability(colname, M_c):
-  prob_match = re.search(r"""
-      probability\s*
-      \(\s*
-      (?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)
-      \s*\)
-  """, colname, re.VERBOSE | re.IGNORECASE)
-  if not prob_match:
-    prob_match = re.search(r"""
-      PROBABILITY\s+OF\s+
-      (?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)
-    """, colname, re.VERBOSE | re.IGNORECASE)
-  if prob_match:
-    column = prob_match.group('column')
-    c_idx = M_c['name_to_idx'][column]
-    value = prob_match.group('value')
-    if utils.is_int(value):
-      value = int(value)
-    elif utils.is_float(value):
-      value = float(value)
-    ## TODO: need to escape strings here with ast.eval... call?
-    return c_idx, value
-  else:
-    return None
-
-def parse_similarity(colname, M_c, T):
-  """
-  colname: this is the thing that we want to try to parse as a similarity.
-  It is an entry in a query's columnstring. eg: SELECT colname1, colname2 FROM...
-  We are checking if colname matches "SIMILARITY TO <rowid> [WITH RESPECT TO <col>]"
-  """
-  similarity_match = re.search(r"""
-      similarity\s+to\s+
-      (\()?
-      (?P<rowid>[^,\)\(]+)
-      (\))?
-      \s+with\s+respect\s+to\s+
-      (?P<column>[^\s]+)
-  """, colname, re.VERBOSE | re.IGNORECASE)
-  if not similarity_match:
-    similarity_match = re.search(r"""
-      similarity\s+to\s+
-      (?P<rowid>[^,]+)
-    """, colname, re.VERBOSE | re.IGNORECASE)
-  ## Try 2nd type of similarity syntax. Add "contextual similarity" for when cols are present?
-  if not similarity_match:
-    similarity_match = re.search(r"""
-        similarity_to\s*\(\s*
-        (?P<rowid>[^,]+)
-        (\s*,\s*(?P<column>[^\s]+)\s*)?
-        \s*\)
-    """, colname, re.VERBOSE | re.IGNORECASE) 
-
-  if similarity_match:
-      rowid = similarity_match.group('rowid').strip()
-      if utils.is_int(rowid):
-        target_row_id = int(rowid)
-      else:
-        ## Instead of specifying an integer for rowid, you can specify a simple where clause.
-        where_vals = rowid.split('=')
-        where_colname = where_vals[0]
-        where_val = where_vals[1]
-        if type(where_val) == str or type(where_val) == unicode:
-          where_val = ast.literal_eval(where_val)
-        ## Look up the row_id where this column has this value!
-        c_idx = M_c['name_to_idx'][where_colname.lower()]
-        for row_id, T_row in enumerate(T):
-          row_values = convert_row_from_codes_to_values(T_row, M_c)
-          if row_values[c_idx] == where_val:
-            target_row_id = row_id
-            break
-
-      if 'column' in similarity_match.groupdict() and similarity_match.group('column'):
-          target_column = similarity_match.group('column').strip()
-      else:
-          target_column = None
-
-      return target_row_id, target_column
-  else:
-      return None
-
-def parse_row_typicality(colname):
-    row_typicality_match = re.search(r"""
-        ((row_typicality)|
-        (^\s*TYPICALITY\s*$))
-    """, colname, re.VERBOSE | re.IGNORECASE)
-    if row_typicality_match:
-        return True
-    else:
-        return None
-
-def parse_column_typicality(colname, M_c):
-  col_typicality_match = re.search(r"""
-      col_typicality
-      \s*
-      \(\s*
-      (?P<column>[^\s]+)
-      \s*\)
-  """, colname, re.VERBOSE | re.IGNORECASE)
-  if not col_typicality_match:
-      col_typicality_match = re.search(r"""
-      COLUMN\s+TYPICALITY\s+OF\s+
-      (?P<column>[^\s]+)
-      """, colname, re.VERBOSE | re.IGNORECASE)
-  if col_typicality_match:
-      colname = col_typicality_match.group('column').strip()
-      return M_c['name_to_idx'][colname]
-
-def parse_mutual_information(colname, M_c):
-  mutual_information_match = re.search(r"""
-      mutual_information
-      \s*\(\s*
-      (?P<col1>[^\s]+)
-      \s*,\s*
-      (?P<col2>[^\s]+)
-      \s*\)
-  """, colname, re.VERBOSE | re.IGNORECASE)
-  if not mutual_information_match:
-    mutual_information_match = re.search(r"""
-      MUTUAL\s+INFORMATION\s+OF\s+
-      (?P<col1>[^\s]+)
-      \s+(WITH|TO)\s+
-      (?P<col2>[^\s]+)
-    """, colname, re.VERBOSE | re.IGNORECASE)    
-  if mutual_information_match:
-      col1 = mutual_information_match.group('col1')
-      col2 = mutual_information_match.group('col2')
-      col1, col2 = M_c['name_to_idx'][col1], M_c['name_to_idx'][col2]
-      return col1, col2
-  else:
-      return None
-
-    
