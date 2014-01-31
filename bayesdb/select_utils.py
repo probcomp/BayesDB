@@ -135,7 +135,11 @@ def get_queries_from_columnstring(columnstring, M_c, T):
         continue
 
       ## If none of above query types matched, then this is a normal column query.
-      queries.append((functions._column, M_c['name_to_idx'][colname], False))
+      if colname in M_c['name_to_idx']:
+        queries.append((functions._column, M_c['name_to_idx'][colname], False))
+        continue
+        
+      raise Exception("Invalid query argument: could not parse '%s'" % colname)
       
     ## Always return row_id as the first column.
     query_colnames = ['row_id'] + query_colnames
@@ -206,7 +210,11 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
       function_list.append((functions._predictive_probability, p, desc))
       continue
 
-    function_list.append((functions._column, M_c['name_to_idx'][raw_orderable_string], desc))
+    if raw_orderable_string in M_c['name_to_idx']:
+      function_list.append((functions._column, M_c['name_to_idx'][raw_orderable_string], desc))
+      continue
+      
+    raise Exception("Invalid query argument: could not parse '%s'" % raw_orderable_string)    
 
   ## Step 2: call order by.
   rows = _order_by(rows, function_list, M_c, X_L_list, X_D_list, T, backend)

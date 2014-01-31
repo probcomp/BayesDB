@@ -165,7 +165,7 @@ def test_select():
   # TODO: test all single-column aggregate functions
   
   # TYPICALITY OF <col>
-  columnstring = 'typicality of '
+  columnstring = 'typicality of name'
   order_by = [('typicality', True)]
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
   

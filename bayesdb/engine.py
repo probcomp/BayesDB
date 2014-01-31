@@ -43,6 +43,7 @@ import bayesdb.settings as S
 from crosscat.CrossCatClient import get_CrossCatClient
 from _file_persistence_layer import FilePersistenceLayer
 import utils
+import functions
 import select_utils
 import plotting_utils
 

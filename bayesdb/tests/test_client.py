@@ -80,7 +80,7 @@ def test_select():
   test_tablename = create_dha()
   global client, test_filenames
   client('initialize 2 models for %s' % (test_tablename))
-  '''
+
   client('select name, qual_score from %s' % (test_tablename))
   client('select name, qual_score from %s limit 10' % (test_tablename))
   client('select name, qual_score from %s order by qual_score limit 10' % (test_tablename))
@@ -122,7 +122,7 @@ def test_select():
   client("select predictive probability of qual_score from %s order by predictive probability of qual_score" % (test_tablename))
 
   ## Aggregate functions: can't order by these.
-  '''
+
   # mutual information
   client("select name, qual_score, mutual information of name with qual_score from %s" % (test_tablename))
 
