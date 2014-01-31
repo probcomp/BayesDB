@@ -83,6 +83,7 @@ def test_estimate_columns():
 
   client('estimate columns from %s' % test_tablename)
 
+  client('estimate columns from %s where typicality > 1' % test_tablename)  
   client('estimate columns from %s where typicality > 0' % test_tablename)
   client('estimate columns from %s where typicality > 0 order by typicality' % test_tablename)
   client('estimate columns from %s order by typicality limit 5' % test_tablename)
@@ -95,7 +96,7 @@ def test_estimate_columns():
   client('estimate columns from %s where correlation with qual_score > 0 order by correlation with qual_score limit 5' % test_tablename)  
 
   client('estimate columns from %s order by mutual information with qual_score limit 5' % test_tablename)
-  client('estimate columns from %s where mutual information with qual_score > 0 order by typicality' % test_tablename)
+  client('estimate columns from %s where mutual information with qual_score > 1 order by typicality' % test_tablename)
 
 def test_select_whereclause_functions():
   test_tablename = create_dha()
