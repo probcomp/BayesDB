@@ -160,11 +160,15 @@ def test_select():
 
   # TODO: test all other single-column functions
   # PROBABILITY <col>=<val>
-
   # PREDICTIVE PROBABILITY
 
   # TODO: test all single-column aggregate functions
+  
   # TYPICALITY OF <col>
+  columnstring = 'typicality of '
+  order_by = [('typicality', True)]
+  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  
   # DEPENDENCE PROBABILITY OF <col> WITH <col> #DEPENDENCE PROBABILITY TO <col>
   # MUTUAL INFORMATION OF <col> WITH <col> #MUTUAL INFORMATION WITH <col>
   # CORRELATION OF <col> WITH <col>
@@ -330,11 +334,6 @@ def test_estimate_pairwise_correlation():
   test_tablename, _ = create_dha()
   engine.initialize_models(test_tablename, 2)
   cor_mat = engine.estimate_pairwise(test_tablename, 'correlation')
-
-def test_estimate_pairwise_view_similarity():
-  test_tablename, _ = create_dha()
-  engine.initialize_models(test_tablename, 2)
-  vs_mat = engine.estimate_pairwise(test_tablename, 'view similarity')  
 
 def test_list_btables():
   list_btables_result = engine.list_btables()  

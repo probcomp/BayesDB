@@ -27,11 +27,20 @@ import matplotlib.cm
 import inspect
 import operator
 import ast
+from scipy.stats import pearsonr
 
 import utils
 import select_utils
 import crosscat.utils.data_utils as du
 
+###
+# Three types of function signatures, for each purpose.
+#
+# SELECT/ORDER BY/WHERE:
+# f(args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend)
+#
+# ESTIMATE COLUMNS
+##
 
 ###################################################################
 # NORMAL FUNCTIONS (have a separate output value for each row: can ORDER BY, SELECT, etc.)

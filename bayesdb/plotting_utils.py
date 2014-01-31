@@ -24,6 +24,7 @@ import pylab
 import matplotlib.cm
 
 import utils
+import functions
 import crosscat.utils.data_utils as du
 
 def plot_matrix(matrix, column_names, title='', filename=None):
@@ -82,17 +83,13 @@ def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', 
     if len(X_L_list) == 0:
         return {'message': 'You must initialize models before computing mutual information.'}    
     if col_function_name == 'mutual information':
-      col_function = utils._mutual_information
+      col_function = functions._mutual_information
     elif col_function_name == 'dependence probability':
       if len(X_L_list) == 0:
           return {'message': 'You must initialize models before computing dependence probability.'}
-      col_function = utils._dependence_probability
+      col_function = functions._dependence_probability
     elif col_function_name == 'correlation':
-      col_function = utils._correlation
-    elif col_function_name == 'view similarity':
-      if len(X_L_list) == 0:
-          return {'message': 'You must initialize models before computing view similarity.'}        
-      col_function = utils._view_similarity
+      col_function = functions._correlation
     else:
       raise Exception('Invalid column function: %s' % col_function_name)
 
@@ -104,7 +101,7 @@ def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', 
     z_matrix = numpy.zeros((num_cols, num_cols))
     for i in range(num_cols):
       for j in range(num_cols):
-        z_matrix[i][j] = col_function(i, j, X_L_list, X_D_list, M_c, T, backend)
+        z_matrix[i][j] = col_function((i, j), None, None, M_c, X_L_list, X_D_list, T, backend)
 
     if col:
       z_column = list(z_matrix[M_c['name_to_idx'][col]])
