@@ -79,7 +79,8 @@ def test_save_and_load_models():
 def test_select():
   test_tablename = create_dha()
   global client, test_filenames
-  client('initialize 5 models for %s' % (test_tablename))
+  client('initialize 2 models for %s' % (test_tablename))
+  '''
   client('select name, qual_score from %s' % (test_tablename))
   client('select name, qual_score from %s limit 10' % (test_tablename))
   client('select name, qual_score from %s order by qual_score limit 10' % (test_tablename))
@@ -96,8 +97,44 @@ def test_select():
   client('select name, similarity to 0 with respect to name from %s order by similarity to 1 with respect to qual_score' % (test_tablename))        
   client('select name, similarity to 0 from %s order by similarity to 1 with respect to qual_score' % (test_tablename))      
 
-  # typicality
+  # row typicality
   client('select typicality from %s' % (test_tablename))
   client('select *, typicality from %s' % (test_tablename))  
   client('select typicality from %s order by typicality limit 10' % (test_tablename))
 
+  # probability
+  # why is this so slow, when predictive probability is really fast? these are _observed_
+  # for qual_score (continuous): probability takes 20 times longer than predictive prob (about 5 seconds total for 300 rows)
+  # for name (multinomial): probability takes extremely long (about 75 seconds for 300 rows)
+  #  while predictive probability takes under one second for 300 rows
+  client('select probability of qual_score = 6 from %s' % (test_tablename))
+  client("select probability of name='Albany NY' from %s" % (test_tablename))
+
+  #client("select name from %s order by probability of name='Albany NY' DESC" % (test_tablename))  
+  # TODO: test that probability function doesn't get evaluated 2x for each row
+  #client("select probability of name='Albany NY' from %s order by probability of name='Albany NY' DESC" % (test_tablename))
+
+  # predictive probability
+  # these are really fast! :) simple predictive probability, unobserved
+  client("select predictive probability of qual_score from %s" % (test_tablename))
+  client("select predictive probability of name from %s" % (test_tablename))
+  client("select predictive probability of qual_score from %s order by predictive probability of name" % (test_tablename))
+  client("select predictive probability of qual_score from %s order by predictive probability of qual_score" % (test_tablename))
+
+  ## Aggregate functions: can't order by these.
+  '''
+  # mutual information
+  client("select name, qual_score, mutual information of name with qual_score from %s" % (test_tablename))
+
+  # dependence probability
+  client("select dependence probability of name with qual_score from %s" % (test_tablename))
+  client("select name, qual_score, dependence probability of name with qual_score from %s" % (test_tablename))
+
+  # correlation
+  client("select name, qual_score, correlation of name with qual_score from %s" % (test_tablename))
+
+  # column typicality
+  client("select typicality of qual_score, typicality of name from %s" % (test_tablename))
+  client("select typicality of qual_score from %s order by typicality of name" % (test_tablename))
+  '''
+  

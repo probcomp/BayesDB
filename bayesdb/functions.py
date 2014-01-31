@@ -27,6 +27,7 @@ import matplotlib.cm
 import inspect
 import operator
 import ast
+import math
 from scipy.stats import pearsonr
 
 import utils
@@ -61,19 +62,23 @@ def _row_typicality(row_typicality_args, row_id, data_values, M_c, X_L_list, X_D
     return backend.row_structural_typicality(X_L_list, X_D_list, row_id)
 
 def _predictive_probability(predictive_probability_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend):
-    c_idx = query_args
+    c_idx = predictive_probability_args
     ## WARNING: this backend call doesn't work for multinomial
     ## TODO: need to test
-    Q = [(row_id, c_idx, du.convert_value_to_code(M_c, c_idx, T[row_id][c_idx]))]
+    Q = [(row_id, c_idx, T[row_id][c_idx])]
     Y = []
-    return math.exp(backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
+    p = math.exp(backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))    
+    return p
 
 def _probability(probability_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend):
-    c_idx, value = query_args
+    c_idx, value = probability_args
     observed = du.convert_value_to_code(M_c, c_idx, value)
-    Q = [(len(X_D_list[0][0])+1, c_idx, observed)] ## row is set to 1 + max row, instead of this row.
-    prob = math.exp(backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
-    ret_row.append(prob)
+    row_id = len(X_D_list[0][0]) + 1 ## row is set to 1 + max row, instead of this row.
+    Q = [(row_id, c_idx, observed)]
+    Y = []
+    p = math.exp(backend.simple_predictive_probability_multistate(M_c, X_L_list, X_D_list, Y, Q))
+    return p
+
 
 #####################################################################
 # AGGREGATE FUNCTIONS (have only one output value)
@@ -119,7 +124,6 @@ def _mutual_information(mutual_information_args, row_id, data_values, M_c, X_L_l
     
     return mi
     
-  
 def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend):
     col1, col2 = correlation_args
     t_array = numpy.array(T, dtype=float)
@@ -133,20 +137,22 @@ def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list,
 # function parsing
 ##############################################
 
-# TODO
-# def parse_predictive_probability(colname,
+def parse_predictive_probability(colname, M_c):
+  prob_match = re.search(r"""
+      PREDICTIVE\s+PROBABILITY\s+OF\s+
+      (?P<column>[^\s]+)
+  """, colname, re.VERBOSE | re.IGNORECASE)
+  if prob_match:
+    column = prob_match.group('column')
+    c_idx = M_c['name_to_idx'][column]
+    return c_idx
+  else:
+    return None
 
 def parse_probability(colname, M_c):
   prob_match = re.search(r"""
-      probability\s*
-      \(\s*
-      (?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)
-      \s*\)
-  """, colname, re.VERBOSE | re.IGNORECASE)
-  if not prob_match:
-    prob_match = re.search(r"""
-      PROBABILITY\s+OF\s+
-      (?P<column>[^\s]+)\s*=\s*(?P<value>[^\s]+)
+      ^PROBABILITY\s+OF\s+
+      (?P<column>[^\s]+)\s*=\s*(\'|\")?\s*(?P<value>[^\'\"]*)\s*(\'|\")?$
     """, colname, re.VERBOSE | re.IGNORECASE)
   if prob_match:
     column = prob_match.group('column')
@@ -220,8 +226,10 @@ def parse_similarity(colname, M_c, T):
 
 def parse_row_typicality(colname):
     row_typicality_match = re.search(r"""
+        ^\s*    
         ((row_typicality)|
         (^\s*TYPICALITY\s*$))
+        \s*$
     """, colname, re.VERBOSE | re.IGNORECASE)
     if row_typicality_match:
         return True
@@ -238,8 +246,10 @@ def parse_column_typicality(colname, M_c):
   """, colname, re.VERBOSE | re.IGNORECASE)
   if not col_typicality_match:
       col_typicality_match = re.search(r"""
-      COLUMN\s+TYPICALITY\s+OF\s+
+      ^\s*
+      TYPICALITY\s+OF\s+
       (?P<column>[^\s]+)
+      \s*$
       """, colname, re.VERBOSE | re.IGNORECASE)
   if col_typicality_match:
       colname = col_typicality_match.group('column').strip()
@@ -269,4 +279,35 @@ def parse_mutual_information(colname, M_c):
   else:
       return None
 
-    
+def parse_dependence_probability(colname, M_c):
+  dependence_probability_match = re.search(r"""
+    DEPENDENCE\s+PROBABILITY\s+OF\s+
+    (?P<col1>[^\s]+)
+    \s+(WITH|TO)\s+
+    (?P<col2>[^\s]+)
+  """, colname, re.VERBOSE | re.IGNORECASE)    
+  if dependence_probability_match:
+      col1 = dependence_probability_match.group('col1')
+      col2 = dependence_probability_match.group('col2')
+      col1, col2 = M_c['name_to_idx'][col1], M_c['name_to_idx'][col2]
+      return col1, col2
+  else:
+      return None
+
+        
+def parse_correlation(colname, M_c):
+  correlation_match = re.search(r"""
+    CORRELATION\s+OF\s+
+    (?P<col1>[^\s]+)
+    \s+(WITH|TO)\s+
+    (?P<col2>[^\s]+)
+  """, colname, re.VERBOSE | re.IGNORECASE)    
+  if correlation_match:
+      col1 = correlation_match.group('col1')
+      col2 = correlation_match.group('col2')
+      col1, col2 = M_c['name_to_idx'][col1], M_c['name_to_idx'][col2]
+      return col1, col2
+  else:
+      return None
+
+        

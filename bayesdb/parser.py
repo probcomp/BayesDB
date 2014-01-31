@@ -659,9 +659,8 @@ class Parser(object):
                     desc = True
                 else:
                     desc = False
-                # re.IGNORECASE doesn't work for re.sub
-                orderable = re.sub(r'\s+(desc|asc)($|\s|,|(?=limit))', '', orderable.lower(), re.IGNORECASE)
-                orderables.append((orderable.strip().lower(), desc))
+                orderable = re.sub(r'\s+(desc|asc)($|\s|,|(?=limit))', '', orderable, flags=re.IGNORECASE)
+                orderables.append((orderable.strip(), desc))
                 
             orig = re.sub(pattern, '', orig, flags=re.VERBOSE | re.IGNORECASE)
             return (orig, orderables)

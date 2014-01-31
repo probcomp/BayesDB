@@ -112,7 +112,7 @@ def test_select():
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
   assert select_result['data'] == ground_truth_ordered_results
 
-  engine.initialize_models(test_tablename, 4)  
+  engine.initialize_models(test_tablename, 2)  
   
   # SIMILARITY TO <row> [WITH RESPECT TO <col>]
   # smoke tests

@@ -88,34 +88,11 @@ def get_queries_from_columnstring(columnstring, M_c, T):
     aggregates_only = True
     for idx, colname in enumerate(query_colnames):
       #####################
-      ## Normal functions (of a cell)
-      ######################
-      p = functions.parse_probability(colname, M_c)
-      if p is not None:
-        queries.append((functions._probability, p))
-        aggregates_only = False
-        continue
-
-      s = functions.parse_similarity(colname, M_c, T)
-      if s is not None:
-        queries.append((functions._similarity, s))
-        aggregates_only = False
-        continue
-
-      if functions.parse_row_typicality(colname):
-        queries.append((functions._row_typicality, None))
-        aggregates_only = False        
-        continue
-
-      ## TODO: Check if predictive probability query
-
-      #####################
       # Single column functions (aggregate)
       #####################
       c = functions.parse_column_typicality(colname, M_c)
       if c is not None:
-        c_idx = c
-        queries.append((functions._col_typicality, c_idx))
+        queries.append((functions._col_typicality, c))
         continue
         
       m = functions.parse_mutual_information(colname, M_c)
@@ -123,14 +100,45 @@ def get_queries_from_columnstring(columnstring, M_c, T):
         queries.append((functions._mutual_information, m))
         continue
 
-      ## TODO: Check if "dependence probability to <col>"
+      d = functions.parse_dependence_probability(colname, M_c)
+      if d is not None:
+        queries.append((functions._dependence_probability, d))
+        continue
 
-      ## TODO: Check if "correlation with <col>"
+      c = functions.parse_correlation(colname, M_c)
+      if c is not None:
+        queries.append((functions._correlation, c))
+        continue
 
+      # If none of the above aggregate functions matched, then there is at least one
+      # non-aggregate function in this query.
+      aggregates_only = False        
+      
+      #####################
+      ## Normal functions (of a cell)
+      ######################
+      p = functions.parse_probability(colname, M_c)
+      if p is not None:
+        queries.append((functions._probability, p))
+        continue
+
+      s = functions.parse_similarity(colname, M_c, T)
+      if s is not None:
+        queries.append((functions._similarity, s))
+        continue
+
+      t = functions.parse_row_typicality(colname)
+      if t is not None:
+        queries.append((functions._row_typicality, None))
+        continue
+
+      p = functions.parse_predictive_probability(colname, M_c)
+      if p is not None:
+        queries.append((functions._predictive_probability, p))
+        continue
 
       ## If none of above query types matched, then this is a normal column query.
       queries.append((functions._column, M_c['name_to_idx'][colname]))
-      aggregates_only = False
       
     ## Always return row_id as the first column.
     query_colnames = ['row_id'] + query_colnames
@@ -191,6 +199,16 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
       function_list.append((functions._row_typicality, c, desc))
       continue
 
+    p = functions.parse_probability(raw_orderable_string, M_c)
+    if p is not None:
+      function_list.append((functions._probability, p, desc))
+      continue
+
+    p = functions.parse_predictive_probability(raw_orderable_string, M_c)
+    if p is not None:
+      function_list.append((functions._predictive_probability, p, desc))
+      continue
+
     function_list.append((functions._column, M_c['name_to_idx'][raw_orderable_string], desc))
 
   ## Step 2: call order by.
@@ -218,6 +236,7 @@ def _order_by(filtered_values, function_list, M_c, X_L_list, X_D_list, T, backen
       scores.append(score)
     scored_data_tuples.append((tuple(scores), (row_id, data_tuple)))
   scored_data_tuples.sort(key=lambda tup: tup[0], reverse=False)
+
   return [tup[1] for tup in scored_data_tuples]
 
 
