@@ -8,3 +8,4 @@
 *.ropeproject
 server_logs
 bayesdb/data
+docs/_build
