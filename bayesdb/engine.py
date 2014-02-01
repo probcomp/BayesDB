@@ -162,14 +162,12 @@ class Engine(object):
     max_chainid = self.persistence_layer.get_max_chain_id(tablename)
 
     # Call initialize on backend
-    states_by_chain = list()
     args_dict = dict()
     args_dict['M_c'] = M_c
     args_dict['M_r'] = M_r
     args_dict['T'] = T
-    for chain_index in range(max_chainid, n_chains + max_chainid):
-      x_l_prime, x_d_prime = self.backend.initialize(M_c, M_r, T)
-      states_by_chain.append((x_l_prime, x_d_prime))
+    X_L_list, X_D_list = self.backend.initialize(M_c, M_r, T)
+    states_by_chain = zip(X_L_list, X_D_list)
 
     # Insert results into persistence layer
     self.persistence_layer.insert_models(tablename, states_by_chain)
