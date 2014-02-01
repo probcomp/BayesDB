@@ -30,7 +30,6 @@ import ast
 import crosscat.utils.api_utils as au
 
 import utils
-import plotting_utils
 from parser import Parser
 from engine import Engine
 
