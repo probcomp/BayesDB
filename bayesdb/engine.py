@@ -174,10 +174,10 @@ class Engine(object):
     max_modelid = self.persistence_layer.get_max_model_id(tablename)
 
     # Call initialize on backend
-    model_list = list()
-    for model_index in range(max_modelid, n_models + max_modelid):
-      X_L, X_D = self.backend.initialize(M_c, M_r, T)
-      model_list.append(dict(X_L=X_L, X_D=X_D, iterations=0))
+    X_L_list, X_D_list = self.backend.initialize(M_c, M_r, T)
+    model_list = list()    
+    for X_L, X_D in zip(X_L_list, X_D_list):
+      model_list.append(dict(X_L=X_L, X_D=X_D, iterations=0))      
 
     # Insert results into persistence layer
     self.persistence_layer.add_models(tablename, model_list)

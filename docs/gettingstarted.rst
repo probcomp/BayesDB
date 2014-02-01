@@ -34,6 +34,14 @@ To import your dataset, first convert it to CSV (comma separated values) format.
    name, age, grade
    Joe, 12, 7
    Sally, 14, 9
+   Jill, 12, 8
+
+Missing values my be indicated by simply omitting the value, or using 'nan', 'null', or 'n/a' without quotes. If the dataset above had missing data, here is an example of all acceptable ways to indicate that::
+
+   name, age, grade
+   Joe, , 7
+   Sally, n/a, null
+   Jill, nan, 8
 
 Use a CREATE BTABLE statement to import your data and create a new btable (bayesian table)::
 
