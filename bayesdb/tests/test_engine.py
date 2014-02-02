@@ -195,7 +195,6 @@ def test_update_datatypes():
   with pytest.raises(ValueError):
     engine.update_datatypes(test_tablename, mappings)
 
-@pytest.mark.slow
 def test_save_and_load_models():
   test_tablename, _ = create_dha()
   engine.initialize_models(test_tablename, 3)
@@ -222,7 +221,6 @@ def test_initialize_models():
     X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
     assert iters == 0
 
-@pytest.mark.slow
 def test_analyze():
   test_tablename, _ = create_dha()
   num_models = 3
@@ -329,7 +327,6 @@ def test_estimate_pairwise_mutual_information():
   engine.initialize_models(test_tablename, 2)
   mi_mat = engine.estimate_pairwise(test_tablename, 'mutual information')
 
-@pytest.mark.slow
 def test_estimate_pairwise_correlation():
   test_tablename, _ = create_dha()
   engine.initialize_models(test_tablename, 2)
@@ -387,7 +384,6 @@ def test_show_schema():
   assert schema['columns'][-4] == 'qual_score'
   assert sorted(schema['data'][0]) == sorted(cctypes)
 
-@pytest.mark.slow
 def test_show_models():
   test_tablename, _ = create_dha()
   num_models = 3

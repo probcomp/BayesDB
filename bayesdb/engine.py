@@ -174,7 +174,13 @@ class Engine(object):
     max_modelid = self.persistence_layer.get_max_model_id(tablename)
 
     # Call initialize on backend
-    X_L_list, X_D_list = self.backend.initialize(M_c, M_r, T)
+    X_L_list, X_D_list = self.backend.initialize(M_c, M_r, T, n_chains=n_models)
+
+    # If n_models is 1, initialize returns X_L and X_D instead of X_L_list and X_D_list
+    if n_models == 1:
+      X_L_list = [X_L_list]
+      X_D_list = [X_D_list]
+    
     model_list = list()    
     for X_L, X_D in zip(X_L_list, X_D_list):
       model_list.append(dict(X_L=X_L, X_D=X_D, iterations=0))      
