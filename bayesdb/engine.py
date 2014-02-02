@@ -200,29 +200,30 @@ class Engine(object):
     else:
       return dict(message='', models=modelid_iteration_info)
 
-  def analyze(self, tablename, model_index='all', iterations=2, wait=False):
+  def analyze(self, tablename, model_index='all', iterations=1):
     """Run analyze for the selected table. model_index may be 'all'."""
-    # Get M_c, T, X_L, and X_D from database
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
+    models = self.persistence_layer.get_models(tablename)
+
     if (str(model_index).upper() == 'ALL'):
-      modelids = self.persistence_layer.get_model_ids(tablename)
-      print('modelids: %s' % modelids)
+      modelids = sorted(models.keys())
     else:
       modelids = [model_index]
 
-    modelid_iteration_info = list()
-    for modelid in modelids:
-      iters = self._analyze_helper(tablename, M_c, T, modelid, iterations)
-      modelid_iteration_info.append((modelid, iters))
-    return dict(message='', models=modelid_iteration_info)
+    X_L_list = [models[i]['X_L'] for i in modelids]
+    X_D_list = [models[i]['X_D'] for i in modelids]
+    
+    X_L_list_prime, X_D_list_prime = self.backend.analyze(M_c, T, X_L_list, X_D_list, n_steps=iterations)
 
-  def _analyze_helper(self, tablename, M_c, T, modelid, iterations):
-    """Only for one model."""
-    X_L, X_D, prev_iterations = self.persistence_layer.get_model(tablename, modelid)
-    X_L_prime, X_D_prime = self.backend.analyze(M_c, T, X_L, X_D, n_steps=iterations)
-    self.persistence_layer.update_model(tablename, X_L_prime, X_D_prime, prev_iterations + iterations, modelid)
-    return (prev_iterations + iterations)
+    for i in modelids:
+      X_L = X_L_list_prime[i]
+      X_D = X_D_list_prime[i]
+      self.persistence_layer.update_model(tablename, X_L, X_D, models[i]['iterations'] + iterations, i)
+
+    ret = self.show_models(tablename)
+    ret['message'] = 'Analyze complete.'
+    return ret
 
   def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False):
     """Impute missing values.
