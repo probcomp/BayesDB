@@ -166,9 +166,14 @@ class Engine(object):
     args_dict['M_c'] = M_c
     args_dict['M_r'] = M_r
     args_dict['T'] = T
-    X_L_list, X_D_list = self.backend.initialize(M_c, M_r, T)
-    states_by_chain = zip(X_L_list, X_D_list)
+    X_L_list, X_D_list = self.backend.initialize(M_c, M_r, T, n_chains=n_chains)
 
+    # If n_chains is 1, initialize returns X_L and X_D instead of X_L_list and X_D_list
+    if n_chains == 1:
+      X_L_list = [X_L_list]
+      X_D_list = [X_D_list]
+
+    states_by_chain = zip(X_L_list, X_D_list)
     # Insert results into persistence layer
     self.persistence_layer.insert_models(tablename, states_by_chain)
 
