@@ -137,11 +137,10 @@ class FilePersistenceLayer(PersistenceLayer):
         Model indexing starts at 0 when models exist."""
         if models is None:
             models = self.get_models(tablename)
-        iter_list = [model['iterations'] for model in models.values()]
-        if len(iter_list) == 0:
+        if len(models.keys()) == 0:
             return -1
         else:
-            return max(iter_list)
+            return max(models.keys())
 
     def get_cctypes(self, tablename):
         """Access the table's current cctypes."""
