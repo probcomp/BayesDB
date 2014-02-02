@@ -216,10 +216,12 @@ class Engine(object):
     
     X_L_list_prime, X_D_list_prime = self.backend.analyze(M_c, T, X_L_list, X_D_list, n_steps=iterations)
 
+
     for i in modelids:
       X_L = X_L_list_prime[i]
       X_D = X_D_list_prime[i]
-      self.persistence_layer.update_model(tablename, X_L, X_D, models[i]['iterations'] + iterations, i)
+      models[i] = dict(X_L=X_L, X_D=X_D, iterations=models[i]['iterations'] + iterations)
+    self.persistence_layer.update_models(tablename, models)
 
     ret = self.show_models(tablename)
     ret['message'] = 'Analyze complete.'

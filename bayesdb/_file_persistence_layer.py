@@ -240,6 +240,13 @@ class FilePersistenceLayer(PersistenceLayer):
             models[max_model_id + 1 + i] = m
         self.write_models(tablename, models)
 
+    def update_models(self, tablename, models_new):
+        """ Overwrite all models by id. """
+        models = self.get_models(tablename)
+        for modelid in models_new.keys():            
+            models[modelid] = models_new[modelid]
+        self.write_models(tablename, models)
+
     def update_model(self, tablename, X_L, X_D, iterations, modelid):
         """ Overwrite a certain model by id. """
         models = self.get_models(tablename)
