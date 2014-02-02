@@ -295,7 +295,7 @@ class Parser(object):
                 model_index = words[idx+2]
                 idx += 3
             ## TODO: check length here
-            if words[idx] == "for" and words[idx+2] == 'iterations':
+            if words[idx] == "for" and ((words[idx+2] == 'iterations') or (words[idx+2] == 'iteration')):
                 iterations = int(words[idx+1])
             return 'analyze', dict(tablename=tablename, model_index=model_index,
                                    iterations=iterations, wait=False)
