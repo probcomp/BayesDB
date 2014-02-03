@@ -439,6 +439,14 @@ class Engine(object):
                                          X_L_list, X_D_list, M_c, T, tablename,
                                          filename, backend=self.backend)
 
+  def load_old_style_samples(self, tablename, old_samples_path, iterations=0):
+    old_samples = pickle.load(gzip.open(old_samples_path), 'r')
+    model_list = list()
+    for X_L, X_D in zip(old_samples['X_L_list'], old_samples['X_D_list']):
+      model_list.append(dict(X_L=X_L, X_D=X_D, iterations=iterations))
+    self.persistence_layer.add_models(tablename, model_list)
+    return self.show_models(tablename)
+
 # helper functions
 get_name = lambda x: getattr(x, '__name__')
 get_Engine_attr = lambda x: getattr(Engine, x)
