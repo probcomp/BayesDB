@@ -199,10 +199,7 @@ class Parser(object):
                         if len(words) >= 7:
                             if words[4] == 'with' and utils.is_int(words[5]) and words[6] == 'explanations':
                                 n_models = int(words[5])
-                        result = 'initialize_models', dict(tablename=tablename, n_models=n_models)
-                        # TODO: factor this print statement into callback in client
-                        print 'Created %d models for btable %s' % (n_models, tablename)
-                        return result
+                        return 'initialize_models', dict(tablename=tablename, n_models=n_models)
                     else:
                         print self.help_initialize_models()
                         return False
