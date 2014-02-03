@@ -484,7 +484,7 @@ class Parser(object):
             return 'show_columns', dict(tablename=tablename, column_list=column_list)
             
     def help_estimate_columns(self):
-        return "ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>]"
+        return "ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>] [AS <column_list>]"
 
     def parse_estimate_columns(self, words, orig):
         ## TODO: add "as <name>". could use pyparsing.
