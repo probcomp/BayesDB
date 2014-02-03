@@ -137,7 +137,7 @@ def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', 
 
     title = 'Pairwise column %s for %s' % (col_function_name, tablename)
     if filename:
-      utils.plot_matrix(z_matrix_reordered, column_names_reordered, title, filename)
+      plotting_utils.plot_matrix(z_matrix_reordered, column_names_reordered, title, filename)
 
     return dict(
       matrix=z_matrix_reordered,
