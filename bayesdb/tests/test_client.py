@@ -76,6 +76,27 @@ def test_save_and_load_models():
 
   assert new_models.values() == original_models.values()
 
+def test_column_lists():
+  test_tablename = create_dha()
+  global client, test_filenames
+  client('initialize 2 models for %s' % (test_tablename))
+
+  cname1 = 'cname1'
+  cname2 = 'cname2'
+  client('show column lists for %s' % test_tablename)
+  client('estimate columns from %s as %s' % (test_tablename, cname1))
+  client('show column lists for %s' % test_tablename)
+  client('show columns %s from %s' % (cname1, test_tablename))
+  client('show columns %s from %s' % (cname2, test_tablename))  
+  client('estimate columns from %s where typicality > 0.5 as %s' % (test_tablename, cname1))
+  client('estimate columns from %s as %s' % (test_tablename, cname2))  
+  client('show column lists for %s' % test_tablename)
+  client('show columns %s from %s' % (cname1, test_tablename))
+  client('show columns %s from %s' % (cname2, test_tablename))
+
+  client('estimate pairwise dependence probability from %s for columns %s' % (test_tablename, cname1))
+  client('estimate pairwise dependence probability from %s for columns %s' % (test_tablename, cname2))  
+
 def test_estimate_columns():
   test_tablename = create_dha()
   global client, test_filenames
@@ -135,6 +156,9 @@ def test_select():
   client('select * from %s order by qual_score DESC limit 10' % (test_tablename))
   client('select name, qual_score from %s where qual_score > 6' % (test_tablename))
   client('select * from %s where qual_score > 6' % (test_tablename))
+  client("select * from %s where qual_score > 80 and name = 'Albany NY'" % (test_tablename))
+  client("select * from %s where qual_score > 80 and ami_score > 85" % (test_tablename))    
+
 
   # similarity
   client('select name, similarity to 0 from %s' % (test_tablename))
@@ -153,8 +177,12 @@ def test_select():
   # for qual_score (continuous): probability takes 20 times longer than predictive prob (about 5 seconds total for 300 rows)
   # for name (multinomial): probability takes extremely long (about 75 seconds for 300 rows)
   #  while predictive probability takes under one second for 300 rows
+  st = time.time()
   client('select probability of qual_score = 6 from %s' % (test_tablename))
+  el = time.time() - st
+  st = time.time()  
   client("select probability of name='Albany NY' from %s" % (test_tablename))
+  el2 = time.time() - st
 
   #client("select name from %s order by probability of name='Albany NY' DESC" % (test_tablename))  
   # TODO: test that probability function doesn't get evaluated 2x for each row

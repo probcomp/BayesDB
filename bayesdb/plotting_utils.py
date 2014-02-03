@@ -75,7 +75,7 @@ def _create_histogram(M_c, data, columns, mc_col_indices, filename):
   pylab.tight_layout()
   pylab.savefig(full_filename)
 
-def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False, backend=None):
+def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False, backend=None, column_names=None):
     """ Compute a matrix. If using a function that requires backend (currently only
     mutual information), backend must not be None. """
 
@@ -93,9 +93,13 @@ def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', 
     else:
       raise Exception('Invalid column function: %s' % col_function_name)
 
-    num_cols = len(X_L_list[0]['column_partition']['assignments'])
-    column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
+    if column_names:
+        num_cols = len(column_names)
+    else:
+        num_cols = len(X_L_list[0]['column_partition']['assignments'])
+        column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
     column_names = numpy.array(column_names)
+    
     # extract unordered z_matrix
     num_latent_states = len(X_L_list)
     z_matrix = numpy.zeros((num_cols, num_cols))

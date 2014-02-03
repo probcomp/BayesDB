@@ -40,8 +40,10 @@ class FilePersistenceLayer(PersistenceLayer):
         data.csv
         metadata.pkl
         models.pkl
+        column_lists.pkl
 
     metadata.pkl: dict. keys: M_r, M_c, T, cctypes
+    column_lists.pkl: dict. keys: column list names, values: list of column names.
     models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations]. Idx starting at 1.
     data.csv: the raw csv file that the data was loaded from.
     """
@@ -74,10 +76,36 @@ class FilePersistenceLayer(PersistenceLayer):
         except IOError:
             return {}
 
+    def get_column_lists(self, tablename):
+        try:
+            f = open(os.path.join(self.data_dir, tablename, 'column_lists.pkl'), 'r')
+            column_lists = pickle.load(f)
+            f.close()
+            return column_lists
+        except IOError:
+            return dict()
+
+    def add_column_list(self, tablename, column_list_name, column_list):
+        column_lists = self.get_column_lists(tablename)
+        column_lists[column_list_name] = column_list
+        self.write_column_lists(tablename, column_lists)
+
+    def get_column_list(self, tablename, column_list):
+        column_lists = self.get_column_lists(tablename)
+        if column_list in column_lists:
+            return column_lists[column_list]
+        else:
+            return []
+
     def write_models(self, tablename, models):
         models_f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'w')
         pickle.dump(models, models_f, pickle.HIGHEST_PROTOCOL)
         models_f.close()
+
+    def write_column_lists(self, tablename, column_lists):
+        column_lists_f = open(os.path.join(self.data_dir, tablename, 'column_lists.pkl'), 'w')
+        pickle.dump(column_lists, column_lists_f, pickle.HIGHEST_PROTOCOL)
+        column_lists_f.close()
 
     def get_csv(self, tablename):
         f = open(os.path.join(self.data_dir, tablename, 'data.csv'), 'r')
@@ -218,6 +246,10 @@ class FilePersistenceLayer(PersistenceLayer):
         # Write models
         models = dict()
         self.write_models(tablename, models)
+
+        # Write column lists
+        column_lists = dict()
+        self.write_column_lists(tablename, column_lists)
 
         # Add to btable name index
         self.btable_names.add(tablename)

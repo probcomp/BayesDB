@@ -394,6 +394,24 @@ class Engine(object):
     ret = {'message': 'Simulated data:', 'columns': colnames, 'data': data}
     return ret
 
+  def show_column_lists(self, tablename):
+    """
+    Return a list of all column list names.
+    """
+    column_lists = self.persistence_layer.get_column_lists(tablename)
+    return dict(columns=list(column_lists.keys()))
+
+  def show_columns(self, tablename, column_list=None):
+    """
+    Return the specified columnlist. If None, return all columns in original order.
+    """
+    if column_list:
+      column_names = self.persistence_layer.get_column_list(tablename, column_list)
+    else:
+      M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)      
+      column_names = list(M_c['name_to_idx'].keys())
+    return dict(columns=column_names)
+
   def estimate_columns(self, tablename, whereclause, limit, order_by, name=None):
     """
     Return all the column names from the specified table as a list.
@@ -426,18 +444,25 @@ class Engine(object):
 
     # convert indices to names
     column_names = [M_c['idx_to_name'][str(idx)] for idx in column_indices]
+
+    # save column list, if given a name to save as
+    if name:
+      self.persistence_layer.add_column_list(tablename, name, column_names)
+    
     return {'columns': column_names}
   
   def estimate_pairwise(self, tablename, function_name, filename=None, column_list=None):
-    ## TODO: implement functionality with column_list
-    if column_list is not None:
-      raise NotImplementedError()
-      
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    
+    if column_list:
+      column_names = self.persistence_layer.get_column_list(tablename, column_list)
+    else:
+      column_names = None
+      
     return plotting_utils._do_gen_matrix(function_name,
                                          X_L_list, X_D_list, M_c, T, tablename,
-                                         filename, backend=self.backend)
+                                         filename, backend=self.backend, column_names=column_names)
 
   def load_old_style_samples(self, tablename, old_samples_path, iterations=0):
     old_samples = pickle.load(gzip.open(old_samples_path), 'r')
