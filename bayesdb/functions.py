@@ -107,9 +107,23 @@ def _dependence_probability(dependence_probability_args, row_id, data_values, M_
         if (assignments[col1] == assignments[col2]):
             if len(numpy.unique(X_D[assignments[col1]])) > 1:
                 prob_dep += 1
-        prob_dep /= float(len(X_L_list))
+    prob_dep /= float(len(X_L_list))
     return prob_dep
 
+def _old_dependence_probability(dependence_probability_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend):
+    col1, col2 = dependence_probability_args
+    prob_dep = 0
+    for X_L, X_D in zip(X_L_list, X_D_list):
+        assignments = X_L['column_partition']['assignments']
+        ## Columns dependent if in same view, and the view has greater than 1 category
+        ## Future work can investigate whether more advanced probability of dependence measures
+        ## that attempt to take into account the number of outliers do better.
+        if (assignments[col1] == assignments[col2]):
+            prob_dep += 1
+    prob_dep /= float(len(X_L_list))
+    return prob_dep
+
+    
 def _mutual_information(mutual_information_args, row_id, data_values, M_c, X_L_list, X_D_list, T, backend, n_samples=None):
     col1, col2 = mutual_information_args
     Q = [(col1, col2)]
