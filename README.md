@@ -31,6 +31,13 @@ Don't forget to add BayesDB to your python path.  For bash, this can be accompli
     export PYTHONPATH=\$PYTHONPATH:$(pwd)
     EOF
 
+If you have trouble with matplotlib, you should try switching to a different backend. Open a python prompt ($ python):
+
+    import matplotlib
+    matplotlib.matplotlib_fname()
+
+Then, edit the file at the path that was outputted, changing 'backend' to another one of the available values, until the matplotlib errors go away. Good ones to try are GTKAgg and Agg.
+
 # Documentation
 
 [Website](http://probcomp.csail.mit.edu/bayesdb)
