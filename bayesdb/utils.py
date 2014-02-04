@@ -64,11 +64,11 @@ def column_string_splitter(columnstring, M_c=None, column_lists=None):
         output += get_all_column_names_in_original_order(M_c)
       else:
         current_column_name = ''.join(current_column)
-        ## First, check if current_column is a column_list
-        if current_column_name in column_lists.keys():
+        if column_lists and current_column_name in column_lists.keys():
+            ## First, check if current_column is a column_list
             output += column_lists[current_column_name]
-        ## If not, then it is a normal column name: append it.
         else:
+            ## If not, then it is a normal column name: append it.            
             output.append(current_column_name)
       return output
     
