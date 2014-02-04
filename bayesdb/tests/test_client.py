@@ -94,7 +94,10 @@ def test_column_lists():
   client('show columns %s from %s' % (cname1, test_tablename))
   client('show columns %s from %s' % (cname2, test_tablename))
 
-  client('estimate pairwise dependence probability from %s for columns %s' % (test_tablename, cname1))
+  tmp = 'asdf.png'
+  test_filenames.append(tmp)
+  client('estimate pairwise dependence probability from %s for columns %s save to %s' % (test_tablename, cname1, tmp))
+  # TODO: assert tmp exists
   client('estimate pairwise dependence probability from %s for columns %s' % (test_tablename, cname2))  
 
 def test_estimate_columns():

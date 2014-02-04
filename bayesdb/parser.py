@@ -526,7 +526,7 @@ class Parser(object):
             (?P<functionname>.*?((?=\sfrom)))
             \s*from\s+
             (?P<btable>[^\s]+)
-            (\s+for\s+(?P<columns>[^\s]+))?
+            (\s+for\s+columns\s+(?P<columns>[^\s]+))?
             (\s+save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
