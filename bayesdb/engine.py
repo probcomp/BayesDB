@@ -300,13 +300,14 @@ class Engine(object):
     
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    column_lists = self.persistence_layer.get_column_lists(tablename)
 
     # query_colnames is the list of the raw columns/functions from the columnstring, with row_id prepended
     # queries is a list of (query_function, query_args, aggregate) tuples, where 'query_function' is
     #   a function like row_id, column, similarity, or typicality, and 'query_args' are the function-specific
     #   arguments that that function takes (in addition to the normal arguments, like M_c, X_L_list, etc).
     #   aggregate specifies whether that individual function is aggregate or not
-    queries, query_colnames = select_utils.get_queries_from_columnstring(columnstring, M_c, T)
+    queries, query_colnames = select_utils.get_queries_from_columnstring(columnstring, M_c, T, column_lists)
 
     # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
     # TODO: support functions in where_conditions. right now we only support actual column values.

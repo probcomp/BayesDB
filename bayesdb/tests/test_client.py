@@ -89,7 +89,7 @@ def test_column_lists():
   client('show columns %s from %s' % (cname1, test_tablename))
   client('show columns %s from %s' % (cname2, test_tablename))  
   client('estimate columns from %s where typicality > 0.5 as %s' % (test_tablename, cname1))
-  client('estimate columns from %s as %s' % (test_tablename, cname2))  
+  client('estimate columns from %s limit 5 as %s' % (test_tablename, cname2))  
   client('show column lists for %s' % test_tablename)
   client('show columns %s from %s' % (cname1, test_tablename))
   client('show columns %s from %s' % (cname2, test_tablename))
@@ -98,7 +98,10 @@ def test_column_lists():
   test_filenames.append(tmp)
   client('estimate pairwise dependence probability from %s for columns %s save to %s' % (test_tablename, cname1, tmp))
   # TODO: assert tmp exists
-  client('estimate pairwise dependence probability from %s for columns %s' % (test_tablename, cname2))  
+  client('estimate pairwise dependence probability from %s for columns %s' % (test_tablename, cname2))
+
+  client('select %s from %s limit 10' % (cname1, test_tablename))
+  client('select %s from %s limit 10' % (cname2, test_tablename))  
 
 def test_estimate_columns():
   test_tablename = create_dha()

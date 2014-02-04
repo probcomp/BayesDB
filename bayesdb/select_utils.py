@@ -105,7 +105,7 @@ def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend
     return op(where_value, val)
   return True
 
-def get_queries_from_columnstring(columnstring, M_c, T):
+def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
     """
     Iterate through the columnstring portion of the input, and generate the query list.
     queries is a list of (query_function, query_args, aggregate) tuples,
@@ -116,7 +116,7 @@ def get_queries_from_columnstring(columnstring, M_c, T):
     For probability: query_args is a (c_idx, value) tuple.
     For similarity: query_args is a (target_row_id, target_column) tuple.
     """
-    query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c)]
+    query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c, column_lists)]
     queries = []
     for idx, colname in enumerate(query_colnames):
       #####################

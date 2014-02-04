@@ -49,8 +49,11 @@ def get_all_column_names_in_original_order(M_c):
     colnames = map(lambda tup: tup[0], sorted(colname_to_idx_dict.items(), key=lambda tup: tup[1]))
     return colnames
 
-def column_string_splitter(columnstring, M_c=None):
-    """If '*' is a possible input, M_c must not be None."""
+def column_string_splitter(columnstring, M_c=None, column_lists=None):
+    """
+    If '*' is a possible input, M_c must not be None.
+    If column_lists is not None, all column names are attempted to be expanded as a column list.
+    """
     paren_level = 0
     output = []
     current_column = []
@@ -60,7 +63,13 @@ def column_string_splitter(columnstring, M_c=None):
         assert M_c is not None
         output += get_all_column_names_in_original_order(M_c)
       else:
-        output.append(''.join(current_column))
+        current_column_name = ''.join(current_column)
+        ## First, check if current_column is a column_list
+        if current_column_name in column_lists.keys():
+            output += column_lists[current_column_name]
+        ## If not, then it is a normal column name: append it.
+        else:
+            output.append(current_column_name)
       return output
     
     for i,c in enumerate(columnstring):
