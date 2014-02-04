@@ -240,11 +240,9 @@ class Engine(object):
     t_array = numpy.array(T, dtype=float)
     name_to_idx = M_c['name_to_idx']
 
-    if '*' in columnstring:
-      col_indices = name_to_idx.values()
-    else:
-      colnames = [colname.strip() for colname in columnstring.split(',')]
-      col_indices = [name_to_idx[colname] for colname in colnames]
+    column_lists = self.persistence_layer.get_column_lists(tablename)
+    colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
+    col_indices = [name_to_idx[colname] for colname in colnames]
       
     Q = []
     for row_idx in range(numrows):
@@ -372,12 +370,16 @@ class Engine(object):
       Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
 
     ## Parse queried columns.
-    colnames = [colname.strip() for colname in columnstring.split(',')]
+    column_lists = self.persistence_layer.get_column_lists(tablename)
+    colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
     col_indices = [name_to_idx[colname] for colname in colnames]
     query_col_indices = [idx for idx in col_indices if idx not in where_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
 
-    out = self.backend.simple_predictive_sample(M_c, X_L_list, X_D_list, Y, Q, numpredictions)
+    if len(Q) > 0:
+      out = self.backend.simple_predictive_sample(M_c, X_L_list, X_D_list, Y, Q, numpredictions)
+    else:
+      out = []
 
     # convert to data, columns dict output format
     # map codes to original values

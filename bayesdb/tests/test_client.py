@@ -101,7 +101,13 @@ def test_column_lists():
   client('estimate pairwise dependence probability from %s for columns %s' % (test_tablename, cname2))
 
   client('select %s from %s limit 10' % (cname1, test_tablename))
-  client('select %s from %s limit 10' % (cname2, test_tablename))  
+  client('select %s from %s limit 10' % (cname2, test_tablename))
+
+  client('infer %s from %s with confidence 0.1 limit 10' % (cname1, test_tablename))
+  client('infer %s from %s with confidence 0.1 limit 10' % (cname2, test_tablename))
+
+  client('simulate %s from %s times 10' % (cname1, test_tablename))  
+  client('simulate %s from %s times 10' % (cname2, test_tablename))  
 
 def test_estimate_columns():
   test_tablename = create_dha()
