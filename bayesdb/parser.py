@@ -421,7 +421,6 @@ class Parser(object):
                                   limit=limit, order_by=order_by)
 
 
-            
     def help_simulate(self):
         return "SIMULATE col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times> [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]]: simulate new datapoints based on the underlying model."
 

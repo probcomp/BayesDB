@@ -232,55 +232,10 @@ class Engine(object):
     Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
     Argument newtablename == null/emptystring if we don't want to do INTO
     """
-    # TODO: actually impute only missing values, instead of all values.
-    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
-    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    numrows = len(T)
-
-    t_array = numpy.array(T, dtype=float)
-    name_to_idx = M_c['name_to_idx']
-
-    column_lists = self.persistence_layer.get_column_lists(tablename)
-    colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
-    col_indices = [name_to_idx[colname] for colname in colnames]
-      
-    Q = []
-    for row_idx in range(numrows):
-      for col_idx in col_indices:
-        if numpy.isnan(t_array[row_idx, col_idx]):
-          Q.append([row_idx, col_idx])
-
-    # FIXME: the purpose of the whereclause is to specify 'given'
-    #        p(missing_value | X_L, X_D, whereclause)
-    ## TODO: should all observed values besides the ones being imputed be givens?
-    if whereclause=="" or '=' not in whereclause:
-      Y = None
-    else:
-      varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
-      Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
-      Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
-
-    counter = 0
-    ret = []
-    for q in Q:
-      out = self.backend.impute_and_confidence(M_c, X_L_list, X_D_list, Y, [q], numsamples)
-      value, conf = out
-      if conf >= confidence:
-        row_idx = q[0]
-        col_idx = q[1]
-        ret.append((row_idx, col_idx, value))
-        counter += 1
-        if counter >= limit:
-          break
-    imputations_list = [(r, c, du.convert_code_to_value(M_c, c, code)) for r,c,code in ret]
-    ## Convert into dict with r,c keys
-    imputations_dict = defaultdict(dict)
-    for r,c,val in imputations_list:
-      imputations_dict[r][c] = val
-    ret = self.select(tablename, columnstring, whereclause, limit, order_by=order_by, imputations_dict=imputations_dict)
-    return ret
-
-  def select(self, tablename, columnstring, whereclause, limit, order_by, imputations_dict=None):
+    return self.select(tablename, columnstring, whereclause, limit, order_by,
+                       impute_confidence=confidence, num_impute_samples=numsamples)
+    
+  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None):
     """
     BQL's version of the SQL SELECT query.
     
@@ -329,7 +284,8 @@ class Engine(object):
 
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
-    filtered_rows = select_utils.filter_and_impute_rows(imputations_dict, where_conditions, T, M_c, X_L_list, X_D_list, self.backend)
+    filtered_rows = select_utils.filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, self.backend,
+                                                        query_colnames, impute_confidence, num_impute_samples)
 
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected

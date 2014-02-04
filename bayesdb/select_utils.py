@@ -191,19 +191,49 @@ def convert_row_from_codes_to_values(row, M_c):
       ret.append(code)
   return tuple(ret)
 
-def filter_and_impute_rows(imputations_dict, where_conditions, T, M_c, X_L_list, X_D_list, backend):
-    ## Iterate through all rows of T, convert codes to values, filter by all predicates in where clause,
-    ## and fill in imputed values.
+def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, backend, query_colnames,
+                           impute_confidence, num_impute_samples):
+    """
+    impute_confidence: if None, don't impute. otherwise, this is the imput confidence
+    Iterate through all rows of T, convert codes to values, filter by all predicates in where clause,
+    and fill in imputed values.
+    """
     filtered_rows = list()
+
+    if impute_confidence is not None:
+      t_array = numpy.array(T, dtype=float)
+      infer_colnames = query_colnames[1:] # remove row_id from front of query_columns, so that infer doesn't infer row_id
+      query_col_indices = [M_c['name_to_idx'][colname] for colname in infer_colnames]
+
+      # FIXME: the purpose of the whereclause is to specify 'given'
+      #        p(missing_value | X_L, X_D, whereclause)
+      ## TODO: should all observed values besides the ones being imputed be givens?
+      # TODO: REFACTOR: INFER SHOULD USE WHERE_CONDITIONS, NOT WHERECLAUSE
+      if whereclause=="" or '=' not in whereclause:
+        Y = None
+      else:
+        varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
+        Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
+        Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
+
     for row_id, T_row in enumerate(T):
       row_values = convert_row_from_codes_to_values(T_row, M_c) ## Convert row from codes to values
       if is_row_valid(row_id, row_values, where_conditions, M_c, X_L_list, X_D_list, T, backend): ## Where clause filtering.
-        if imputations_dict and len(imputations_dict[row_id]) > 0:
-          ## Fill in any imputed values.
-          for col_idx, value in imputations_dict[row_id].items():
-            row_values = list(row_values)
-            row_values[col_idx] = value
-            row_values = tuple(row_values)
+        if impute_confidence is not None:
+          ## Determine which values are 'nan', which need to be imputed.
+          ## Only impute columns in 'query_colnames'
+          Q = []
+          for col_id in query_col_indices:
+            if numpy.isnan(t_array[row_id, col_id]):
+              # Found missing value! Try to fill it in.
+              code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, num_impute_samples,
+                                 impute_confidence, backend)
+              if code:
+                # Inferred successfully! Fill in the new value.
+                value = du.convert_code_to_value(M_c, col_id, code)
+                row_values = list(row_values)
+                row_values[col_id] = value
+                row_values = tuple(row_values)
         filtered_rows.append((row_id, row_values))
     return filtered_rows
 

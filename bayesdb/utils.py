@@ -44,6 +44,17 @@ def is_float(s):
     except ValueError:
         return False
 
+def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, backend):
+    q = [row_id, col_id]
+    out = backend.impute_and_confidence(M_c, X_L_list, X_D_list, Y, [q], numsamples)
+    value, conf = out
+    if conf >= confidence:
+      row_idx = q[0]
+      col_idx = q[1]
+      return value
+    else:
+      return None
+
 def get_all_column_names_in_original_order(M_c):
     colname_to_idx_dict = M_c['name_to_idx']
     colnames = map(lambda tup: tup[0], sorted(colname_to_idx_dict.items(), key=lambda tup: tup[1]))
@@ -69,7 +80,7 @@ def column_string_splitter(columnstring, M_c=None, column_lists=None):
             output += column_lists[current_column_name]
         else:
             ## If not, then it is a normal column name: append it.            
-            output.append(current_column_name)
+            output.append(current_column_name.strip())
       return output
     
     for i,c in enumerate(columnstring):
