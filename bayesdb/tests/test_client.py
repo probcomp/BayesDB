@@ -29,7 +29,6 @@ import shutil
 
 from bayesdb.client import Client
 from bayesdb.engine import Engine
-engine = Engine('local')
 
 test_tablenames = None
 client = None
@@ -42,9 +41,9 @@ def setup_function(function):
   client = Client()
 
 def teardown_function(function):
-  global tablename
+  global tablename, client
   for test_tablename in test_tablenames:
-    engine.drop_btable(test_tablename)
+    client.engine.drop_btable(test_tablename)
 
   for test_filename in test_filenames:
     if os.path.exists(test_filename):
@@ -59,6 +58,43 @@ def create_dha(path='data/dha.csv'):
   test_tablenames.append(test_tablename)
   
   return test_tablename
+
+def test_btable_list():
+  global client, test_filenames
+
+  out = client('list btables', pretty=False)[0]
+  print out
+  init_btable_count = len(out)
+  
+  test_tablename1 = create_dha()
+
+  out = client('list btables', pretty=False)[0]
+  assert len(out) == 1 + init_btable_count
+  assert test_tablename1 in out
+  
+  test_tablename2 = create_dha()
+
+  out = client('list btables', pretty=False)[0]
+  assert len(out) == 2 + init_btable_count
+  assert test_tablename1 in out
+  assert test_tablename2 in out
+
+  client('drop btable %s' % test_tablename1)
+  
+  out = client('list btables', pretty=False)[0]
+  assert len(out) == 1 + init_btable_count
+  assert test_tablename1 not in out
+  assert test_tablename2 in out
+
+  ## test to make sure btable list is persisted
+  del client
+  client = Client()
+  
+  out = client('list btables', pretty=False)[0]
+  assert len(out) == 1 + init_btable_count
+  assert test_tablename1 not in out
+  assert test_tablename2 in out
+  
     
 def test_save_and_load_models():
   test_tablename1 = create_dha()
@@ -69,14 +105,15 @@ def test_save_and_load_models():
   pkl_path = 'test_models.pkl.gz'
   test_filenames.append(pkl_path)
   client('save models for %s to %s' % (test_tablename1, pkl_path))
-  original_models = engine.save_models(test_tablename1)
+  original_models = client.engine.save_models(test_tablename1)
   
   client('load models %s for %s' % (pkl_path, test_tablename2))
-  new_models = engine.save_models(test_tablename1)         
+  new_models = client.engine.save_models(test_tablename1)         
 
   assert new_models.values() == original_models.values()
 
 def test_column_lists():
+  """ smoke test """
   test_tablename = create_dha()
   global client, test_filenames
   client('initialize 2 models for %s' % (test_tablename))
@@ -110,6 +147,7 @@ def test_column_lists():
   client('simulate %s from %s times 10' % (cname2, test_tablename))  
 
 def test_estimate_columns():
+  """ smoke test """
   test_tablename = create_dha()
   global client, test_filenames
   client('initialize 2 models for %s' % (test_tablename))
@@ -132,6 +170,7 @@ def test_estimate_columns():
   client('estimate columns from %s where mutual information with qual_score > 1 order by typicality' % test_tablename)
 
 def test_select_whereclause_functions():
+  """ smoke test """
   test_tablename = create_dha()
   global client, test_filenames
   client('initialize 2 models for %s' % (test_tablename))
@@ -156,6 +195,7 @@ def test_select_whereclause_functions():
   
 
 def test_select():
+  """ smoke test """
   test_tablename = create_dha()
   global client, test_filenames
   client('initialize 2 models for %s' % (test_tablename))

@@ -333,8 +333,8 @@ def test_estimate_pairwise_correlation():
   cor_mat = engine.estimate_pairwise(test_tablename, 'correlation')
 
 def test_list_btables():
-  list_btables_result = engine.list_btables()  
-  assert type(list_btables_result) == set
+  list_btables_result = engine.list_btables()
+  assert (type(list_btables_result) == set) or (type(list_btables_result) == list)  
   assert len(list_btables_result) == 0
   
   test_tablename1, create_btable_result = create_dha()

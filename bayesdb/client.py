@@ -203,7 +203,7 @@ class Client(object):
             for row in query_obj['data']:
                 pt.add_row(row)
             result = pt
-        elif type(query_obj) == list and type(query_obj[0]) == tuple:
+        elif type(query_obj) == list and len(query_obj) > 0 and type(query_obj[0]) == tuple:
             pt = prettytable.PrettyTable()
             ## TODO
             return "TODO"

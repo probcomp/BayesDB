@@ -36,12 +36,15 @@ class FilePersistenceLayer(PersistenceLayer):
     """
     Stores btables in the following format in the "data" directory:
     bayesdb/data/
+      btable_index.pkl
       <tablename>/
         data.csv
         metadata.pkl
         models.pkl
         column_lists.pkl
 
+    table_index.pkl: list of btable names.
+    
     metadata.pkl: dict. keys: M_r, M_c, T, cctypes
     column_lists.pkl: dict. keys: column list names, values: list of column names.
     models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations]. Idx starting at 1.
@@ -49,12 +52,42 @@ class FilePersistenceLayer(PersistenceLayer):
     """
     
     def __init__(self):
-        ## Create data directory if doesn't exist
+        """
+        Create data directory if doesn't exist: every other function requires data_dir.
+        """
         self.cur_dir = os.path.dirname(os.path.abspath(__file__))
         self.data_dir = os.path.join(self.cur_dir, 'data')
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
-        self.btable_names = set()
+        self.load_btable_index() # sets it to self.btable_index
+
+    def load_btable_index(self):
+        """
+        Create btable_index.pkl with an empty list if it doesn't exist; otherwise, read its contents.
+        Set it to self.btable_index
+        """
+        btable_index_path = os.path.join(self.data_dir, 'btable_index.pkl')
+        if not os.path.exists(btable_index_path):
+            self.btable_index = []
+            self.write_btable_index()
+        else:
+            f = open(btable_index_path, 'r')
+            self.btable_index = pickle.load(f)
+            f.close()
+
+    def write_btable_index(self):
+        btable_index_path = os.path.join(self.data_dir, 'btable_index.pkl')        
+        f = open(btable_index_path, 'w')
+        pickle.dump(self.btable_index, f, pickle.HIGHEST_PROTOCOL)
+        f.close()
+
+    def add_btable_to_index(self, tablename):
+        self.btable_index.append(tablename)
+        self.write_btable_index()
+
+    def remove_btable_from_index(self, tablename):
+        self.btable_index.remove(tablename)
+        self.write_btable_index()
 
     def get_metadata(self, tablename):
         f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'r')
@@ -128,14 +161,14 @@ class FilePersistenceLayer(PersistenceLayer):
 
     def drop_btable(self, tablename):
         """Delete a single btable."""
-        if tablename in self.btable_names:
+        if tablename in self.btable_index:
             shutil.rmtree(os.path.join(self.data_dir, tablename))
-            self.btable_names.remove(tablename)
+            self.remove_btable_from_index(tablename)
         return 0
-
+        
     def list_btables(self):
         """Return a list of all btable names."""
-        return self.btable_names
+        return self.btable_index
 
     def delete_model(self, tablename, model_index):
         """Delete a single model"""
@@ -223,7 +256,7 @@ class FilePersistenceLayer(PersistenceLayer):
 
     def check_if_table_exists(self, tablename):
         """Return true iff this tablename exists in the persistence layer."""
-        return tablename in self.btable_names
+        return tablename in self.btable_index
 
     def create_btable_from_csv(self, tablename, csv_path, csv, cctypes, postgres_coltypes, colnames):
         """
@@ -252,7 +285,7 @@ class FilePersistenceLayer(PersistenceLayer):
         self.write_column_lists(tablename, column_lists)
 
         # Add to btable name index
-        self.btable_names.add(tablename)
+        self.add_btable_to_index(tablename)
 
     def add_models(self, tablename, model_list):
         """
