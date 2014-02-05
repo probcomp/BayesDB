@@ -80,13 +80,13 @@ def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', 
     mutual information), backend must not be None. """
 
     assert len(X_L_list) == len(X_D_list)
-    if len(X_L_list) == 0:
-        return {'message': 'You must initialize models before computing mutual information.'}    
     if col_function_name == 'mutual information':
+      if len(X_L_list) == 0:
+        return {'message': 'You must initialize models before computing mutual information.'}    
       col_function = functions._mutual_information
     elif col_function_name == 'dependence probability':
       if len(X_L_list) == 0:
-          return {'message': 'You must initialize models before computing dependence probability.'}
+        return {'message': 'You must initialize models before computing dependence probability.'}
       col_function = functions._dependence_probability
     elif col_function_name == 'correlation':
       col_function = functions._correlation
