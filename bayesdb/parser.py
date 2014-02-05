@@ -549,12 +549,12 @@ class Parser(object):
 
 
             
-    def help_update_datatypes(self):
-        return "UPDATE DATATYPES FROM <btable> SET [col0=numerical|categorical|key|ignore]: must be done before creating models or analyzing."
+    def help_update_schema(self):
+        return "UPDATE SCHEMA FOR <btable> SET (col0=numerical|categorical|key|ignore)[,...]: must be done before creating models or analyzing."
         
-    def parse_update_datatypes(self, words, orig):
+    def parse_update_schema(self, words, orig):
         match = re.search(r"""
-            update\s+datatypes\s+from\s+
+            update\s+schema\s+for\s+
             (?P<btable>[^\s]+)\s+
             set\s+(?P<mappings>[^;]*);?
         """, orig, re.VERBOSE | re.IGNORECASE)

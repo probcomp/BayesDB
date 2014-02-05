@@ -69,7 +69,7 @@ class Engine(object):
      """Delete one model."""
      return self.persistence_layer.delete_model(tablename)
 
-  def update_datatypes(self, tablename, mappings):
+  def update_schema(self, tablename, mappings):
     """
     mappings is a dict of column name to 'continuous', 'multinomial',
     or an int, which signifies multinomial of a specific type.
@@ -77,12 +77,13 @@ class Engine(object):
     and it ignores multinomials' specific number of outcomes.
     Also, disastrous things may happen if you update a schema after creating models.
     """
-    metadata = self.persistence_layer.update_datatypes(tablename, mappings)
+    metadata = self.persistence_layer.update_schema(tablename, mappings)
     m_c = metadata['M_c']
     cctypes = metadata['cctypes']
     colnames = [m_c['idx_to_name'][str(idx)] for idx in range(len(m_c['idx_to_name']))]
     return dict(columns=colnames, data=[cctypes], message='Updated schema:\n')
 
+    
   def _guess_schema(self, header, values, crosscat_column_types, colnames):
     # TODO: should this be deleted in favor of using crosscat's datatype guessing?
     # If so, then call du.read_model_data_from_csv(...) in create_btable instead of du.read_csv(...)

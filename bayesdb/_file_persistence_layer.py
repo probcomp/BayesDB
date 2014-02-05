@@ -208,7 +208,7 @@ class FilePersistenceLayer(PersistenceLayer):
         metadata = self.get_metadata(tablename)
         return metadata['cctypes']
 
-    def update_datatypes(self, tablename, mappings):
+    def update_schema(self, tablename, mappings):
         """
         mappings is a dict of column name to 'continuous', 'multinomial',
         or an int, which signifies multinomial of a specific type.

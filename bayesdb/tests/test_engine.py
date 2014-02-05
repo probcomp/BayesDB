@@ -178,7 +178,7 @@ def test_select():
 def test_delete_model():
   pass #TODO
 
-def test_update_datatypes():
+def test_update_schema():
   test_tablename, _ = create_dha()
   m_c, m_r, t = engine.persistence_layer.get_metadata_and_table(test_tablename)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
@@ -186,14 +186,14 @@ def test_update_datatypes():
   assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
   
   mappings = dict(qual_score='multinomial')
-  engine.update_datatypes(test_tablename, mappings)
+  engine.update_schema(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
   
   ## Now test that it doesn't allow name to be continuous
   mappings = dict(name='continuous')
   with pytest.raises(ValueError):
-    engine.update_datatypes(test_tablename, mappings)
+    engine.update_schema(test_tablename, mappings)
 
 def test_save_and_load_models():
   test_tablename, _ = create_dha()
@@ -375,7 +375,7 @@ def test_show_schema():
   assert sorted(schema['data'][0]) == sorted(cctypes)  
   
   mappings = dict(qual_score='multinomial')
-  engine.update_datatypes(test_tablename, mappings)
+  engine.update_schema(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
   
