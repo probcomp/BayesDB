@@ -64,11 +64,11 @@ class Client(object):
             out = method(*args)
         return out
 
-    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None):
+    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False):
         """Wrapper around execute."""
-        return self.execute(call_input, pretty, timing, wait, plots)
+        return self.execute(call_input, pretty, timing, wait, plots, yes)
 
-    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None):
+    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False):
         """
         Execute a chunk of BQL. This method breaks a large chunk of BQL (like a file)
         consisting of possibly many BQL statements, breaks them up into individual statements,
@@ -101,7 +101,7 @@ class Client(object):
                 user_input = raw_input()
                 if len(user_input) > 0 and (user_input[0] == 'q' or user_input[0] == 's'):
                     continue
-            result = self.execute_statement(line, pretty, timing)
+            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes)
 
             if type(result) == dict and result['message'] == 'execute_file':
                 ## special case for one command: execute_file
@@ -117,7 +117,7 @@ class Client(object):
         if not pretty:
             return return_list
 
-    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None):
+    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False):
         """
         Accepts a SINGLE BQL STATEMENT as input, parses it, and executes it if it was parsed
         successfully.
@@ -144,6 +144,12 @@ class Client(object):
         method_name, args_dict = out
         if method_name == 'execute_file':
             return dict(message='execute_file', bql_string=open(filename, 'r').read())
+        elif method_name == 'drop_btable' and (not yes):
+            ## If dropping something, ask for confirmation.
+            print "Are you sure you want to permanently delete this btable? Enter 'y' if yes."
+            user_confirmation = raw_input()
+            if 'y' != user_confirmation.strip():
+                return dict(message="Operation canceled by user.")
         result = self.call_bayesdb_engine(method_name, args_dict)
         result = self.callback(method_name, args_dict, result)
         assert type(result) != int

@@ -59,6 +59,26 @@ def create_dha(path='data/dha.csv'):
   
   return test_tablename
 
+def test_drop_btable():
+  """
+  Test to make sure drop btable prompts the user for confirmation, and responds appropriately when
+  given certain input.
+  """
+  import sys
+  from cStringIO import StringIO
+
+  # setup the environment
+  backup = sys.stdout
+  sys.stdout = StringIO()     # capture output
+
+  # TODO
+
+  
+  out = sys.stdout.getvalue() # release output
+  sys.stdout.close()  # close the stream 
+  sys.stdout = backup # restore original stdout
+
+
 def test_btable_list():
   global client, test_filenames
 
@@ -79,7 +99,7 @@ def test_btable_list():
   assert test_tablename1 in out
   assert test_tablename2 in out
 
-  client('drop btable %s' % test_tablename1)
+  client('drop btable %s' % test_tablename1, yes=True)
   
   out = client('list btables', pretty=False)[0]
   assert len(out) == 1 + init_btable_count
