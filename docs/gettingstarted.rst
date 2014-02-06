@@ -74,9 +74,12 @@ BayesDB does its best to infer the datatype to use to model each column, but occ
    ignore
 	Use this column type to exclude values that you wouldn't like to include in the model.
 
+   key
+        Treated by the model in the same way as ignore, but must be unique for each row, and is used to identify rows when you are selected rows. It is not required that you manually set a key: a row_id variable is automatically created as a unique row identifier. However, if using queries where you must specify particular rows, you may prefer to use a variable like 'name' to identify the row instead of its id.
+
 In this example, BayesDB guessed that age was a categorical variable because it only observed two possible outcomes for age. However, we'd like to model age as a numerical value. In order to update the inferred datatypes, we use the UPDATE DATATYPES command::
 
-   client('UPDATE DATATYPES FROM mytable SET age=numerical;')
+   client('UPDATE SCHEMA FOR mytable SET age=numerical;')
 
 Now, the updated datatypes are printed::
 
@@ -90,9 +93,9 @@ Now, the updated datatypes are printed::
 Run Analysis
 ~~~~~~~~~~~~
 
-Now that we've chosen the correct datatypes for each of our columns, we can create and analyze models for our btable::
+Now that we've chosen the correct datatypes for each of our columns, we can initialize and analyze models for our btable::
 
-    client('CREATE 20 MODELS FOR mytable;')
+    client('INITIALIZE 20 MODELS FOR mytable;')
     client('ANALYZE mytable FOR 100 ITERATIONS;')
 
 You may pick any number of models and iterations. More will give better quality predictions, but will take longer time before you can start querying your data.
@@ -106,7 +109,7 @@ First, note that BQL supports many features from normal SQL, including SELECT wi
 
        client('SELECT name, grade FROM mytable WHERE grade > 5 ORDER BY AGE LIMIT 10;')
 
-Now, you can try ordering your rows by similarity to a particular row. BayesDB doesn't simply compute row-to-row similarity by using a standard distance metric (e.g. Euclidean distance), it uses CrossCat samples to estimate how similar rows are to each other::
+Now, you can try ordering your rows by similarity to a particular row. BayesDB doesn't simply compute row-to-row similarity by using a standard distance metric (e.g. Euclidean distance), it uses CrossCat samples to estimate how similar rows are to each other. Note that we identify the row we are interested in with the value of its row_id (or other key variable, if we set one of the columns to be a key with UPDATE SCHEMA above)::
 
        client('SELECT name, grade FROM mytable WHERE grade > 5 ORDER BY SIMILARITY TO 1 LIMIT 10;')
 
@@ -134,6 +137,6 @@ Estimate Column Dependencies
 
 BayesDB can estimate which columns depend on each other::
 
-	client('ESTIMATE DEPENDENCE PROBABILITIES FROM mytable')
+	client('ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM mytable')
 
-Estimate dependence probabilities generates a column by column table that illustrates how dependent each pair of columns is.
+ESTIMATE PAIRWISE generates a column by column table that displays the value of a some function of two columns, for each pair of two columns. In this case the function we chose to use is DEPENDENCE PROBABILITY, which computes the probability that two columns are statistically dependent.
