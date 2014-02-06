@@ -185,7 +185,7 @@ class Parser(object):
                 
                 
     def help_initialize_models(self):
-        return "INITIALIZE MODELS FOR <btable> [WITH <n_models> EXPLANATIONS]: the step to perform before analyze."
+        return "INITIALIZE <num_models> MODELS FOR <btable>: the step to perform before analyze."
 
     def parse_initialize_models(self, words, orig):
         n_models = 10
@@ -245,23 +245,23 @@ class Parser(object):
 
 
                 
-    def help_delete_model(self):
-        return "DELETE MODEL <model_index> FROM <tablename>: delete the specified model (model). model_index may be 'all'."
+    def help_drop_models(self):
+        return "DROP MODEL[S| <model_index>] FROM <tablename>: delete the model with specified index, or all models."
 
-    def parse_delete_model(self, words, orig):
+    def parse_drop_models(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'delete':
                 if words[1] == 'model' and utils.is_int(words[2]):
                     model_index = int(words[2])
                     if words[3] == 'from':
                         tablename = words[4]
-                        return 'delete_model', dict(tablename=tablename, model_index=model_index)
-                elif len(words) >= 6 and words[2] == 'all' and words[3] == 'models' and words[4] == 'from':
+                        return 'drop_models', dict(tablename=tablename, model_index=model_index)
+                elif len(words) >= 5 and (words[2] == 'models' and words[3] == 'from'):
                     model_index = 'all'
-                    tablename = words[5]
-                    return 'delete_model', dict(tablename=tablename, model_index=model_index)
+                    tablename = words[4]
+                    return 'drop_models', dict(tablename=tablename, model_index=model_index)
                 else:
-                    return 'help', self.help_delete_model()
+                    return 'help', self.help_drop_models()
 
 
                     
@@ -360,7 +360,7 @@ class Parser(object):
 
             
     def help_load_models(self):
-        return "LOAD MODELS <pklpath> INTO <btable> [ITERATIONS <iterations>]: load models from a pickle file."
+        return "LOAD MODELS <pklpath> INTO <btable>: load models from a pickle file."
         
     def parse_load_models(self, words, orig):
         match = re.search(r"""

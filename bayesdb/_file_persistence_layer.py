@@ -170,10 +170,14 @@ class FilePersistenceLayer(PersistenceLayer):
         """Return a list of all btable names."""
         return self.btable_index
 
-    def delete_model(self, tablename, model_index):
-        """Delete a single model"""
+    def drop_models(self, tablename, model_index='all'):
+        """ Delete a single model, or all, if model_index == 'all'. """
         models = pickle.load(open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r'))
-        del models[model_index]
+        if model_index == 'all':
+            models = {}
+        else:
+            del models[model_index]
+        self.write_models(tablename, models)
         return 0
             
     def get_latent_states(self, tablename):

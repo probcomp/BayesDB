@@ -65,9 +65,9 @@ class Engine(object):
     """Return names of all btables."""
     return self.persistence_layer.list_btables()
 
-  def delete_model(self, tablename, model_index):
-     """Delete one model."""
-     return self.persistence_layer.delete_model(tablename)
+  def drop_models(self, tablename, model_index):
+     """Delete one model by index, or all models. model_index may be 'all'. """
+     return self.persistence_layer.drop_models(tablename, model_index)
 
   def update_schema(self, tablename, mappings):
     """
