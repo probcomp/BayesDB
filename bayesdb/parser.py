@@ -421,7 +421,7 @@ class Parser(object):
 
 
     def help_simulate(self):
-        return "SIMULATE col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times> [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]]: simulate new datapoints based on the underlying model."
+        return "SIMULATE col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times>: simulate new datapoints based on the underlying model."
 
     def parse_simulate(self, words, orig):
         match = re.search(r"""
