@@ -39,7 +39,7 @@ def plot_matrix(matrix, column_names, title='', filename=None):
     pylab.gca().set_xticks(range(len(column_names)))
     pylab.gca().set_xticklabels(column_names, rotation=90, size='small')
     pylab.title(title)
-    if filename or 'DISPLAY' not in os.environ.keys():
+    if filename:
         pylab.savefig(filename)
     else:
         fig.show()
@@ -140,8 +140,6 @@ def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', 
       column_names_reordered = column_names[reorder_indices]
 
     title = 'Pairwise column %s for %s' % (col_function_name, tablename)
-    if filename:
-      plot_matrix(z_matrix_reordered, column_names_reordered, title, filename)
 
     return dict(
       matrix=z_matrix_reordered,

@@ -30,6 +30,7 @@ import ast
 import crosscat.utils.api_utils as au
 
 import utils
+import plotting_utils
 from parser import Parser
 from engine import Engine
 
@@ -142,6 +143,8 @@ class Client(object):
             return
             
         method_name, args_dict = out
+        
+        ## Do stuff now that you know the user's command, but before passing it to engine.
         if method_name == 'execute_file':
             return dict(message='execute_file', bql_string=open(filename, 'r').read())
         elif method_name == 'drop_btable' and (not yes):
@@ -150,8 +153,13 @@ class Client(object):
             user_confirmation = raw_input()
             if 'y' != user_confirmation.strip():
                 return dict(message="Operation canceled by user.")
+
+        ## Call engine.
         result = self.call_bayesdb_engine(method_name, args_dict)
+
+        ## Do stuff now that engine has given you output, but before printing the result.
         result = self.callback(method_name, args_dict, result)
+        
         assert type(result) != int
         
         if timing:
@@ -165,8 +173,8 @@ class Client(object):
 
         if 'matrix' in result:
             ## Special logic to display matrices.
-            if plots:
-                plotting_utils.plot_matrix(result['matrix'], result['column_names'], title=result['title'], filename=None)                            
+            if plots or result['filename']:
+                plotting_utils.plot_matrix(result['matrix'], result['column_names'], title=result['title'], filename=result['filename'])
             else:
                 pp = self.pretty_print(result)
                 print pp
@@ -194,6 +202,7 @@ class Client(object):
             samples_file = gzip.GzipFile(args_dict['pkl_path'], 'w')
             pickle.dump(samples_dict, samples_file)
             return dict(message="Successfully saved the samples to %s" % args_dict['pkl_path'])
+
         else:
             return result
         
