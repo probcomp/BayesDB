@@ -393,8 +393,7 @@ class Parser(object):
 
             
     def help_select(self):
-        return 'SELECT col0, [col1, ...] FROM <btable> [WHERE <whereclause>] '+\
-            '[ORDER BY SIMILARITY TO <rowid> [WITH RESPECT TO <column>]] [LIMIT <limit>]: like SQL select.'
+        return 'SELECT <columns|functions> FROM <btable> [WHERE <whereclause>]  [ORDER BY <columns>] [LIMIT <limit>]'
         
     def parse_select(self, words, orig):
         match = re.search(r"""
