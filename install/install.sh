@@ -36,4 +36,3 @@ apt-get install -y python-dev valgrind postgresql postgresql-server-dev-all
 # 
 pip install $options -r $requirements_filename
 bash $my_dirname/install_hcluster.sh
-bash $my_dirname/postgres_setup.sh
