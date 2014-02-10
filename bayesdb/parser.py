@@ -382,10 +382,10 @@ class Parser(object):
             except IOError as e:
                 if pklpath[-7:] != '.pkl.gz':
                     if pklpath[-4:] == '.pkl':
-                        pklpath = pklpath + ".gz"
+                        models = pickle.load(open(self.get_absolute_path(pklpath), 'rb'))
                     else:
                         pklpath = pklpath + ".pkl.gz"
-                    models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
+                        models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
                 else:
                     raise e
             return 'load_models', dict(tablename=tablename, models=models)

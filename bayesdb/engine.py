@@ -161,7 +161,7 @@ class Engine(object):
         models[id] = dict(X_L=X_L, X_D=X_D, iterations=500)
       
     result = self.persistence_layer.add_models(tablename, models.values())
-    return dict(message="Successfully loaded %d models." % len(models))
+    return self.show_models(tablename)
 
   def drop_models(self, tablename, model_ids=None):
     """Drop the specified models. If model_ids is None, drop all models."""
