@@ -40,7 +40,7 @@ def _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, backen
         # mutual_info, correlation, and dep_prob all take args=(i,j)
         # col_typicality takes just args=i
         # incoming f_args will be None for col_typicality, j for the three others
-        if f_args:
+        if f_args is not None:
             f_args = (f_args, c_idx)
         else:
             f_args = c_idx
@@ -85,12 +85,12 @@ def get_conditions_from_column_whereclause(whereclause, M_c, T):
 
 
       t = functions.parse_cfun_column_typicality(raw_string, M_c)
-      if t:
+      if t is not None:
         conds.append(((functions._col_typicality, None), op, val))
         continue
 
       d = functions.parse_cfun_dependence_probability(raw_string, M_c)
-      if d:
+      if d is not None:
         conds.append(((functions._dependence_probability, d), op, val))
         continue
 

@@ -28,7 +28,7 @@ SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 0 FROM kiva L
 SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 0 FROM kiva ORDER BY SIMILARITY TO 0 LIMIT 20;
 
 SELECT journal_entries, num_borrowers, gender_ratio FROM kiva LIMIT 20;
-SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 16 WITH RESPECT TO journal_entries FROM kiva LIMIT 10 ORDERY BY SIMILARITY TO 16 WITH RESPECT TO journal_entries;
+SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 16 WITH RESPECT TO journal_entries FROM kiva LIMIT 10 ORDER BY SIMILARITY TO 16 WITH RESPECT TO journal_entries;
 
 SELECT partner_rating, loan_amount, paid_date, default_rate FROM kiva LIMIT 20;
 INFER partner_rating, loan_amount, paid_date, default_rate FROM kiva WITH CONFIDENCE 0.96 LIMIT 20;

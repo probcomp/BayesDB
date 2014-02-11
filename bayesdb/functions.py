@@ -199,22 +199,17 @@ def parse_similarity(colname, M_c, T):
       (?P<rowid>[^,\)\(]+)
       (\))?
       \s+with\s+respect\s+to\s+
-      (?P<column>[^\s]+)
+      (?P<column>[^\s\(\)]+)
+      \s*$
   """, colname, re.VERBOSE | re.IGNORECASE)
   if not similarity_match:
     similarity_match = re.search(r"""
       similarity\s+to\s+
-      (?P<rowid>[^,]+)
+      (\()?
+      (?P<rowid>[^,\)\(]+)
+      (\))?
+      \s*$
     """, colname, re.VERBOSE | re.IGNORECASE)
-  ## Try 2nd type of similarity syntax. Add "contextual similarity" for when cols are present?
-  if not similarity_match:
-    similarity_match = re.search(r"""
-        similarity_to\s*\(\s*
-        (?P<rowid>[^,]+)
-        (\s*,\s*(?P<column>[^\s]+)\s*)?
-        \s*\)
-    """, colname, re.VERBOSE | re.IGNORECASE) 
-
   if similarity_match:
       rowid = similarity_match.group('rowid').strip()
       if utils.is_int(rowid):
@@ -352,7 +347,9 @@ def parse_cfun_mutual_information(colname, M_c):
   mutual_information_match = re.search(r"""
       MUTUAL\s+INFORMATION\s+
       (WITH|TO)\s+
-      (?P<col1>[^\s]+)
+      ['"]?
+      (?P<col1>[^\s'"]+)
+      ['"]?
   """, colname, re.VERBOSE | re.IGNORECASE)    
   if mutual_information_match:
       col1 = mutual_information_match.group('col1')
@@ -363,9 +360,11 @@ def parse_cfun_mutual_information(colname, M_c):
 def parse_cfun_dependence_probability(colname, M_c):
   dependence_probability_match = re.search(r"""
     DEPENDENCE\s+PROBABILITY\s+
-    (WITH|TO)\s+  
-    (?P<col1>[^\s]+)
-  """, colname, re.VERBOSE | re.IGNORECASE)    
+    (WITH|TO)\s+
+    ['"]?
+    (?P<col1>[^\s'"]+)
+    ['"]?
+  """, colname, re.VERBOSE | re.IGNORECASE)
   if dependence_probability_match:
       col1 = dependence_probability_match.group('col1')
       return M_c['name_to_idx'][col1]      
@@ -376,7 +375,9 @@ def parse_cfun_correlation(colname, M_c):
   correlation_match = re.search(r"""
     CORRELATION\s+
     (WITH|TO)\s+
-    (?P<col1>[^\s]+)
+    ['"]?
+    (?P<col1>[^\s'"]+)
+    ['"]?
   """, colname, re.VERBOSE | re.IGNORECASE)    
   if correlation_match:
       col1 = correlation_match.group('col1')

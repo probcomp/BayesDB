@@ -32,19 +32,19 @@ SHOW SCHEMA FOR dha_demo;
 -- EXECUTE FILE dha_datatypes.bql
 SHOW MODELS FOR dha_demo;
 
-ESTIMATE COLUMNS FROM dha_demo WHERE dependence probability to 'name' > 0.05 ORDER BY centrality LIMIT 10;
+ESTIMATE COLUMNS FROM dha_demo WHERE DEPENDENCE PROBABILITY TO 'name' > 0.05 ORDER BY TYPICALITY LIMIT 10;
 
 -- Examine column dependencies
 SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo LIMIT 10;
-ESTIMATE DEPENDENCE PROBABILITIES FROM dha_demo;
-ESTIMATE DEPENDENCE PROBABILITIES FROM dha_demo REFERENCING qual_score LIMIT 6;
---ESTIMATE DEPENDENCE PROBABILITIES FROM dha_demo REFERENCING qual_score WITH CONFIDENCE 0.9;
-ESTIMATE DEPENDENCE PROBABILITIES FROM dha_demo REFERENCING pymt_p_md_visit LIMIT 6;
+ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha_demo;
+ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha_demo REFERENCING qual_score LIMIT 6;
+--ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha_demo REFERENCING qual_score WITH CONFIDENCE 0.9;
+ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha_demo REFERENCING pymt_p_md_visit LIMIT 6;
 
 -- Examine hospitals similar to Albany
-SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY similarity_to(name='Albany NY') LIMIT 10;
-SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY similarity_to(name='Albany NY', qual_score), ami_score  LIMIT 10;
-SELECT name, qual_score, ami_score,  pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY similarity_to(name='Albany NY', pymt_p_visit_ratio), ttl_mdcr_spnd  LIMIT 10;
+SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY SIMILARITY TO (name='Albany NY') LIMIT 10;
+SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY SIMILARITY TO (name='Albany NY') WITH RESPECT TO qual_score LIMIT 10;
+SELECT name, qual_score, ami_score,  pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY SIMILARITY TO (name='Albany NY') WITH RESPECT TO pymt_p_visit_ratio LIMIT 10;
 
 -- Simulate
 SIMULATE name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo WHERE ami_score=95.0  TIMES 10;

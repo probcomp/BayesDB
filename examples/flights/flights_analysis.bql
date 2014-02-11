@@ -25,8 +25,8 @@ LOAD MODELS flights_models.pkl.gz FOR flights;
 
 -- Do analysis
 SELECT * FROM flights ORDER BY arrdelay;
-ESTIMATE DEPENDENCE PROBABILITIES FROM flights;
+ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM flights;
 INFER * FROM flights WITH CONFIDENCE 0.9 ORDER BY arrdelay;
-SELECT *, similarity_to(4) FROM flights ORDER BY similarity_to(4);
+SELECT *, SIMILARITY TO 4 FROM flights ORDER BY SIMILARITY TO 4;
 --SIMULATE arrdelay FROM flights TIMES 20;
 
