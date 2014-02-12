@@ -10,5 +10,4 @@ setup(
     url='probcomp.csail.mit.edu/bayesdb',
     long_description='BayesDB',
     packages=['bayesdb', 'bayesdb.tests']
-    ext_modules=ext_modules,
 )

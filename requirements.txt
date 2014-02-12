@@ -2,9 +2,6 @@
 # See probcomp.csail.mit.edu/crosscat for installation instructions.
 # crosscat>=0.1
 
-# yolk is for looking at python packages available
-yolk==0.4.3
-
 # api server
 jsonrpc==1.2
 requests==1.0.3
@@ -14,7 +11,6 @@ pyOpenSSL==0.13
 # numerics and plotting
 numpy==1.7.0
 scipy>=0.11.0
-freetype-py==0.4.1
 matplotlib==1.2.0
 
 # install via install_hcluster.sh
@@ -41,7 +37,3 @@ pytest>=2.5.1
 
 # for ipython notebook
 ipython==0.13.2
-tornado==3.1
-
-# for convergence testing (ARI)
-scikit-learn

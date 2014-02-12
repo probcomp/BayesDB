@@ -31,7 +31,7 @@ requirements_filename=$project_location/requirements.txt
 apt-get build-dep -y python-numpy python-matplotlib
 apt-get build-dep -y python-sphinx
 apt-get install -y python-pip
-apt-get install -y python-dev valgrind postgresql postgresql-server-dev-all
+apt-get install -y python-dev
 # libfreetype6-dev tk-dev libpng12-dev subsumed by 'pip install matplotlib'? 
 # 
 pip install $options -r $requirements_filename
