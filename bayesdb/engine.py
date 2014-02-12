@@ -47,7 +47,7 @@ import estimate_columns_utils
 import plotting_utils
 
 class Engine(object):
-  def __init__(self,  crosscat_engine_type='multiprocessing', crosscat_host=None, crosscat_port=8007, **kwargs):
+  def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing', **kwargs):
     """ One optional argument that you may find yourself using frequently is seed.
     It defaults to random seed, but for testing/reproduceability purposes you may
     want a deterministic one. """
