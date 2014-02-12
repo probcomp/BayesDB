@@ -27,8 +27,6 @@ import os
 import time
 import ast
 
-import crosscat.utils.api_utils as au
-
 import utils
 import plotting_utils
 from parser import Parser
@@ -45,6 +43,9 @@ class Client(object):
         if hostname is None or hostname=='localhost':
             self.online = False
             self.engine = Engine(crosscat_engine_type)
+
+            ## Only depend on crosscat if using it locally.
+            import crosscat.utils.api_utils as au            
         else:
             self.online = True
             self.hostname = hostname

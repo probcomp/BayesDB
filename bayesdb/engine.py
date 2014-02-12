@@ -36,11 +36,7 @@ import numpy
 import matplotlib.cm
 from collections import defaultdict
 
-import crosscat.utils.api_utils as au
-import crosscat.utils.data_utils as du
 import bayesdb.settings as S
-
-from crosscat.CrossCatClient import get_CrossCatClient
 from _file_persistence_layer import FilePersistenceLayer
 import utils
 import functions
@@ -53,6 +49,13 @@ class Engine(object):
     """ One optional argument that you may find yourself using frequently is seed.
     It defaults to random seed, but for testing/reproduceability purposes you may
     want a deterministic one. """
+
+    # Only dependent on CrossCat when you actually instantiate Engine
+    # (i.e., allow engine to be imported in order to examine the API, without CrossCat)
+    from crosscat.CrossCatClient import get_CrossCatClient
+    import crosscat.utils.data_utils as du
+    self.du = du
+    
     self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
     self.persistence_layer = FilePersistenceLayer()
 
@@ -86,7 +89,7 @@ class Engine(object):
     
   def _guess_schema(self, header, values, crosscat_column_types, colnames):
     # TODO: should this be deleted in favor of using crosscat's datatype guessing?
-    # If so, then call du.read_model_data_from_csv(...) in create_btable instead of du.read_csv(...)
+    # If so, then call self.du.read_model_data_from_csv(...) in create_btable instead of self.du.read_csv(...)
     """Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes
     Also make the corresponding postgres column types."""
     postgres_coltypes = []
@@ -98,7 +101,7 @@ class Engine(object):
         cctype = crosscat_column_types[colname]
       else:
         column_data = column_data_lookup[colname]
-        cctype = du.guess_column_type(column_data)
+        cctype = self.du.guess_column_type(column_data)
         # cctype = 'continuous'
       cctypes.append(cctype)
       if cctype == 'ignore':
@@ -125,8 +128,8 @@ class Engine(object):
     colnames = csv.split('\n')[0].split(',')
 
     ## Guess schema and create table
-    header, values = du.read_csv(csv_abs_path, has_header=True)
-    values = du.convert_nans(values)
+    header, values = self.du.read_csv(csv_abs_path, has_header=True)
+    values = self.du.convert_nans(values)
     postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types, colnames)
     self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, csv, cctypes, postgres_coltypes, colnames)
 
@@ -324,7 +327,7 @@ class Engine(object):
         Y.append((numrows+1, name_to_idx[colname], colval))
 
       # map values to codes
-      Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
+      Y = [(r, c, self.du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
 
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
@@ -348,7 +351,7 @@ class Engine(object):
         if idx in where_col_idxs_to_vals:
           row.append(where_col_idxs_to_vals[idx])
         else:
-          row.append(du.convert_code_to_value(M_c, idx, vals[i]))
+          row.append(self.du.convert_code_to_value(M_c, idx, vals[i]))
           i += 1
       data.append(row)
     ret = {'message': 'Simulated data:', 'columns': colnames, 'data': data}
