@@ -38,6 +38,8 @@ from collections import defaultdict
 
 import bayesdb.settings as S
 from _file_persistence_layer import FilePersistenceLayer
+import api_utils
+import data_utils
 import utils
 import functions
 import select_utils
@@ -45,19 +47,37 @@ import estimate_columns_utils
 import plotting_utils
 
 class Engine(object):
-  def __init__(self, crosscat_engine_type='local', **kwargs):
+  def __init__(self,  crosscat_engine_type='multiprocessing', crosscat_host=None, crosscat_port=8007, **kwargs):
     """ One optional argument that you may find yourself using frequently is seed.
     It defaults to random seed, but for testing/reproduceability purposes you may
     want a deterministic one. """
-
-    # Only dependent on CrossCat when you actually instantiate Engine
-    # (i.e., allow engine to be imported in order to examine the API, without CrossCat)
-    from crosscat.CrossCatClient import get_CrossCatClient
-    import crosscat.utils.data_utils as du
-    self.du = du
     
-    self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
     self.persistence_layer = FilePersistenceLayer()
+
+    if crosscat_host is None or crosscat_host == 'localhost':
+      self.online = False
+      
+      # Only dependent on CrossCat when you actually instantiate Engine
+      # (i.e., allow engine to be imported in order to examine the API, without CrossCat)
+      from crosscat.CrossCatClient import get_CrossCatClient
+      self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
+    else:
+      self.online = True
+      self.hostname = crosscat_host
+      self.port = crosscat_port
+      self.URI = 'http://' + self.hostname + ':%d' % self.port
+
+  def call_backend(self, method_name, args_dict):
+    """
+    Helper function used to call the CrossCat backend, whether it is remote or local.
+    Accept method name and arguments for that method as input.
+    """
+    if self.online:
+      out, id = api_utils.call(method_name, args_dict, self.URI)
+    else:
+      method = getattr(self.backend, method_name)
+      out = method(**args_dict)
+    return out
 
   def drop_btable(self, tablename):
     """Delete table by tablename."""
@@ -89,7 +109,7 @@ class Engine(object):
     
   def _guess_schema(self, header, values, crosscat_column_types, colnames):
     # TODO: should this be deleted in favor of using crosscat's datatype guessing?
-    # If so, then call self.du.read_model_data_from_csv(...) in create_btable instead of self.du.read_csv(...)
+    # If so, then call data_utils.read_model_data_from_csv(...) in create_btable instead of data_utils.read_csv(...)
     """Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes
     Also make the corresponding postgres column types."""
     postgres_coltypes = []
@@ -101,7 +121,7 @@ class Engine(object):
         cctype = crosscat_column_types[colname]
       else:
         column_data = column_data_lookup[colname]
-        cctype = self.du.guess_column_type(column_data)
+        cctype = data_utils.guess_column_type(column_data)
         # cctype = 'continuous'
       cctypes.append(cctype)
       if cctype == 'ignore':
@@ -128,8 +148,8 @@ class Engine(object):
     colnames = csv.split('\n')[0].split(',')
 
     ## Guess schema and create table
-    header, values = self.du.read_csv(csv_abs_path, has_header=True)
-    values = self.du.convert_nans(values)
+    header, values = data_utils.read_csv(csv_abs_path, has_header=True)
+    values = data_utils.convert_nans(values)
     postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types, colnames)
     self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, csv, cctypes, postgres_coltypes, colnames)
 
@@ -178,7 +198,7 @@ class Engine(object):
     max_modelid = self.persistence_layer.get_max_model_id(tablename)
 
     # Call initialize on backend
-    X_L_list, X_D_list = self.backend.initialize(M_c, M_r, T, n_chains=n_models)
+    X_L_list, X_D_list = self.call_backend('initialize', dict(M_c=M_c, M_r=M_r, T=T, n_chains=n_models))    
 
     # If n_models is 1, initialize returns X_L and X_D instead of X_L_list and X_D_list
     if n_models == 1:
@@ -218,7 +238,7 @@ class Engine(object):
     X_L_list = [models[i]['X_L'] for i in modelids]
     X_D_list = [models[i]['X_D'] for i in modelids]
     
-    X_L_list_prime, X_D_list_prime = self.backend.analyze(M_c, T, X_L_list, X_D_list, n_steps=iterations)
+    X_L_list_prime, X_D_list_prime = self.call_backend('analyze', dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, n_steps=iterations))
 
     for i in modelids:
       X_L = X_L_list_prime[i]
@@ -288,7 +308,7 @@ class Engine(object):
 
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
-    filtered_rows = select_utils.filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, self.backend,
+    filtered_rows = select_utils.filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, self,
                                                         query_colnames, impute_confidence, num_impute_samples)
 
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
@@ -297,10 +317,10 @@ class Engine(object):
     ## If only being selected: then want to compute after ordering...
 
     # Simply rearranges the order of the rows in filtered_rows according to the order_by query.
-    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self.backend)
+    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self)
 
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
-    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self.backend)
+    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
 
     return dict(message='', data=data, columns=query_colnames)
 
@@ -327,7 +347,7 @@ class Engine(object):
         Y.append((numrows+1, name_to_idx[colname], colval))
 
       # map values to codes
-      Y = [(r, c, self.du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
+      Y = [(r, c, data_utils.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
 
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
@@ -337,7 +357,7 @@ class Engine(object):
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
 
     if len(Q) > 0:
-      out = self.backend.simple_predictive_sample(M_c, X_L_list, X_D_list, Y, Q, numpredictions)
+      out = self.call_backend('simple_predictive_sample', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=Q, n=numpredictions))
     else:
       out = []
 
@@ -351,7 +371,7 @@ class Engine(object):
         if idx in where_col_idxs_to_vals:
           row.append(where_col_idxs_to_vals[idx])
         else:
-          row.append(self.du.convert_code_to_value(M_c, idx, vals[i]))
+          row.append(data_utils.convert_code_to_value(M_c, idx, vals[i]))
           i += 1
       data.append(row)
     ret = {'message': 'Simulated data:', 'columns': colnames, 'data': data}
@@ -396,10 +416,10 @@ class Engine(object):
     
     ## filter based on where clause
     where_conditions = estimate_columns_utils.get_conditions_from_column_whereclause(whereclause, M_c, T)
-    column_indices = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self.backend)
+    column_indices = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self)
     
     ## order
-    column_indices = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self.backend)
+    column_indices = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self)
     
     # limit
     if limit != float('inf'):
@@ -425,7 +445,7 @@ class Engine(object):
       
     return plotting_utils._do_gen_matrix(function_name,
                                          X_L_list, X_D_list, M_c, T, tablename,
-                                         filename, backend=self.backend, column_names=column_names)
+                                         filename, engine=self, column_names=column_names)
 
   def load_old_style_samples(self, tablename, old_samples_path, iterations=0):
     old_samples = pickle.load(gzip.open(old_samples_path), 'r')

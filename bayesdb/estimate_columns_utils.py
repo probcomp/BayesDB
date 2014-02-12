@@ -32,10 +32,10 @@ import utils
 import functions
 import crosscat.utils.data_utils as du
 
-def filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, backend):
-  return [c_idx for c_idx in column_indices if _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, backend)]
+def filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, engine):
+  return [c_idx for c_idx in column_indices if _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine)]
 
-def _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, backend):
+def _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine):
     for ((func, f_args), op, val) in where_conditions:
         # mutual_info, correlation, and dep_prob all take args=(i,j)
         # col_typicality takes just args=i
@@ -45,7 +45,7 @@ def _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, backen
         else:
             f_args = c_idx
       
-        where_value = func(f_args, None, None, M_c, X_L_list, X_D_list, T, backend)
+        where_value = func(f_args, None, None, M_c, X_L_list, X_D_list, T, engine)
         return op(where_value, val)
     return True
 
@@ -108,7 +108,7 @@ def get_conditions_from_column_whereclause(whereclause, M_c, T):
   return conds
     
 
-def order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, backend):
+def order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, engine):
   if not order_by:
     return column_indices
   # Step 1: get appropriate functions.
@@ -119,7 +119,7 @@ def order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, backend)
     desc = orderable[1]
 
     ## function_list is a list of
-    ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, backend), args, desc)
+    ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, engine), args, desc)
 
     t = functions.parse_cfun_column_typicality(raw_orderable_string, M_c)
     if t:
@@ -144,10 +144,10 @@ def order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, backend)
     raise Exception("Invalid query argument: could not parse '%s'" % raw_orderable_string)    
 
   ## Step 2: call order by.
-  sorted_column_indices = _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, backend)
+  sorted_column_indices = _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, engine)
   return sorted_column_indices
 
-def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, backend):
+def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, engine):
   """
   Return the original column indices, but sorted by the individual functions.
   """
@@ -168,7 +168,7 @@ def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, 
       else:
         f_args = c_idx
         
-      score = f(f_args, None, None, M_c, X_L_list, X_D_list, T, backend)
+      score = f(f_args, None, None, M_c, X_L_list, X_D_list, T, engine)
       if desc:
         score *= -1
       scores.append(score)

@@ -355,7 +355,7 @@ class Parser(object):
                     pklpath = pklpath + ".gz"
                 else:
                     pklpath = pklpath + ".pkl.gz"
-            return 'save_models', dict(tablename=tablename, pkl_path=pklpath)
+            return 'save_models', dict(tablename=tablename), dict(pkl_path=pklpath)
 
 
             

@@ -28,7 +28,7 @@ import random
 
 from bayesdb.client import Client
 from bayesdb.engine import Engine
-engine = Engine('local')
+engine = Engine()
 
 test_tablenames = None
 
@@ -36,7 +36,7 @@ def setup_function(function):
   global test_tablenames
   test_tablenames = []
   global engine
-  engine = Engine('local')
+  engine = Engine()
 
 def teardown_function(function):
   global tablename

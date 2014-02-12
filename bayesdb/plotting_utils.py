@@ -75,9 +75,9 @@ def _create_histogram(M_c, data, columns, mc_col_indices, filename):
   pylab.tight_layout()
   pylab.savefig(full_filename)
 
-def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False, backend=None, column_names=None):
-    """ Compute a matrix. If using a function that requires backend (currently only
-    mutual information), backend must not be None. """
+def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False, engine=None, column_names=None):
+    """ Compute a matrix. If using a function that requires engine (currently only
+    mutual information), engine must not be None. """
 
     assert len(X_L_list) == len(X_D_list)
     if col_function_name == 'mutual information':
@@ -105,7 +105,7 @@ def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', 
     z_matrix = numpy.zeros((num_cols, num_cols))
     for i in range(num_cols):
       for j in range(num_cols):
-        z_matrix[i][j] = col_function((i, j), None, None, M_c, X_L_list, X_D_list, T, backend)
+        z_matrix[i][j] = col_function((i, j), None, None, M_c, X_L_list, X_D_list, T, engine)
 
     if col:
       z_column = list(z_matrix[M_c['name_to_idx'][col]])

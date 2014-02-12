@@ -44,9 +44,9 @@ def is_float(s):
     except ValueError:
         return False
 
-def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, backend):
+def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, engine):
     q = [row_id, col_id]
-    out = backend.impute_and_confidence(M_c, X_L_list, X_D_list, Y, [q], numsamples)
+    out = engine.call_backend('impute_and_confidence', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=[q], n=numsamples))
     value, conf = out
     if conf >= confidence:
       row_idx = q[0]

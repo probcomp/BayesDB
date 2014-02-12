@@ -29,28 +29,27 @@ import ast
 
 import utils
 import plotting_utils
+import api_utils
 from parser import Parser
 from engine import Engine
 
 class Client(object):
-    def __init__(self, hostname=None, port=8008, crosscat_engine_type='multiprocessing'):
+    def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing',
+                 bayesdb_host=None, bayesdb_port=8008):
         """
         Create a client object. The client creates a parser, that is uses to parse all commands,
         and an engine, which is uses to execute all commands. The engine can be remote or local.
         If local, the engine will be created.
         """
         self.parser = Parser()
-        if hostname is None or hostname=='localhost':
+        if bayesdb_host is None or bayesdb_host=='localhost':
             self.online = False
-            self.engine = Engine(crosscat_engine_type)
-
-            ## Only depend on crosscat if using it locally.
-            import crosscat.utils.api_utils as au            
+            self.engine = Engine(crosscat_host, crosscat_port, crosscat_engine_type)
         else:
             self.online = True
-            self.hostname = hostname
-            self.port = port
-            self.URI = 'http://' + hostname + ':%d' % port
+            self.hostname = bayesdb_host
+            self.port = bayesdb_port
+            self.URI = 'http://' + self.hostname + ':%d' % self.port
 
     def call_bayesdb_engine(self, method_name, args_dict):
         """
@@ -58,12 +57,10 @@ class Client(object):
         Accepts method name and arguments for that method as input.
         """
         if self.online:
-            out, id = au.call(method_name, args_dict, self.URI)
+            out, id = api_utils.call(method_name, args_dict, self.URI)
         else:
             method = getattr(self.engine, method_name)
-            argnames = inspect.getargspec(method)[0]
-            args = [args_dict[argname] for argname in argnames if argname in args_dict]
-            out = method(*args)
+            out = method(**args_dict)
         return out
 
     def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False):
@@ -136,14 +133,18 @@ class Client(object):
         if timing:
             start_time = time.time()
 
-        out  = self.parser.parse_statement(bql_statement_string)
-        if out is None:
+        parser_out  = self.parser.parse_statement(bql_statement_string)
+        if parser_out is None:
             print "Could not parse command. Try typing 'help' for a list of all commands."
             return
-        elif not out:
+        elif not parser_out:
             return
-            
-        method_name, args_dict = out
+
+        if len(parser_out) == 2:
+            method_name, args_dict = parser_out
+            client_dict = {}
+        else:
+            method_name, args_dict, client_dict = parser_out
         
         ## Do stuff now that you know the user's command, but before passing it to engine.
         if method_name == 'execute_file':
@@ -165,7 +166,7 @@ class Client(object):
         result = self.call_bayesdb_engine(method_name, args_dict)
 
         ## Do stuff now that engine has given you output, but before printing the result.
-        result = self.callback(method_name, args_dict, result)
+        result = self.callback(method_name, args_dict, client_dict, result)
         
         assert type(result) != int
         
@@ -197,7 +198,7 @@ class Client(object):
                 print result['message']
             return result
 
-    def callback(self, method_name, args_dict, result):
+    def callback(self, method_name, args_dict, client_dict, result):
         """
         This method is meant to be called after receiving the result of a
         call to the BayesDB engine, and modifies the output before it is displayed
@@ -206,9 +207,9 @@ class Client(object):
         if method_name == 'save_models':
             samples_dict = result
             ## Here is where the models get saved.
-            samples_file = gzip.GzipFile(args_dict['pkl_path'], 'w')
+            samples_file = gzip.GzipFile(client_dict['pkl_path'], 'w')
             pickle.dump(samples_dict, samples_file)
-            return dict(message="Successfully saved the samples to %s" % args_dict['pkl_path'])
+            return dict(message="Successfully saved the samples to %s" % client_dict['pkl_path'])
 
         else:
             return result

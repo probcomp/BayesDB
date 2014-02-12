@@ -191,7 +191,7 @@ def convert_row_from_codes_to_values(row, M_c):
       ret.append(code)
   return tuple(ret)
 
-def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, backend, query_colnames,
+def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, engine, query_colnames,
                            impute_confidence, num_impute_samples):
     """
     impute_confidence: if None, don't impute. otherwise, this is the imput confidence
@@ -218,7 +218,7 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
 
     for row_id, T_row in enumerate(T):
       row_values = convert_row_from_codes_to_values(T_row, M_c) ## Convert row from codes to values
-      if is_row_valid(row_id, row_values, where_conditions, M_c, X_L_list, X_D_list, T, backend): ## Where clause filtering.
+      if is_row_valid(row_id, row_values, where_conditions, M_c, X_L_list, X_D_list, T, engine): ## Where clause filtering.
         if impute_confidence is not None:
           ## Determine which values are 'nan', which need to be imputed.
           ## Only impute columns in 'query_colnames'
@@ -227,7 +227,7 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
             if numpy.isnan(t_array[row_id, col_id]):
               # Found missing value! Try to fill it in.
               code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, num_impute_samples,
-                                 impute_confidence, backend)
+                                 impute_confidence, engine)
               if code:
                 # Inferred successfully! Fill in the new value.
                 value = du.convert_code_to_value(M_c, col_id, code)
@@ -237,7 +237,7 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
         filtered_rows.append((row_id, row_values))
     return filtered_rows
 
-def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
+def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine):
   """Input: rows are list of (row_id, row_values) tuples."""
   if not order_by:
       return rows
@@ -249,7 +249,7 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
     desc = orderable[1]
 
     ## function_list is a list of
-    ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, backend), args, desc)
+    ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, engine), args, desc)
     
     s = functions.parse_similarity(raw_orderable_string, M_c, T)
     if s:
@@ -278,10 +278,10 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, backend):
     raise Exception("Invalid query argument: could not parse '%s'" % raw_orderable_string)    
 
   ## Step 2: call order by.
-  rows = _order_by(rows, function_list, M_c, X_L_list, X_D_list, T, backend)
+  rows = _order_by(rows, function_list, M_c, X_L_list, X_D_list, T, engine)
   return rows
 
-def _order_by(filtered_values, function_list, M_c, X_L_list, X_D_list, T, backend):
+def _order_by(filtered_values, function_list, M_c, X_L_list, X_D_list, T, engine):
   """
   Return the original data tuples, but sorted by the given functions.
   The data_tuples must contain all __original__ data because you can order by
@@ -295,7 +295,7 @@ def _order_by(filtered_values, function_list, M_c, X_L_list, X_D_list, T, backen
     ## Apply each function to each data_tuple to get a #functions-length tuple of scores.
     scores = []
     for (f, args, desc) in function_list:
-      score = f(args, row_id, data_tuple, M_c, X_L_list, X_D_list, T, backend)
+      score = f(args, row_id, data_tuple, M_c, X_L_list, X_D_list, T, engine)
       if desc:
         score *= -1
       scores.append(score)
@@ -305,7 +305,7 @@ def _order_by(filtered_values, function_list, M_c, X_L_list, X_D_list, T, backen
   return [tup[1] for tup in scored_data_tuples]
 
 
-def compute_result_and_limit(rows, limit, queries, M_c, X_L_list, X_D_list, T, backend):
+def compute_result_and_limit(rows, limit, queries, M_c, X_L_list, X_D_list, T, engine):
   data = []
   row_count = 0
 
@@ -313,7 +313,7 @@ def compute_result_and_limit(rows, limit, queries, M_c, X_L_list, X_D_list, T, b
   aggregate_cache = dict()
   for query_idx, (query_function, query_args, aggregate) in enumerate(queries):
     if aggregate:
-      aggregate_cache[query_idx] = query_function(query_args, None, None, M_c, X_L_list, X_D_list, T, backend)
+      aggregate_cache[query_idx] = query_function(query_args, None, None, M_c, X_L_list, X_D_list, T, engine)
 
   # Only return one row if all aggregate functions (row_id will never be aggregate, so subtract 1 and don't return it).
   assert queries[0][0] == functions._row_id
@@ -327,7 +327,7 @@ def compute_result_and_limit(rows, limit, queries, M_c, X_L_list, X_D_list, T, b
       if aggregate:
         ret_row.append(aggregate_cache[query_idx])
       else:
-        ret_row.append(query_function(query_args, row_id, row_values, M_c, X_L_list, X_D_list, T, backend))
+        ret_row.append(query_function(query_args, row_id, row_values, M_c, X_L_list, X_D_list, T, engine))
     data.append(tuple(ret_row))
     row_count += 1
     if row_count >= limit:
