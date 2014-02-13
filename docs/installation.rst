@@ -59,22 +59,13 @@ You can log in via ssh with (tested on Ubuntu and Mac OSX)::
 
 Manual Installation
 ~~~~~~~~~~~~~~~~~~~
-**Note: Only Ubuntu is currently supported. A Mac OS X install may be coming soon.**
-
 BayesDB depends on CrossCat, so first install CrossCat by following its local installation instructions `here <https://github.com/mit-probabilistic-computing-project/crosscat/blob/master/README.md>`_.
 
-BayesDB can be installed locally on Ubuntu systems with::
+BayesDB can be installed locally with::
 
     git clone https://github.com/mit-probabilistic-computing-project/BayesDB.git
-    sudo bash BayesDB/install/install.sh
-    cd BayesDB && PYTHONPATH=$PYTHONPATH:$(pwd)
-
-Don't forget to add BayesDB to your python path.  For bash, this can be accomplished with::
-
     cd BayesDB
-    cat -- >> ~/.bashrc <<EOF
-    export PYTHONPATH=\$PYTHONPATH:$(pwd)
-    EOF
+    sudo python setup.py install
 
 If you have trouble with matplotlib, you should try switching to a different backend. Open a python prompt ($ python)::
 

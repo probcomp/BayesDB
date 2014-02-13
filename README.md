@@ -15,21 +15,14 @@ We provide a VirtualBox VM ([Get the VM and VM_README here](http://probcomp.csai
 
 **Note**: The VM is only meant to provide an out-of-the-box usable system setup.  Its resources are limited and large jobs will fail due to memory errors.  To run larger jobs, increase the VM resources or install directly to your system.
 
-### Local (Ubuntu)
+### Local
 BayesDB depends on CrossCat, so first install CrossCat by following its local installation instructions [here](https://github.com/mit-probabilistic-computing-project/crosscat/blob/master/README.md).
 
-BayesDB can be installed locally on Ubuntu systems with
+BayesDB can be installed locally with:
 
     git clone https://github.com/mit-probabilistic-computing-project/BayesDB.git
-    sudo bash BayesDB/install/install.sh
-    cd BayesDB && PYTHONPATH=$PYTHONPATH:$(pwd)
-
-Don't forget to add BayesDB to your python path.  For bash, this can be accomplished with
-
     cd BayesDB
-    cat -- >> ~/.bashrc <<EOF
-    export PYTHONPATH=\$PYTHONPATH:$(pwd)
-    EOF
+    sudo python setup.py install
 
 If you have trouble with matplotlib, you should try switching to a different backend. Open a python prompt ($ python):
 
