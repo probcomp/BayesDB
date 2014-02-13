@@ -13,8 +13,8 @@ numpy==1.7.0
 scipy>=0.11.0
 matplotlib==1.2.0
 
-# install via install_hcluster.sh
-# hcluster==0.2.0
+# install via install_hcluster.sh if this doesn't work
+hcluster==0.2.0
 
 # for documentation generation
 Sphinx==1.2b1
@@ -24,6 +24,10 @@ prettytable==0.7.2
 
 # testing
 pytest>=2.5.1
+
+# bql shell
+cmd2>=0.6.7
+pyparsing>=2.0.1
 
 # starcluster, only necessary on local computer spinning up a cluster
 # Jinja2==2.6

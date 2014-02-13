@@ -222,10 +222,10 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
         if impute_confidence is not None:
           ## Determine which values are 'nan', which need to be imputed.
           ## Only impute columns in 'query_colnames'
-          Q = []
           for col_id in query_col_indices:
             if numpy.isnan(t_array[row_id, col_id]):
               # Found missing value! Try to fill it in.
+              # row_id, col_id is Q. Y is givens.
               code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, num_impute_samples,
                                  impute_confidence, engine)
               if code:
