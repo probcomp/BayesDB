@@ -449,9 +449,9 @@ class Engine(object):
     else:
       column_names = None
       
-    return plotting_utils._do_gen_matrix(function_name,
-                                         X_L_list, X_D_list, M_c, T, tablename,
-                                         engine=self, column_names=column_names)
+    return utils.generate_pairwise_matrix(function_name,
+                                          X_L_list, X_D_list, M_c, T, tablename,
+                                          engine=self, column_names=column_names)
 
   def load_old_style_samples(self, tablename, old_samples_path, iterations=0):
     old_samples = pickle.load(gzip.open(old_samples_path), 'r')
