@@ -32,7 +32,7 @@ from scipy.stats import pearsonr
 
 import utils
 import select_utils
-import crosscat.utils.data_utils as du
+import data_utils as du
 
 ###
 # Three types of function signatures, for each purpose.

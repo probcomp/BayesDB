@@ -25,7 +25,7 @@ import matplotlib.cm
 
 import utils
 import functions
-import crosscat.utils.data_utils as du
+import data_utils as du
 
 def plot_matrix(matrix, column_names, title='', filename=None):
     # actually create figure

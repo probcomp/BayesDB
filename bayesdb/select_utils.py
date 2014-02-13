@@ -30,7 +30,7 @@ import ast
 
 import utils
 import functions
-import crosscat.utils.data_utils as du
+import data_utils as du
 
 def get_conditions_from_whereclause(whereclause, M_c, T):
   ## Create conds: the list of conditions in the whereclause.
