@@ -399,7 +399,7 @@ class Engine(object):
     """
     Return all the column names from the specified table as a list.
     First, columns are filtered based on whether they match the whereclause.
-      The whereclause must consist of functions of a single column only.
+    The whereclause must consist of functions of a single column only.
     Next, the columns are ordered by other functions of a single column.
     Finally, the columns are limited to the specified number.
 
@@ -408,7 +408,6 @@ class Engine(object):
     # dependence probability to <col>
     # mutual information with <col>
     # correlation with <col>
-    
     """
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)

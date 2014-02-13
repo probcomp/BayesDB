@@ -24,7 +24,6 @@ CREATE BTABLE dha_demo FROM dha.csv;
 LOAD MODELS dha_models.pkl.gz FOR dha_demo;
 
 SELECT qual_score FROM dha_demo ORDER BY qual_score LIMIT 5;
-SELECT qual_score FROM dha_demo ORDER BY qual_score DESC LIMIT 5;
 SELECT qual_score FROM dha_demo ORDER BY qual_score ASC LIMIT 5;
 
 SHOW SCHEMA FOR dha_demo;
@@ -37,9 +36,6 @@ ESTIMATE COLUMNS FROM dha_demo WHERE DEPENDENCE PROBABILITY TO 'name' > 0.05 ORD
 -- Examine column dependencies
 SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo LIMIT 10;
 ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha_demo;
-ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha_demo REFERENCING qual_score LIMIT 6;
---ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha_demo REFERENCING qual_score WITH CONFIDENCE 0.9;
-ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha_demo REFERENCING pymt_p_md_visit LIMIT 6;
 
 -- Examine hospitals similar to Albany
 SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY SIMILARITY TO (name='Albany NY') LIMIT 10;

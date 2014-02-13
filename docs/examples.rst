@@ -64,13 +64,17 @@ Now, to zoom in on parts of this matrix, we can just look at the 6 columns most 
 
 .. ipython::
 
-   In [6]: client('ESTIMATE COLUMNS FROM dha ORDER BY DEPENDENCE PROBABILITY WITH qual_score LIMIT 6 AS qs_cols;')
+   In [6]: client('ESTIMATE COLUMNS FROM dha ORDER BY DEPENDENCE PROBABILITY WITH qual_score LIMIT 6 AS qs_cols;')   
 
 Now, we will generate a subsection of the pairwise dependence probability matrix above, by only showing the 6x6 submatrix involving the 6 columns we selected above. Since it is small enough, we can view this matrix as textual output instead of as an image.
 
 .. ipython::
 
-   In [6]: client('ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha FOR COLUMNS qs_cols;')
+   In [6]: client('ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha FOR COLUMNS qs_cols SAVE TO images/dha_dep_qs_cols.png;')
+
+.. image:: images/dha_dep_qs_cols.png
+   :width: 1000px
+   
 
 Let's see which columns are most related to pymt_p_md_visit (payment per doctor visit).
 
@@ -154,6 +158,19 @@ That's a lot of variables! You can imagine that any dataset with more than 100 c
 
 .. ipython::
 
+   # Pick out the 10 columns most dependent with racecen1
+   In [6]: client('ESTIMATE COLUMNS FROM gss ORDER BY DEPENDENCE PROBABILITY WITH racecen1 LIMIT 10 AS racecen1_cols;')
+
+   # Generate the pairwise dependence probability matrix with that column subset.
+   In [7]: client('ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM gss FOR COLUMNS racecen1_cols SAVE TO images/gss_dep_race1.png')
+
+.. image:: images/gss_dep_race1.png
+   :width: 1000px
+
+Now, let's examine the 10 most typical columns:
+
+.. ipython::
+
    # Pick out the 10 most typical columns.
    In [6]: client('ESTIMATE COLUMNS FROM gss ORDER BY TYPICALITY DESC LIMIT 10 AS typical10col;')
 
@@ -185,7 +202,7 @@ Inspect this submatrix to see how many of the clusters from the large matrix are
 .. ipython::
 
    # -- Lots of missing values, maybe fill in to better see relationships
-   In [9]: client('INFER typical10col from gss WITH CONFIDENCE .9 LIMIT 20;')
+   #In [9]: client('INFER typical10col from gss WITH CONFIDENCE .9 LIMIT 20;')
 
 -- Note that the values were not filled in. Why? To simultaneously estimate many variables takes considerably more information than one or two variables, and we don't have enough at the moment. If we focus on just pairs, we will have better luck
 
@@ -193,11 +210,11 @@ Inspect this submatrix to see how many of the clusters from the large matrix are
 
 .. ipython::
    
-   In[10]: client('SIMULATE typical10col FROM gss WHERE sprel=1 times 50;')
+   #In[10]: client('SIMULATE typical10col FROM gss WHERE sprel=1 times 50;')
    
-   In[11]: client('SIMULATE typical10col FROM gss WHERE sprel=2 times 50;')
+   #In[11]: client('SIMULATE typical10col FROM gss WHERE sprel=2 times 50;')
    
-   In[12]: client('SIMULATE typical10col FROM gss WHERE sprel=3 times 50;')
+   #In[12]: client('SIMULATE typical10col FROM gss WHERE sprel=3 times 50;')
    
 -- Not huge differences. Minor things like where science info comes from (Protestants go to internet or govt, Catholics are a bit more variable, Jewish folks are more likely to look to books)
 
@@ -209,8 +226,8 @@ Inspect this submatrix to see how many of the clusters from the large matrix are
 
 .. ipython::
    
-   In[13]: client('SIMULATE typical10col FROM gss WHERE racecen1=1 times 50;')
+   #In[13]: client('SIMULATE typical10col FROM gss WHERE racecen1=1 times 50;')
    
-   In[14]: client('SIMULATE typical10col FROM gss WHERE racecen1=2 times 50;')
+   #In[14]: client('SIMULATE typical10col FROM gss WHERE racecen1=2 times 50;')
    
-   In[15]: client('SIMULATE typical10col FROM gss WHERE racecen1=16 times 50;')
+   #In[15]: client('SIMULATE typical10col FROM gss WHERE racecen1=16 times 50;')
