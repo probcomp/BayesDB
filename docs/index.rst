@@ -13,6 +13,7 @@ Welcome to BayesDB's documentation!
    gettingstarted.rst
    bql.rst
    examples.rst
+   developer.rst
    
 
 Indices and tables
