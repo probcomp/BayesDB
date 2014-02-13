@@ -26,7 +26,7 @@ import pickle
 import shutil
 import contextlib
 
-import crosscat.utils.data_utils as du
+import data_utils as du
 
 from bayesdb.persistence_layer import PersistenceLayer
 import bayesdb.settings as S

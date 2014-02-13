@@ -30,7 +30,7 @@ import ast
 
 import utils
 import functions
-import crosscat.utils.data_utils as du
+import data_utils as du
 
 def filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, engine):
   return [c_idx for c_idx in column_indices if _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine)]

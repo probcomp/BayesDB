@@ -27,7 +27,7 @@ import pylab
 import matplotlib.cm
 import time
 
-import crosscat.utils.data_utils as du
+import data_utils as du
 import select_utils
 
 def is_int(s):

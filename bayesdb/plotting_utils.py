@@ -25,7 +25,15 @@ import matplotlib.cm
 
 import utils
 import functions
-import crosscat.utils.data_utils as du
+import data_utils as du
+
+def make_histogram(colnames, data):
+    '''
+    colnames: list of column names
+    data: list of tuples (first list is a list of rows, so each inner tuples is a row)
+    colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
+    '''
+    pass
 
 def plot_matrix(matrix, column_names, title='', filename=None):
     # actually create figure
