@@ -324,7 +324,7 @@ class Engine(object):
 
     return dict(message='', data=data, columns=query_colnames)
 
-  def simulate(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by):
+  def simulate(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by, hist=False):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
     
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
@@ -374,6 +374,8 @@ class Engine(object):
           row.append(data_utils.convert_code_to_value(M_c, idx, vals[i]))
           i += 1
       data.append(row)
+    if hist:
+      plotting_utils.make_histogram(colnames, data)
     ret = {'message': 'Simulated data:', 'columns': colnames, 'data': data}
     return ret
 
