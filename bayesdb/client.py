@@ -179,16 +179,15 @@ class Client(object):
             #plots = 'DISPLAY' in os.environ.keys()
             plots = False
 
-        if 'matrix' in result:
-            ## Special logic to display matrices.
-            if plots or result['filename']:
-                plotting_utils.plot_matrix(result['matrix'], result['column_names'], title=result['title'], filename=result['filename'])
-            else:
-                pp = self.pretty_print(result)
-                print pp
-                return pp
-        elif pretty:
-            if type(result) == dict and 'message' in result.keys():
+        if 'matrix' in result and (plots or client_dict['filename']):
+            # Plot matrices
+            plotting_utils.plot_matrix(result['matrix'], result['column_names'], title=result['title'], filename=client_dict['filename'])
+        if 'hist' in client_dict and (plots or client_dict['filename']):
+            # Plot generalized histograms
+            plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'])
+
+        if pretty:
+            if 'message' in result.keys():
                 print result['message']
             pp = self.pretty_print(result)
             print pp
@@ -218,22 +217,19 @@ class Client(object):
         """
         Return a pretty string representing the output object.
         """
+        assert type(query_obj) == dict
         result = ""
-        if type(query_obj) == dict and 'data' in query_obj and 'columns' in query_obj:
+        if 'data' in query_obj and 'columns' in query_obj:
             """ Pretty-print data table """
             pt = prettytable.PrettyTable()
             pt.field_names = query_obj['columns']
             for row in query_obj['data']:
                 pt.add_row(row)
             result = pt
-        elif type(query_obj) == list and len(query_obj) > 0 and type(query_obj[0]) == tuple:
-            pt = prettytable.PrettyTable()
-            ## TODO
-            return "TODO"
-        elif type(query_obj) == list:
+        elif 'list' in query_obj:
             """ Pretty-print lists """
-            result = str(query_obj)
-        elif type(query_obj) == dict and 'column_names' in query_obj:
+            result = str(query_obj['list'])
+        elif 'column_names' in query_obj:
             """ Pretty-print cctypes """
             colnames = query_obj['column_names']
             zmatrix = query_obj['matrix']
@@ -242,12 +238,12 @@ class Client(object):
             for row, colname in zip(zmatrix, list(colnames)):
                 pt.add_row([colname] + list(row))
             result = pt
-        elif type(query_obj) == dict and 'columns' in query_obj:
+        elif 'columns' in query_obj:
             """ Pretty-print column list."""
             pt = prettytable.PrettyTable()
             pt.field_names = query_obj['columns']
             result = pt
-        elif type(query_obj) == dict and 'models' in query_obj:
+        elif 'models' in query_obj:
             """ Prety-print model info. """
             m = query_obj['models']
             output_list = ['Model %d: %d iterations' % (id, iterations) for id,iterations in m]

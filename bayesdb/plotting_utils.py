@@ -27,13 +27,18 @@ import utils
 import functions
 import data_utils as du
 
-def make_histogram(colnames, data):
+def plot_general_histogram(colnames, data, M_c, filename=None):
     '''
     colnames: list of column names
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
     '''
-    pass
+    fig = pylab.figure()
+    
+    if filename:
+        pylab.savefig(filename)
+    else:
+        fig.show()
 
 def plot_matrix(matrix, column_names, title='', filename=None):
     # actually create figure
@@ -83,7 +88,7 @@ def _create_histogram(M_c, data, columns, mc_col_indices, filename):
   pylab.tight_layout()
   pylab.savefig(full_filename)
 
-def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', filename=None, col=None, confidence=None, limit=None, submatrix=False, engine=None, column_names=None):
+def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', col=None, confidence=None, limit=None, submatrix=False, engine=None, column_names=None):
     """ Compute a matrix. If using a function that requires engine (currently only
     mutual information), engine must not be None. """
 
@@ -153,7 +158,6 @@ def _do_gen_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', 
       matrix=z_matrix_reordered,
       column_names=column_names_reordered,
       title=title,
-      filename=filename,
       message = "Created " + title
       )
         

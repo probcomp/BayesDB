@@ -82,11 +82,11 @@ class Engine(object):
   def drop_btable(self, tablename):
     """Delete table by tablename."""
     self.persistence_layer.drop_btable(tablename)
-    return ''
+    return dict()
 
   def list_btables(self):
     """Return names of all btables."""
-    return self.persistence_layer.list_btables()
+    return dict(list=self.persistence_layer.list_btables())
 
   def drop_models(self, tablename, model_index):
      """Delete one model by index, or all models. model_index may be 'all'. """
@@ -159,7 +159,7 @@ class Engine(object):
     metadata = self.persistence_layer.get_metadata(tablename)
     colnames = utils.get_all_column_names_in_original_order(metadata['M_c'])
     cctypes = metadata['cctypes']
-    return dict(columns=colnames, data=[cctypes], message='')
+    return dict(columns=colnames, data=[cctypes])
 
   def save_models(self, tablename):
     """Opposite of load models! Returns the models, including the contents, which
@@ -222,7 +222,7 @@ class Engine(object):
     if len(models) == 0:
       return dict(message="No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
     else:
-      return dict(message='', models=modelid_iteration_info)
+      return dict(models=modelid_iteration_info)
 
   def analyze(self, tablename, model_index='all', iterations=1):
     """Run analyze for the selected table. model_index may be 'all'."""
@@ -250,16 +250,16 @@ class Engine(object):
     ret['message'] = 'Analyze complete.'
     return ret
 
-  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False):
+  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False, hist=False):
     """Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
     Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
     Argument newtablename == null/emptystring if we don't want to do INTO
     """
     return self.select(tablename, columnstring, whereclause, limit, order_by,
-                       impute_confidence=confidence, num_impute_samples=numsamples)
+                       impute_confidence=confidence, num_impute_samples=numsamples, hist=hist)
     
-  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None):
+  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, hist=False):
     """
     BQL's version of the SQL SELECT query.
     
@@ -322,7 +322,10 @@ class Engine(object):
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
 
-    return dict(message='', data=data, columns=query_colnames)
+    ret = dict(data=data, columns=query_colnames)
+    if hist:
+      ret['M_c'] = M_c
+    return ret
 
   def simulate(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by, hist=False):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
@@ -374,9 +377,11 @@ class Engine(object):
           row.append(data_utils.convert_code_to_value(M_c, idx, vals[i]))
           i += 1
       data.append(row)
-    if hist:
-      plotting_utils.make_histogram(colnames, data)
+      
     ret = {'message': 'Simulated data:', 'columns': colnames, 'data': data}
+    if hist:
+      ret['M_c'] = M_c
+      
     return ret
 
   def show_column_lists(self, tablename):
@@ -435,7 +440,7 @@ class Engine(object):
     
     return {'columns': column_names}
   
-  def estimate_pairwise(self, tablename, function_name, filename=None, column_list=None):
+  def estimate_pairwise(self, tablename, function_name, column_list=None):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
@@ -446,7 +451,7 @@ class Engine(object):
       
     return plotting_utils._do_gen_matrix(function_name,
                                          X_L_list, X_D_list, M_c, T, tablename,
-                                         filename, engine=self, column_names=column_names)
+                                         engine=self, column_names=column_names)
 
   def load_old_style_samples(self, tablename, old_samples_path, iterations=0):
     old_samples = pickle.load(gzip.open(old_samples_path), 'r')

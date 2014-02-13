@@ -290,17 +290,19 @@ class Parser(object):
 
             
     def help_infer(self):
-        return "INFER col0, [col1, ...] FROM <btable> [WHERE <whereclause>] WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]]: like select, but infers (fills in) missing values."
+        return "INFER [HIST] col0, [col1, ...] FROM <btable> [WHERE <whereclause>] WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]] [SAVE TO <file>]: like select, but infers (fills in) missing values."
         
     def parse_infer(self, words, orig):
         match = re.search(r"""
             infer\s+
+            (?P<hist>hist\s+)?        
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
             (where\s+(?P<whereclause>.*(?=with)))?
             \s*with\s+confidence\s+(?P<confidence>[^\s]+)
             (\s+limit\s+(?P<limit>[^\s]+))?
             (\s+numsamples\s+(?P<numsamples>[^\s]+))?
+            (\s+save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'infer':
@@ -326,9 +328,16 @@ class Parser(object):
                 numsamples = int(numsamples)
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-            return 'infer', dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
-                                 confidence=confidence, whereclause=whereclause, limit=limit,
-                                 numsamples=numsamples, order_by=order_by)
+            hist = match.group('hist') is not None
+            if match.group('filename'):
+                filename = match.group('filename')
+            else:
+                filename = None
+            return 'infer', \
+                   dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
+                        confidence=confidence, whereclause=whereclause, limit=limit,
+                        numsamples=numsamples, order_by=order_by, hist=hist), \
+                   dict(hist=hist, filename=filename)
 
             
             
@@ -393,15 +402,17 @@ class Parser(object):
 
             
     def help_select(self):
-        return 'SELECT <columns|functions> FROM <btable> [WHERE <whereclause>]  [ORDER BY <columns>] [LIMIT <limit>]'
+        return 'SELECT [HIST] <columns|functions> FROM <btable> [WHERE <whereclause>]  [ORDER BY <columns>] [LIMIT <limit>] [SAVE TO <file>]'
         
     def parse_select(self, words, orig):
         match = re.search(r"""
             select\s+
+            (?P<hist>hist\s+)?        
             (?P<columnstring>.*?((?=from)))
             \s*from\s+(?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
             (\s*limit\s+(?P<limit>[^\s]+))?
+            (\s+save\s+to\s+(?P<filename>[^\s]+))?        
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'select':
@@ -416,20 +427,27 @@ class Parser(object):
                 whereclause = whereclause.strip()
             limit = self.extract_limit(orig)
             orig, order_by = self.extract_order_by(orig)
+            hist = match.group('hist') is not None
+            if match.group('filename'):
+                filename = match.group('filename')
+            else:
+                filename = None
             return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                  limit=limit, order_by=order_by)
+                                  limit=limit, order_by=order_by, hist=hist), dict(hist=hist, filename=filename)
 
 
     def help_simulate(self):
-        return "SIMULATE col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times>: simulate new datapoints based on the underlying model."
+        return "SIMULATE [HIST] col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <file>]: simulate new datapoints based on the underlying model."
 
     def parse_simulate(self, words, orig):
         match = re.search(r"""
             simulate\s+
+            (?P<hist>hist\s+)?
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
             (where\s+(?P<whereclause>.*(?=times)))?
             times\s+(?P<times>[^\s]+)
+            (\s+save\s+to\s+(?P<filename>[^\s]+))?        
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'simulate':
@@ -445,8 +463,15 @@ class Parser(object):
             numpredictions = int(match.group('times'))
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-            return 'simulate', dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
-                                    whereclause=whereclause, numpredictions=numpredictions, order_by=order_by)
+            hist = match.group('hist') is not None
+            if match.group('filename'):
+                filename = match.group('filename')
+            else:
+                filename = None            
+            return 'simulate', \
+                    dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
+                         whereclause=whereclause, numpredictions=numpredictions, order_by=order_by, hist=hist), \
+                    dict(hist=hist, filename=filename)
 
     def help_show_column_lists(self):
         return "SHOW COLUMN LISTS FOR <btable>"
@@ -544,7 +569,7 @@ class Parser(object):
             else:
                 column_list = None
             return 'estimate_pairwise', dict(tablename=tablename, function_name=function_name,
-                                             filename=filename, column_list=column_list)
+                                             column_list=column_list), dict(filename=filename)
 
 
             
