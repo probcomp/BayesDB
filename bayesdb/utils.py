@@ -29,6 +29,7 @@ import time
 
 import data_utils as du
 import select_utils
+import functions
 
 def is_int(s):
     try:

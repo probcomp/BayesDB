@@ -175,9 +175,7 @@ class Client(object):
             print 'Elapsed time: %.2f seconds.' % (end_time - start_time)
 
         if plots is None:
-            # TODO: should this be commented or not?
-            #plots = 'DISPLAY' in os.environ.keys()
-            plots = False
+            plots = 'DISPLAY' in os.environ.keys()
 
         if 'matrix' in result and (plots or client_dict['filename']):
             # Plot matrices
