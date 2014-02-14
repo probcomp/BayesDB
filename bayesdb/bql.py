@@ -71,6 +71,9 @@ class BayesDBApp(Cmd):
 
   def do_update(self, line):
     self.client('update ' + str(line))
+
+  def do_help(self, line):
+    self.client('help ' + str(line))
     
   def default(self, line):
     self.client(str(line))
@@ -87,7 +90,8 @@ def run_command_line():
       port = int(input[1])
     elif len(input) > 2:
       print "Run with 'python bql [hostname[:port]]'"
-    
+
+  print """Welcome to BayesDB. You may enter BQL commands directly into this prompt. Type 'help' for help, and 'quit' to quit."""
   client = Client(hostname, port)
   app = BayesDBApp(client)
   app.cmdloop()
