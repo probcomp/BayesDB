@@ -179,9 +179,9 @@ class Client(object):
 
         if 'matrix' in result and (plots or client_dict['filename']):
             # Plot matrices
-            plotting_utils.plot_matrix(result['matrix'], result['column_names'], title=result['title'], filename=client_dict['filename'])
+            plotting_utils.plot_matrix(result['matrix'], result['column_names'], result['title'], client_dict['filename'])
             return self.pretty_print(result)
-        if 'hist' in client_dict and (plots or client_dict['filename']):
+        if ('hist' in client_dict and client_dict['hist']) and (plots or client_dict['filename']):
             # Plot generalized histograms
             plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'])
             return self.pretty_print(result)
