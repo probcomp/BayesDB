@@ -271,7 +271,6 @@ class Parser(object):
     def parse_analyze(self, words, orig):
         model_index = 'all'
         iterations = 2
-        wait = False
         if len(words) >= 1 and words[0] == 'analyze':
             if len(words) >= 2:
                 tablename = words[1]
@@ -285,7 +284,7 @@ class Parser(object):
             if words[idx] == "for" and ((words[idx+2] == 'iterations') or (words[idx+2] == 'iteration')):
                 iterations = int(words[idx+1])
             return 'analyze', dict(tablename=tablename, model_index=model_index,
-                                   iterations=iterations, wait=False)
+                                   iterations=iterations)
 
 
             
