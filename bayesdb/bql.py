@@ -34,7 +34,6 @@ class BayesDBApp(Cmd):
     self.client('show ' + str(line))
 
   def do_list(self, line):
-    import pdb; pdb.set_trace()    
     self.client('list ' + str(line))
 
   def do_analyze(self, line):
@@ -77,7 +76,6 @@ class BayesDBApp(Cmd):
     self.client('help ' + str(line))
     
   def default(self, line):
-    import pdb; pdb.set_trace()
     self.client(str(line))
 
 def run_command_line():
