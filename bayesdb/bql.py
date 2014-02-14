@@ -75,7 +75,7 @@ class BayesDBApp(Cmd):
   def default(self, line):
     self.client(str(line))
 
-if __name__ == "__main__":
+def run_command_line():
   # Get command line arguments to specify hostname and port
   hostname = None
   port = None
@@ -91,3 +91,7 @@ if __name__ == "__main__":
   client = Client(hostname, port)
   app = BayesDBApp(client)
   app.cmdloop()
+    
+
+if __name__ == "__main__":
+  run_command_line()

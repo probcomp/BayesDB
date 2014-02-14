@@ -1,6 +1,7 @@
-#!/usr/bin/env python
-
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 
 setup(
     name='BayesDB',
@@ -9,5 +10,16 @@ setup(
     author_email = 'bayesdb@mit.edu',
     url='probcomp.csail.mit.edu/bayesdb',
     long_description='BayesDB',
-    packages=['bayesdb', 'bayesdb.tests']
+    packages=['bayesdb', 'bayesdb.tests'],
+    install_requires=['jsonrpc', 'requests', 'Twisted', 'pyOpenSSL',
+                      'numpy', 'scipy', 'matplotlib', 'hcluster',
+                      'Sphinx', 'pytest',
+                      'prettytable', 'cmd2', 'pyparsing',
+                      'ipython'],
+    license='Apache License, Version 2.0',
+    entry_points = """
+                   [console_scripts]
+                   bql = bayesdb.bql:run_command_line
+                   """
+                   
 )
