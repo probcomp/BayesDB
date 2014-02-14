@@ -34,6 +34,7 @@ class BayesDBApp(Cmd):
     self.client('show ' + str(line))
 
   def do_list(self, line):
+    import pdb; pdb.set_trace()    
     self.client('list ' + str(line))
 
   def do_analyze(self, line):
@@ -76,6 +77,7 @@ class BayesDBApp(Cmd):
     self.client('help ' + str(line))
     
   def default(self, line):
+    import pdb; pdb.set_trace()
     self.client(str(line))
 
 def run_command_line():
@@ -86,16 +88,19 @@ def run_command_line():
     # Treat the first argument as hostname[:port]
     input = sys.argv[1].split(':')
     hostname = input[0]
+    if len(input) == 1:
+      client = Client(hostname)
     if len(input) == 2:
       port = int(input[1])
+      client = Client(hostname, port)
     elif len(input) > 2:
       print "Run with 'python bql [hostname[:port]]'"
+  else:
+    client = Client()
 
   print """Welcome to BayesDB. You may enter BQL commands directly into this prompt. Type 'help' for help, and 'quit' to quit."""
-  client = Client(hostname, port)
   app = BayesDBApp(client)
   app.cmdloop()
-    
 
 if __name__ == "__main__":
   run_command_line()
