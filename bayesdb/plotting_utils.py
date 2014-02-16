@@ -50,7 +50,8 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         ax.set_yticks(ind+width)
         ax.set_yticklabels(labels)
     elif parsed_data['datatype'] == 'cont1D':
-        return
+        fig, ax = pylab.subplots()
+        ax.hist(parsed_data['data'], orientation='horizontal')
     else:
         return
     if filename:
