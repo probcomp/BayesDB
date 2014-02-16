@@ -49,33 +49,38 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         rects = ax.barh(ind, counts, width)
         ax.set_yticks(ind+width)
         ax.set_yticklabels(labels)
+    elif parsed_data['datatype'] == 'cont1D':
+        return
+    else:
+        return
     if filename:
         pylab.savefig(filename)
     else:
         fig.show()
 
 def parse_data_for_hist(colnames, data, M_c):
+    output = {}
     if len(colnames) - 1 == 1:
-        if M_c['column_metadata'][0]['modeltype'] == 'symmetric_dirichlet_discrete':
+        col_idx = M_c['name_to_idx'][colnames[1]]
+        if M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
             str_data = [x[1] for x in data]
             unique_labels = list(set(str_data))
             np_str_data = numpy.array(str_data)
             counts = []
             for label in unique_labels:
                 counts.append(sum(np_str_data==label))
-            output = {}
             output['datatype'] = 'mult1D'
             output['labels'] = unique_labels
             output['data'] = counts
-            return output
-            #1D case
-        if M_c['column_metadata'][0]['modeltype'] == 'normal_inverse_gamma':
-            return None
+        elif M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma':
+            output['datatype'] = 'cont1D'
+            output['data'] = numpy.array([x[1] for x in data])
     elif len(colnames) - 1 == 2:
-        print 'there'
-        return None#2d case
+        output['datatype'] = '2D'
     else:
-        return None
+        output['datatype'] = None
+    return output
+
 def plot_matrix(matrix, column_names, title='', filename=None):
     # actually create figure
     fig = pylab.figure()
