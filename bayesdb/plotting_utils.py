@@ -22,10 +22,13 @@ import numpy
 import os
 import pylab
 import matplotlib.cm
+#import matplotlib as plt
 
 import utils
 import functions
 import data_utils as du
+
+import pdb
 
 def plot_general_histogram(colnames, data, M_c, filename=None):
     '''
@@ -34,12 +37,45 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
     '''
     fig = pylab.figure()
-    
+    parsed_data = parse_data_for_hist(colnames, data, M_c)
+    if parsed_data['datatype'] == 'mult1D':
+        print 'mult1D'
+        labels = parsed_data['labels']
+        counts = parsed_data['data']
+        num_vals = len(labels)
+        ind = numpy.arange(num_vals)
+        width = .5
+        fig, ax = pylab.subplots()
+        rects = ax.barh(ind, counts, width)
+        ax.set_yticks(ind+width)
+        ax.set_yticklabels(labels)
     if filename:
         pylab.savefig(filename)
     else:
         fig.show()
 
+def parse_data_for_hist(colnames, data, M_c):
+    if len(colnames) - 1 == 1:
+        if M_c['column_metadata'][0]['modeltype'] == 'symmetric_dirichlet_discrete':
+            str_data = [x[1] for x in data]
+            unique_labels = list(set(str_data))
+            np_str_data = numpy.array(str_data)
+            counts = []
+            for label in unique_labels:
+                counts.append(sum(np_str_data==label))
+            output = {}
+            output['datatype'] = 'mult1D'
+            output['labels'] = unique_labels
+            output['data'] = counts
+            return output
+            #1D case
+        if M_c['column_metadata'][0]['modeltype'] == 'normal_inverse_gamma':
+            return None
+    elif len(colnames) - 1 == 2:
+        print 'there'
+        return None#2d case
+    else:
+        return None
 def plot_matrix(matrix, column_names, title='', filename=None):
     # actually create figure
     fig = pylab.figure()
