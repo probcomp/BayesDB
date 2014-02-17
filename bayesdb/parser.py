@@ -179,7 +179,7 @@ class Parser(object):
         ## TODO: parse min to max
         if len(words) >= 4 and words[0] == 'models' and words[1] == 'drop':
             if words[2] == 'for':
-                return 'show_diagnostics', dict(tablename=words[3])
+                return 'drop_models', dict(tablename=words[3])
             else:
                 return 'help', self.help_show_diagnostics()
                 
@@ -583,7 +583,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'update':
-                return 'help', self.help_update_datatypes()
+                return 'help', self.help_update_schema()
         else:
             tablename = match.group('btable').strip()
             mapping_string = match.group('mappings').strip()
@@ -605,7 +605,7 @@ class Parser(object):
                 else:
                     return 'help', self.help_update_datatypes()
                 mappings[vals[0]] = datatype
-            return 'update_datatypes', dict(tablename=tablename, mappings=mappings)
+            return 'update_schema', dict(tablename=tablename, mappings=mappings)
 
 ############################################################
 # Parsing helper functions: "extract" functions

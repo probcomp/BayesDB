@@ -100,12 +100,12 @@ class Engine(object):
     and it ignores multinomials' specific number of outcomes.
     Also, disastrous things may happen if you update a schema after creating models.
     """
-    metadata = self.persistence_layer.update_schema(tablename, mappings)
-    m_c = metadata['M_c']
-    cctypes = metadata['cctypes']
-    colnames = [m_c['idx_to_name'][str(idx)] for idx in range(len(m_c['idx_to_name']))]
-    return dict(columns=colnames, data=[cctypes], message='Updated schema:\n')
-
+    msg = self.persistence_layer.update_schema(tablename, mappings)
+    if 'Error' in msg:
+      return dict(message=msg)
+    ret = self.show_schema(tablename)
+    ret['message'] = 'Updated schema.'
+    return ret
     
   def _guess_schema(self, header, values, crosscat_column_types, colnames):
     # TODO: should this be deleted in favor of using crosscat's datatype guessing?
@@ -224,8 +224,13 @@ class Engine(object):
     else:
       return dict(models=modelid_iteration_info)
 
-  def analyze(self, tablename, model_index='all', iterations=1):
-    """Run analyze for the selected table. model_index may be 'all'."""
+  def analyze(self, tablename, model_index='all', iterations=1, max_time=-1):
+    """
+    Run analyze for the selected table. model_index may be 'all'.
+    Previously: this command ran in the same thread as this engine.
+    Now: runs each model in its own thread, and does 10 seconds of inference at a time,
+    by default. Each thread also has its own crosscat engine instance!
+    """
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
     models = self.persistence_layer.get_models(tablename)
