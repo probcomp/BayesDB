@@ -18,11 +18,11 @@
 #   limitations under the License.
 #
 
-import numpy
+import numpy as np
 import os
 import pylab
 import matplotlib.cm
-#import matplotlib as plt
+import pandas as pd
 
 import utils
 import functions
@@ -30,28 +30,32 @@ import data_utils as du
 
 import pdb
 
+KDE = True
+
 def plot_general_histogram(colnames, data, M_c, filename=None):
     '''
     colnames: list of column names
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
     '''
-    fig = pylab.figure()
+    fig, ax = pylab.subplots()
     parsed_data = parse_data_for_hist(colnames, data, M_c)
     if parsed_data['datatype'] == 'mult1D':
         print 'mult1D'
         labels = parsed_data['labels']
-        counts = parsed_data['data']
+        datapoints = parsed_data['data']
         num_vals = len(labels)
-        ind = numpy.arange(num_vals)
+        ind = np.arange(num_vals)
         width = .5
-        fig, ax = pylab.subplots()
-        rects = ax.barh(ind, counts, width)
+        rects = ax.barh(ind, datapoints, width)
         ax.set_yticks(ind+width)
         ax.set_yticklabels(labels)
     elif parsed_data['datatype'] == 'cont1D':
-        fig, ax = pylab.subplots()
-        ax.hist(parsed_data['data'], orientation='horizontal')
+        datapoints = parsed_data['data']
+        if KDE:
+            pass
+        else:
+            ax.hist(parsed_data['data'], orientation='horizontal')
     else:
         return
     if filename:
@@ -66,7 +70,7 @@ def parse_data_for_hist(colnames, data, M_c):
         if M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
             str_data = [x[1] for x in data]
             unique_labels = list(set(str_data))
-            np_str_data = numpy.array(str_data)
+            np_str_data = np.array(str_data)
             counts = []
             for label in unique_labels:
                 counts.append(sum(np_str_data==label))
@@ -75,7 +79,7 @@ def parse_data_for_hist(colnames, data, M_c):
             output['data'] = counts
         elif M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma':
             output['datatype'] = 'cont1D'
-            output['data'] = numpy.array([x[1] for x in data])
+            output['data'] = np.array([x[1] for x in data])
     elif len(colnames) - 1 == 2:
         output['datatype'] = '2D'
     else:
@@ -118,14 +122,14 @@ def _create_histogram(M_c, data, columns, mc_col_indices, filename):
     else:
       str_data = [du.convert_code_to_value(M_c, mc_col_idx, code) for code in data_i]
       unique_labels = list(set(str_data))
-      np_str_data = numpy.array(str_data)
+      np_str_data = np.array(str_data)
       counts = []
       for label in unique_labels:
         counts.append(sum(np_str_data==label))
       num_vals = len(M_c['column_metadata'][mc_col_idx]['code_to_value'])
       rects = pylab.barh(range(num_vals), counts)
-      heights = numpy.array([rect.get_height() for rect in rects])
-      ax.set_yticks(numpy.arange(num_vals) + heights/2)
+      heights = np.array([rect.get_height() for rect in rects])
+      ax.set_yticks(np.arange(num_vals) + heights/2)
       ax.set_yticklabels(unique_labels)
   pylab.tight_layout()
   pylab.savefig(full_filename)
