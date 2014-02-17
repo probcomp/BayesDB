@@ -28,6 +28,8 @@ import utils
 import functions
 import data_utils as du
 
+import math
+
 import pdb
 
 KDE = True
@@ -38,6 +40,7 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
     '''
+#    pdb.set_trace()
     fig, ax = pylab.subplots()
     parsed_data = parse_data_for_hist(colnames, data, M_c)
     if parsed_data['datatype'] == 'mult1D':
@@ -53,7 +56,11 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
     elif parsed_data['datatype'] == 'cont1D':
         datapoints = parsed_data['data']
         if KDE:
-            pass
+            from scipy.stats import kurtosis
+            doanes = lambda dataq: int(1 + math.log(len(dataq)) + math.log(1 + kurtosis(dataq) * (len(dataq) / 6.) ** 0.5))
+            series = pd.Series(datapoints)
+            series.hist(bins=doanes(series.dropna()), normed=True, color='lightseagreen')
+            series.dropna().plot(kind='kde', xlim=(0,100), style='r--') #Should be changed from hardcoded 100
         else:
             ax.hist(parsed_data['data'], orientation='horizontal')
     else:
