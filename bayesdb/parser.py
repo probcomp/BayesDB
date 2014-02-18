@@ -266,11 +266,12 @@ class Parser(object):
 
                     
     def help_analyze(self):
-        return "ANALYZE <btable> [MODEL INDEX <model_index>] [FOR <iterations> ITERATIONS]: perform inference."
+        return "ANALYZE <btable> [MODEL INDEX <model_index>] [FOR <iterations> ITERATIONS | FOR <seconds> SECONDS]: perform inference."
 
     def parse_analyze(self, words, orig):
         model_index = 'all'
-        iterations = 2
+        iterations = None
+        seconds = None
         if len(words) >= 1 and words[0] == 'analyze':
             if len(words) >= 2:
                 tablename = words[1]
@@ -283,8 +284,15 @@ class Parser(object):
             ## TODO: check length here
             if words[idx] == "for" and ((words[idx+2] == 'iterations') or (words[idx+2] == 'iteration')):
                 iterations = int(words[idx+1])
+                seconds = -1
+            elif words[idx] == "for" and ((words[idx+2] == 'seconds') or (words[idx+2] == 'second')):
+                seconds = float(words[idx+1])
+                iterations = None
+            else:
+                seconds = 300
+                iterations = None
             return 'analyze', dict(tablename=tablename, model_index=model_index,
-                                   iterations=iterations)
+                                   iterations=iterations, seconds=seconds)
 
 
             

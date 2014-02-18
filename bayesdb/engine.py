@@ -224,7 +224,7 @@ class Engine(object):
     else:
       return dict(models=modelid_iteration_info)
 
-  def analyze(self, tablename, model_index='all', iterations=1, max_time=-1):
+  def analyze(self, tablename, model_index='all', iterations=100, seconds=300):
     """
     Run analyze for the selected table. model_index may be 'all'.
     Previously: this command ran in the same thread as this engine.
@@ -233,6 +233,9 @@ class Engine(object):
     """
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
+    max_model_id = self.persistence_layer.get_max_model_id(tablename)
+    if max_model_id == -1:
+      return dict(message="You must INITIALIZE MODELS before using ANALYZE.")
     models = self.persistence_layer.get_models(tablename)
 
     if (str(model_index).upper() == 'ALL'):
@@ -242,15 +245,17 @@ class Engine(object):
 
     X_L_list = [models[i]['X_L'] for i in modelids]
     X_D_list = [models[i]['X_D'] for i in modelids]
+
+    analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True)
+    if iterations is not None:
+      analyze_args['n_steps'] = iterations
+    else:
+      analyze_args['max_time'] = seconds
+
+    X_L_list_prime, X_D_list_prime, diagnostics_dict = self.call_backend('analyze', analyze_args)
+    iterations = len(diagnostics_dict['logscore'])
+    self.persistence_layer.update_models(tablename, modelids, X_L_list_prime, X_D_list_prime, diagnostics_dict)
     
-    X_L_list_prime, X_D_list_prime = self.call_backend('analyze', dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, n_steps=iterations))
-
-    for i in modelids:
-      X_L = X_L_list_prime[i]
-      X_D = X_D_list_prime[i]
-      models[i] = dict(X_L=X_L, X_D=X_D, iterations=models[i]['iterations'] + iterations)
-    self.persistence_layer.update_models(tablename, models)
-
     ret = self.show_models(tablename)
     ret['message'] = 'Analyze complete.'
     return ret

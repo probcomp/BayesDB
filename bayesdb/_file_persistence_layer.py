@@ -47,7 +47,7 @@ class FilePersistenceLayer(PersistenceLayer):
     
     metadata.pkl: dict. keys: M_r, M_c, T, cctypes
     column_lists.pkl: dict. keys: column list names, values: list of column names.
-    models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations]. Idx starting at 1.
+    models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore]. Idx starting at 1.
     data.csv: the raw csv file that the data was loaded from.
     """
     
@@ -308,11 +308,37 @@ class FilePersistenceLayer(PersistenceLayer):
             models[max_model_id + 1 + i] = m
         self.write_models(tablename, models)
 
-    def update_models(self, tablename, models_new):
-        """ Overwrite all models by id. """
+    def update_models(self, tablename, modelids, X_L_list, X_D_list, diagnostics_dict):
+        """
+        Overwrite all models by id, and append diagnostic info.
+        
+        param diagnostics_dict: -> dict[f_z[0, D], num_views, logscore, f_z[0, 1], column_crp_alpha]
+        Each of the 5 diagnostics is a 2d array, size #models x #iterations
+
+        Ignores f_z[0, D] and f_z[0, 1], since these will need to be recalculated after all
+        inference is done in order to properly incorporate all models.
+        """
         models = self.get_models(tablename)
-        for modelid in models_new.keys():            
-            models[modelid] = models_new[modelid]
+        new_iterations = len(diagnostics_dict['logscore'])
+
+        # models: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views]. Idx starting at 1.
+        # each diagnostic entry is a list, over iterations.
+
+        # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore, num_views.
+        for idx, modelid in enumerate(modelids):
+            model_dict = models[modelid]
+            model_dict['X_L'] = X_L_list[idx]
+            model_dict['X_D'] = X_D_list[idx]
+            model_dict['iterations'] = model_dict['iterations'] + new_iterations
+            
+            for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
+                diag_list = [l[idx] for l in diagnostics_dict[diag_key]]
+                if diag_key in model_dict and type(model_dict[diag_key]) == list:
+                    model_dict[diag_key] += diag_list
+                else:
+                    model_dict[diag_key] = diag_list
+
+        # Save to disk
         self.write_models(tablename, models)
 
     def update_model(self, tablename, X_L, X_D, iterations, modelid):

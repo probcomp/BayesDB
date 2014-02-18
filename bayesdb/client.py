@@ -102,7 +102,7 @@ class Client(object):
                     continue
             result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes)
 
-            if type(result) == dict and result['message'] == 'execute_file':
+            if type(result) == dict and 'message' in result and result['message'] == 'execute_file':
                 ## special case for one command: execute_file
                 new_lines = self.parser.parse(result['bql_string'])
                 lines += new_lines
