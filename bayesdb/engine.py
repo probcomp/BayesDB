@@ -224,7 +224,7 @@ class Engine(object):
     else:
       return dict(models=modelid_iteration_info)
 
-  def analyze(self, tablename, model_index='all', iterations=100, seconds=300):
+  def analyze(self, tablename, model_index='all', iterations=1, seconds=-1):
     """
     Run analyze for the selected table. model_index may be 'all'.
     Previously: this command ran in the same thread as this engine.

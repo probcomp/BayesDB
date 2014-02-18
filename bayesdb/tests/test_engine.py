@@ -61,16 +61,16 @@ def test_create_btable():
   assert 'data' in create_btable_result
   assert 'message' in create_btable_result
   assert len(create_btable_result['data'][0]) == 64 ## 64 is number of columns in DHA dataset
-  list_btables_result = engine.list_btables()
+  list_btables_result = engine.list_btables()['list']
   assert test_tablename in list_btables_result
   engine.drop_btable(test_tablename)
 
 def test_drop_btable():
   test_tablename, _ = create_dha()
-  list_btables_result = engine.list_btables()
+  list_btables_result = engine.list_btables()['list']
   assert test_tablename in list_btables_result
   engine.drop_btable(test_tablename)
-  list_btables_result = engine.list_btables()
+  list_btables_result = engine.list_btables()['list']
   assert test_tablename not in list_btables_result
 
 def test_select():
@@ -85,7 +85,6 @@ def test_select():
   select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
   assert 'columns' in select_result
   assert 'data' in select_result
-  assert 'message' in select_result
   assert select_result['columns'] == ['row_id', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
   assert len(select_result['data']) == 307 and len(select_result['data'][0]) == len(select_result['columns'])
@@ -209,7 +208,6 @@ def test_save_and_load_models():
 
 def test_initialize_models():
   test_tablename, _ = create_dha(path='data/dha_missing.csv')     
-  print test_tablename
 
   engine = Engine(seed=0)
   num_models = 5
@@ -248,7 +246,6 @@ def test_infer():
   ## TODO: whereclauses
   test_tablename, _ = create_dha(path='data/dha_missing.csv')
 
-  print test_tablename
   ## dha_missing has missing qual_score in first 5 rows, and missing name in rows 6-10.
   engine = Engine(seed=0)
   engine.initialize_models(test_tablename, 20)
@@ -262,7 +259,6 @@ def test_infer():
   infer_result = engine.infer(test_tablename, columnstring, '', confidence, whereclause, limit, numsamples, order_by)
   assert 'columns' in infer_result
   assert 'data' in infer_result
-  assert 'message' in infer_result
   assert infer_result['columns'] == ['row_id', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
   assert len(infer_result['data']) == 307 and len(infer_result['data'][0]) == len(infer_result['columns'])
@@ -305,7 +301,6 @@ def test_simulate():
   simulate_result = engine.simulate(test_tablename, columnstring, '', whereclause, numpredictions, order_by)
   assert 'columns' in simulate_result
   assert 'data' in simulate_result
-  assert 'message' in simulate_result
   assert simulate_result['columns'] == ['name', 'qual_score']
 
   assert len(simulate_result['data']) == 10 and len(simulate_result['data'][0]) == len(simulate_result['columns'])
@@ -333,21 +328,21 @@ def test_estimate_pairwise_correlation():
   cor_mat = engine.estimate_pairwise(test_tablename, 'correlation')
 
 def test_list_btables():
-  list_btables_result = engine.list_btables()
+  list_btables_result = engine.list_btables()['list']
   assert (type(list_btables_result) == set) or (type(list_btables_result) == list)
   initial_btable_count = len(list_btables_result)
   
   test_tablename1, create_btable_result = create_dha()
   test_tablename2, create_btable_result = create_dha()
 
-  list_btables_result = engine.list_btables()
+  list_btables_result = engine.list_btables()['list']
   assert test_tablename1 in list_btables_result
   assert test_tablename2 in list_btables_result
   assert len(list_btables_result) == 2 + initial_btable_count
   
   engine.drop_btable(test_tablename1)
   test_tablename3, create_btable_result = create_dha()
-  list_btables_result = engine.list_btables()  
+  list_btables_result = engine.list_btables()['list']  
   assert test_tablename1 not in list_btables_result
   assert test_tablename3 in list_btables_result
   assert test_tablename2 in list_btables_result
@@ -355,7 +350,7 @@ def test_list_btables():
   engine.drop_btable(test_tablename2)
   engine.drop_btable(test_tablename3)
 
-  list_btables_result = engine.list_btables()  
+  list_btables_result = engine.list_btables()['list']  
   assert len(list_btables_result) == 0 + initial_btable_count
 
 

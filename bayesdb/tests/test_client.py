@@ -82,26 +82,25 @@ def test_drop_btable():
 def test_btable_list():
   global client, test_filenames
 
-  out = client('list btables', pretty=False)[0]
-  print out
+  out = client('list btables', pretty=False)[0]['list']
   init_btable_count = len(out)
   
   test_tablename1 = create_dha()
 
-  out = client('list btables', pretty=False)[0]
+  out = client('list btables', pretty=False)[0]['list']
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 in out
   
   test_tablename2 = create_dha()
 
-  out = client('list btables', pretty=False)[0]
+  out = client('list btables', pretty=False)[0]['list']
   assert len(out) == 2 + init_btable_count
   assert test_tablename1 in out
   assert test_tablename2 in out
 
   client('drop btable %s' % test_tablename1, yes=True)
   
-  out = client('list btables', pretty=False)[0]
+  out = client('list btables', pretty=False)[0]['list']
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 not in out
   assert test_tablename2 in out
@@ -110,7 +109,7 @@ def test_btable_list():
   del client
   client = Client()
   
-  out = client('list btables', pretty=False)[0]
+  out = client('list btables', pretty=False)[0]['list']
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 not in out
   assert test_tablename2 in out
