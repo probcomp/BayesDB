@@ -334,7 +334,7 @@ class Engine(object):
 
   def simulate(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by, hist=False):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
-    
+
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
 
@@ -383,10 +383,9 @@ class Engine(object):
           i += 1
       data.append(row)
       
-    ret = {'message': 'Simulated data:', 'columns': colnames, 'data': data}
+    ret = {'columns': colnames, 'data': data}
     if hist:
       ret['M_c'] = M_c
-      
     return ret
 
   def show_column_lists(self, tablename):
