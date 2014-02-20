@@ -253,6 +253,21 @@ class Engine(object):
     else:
       return dict(models=modelid_iteration_info)
 
+  def show_diagnostics(self, tablename):
+    """
+    Display diagnostic information for all your models.
+    TODO: generate plots of num_views, column_crp_alpha, logscore, and f_z stuff
+    """
+    models = self.persistence_layer.get_models(tablename)    
+    data = list()
+    for modelid, model in sorted(models.items(), key=lambda t:t[0]):
+      data.append((modelid, model['iterations'], str(model['model_config'])))
+    if len(models) == 0:
+      return dict(message="No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
+    else:
+      return dict(columns=['model_id', 'iterations', 'model_config'], data=data)
+    
+
   def analyze(self, tablename, model_index='all', iterations=1, seconds=-1):
     """
     Run analyze for the selected table. model_index may be 'all'.
