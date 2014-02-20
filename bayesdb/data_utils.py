@@ -284,7 +284,7 @@ def convert_code_to_value(M_c, cidx, code):
     TODO: fix the backwards naming.
     """
     if M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
-        return round(code,1)
+        return float(code)
     else:
         try:
             return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
