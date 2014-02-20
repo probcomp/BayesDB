@@ -191,14 +191,41 @@ class Engine(object):
     #TODO
     pass
     
-  def initialize_models(self, tablename, n_models):
-    """Call CrossCat's initialize method n_models times."""
+  def initialize_models(self, tablename, n_models, model_config=None):
+    """
+    Initialize n_models models.
+
+    By default, model_config specifies to use the CrossCat model. You may pass 'naive bayes'
+    or 'crp mixture' to use those specific models instead. Alternatively, you can pass a custom
+    dictionary for model_config, as long as it contains a kernel_list, initializaiton, and
+    row_initialization.
+    """
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     max_modelid = self.persistence_layer.get_max_model_id(tablename)
 
+    # Set model configuration parameters.
+    if type(model_config) == str and model_config.lower() == 'naive bayes':
+      model_config = dict(kernel_list=['column_hyperparameters'],
+                          initialization='together',
+                          row_initialization='together')
+    elif type(model_config) == str and model_config.lower() == 'crp mixture':
+      model_config = dict(kernel_list=['column_hyperparameters',
+                                       'row_partition_hyperparameters',
+                                       'row_partition_assignments'],
+                          initialization='together',
+                          row_initialization='from_the_prior')
+    elif type(model_config) != dict or ('kernel_list' not in model_config) or ('initialization' not in model_config) or ('row_initialization' not in model_config):
+      # default model_config: crosscat
+      model_config = dict(kernel_list=(), # uses default
+                          initialization='from_the_prior',
+                          row_initialization='from_the_prior')
+
     # Call initialize on backend
-    X_L_list, X_D_list = self.call_backend('initialize', dict(M_c=M_c, M_r=M_r, T=T, n_chains=n_models))    
+    X_L_list, X_D_list = self.call_backend('initialize',
+                                           dict(M_c=M_c, M_r=M_r, T=T, n_chains=n_models,
+                                                initialization=model_config['initialization'],
+                                                row_initialization=model_config['row_initialization']))
 
     # If n_models is 1, initialize returns X_L and X_D instead of X_L_list and X_D_list
     if n_models == 1:
@@ -207,7 +234,9 @@ class Engine(object):
     
     model_list = list()    
     for X_L, X_D in zip(X_L_list, X_D_list):
-      model_list.append(dict(X_L=X_L, X_D=X_D, iterations=0))      
+      model_list.append(dict(X_L=X_L, X_D=X_D, iterations=0,
+                             column_crp_alpha=[], logscore=[], num_views=[],
+                             model_config=model_config))
 
     # Insert results into persistence layer
     self.persistence_layer.add_models(tablename, model_list)
@@ -246,7 +275,14 @@ class Engine(object):
     X_L_list = [models[i]['X_L'] for i in modelids]
     X_D_list = [models[i]['X_D'] for i in modelids]
 
-    analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True)
+    first_model = models[modelids[0]]
+    if 'kernel_list' in first_model:
+      kernel_list = ['kernel_list']
+    else:
+      kernel_list = () # default kernel list
+      
+    analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True,
+                        kernel_list=kernel_list)
     if iterations is not None:
       analyze_args['n_steps'] = iterations
     else:

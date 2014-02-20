@@ -47,7 +47,7 @@ class FilePersistenceLayer(PersistenceLayer):
     
     metadata.pkl: dict. keys: M_r, M_c, T, cctypes
     column_lists.pkl: dict. keys: column list names, values: list of column names.
-    models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore]. Idx starting at 1.
+    models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views, model_config]. Idx starting at 1.
     data.csv: the raw csv file that the data was loaded from.
     """
     

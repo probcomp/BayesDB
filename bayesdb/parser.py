@@ -185,34 +185,28 @@ class Parser(object):
                 
                 
     def help_initialize_models(self):
-        return "INITIALIZE <num_models> MODELS FOR <btable>: the step to perform before analyze."
+        return "INITIALIZE <num_models> MODELS FOR <btable> [WITH CONFIG <model_config>]: the step to perform before analyze."
 
     def parse_initialize_models(self, words, orig):
-        n_models = 10
-        if len(words) >= 1:
-            if words[0] == 'initialize' and (utils.is_int(words[1]) or words[1] == 'model' or words[1] == 'models'):
-                if len(words) >= 4 and words[1] == 'model' or words[1] == 'models':
-                    if words[2] == 'for':
-                        tablename = words[3]
-                        if len(words) >= 7:
-                            if words[4] == 'with' and utils.is_int(words[5]) and words[6] == 'explanations':
-                                n_models = int(words[5])
-                        return 'initialize_models', dict(tablename=tablename, n_models=n_models)
-                    else:
-                        return 'help', self.help_initialize_models()
-                elif len(words) >= 3 and utils.is_int(words[1]):
-                    n_models = int(words[1])
-                    assert n_models > 0
-                    if words[2] == 'model' or words[2] == 'models':
-                        if len(words) >= 5 and words[3] == 'for':
-                            tablename = words[4]
-                            return 'initialize_models', dict(tablename=tablename, n_models=n_models)
-                        else:
-                            return 'help', self.help_initialize_models()
-                else:
-                    return 'help', self.help_initialize_models()
+        match = re.search(r"""
+            initialize\s+
+            (?P<num_models>[^\s]+)
+            \s+model(s)?\s+for\s+
+            (?P<btable>[^\s]+)
+            (\s+with\s+config\s+(?P<model_config>)$)?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'initialize' or words[0] == 'create':
+                return 'help', self.help_initialize_models()
+        else:
+            n_models = int(match.group('num_models'))
+            tablename = match.group('btable')
+            model_config = match.group('model_config')
 
-
+            if model_config is not None:
+                model_config = model_config.strip()
+            return 'initialize_models', dict(tablename=tablename, n_models=n_models,
+                                             model_config=model_config)
                     
     def help_create_btable(self):
         return "CREATE BTABLE <tablename> FROM <filename>: create a table from a csv file"
