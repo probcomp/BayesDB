@@ -27,12 +27,8 @@ import pandas as pd
 import utils
 import functions
 import data_utils as du
-
 import math
-
 import pdb
-
-KDE = True
 
 def plot_general_histogram(colnames, data, M_c, filename=None):
     '''
@@ -40,7 +36,6 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
     '''
-#    pdb.set_trace()
     fig, ax = pylab.subplots()
     parsed_data = parse_data_for_hist(colnames, data, M_c)
     if parsed_data['datatype'] == 'mult1D':
@@ -55,14 +50,11 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         ax.set_yticklabels(labels)
     elif parsed_data['datatype'] == 'cont1D':
         datapoints = parsed_data['data']
-        if KDE:
-            from scipy.stats import kurtosis
-            doanes = lambda dataq: int(1 + math.log(len(dataq)) + math.log(1 + kurtosis(dataq) * (len(dataq) / 6.) ** 0.5))
-            series = pd.Series(datapoints)
-            series.hist(bins=doanes(series.dropna()), normed=True, color='lightseagreen')
-            series.dropna().plot(kind='kde', xlim=(0,100), style='r--') #Should be changed from hardcoded 100
-        else:
-            ax.hist(parsed_data['data'], orientation='horizontal')
+        from scipy.stats import kurtosis
+        doanes = lambda dataq: int(1 + math.log(len(dataq)) + math.log(1 + kurtosis(dataq) * (len(dataq) / 6.) ** 0.5))
+        series = pd.Series(datapoints)
+        series.hist(bins=doanes(series.dropna()), normed=True, color='lightseagreen')
+        series.dropna().plot(kind='kde', xlim=(0,100), style='r--') #Should be changed from hardcoded 100
     else:
         return
     if filename:
@@ -72,22 +64,30 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
 
 def parse_data_for_hist(colnames, data, M_c):
     output = {}
-    if len(colnames) - 1 == 1:
-        col_idx = M_c['name_to_idx'][colnames[1]]
+    columns = colnames[:]
+    data_no_id = [] #This will be the data with the row_ids removed if present
+    if colnames[0] == 'row_id':
+        columns.pop(0)
+
+    if len(columns) == 1:
+        if colnames[0] == 'row_id':
+            data_no_id = [x[1] for x in data]
+        else:
+            data_no_id = [x[0] for x in data]
+        col_idx = M_c['name_to_idx'][columns[0]]
         if M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
-            str_data = [x[1] for x in data]
-            unique_labels = list(set(str_data))
-            np_str_data = np.array(str_data)
+            unique_labels = list(set(data_no_id))
+            np_data = np.array(data_no_id)
             counts = []
             for label in unique_labels:
-                counts.append(sum(np_str_data==label))
+                counts.append(sum(np_data==label))
             output['datatype'] = 'mult1D'
             output['labels'] = unique_labels
             output['data'] = counts
         elif M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma':
             output['datatype'] = 'cont1D'
-            output['data'] = np.array([x[1] for x in data])
-    elif len(colnames) - 1 == 2:
+            output['data'] = np.array(data_no_id)
+    elif len(columns) == 2:
         output['datatype'] = '2D'
     else:
         output['datatype'] = None
@@ -109,6 +109,7 @@ def plot_matrix(matrix, column_names, title='', filename=None):
         pylab.savefig(filename)
     else:
         fig.show()
+
 
 
 def _create_histogram(M_c, data, columns, mc_col_indices, filename):
