@@ -205,17 +205,6 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
       infer_colnames = query_colnames[1:] # remove row_id from front of query_columns, so that infer doesn't infer row_id
       query_col_indices = [M_c['name_to_idx'][colname] for colname in infer_colnames]
 
-      # FIXME: the purpose of the whereclause is to specify 'given'
-      #        p(missing_value | X_L, X_D, whereclause)
-      ## TODO: should all observed values besides the ones being imputed be givens?
-      # TODO: REFACTOR: INFER SHOULD USE WHERE_CONDITIONS, NOT WHERECLAUSE
-      if whereclause=="" or '=' not in whereclause:
-        Y = None
-      else:
-        varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
-        Y = [(numrows+1, name_to_idx[colname], colval) for colname, colval in varlist]
-        Y = [(r, c, du.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
-
     for row_id, T_row in enumerate(T):
       row_values = convert_row_from_codes_to_values(T_row, M_c) ## Convert row from codes to values
       if is_row_valid(row_id, row_values, where_conditions, M_c, X_L_list, X_D_list, T, engine): ## Where clause filtering.
@@ -225,7 +214,9 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
           for col_id in query_col_indices:
             if numpy.isnan(t_array[row_id, col_id]):
               # Found missing value! Try to fill it in.
-              # row_id, col_id is Q. Y is givens.
+              # row_id, col_id is Q. Y is givens: All non-nan values in this row
+              Y = [(row_id, cidx, t_array[row_id, cidx]) for cidx in M_c['name_to_idx'].values() \
+                   if not numpy.isnan(t_array[row_id, cidx])]
               code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, num_impute_samples,
                                  impute_confidence, engine)
               if code:
