@@ -438,7 +438,7 @@ class Parser(object):
 
 
     def help_simulate(self):
-        return "SIMULATE [HIST] col0, [col1, ...] FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <file>]: simulate new datapoints based on the underlying model."
+        return "SIMULATE [HIST] col0, [col1, ...] FROM <btable> [GIVEN <givens>] TIMES <times> [SAVE TO <file>]: simulate new datapoints based on the underlying model."
 
     def parse_simulate(self, words, orig):
         match = re.search(r"""
@@ -446,7 +446,7 @@ class Parser(object):
             (?P<hist>hist\s+)?
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
-            (where\s+(?P<whereclause>.*(?=times)))?
+            ((given|where)\s+(?P<givens>.*(?=times)))?
             times\s+(?P<times>[^\s]+)
             (\s+save\s+to\s+(?P<filename>[^\s]+))?        
         """, orig, re.VERBOSE | re.IGNORECASE)
@@ -456,11 +456,11 @@ class Parser(object):
         else:
             columnstring = match.group('columnstring').strip()
             tablename = match.group('btable')
-            whereclause = match.group('whereclause')
-            if whereclause is None:
-                whereclause = ''
+            givens = match.group('givens')
+            if givens is None:
+                givens = ''
             else:
-                whereclause = whereclause.strip()
+                givens = givens.strip()
             numpredictions = int(match.group('times'))
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
@@ -471,7 +471,7 @@ class Parser(object):
                 filename = None            
             return 'simulate', \
                     dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
-                         whereclause=whereclause, numpredictions=numpredictions, order_by=order_by, hist=hist), \
+                         givens=givens, numpredictions=numpredictions, order_by=order_by, hist=hist), \
                     dict(hist=hist, filename=filename)
 
     def help_show_column_lists(self):

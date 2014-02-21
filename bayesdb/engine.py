@@ -358,14 +358,14 @@ class Engine(object):
       used_functions = [q[0] for q in queries]
       for bf in blacklisted_functions:
         if bf in queries:
-          return {'message': 'You must INITIALIZE MODELS (and preferably ANALYZE) before calling functions that require models.'}
+          return {'message': 'You must INITIALIZE MODELS (and highly preferably ANALYZE) before calling functions that require models.'}
       if order_by:
         order_by_functions = [x[0] for x in order_by]
         blacklisted_function_names = ['similarity', 'typicality', 'probability', 'predictive probability']        
         for fname in blacklisted_function_names:
           for order_by_f in order_by_functions:
             if fname in order_by_f:
-              return {'message': 'You must INITIALIZE MODELS (and preferably ANALYZE) before calling functions that require models.'}
+              return {'message': 'You must INITIALIZE MODELS (and highly preferably ANALYZE) before calling functions that require models.'}
 
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
@@ -388,26 +388,28 @@ class Engine(object):
       ret['M_c'] = M_c
     return ret
 
-  def simulate(self, tablename, columnstring, newtablename, whereclause, numpredictions, order_by, hist=False):
+  def simulate(self, tablename, columnstring, newtablename, givens, numpredictions, order_by, hist=False):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
 
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    if len(X_L_list) == 0:
+      return {'message': 'You must INITIALIZE MODELS (and highly preferably ANALYZE) before using predictive queries.'}
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
 
     numrows = len(M_r['idx_to_name'])
     name_to_idx = M_c['name_to_idx']
 
-    # parse whereclause
-    where_col_idxs_to_vals = dict()
-    if whereclause=="" or '=' not in whereclause:
+    # parse givens
+    given_col_idxs_to_vals = dict()
+    if givens=="" or '=' not in givens:
       Y = None
     else:
-      varlist = [[c.strip() for c in b.split('=')] for b in whereclause.split('AND')]
+      varlist = [[c.strip() for c in b.split('=')] for b in givens.split('AND')]
       Y = []
       for colname, colval in varlist:
         if type(colval) == str or type(colval) == unicode:
           colval = ast.literal_eval(colval)
-        where_col_idxs_to_vals[name_to_idx[colname]] = colval
+        given_col_idxs_to_vals[name_to_idx[colname]] = colval
         Y.append((numrows+1, name_to_idx[colname], colval))
 
       # map values to codes
@@ -417,7 +419,7 @@ class Engine(object):
     column_lists = self.persistence_layer.get_column_lists(tablename)
     colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
     col_indices = [name_to_idx[colname] for colname in colnames]
-    query_col_indices = [idx for idx in col_indices if idx not in where_col_idxs_to_vals.keys()]
+    query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
 
     if len(Q) > 0:
@@ -432,8 +434,8 @@ class Engine(object):
       row = []
       i = 0
       for idx in col_indices:
-        if idx in where_col_idxs_to_vals:
-          row.append(where_col_idxs_to_vals[idx])
+        if idx in given_col_idxs_to_vals:
+          row.append(given_col_idxs_to_vals[idx])
         else:
           row.append(data_utils.convert_code_to_value(M_c, idx, vals[i]))
           i += 1
