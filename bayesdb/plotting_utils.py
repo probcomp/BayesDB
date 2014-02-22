@@ -21,6 +21,8 @@
 import numpy as np
 import os
 import pylab
+from pylab import *
+from matplotlib.colors import LogNorm
 import matplotlib.cm
 import pandas as pd
 
@@ -29,6 +31,7 @@ import functions
 import data_utils as du
 import math
 import pdb
+from matplotlib.colors import LogNorm
 
 def plot_general_histogram(colnames, data, M_c, filename=None):
     '''
@@ -39,7 +42,6 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
     fig, ax = pylab.subplots()
     parsed_data = parse_data_for_hist(colnames, data, M_c)
     if parsed_data['datatype'] == 'mult1D':
-        print 'mult1D'
         labels = parsed_data['labels']
         datapoints = parsed_data['data']
         num_vals = len(labels)
@@ -55,6 +57,11 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         series = pd.Series(datapoints)
         series.hist(bins=doanes(series.dropna()), normed=True, color='lightseagreen')
         series.dropna().plot(kind='kde', xlim=(0,100), style='r--') #Should be changed from hardcoded 100
+    elif parsed_data['datatype'] == 'multmult':
+        hist2d(parsed_data['data_x'], parsed_data['data_y'], bins=40, norm=LogNorm())
+        colorbar()
+        show()
+        return
     else:
         return
     if filename:
@@ -88,7 +95,16 @@ def parse_data_for_hist(colnames, data, M_c):
             output['datatype'] = 'cont1D'
             output['data'] = np.array(data_no_id)
     elif len(columns) == 2:
-        output['datatype'] = '2D'
+        if colnames[0] == 'row_id':
+            data_no_id = [(x[1], x[2]) for x in data]
+        else:
+            data_no_id = [(x[0], x[1]) for x in data]
+        col_idx_1 = M_c['name_to_idx'][columns[0]]
+        col_idx_2 = M_c['name_to_idx'][columns[1]]
+        if M_c['column_metadata'][col_idx_2]['modeltype'] == 'normal_inverse_gamma' and M_c['column_metadata'][col_idx_2]['modeltype'] == 'normal_inverse_gamma':
+            output['datatype'] = 'multmult'
+            output['data_x'] = [x[0] for x in data_no_id]
+            output['data_y'] = [x[1] for x in data_no_id]
     else:
         output['datatype'] = None
     return output
