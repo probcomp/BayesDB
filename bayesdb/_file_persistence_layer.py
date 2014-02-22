@@ -170,13 +170,13 @@ class FilePersistenceLayer(PersistenceLayer):
         """Return a list of all btable names."""
         return self.btable_index
 
-    def drop_models(self, tablename, model_index='all'):
-        """ Delete a single model, or all, if model_index == 'all'. """
+    def drop_models(self, tablename, model_ids='all'):
+        """ Delete a single model, or all, if model_ids == 'all' or None. """
         models = pickle.load(open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r'))
-        if model_index == 'all':
+        if model_ids == 'all' or model_ids is None:
             models = {}
         else:
-            del models[model_index]
+            del models[model_ids]
         self.write_models(tablename, models)
         return 0
             

@@ -188,8 +188,8 @@ class Engine(object):
 
   def drop_models(self, tablename, model_ids=None):
     """Drop the specified models. If model_ids is None, drop all models."""
-    #TODO
-    pass
+    self.persistence_layer.drop_models(tablename, model_ids)
+    return self.show_models(tablename)
     
   def initialize_models(self, tablename, n_models, model_config=None):
     """

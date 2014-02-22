@@ -173,12 +173,12 @@ class Parser(object):
 
 
     def help_drop_models(self):
-        return "DROP MODELS [<min> TO <max>] FOR <btable>: drop the models specified by the given ids."
+        return "DROP MODEL[S] FROM <btable>: drop the models specified by the given ids."
 
     def parse_drop_models(self, words, orig):
         ## TODO: parse min to max
-        if len(words) >= 4 and words[0] == 'models' and words[1] == 'drop':
-            if words[2] == 'for':
+        if len(words) >= 4 and words[0] == 'drop' and (words[1] == 'models' or words[1] == 'model'):
+            if words[2] == 'for' or words[2] == 'from':
                 return 'drop_models', dict(tablename=words[3])
             else:
                 return 'help', self.help_show_diagnostics()
@@ -238,27 +238,6 @@ class Parser(object):
                 return 'drop_btable', dict(tablename=words[2])
 
 
-                
-    def help_drop_models(self):
-        return "DROP MODEL[S| <model_index>] FROM <tablename>: delete the model with specified index, or all models."
-
-    def parse_drop_models(self, words, orig):
-        if len(words) >= 3:
-            if words[0] == 'delete':
-                if words[1] == 'model' and utils.is_int(words[2]):
-                    model_index = int(words[2])
-                    if words[3] == 'from':
-                        tablename = words[4]
-                        return 'drop_models', dict(tablename=tablename, model_index=model_index)
-                elif len(words) >= 5 and (words[2] == 'models' and words[3] == 'from'):
-                    model_index = 'all'
-                    tablename = words[4]
-                    return 'drop_models', dict(tablename=tablename, model_index=model_index)
-                else:
-                    return 'help', self.help_drop_models()
-
-
-                    
     def help_analyze(self):
         return "ANALYZE <btable> [MODEL INDEX <model_index>] [FOR <iterations> ITERATIONS | FOR <seconds> SECONDS]: perform inference."
 
