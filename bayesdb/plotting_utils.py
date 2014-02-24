@@ -57,10 +57,20 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         series = pd.Series(datapoints)
         series.hist(bins=doanes(series.dropna()), normed=True, color='lightseagreen')
         series.dropna().plot(kind='kde', xlim=(0,100), style='r--') #Should be changed from hardcoded 100
-    elif parsed_data['datatype'] == 'multmult':
-        hist2d(parsed_data['data_x'], parsed_data['data_y'], bins=40, norm=LogNorm())
+    elif parsed_data['datatype'] == 'contcont':
+        hist2d(parsed_data['data_x'], parsed_data['data_y'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm())
         colorbar()
         show()
+        return
+    elif parsed_data['data_type'] == 'multmult':
+        plt.imshow(parsed_data['data'], interpolation='none', aspect=3./20)
+        uniqe_xs = parsed_data['labels_x']
+        uniqe_ys = parsed_data['labels_y']
+        plt.xticks(range(len(unique_xs)), unique_xs)
+        plt.yticks(range(len(unique_ys)), unique_ys)
+        plt.jet()
+        plt.colorbar()
+        plt.show()
         return
     else:
         return
@@ -101,10 +111,28 @@ def parse_data_for_hist(colnames, data, M_c):
             data_no_id = [(x[0], x[1]) for x in data]
         col_idx_1 = M_c['name_to_idx'][columns[0]]
         col_idx_2 = M_c['name_to_idx'][columns[1]]
-        if M_c['column_metadata'][col_idx_2]['modeltype'] == 'normal_inverse_gamma' and M_c['column_metadata'][col_idx_2]['modeltype'] == 'normal_inverse_gamma':
-            output['datatype'] = 'multmult'
+        if M_c['column_metadata'][col_idx_1]['modeltype'] == 'normal_inverse_gamma' and M_c['column_metadata'][col_idx_2]['modeltype'] == 'normal_inverse_gamma':
+            output['datatype'] = 'contcont'
             output['data_x'] = [x[0] for x in data_no_id]
             output['data_y'] = [x[1] for x in data_no_id]
+        elif M_c['column_metadata'][col_idx_1]['modeltype'] == 'symmetric_dirichlet_discrete' and M_c['column_metadata'][col_idx_2]['modeltype'] == 'symmetric_dirichlet_discrete':
+            counts = {}
+            for i in data_no_id:
+                if i in counts:
+                    counts[i]+=1
+                else:
+                    counts[i]=1
+            unique_xs = list(set(x[0] for x in data_no_id))
+            unique_ys = list(set(x[1] for x in data_no_id))
+            x_to_idx = dict(zip(unique_xs, range(len(unique_xs))))
+            y_to_idx = dict(zip(unique_ys, range(len(unique_ys))))
+            counts_array = numpy.zeros(shape=(len(unique_xs),len(unique_ys)))
+            for i in counts:
+                counts_array[x_to_idx[i[0]]][y_to_idx[i[1]]] = counts[i]
+            output['datatype'] = 'multmult'
+            output['data'] = counts
+            output['labels_x'] = unique_xs
+            output['labels_y'] = unique_ys
     else:
         output['datatype'] = None
     return output
