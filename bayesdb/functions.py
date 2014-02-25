@@ -162,7 +162,7 @@ def parse_predictive_probability(colname, M_c):
   """, colname, re.VERBOSE | re.IGNORECASE)
   if prob_match:
     column = prob_match.group('column')
-    c_idx = M_c['name_to_idx'][column]
+    c_idx = M_c['name_to_idx'][column.lower()]
     return c_idx
   else:
     return None
@@ -174,7 +174,7 @@ def parse_probability(colname, M_c):
     """, colname, re.VERBOSE | re.IGNORECASE)
   if prob_match:
     column = prob_match.group('column')
-    c_idx = M_c['name_to_idx'][column]
+    c_idx = M_c['name_to_idx'][column.lower()]
     value = prob_match.group('value')
     if utils.is_int(value):
       value = int(value)
@@ -229,7 +229,7 @@ def parse_similarity(colname, M_c, T):
 
       if 'column' in similarity_match.groupdict() and similarity_match.group('column'):
           target_column = similarity_match.group('column').strip()
-          target_column = M_c['name_to_idx'][target_column]
+          target_column = M_c['name_to_idx'][target_column.lower()]
       else:
           target_column = None
 
@@ -266,7 +266,7 @@ def parse_column_typicality(colname, M_c):
       """, colname, flags=re.VERBOSE | re.IGNORECASE)
   if col_typicality_match:
       colname = col_typicality_match.group('column').strip()
-      return M_c['name_to_idx'][colname]
+      return M_c['name_to_idx'][colname.lower()]
   else:
       return None
 
@@ -289,7 +289,7 @@ def parse_mutual_information(colname, M_c):
   if mutual_information_match:
       col1 = mutual_information_match.group('col1')
       col2 = mutual_information_match.group('col2')
-      col1, col2 = M_c['name_to_idx'][col1], M_c['name_to_idx'][col2]
+      col1, col2 = M_c['name_to_idx'][col1.lower()], M_c['name_to_idx'][col2.lower()]
       return col1, col2
   else:
       return None
@@ -304,7 +304,7 @@ def parse_dependence_probability(colname, M_c):
   if dependence_probability_match:
       col1 = dependence_probability_match.group('col1')
       col2 = dependence_probability_match.group('col2')
-      col1, col2 = M_c['name_to_idx'][col1], M_c['name_to_idx'][col2]
+      col1, col2 = M_c['name_to_idx'][col1.lower()], M_c['name_to_idx'][col2.lower()]
       return col1, col2
   else:
       return None
@@ -320,7 +320,7 @@ def parse_correlation(colname, M_c):
   if correlation_match:
       col1 = correlation_match.group('col1')
       col2 = correlation_match.group('col2')
-      col1, col2 = M_c['name_to_idx'][col1], M_c['name_to_idx'][col2]
+      col1, col2 = M_c['name_to_idx'][col1.lower()], M_c['name_to_idx'][col2.lower()]
       return col1, col2
   else:
       return None
@@ -351,7 +351,7 @@ def parse_cfun_mutual_information(colname, M_c):
   """, colname, re.VERBOSE | re.IGNORECASE)    
   if mutual_information_match:
       col1 = mutual_information_match.group('col1')
-      return M_c['name_to_idx'][col1]
+      return M_c['name_to_idx'][col1.lower()]
   else:
       return None
 
@@ -365,7 +365,7 @@ def parse_cfun_dependence_probability(colname, M_c):
   """, colname, re.VERBOSE | re.IGNORECASE)
   if dependence_probability_match:
       col1 = dependence_probability_match.group('col1')
-      return M_c['name_to_idx'][col1]      
+      return M_c['name_to_idx'][col1.lower()]
   else:
       return None
 
@@ -379,6 +379,6 @@ def parse_cfun_correlation(colname, M_c):
   """, colname, re.VERBOSE | re.IGNORECASE)    
   if correlation_match:
       col1 = correlation_match.group('col1')
-      return M_c['name_to_idx'][col1]      
+      return M_c['name_to_idx'][col1.lower()]
   else:
       return None

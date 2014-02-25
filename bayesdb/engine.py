@@ -418,6 +418,7 @@ class Engine(object):
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
     colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
+    colnames = [c.lower() for c in colnames]
     col_indices = [name_to_idx[colname] for colname in colnames]
     query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]

@@ -53,7 +53,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
           op = operator_map[op_str]
           break
       vals = condition.split(op_str)
-      column = vals[0].strip()
+      colname = vals[0].strip().lower()
 
       ## Determine what type the value is
       raw_val = vals[1].strip()
@@ -66,10 +66,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
         ## with the following safe (string literal only) implementation of eval
         val = ast.literal_eval(raw_val).lower()
 
-
-      ## Get the column (function)
-      colname = column
-
+        
       s = functions.parse_similarity(colname, M_c, T)
       if s is not None:
         conds.append(((functions._similarity, s), op, val))
@@ -111,7 +108,7 @@ def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
     For probability: query_args is a (c_idx, value) tuple.
     For similarity: query_args is a (target_row_id, target_column) tuple.
     """
-    query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c, column_lists)]
+    query_colnames = [colname.strip().lower() for colname in utils.column_string_splitter(columnstring, M_c, column_lists)]
     queries = []
     for idx, colname in enumerate(query_colnames):
       #####################
@@ -252,8 +249,8 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine):
       function_list.append((functions._predictive_probability, p, desc))
       continue
 
-    if raw_orderable_string in M_c['name_to_idx']:
-      function_list.append((functions._column, M_c['name_to_idx'][raw_orderable_string], desc))
+    if raw_orderable_string.lower() in M_c['name_to_idx']:
+      function_list.append((functions._column, M_c['name_to_idx'][raw_orderable_string.lower()], desc))
       continue
       
     raise Exception("Invalid query argument: could not parse '%s'" % raw_orderable_string)    
