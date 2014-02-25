@@ -70,11 +70,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       ## Get the column (function)
       colname = column
 
-      p = functions.parse_probability(colname, M_c)
-      if p is not None:
-        conds.append(((functions._probability, p), op, val))
-        continue
-
       s = functions.parse_similarity(colname, M_c, T)
       if s is not None:
         conds.append(((functions._similarity, s), op, val))
@@ -142,14 +137,14 @@ def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
         queries.append((functions._correlation, c, True))
         continue
 
+      p = functions.parse_probability(colname, M_c)
+      if p is not None:
+        queries.append((functions._probability, p, True))
+        continue
+
       #####################
       ## Normal functions (of a cell)
       ######################
-      p = functions.parse_probability(colname, M_c)
-      if p is not None:
-        queries.append((functions._probability, p, False))
-        continue
-
       s = functions.parse_similarity(colname, M_c, T)
       if s is not None:
         queries.append((functions._similarity, s, False))
@@ -250,11 +245,6 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine):
     c = functions.parse_row_typicality(raw_orderable_string)
     if c:
       function_list.append((functions._row_typicality, c, desc))
-      continue
-
-    p = functions.parse_probability(raw_orderable_string, M_c)
-    if p is not None:
-      function_list.append((functions._probability, p, desc))
       continue
 
     p = functions.parse_predictive_probability(raw_orderable_string, M_c)

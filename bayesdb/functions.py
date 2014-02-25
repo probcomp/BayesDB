@@ -69,17 +69,6 @@ def _predictive_probability(predictive_probability_args, row_id, data_values, M_
     p = math.exp(engine.call_backend('simple_predictive_probability_multistate', dict(M_c=M_c, X_L_list=X_L_list, X_D_list=X_D_list, Y=Y, Q=Q)))
     return p
 
-def _probability(probability_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine):
-    c_idx, value = probability_args
-    assert type(c_idx) == int
-    observed = du.convert_value_to_code(M_c, c_idx, value)
-    row_id = len(X_D_list[0][0]) + 1 ## row is set to 1 + max row, instead of this row.
-    Q = [(row_id, c_idx, observed)]
-    Y = []
-    p = math.exp(engine.call_backend('simple_predictive_probability_multistate', dict(M_c=M_c, X_L_list=X_L_list, X_D_list=X_D_list, Y=Y, Q=Q)))
-    return p
-
-
 #####################################################################
 # AGGREGATE FUNCTIONS (have only one output value)
 #####################################################################
@@ -89,6 +78,20 @@ def _col_typicality(col_typicality_args, row_id, data_values, M_c, X_L_list, X_D
     assert type(c_idx) == int
     return engine.call_backend('column_structural_typicality', dict(X_L_list=X_L_list, col_id=c_idx))
 
+def _probability(probability_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine):
+    c_idx, value = probability_args
+    assert type(c_idx) == int
+    try:
+        observed = du.convert_value_to_code(M_c, c_idx, value)
+    except KeyError:
+        # value doesn't exist
+        return 0
+    row_id = len(X_D_list[0][0]) + 1 ## row is set to 1 + max row, instead of this row.
+    Q = [(row_id, c_idx, observed)]
+    Y = []
+    p = math.exp(engine.call_backend('simple_predictive_probability_multistate', dict(M_c=M_c, X_L_list=X_L_list, X_D_list=X_D_list, Y=Y, Q=Q)))
+    return p
+    
 
 #########################################################################
 ## TWO COLUMN AGGREGATE FUNCTIONS (have only one output value, and take two columns as input)
