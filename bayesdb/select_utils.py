@@ -211,7 +211,7 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
                    if not numpy.isnan(t_array[row_id, cidx])]
               code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, num_impute_samples,
                                  impute_confidence, engine)
-              if code:
+              if code is not None:
                 # Inferred successfully! Fill in the new value.
                 value = du.convert_code_to_value(M_c, col_id, code)
                 row_values = list(row_values)

@@ -48,11 +48,9 @@ def is_float(s):
 def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, engine):
     q = [row_id, col_id]
     out = engine.call_backend('impute_and_confidence', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=[q], n=numsamples))
-    value, conf = out
+    code, conf = out
     if conf >= confidence:
-      row_idx = q[0]
-      col_idx = q[1]
-      return value
+      return code
     else:
       return None
 
