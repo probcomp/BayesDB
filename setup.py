@@ -15,7 +15,7 @@ setup(
                       'numpy', 'scipy', 'matplotlib', 'hcluster',
                       'Sphinx', 'pytest',
                       'prettytable', 'cmd2', 'pyparsing',
-                      'ipython'],
+                      'ipython', 'pandas'],
     license='Apache License, Version 2.0',
     entry_points = """
                    [console_scripts]
