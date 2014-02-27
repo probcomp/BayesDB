@@ -80,6 +80,14 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         fig.show()
 
 def parse_data_for_hist(colnames, data, M_c):
+    data_c = []
+    for i in data:
+        no_nan = True
+        for j in i:
+            if isinstance(j, float) and math.isnan(j):
+                no_nan = False
+        if no_nan:
+            data_c.append(i)
     output = {}
     columns = colnames[:]
     data_no_id = [] #This will be the data with the row_ids removed if present
@@ -88,9 +96,9 @@ def parse_data_for_hist(colnames, data, M_c):
 
     if len(columns) == 1:
         if colnames[0] == 'row_id':
-            data_no_id = [x[1] for x in data]
+            data_no_id = [x[1] for x in data_c]
         else:
-            data_no_id = [x[0] for x in data]
+            data_no_id = [x[0] for x in data_c]
         col_idx = M_c['name_to_idx'][columns[0]]
         if M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
             unique_labels = list(set(data_no_id))
@@ -106,9 +114,9 @@ def parse_data_for_hist(colnames, data, M_c):
             output['data'] = np.array(data_no_id)
     elif len(columns) == 2:
         if colnames[0] == 'row_id':
-            data_no_id = [(x[1], x[2]) for x in data]
+            data_no_id = [(x[1], x[2]) for x in data_c]
         else:
-            data_no_id = [(x[0], x[1]) for x in data]
+            data_no_id = [(x[0], x[1]) for x in data_c]
         col_idx_1 = M_c['name_to_idx'][columns[0]]
         col_idx_2 = M_c['name_to_idx'][columns[1]]
         if M_c['column_metadata'][col_idx_1]['modeltype'] == 'normal_inverse_gamma' and M_c['column_metadata'][col_idx_2]['modeltype'] == 'normal_inverse_gamma':
