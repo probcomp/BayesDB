@@ -59,7 +59,7 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         doanes = lambda dataq: int(1 + math.log(len(dataq)) + math.log(1 + kurtosis(dataq) * (len(dataq) / 6.) ** 0.5))
         series = pd.Series(datapoints)
         series.hist(bins=doanes(series.dropna()), normed=True, color='lightseagreen')
-        series.dropna().plot(kind='kde', xlim=(0,100), style='r--') #Should be changed from hardcoded 100
+        series.dropna().plot(kind='kde', style='r--') #Should be changed from hardcoded 100
         xlabel(parsed_data['axis_label'])
         
     elif parsed_data['datatype'] == 'contcont':
@@ -118,11 +118,12 @@ def parse_data_for_hist(colnames, data, M_c):
         output['title'] = columns[0]
         col_idx = M_c['name_to_idx'][columns[0]]
         if M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
-            unique_labels = list(set(data_no_id))
+            unique_labels = sort_mult_list(list(set(data_no_id)))
+
             np_data = np.array(data_no_id)
             counts = []
             for label in unique_labels:
-                counts.append(sum(np_data==label))
+                counts.append(sum(np_data==str(label)))
             output['datatype'] = 'mult1D'
             output['labels'] = unique_labels
             output['data'] = counts
@@ -157,8 +158,8 @@ def parse_data_for_hist(colnames, data, M_c):
                     counts[i]+=1
                 else:
                     counts[i]=1
-            unique_xs = list(M_c['column_metadata'][col_idx_1]['code_to_value'].keys())
-            unique_ys = list(M_c['column_metadata'][col_idx_2]['code_to_value'].keys())
+            unique_xs = sort_mult_list(list(M_c['column_metadata'][col_idx_1]['code_to_value'].keys()))
+            unique_ys = sort_mult_list(list(M_c['column_metadata'][col_idx_2]['code_to_value'].keys()))
             counts_array = numpy.zeros(shape=(len(unique_ys), len(unique_xs)))
             for i in counts:
                 counts_array[M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]]][M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]]] = counts[i]
@@ -166,23 +167,51 @@ def parse_data_for_hist(colnames, data, M_c):
             output['data'] = counts_array
             output['labels_x'] = unique_xs
             output['labels_y'] = unique_ys
+
         elif 'normal_inverse_gamma' in types and 'symmetric_dirichlet_discrete' in types:
-            groups = [x[0] for x in data_no_id]
-            values = [x[1] for x in data_no_id]
-            if types[0] == 'normal_inverse_gamma':
-                temp = values[:]
-                values = groups[:]
-                groups = temp[:]
+            output['datatype'] = 'multcont'
+            if types[0] == 'normal_inverse_gamma':                
+                data_no_id = sort_mult_tuples(data_no_id, 1)
+                output['groups'] = [x[1] for x in data_no_id]
+                output['values'] = [x[0] for x in data_no_id]
                 temp = output['axis_label_x']
                 output['axis_label_x'] = output['axis_label_y']
                 output['axis_label_y'] = temp
-                
-            output['datatype'] = 'multcont'
-            output['groups'] = groups
-            output['values'] = values
+            else:
+                data_no_id = sort_mult_tuples(data_no_id, 0)
+                output['groups'] = [x[0] for x in data_no_id]
+                output['values'] = [x[1] for x in data_no_id]
     else:
         output['datatype'] = None
     return output
+
+#Takes a list of multinomial variables and if they are all numeric, it sorts the list.
+def sort_mult_list(mult):
+    num_mult = []
+    for i in mult:
+        try:
+            num_mult.append(int(float(i)))
+        except ValueError:
+            return mult
+    return sorted(num_mult)
+
+#Takes a list of tuples and if the all the elements at index ind are numeric,
+#it returns a list of tuples sorted by the value at ind, which has been converted to an int.
+def sort_mult_tuples(mult, ind):
+
+    def sort_func(tup):
+        return float(tup[ind])
+
+    num_mult = []    
+    for i in mult:
+        try:
+            i_l = list(i)
+            i_l[ind] = int(float(i[ind]))
+            num_mult.append(tuple(i_l)) 
+        except ValueError:
+            return mult
+
+    return sorted(num_mult, key = sort_func)
 
 def plot_matrix(matrix, column_names, title='', filename=None):
     # actually create figure
