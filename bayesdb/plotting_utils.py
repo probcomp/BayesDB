@@ -25,13 +25,12 @@ from matplotlib.colors import LogNorm
 import matplotlib.cm
 import pandas as pd
 import numpy
-import seaborn as sns
+#from seaborn import violinplot
 import utils
 import functions
 import data_utils as du
 import math
 from scipy.stats import kurtosis
-
 
 
 def plot_general_histogram(colnames, data, M_c, filename=None):
@@ -58,11 +57,11 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         doanes = lambda dataq: int(1 + math.log(len(dataq)) + math.log(1 + kurtosis(dataq) * (len(dataq) / 6.) ** 0.5))
         series = pd.Series(datapoints)
         series.hist(bins=doanes(series.dropna()), normed=True, color='lightseagreen')
-        series.dropna().plot(kind='kde', style='r--') #Should be changed from hardcoded 100
+        series.dropna().plot(kind='kde', style='r--') 
         p.xlabel(parsed_data['axis_label'])
         
     elif parsed_data['datatype'] == 'contcont':
-        p.hist2d(parsed_data['data_x'], parsed_data['data_y'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm())
+        p.hist2d(parsed_data['data_x'], parsed_data['data_y'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm(), cmap='cool')
         p.colorbar()
         p.ylabel(parsed_data['axis_label_y'])
         p.xlabel(parsed_data['axis_label_x'])
@@ -80,10 +79,11 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         p.xlabel(parsed_data['axis_label_x'])
 
     elif parsed_data['datatype'] == 'multcont':
-        df = pd.DataFrame(dict(score = np.array(parsed_data['values']), group = np.array(parsed_data['groups'])))
-        sns.violinplot(df.score, df.group);
-        p.ylabel(parsed_data['axis_label_y'])
-        p.xlabel(parsed_data['axis_label_x'])
+        raise Exception('multinomial by continous plots not implemeneted at the moment.')
+        #df = pd.DataFrame(dict(score = np.array(parsed_data['values']), group = np.array(parsed_data['groups'])))
+        #violinplot(df.score, df.group);
+        #p.ylabel(parsed_data['axis_label_y'])
+        #p.xlabel(parsed_data['axis_label_x'])
 
     else:
         raise Exception('Unexpected data type')
@@ -180,6 +180,12 @@ def parse_data_for_hist(colnames, data, M_c):
                 data_no_id = sort_mult_tuples(data_no_id, 0)
                 output['groups'] = [x[0] for x in data_no_id]
                 output['values'] = [x[1] for x in data_no_id]
+            group_types = set(output['groups'])
+            colors = []
+            for i in group_types:
+                colors.append(output['groups'].count(i)/len(output['groups'])) 
+            
+
     else:
         output['datatype'] = None
     return output
