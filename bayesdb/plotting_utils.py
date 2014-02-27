@@ -26,6 +26,7 @@ from matplotlib.colors import LogNorm
 import matplotlib.cm
 import pandas as pd
 import numpy
+import seaborn as sns
 
 import utils
 import functions
@@ -79,8 +80,11 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         ylabel(parsed_data['axis_label_y'])
         xlabel(parsed_data['axis_label_x'])
 
-    elif parsed_data['datatype'] == 'contmult':
-        return
+    elif parsed_data['datatype'] == 'multcont':
+        df = pd.DataFrame(dict(score = np.array(parsed_data['values']), group = np.array(parsed_data['groups'])))
+        sns.violinplot(df.score, df.group);
+        ylabel(parsed_data['axis_label_y'])
+        xlabel(parsed_data['axis_label_x'])
 
     else:
         return
@@ -132,8 +136,10 @@ def parse_data_for_hist(colnames, data, M_c):
             data_no_id = [(x[1], x[2]) for x in data_c]
         else:
             data_no_id = [(x[0], x[1]) for x in data_c]
+
         col_idx_1 = M_c['name_to_idx'][columns[0]]
         col_idx_2 = M_c['name_to_idx'][columns[1]]
+        types = (M_c['column_metadata'][col_idx_1]['modeltype'], M_c['column_metadata'][col_idx_2]['modeltype'])
         
         output['axis_label_x'] = columns[0]
         output['axis_label_y'] = columns[1]
@@ -160,6 +166,20 @@ def parse_data_for_hist(colnames, data, M_c):
             output['data'] = counts_array
             output['labels_x'] = unique_xs
             output['labels_y'] = unique_ys
+        elif 'normal_inverse_gamma' in types and 'symmetric_dirichlet_discrete' in types:
+            groups = [x[0] for x in data_no_id]
+            values = [x[1] for x in data_no_id]
+            if types[0] == 'normal_inverse_gamma':
+                temp = values[:]
+                values = groups[:]
+                groups = temp[:]
+                temp = output['axis_label_x']
+                output['axis_label_x'] = output['axis_label_y']
+                output['axis_label_y'] = temp
+                
+            output['datatype'] = 'multcont'
+            output['groups'] = groups
+            output['values'] = values
     else:
         output['datatype'] = None
     return output
