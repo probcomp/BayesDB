@@ -25,6 +25,7 @@ from pylab import *
 from matplotlib.colors import LogNorm
 import matplotlib.cm
 import pandas as pd
+import numpy
 
 import utils
 import functions
@@ -39,17 +40,18 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
     '''
-    fig, ax = pylab.subplots()
     parsed_data = parse_data_for_hist(colnames, data, M_c)
+
     if parsed_data['datatype'] == 'mult1D':
         labels = parsed_data['labels']
         datapoints = parsed_data['data']
         num_vals = len(labels)
         ind = np.arange(num_vals)
         width = .5
-        rects = ax.barh(ind, datapoints, width)
-        ax.set_yticks(ind+width)
-        ax.set_yticklabels(labels)
+        barh(ind, datapoints, width)
+        yticks(ind + width/2, labels)
+        ylabel(parsed_data['axis_label'])
+
     elif parsed_data['datatype'] == 'cont1D':
         datapoints = parsed_data['data']
         from scipy.stats import kurtosis
@@ -57,27 +59,36 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         series = pd.Series(datapoints)
         series.hist(bins=doanes(series.dropna()), normed=True, color='lightseagreen')
         series.dropna().plot(kind='kde', xlim=(0,100), style='r--') #Should be changed from hardcoded 100
+        xlabel(parsed_data['axis_label'])
+        
     elif parsed_data['datatype'] == 'contcont':
         hist2d(parsed_data['data_x'], parsed_data['data_y'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm())
         colorbar()
-        show()
+        ylabel(parsed_data['axis_label_y'])
+        xlabel(parsed_data['axis_label_x'])
+
+        
+    elif parsed_data['datatype'] == 'multmult':
+        unique_xs = parsed_data['labels_x']
+        unique_ys = parsed_data['labels_y']
+        imshow(parsed_data['data'], interpolation='nearest')#, aspect = len(unique_ys)/len(unique_xs)) #Some heuristic to determine the dimensions of the plot
+        xticks(range(len(unique_xs)), unique_xs)
+        yticks(range(len(unique_ys)), unique_ys)
+        jet()
+        colorbar()
+        ylabel(parsed_data['axis_label_y'])
+        xlabel(parsed_data['axis_label_x'])
+
+    elif parsed_data['datatype'] == 'contmult':
         return
-    elif parsed_data['data_type'] == 'multmult':
-        plt.imshow(parsed_data['data'], interpolation='none', aspect=3./20)
-        uniqe_xs = parsed_data['labels_x']
-        uniqe_ys = parsed_data['labels_y']
-        plt.xticks(range(len(unique_xs)), unique_xs)
-        plt.yticks(range(len(unique_ys)), unique_ys)
-        plt.jet()
-        plt.colorbar()
-        plt.show()
-        return
+
     else:
         return
+    suptitle(parsed_data['title'])
     if filename:
         pylab.savefig(filename)
     else:
-        fig.show()
+        show()
 
 def parse_data_for_hist(colnames, data, M_c):
     data_c = []
@@ -99,6 +110,8 @@ def parse_data_for_hist(colnames, data, M_c):
             data_no_id = [x[1] for x in data_c]
         else:
             data_no_id = [x[0] for x in data_c]
+        output['axis_label'] = columns[0]
+        output['title'] = columns[0]
         col_idx = M_c['name_to_idx'][columns[0]]
         if M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
             unique_labels = list(set(data_no_id))
@@ -109,9 +122,11 @@ def parse_data_for_hist(colnames, data, M_c):
             output['datatype'] = 'mult1D'
             output['labels'] = unique_labels
             output['data'] = counts
+
         elif M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma':
             output['datatype'] = 'cont1D'
             output['data'] = np.array(data_no_id)
+
     elif len(columns) == 2:
         if colnames[0] == 'row_id':
             data_no_id = [(x[1], x[2]) for x in data_c]
@@ -119,10 +134,16 @@ def parse_data_for_hist(colnames, data, M_c):
             data_no_id = [(x[0], x[1]) for x in data_c]
         col_idx_1 = M_c['name_to_idx'][columns[0]]
         col_idx_2 = M_c['name_to_idx'][columns[1]]
+        
+        output['axis_label_x'] = columns[0]
+        output['axis_label_y'] = columns[1]
+        output['title'] = columns[0] + ' -versus- ' + columns[1]
+ 
         if M_c['column_metadata'][col_idx_1]['modeltype'] == 'normal_inverse_gamma' and M_c['column_metadata'][col_idx_2]['modeltype'] == 'normal_inverse_gamma':
             output['datatype'] = 'contcont'
             output['data_x'] = [x[0] for x in data_no_id]
             output['data_y'] = [x[1] for x in data_no_id]
+
         elif M_c['column_metadata'][col_idx_1]['modeltype'] == 'symmetric_dirichlet_discrete' and M_c['column_metadata'][col_idx_2]['modeltype'] == 'symmetric_dirichlet_discrete':
             counts = {}
             for i in data_no_id:
@@ -130,15 +151,13 @@ def parse_data_for_hist(colnames, data, M_c):
                     counts[i]+=1
                 else:
                     counts[i]=1
-            unique_xs = list(set(x[0] for x in data_no_id))
-            unique_ys = list(set(x[1] for x in data_no_id))
-            x_to_idx = dict(zip(unique_xs, range(len(unique_xs))))
-            y_to_idx = dict(zip(unique_ys, range(len(unique_ys))))
-            counts_array = numpy.zeros(shape=(len(unique_xs),len(unique_ys)))
+            unique_xs = list(M_c['column_metadata'][col_idx_1]['code_to_value'].keys())
+            unique_ys = list(M_c['column_metadata'][col_idx_2]['code_to_value'].keys())
+            counts_array = numpy.zeros(shape=(len(unique_ys), len(unique_xs)))
             for i in counts:
-                counts_array[x_to_idx[i[0]]][y_to_idx[i[1]]] = counts[i]
+                counts_array[M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]]][M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]]] = counts[i]
             output['datatype'] = 'multmult'
-            output['data'] = counts
+            output['data'] = counts_array
             output['labels_x'] = unique_xs
             output['labels_y'] = unique_ys
     else:
@@ -193,4 +212,3 @@ def _create_histogram(M_c, data, columns, mc_col_indices, filename):
       ax.set_yticklabels(unique_labels)
   pylab.tight_layout()
   pylab.savefig(full_filename)
-
