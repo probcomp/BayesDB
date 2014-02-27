@@ -282,7 +282,7 @@ class Parser(object):
             \s*with\s+confidence\s+(?P<confidence>[^\s]+)
             (\s+limit\s+(?P<limit>[^\s]+))?
             (\s+numsamples\s+(?P<numsamples>[^\s]+))?
-            (\s+save\s+to\s+(?P<filename>[^\s]+))?
+            (\s*save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'infer':
@@ -392,7 +392,7 @@ class Parser(object):
             \s*from\s+(?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
             (\s*limit\s+(?P<limit>[^\s]+))?
-            (\s+save\s+to\s+(?P<filename>[^\s]+))?        
+            (\s*save\s+to\s+(?P<filename>[^\s]+))?        
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'select':
@@ -427,7 +427,7 @@ class Parser(object):
             from\s+(?P<btable>[^\s]+)\s+
             ((given|where)\s+(?P<givens>.*(?=times)))?
             times\s+(?P<times>[^\s]+)
-            (\s+save\s+to\s+(?P<filename>[^\s]+))?        
+            (\s*save\s+to\s+(?P<filename>[^\s]+))?        
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'simulate':

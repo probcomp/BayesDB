@@ -87,10 +87,10 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         xlabel(parsed_data['axis_label_x'])
 
     else:
-        return
+        raise Exception('Unexpected data type')
     suptitle(parsed_data['title'])
     if filename:
-        pylab.savefig(filename)
+        savefig(filename)
     else:
         show()
 
