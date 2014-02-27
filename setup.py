@@ -12,7 +12,7 @@ setup(
     long_description='BayesDB',
     packages=['bayesdb', 'bayesdb.tests'],
     install_requires=['jsonrpc', 'requests', 'Twisted', 'pyOpenSSL',
-                      'numpy', 'scipy', 'matplotlib', 'hcluster',
+                      'numpy', 'scipy', 'matplotlib>=1.2.0', 'hcluster',
                       'Sphinx', 'pytest',
                       'prettytable', 'cmd2', 'pyparsing',
                       'ipython', 'pandas>=0.7.1',
