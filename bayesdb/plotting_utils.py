@@ -19,21 +19,20 @@
 #
 
 import numpy as np
+import pylab as p
 import os
-import pylab
-from pylab import *
 from matplotlib.colors import LogNorm
 import matplotlib.cm
 import pandas as pd
 import numpy
 import seaborn as sns
-
 import utils
 import functions
 import data_utils as du
 import math
-import pdb
-from matplotlib.colors import LogNorm
+from scipy.stats import kurtosis
+
+
 
 def plot_general_histogram(colnames, data, M_c, filename=None):
     '''
@@ -49,9 +48,9 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         num_vals = len(labels)
         ind = np.arange(num_vals)
         width = .5
-        barh(ind, datapoints, width)
-        yticks(ind + width/2, labels)
-        ylabel(parsed_data['axis_label'])
+        p.barh(ind, datapoints, width)
+        p.yticks(ind + width/2, labels)
+        p.ylabel(parsed_data['axis_label'])
 
     elif parsed_data['datatype'] == 'cont1D':
         datapoints = parsed_data['data']
@@ -60,39 +59,39 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         series = pd.Series(datapoints)
         series.hist(bins=doanes(series.dropna()), normed=True, color='lightseagreen')
         series.dropna().plot(kind='kde', style='r--') #Should be changed from hardcoded 100
-        xlabel(parsed_data['axis_label'])
+        p.xlabel(parsed_data['axis_label'])
         
     elif parsed_data['datatype'] == 'contcont':
-        hist2d(parsed_data['data_x'], parsed_data['data_y'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm())
-        colorbar()
-        ylabel(parsed_data['axis_label_y'])
-        xlabel(parsed_data['axis_label_x'])
+        p.hist2d(parsed_data['data_x'], parsed_data['data_y'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm())
+        p.colorbar()
+        p.ylabel(parsed_data['axis_label_y'])
+        p.xlabel(parsed_data['axis_label_x'])
 
         
     elif parsed_data['datatype'] == 'multmult':
         unique_xs = parsed_data['labels_x']
         unique_ys = parsed_data['labels_y']
-        imshow(parsed_data['data'], interpolation='nearest')#, aspect = len(unique_ys)/len(unique_xs)) #Some heuristic to determine the dimensions of the plot
-        xticks(range(len(unique_xs)), unique_xs)
-        yticks(range(len(unique_ys)), unique_ys)
-        jet()
-        colorbar()
-        ylabel(parsed_data['axis_label_y'])
-        xlabel(parsed_data['axis_label_x'])
+        p.imshow(parsed_data['data'], interpolation='nearest')
+        p.xticks(range(len(unique_xs)), unique_xs)
+        p.yticks(range(len(unique_ys)), unique_ys)
+        p.jet()
+        p.colorbar()
+        p.ylabel(parsed_data['axis_label_y'])
+        p.xlabel(parsed_data['axis_label_x'])
 
     elif parsed_data['datatype'] == 'multcont':
         df = pd.DataFrame(dict(score = np.array(parsed_data['values']), group = np.array(parsed_data['groups'])))
         sns.violinplot(df.score, df.group);
-        ylabel(parsed_data['axis_label_y'])
-        xlabel(parsed_data['axis_label_x'])
+        p.ylabel(parsed_data['axis_label_y'])
+        p.xlabel(parsed_data['axis_label_x'])
 
     else:
         raise Exception('Unexpected data type')
-    suptitle(parsed_data['title'])
+    p.suptitle(parsed_data['title'])
     if filename:
-        savefig(filename)
+        p.savefig(filename)
     else:
-        show()
+        p.show()
 
 def parse_data_for_hist(colnames, data, M_c):
     data_c = []
