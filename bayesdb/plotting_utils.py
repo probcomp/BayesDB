@@ -21,8 +21,7 @@
 import numpy as np
 import pylab as p
 import os
-from matplotlib.colors import LogNorm
-from matplotlib.colors import Normalize
+from matplotlib.colors import LogNorm, Normalize
 import matplotlib.cm
 import pandas as pd
 import numpy
@@ -30,7 +29,6 @@ import utils
 import functions
 import data_utils as du
 import math
-from scipy.stats import kurtosis
 
 
 def plot_general_histogram(colnames, data, M_c, filename=None):
@@ -55,10 +53,8 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
 
     elif parsed_data['datatype'] == 'cont1D':
         datapoints = parsed_data['data']
-        from scipy.stats import kurtosis
-        doanes = lambda dataq: int(1 + math.log(len(dataq)) + math.log(1 + kurtosis(dataq) * (len(dataq) / 6.) ** 0.5))
         series = pd.Series(datapoints)
-        series.hist(bins=doanes(series.dropna()), normed=True, color='lightseagreen')
+        series.hist(normed=True, color='lightseagreen')
         series.dropna().plot(kind='kde', style='r--') 
         p.xlabel(parsed_data['axis_label'])
         
