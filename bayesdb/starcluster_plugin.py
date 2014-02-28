@@ -28,8 +28,6 @@ project_name = 'bayesdb'
 #
 repo_url = 'https://github.com/mit-probabilistic-computing-project/%s.git' % project_name
 get_repo_dir = lambda user: os.path.join('/home', user, project_name)
-get_install_script = lambda user: \
-        os.path.join(get_repo_dir(user), 'scripts', 'ubuntu_install.sh') 
 get_setup_script = lambda user: os.path.join(get_repo_dir(user), 'setup.py')
 
 
@@ -42,7 +40,6 @@ class bayesdbSetup(ClusterSetup):
     def run(self, nodes, master, user, user_shell, volumes):
         # set up some paths
         repo_dir = get_repo_dir(user)
-        install_script = get_install_script(user)
         setup_script = get_setup_script(user)
         for node in nodes:
             # NOTE: nodes includes master
@@ -51,7 +48,6 @@ class bayesdbSetup(ClusterSetup):
             cmd_strs = [
                 'rm -rf %s' % repo_dir,
                 'git clone %s %s' % (repo_url, repo_dir),
-                'bash %s' % install_script,
                 'python %s install' % setup_script,
                 'python %s build_ext --inplace' % setup_script,
                 'chown -R %s %s' % (user, repo_dir),
