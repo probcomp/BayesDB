@@ -1,7 +1,17 @@
+import os
+
+
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
+
+
+# make sure cwd is correct
+this_file = os.path.abspath(__file__)
+this_dir = os.path.split(this_file)[0]
+os.chdir(this_dir)
+
 
 setup(
     name='BayesDB',
@@ -15,8 +25,8 @@ setup(
                       'numpy', 'scipy', 'matplotlib>=1.2.0', 'hcluster',
                       'Sphinx', 'pytest',
                       'prettytable', 'cmd2', 'pyparsing>=2.0.1',
-                      'ipython', 'pandas>=0.7.1', # this pandas version required by patsy
-                      'patsy', 'seaborn'], # patsy required by seaborn
+                      'ipython', 'pandas',
+                      ],
     license='Apache License, Version 2.0',
     entry_points = """
                    [console_scripts]

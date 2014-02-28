@@ -225,18 +225,18 @@ def sort_mult_tuples(mult, ind):
 
 def plot_matrix(matrix, column_names, title='', filename=None):
     # actually create figure
-    fig = pylab.figure()
+    fig = p.figure()
     fig.set_size_inches(16, 12)
-    pylab.imshow(matrix, interpolation='none',
+    p.imshow(matrix, interpolation='none',
                  cmap=matplotlib.cm.gray_r, vmin=0, vmax=1)
-    pylab.colorbar()
-    pylab.gca().set_yticks(range(len(column_names)))
-    pylab.gca().set_yticklabels(column_names, size='small')
-    pylab.gca().set_xticks(range(len(column_names)))
-    pylab.gca().set_xticklabels(column_names, rotation=90, size='small')
-    pylab.title(title)
+    p.colorbar()
+    p.gca().set_yticks(range(len(column_names)))
+    p.gca().set_yticklabels(column_names, size='small')
+    p.gca().set_xticks(range(len(column_names)))
+    p.gca().set_xticklabels(column_names, rotation=90, size='small')
+    p.title(title)
     if filename:
-        pylab.savefig(filename)
+        p.savefig(filename)
     else:
         fig.show()
 
@@ -248,15 +248,15 @@ def _create_histogram(M_c, data, columns, mc_col_indices, filename):
   num_rows = data.shape[0]
   num_cols = data.shape[1]
   #
-  pylab.figure()
+  p.figure()
   # col_i goes from 0 to number of predicted columns
   # mc_col_idx is the original column's index in M_c
   for col_i in range(num_cols):
     mc_col_idx = mc_col_indices[col_i]
     data_i = data[:, col_i]
-    ax = pylab.subplot(1, num_cols, col_i, title=columns[col_i])
+    ax = p.subplot(1, num_cols, col_i, title=columns[col_i])
     if M_c['column_metadata'][mc_col_idx]['modeltype'] == 'normal_inverse_gamma':
-      pylab.hist(data_i, orientation='horizontal')
+      p.hist(data_i, orientation='horizontal')
     else:
       str_data = [du.convert_code_to_value(M_c, mc_col_idx, code) for code in data_i]
       unique_labels = list(set(str_data))
@@ -265,9 +265,9 @@ def _create_histogram(M_c, data, columns, mc_col_indices, filename):
       for label in unique_labels:
         counts.append(sum(np_str_data==label))
       num_vals = len(M_c['column_metadata'][mc_col_idx]['code_to_value'])
-      rects = pylab.barh(range(num_vals), counts)
+      rects = p.barh(range(num_vals), counts)
       heights = np.array([rect.get_height() for rect in rects])
       ax.set_yticks(np.arange(num_vals) + heights/2)
       ax.set_yticklabels(unique_labels)
-  pylab.tight_layout()
-  pylab.savefig(full_filename)
+  p.tight_layout()
+  p.savefig(full_filename)
