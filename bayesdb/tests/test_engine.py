@@ -418,7 +418,8 @@ def test_estimate_columns():
   limit = float('inf')
   order_by = None
   name = None
-  columns = engine.estimate_columns(test_tablename, whereclause, limit, order_by, name)['columns']
+  columnstring = ''
+  columns = engine.estimate_columns(test_tablename, columnstring, whereclause, limit, order_by, name)['columns']
   assert columns == all_columns
   
 if __name__ == '__main__':

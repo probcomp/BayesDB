@@ -196,7 +196,7 @@ class Parser(object):
             (\s+with\s+config\s+(?P<model_config>)$)?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
-            if words[0] == 'initialize' or words[0] == 'create':
+            if words[0] == 'initialize' or (words[0] == 'create' and len(words) >= 2 and words[1] != 'models'):
                 return 'help', self.help_initialize_models()
         else:
             n_models = int(match.group('num_models'))
@@ -514,27 +514,37 @@ class Parser(object):
             return 'show_columns', dict(tablename=tablename, column_list=column_list)
             
     def help_estimate_columns(self):
-        return "ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>] [AS <column_list>]"
+        return "(ESTIMATE COLUMNS | CREATE COLUMN LIST) [<column_names>] FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>] [AS <column_list>]"
 
     def parse_estimate_columns(self, words, orig):
-        ## TODO: add "as <name>". could use pyparsing.
         match = re.search(r"""
-            estimate\s+columns\s+from\s+
+            ((estimate\s+columns\s+)|(create\s+column\s+list\s+))
+            (?P<columnstring>.*?((?=from)))
+            \s*from\s+
             (?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|(?=as)|$)))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
-            if words[0] == 'estimate' and words[2] == 'columns':
+            if (words[0] == 'estimate' and words[2] == 'columns') or (words[0] == 'create' and words[1] == 'column'):
                 return 'help', self.help_estimate_columns()
         else:
             tablename = match.group('btable').strip()
+            
+            columnstring = match.group('columnstring')
+            if columnstring is None:
+                columnstring = ''
+            else:
+                columnstring = columnstring.strip()
+                
             whereclause = match.group('whereclause')
             if whereclause is None:
                 whereclause = ''
             else:
                 whereclause = whereclause.strip()
+                
             limit = self.extract_limit(orig)                
             orig, order_by = self.extract_order_by(orig)
+            
             name_match = re.search(r"""
               as\s+
               (?P<name>[^\s]+)
@@ -544,8 +554,9 @@ class Parser(object):
                 name = name_match.group('name')
             else:
                 name = None
-            return 'estimate_columns', dict(tablename=tablename, whereclause=whereclause, limit=limit,
-                                            order_by=order_by, name=name)
+
+            return 'estimate_columns', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
+                                            limit=limit, order_by=order_by, name=name)
             
     def help_estimate_pairwise(self):
         return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [SAVE TO <file>]: estimate a pairwise function of columns."

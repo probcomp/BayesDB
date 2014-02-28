@@ -465,7 +465,7 @@ class Engine(object):
       column_names = list(M_c['name_to_idx'].keys())
     return dict(columns=column_names)
 
-  def estimate_columns(self, tablename, whereclause, limit, order_by, name=None):
+  def estimate_columns(self, tablename, columnstring, whereclause, limit, order_by, name=None):
     """
     Return all the column names from the specified table as a list.
     First, columns are filtered based on whether they match the whereclause.
@@ -481,7 +481,13 @@ class Engine(object):
     """
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    column_indices = list(M_c['name_to_idx'].values())
+    
+    if columnstring and len(columnstring) > 0:
+      # User has entered the columns to be in the column list.
+      column_indices = [M_c['name_to_idx'][colname.lower()] for colname in utils.column_string_splitter(columnstring, M_c, [])]
+    else:
+      # Start with all columns.
+      column_indices = list(M_c['name_to_idx'].values())
     
     ## filter based on where clause
     where_conditions = estimate_columns_utils.get_conditions_from_column_whereclause(whereclause, M_c, T)
