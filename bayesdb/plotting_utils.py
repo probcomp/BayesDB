@@ -22,10 +22,10 @@ import numpy as np
 import pylab as p
 import os
 from matplotlib.colors import LogNorm
+from matplotlib.colors import Normalize
 import matplotlib.cm
 import pandas as pd
 import numpy
-#from seaborn import violinplot
 import utils
 import functions
 import data_utils as du
@@ -39,6 +39,8 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
     '''
+
+    p.figure()
     parsed_data = parse_data_for_hist(colnames, data, M_c)
 
     if parsed_data['datatype'] == 'mult1D':
@@ -47,7 +49,7 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
         num_vals = len(labels)
         ind = np.arange(num_vals)
         width = .5
-        p.barh(ind, datapoints, width)
+        p.barh(ind, datapoints, width, color='lightseagreen')
         p.yticks(ind + width/2, labels)
         p.ylabel(parsed_data['axis_label'])
 
@@ -70,10 +72,11 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
     elif parsed_data['datatype'] == 'multmult':
         unique_xs = parsed_data['labels_x']
         unique_ys = parsed_data['labels_y']
-        p.imshow(parsed_data['data'], interpolation='nearest')
+        dat = parsed_data['data']
+        norm_a = Normalize(vmin=dat.min(), vmax=dat.max()) 
+        p.imshow(parsed_data['data'],norm=Normalize(), interpolation='nearest',  cmap=matplotlib.cm.cool)
         p.xticks(range(len(unique_xs)), unique_xs)
         p.yticks(range(len(unique_ys)), unique_ys)
-        p.jet()
         p.colorbar()
         p.ylabel(parsed_data['axis_label_y'])
         p.xlabel(parsed_data['axis_label_x'])
@@ -90,6 +93,7 @@ def plot_general_histogram(colnames, data, M_c, filename=None):
     p.suptitle(parsed_data['title'])
     if filename:
         p.savefig(filename)
+        p.close()
     else:
         p.show()
 
@@ -161,8 +165,9 @@ def parse_data_for_hist(colnames, data, M_c):
             unique_ys = sort_mult_list(list(M_c['column_metadata'][col_idx_2]['code_to_value'].keys()))
             counts_array = numpy.zeros(shape=(len(unique_ys), len(unique_xs)))
             for i in counts:
-                counts_array[M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]]][M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]]] = counts[i]
+                counts_array[M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]]][M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]]] = float(counts[i])
             output['datatype'] = 'multmult'
+            print counts_array
             output['data'] = counts_array
             output['labels_x'] = unique_xs
             output['labels_y'] = unique_ys
