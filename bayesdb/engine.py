@@ -311,16 +311,16 @@ class Engine(object):
     ret['message'] = 'Analyze complete.'
     return ret
 
-  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False, hist=False):
+  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False, plot=False):
     """Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
     Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
     Argument newtablename == null/emptystring if we don't want to do INTO
     """
     return self.select(tablename, columnstring, whereclause, limit, order_by,
-                       impute_confidence=confidence, num_impute_samples=numsamples, hist=hist)
+                       impute_confidence=confidence, num_impute_samples=numsamples, plot=plot)
     
-  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, hist=False):
+  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False):
     """
     BQL's version of the SQL SELECT query.
     
@@ -384,11 +384,11 @@ class Engine(object):
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
 
     ret = dict(data=data, columns=query_colnames)
-    if hist:
+    if plot:
       ret['M_c'] = M_c
     return ret
 
-  def simulate(self, tablename, columnstring, newtablename, givens, numpredictions, order_by, hist=False):
+  def simulate(self, tablename, columnstring, newtablename, givens, numpredictions, order_by, plot=False):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
 
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
@@ -443,7 +443,7 @@ class Engine(object):
       data.append(row)
       
     ret = {'columns': colnames, 'data': data}
-    if hist:
+    if plot:
       ret['M_c'] = M_c
     return ret
 
