@@ -46,6 +46,8 @@ class bayesdbSetup(ClusterSetup):
             log.info("Installing %s as root on %s" % (project_name, node.alias))
             #
             cmd_strs = [
+                # FIXME: do this somewhere else
+                'pip install pyparsing==2.0.1',
                 'rm -rf %s' % repo_dir,
                 'git clone %s %s' % (repo_url, repo_dir),
                 'cd %s && git checkout starcluster' % (repo_dir,),
