@@ -48,6 +48,7 @@ class bayesdbSetup(ClusterSetup):
             cmd_strs = [
                 'rm -rf %s' % repo_dir,
                 'git clone %s %s' % (repo_url, repo_dir),
+                'cd %s && git checkout starcluster' % (repo_dir,),
                 'python %s develop' % setup_script,
                 # 'python %s build_ext --inplace' % setup_script,
                 'chown -R %s %s' % (user, repo_dir),

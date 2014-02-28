@@ -26,7 +26,7 @@ setup(
                       'Sphinx', 'pytest',
                       'prettytable', 'cmd2', 'pyparsing',
                       'ipython', 'pandas>=0.7.1',
-                      'patsy', 'seaborn'], # patsy required by seaborn
+                      ]
     license='Apache License, Version 2.0',
     entry_points = """
                    [console_scripts]
