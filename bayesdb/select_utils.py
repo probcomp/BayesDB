@@ -64,7 +64,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       else:
         ## val could have matching single or double quotes, which we can safely eliminate
         ## with the following safe (string literal only) implementation of eval
-        val = ast.literal_eval(raw_val).lower()
+        val = ast.literal_eval(raw_val)
 
         
       s = functions.parse_similarity(colname, M_c, T)
@@ -83,8 +83,8 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
         continue
 
       ## If none of above query types matched, then this is a normal column query.
-      if colname in M_c['name_to_idx']:
-        conds.append(((functions._column, M_c['name_to_idx'][colname]), op, val))
+      if colname.lower() in M_c['name_to_idx']:
+        conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
         continue
         
       raise Exception("Invalid where clause argument: could not parse '%s'" % colname)
@@ -108,7 +108,7 @@ def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
     For probability: query_args is a (c_idx, value) tuple.
     For similarity: query_args is a (target_row_id, target_column) tuple.
     """
-    query_colnames = [colname.strip().lower() for colname in utils.column_string_splitter(columnstring, M_c, column_lists)]
+    query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c, column_lists)]
     queries = []
     for idx, colname in enumerate(query_colnames):
       #####################
@@ -158,7 +158,7 @@ def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
         continue
 
       ## If none of above query types matched, then this is a normal column query.
-      if colname in M_c['name_to_idx']:
+      if colname.lower() in M_c['name_to_idx']:
         queries.append((functions._column, M_c['name_to_idx'][colname], False))
         continue
         
