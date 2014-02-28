@@ -3,6 +3,13 @@ try:
 except ImportError:
     from distutils.core import setup
 
+
+# make sure cwd is correct
+this_file = os.path.abspath(__file__)
+this_dir = os.path.split(this_file)[0]
+os.chdir(this_dir)
+
+
 setup(
     name='BayesDB',
     version='0.2.0',
