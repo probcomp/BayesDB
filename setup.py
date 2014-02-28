@@ -14,8 +14,8 @@ setup(
     install_requires=['jsonrpc', 'requests', 'Twisted', 'pyOpenSSL',
                       'numpy', 'scipy', 'matplotlib>=1.2.0', 'hcluster',
                       'Sphinx', 'pytest',
-                      'prettytable', 'cmd2', 'pyparsing',
-                      'ipython', 'pandas>=0.7.1',
+                      'prettytable', 'cmd2', 'pyparsing>=2.0.1',
+                      'ipython', 'pandas>=0.7.1', # this pandas version required by patsy
                       'patsy', 'seaborn'], # patsy required by seaborn
     license='Apache License, Version 2.0',
     entry_points = """
