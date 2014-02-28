@@ -270,18 +270,18 @@ class Parser(object):
 
             
     def help_infer(self):
-        return "INFER [HIST] col0, [col1, ...] FROM <btable> [WHERE <whereclause>] WITH CONFIDENCE <confidence> [LIMIT <limit>] [NUMSAMPLES <numsamples>] [ORDER BY SIMILARITY TO <row_id> [WITH RESPECT TO <column>]] [SAVE TO <file>]: like select, but infers (fills in) missing values."
+        return "INFER [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <file>]: like select, but imputes (fills in) missing values."
         
     def parse_infer(self, words, orig):
         match = re.search(r"""
             infer\s+
-            (?P<hist>hist\s+)?        
+            ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
             (where\s+(?P<whereclause>.*(?=with)))?
             \s*with\s+confidence\s+(?P<confidence>[^\s]+)
             (\s+limit\s+(?P<limit>[^\s]+))?
-            (\s+numsamples\s+(?P<numsamples>[^\s]+))?
+            (\s+with\s+(?P<numsamples>[^\s]+)\s+samples)?
             (\s*save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
@@ -308,7 +308,16 @@ class Parser(object):
                 numsamples = int(numsamples)
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-            hist = match.group('hist') is not None
+
+
+            plot = match.group('plot') is not None
+            if plot:
+                scatter = 'scatter' in match.group('plot')
+                pairwise = match.group('pairwise') is not None
+            else:
+                scatter = False
+                pairwise = False
+                
             if match.group('filename'):
                 filename = match.group('filename')
             else:
@@ -316,8 +325,8 @@ class Parser(object):
             return 'infer', \
                    dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
                         confidence=confidence, whereclause=whereclause, limit=limit,
-                        numsamples=numsamples, order_by=order_by, hist=hist), \
-                   dict(hist=hist, filename=filename)
+                        numsamples=numsamples, order_by=order_by, plot=plot), \
+                   dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
 
             
             
@@ -382,12 +391,12 @@ class Parser(object):
 
             
     def help_select(self):
-        return 'SELECT [HIST] <columns|functions> FROM <btable> [WHERE <whereclause>]  [ORDER BY <columns>] [LIMIT <limit>] [SAVE TO <file>]'
+        return 'SELECT [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <filename>]'
         
     def parse_select(self, words, orig):
         match = re.search(r"""
             select\s+
-            (?P<hist>hist\s+)?        
+            ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*      
             (?P<columnstring>.*?((?=from)))
             \s*from\s+(?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
@@ -407,22 +416,32 @@ class Parser(object):
                 whereclause = whereclause.strip()
             limit = self.extract_limit(orig)
             orig, order_by = self.extract_order_by(orig)
-            hist = match.group('hist') is not None
+
+            plot = match.group('plot') is not None
+            if plot:
+                scatter = 'scatter' in match.group('plot')
+                pairwise = match.group('pairwise') is not None
+            else:
+                scatter = False
+                pairwise = False
+
             if match.group('filename'):
                 filename = match.group('filename')
             else:
                 filename = None
+
             return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                  limit=limit, order_by=order_by, hist=hist), dict(hist=hist, filename=filename)
+                                  limit=limit, order_by=order_by, plot=plot), \
+              dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
 
     def help_simulate(self):
-        return "SIMULATE [HIST] col0, [col1, ...] FROM <btable> [GIVEN <givens>] TIMES <times> [SAVE TO <file>]: simulate new datapoints based on the underlying model."
+        return "SIMULATE [HIST|SCATTER [PAIRWISE]] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <filename>]: simulate new datapoints based on the underlying model."
 
     def parse_simulate(self, words, orig):
         match = re.search(r"""
             simulate\s+
-            (?P<hist>hist\s+)?
+            ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
             ((given|where)\s+(?P<givens>.*(?=times)))?
@@ -443,15 +462,23 @@ class Parser(object):
             numpredictions = int(match.group('times'))
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-            hist = match.group('hist') is not None
+
+            plot = match.group('plot') is not None
+            if plot:
+                scatter = 'scatter' in match.group('plot')
+                pairwise = match.group('pairwise') is not None
+            else:
+                scatter = False
+                pairwise = False
+            
             if match.group('filename'):
                 filename = match.group('filename')
             else:
                 filename = None            
             return 'simulate', \
                     dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
-                         givens=givens, numpredictions=numpredictions, order_by=order_by, hist=hist), \
-                    dict(hist=hist, filename=filename)
+                         givens=givens, numpredictions=numpredictions, order_by=order_by, plot=plot), \
+                    dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
     def help_show_column_lists(self):
         return "SHOW COLUMN LISTS FOR <btable>"

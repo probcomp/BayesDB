@@ -31,13 +31,13 @@ import data_utils as du
 import math
 
 
-def plot_general_histogram(colnames, data, M_c, filename=None):
+def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pairwise=False):
     '''
     colnames: list of column names
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
+    scatter: False if histogram, True if scatterplot
     '''
-
     p.figure()
     parsed_data = parse_data_for_hist(colnames, data, M_c)
 
