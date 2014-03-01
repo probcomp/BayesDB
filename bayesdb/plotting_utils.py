@@ -227,6 +227,11 @@ def parse_data_for_pairwise(colnames, data, M_c, pairwise):
         data_no_id = [x[1:] for x in data_c]
     else:
         data_no_id = data_c[:]
+
+    for i in columns:
+        if M_c['column_metadata'][M_c['name_to_idx'][i]]['modeltype'] != 'normal_inverse_gamma':
+            raise Exception('Pairwise plots currently only support continuous data')
+
     data_dict = {}
     for i in range(len(columns)):
         data_dict[columns[i]] = [x[i] for x in data_no_id]
