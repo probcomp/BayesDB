@@ -303,7 +303,7 @@ class Parser(object):
                 limit = int(limit)
             numsamples = match.group('numsamples')
             if numsamples is None:
-                numsamples = 1
+                numsamples = None
             else:
                 numsamples = int(numsamples)
             newtablename = '' # For INTO

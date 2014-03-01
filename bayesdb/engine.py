@@ -37,7 +37,7 @@ import matplotlib.cm
 from collections import defaultdict
 
 import bayesdb.settings as S
-from _file_persistence_layer import FilePersistenceLayer
+from persistence_layer import PersistenceLayer
 import api_utils
 import data_utils
 import utils
@@ -52,7 +52,7 @@ class Engine(object):
     It defaults to random seed, but for testing/reproduceability purposes you may
     want a deterministic one. """
     
-    self.persistence_layer = FilePersistenceLayer()
+    self.persistence_layer = PersistenceLayer()
 
     if crosscat_host is None or crosscat_host == 'localhost':
       self.online = False
@@ -317,6 +317,9 @@ class Engine(object):
     Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
     Argument newtablename == null/emptystring if we don't want to do INTO
     """
+    if numsamples is None:
+      numsamples=50
+      
     return self.select(tablename, columnstring, whereclause, limit, order_by,
                        impute_confidence=confidence, num_impute_samples=numsamples, plot=plot)
     
