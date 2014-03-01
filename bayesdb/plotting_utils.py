@@ -29,6 +29,7 @@ import utils
 import functions
 import data_utils as du
 import math
+import statsmodels.graphics.boxplots as smplt
 
 
 def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pairwise=False):
@@ -64,7 +65,6 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
         p.ylabel(parsed_data['axis_label_y'])
         p.xlabel(parsed_data['axis_label_x'])
 
-        
     elif parsed_data['datatype'] == 'multmult':
         unique_xs = parsed_data['labels_x']
         unique_ys = parsed_data['labels_y']
@@ -78,11 +78,13 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
         p.xlabel(parsed_data['axis_label_x'])
 
     elif parsed_data['datatype'] == 'multcont':
-        raise Exception('multinomial by continous plots not implemeneted at the moment.')
-        #df = pd.DataFrame(dict(score = np.array(parsed_data['values']), group = np.array(parsed_data['groups'])))
-        #violinplot(df.score, df.group);
-        #p.ylabel(parsed_data['axis_label_y'])
-        #p.xlabel(parsed_data['axis_label_x'])
+        p.close() #statsmodels beanplot creates its own figures, so closing the existing figure prevents a blank figure from being displayed.
+        pltopts = {}
+        pltopts['violin_fc'] = 'lightseagreen'
+        print parsed_data['values']
+        smplt.beanplot(parsed_data['values'], labels=parsed_data['groups'], plot_opts = pltopts)
+        p.ylabel(parsed_data['axis_label_y'])
+        p.xlabel(parsed_data['axis_label_x'])
 
     else:
         raise Exception('Unexpected data type')
@@ -170,10 +172,18 @@ def parse_data_for_hist(colnames, data, M_c):
 
         elif 'normal_inverse_gamma' in types and 'symmetric_dirichlet_discrete' in types:
             output['datatype'] = 'multcont'
+            beans = {}
             if types[0] == 'normal_inverse_gamma':                
                 data_no_id = sort_mult_tuples(data_no_id, 1)
-                output['groups'] = [x[1] for x in data_no_id]
-                output['values'] = [x[0] for x in data_no_id]
+                for i in data_no_id:
+                    if i[1] in beans:
+                        beans[i[1]].append(i[0])
+                    else:
+                        beans[i[1]] = [i[0]]
+
+                groups = list(set([x[1] for x in data_no_id]))
+                output['groups'] = groups
+                output['values'] = [beans[x] for x in groups]
                 temp = output['axis_label_x']
                 output['axis_label_x'] = output['axis_label_y']
                 output['axis_label_y'] = temp
