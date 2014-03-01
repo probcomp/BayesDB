@@ -25,7 +25,7 @@ setup(
                       'numpy', 'scipy', 'matplotlib>=1.2.0', 'hcluster',
                       'Sphinx', 'pytest',
                       'prettytable', 'cmd2', 'pyparsing>=2.0.1',
-                      'ipython', 'pandas',
+                      'ipython', 'pandas','statsmodels',
                       ],
     license='Apache License, Version 2.0',
     entry_points = """
