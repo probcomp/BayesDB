@@ -189,8 +189,16 @@ def parse_data_for_hist(colnames, data, M_c):
                 output['axis_label_y'] = temp
             else:
                 data_no_id = sort_mult_tuples(data_no_id, 0)
-                output['groups'] = [x[0] for x in data_no_id]
-                output['values'] = [x[1] for x in data_no_id]
+                for i in data_no_id:
+                    if i[0] in beans:
+                        beans[i[0]].append(i[1])
+                    else:
+                        beans[i[0]] = [i[1]]
+
+                groups = list(set([x[0] for x in data_no_id]))
+                output['groups'] = groups
+                output['values'] = [beans[x] for x in groups]
+
             group_types = set(output['groups'])
             colors = []
             for i in group_types:
