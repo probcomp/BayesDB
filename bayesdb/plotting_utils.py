@@ -40,7 +40,7 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
     scatter: False if histogram, True if scatterplot
     '''
     p.figure()
-    parsed_data = parse_data_for_hist(colnames, data, M_c)
+    parsed_data = parse_data_for_hist(colnames, data, M_c, pairwise)
 
     if parsed_data['datatype'] == 'mult1D':
         labels = parsed_data['labels']
@@ -81,11 +81,15 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
         p.close() #statsmodels beanplot creates its own figures, so closing the existing figure prevents a blank figure from being displayed.
         pltopts = {}
         pltopts['violin_fc'] = 'lightseagreen'
-        print parsed_data['values']
         smplt.beanplot(parsed_data['values'], labels=parsed_data['groups'], plot_opts = pltopts)
         p.ylabel(parsed_data['axis_label_y'])
         p.xlabel(parsed_data['axis_label_x'])
-
+    
+    elif parsed_data['datatype'] == 'pairwise_scatter':
+        p.close()
+        df = pd.DataFrame(parsed_data['data'])
+        pd.scatter_matrix(df, diagonal='kde')
+        
     else:
         raise Exception('Unexpected data type')
     p.suptitle(parsed_data['title'])
@@ -95,7 +99,10 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
     else:
         p.show()
 
-def parse_data_for_hist(colnames, data, M_c):
+def parse_data_for_hist(colnames, data, M_c, pairwise):
+    if pairwise:
+        return parse_data_for_pairwise(colnames, data, M_c, pairwise)
+    
     data_c = []
     for i in data:
         no_nan = True
@@ -165,7 +172,6 @@ def parse_data_for_hist(colnames, data, M_c):
             for i in counts:
                 counts_array[M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]]][M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]]] = float(counts[i])
             output['datatype'] = 'multmult'
-            print counts_array
             output['data'] = counts_array
             output['labels_x'] = unique_xs
             output['labels_y'] = unique_ys
@@ -200,14 +206,35 @@ def parse_data_for_hist(colnames, data, M_c):
                 output['values'] = [beans[x] for x in groups]
 
             group_types = set(output['groups'])
-            colors = []
-            for i in group_types:
-                colors.append(output['groups'].count(i)/len(output['groups'])) 
-            
-
     else:
         output['datatype'] = None
     return output
+
+def parse_data_for_pairwise(colnames, data, M_c, pairwise):
+    data_c = []
+    for i in data:
+        no_nan = True
+        for j in i:
+            if isinstance(j, float) and math.isnan(j):
+                no_nan = False
+        if no_nan:
+            data_c.append(i)
+    output = {}
+    columns = colnames[:]
+    data_no_id = [] #This will be the data with the row_ids removed if present
+    if colnames[0] == 'row_id':
+        columns.pop(0)
+        data_no_id = [x[1:] for x in data_c]
+    else:
+        data_no_id = data_c[:]
+    data_dict = {}
+    for i in range(len(columns)):
+        data_dict[columns[i]] = [x[i] for x in data_no_id]
+    output['datatype'] = 'pairwise_scatter'
+    output['title'] = 'this is a test'
+    output['data'] = data_dict
+    return output
+                        
 
 #Takes a list of multinomial variables and if they are all numeric, it sorts the list.
 def sort_mult_list(mult):
