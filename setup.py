@@ -23,9 +23,9 @@ setup(
     packages=['bayesdb', 'bayesdb.tests'],
     install_requires=['jsonrpc', 'requests', 'Twisted', 'pyOpenSSL',
                       'numpy', 'scipy', 'matplotlib>=1.2.0', 'hcluster',
-                      'Sphinx', 'pytest',
+                      'Sphinx', 'pytest', 'scikit-learn',
                       'prettytable', 'cmd2', 'pyparsing>=2.0.1',
-                      'ipython', 'pandas','statsmodels',
+                      'ipython', 'pandas', 'patsy', 'statsmodels',
                       ],
     license='Apache License, Version 2.0',
     entry_points = """
