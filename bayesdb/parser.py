@@ -238,34 +238,39 @@ class Parser(object):
 
 
     def help_analyze(self):
-        return "ANALYZE <btable> [MODEL INDEX <model_index>] [FOR <iterations> ITERATIONS | FOR <seconds> SECONDS]: perform inference."
+        return "ANALYZE <btable> [MODEL[S] <id>-<id>] [FOR <iterations> ITERATIONS | FOR <seconds> SECONDS]: perform inference."
 
     def parse_analyze(self, words, orig):
-        model_index = 'all'
-        iterations = None
-        seconds = None
-        if len(words) >= 1 and words[0] == 'analyze':
-            if len(words) >= 2:
-                tablename = words[1]
-            else:
+        match = re.search(r"""
+            analyze\s+
+            (?P<btable>[^\s]+)\s+
+            (models\s+(?P<start>\d+)\s*-\s*(?P<end>\d+))?
+            \s*for\s+
+            ((?P<iterations>\d+)\s+iteration(s)?)?
+            ((?P<seconds>\d+)\s+second(s)?)?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None or (match.group('iterations') is None and match.group('seconds') is None):
+            if words[0] == 'analyze':
                 return 'help', self.help_analyze()
-            idx = 2
-            if words[idx] == "model" and words[idx+1] == 'index':
-                model_index = words[idx+2]
-                idx += 3
-            ## TODO: check length here
-            if words[idx] == "for" and ((words[idx+2] == 'iterations') or (words[idx+2] == 'iteration')):
-                iterations = int(words[idx+1])
-                seconds = -1
-            elif words[idx] == "for" and ((words[idx+2] == 'seconds') or (words[idx+2] == 'second')):
-                seconds = float(words[idx+1])
-                iterations = None
-            else:
-                seconds = 300
-                iterations = None
-            return 'analyze', dict(tablename=tablename, model_index=model_index,
-                                   iterations=iterations, seconds=seconds)
+        else:
+            model_indices = 'all'
+            tablename = match.group('btable')
 
+            start = match.group('start')
+            end = match.group('end')
+            if start is not None and end is not None:
+                model_indices = range(int(start), int(end)+1)
+            
+            iterations = match.group('iterations')
+            if iterations is not None:
+                iterations = int(iterations)
+            
+            seconds = match.group('seconds')
+            if seconds is not None:
+                seconds = int(seconds)
+                
+            return 'analyze', dict(tablename=tablename, model_indices=model_indices,
+                                   iterations=iterations, seconds=seconds)
 
             
     def help_infer(self):

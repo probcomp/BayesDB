@@ -268,13 +268,19 @@ class Engine(object):
       return dict(columns=['model_id', 'iterations', 'model_config'], data=data)
     
 
-  def analyze(self, tablename, model_index='all', iterations=1, seconds=-1):
+  def analyze(self, tablename, model_indices='all', iterations=None, seconds=None):
     """
-    Run analyze for the selected table. model_index may be 'all'.
+    Run analyze for the selected table. model_indices may be 'all'.
+
+    Runs for a maximum of iterations 
+    
     Previously: this command ran in the same thread as this engine.
     Now: runs each model in its own thread, and does 10 seconds of inference at a time,
     by default. Each thread also has its own crosscat engine instance!
     """
+    if iterations is None:
+      iterations = 1000
+    
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
     max_model_id = self.persistence_layer.get_max_model_id(tablename)
@@ -282,10 +288,11 @@ class Engine(object):
       return dict(message="You must INITIALIZE MODELS before using ANALYZE.")
     models = self.persistence_layer.get_models(tablename)
 
-    if (str(model_index).upper() == 'ALL'):
+    if (str(model_indices).upper() == 'ALL'):
       modelids = sorted(models.keys())
     else:
-      modelids = [model_index]
+      assert type(model_indices) == list
+      modelids = model_indices
 
     X_L_list = [models[i]['X_L'] for i in modelids]
     X_D_list = [models[i]['X_D'] for i in modelids]
@@ -298,9 +305,9 @@ class Engine(object):
       
     analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True,
                         kernel_list=kernel_list)
-    if iterations is not None:
-      analyze_args['n_steps'] = iterations
-    else:
+    
+    analyze_args['n_steps'] = iterations
+    if seconds is not None:
       analyze_args['max_time'] = seconds
 
     X_L_list_prime, X_D_list_prime, diagnostics_dict = self.call_backend('analyze', analyze_args)
