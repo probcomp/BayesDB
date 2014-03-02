@@ -148,7 +148,7 @@ class Client(object):
         
         ## Do stuff now that you know the user's command, but before passing it to engine.
         if method_name == 'execute_file':
-            return dict(message='execute_file', bql_string=open(filename, 'r').read())
+            return dict(message='execute_file', bql_string=open(args_dict['filename'], 'r').read())
         elif (method_name == 'drop_btable') and (not yes):
             ## If dropping something, ask for confirmation.
             print "Are you sure you want to permanently delete this btable, and all associated models, without any way to get them back? Enter 'y' if yes."

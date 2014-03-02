@@ -27,9 +27,8 @@ import os
 
 class Parser(object):
     def __init__(self):
-        self.engine_method_names = [method_name for method_name in be.get_method_names() if method_name[0] != '_']
-        self.parser_method_names = [method_name[6:] for method_name in dir(Parser) if method_name[:6] == 'parse_']
-        self.method_names = set(self.engine_method_names).intersection(self.parser_method_names)
+        self.method_names = [method_name[6:] for method_name in dir(Parser) if method_name[:6] == 'parse_']
+        self.method_names.remove('statement')
         self.method_name_to_args = be.get_method_name_to_args()
         self.reset_root_dir()
     
@@ -131,9 +130,9 @@ class Parser(object):
         return "EXECUTE FILE <filename>: execute a BQL script from file."
 
     def parse_execute_file(self, words, orig):
-        if len(words) >= 2 and words[0] == 'execute':
+        if len(words) >= 1 and words[0] == 'execute':
             if len(words) >= 3 and words[1] == 'file':
-                filename = words[1]
+                filename = words[2]
                 return 'execute_file', dict(filename=self.get_absolute_path(filename))
             else:
                 return 'help', self.help_execute_file()
