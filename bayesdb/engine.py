@@ -127,6 +127,15 @@ class Engine(object):
       elif cctype == 'multinomial':
         postgres_coltypes.append('varchar(1000)')
     return postgres_coltypes, cctypes
+
+  def create_btable_from_existing(self, data, colnames, M_c, new_tablename):
+    """
+    Used in INTO statements to create a new btable as a portion of an existing one.
+    """
+    lines = []
+    for line in data:
+      lines.append(','.join(line))
+    csv = ','.join(colnames) + '\n' + '\n'.join(lines)
         
   def create_btable(self, tablename, csv, crosscat_column_types):
     """Uplooad a csv table to the predictive db.
@@ -326,7 +335,7 @@ class Engine(object):
     return self.select(tablename, columnstring, whereclause, limit, order_by,
                        impute_confidence=confidence, num_impute_samples=numsamples, plot=plot)
     
-  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False):
+  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, new_tablename=None):
     """
     BQL's version of the SQL SELECT query.
     
@@ -389,6 +398,10 @@ class Engine(object):
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
 
+    # Execute INTO statement
+    if new_tablename is not None:
+      create_btable_from_existing(data, query_colnames, M_c, new_tablename)
+    
     ret = dict(data=data, columns=query_colnames)
     if plot:
       ret['M_c'] = M_c

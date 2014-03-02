@@ -415,7 +415,7 @@ class Parser(object):
 
             
     def help_select(self):
-        return 'SELECT [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <filename>]'
+        return 'SELECT [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [INTO <new_btable>] [SAVE TO <filename>]'
         
     def parse_select(self, words, orig):
         match = re.search(r"""
@@ -425,7 +425,8 @@ class Parser(object):
             \s*from\s+(?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
             (\s*limit\s+(?P<limit>[^\s]+))?
-            (\s*save\s+to\s+(?P<filename>[^\s]+))?        
+            (\s*into\s+(?P<newbtable>[^\s]+))?
+            (\s*save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'select':
@@ -449,13 +450,18 @@ class Parser(object):
                 scatter = False
                 pairwise = False
 
+            if match.group('newbtable'):
+                new_tablename = match.group('newbtable')
+            else:
+                new_tablename = None
+
             if match.group('filename'):
                 filename = match.group('filename')
             else:
                 filename = None
 
             return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                  limit=limit, order_by=order_by, plot=plot), \
+                                  limit=limit, order_by=order_by, plot=plot, new_tablename=new_tablename), \
               dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
 
