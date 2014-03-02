@@ -172,15 +172,31 @@ class Parser(object):
 
 
     def help_drop_models(self):
-        return "DROP MODEL[S] FROM <btable>: drop the models specified by the given ids."
+        return "DROP MODEL[S] [<id>-<id>] FROM <btable>: drop the models specified by the given ids."
 
     def parse_drop_models(self, words, orig):
-        ## TODO: parse min to max
-        if len(words) >= 4 and words[0] == 'drop' and (words[1] == 'models' or words[1] == 'model'):
-            if words[2] == 'for' or words[2] == 'from':
-                return 'drop_models', dict(tablename=words[3])
-            else:
-                return 'help', self.help_show_diagnostics()
+        match = re.search(r"""
+            drop\s+model(s)?\s+
+            ( ((?P<start>\d+)\s*-\s*(?P<end>\d+)) | (?P<id>\d+) )?
+            \s*from\s+
+            (?P<btable>[^\s]+)
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'drop':
+                return 'help', self.help_drop_models()
+        else:
+            tablename = match.group('btable')
+            
+            model_indices = None            
+            start = match.group('start')
+            end = match.group('end')
+            if start is not None and end is not None:
+                model_indices = range(int(start), int(end)+1)
+            id = match.group('id')
+            if id is not None:
+                model_indices = [int(id)]
+            
+            return 'drop_models', dict(tablename=tablename, model_indices=model_indices)
                 
                 
     def help_initialize_models(self):
@@ -244,7 +260,8 @@ class Parser(object):
         match = re.search(r"""
             analyze\s+
             (?P<btable>[^\s]+)\s+
-            (models\s+(?P<start>\d+)\s*-\s*(?P<end>\d+))?
+            (model(s)?\s+
+              (((?P<start>\d+)\s*-\s*(?P<end>\d+)) | (?P<id>\d+)) )?
             \s*for\s+
             ((?P<iterations>\d+)\s+iteration(s)?)?
             ((?P<seconds>\d+)\s+second(s)?)?
@@ -253,13 +270,16 @@ class Parser(object):
             if words[0] == 'analyze':
                 return 'help', self.help_analyze()
         else:
-            model_indices = 'all'
+            model_indices = None
             tablename = match.group('btable')
 
             start = match.group('start')
             end = match.group('end')
             if start is not None and end is not None:
                 model_indices = range(int(start), int(end)+1)
+            id = match.group('id')
+            if id is not None:
+                model_indices = [int(id)]
             
             iterations = match.group('iterations')
             if iterations is not None:

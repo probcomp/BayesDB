@@ -175,7 +175,10 @@ class PersistenceLayer():
         if model_ids == 'all' or model_ids is None:
             models = {}
         else:
-            del models[model_ids]
+            if type(model_ids) != list:
+                model_ids = [model_ids]
+            for id in model_ids:
+                del models[id]
         self.write_models(tablename, models)
         return 0
             

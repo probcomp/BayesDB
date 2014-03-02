@@ -88,10 +88,6 @@ class Engine(object):
     """Return names of all btables."""
     return dict(list=self.persistence_layer.list_btables())
 
-  def drop_models(self, tablename, model_index):
-     """Delete one model by index, or all models. model_index may be 'all'. """
-     return self.persistence_layer.drop_models(tablename, model_index)
-
   def update_schema(self, tablename, mappings):
     """
     mappings is a dict of column name to 'continuous', 'multinomial',
@@ -186,9 +182,9 @@ class Engine(object):
     result = self.persistence_layer.add_models(tablename, models.values())
     return self.show_models(tablename)
 
-  def drop_models(self, tablename, model_ids=None):
-    """Drop the specified models. If model_ids is None, drop all models."""
-    self.persistence_layer.drop_models(tablename, model_ids)
+  def drop_models(self, tablename, model_indices=None):
+    """Drop the specified models. If model_ids is None or all, drop all models."""
+    self.persistence_layer.drop_models(tablename, model_indices)
     return self.show_models(tablename)
     
   def initialize_models(self, tablename, n_models, model_config=None):
@@ -268,9 +264,9 @@ class Engine(object):
       return dict(columns=['model_id', 'iterations', 'model_config'], data=data)
     
 
-  def analyze(self, tablename, model_indices='all', iterations=None, seconds=None):
+  def analyze(self, tablename, model_indices=None, iterations=None, seconds=None):
     """
-    Run analyze for the selected table. model_indices may be 'all'.
+    Run analyze for the selected table. model_indices may be 'all' or None to indicate all models.
 
     Runs for a maximum of iterations 
     
@@ -288,7 +284,7 @@ class Engine(object):
       return dict(message="You must INITIALIZE MODELS before using ANALYZE.")
     models = self.persistence_layer.get_models(tablename)
 
-    if (str(model_indices).upper() == 'ALL'):
+    if model_indices is None or (str(model_indices).upper() == 'ALL'):
       modelids = sorted(models.keys())
     else:
       assert type(model_indices) == list
