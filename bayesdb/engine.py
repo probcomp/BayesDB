@@ -30,6 +30,8 @@ import math
 import ast
 import sys
 import random
+import threading
+import Queue
 
 import pylab
 import numpy
@@ -276,7 +278,7 @@ class Engine(object):
     """
     if iterations is None:
       iterations = 1000
-    
+
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
     max_model_id = self.persistence_layer.get_max_model_id(tablename)
@@ -299,16 +301,39 @@ class Engine(object):
     else:
       kernel_list = () # default kernel list
       
-    analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True,
-                        kernel_list=kernel_list)
-    
     analyze_args['n_steps'] = iterations
     if seconds is not None:
       analyze_args['max_time'] = seconds
 
-    X_L_list_prime, X_D_list_prime, diagnostics_dict = self.call_backend('analyze', analyze_args)
-    iterations = len(diagnostics_dict['logscore'])
-    self.persistence_layer.update_models(tablename, modelids, X_L_list_prime, X_D_list_prime, diagnostics_dict)
+    ## CrossCat analyze works by trying to do the specified number of iterations (which MUST be at least 1,
+    ##   and it never does more than that number), and doesn't start a new iteration if the specified time
+    ##   has passed (although stopped after X seconds appeared to be buggy).
+
+    ## If we have only a number of iterations: we'll do that many iterations
+    ## If we have only a number of seconds: we'll keep starting new transitions up until that many seconds
+    ##   has elapsed.
+    ## If we have both: we'll do the min of the two.
+
+    ## We will call CrossCat in 1 iteration batches for now, and in a future commit, we'll support
+    ## batches of larger size for smaller tables.
+
+    def _do_analyze_chunk(modelid):
+      analyze_args = dict(M_c=M_c, T=T, do_diagnostics=True, kernel_list=kernel_list, \
+                          X_L=models[modelid]['X_L'], X_D=models[modelid]['X_D'], iterations=1)
+      X_L, X_D, diagnostics_dict = self.call_backend('analyze', analyze_args)
+      self.persistence_layer.update_models(tablename, [modelid], [X_L], [X_D], diagnostics_dict)
+    
+    threads = []
+    # Create a thread for each modelid. Each thread will execute one iteration of analyze.
+    for modelid in modelids:
+      t = threading.Thread(target=_do_analyze_chunk, args=modelid)
+      t.daemon = True
+      t.start()
+      threads.append(t)
+
+    # before returning, make sure all threads have finished
+    for t in threads:
+      t.join()
     
     ret = self.show_models(tablename)
     ret['message'] = 'Analyze complete.'
