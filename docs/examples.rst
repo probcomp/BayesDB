@@ -204,6 +204,7 @@ Inspect this submatrix to see how many of the clusters from the large matrix are
    # -- Lots of missing values, maybe fill in to better see relationships
    #In [9]: client('INFER typical10col from gss WITH CONFIDENCE .9 LIMIT 20;')
 
+
 -- Note that the values were not filled in. Why? To simultaneously estimate many variables takes considerably more information than one or two variables, and we don't have enough at the moment. If we focus on just pairs, we will have better luck
 
 -- Focus on religion for differences
@@ -231,3 +232,4 @@ Inspect this submatrix to see how many of the clusters from the large matrix are
    #In[14]: client('SIMULATE typical10col FROM gss WHERE racecen1=2 times 50;')
    
    #In[15]: client('SIMULATE typical10col FROM gss WHERE racecen1=16 times 50;')
+
