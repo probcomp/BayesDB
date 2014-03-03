@@ -100,27 +100,43 @@ class PersistenceLayer():
         pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
         metadata_f.close()
 
-    def get_models(self, tablename):
+    def get_models(self, tablename, modelid=None):
+        """
+        Return the models dict for the table if modelid is None.
+        If modelid is an int, then return the model specified by that id.
+        """
         models_dir = os.path.join(self.data_dir, tablename, 'models')
         if os.path.exists(models_dir):
-            models = {}
-            fnames = os.listdir(models_dir)
-            for fname in fnames:
-                model_id = fname[6:] # remove preceding 'model_'
-                model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
-                full_fname = os.path.join(models_dir, fname)
+            if modelid is not None:
+                # Only return one of the models
+                full_fname = os.path.join(models_dir, 'model_%d.pkl' % modelid)
                 f = open(full_fname, 'r')
                 m = pickle.load(f)
                 f.close()
-                models[model_id] = m
-            return models
+                return f
+            else:
+                # Return all the models
+                models = {}
+                fnames = os.listdir(models_dir)
+                for fname in fnames:
+                    model_id = fname[6:] # remove preceding 'model_'
+                    model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
+                    full_fname = os.path.join(models_dir, fname)
+                    f = open(full_fname, 'r')
+                    m = pickle.load(f)
+                    f.close()
+                    models[model_id] = m
+                return models
         else:
             # Backwards compatibility with old model style.
             try:
                 f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r')
                 models = pickle.load(f)
                 f.close()
-                return models
+                if modelid is not None:
+                    return models[modelid]
+                else:
+                    return models
             except IOError:
                 return {}
 
@@ -374,17 +390,11 @@ class PersistenceLayer():
         # Save to disk
         self.write_models(tablename, models)
 
-    def update_model(self, tablename, X_L, X_D, iterations, modelid):
+    def update_model(self, tablename, X_L, X_D, iterations, modelid, diagnostics_dict):
         """ Overwrite a certain model by id. """
         models = self.get_models(tablename)
         models[modelid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
         self.write_models(tablename, models)
-
-    def get_model(self, tablename, modelid):
-        """ Retrieve an individual (X_L, X_D, iteration) tuple, by modelid. """
-        models = self.get_models(tablename)
-        m = models[modelid]
-        return m['X_L'], m['X_D'], m['iterations']
 
     def get_model_ids(self, tablename):
         """ Receive a list of all model ids for the table. """

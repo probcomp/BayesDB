@@ -216,8 +216,8 @@ def test_initialize_models():
   model_ids = engine.persistence_layer.get_model_ids(test_tablename)
   assert sorted(model_ids) == range(num_models)
   for i in range(num_models):
-    X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
-    assert iters == 0
+    model = engine.persistence_layer.get_models(test_tablename, i)
+    assert model['iterations'] == 0
 
 def test_analyze():
   test_tablename, _ = create_dha()
@@ -229,8 +229,8 @@ def test_analyze():
     model_ids = engine.persistence_layer.get_model_ids(test_tablename)
     assert sorted(model_ids) == range(num_models)
     for i in range(num_models):
-      X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
-      assert iters == it
+      model = engine.persistence_layer.get_models(test_tablename, i)
+      assert model['iterations'] == it      
 
 def test_nan_handling():
   test_tablename1, _ = create_dha(path='data/dha_missing.csv') 
@@ -389,8 +389,8 @@ def test_show_models():
     model_ids = engine.persistence_layer.get_model_ids(test_tablename)
     assert sorted(model_ids) == range(num_models)
     for i in range(num_models):
-      X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
-      assert iters == it
+      model = engine.persistence_layer.get_models(test_tablename, i)
+      assert model['iterations'] == it
 
     ## models should be a list of (id, iterations) tuples.
     models = engine.show_models(test_tablename)['models']
