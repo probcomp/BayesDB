@@ -266,11 +266,11 @@ class Engine(object):
       return dict(columns=['model_id', 'iterations', 'model_config'], data=data)
     
 
-  def analyze(self, tablename, model_indices=None, iterations=None, seconds=None):
+  def analyze(self, tablename, model_indices=None, iterations=None, max_time=None):
     """
     Run analyze for the selected table. model_indices may be 'all' or None to indicate all models.
 
-    Runs for a maximum of iterations 
+    Runs for a maximum of iterations, or a maximum number of seconds.
     
     Previously: this command ran in the same thread as this engine.
     Now: runs each model in its own thread, and does 10 seconds of inference at a time,
@@ -300,10 +300,6 @@ class Engine(object):
       kernel_list = ['kernel_list']
     else:
       kernel_list = () # default kernel list
-      
-    analyze_args['n_steps'] = iterations
-    if seconds is not None:
-      analyze_args['max_time'] = seconds
 
     ## CrossCat analyze works by trying to do the specified number of iterations (which MUST be at least 1,
     ##   and it never does more than that number), and doesn't start a new iteration if the specified time
@@ -317,16 +313,29 @@ class Engine(object):
     ## We will call CrossCat in 1 iteration batches for now, and in a future commit, we'll support
     ## batches of larger size for smaller tables.
 
-    def _do_analyze_chunk(modelid):
+    def _do_analyze_for_model(modelid):
+      # TODO: this thread should make a background thread for model writes!
       analyze_args = dict(M_c=M_c, T=T, do_diagnostics=True, kernel_list=kernel_list, \
-                          X_L=models[modelid]['X_L'], X_D=models[modelid]['X_D'], iterations=1)
-      X_L, X_D, diagnostics_dict = self.call_backend('analyze', analyze_args)
-      self.persistence_layer.update_models(tablename, [modelid], [X_L], [X_D], diagnostics_dict)
+                          X_L=models[modelid]['X_L'], X_D=models[modelid]['X_D'], n_steps=1)
+      start_time = time.time()
+      last_write_time = start_time
+      for i in range(iterations):
+        X_L, X_D, diagnostics_dict = self.call_backend('analyze', analyze_args)
+        
+        cur_time = time.time()
+        elapsed = cur_time - start_time
+        time_since_write = cur_time - last_write_time
+
+        self.persistence_layer.update_model(tablename, X_L, X_D, diagnostics_dict, modelid)
+        
+        if elapsed >= max_time:
+          return
+          
     
     threads = []
     # Create a thread for each modelid. Each thread will execute one iteration of analyze.
     for modelid in modelids:
-      t = threading.Thread(target=_do_analyze_chunk, args=modelid)
+      t = threading.Thread(target=_do_analyze_for_model, args=(modelid,))
       t.daemon = True
       t.start()
       threads.append(t)

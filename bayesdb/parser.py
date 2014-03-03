@@ -285,12 +285,12 @@ class Parser(object):
             if iterations is not None:
                 iterations = int(iterations)
             
-            seconds = match.group('seconds')
+            max_time = match.group('seconds')
             if seconds is not None:
-                seconds = int(seconds)
+                max_time = int(seconds)
                 
             return 'analyze', dict(tablename=tablename, model_indices=model_indices,
-                                   iterations=iterations, seconds=seconds)
+                                   iterations=iterations, max_time=max_time)
 
             
     def help_infer(self):

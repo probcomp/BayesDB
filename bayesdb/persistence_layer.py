@@ -409,7 +409,7 @@ class PersistenceLayer():
         # Save to disk
         self.write_models(tablename, models)
 
-    def update_model(self, tablename, X_L, X_D, modelid, diagnostics_dict):
+    def update_model(self, tablename, X_L, X_D, diagnostics_dict, modelid):
         """
         Overwrite a certain model by id.
         Assumes that diagnostics_dict was from an analyze run with only one model.
@@ -432,11 +432,11 @@ class PersistenceLayer():
 
         # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore, num_views.
         for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
-            diag_list = [l[idx] for l in diagnostics_dict[diag_key]]
-            if diag_key in model_dict and type(model_dict[diag_key]) == list:
-                model_dict[diag_key] += diag_list
+            diag_list = [l[0] for l in diagnostics_dict[diag_key]]
+            if diag_key in model and type(model[diag_key]) == list:
+                model[diag_key] += diag_list
             else:
-                model_dict[diag_key] = diag_list
+                model[diag_key] = diag_list
         
         self.write_model(tablename, model, modelid)
 
