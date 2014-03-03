@@ -100,27 +100,43 @@ class PersistenceLayer():
         pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
         metadata_f.close()
 
-    def get_models(self, tablename):
+    def get_models(self, tablename, modelid=None):
+        """
+        Return the models dict for the table if modelid is None.
+        If modelid is an int, then return the model specified by that id.
+        """
         models_dir = os.path.join(self.data_dir, tablename, 'models')
         if os.path.exists(models_dir):
-            models = {}
-            fnames = os.listdir(models_dir)
-            for fname in fnames:
-                model_id = fname[6:] # remove preceding 'model_'
-                model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
-                full_fname = os.path.join(models_dir, fname)
+            if modelid is not None:
+                # Only return one of the models
+                full_fname = os.path.join(models_dir, 'model_%d.pkl' % modelid)
                 f = open(full_fname, 'r')
                 m = pickle.load(f)
                 f.close()
-                models[model_id] = m
-            return models
+                return m
+            else:
+                # Return all the models
+                models = {}
+                fnames = os.listdir(models_dir)
+                for fname in fnames:
+                    model_id = fname[6:] # remove preceding 'model_'
+                    model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
+                    full_fname = os.path.join(models_dir, fname)
+                    f = open(full_fname, 'r')
+                    m = pickle.load(f)
+                    f.close()
+                    models[model_id] = m
+                return models
         else:
             # Backwards compatibility with old model style.
             try:
                 f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r')
                 models = pickle.load(f)
                 f.close()
-                return models
+                if modelid is not None:
+                    return models[modelid]
+                else:
+                    return models
             except IOError:
                 return {}
 
@@ -144,6 +160,16 @@ class PersistenceLayer():
             return column_lists[column_list]
         else:
             return []
+
+    def write_model(self, tablename, model, modelid):
+        # Make models dir
+        models_dir = os.path.join(self.data_dir, tablename, 'models')
+        if not os.path.exists(models_dir):
+            os.makedirs(models_dir)
+
+        model_f = open(os.path.join(models_dir, 'model_%d.pkl' % modelid), 'w')
+        pickle.dump(model, model_f, pickle.HIGHEST_PROTOCOL)
+        model_f.close()
 
     def write_models(self, tablename, models):
         # Make models dir
@@ -233,12 +259,24 @@ class PersistenceLayer():
     def get_max_model_id(self, tablename, models=None):
         """Get the highest model id, and -1 if there are no models.
         Model indexing starts at 0 when models exist."""
-        if models is None:
-            models = self.get_models(tablename)
-        if len(models.keys()) == 0:
+        
+        if models is not None:
+            model_ids = models.keys()
+        else:
+            models_dir = os.path.join(self.data_dir, tablename, 'models')
+            if not os.path.exists(models_dir):
+                model_ids = []
+            else:
+                model_ids = []                
+                fnames = os.listdir(models_dir)
+                for fname in fnames:
+                    model_id = fname[6:] # remove preceding 'model_'
+                    model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
+                    model_ids.append(model_id)
+        if len(model_ids) == 0:
             return -1
         else:
-            return max(models.keys())
+            return max(model_ids)
 
     def get_cctypes(self, tablename):
         """Access the table's current cctypes."""
@@ -314,7 +352,7 @@ class PersistenceLayer():
         self.write_metadata(tablename, metadata)
 
         # Write models
-        models = dict()
+        models = {}
         self.write_models(tablename, models)
 
         # Write column lists
@@ -332,14 +370,11 @@ class PersistenceLayer():
         parameter model_list is a list of dicts, where each dict contains the keys
         X_L, X_D, and iterations.
         """
-        # Load from existing models file.
-        models = self.get_models(tablename)
-        
         ## Model indexing starts at 0 (and is -1 if none exist)
-        max_model_id = self.get_max_model_id(tablename, models)        
+        max_model_id = self.get_max_model_id(tablename)
         for i,m in enumerate(model_list):
-            models[max_model_id + 1 + i] = m
-        self.write_models(tablename, models)
+            modelid = max_model_id + 1 + i
+            self.write_model(tablename, m, modelid)
 
     def update_models(self, tablename, modelids, X_L_list, X_D_list, diagnostics_dict):
         """
@@ -374,17 +409,36 @@ class PersistenceLayer():
         # Save to disk
         self.write_models(tablename, models)
 
-    def update_model(self, tablename, X_L, X_D, iterations, modelid):
-        """ Overwrite a certain model by id. """
-        models = self.get_models(tablename)
-        models[modelid] = dict(X_L=X_L, X_D=X_D, iterations=iterations)
-        self.write_models(tablename, models)
+    def update_model(self, tablename, X_L, X_D, modelid, diagnostics_dict):
+        """
+        Overwrite a certain model by id.
+        Assumes that diagnostics_dict was from an analyze run with only one model.
 
-    def get_model(self, tablename, modelid):
-        """ Retrieve an individual (X_L, X_D, iteration) tuple, by modelid. """
-        models = self.get_models(tablename)
-        m = models[modelid]
-        return m['X_L'], m['X_D'], m['iterations']
+        param diagnostics_dict: -> dict[f_z[0, D], num_views, logscore, f_z[0, 1], column_crp_alpha]
+        Each of the 5 diagnostics is a 2d array, size #models x #iterations
+
+        Ignores f_z[0, D] and f_z[0, 1], since these will need to be recalculated after all
+        inference is done in order to properly incorporate all models.
+
+        models: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views]. Idx starting at 1.
+        each diagnostic entry is a list, over iterations.
+
+        """
+        model = self.get_models(tablename, modelid)
+
+        model['X_L'] = X_L
+        model['X_D'] = X_D
+        model['iterations'] = model['iterations'] + len(diagnostics_dict['logscore'])
+
+        # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore, num_views.
+        for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
+            diag_list = [l[idx] for l in diagnostics_dict[diag_key]]
+            if diag_key in model_dict and type(model_dict[diag_key]) == list:
+                model_dict[diag_key] += diag_list
+            else:
+                model_dict[diag_key] = diag_list
+        
+        self.write_model(tablename, model, modelid)
 
     def get_model_ids(self, tablename):
         """ Receive a list of all model ids for the table. """
