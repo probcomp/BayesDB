@@ -39,8 +39,9 @@ class PersistenceLayer():
       <tablename>/
         data.csv
         metadata.pkl
-        models.pkl
         column_lists.pkl
+        models/
+          model_<id>.pkl
 
     table_index.pkl: list of btable names.
     
@@ -58,7 +59,7 @@ class PersistenceLayer():
         self.data_dir = os.path.join(self.cur_dir, 'data')
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
-        self.load_btable_index() # sets it to self.btable_index
+        self.load_btable_index() # sets self.btable_index
 
     def load_btable_index(self):
         """
@@ -100,13 +101,28 @@ class PersistenceLayer():
         metadata_f.close()
 
     def get_models(self, tablename):
-        try:
-            f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r')
-            models = pickle.load(f)
-            f.close()
+        models_dir = os.path.join(self.data_dir, tablename, 'models')
+        if os.path.exists(models_dir):
+            models = {}
+            fnames = os.listdir(models_dir)
+            for fname in fnames:
+                model_id = fname[6:] # remove preceding 'model_'
+                model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
+                full_fname = os.path.join(models_dir, fname)
+                f = open(full_fname, 'r')
+                m = pickle.load(f)
+                f.close()
+                models[model_id] = m
             return models
-        except IOError:
-            return {}
+        else:
+            # Backwards compatibility with old model style.
+            try:
+                f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r')
+                models = pickle.load(f)
+                f.close()
+                return models
+            except IOError:
+                return {}
 
     def get_column_lists(self, tablename):
         try:
@@ -130,9 +146,16 @@ class PersistenceLayer():
             return []
 
     def write_models(self, tablename, models):
-        models_f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'w')
-        pickle.dump(models, models_f, pickle.HIGHEST_PROTOCOL)
-        models_f.close()
+        # Make models dir
+        models_dir = os.path.join(self.data_dir, tablename, 'models')
+        if not os.path.exists(models_dir):
+            os.makedirs(models_dir)
+
+        # Write each model individually
+        for i, v in models.items():
+            model_f = open(os.path.join(models_dir, 'model_%d.pkl' % i), 'w')
+            pickle.dump(v, model_f, pickle.HIGHEST_PROTOCOL)
+            model_f.close()
 
     def write_column_lists(self, tablename, column_lists):
         column_lists_f = open(os.path.join(self.data_dir, tablename, 'column_lists.pkl'), 'w')
@@ -171,16 +194,24 @@ class PersistenceLayer():
 
     def drop_models(self, tablename, model_ids='all'):
         """ Delete a single model, or all, if model_ids == 'all' or None. """
-        models = pickle.load(open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r'))
-        if model_ids == 'all' or model_ids is None:
-            models = {}
+        models_dir = os.path.join(self.data_dir, tablename, 'models')
+        if os.path.exists(models_dir):
+            if model_ids is None or model_ids == 'all':
+                fnames = os.listdir(models_dir)
+                for fname in fnames:
+                    if 'model_' in fname:
+                        os.remove(os.path.join(models_dir, fname))
+            else:
+                for modelid in model_ids:
+                    fname = os.path.join(models_dir, 'model_%d.pkl' % modelid)
+                    if os.path.exists(fname):
+                        os.remove(fname)
         else:
-            if type(model_ids) != list:
-                model_ids = [model_ids]
-            for id in model_ids:
-                del models[id]
-        self.write_models(tablename, models)
-        return 0
+            # If models in old style, convert to new style, save, and retry.
+            models = self.get_models(tablename)
+            self.write_models(tablename, models)
+            self.drop_models(tablename, model_ids)
+
             
     def get_latent_states(self, tablename):
         """Return X_L_list, X_D_list, and M_c"""
