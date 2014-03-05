@@ -304,7 +304,7 @@ class Parser(object):
             from\s+(?P<btable>[^\s]+)\s+
             (where\s+(?P<whereclause>.*(?=with)))?
             \s*with\s+confidence\s+(?P<confidence>[^\s]+)
-            (\s+limit\s+(?P<limit>[^\s]+))?
+            (\s+limit\s+(?P<limit>\d+))?
             (\s+with\s+(?P<numsamples>[^\s]+)\s+samples)?
             (\s*save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
@@ -390,7 +390,7 @@ class Parser(object):
             models\s+
             (?P<pklpath>[^\s]+)\s+
             ((into\s+)|(for\s+))
-            (?P<btable>[^\s]+)
+            (?P<btable>[^\s]+)\s*$
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'load':
@@ -424,8 +424,8 @@ class Parser(object):
             (?P<columnstring>.*?((?=from)))
             \s*from\s+(?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
-            (\s*limit\s+(?P<limit>[^\s]+))?
-            (\s*save\s+to\s+(?P<filename>[^\s]+))?        
+            (\s*limit\s+(?P<limit>\d+))?
+            (\s*save\s+to\s+(?P<filename>[^\s]+))?\s*$ 
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'select':
@@ -469,8 +469,8 @@ class Parser(object):
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
             ((given|where)\s+(?P<givens>.*(?=times)))?
-            times\s+(?P<times>[^\s]+)
-            (\s*save\s+to\s+(?P<filename>[^\s]+))?        
+            times\s+(?P<times>\d+)
+            (\s*save\s+to\s+(?P<filename>[^\s]+))?\s*$     
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'simulate':
@@ -510,7 +510,7 @@ class Parser(object):
     def parse_show_column_lists(self, words, orig):
         match = re.search(r"""
           SHOW\s+COLUMN\s+LISTS\s+FOR\s+
-          (?P<btable>[^\s]+)
+          (?P<btable>[^\s]+)\s*$
         """, orig, flags=re.VERBOSE|re.IGNORECASE)
         if not match:
             if words[0] == 'show':
@@ -527,7 +527,7 @@ class Parser(object):
           SHOW\s+COLUMNS\s+
           ((?P<columnlist>[^\s]+)\s+)?
           FROM\s+
-          (?P<btable>[^\s]+)
+          (?P<btable>[^\s]+)\s*$
         """, orig, flags= re.VERBOSE | re.IGNORECASE)
         if not match:
             if words[0] == 'show':
@@ -547,7 +547,7 @@ class Parser(object):
             (?P<columnstring>.*?((?=from)))
             \s*from\s+
             (?P<btable>[^\s]+)\s*
-            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|(?=as)|$)))?
+            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|(?=as)|$)))?\s*$
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if (words[0] == 'estimate' and words[2] == 'columns') or (words[0] == 'create' and words[1] == 'column'):

@@ -136,7 +136,10 @@ class Client(object):
         if timing:
             start_time = time.time()
 
-        parser_out  = self.parser.parse_statement(bql_statement_string)
+        try:
+            parser_out  = self.parser.parse_statement(bql_statement_string)
+        except Exception as e:
+            raise utils.BayesDBParseError(str(e))
         if parser_out is None:
             print "Could not parse command. Try typing 'help' for a list of all commands."
             return

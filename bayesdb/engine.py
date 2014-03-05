@@ -497,6 +497,9 @@ class Engine(object):
     """
     Return a list of all column list names.
     """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+      
     column_lists = self.persistence_layer.get_column_lists(tablename)
     return dict(columns=list(column_lists.keys()))
 
@@ -504,6 +507,9 @@ class Engine(object):
     """
     Return the specified columnlist. If None, return all columns in original order.
     """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+      
     if column_list:
       column_names = self.persistence_layer.get_column_list(tablename, column_list)
     else:
