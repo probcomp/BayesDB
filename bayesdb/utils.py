@@ -31,6 +31,43 @@ import data_utils as du
 import select_utils
 import functions
 
+class BayesDBError(Exception):
+    """ Base class for all other exceptions in this module. """
+    def __str__(self):
+        return "BayesDB internal error. Try using 'help' to see the help menu."
+
+class BayesDBParseError(BayesDBError):
+    def __init__(self, msg=None):
+        if msg:
+            self.msg = msg
+        else:
+            self.msg = "BayesDB parsing error. Try using 'help' to see the help menu for BQL syntax."
+    
+    def __str__(self):
+        return self.msg
+
+class BayesDBNoModelsError(BayesDBError):
+    def __init__(self, tablename):
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Btable %s has no models, but this command requires models. Please create models first with INITIALIZE MODELS, and then ANALYZE." % self.tablename
+
+class BayesDBInvalidBtableError(BayesDBError):
+    def __init__(self, tablename):
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Btable %s does not exist. Please create it first with CREATE BTABLE, or view existing btables with LIST BTABLES." % self.tablename
+
+class BayesDBColumnDoesNotExistError(BayesDBError):
+    def __init__(self, column, tablename):
+        self.column = column
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Column %s does not exist in btable %s." % (self.column, self.tablename)
+
 def is_int(s):
     try:
         int(s)
@@ -96,10 +133,11 @@ def column_string_splitter(columnstring, M_c=None, column_lists=None):
     output = end_column(current_column, output)
     return output
 
-def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', col=None, confidence=None, limit=None, submatrix=False, engine=None, column_names=None):
+def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', confidence=None, limit=None, submatrix=False, engine=None, column_names=None, component_threshold=None):
     """ Compute a matrix. If using a function that requires engine (currently only
     mutual information), engine must not be None. """
 
+    # Get appropriate function
     assert len(X_L_list) == len(X_D_list)
     if col_function_name == 'mutual information':
       if len(X_L_list) == 0:
@@ -112,61 +150,88 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
     elif col_function_name == 'correlation':
       col_function = functions._correlation
     else:
-      raise Exception('Invalid column function: %s' % col_function_name)
+      raise BayesDBParseError('Invalid column function: %s' % col_function_name)
 
+    # If using a subset of the columns, get the appropriate names, and figure out their indices.
     if column_names:
         num_cols = len(column_names)
+        column_indices = [M_c['name_to_idx'][name] for name in column_names]
     else:
         num_cols = len(X_L_list[0]['column_partition']['assignments'])
         column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
+        column_indices = range(num_cols)
     column_names = numpy.array(column_names)
     
-    # extract unordered z_matrix
+    # Compute unordered matrix: evaluate the function for every pair of columns
+    # Shortcut: assume all functions are symmetric between columns, only compute half.
     num_latent_states = len(X_L_list)
     z_matrix = numpy.zeros((num_cols, num_cols))
-    for i in range(num_cols):
-      for j in range(num_cols):
-        z_matrix[i][j] = col_function((i, j), None, None, M_c, X_L_list, X_D_list, T, engine)
+    for i, orig_i in enumerate(column_indices):
+      for j in range(i, num_cols):
+        orig_j = column_indices[j]
+        func_val = col_function((orig_i, orig_j), None, None, M_c, X_L_list, X_D_list, T, engine)
+        z_matrix[i][j] = func_val
+        z_matrix[j][i] = func_val
 
-    if col:
-      z_column = list(z_matrix[M_c['name_to_idx'][col]])
-      data_tuples = zip(z_column, range(num_cols))
-      data_tuples.sort(reverse=True)
-      if confidence:
-        data_tuples = filter(lambda tup: tup[0] >= float(confidence), data_tuples)
-      if limit and limit != float("inf"):
-        data_tuples = data_tuples[:int(limit)]
-      data = [tuple([d[0] for d in data_tuples])]
-      columns = [d[1] for d in data_tuples]
-      column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]      
-      column_names = numpy.array(column_names)
-      column_names_reordered = column_names[columns]
-      if submatrix:
-        z_matrix = z_matrix[columns,:][:,columns]
-        z_matrix_reordered = z_matrix
-      else:
-        return {'data': data, 'columns': column_names_reordered}
-    else:
-      # hierachically cluster z_matrix
-      import hcluster
-      Y = hcluster.pdist(z_matrix)
-      Z = hcluster.linkage(Y)
-      pylab.figure()
-      hcluster.dendrogram(Z)
-      intify = lambda x: int(x.get_text())
-      reorder_indices = map(intify, pylab.gca().get_xticklabels())
-      pylab.clf() ## use instead of close to avoid error spam
-      # REORDER! 
-      z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
-      column_names_reordered = column_names[reorder_indices]
+    # Hierarchically cluster columns.
+    import hcluster
+    Y = hcluster.pdist(z_matrix)
+    Z = hcluster.linkage(Y)
+    pylab.figure()
+    hcluster.dendrogram(Z)
+    intify = lambda x: int(x.get_text())
+    reorder_indices = map(intify, pylab.gca().get_xticklabels())
+    pylab.clf() ## use instead of close to avoid error spam
+    # reorder the matrix
+    z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
+    column_names_reordered = column_names[reorder_indices]
 
+    # If component_threshold isn't none, then we want to return all the connected components
+    # of columns: columns are connected if their edge weight is above the threshold.
+    # Just do a search, starting at each column id.
+    if component_threshold is not None:
+        from collections import defaultdict
+        components = [] # list of lists (conceptually a set of sets, but faster here)
+
+        # Construct graph, in the form of a neighbor dictionary
+        neighbors_dict = defaultdict(list)
+        for i in range(num_cols):
+            for j in range(i+1, num_cols):
+                if z_matrix[i][j] > component_threshold:
+                    neighbors_dict[i].append(j)
+                    neighbors_dict[j].append(i)
+
+        # Outer while loop: make sure every column has been visited
+        unvisited = set(range(num_cols))
+        while(len(unvisited) > 0):
+            component = []
+            stack = [unvisited.pop()]
+            while(len(stack) > 0):
+                cur = stack.pop()
+                component.append(cur)                
+                neighbors = neighbors_dict[cur]
+                for n in neighbors:
+                    if n in unvisited:
+                        stack.append(n)
+                        unvisited.remove(n)                        
+            if len(component) > 1:
+                components.append(component)
+                
+        # Now, convert the components from their z_matrix indices to their btable indices
+        new_comps = []
+        for comp in components:
+            new_comps.append([column_indices[c] for c in comp])
+        components = new_comps
+            
     title = 'Pairwise column %s for %s' % (col_function_name, tablename)
 
-    return dict(
+    ret = dict(
       matrix=z_matrix_reordered,
       column_names=column_names_reordered,
       title=title,
       message = "Created " + title
       )
-        
+    if component_threshold is not None:
+        ret['components'] = components
+    return ret
     

@@ -178,7 +178,7 @@ class Parser(object):
         match = re.search(r"""
             drop\s+model(s)?\s+
             ( ((?P<start>\d+)\s*-\s*(?P<end>\d+)) | (?P<id>\d+) )?
-            \s*from\s+
+            \s*(from|for)\s+
             (?P<btable>[^\s]+)
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
@@ -304,7 +304,7 @@ class Parser(object):
             from\s+(?P<btable>[^\s]+)\s+
             (where\s+(?P<whereclause>.*(?=with)))?
             \s*with\s+confidence\s+(?P<confidence>[^\s]+)
-            (\s+limit\s+(?P<limit>[^\s]+))?
+            (\s+limit\s+(?P<limit>\d+))?
             (\s+with\s+(?P<numsamples>[^\s]+)\s+samples)?
             (\s*save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
@@ -390,7 +390,7 @@ class Parser(object):
             models\s+
             (?P<pklpath>[^\s]+)\s+
             ((into\s+)|(for\s+))
-            (?P<btable>[^\s]+)
+            (?P<btable>[^\s]+)\s*$
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'load':
@@ -424,8 +424,8 @@ class Parser(object):
             (?P<columnstring>.*?((?=from)))
             \s*from\s+(?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
-            (\s*limit\s+(?P<limit>[^\s]+))?
-            (\s*save\s+to\s+(?P<filename>[^\s]+))?        
+            (\s*limit\s+(?P<limit>\d+))?
+            (\s*save\s+to\s+(?P<filename>[^\s]+))?\s*$ 
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'select':
@@ -469,8 +469,8 @@ class Parser(object):
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
             ((given|where)\s+(?P<givens>.*(?=times)))?
-            times\s+(?P<times>[^\s]+)
-            (\s*save\s+to\s+(?P<filename>[^\s]+))?        
+            times\s+(?P<times>\d+)
+            (\s*save\s+to\s+(?P<filename>[^\s]+))?\s*$     
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'simulate':
@@ -510,7 +510,7 @@ class Parser(object):
     def parse_show_column_lists(self, words, orig):
         match = re.search(r"""
           SHOW\s+COLUMN\s+LISTS\s+FOR\s+
-          (?P<btable>[^\s]+)
+          (?P<btable>[^\s]+)\s*$
         """, orig, flags=re.VERBOSE|re.IGNORECASE)
         if not match:
             if words[0] == 'show':
@@ -527,7 +527,7 @@ class Parser(object):
           SHOW\s+COLUMNS\s+
           ((?P<columnlist>[^\s]+)\s+)?
           FROM\s+
-          (?P<btable>[^\s]+)
+          (?P<btable>[^\s]+)\s*$
         """, orig, flags= re.VERBOSE | re.IGNORECASE)
         if not match:
             if words[0] == 'show':
@@ -536,6 +536,7 @@ class Parser(object):
             tablename = match.group('btable')
             column_list = match.group('columnlist')
             return 'show_columns', dict(tablename=tablename, column_list=column_list)
+
             
     def help_estimate_columns(self):
         return "(ESTIMATE COLUMNS | CREATE COLUMN LIST) [<column_names>] FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>] [AS <column_list>]"
@@ -546,7 +547,7 @@ class Parser(object):
             (?P<columnstring>.*?((?=from)))
             \s*from\s+
             (?P<btable>[^\s]+)\s*
-            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|(?=as)|$)))?
+            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|(?=as)|$)))?\s*$
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if (words[0] == 'estimate' and words[2] == 'columns') or (words[0] == 'create' and words[1] == 'column'):
@@ -583,7 +584,7 @@ class Parser(object):
                                             limit=limit, order_by=order_by, name=name)
             
     def help_estimate_pairwise(self):
-        return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [SAVE TO <file>]: estimate a pairwise function of columns."
+        return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <columnlist>]: estimate a pairwise function of columns."
         
     def parse_estimate_pairwise(self, words, orig):
         match = re.search(r"""
@@ -593,6 +594,7 @@ class Parser(object):
             (?P<btable>[^\s]+)
             (\s+for\s+columns\s+(?P<columns>[^\s]+))?
             (\s+save\s+to\s+(?P<filename>[^\s]+))?
+            (\s+save\s+connected\s+components\s+with\s+threshold\s+(?P<threshold>[^\s]+)\s+as\s+(?P<components_name>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'estimate' and words[1] == 'pairwise':
@@ -602,16 +604,18 @@ class Parser(object):
             function_name = match.group('functionname').strip().lower()
             if function_name not in ["mutual information", "correlation", "dependence probability"]:
                 return 'help', self.help_estimate_pairwise()
-            if match.group('filename'):
-                filename = match.group('filename')
+            filename = match.group('filename') # Could be None
+            column_list = match.group('columns') # Could be None
+            if match.group('components_name') and match.group('threshold'):
+                components_name = match.group('components_name')
+                threshold = float(match.group('threshold'))
             else:
-                filename = None
-            if match.group('columns'):
-                column_list = match.group('columns')
-            else:
-                column_list = None
-            return 'estimate_pairwise', dict(tablename=tablename, function_name=function_name,
-                                             column_list=column_list), dict(filename=filename)
+                components_name = None
+                threshold = None
+            return 'estimate_pairwise', \
+              dict(tablename=tablename, function_name=function_name,
+                   column_list=column_list, components_name=components_name, threshold=threshold), \
+              dict(filename=filename)
 
 
             

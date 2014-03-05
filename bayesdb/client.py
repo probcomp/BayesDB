@@ -60,7 +60,10 @@ class Client(object):
             out, id = api_utils.call(method_name, args_dict, self.URI)
         else:
             method = getattr(self.engine, method_name)
-            out = method(**args_dict)
+            try:
+                out = method(**args_dict)
+            except utils.BayesDBError as e:
+                out = dict(message=str(e))
         return out
 
     def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False):
@@ -133,7 +136,10 @@ class Client(object):
         if timing:
             start_time = time.time()
 
-        parser_out  = self.parser.parse_statement(bql_statement_string)
+        try:
+            parser_out  = self.parser.parse_statement(bql_statement_string)
+        except Exception as e:
+            raise utils.BayesDBParseError(str(e))
         if parser_out is None:
             print "Could not parse command. Try typing 'help' for a list of all commands."
             return
@@ -180,6 +186,8 @@ class Client(object):
         if 'matrix' in result and (plots or client_dict['filename']):
             # Plot matrices
             plotting_utils.plot_matrix(result['matrix'], result['column_names'], result['title'], client_dict['filename'])
+            if 'column_lists' in result:
+                print self.pretty_print(dict(column_lists=result['column_lists']))
             return self.pretty_print(result)
         if ('plot' in client_dict and client_dict['plot']):
             if (plots or client_dict['filename']):
@@ -192,8 +200,6 @@ class Client(object):
                 result['message'] = "Your query indicates that you would like to make a plot, but in order to do so, you must either enable plotting in a window or specify a filename to save to by appending 'SAVE TO <filename>' to this command.\n" + result['message']
 
         if pretty:
-            if 'message' in result.keys():
-                print result['message']
             pp = self.pretty_print(result)
             print pp
             return pp
@@ -224,16 +230,18 @@ class Client(object):
         """
         assert type(query_obj) == dict
         result = ""
+        if type(query_obj) == dict and 'message' in query_obj:
+            result += query_obj["message"] + "\n"
         if 'data' in query_obj and 'columns' in query_obj:
             """ Pretty-print data table """
             pt = prettytable.PrettyTable()
             pt.field_names = query_obj['columns']
             for row in query_obj['data']:
                 pt.add_row(row)
-            result = pt
+            result += str(pt)
         elif 'list' in query_obj:
             """ Pretty-print lists """
-            result = str(query_obj['list'])
+            result += str(query_obj['list'])
         elif 'column_names' in query_obj:
             """ Pretty-print cctypes """
             colnames = query_obj['column_names']
@@ -242,17 +250,29 @@ class Client(object):
             pt.add_row([''] + list(colnames))
             for row, colname in zip(zmatrix, list(colnames)):
                 pt.add_row([colname] + list(row))
-            result = pt
+            result += str(pt)
         elif 'columns' in query_obj:
             """ Pretty-print column list."""
             pt = prettytable.PrettyTable()
             pt.field_names = query_obj['columns']
-            result = pt
+            result += str(pt)
+        elif 'column_lists' in query_obj:
+            """ Pretty-print multiple column lists. """
+            print
+            clists = query_obj['column_lists']
+            for name, clist in clists:
+                print "%s:" % name
+                pt = prettytable.PrettyTable()
+                pt.field_names = clist
+                print pt
         elif 'models' in query_obj:
             """ Prety-print model info. """
             m = query_obj['models']
             output_list = ['Model %d: %d iterations' % (id, iterations) for id,iterations in m]
-            result = ', '.join(output_list)
+            result += ', '.join(output_list)
+
+        if len(result) >= 1 and result[-1] == '\n':
+            result = result[:-1]
         return result
 
 

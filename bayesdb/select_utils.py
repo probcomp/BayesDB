@@ -87,7 +87,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
         conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
         continue
         
-      raise Exception("Invalid where clause argument: could not parse '%s'" % colname)
+      raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
   return conds
 
 def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend):
@@ -161,8 +161,8 @@ def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
       if colname.lower() in M_c['name_to_idx']:
         queries.append((functions._column, M_c['name_to_idx'][colname], False))
         continue
-        
-      raise Exception("Invalid query argument: could not parse '%s'" % colname)
+
+      raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)        
 
     ## Always return row_id as the first column.
     query_colnames = ['row_id'] + query_colnames
@@ -252,8 +252,8 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine):
     if raw_orderable_string.lower() in M_c['name_to_idx']:
       function_list.append((functions._column, M_c['name_to_idx'][raw_orderable_string.lower()], desc))
       continue
-      
-    raise Exception("Invalid query argument: could not parse '%s'" % raw_orderable_string)    
+
+    raise utils.BayesDBParseError("Invalid query argument: could not parse '%s'" % raw_orderable_string)
 
   ## Step 2: call order by.
   rows = _order_by(rows, function_list, M_c, X_L_list, X_D_list, T, engine)
