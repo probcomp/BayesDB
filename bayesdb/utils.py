@@ -197,7 +197,6 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
         neighbors_dict = defaultdict(list)
         for i in range(num_cols):
             for j in range(i+1, num_cols):
-                j = column_indices[jidx]
                 if z_matrix[i][j] > component_threshold:
                     neighbors_dict[i].append(j)
                     neighbors_dict[j].append(i)
@@ -220,8 +219,8 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
                 
         # Now, convert the components from their z_matrix indices to their btable indices
         new_comps = []
-        for c in components:
-            new_comps.append([column_indices[c] for c in components])
+        for comp in components:
+            new_comps.append([column_indices[c] for c in comp])
         components = new_comps
             
     title = 'Pairwise column %s for %s' % (col_function_name, tablename)
