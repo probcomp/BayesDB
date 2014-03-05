@@ -68,6 +68,15 @@ class BayesDBColumnDoesNotExistError(BayesDBError):
     def __str__(self):
         return "Column %s does not exist in btable %s." % (self.column, self.tablename)
 
+class BayesDBColumnListDoesNotExistError(BayesDBError):
+    def __init__(self, column_list, tablename):
+        self.column_list = column_list
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Column list %s does not exist in btable %s." % (self.column_list, self.tablename)
+
+        
 def is_int(s):
     try:
         int(s)
@@ -133,7 +142,7 @@ def column_string_splitter(columnstring, M_c=None, column_lists=None):
     output = end_column(current_column, output)
     return output
 
-def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', confidence=None, limit=None, submatrix=False, engine=None, column_names=None, component_threshold=None):
+def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', confidence=None, limit=None, engine=None, column_names=None, component_threshold=None):
     """ Compute a matrix. If using a function that requires engine (currently only
     mutual information), engine must not be None. """
 
@@ -153,7 +162,7 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
       raise BayesDBParseError('Invalid column function: %s' % col_function_name)
 
     # If using a subset of the columns, get the appropriate names, and figure out their indices.
-    if column_names:
+    if column_names is not None:
         num_cols = len(column_names)
         column_indices = [M_c['name_to_idx'][name] for name in column_names]
     else:
