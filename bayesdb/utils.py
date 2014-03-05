@@ -31,6 +31,25 @@ import data_utils as du
 import select_utils
 import functions
 
+class BayesDBError(Exception):
+    """ Base class for all other exceptions in this module. """
+    pass
+
+class BayesDBParseError(BayesDBError):
+    def __init__(self):
+        pass
+
+class BayesDBNoModelsError(BayesDBError):
+    def __init__(self, tablename):
+        self.tablename = tablename
+
+class BayesDBInvalidBtableError(BayesDBError):
+    def __init__(self, tablename):
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Btable %s does not exist. Please create it first with CREATE BTABLE, or view existing btables with LIST BTABLES." % self.tablename
+
 def is_int(s):
     try:
         int(s)

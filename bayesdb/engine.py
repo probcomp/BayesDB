@@ -36,6 +36,7 @@ import numpy
 import matplotlib.cm
 from collections import defaultdict
 
+from bayesdb import BayesDBInvalidBtableError
 import bayesdb.settings as S
 from persistence_layer import PersistenceLayer
 import api_utils
@@ -96,6 +97,9 @@ class Engine(object):
     and it ignores multinomials' specific number of outcomes.
     Also, disastrous things may happen if you update a schema after creating models.
     """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     msg = self.persistence_layer.update_schema(tablename, mappings)
     if 'Error' in msg:
       return dict(message=msg)
@@ -152,14 +156,20 @@ class Engine(object):
     return dict(columns=colnames, data=[cctypes], message='Created btable %s. Inferred schema:' % tablename)
 
   def show_schema(self, tablename):
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     metadata = self.persistence_layer.get_metadata(tablename)
     colnames = utils.get_all_column_names_in_original_order(metadata['M_c'])
     cctypes = metadata['cctypes']
     return dict(columns=colnames, data=[cctypes])
 
-  def save_models(self, tablename):
+  def save_models(self, tablename):    
     """Opposite of load models! Returns the models, including the contents, which
     the client then saves to disk (in a pickle file)."""
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     return self.persistence_layer.get_models(tablename)
 
   def load_models(self, tablename, models):
@@ -169,6 +179,9 @@ class Engine(object):
 
     # For backwards compatibility with v0.1, where models are stored in the format:
     # dict[X_L_list, X_D_list, M_c, T]
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     if 'X_L_list' in models:
       print """WARNING! The models you are currently importing are stored in an old format
          (from version 0.1); it is deprecated and may not be supported in future releases.
@@ -184,6 +197,9 @@ class Engine(object):
 
   def drop_models(self, tablename, model_indices=None):
     """Drop the specified models. If model_ids is None or all, drop all models."""
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     self.persistence_layer.drop_models(tablename, model_indices)
     return self.show_models(tablename)
     
@@ -196,6 +212,9 @@ class Engine(object):
     dictionary for model_config, as long as it contains a kernel_list, initializaiton, and
     row_initialization.
     """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     max_modelid = self.persistence_layer.get_max_model_id(tablename)
@@ -240,6 +259,9 @@ class Engine(object):
 
   def show_models(self, tablename):
     """Return the current models and their iteration counts."""
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     models = self.persistence_layer.get_models(tablename)
     modelid_iteration_info = list()
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
@@ -254,6 +276,9 @@ class Engine(object):
     Display diagnostic information for all your models.
     TODO: generate plots of num_views, column_crp_alpha, logscore, and f_z stuff
     """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     models = self.persistence_layer.get_models(tablename)    
     data = list()
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
@@ -274,6 +299,9 @@ class Engine(object):
     Now: runs each model in its own thread, and does 10 seconds of inference at a time,
     by default. Each thread also has its own crosscat engine instance!
     """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     if iterations is None:
       iterations = 1000
     
@@ -320,6 +348,9 @@ class Engine(object):
     Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
     Argument newtablename == null/emptystring if we don't want to do INTO
     """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     if numsamples is None:
       numsamples=50
       
@@ -341,6 +372,8 @@ class Engine(object):
     order by as if you're doing it exclusively on columns. The only downside is that now if there isn't an
     order by, but there is a limit, then we computed a large number of extra functions.
     """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
     
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
@@ -396,6 +429,9 @@ class Engine(object):
 
   def simulate(self, tablename, columnstring, newtablename, givens, numpredictions, order_by, plot=False):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
+
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
 
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     if len(X_L_list) == 0:
@@ -485,6 +521,9 @@ class Engine(object):
     # mutual information with <col>
     # correlation with <col>
     """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
@@ -516,6 +555,9 @@ class Engine(object):
     return {'columns': column_names}
   
   def estimate_pairwise(self, tablename, function_name, column_list=None, components_name=None, threshold=None):
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise BayesDBInvalidBtableError(tablename)
+    
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
