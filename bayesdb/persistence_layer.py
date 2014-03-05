@@ -27,6 +27,7 @@ import shutil
 import contextlib
 
 import data_utils as du
+import utils
 
 import bayesdb.settings as S
 
@@ -159,7 +160,7 @@ class PersistenceLayer():
         if column_list in column_lists:
             return column_lists[column_list]
         else:
-            return []
+            raise utils.BayesDBColumnListDoesNotExistError(column_list, tablename)
 
     def write_model(self, tablename, model, modelid):
         # Make models dir
