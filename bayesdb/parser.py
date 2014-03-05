@@ -178,7 +178,7 @@ class Parser(object):
         match = re.search(r"""
             drop\s+model(s)?\s+
             ( ((?P<start>\d+)\s*-\s*(?P<end>\d+)) | (?P<id>\d+) )?
-            \s*from\s+
+            \s*(from|for)\s+
             (?P<btable>[^\s]+)
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
@@ -536,6 +536,7 @@ class Parser(object):
             tablename = match.group('btable')
             column_list = match.group('columnlist')
             return 'show_columns', dict(tablename=tablename, column_list=column_list)
+
             
     def help_estimate_columns(self):
         return "(ESTIMATE COLUMNS | CREATE COLUMN LIST) [<column_names>] FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>] [AS <column_list>]"
@@ -583,7 +584,7 @@ class Parser(object):
                                             limit=limit, order_by=order_by, name=name)
             
     def help_estimate_pairwise(self):
-        return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [SAVE TO <file>]: estimate a pairwise function of columns."
+        return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <columnlist>]: estimate a pairwise function of columns."
         
     def parse_estimate_pairwise(self, words, orig):
         match = re.search(r"""
@@ -593,6 +594,7 @@ class Parser(object):
             (?P<btable>[^\s]+)
             (\s+for\s+columns\s+(?P<columns>[^\s]+))?
             (\s+save\s+to\s+(?P<filename>[^\s]+))?
+            (\s+save\s+connected\s+components\s+with\s+threshold\s+(?P<threshold>[^\s]+)\s+as\s+(?P<components>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'estimate' and words[1] == 'pairwise':
@@ -602,16 +604,18 @@ class Parser(object):
             function_name = match.group('functionname').strip().lower()
             if function_name not in ["mutual information", "correlation", "dependence probability"]:
                 return 'help', self.help_estimate_pairwise()
-            if match.group('filename'):
-                filename = match.group('filename')
+            filename = match.group('filename') # Could be None
+            column_list = match.group('columns') # Could be None
+            if match.group('components') and match.group('threshold'):
+                components = match.group('components')
+                threshold = float(match.group('threshold'))
             else:
-                filename = None
-            if match.group('columns'):
-                column_list = match.group('columns')
-            else:
-                column_list = None
-            return 'estimate_pairwise', dict(tablename=tablename, function_name=function_name,
-                                             column_list=column_list), dict(filename=filename)
+                components = None
+                threshold = None
+            return 'estimate_pairwise', \
+              dict(tablename=tablename, function_name=function_name,
+                   column_list=column_list, components=components, threshold=threshold), \
+              dict(filename=filename)
 
 
             

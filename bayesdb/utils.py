@@ -96,10 +96,11 @@ def column_string_splitter(columnstring, M_c=None, column_lists=None):
     output = end_column(current_column, output)
     return output
 
-def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', col=None, confidence=None, limit=None, submatrix=False, engine=None, column_names=None):
+def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', col=None, confidence=None, limit=None, submatrix=False, engine=None, column_names=None, component_threshold=None):
     """ Compute a matrix. If using a function that requires engine (currently only
     mutual information), engine must not be None. """
 
+    # Get appropriate function
     assert len(X_L_list) == len(X_D_list)
     if col_function_name == 'mutual information':
       if len(X_L_list) == 0:
@@ -114,6 +115,7 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
     else:
       raise Exception('Invalid column function: %s' % col_function_name)
 
+    # If using a subset of the columns, get the appropriate names
     if column_names:
         num_cols = len(column_names)
     else:
@@ -121,13 +123,19 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
         column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
     column_names = numpy.array(column_names)
     
-    # extract unordered z_matrix
+    # Compute unordered matrix: evaluate the function for every pair of columns
+    # Shortcut: assume all functions are symmetric between columns, only compute half.
     num_latent_states = len(X_L_list)
     z_matrix = numpy.zeros((num_cols, num_cols))
     for i in range(num_cols):
-      for j in range(num_cols):
-        z_matrix[i][j] = col_function((i, j), None, None, M_c, X_L_list, X_D_list, T, engine)
+      for j in range(i, num_cols):
+        func_val = col_function((i, j), None, None, M_c, X_L_list, X_D_list, T, engine)
+        z_matrix[i][j] = func_val
+        z_matrix[j][i] = func_val
 
+    # Currently unused code in BayesDB. This used to allow users to select a slice
+    # of a z matrix by getting the columns that are most related to a target column and ordering
+    # by those, and possibly selecting a submatrix.
     if col:
       z_column = list(z_matrix[M_c['name_to_idx'][col]])
       data_tuples = zip(z_column, range(num_cols))
@@ -146,8 +154,9 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
         z_matrix_reordered = z_matrix
       else:
         return {'data': data, 'columns': column_names_reordered}
+
+    # Default pairwise matrix behavior: hierarchically cluster columns.
     else:
-      # hierachically cluster z_matrix
       import hcluster
       Y = hcluster.pdist(z_matrix)
       Z = hcluster.linkage(Y)
@@ -156,17 +165,20 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
       intify = lambda x: int(x.get_text())
       reorder_indices = map(intify, pylab.gca().get_xticklabels())
       pylab.clf() ## use instead of close to avoid error spam
-      # REORDER! 
+      # reorder the matrix
       z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
       column_names_reordered = column_names[reorder_indices]
 
+
     title = 'Pairwise column %s for %s' % (col_function_name, tablename)
 
-    return dict(
+    ret = dict(
       matrix=z_matrix_reordered,
       column_names=column_names_reordered,
       title=title,
       message = "Created " + title
       )
-        
+    if component_threshold is not None:
+        ret['components'] = components
+    return ret
     

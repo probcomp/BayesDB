@@ -515,7 +515,7 @@ class Engine(object):
     
     return {'columns': column_names}
   
-  def estimate_pairwise(self, tablename, function_name, column_list=None):
+  def estimate_pairwise(self, tablename, function_name, column_list=None, components=None, threshold=None):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
@@ -524,9 +524,14 @@ class Engine(object):
     else:
       column_names = None
       
-    return utils.generate_pairwise_matrix(function_name,
-                                          X_L_list, X_D_list, M_c, T, tablename,
-                                          engine=self, column_names=column_names)
+    ret = utils.generate_pairwise_matrix(function_name,
+                                         X_L_list, X_D_list, M_c, T, tablename,
+                                         engine=self, column_names=column_names,
+                                         component_threshold=threshold)
+    if components is not None and threshold is not None:
+      # TODO: create column lists, and return them
+      pass
+    return ret
 
   def load_old_style_samples(self, tablename, old_samples_path, iterations=0):
     old_samples = pickle.load(gzip.open(old_samples_path), 'r')
