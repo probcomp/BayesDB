@@ -32,7 +32,6 @@ import plotting_utils
 import api_utils
 from parser import Parser
 from engine import Engine
-from bayesdb import BayesDBError
 
 class Client(object):
     def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing',
@@ -63,7 +62,7 @@ class Client(object):
             method = getattr(self.engine, method_name)
             try:
                 out = method(**args_dict)
-            except BayesDBError as e:
+            except utils.BayesDBError as e:
                 out = dict(message=str(e))
         return out
 

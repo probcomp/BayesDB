@@ -33,15 +33,25 @@ import functions
 
 class BayesDBError(Exception):
     """ Base class for all other exceptions in this module. """
-    pass
+    def __str__(self):
+        return "BayesDB internal error. Try using 'help' to see the help menu."
 
 class BayesDBParseError(BayesDBError):
-    def __init__(self):
-        pass
+    def __init__(self, msg=None):
+        if msg:
+            self.msg = msg
+        else:
+            self.msg = "BayesDB parsing error. Try using 'help' to see the help menu for BQL syntax."
+    
+    def __str__(self):
+        return self.msg
 
 class BayesDBNoModelsError(BayesDBError):
     def __init__(self, tablename):
         self.tablename = tablename
+
+    def __str__(self):
+        return "Btable %s has no models, but this command requires models. Please create models first with INITIALIZE MODELS, and then ANALYZE." % self.tablename
 
 class BayesDBInvalidBtableError(BayesDBError):
     def __init__(self, tablename):
@@ -49,6 +59,14 @@ class BayesDBInvalidBtableError(BayesDBError):
 
     def __str__(self):
         return "Btable %s does not exist. Please create it first with CREATE BTABLE, or view existing btables with LIST BTABLES." % self.tablename
+
+class BayesDBColumnDoesNotExistError(BayesDBError):
+    def __init__(self, column, tablename):
+        self.column = column
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Column %s does not exist in btable %s." % (self.column, self.tablename)
 
 def is_int(s):
     try:
@@ -132,7 +150,7 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
     elif col_function_name == 'correlation':
       col_function = functions._correlation
     else:
-      raise Exception('Invalid column function: %s' % col_function_name)
+      raise BayesDBParseError('Invalid column function: %s' % col_function_name)
 
     # If using a subset of the columns, get the appropriate names, and figure out their indices.
     if column_names:

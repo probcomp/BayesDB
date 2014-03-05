@@ -36,7 +36,6 @@ import numpy
 import matplotlib.cm
 from collections import defaultdict
 
-from bayesdb import BayesDBInvalidBtableError
 import bayesdb.settings as S
 from persistence_layer import PersistenceLayer
 import api_utils
@@ -98,7 +97,7 @@ class Engine(object):
     Also, disastrous things may happen if you update a schema after creating models.
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
     
     msg = self.persistence_layer.update_schema(tablename, mappings)
     if 'Error' in msg:
@@ -157,7 +156,7 @@ class Engine(object):
 
   def show_schema(self, tablename):
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
     
     metadata = self.persistence_layer.get_metadata(tablename)
     colnames = utils.get_all_column_names_in_original_order(metadata['M_c'])
@@ -168,7 +167,7 @@ class Engine(object):
     """Opposite of load models! Returns the models, including the contents, which
     the client then saves to disk (in a pickle file)."""
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
     
     return self.persistence_layer.get_models(tablename)
 
@@ -180,7 +179,7 @@ class Engine(object):
     # For backwards compatibility with v0.1, where models are stored in the format:
     # dict[X_L_list, X_D_list, M_c, T]
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
     
     if 'X_L_list' in models:
       print """WARNING! The models you are currently importing are stored in an old format
@@ -198,7 +197,7 @@ class Engine(object):
   def drop_models(self, tablename, model_indices=None):
     """Drop the specified models. If model_ids is None or all, drop all models."""
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
     
     self.persistence_layer.drop_models(tablename, model_indices)
     return self.show_models(tablename)
@@ -213,7 +212,7 @@ class Engine(object):
     row_initialization.
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
     
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
@@ -260,7 +259,7 @@ class Engine(object):
   def show_models(self, tablename):
     """Return the current models and their iteration counts."""
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
     
     models = self.persistence_layer.get_models(tablename)
     modelid_iteration_info = list()
@@ -277,7 +276,7 @@ class Engine(object):
     TODO: generate plots of num_views, column_crp_alpha, logscore, and f_z stuff
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
     
     models = self.persistence_layer.get_models(tablename)    
     data = list()
@@ -300,7 +299,9 @@ class Engine(object):
     by default. Each thread also has its own crosscat engine instance!
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
+    if not self.persistence_layer.has_models(tablename):
+      raise utils.BayesDBNoModelsError(tablename)
     
     if iterations is None:
       iterations = 1000
@@ -349,7 +350,9 @@ class Engine(object):
     Argument newtablename == null/emptystring if we don't want to do INTO
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
+    if not self.persistence_layer.has_models(tablename):
+      raise utils.BayesDBNoModelsError(tablename)      
     
     if numsamples is None:
       numsamples=50
@@ -373,7 +376,7 @@ class Engine(object):
     order by, but there is a limit, then we computed a large number of extra functions.
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
     
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
@@ -397,14 +400,14 @@ class Engine(object):
       used_functions = [q[0] for q in queries]
       for bf in blacklisted_functions:
         if bf in queries:
-          return {'message': 'You must INITIALIZE MODELS (and highly preferably ANALYZE) before calling functions that require models.'}
+          raise utils.BayesDBNoModelsError(tablename)
       if order_by:
         order_by_functions = [x[0] for x in order_by]
         blacklisted_function_names = ['similarity', 'typicality', 'probability', 'predictive probability']        
         for fname in blacklisted_function_names:
           for order_by_f in order_by_functions:
             if fname in order_by_f:
-              return {'message': 'You must INITIALIZE MODELS (and highly preferably ANALYZE) before calling functions that require models.'}
+              raise utils.BayesDBNoModelsError(tablename)              
 
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
@@ -429,9 +432,10 @@ class Engine(object):
 
   def simulate(self, tablename, columnstring, newtablename, givens, numpredictions, order_by, plot=False):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
-
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
+    if not self.persistence_layer.has_models(tablename):
+      raise utils.BayesDBNoModelsError(tablename)            
 
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     if len(X_L_list) == 0:
@@ -522,7 +526,7 @@ class Engine(object):
     # correlation with <col>
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
+      raise utils.BayesDBInvalidBtableError(tablename)
     
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
@@ -536,9 +540,13 @@ class Engine(object):
     
     ## filter based on where clause
     where_conditions = estimate_columns_utils.get_conditions_from_column_whereclause(whereclause, M_c, T)
+    if len(where_conditions) > 0 and len(X_L_list) == 0:
+      raise utils.BayesDBNoModelsError(tablename)      
     column_indices = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self)
     
     ## order
+    if order_by and len(X_L_list) == 0:
+      raise utils.BayesDBNoModelsError(tablename)      
     column_indices = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self)
     
     # limit
@@ -556,10 +564,11 @@ class Engine(object):
   
   def estimate_pairwise(self, tablename, function_name, column_list=None, components_name=None, threshold=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
-      raise BayesDBInvalidBtableError(tablename)
-    
+      raise utils.BayesDBInvalidBtableError(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    if len(X_L_list) == 0:
+      raise utils.BayesDBNoModelsError(tablename)
     
     if column_list:
       column_names = self.persistence_layer.get_column_list(tablename, column_list)
@@ -584,14 +593,6 @@ class Engine(object):
       ret['column_lists'] = component_name_tuples
         
     return ret
-
-  def load_old_style_samples(self, tablename, old_samples_path, iterations=0):
-    old_samples = pickle.load(gzip.open(old_samples_path), 'r')
-    model_list = list()
-    for X_L, X_D in zip(old_samples['X_L_list'], old_samples['X_D_list']):
-      model_list.append(dict(X_L=X_L, X_D=X_D, iterations=iterations))
-    self.persistence_layer.add_models(tablename, model_list)
-    return self.show_models(tablename)
 
 # helper functions
 get_name = lambda x: getattr(x, '__name__')

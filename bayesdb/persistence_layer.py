@@ -256,6 +256,9 @@ class PersistenceLayer():
         T = metadata['T']
         return M_c, M_r, T
 
+    def has_models(self, tablename):
+        return self.get_max_model_id(tablename) != -1
+
     def get_max_model_id(self, tablename, models=None):
         """Get the highest model id, and -1 if there are no models.
         Model indexing starts at 0 when models exist."""
