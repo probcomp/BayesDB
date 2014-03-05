@@ -594,7 +594,7 @@ class Parser(object):
             (?P<btable>[^\s]+)
             (\s+for\s+columns\s+(?P<columns>[^\s]+))?
             (\s+save\s+to\s+(?P<filename>[^\s]+))?
-            (\s+save\s+connected\s+components\s+with\s+threshold\s+(?P<threshold>[^\s]+)\s+as\s+(?P<components>[^\s]+))?
+            (\s+save\s+connected\s+components\s+with\s+threshold\s+(?P<threshold>[^\s]+)\s+as\s+(?P<components_name>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'estimate' and words[1] == 'pairwise':
@@ -606,15 +606,15 @@ class Parser(object):
                 return 'help', self.help_estimate_pairwise()
             filename = match.group('filename') # Could be None
             column_list = match.group('columns') # Could be None
-            if match.group('components') and match.group('threshold'):
-                components = match.group('components')
+            if match.group('components_name') and match.group('threshold'):
+                components_name = match.group('components_name')
                 threshold = float(match.group('threshold'))
             else:
-                components = None
+                components_name = None
                 threshold = None
             return 'estimate_pairwise', \
               dict(tablename=tablename, function_name=function_name,
-                   column_list=column_list, components=components, threshold=threshold), \
+                   column_list=column_list, components_name=components_name, threshold=threshold), \
               dict(filename=filename)
 
 

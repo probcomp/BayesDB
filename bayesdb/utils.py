@@ -96,7 +96,7 @@ def column_string_splitter(columnstring, M_c=None, column_lists=None):
     output = end_column(current_column, output)
     return output
 
-def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', col=None, confidence=None, limit=None, submatrix=False, engine=None, column_names=None, component_threshold=None):
+def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', confidence=None, limit=None, submatrix=False, engine=None, column_names=None, component_threshold=None):
     """ Compute a matrix. If using a function that requires engine (currently only
     mutual information), engine must not be None. """
 
@@ -115,61 +115,78 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
     else:
       raise Exception('Invalid column function: %s' % col_function_name)
 
-    # If using a subset of the columns, get the appropriate names
+    # If using a subset of the columns, get the appropriate names, and figure out their indices.
     if column_names:
         num_cols = len(column_names)
+        column_indices = [M_c['name_to_idx'][name] for name in column_names]
     else:
         num_cols = len(X_L_list[0]['column_partition']['assignments'])
         column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
+        column_indices = range(num_cols)
     column_names = numpy.array(column_names)
     
     # Compute unordered matrix: evaluate the function for every pair of columns
     # Shortcut: assume all functions are symmetric between columns, only compute half.
     num_latent_states = len(X_L_list)
     z_matrix = numpy.zeros((num_cols, num_cols))
-    for i in range(num_cols):
+    for i, orig_i in enumerate(column_indices):
       for j in range(i, num_cols):
-        func_val = col_function((i, j), None, None, M_c, X_L_list, X_D_list, T, engine)
+        orig_j = column_indices[j]
+        func_val = col_function((orig_i, orig_j), None, None, M_c, X_L_list, X_D_list, T, engine)
         z_matrix[i][j] = func_val
         z_matrix[j][i] = func_val
 
-    # Currently unused code in BayesDB. This used to allow users to select a slice
-    # of a z matrix by getting the columns that are most related to a target column and ordering
-    # by those, and possibly selecting a submatrix.
-    if col:
-      z_column = list(z_matrix[M_c['name_to_idx'][col]])
-      data_tuples = zip(z_column, range(num_cols))
-      data_tuples.sort(reverse=True)
-      if confidence:
-        data_tuples = filter(lambda tup: tup[0] >= float(confidence), data_tuples)
-      if limit and limit != float("inf"):
-        data_tuples = data_tuples[:int(limit)]
-      data = [tuple([d[0] for d in data_tuples])]
-      columns = [d[1] for d in data_tuples]
-      column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]      
-      column_names = numpy.array(column_names)
-      column_names_reordered = column_names[columns]
-      if submatrix:
-        z_matrix = z_matrix[columns,:][:,columns]
-        z_matrix_reordered = z_matrix
-      else:
-        return {'data': data, 'columns': column_names_reordered}
+    # Hierarchically cluster columns.
+    import hcluster
+    Y = hcluster.pdist(z_matrix)
+    Z = hcluster.linkage(Y)
+    pylab.figure()
+    hcluster.dendrogram(Z)
+    intify = lambda x: int(x.get_text())
+    reorder_indices = map(intify, pylab.gca().get_xticklabels())
+    pylab.clf() ## use instead of close to avoid error spam
+    # reorder the matrix
+    z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
+    column_names_reordered = column_names[reorder_indices]
 
-    # Default pairwise matrix behavior: hierarchically cluster columns.
-    else:
-      import hcluster
-      Y = hcluster.pdist(z_matrix)
-      Z = hcluster.linkage(Y)
-      pylab.figure()
-      hcluster.dendrogram(Z)
-      intify = lambda x: int(x.get_text())
-      reorder_indices = map(intify, pylab.gca().get_xticklabels())
-      pylab.clf() ## use instead of close to avoid error spam
-      # reorder the matrix
-      z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
-      column_names_reordered = column_names[reorder_indices]
+    # If component_threshold isn't none, then we want to return all the connected components
+    # of columns: columns are connected if their edge weight is above the threshold.
+    # Just do a search, starting at each column id.
+    if component_threshold is not None:
+        from collections import defaultdict
+        components = [] # list of lists (conceptually a set of sets, but faster here)
 
+        # Construct graph, in the form of a neighbor dictionary
+        neighbors_dict = defaultdict(list)
+        for i in range(num_cols):
+            for j in range(i+1, num_cols):
+                j = column_indices[jidx]
+                if z_matrix[i][j] > component_threshold:
+                    neighbors_dict[i].append(j)
+                    neighbors_dict[j].append(i)
 
+        # Outer while loop: make sure every column has been visited
+        unvisited = set(range(num_cols))
+        while(len(unvisited) > 0):
+            component = []
+            stack = [unvisited.pop()]
+            while(len(stack) > 0):
+                cur = stack.pop()
+                component.append(cur)                
+                neighbors = neighbors_dict[cur]
+                for n in neighbors:
+                    if n in unvisited:
+                        stack.append(n)
+                        unvisited.remove(n)                        
+            if len(component) > 1:
+                components.append(component)
+                
+        # Now, convert the components from their z_matrix indices to their btable indices
+        new_comps = []
+        for c in components:
+            new_comps.append([column_indices[c] for c in components])
+        components = new_comps
+            
     title = 'Pairwise column %s for %s' % (col_function_name, tablename)
 
     ret = dict(

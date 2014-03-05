@@ -515,7 +515,7 @@ class Engine(object):
     
     return {'columns': column_names}
   
-  def estimate_pairwise(self, tablename, function_name, column_list=None, components=None, threshold=None):
+  def estimate_pairwise(self, tablename, function_name, column_list=None, components_name=None, threshold=None):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
@@ -523,14 +523,24 @@ class Engine(object):
       column_names = self.persistence_layer.get_column_list(tablename, column_list)
     else:
       column_names = None
-      
+
+    # Do the heavy lifting: generate the matrix itself
     ret = utils.generate_pairwise_matrix(function_name,
                                          X_L_list, X_D_list, M_c, T, tablename,
                                          engine=self, column_names=column_names,
                                          component_threshold=threshold)
-    if components is not None and threshold is not None:
-      # TODO: create column lists, and return them
-      pass
+
+    # Add the column lists for connected components, if desired. Overwrites old ones with same name.
+    if components_name is not None and threshold is not None:
+      components = ret['components']
+      component_name_tuples = []
+      for i, component in enumerate(components):
+        name = "%s_%d" % (components_name, i)
+        column_names = [M_c['idx_to_name'][str(idx)] for idx in component]
+        self.persistence_layer.add_column_list(tablename, name, column_names)
+        component_name_tuples.append((name, column_names))
+      ret['column_lists'] = component_name_tuples
+        
     return ret
 
   def load_old_style_samples(self, tablename, old_samples_path, iterations=0):

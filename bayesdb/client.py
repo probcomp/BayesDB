@@ -180,6 +180,8 @@ class Client(object):
         if 'matrix' in result and (plots or client_dict['filename']):
             # Plot matrices
             plotting_utils.plot_matrix(result['matrix'], result['column_names'], result['title'], client_dict['filename'])
+            if 'column_lists' in result:
+                print self.pretty_print(dict(column_lists=result['column_lists']))
             return self.pretty_print(result)
         if ('plot' in client_dict and client_dict['plot']):
             if (plots or client_dict['filename']):
@@ -248,6 +250,15 @@ class Client(object):
             pt = prettytable.PrettyTable()
             pt.field_names = query_obj['columns']
             result = pt
+        elif 'column_lists' in query_obj:
+            """ Pretty-print multiple column lists. """
+            print
+            clists = query_obj['column_lists']
+            for name, clist in clists:
+                print "%s:" % name
+                pt = prettytable.PrettyTable()
+                pt.field_names = clist
+                print pt
         elif 'models' in query_obj:
             """ Prety-print model info. """
             m = query_obj['models']
