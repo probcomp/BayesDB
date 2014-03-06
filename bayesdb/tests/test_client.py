@@ -144,7 +144,7 @@ def test_column_lists():
   client('show column lists for %s' % test_tablename)
   client('show columns %s from %s' % (cname1, test_tablename))
   client('show columns %s from %s' % (cname2, test_tablename))  
-  client('estimate columns from %s where typicality > 0.5 as %s' % (test_tablename, cname1))
+  client('estimate columns from %s where typicality > 0.1 as %s' % (test_tablename, cname1))
   client('estimate columns from %s limit 5 as %s' % (test_tablename, cname2))  
   client('show column lists for %s' % test_tablename)
   client('show columns %s from %s' % (cname1, test_tablename))

@@ -573,6 +573,8 @@ class Engine(object):
     
     if column_list:
       column_names = self.persistence_layer.get_column_list(tablename, column_list)
+      if len(column_names) == 0:
+        raise utils.BayesDBError("Column list %s has no columns." % column_list)
     else:
       column_names = None
 
