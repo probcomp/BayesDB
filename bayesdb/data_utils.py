@@ -231,7 +231,7 @@ def at_most_N_rows(T, N, gen_seed=0):
     return T
 
 def read_csv(filename, has_header=True):
-    with open(filename) as fh:
+    with open(filename, 'rU') as fh:
         csv_reader = csv.reader(fh)
         header = None
         if has_header:

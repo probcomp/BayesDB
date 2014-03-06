@@ -297,7 +297,7 @@ class PersistenceLayer():
         """
         max_modelid = self.get_max_model_id(tablename)
         if max_modelid is not None and max_modelid > 0:
-          return 'Error: cannot update datatypes after models have already been created. Please create a new table.'
+            raise utils.BayesDBError("Cannot update datatypes after models have already been created. Please create a new table.")
           
         metadata = self.get_metadata(tablename)
         cctypes = metadata['cctypes']

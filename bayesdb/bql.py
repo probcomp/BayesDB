@@ -88,9 +88,11 @@ def run_command_line():
     hostname = input[0]
     if len(input) == 1:
       client = Client(hostname)
+      print "Using hostname %s." % hostname
     if len(input) == 2:
       port = int(input[1])
       client = Client(hostname, port)
+      print "Using hostname %s, port %d" % (hostname, port)
     elif len(input) > 2:
       print "Run with 'python bql [hostname[:port]]'"
   else:

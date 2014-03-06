@@ -92,7 +92,7 @@ class Engine(object):
     """
     mappings is a dict of column name to 'continuous', 'multinomial',
     or an int, which signifies multinomial of a specific type.
-    TODO: FIX HACKS. Current works by reloading all the data from csv,
+    TODO: FIX HACKS. Currently works by reloading all the data from csv,
     and it ignores multinomials' specific number of outcomes.
     Also, disastrous things may happen if you update a schema after creating models.
     """
@@ -100,8 +100,6 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
     
     msg = self.persistence_layer.update_schema(tablename, mappings)
-    if 'Error' in msg:
-      return dict(message=msg)
     ret = self.show_schema(tablename)
     ret['message'] = 'Updated schema.'
     return ret

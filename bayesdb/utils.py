@@ -33,8 +33,7 @@ import functions
 
 class BayesDBError(Exception):
     """ Base class for all other exceptions in this module. """
-    def __str__(self):
-        return "BayesDB internal error. Try using 'help' to see the help menu."
+    pass
 
 class BayesDBParseError(BayesDBError):
     def __init__(self, msg=None):
