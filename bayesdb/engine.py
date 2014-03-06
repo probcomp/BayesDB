@@ -136,7 +136,7 @@ class Engine(object):
     column name must be present in the dictionary: default is continuous."""
     ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
-      raise Exception('Error: btable with that name already exists.')
+      raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
     
     csv_abs_path = self.persistence_layer.write_csv(tablename, csv)
 
