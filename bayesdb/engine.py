@@ -140,9 +140,8 @@ class Engine(object):
     
     csv_abs_path = self.persistence_layer.write_csv(tablename, csv)
 
-    ## Parse column names to create table
-    csv = csv.replace('\r', '')
-    colnames = csv.split('\n')[0].split(',')
+    header, raw_T = data_utils.read_csv(filename, has_header=True)
+    colnames = [h.lower().strip() for h in header]
 
     ## Guess schema and create table
     header, values = data_utils.read_csv(csv_abs_path, has_header=True)
