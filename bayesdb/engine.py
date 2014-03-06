@@ -104,16 +104,16 @@ class Engine(object):
     ret['message'] = 'Updated schema.'
     return ret
     
-  def _guess_schema(self, header, values, crosscat_column_types):
+  def _guess_schema(self, colnames, values, crosscat_column_types):
     # TODO: should this be deleted in favor of using crosscat's datatype guessing?
     # If so, then call data_utils.read_model_data_from_csv(...) in create_btable instead of data_utils.read_csv(...)
     """Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes
     Also make the corresponding postgres column types."""
     postgres_coltypes = []
     cctypes = []
-    column_data_lookup = dict(zip(header, numpy.array(values).T))
+    column_data_lookup = dict(zip(colnames, numpy.array(values).T))
     have_column_tpes = type(crosscat_column_types) == dict
-    for colname in header:
+    for colname in colnames:
       if have_column_tpes and colname in crosscat_column_types:
         cctype = crosscat_column_types[colname]
       else:
@@ -142,8 +142,9 @@ class Engine(object):
 
     ## Guess schema and create table
     header, values = data_utils.read_csv(csv_abs_path, has_header=True)
+    colnames = [h.lower() for h in header]
     values = data_utils.convert_nans(values)
-    postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types)
+    postgres_coltypes, cctypes = self._guess_schema(colnames, values, crosscat_column_types)
     self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, csv, cctypes, postgres_coltypes, colnames)
 
     return dict(columns=colnames, data=[cctypes], message='Created btable %s. Inferred schema:' % tablename)
