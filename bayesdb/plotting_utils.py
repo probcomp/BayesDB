@@ -55,17 +55,19 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
         p.show()
 
 def create_plot(parsed_data, subplot, label_x=False, label_y=False):
-    
+    #subplot.axes.xaxis.set_ticklabels([])
+    #subplot.axes.yaxis.set_ticklabels([])
     if parsed_data['datatype'] == 'mult1D':
         subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
         subplot.axes.get_xaxis().set_ticks([])
         labels = parsed_data['labels']
         datapoints = parsed_data['data']
         num_vals = len(labels)
-        ind = np.arange(1, 1 + num_vals)
+        ind = np.arange(num_vals)
         width = .5
         subplot.bar(ind, datapoints, width, color='lightseagreen', align='center')
-        subplot.axes.get_xaxis().set_ticks(labels)
+        subplot.axes.get_xaxis().set_ticks(range(len(labels)))
+        subplot.axes.get_xaxis().set_ticklabels(labels)
 
     elif parsed_data['datatype'] == 'cont1D':
         datapoints = parsed_data['data']
@@ -76,7 +78,6 @@ def create_plot(parsed_data, subplot, label_x=False, label_y=False):
         
     elif parsed_data['datatype'] == 'contcont':
         subplot.hist2d(parsed_data['data_y'], parsed_data['data_x'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm(), cmap='cool')
-        #subplot.colorbar()
         subplot.set_ylabel(parsed_data['axis_label_y'])
         subplot.set_xlabel(parsed_data['axis_label_x'])
 
@@ -88,28 +89,30 @@ def create_plot(parsed_data, subplot, label_x=False, label_y=False):
         dat = parsed_data['data']
         norm_a = Normalize(vmin=dat.min(), vmax=dat.max()) 
         subplot.imshow(parsed_data['data'],norm=Normalize(), interpolation='nearest',  cmap=matplotlib.cm.cool, aspect = float(len(unique_xs))/len(unique_ys))
-        subplot.set_xticks(range(len(unique_xs)), unique_xs)
-        subplot.set_yticks(range(len(unique_ys)), unique_ys)
-        #subplot.colorbar()
-        subplot.set_ylabel(parsed_data['axis_label_y'])
+
+        subplot.axes.get_xaxis().set_ticks(range(len(unique_xs)))
+        subplot.axes.get_xaxis().set_ticklabels(unique_xs)
         subplot.set_xlabel(parsed_data['axis_label_x'])
+        subplot.axes.get_yaxis().set_ticks(range(len(unique_ys)))
+        subplot.axes.get_yaxis().set_ticklabels(unique_ys)
+        subplot.set_ylabel(parsed_data['axis_label_y'])
+
 
     elif parsed_data['datatype'] == 'multcont':
-        #raise Exception('categorical by continuous not working in pairwise yet')
-        #p.close() #statsmodels beanplot creates its own figures, so closing the existing figure prevents a blank figure from being displayed.
         pltopts = {}
         pltopts['violin_fc'] = 'lightseagreen'
         smplt.beanplot(parsed_data['values'], labels=parsed_data['groups'], plot_opts = pltopts, ax=subplot)
-        subplot.set_ylabel(parsed_data['axis_label_y'])
         subplot.set_xlabel(parsed_data['axis_label_x'])
+        subplot.set_ylabel(parsed_data['axis_label_y'])
+
     else:
         raise Exception('Unexpected data type')
-    #subplot.suptitle(parsed_data['title'])
 
     x0,x1 = subplot.get_xlim()
     y0,y1 = subplot.get_ylim()
     aspect = (abs(float((x1-x0)))/abs(float((y1-y0))))
     subplot.set_aspect(aspect)
+
     return subplot
 
 def parse_data_for_hist(colnames, data, M_c):
@@ -245,7 +248,7 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
             if i == j:
                 sub_colnames = [columns[i]]
                 sub_data = [[x[i]] for x in data_no_id]
-                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], adjustable='box', aspect=1))
+                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], adjustable='box', aspect=1), True, True)
             else:
                 sub_colnames = [columns[i], columns[j]]
                 sub_data = [[x[i], x[j]] for x in data_no_id]
