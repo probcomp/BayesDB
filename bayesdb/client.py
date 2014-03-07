@@ -166,18 +166,19 @@ class Client(object):
             if 'y' != user_confirmation.strip():
                 return dict(message="Operation canceled by user.")
         elif method_name == 'load_models':
+            pklpath = client_dict['pkl_path']
             try:
-                models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
+                models = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
             except IOError as e:
                 if pklpath[-7:] != '.pkl.gz':
                     if pklpath[-4:] == '.pkl':
-                        models = pickle.load(open(self.get_absolute_path(pklpath), 'rb'))
+                        models = pickle.load(open(self.parser.get_absolute_path(pklpath), 'rb'))
                     else:
                         pklpath = pklpath + ".pkl.gz"
-                        models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
+                        models = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
                 else:
                     raise utils.BayesDBError('Models file %s could not be found.' % pklpath)
-            args_dict(models=models)
+            args_dict['models'] = models
         elif method_name == 'create_btable':
             f = open(client_dict['csv_path'], 'r')
             args_dict['csv'] = f.read()

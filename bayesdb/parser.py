@@ -498,7 +498,7 @@ class Parser(object):
                 return 'help', self.help_show_column_lists()
         else:
             tablename = match.group('btable')
-            return 'show_column_lists', dict(tablename=tablename)
+            return 'show_column_lists', dict(tablename=tablename), None
 
     def help_show_columns(self):
         return "SHOW COLUMNS <column_list> FROM <btable>"
