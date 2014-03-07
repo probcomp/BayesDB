@@ -383,6 +383,7 @@ class Engine(object):
     #   arguments that that function takes (in addition to the normal arguments, like M_c, X_L_list, etc).
     #   aggregate specifies whether that individual function is aggregate or not
     queries, query_colnames = select_utils.get_queries_from_columnstring(columnstring, M_c, T, column_lists)
+    utils.check_for_duplicate_columns(query_colnames)
 
     # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
     # TODO: support functions in where_conditions. right now we only support actual column values.
@@ -460,6 +461,7 @@ class Engine(object):
     column_lists = self.persistence_layer.get_column_lists(tablename)
     colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
     colnames = [c.lower() for c in colnames]
+    utils.check_for_duplicate_columns(colnames)
     col_indices = [name_to_idx[colname] for colname in colnames]
     query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
@@ -574,7 +576,9 @@ class Engine(object):
     if column_list:
       column_names = self.persistence_layer.get_column_list(tablename, column_list)
       if len(column_names) == 0:
-        raise utils.BayesDBError("Column list %s has no columns." % column_list)
+        raise utils.BayesDBError("Error: Column list %s has no columns." % column_list)
+
+      utils.check_for_duplicate_columns(column_names)
     else:
       column_names = None
 

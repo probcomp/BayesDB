@@ -99,6 +99,14 @@ def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, en
     else:
       return None
 
+def check_for_duplicate_columns(column_names):
+    column_names_set = set()
+    for name in column_names:
+        if name in column_names_set:
+            raise BayesDBError("Error: Column list has duplicate entries of column: %s" % name)
+        column_names_set.add(name)
+    
+
 def get_all_column_names_in_original_order(M_c):
     colname_to_idx_dict = M_c['name_to_idx']
     colnames = map(lambda tup: tup[0], sorted(colname_to_idx_dict.items(), key=lambda tup: tup[1]))
