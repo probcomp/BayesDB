@@ -146,12 +146,10 @@ class Client(object):
         elif not parser_out:
             return
 
-        if len(parser_out) == 2:
-            method_name, args_dict = parser_out
+        method_name, args_dict, client_dict = parser_out
+        if client_dict is None:
             client_dict = {}
-        else:
-            method_name, args_dict, client_dict = parser_out
-        
+            
         ## Do stuff now that you know the user's command, but before passing it to engine.
         if method_name == 'execute_file':
             return dict(message='execute_file', bql_string=open(args_dict['filename'], 'r').read())
@@ -167,6 +165,24 @@ class Client(object):
             user_confirmation = raw_input()
             if 'y' != user_confirmation.strip():
                 return dict(message="Operation canceled by user.")
+        elif method_name == 'load_models':
+            try:
+                models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
+            except IOError as e:
+                if pklpath[-7:] != '.pkl.gz':
+                    if pklpath[-4:] == '.pkl':
+                        models = pickle.load(open(self.get_absolute_path(pklpath), 'rb'))
+                    else:
+                        pklpath = pklpath + ".pkl.gz"
+                        models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
+                else:
+                    raise utils.BayesDBError('Models file %s could not be found.' % pklpath)
+            args_dict(models=models)
+        elif method_name == 'create_btable':
+            f = open(client_dict['csv_path'], 'r')
+            args_dict['csv'] = f.read()
+            f.close()
+
 
         ## Call engine.
         result = self.call_bayesdb_engine(method_name, args_dict)
@@ -217,7 +233,13 @@ class Client(object):
         if method_name == 'save_models':
             samples_dict = result
             ## Here is where the models get saved.
-            samples_file = gzip.GzipFile(client_dict['pkl_path'], 'w')
+            pkl_path = client_dict['pkl_path']
+            if pkl_path[-7:] != '.pkl.gz':
+                if pkl_path[-4:] == '.pkl':
+                    pkl_path = pkl_path + ".gz"
+                else:
+                    pkl_path = pkl_path + ".pkl.gz"
+            samples_file = gzip.GzipFile(pkl_path, 'w')
             pickle.dump(samples_dict, samples_file)
             return dict(message="Successfully saved the samples to %s" % client_dict['pkl_path'])
 

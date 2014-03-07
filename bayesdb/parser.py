@@ -123,7 +123,7 @@ class Parser(object):
     def parse_list_btables(self, words, orig):
         if len(words) >= 2:
             if words[0] == 'list' and words[1] == 'btables':
-                return 'list_btables', dict()
+                return 'list_btables', dict(), None
 
 
     def help_execute_file(self):
@@ -135,7 +135,7 @@ class Parser(object):
                 filename = words[2]
                 return 'execute_file', dict(filename=self.get_absolute_path(filename))
             else:
-                return 'help', self.help_execute_file()
+                return 'help', self.help_execute_file(), None
 
                 
     def help_show_schema(self):
@@ -146,7 +146,7 @@ class Parser(object):
             if words[2] == 'for':
                 return 'show_schema', dict(tablename=words[3])
             else:
-                return 'help', self.help_show_schema()
+                return 'help', self.help_show_schema(), None
 
                 
     def help_show_models(self):
@@ -157,7 +157,7 @@ class Parser(object):
             if words[2] == 'for':
                 return 'show_models', dict(tablename=words[3])
             else:
-                return 'help', self.help_show_models()
+                return 'help', self.help_show_models(), None
 
                 
     def help_show_diagnostics(self):
@@ -168,7 +168,7 @@ class Parser(object):
             if words[2] == 'for':
                 return 'show_diagnostics', dict(tablename=words[3])
             else:
-                return 'help', self.help_show_diagnostics()
+                return 'help', self.help_show_diagnostics(), None
 
 
     def help_drop_models(self):
@@ -183,7 +183,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'drop':
-                return 'help', self.help_drop_models()
+                return 'help', self.help_drop_models(), None
         else:
             tablename = match.group('btable')
             
@@ -196,7 +196,7 @@ class Parser(object):
             if id is not None:
                 model_indices = [int(id)]
             
-            return 'drop_models', dict(tablename=tablename, model_indices=model_indices)
+            return 'drop_models', dict(tablename=tablename, model_indices=model_indices), None
                 
                 
     def help_initialize_models(self):
@@ -221,7 +221,7 @@ class Parser(object):
             if model_config is not None:
                 model_config = model_config.strip()
             return 'initialize_models', dict(tablename=tablename, n_models=n_models,
-                                             model_config=model_config)
+                                             model_config=model_config), None
                     
     def help_create_btable(self):
         return "CREATE BTABLE <tablename> FROM <filename>: create a table from a csv file"
@@ -233,14 +233,12 @@ class Parser(object):
                 if len(words) >= 5:
                     tablename = words[2]
                     if words[3] == 'from':
-                        f = open(self.get_absolute_path(orig.split()[4]), 'r')
-                        csv = f.read()
-                        result = ('create_btable',
-                                 dict(tablename=tablename, csv=csv,
-                                      crosscat_column_types=crosscat_column_types))
-                        return result
+                        csv_path = self.get_absolute_path(orig.split()[4])
+                        return 'create_btable', \
+                               dict(tablename=tablename, crosscat_column_types=crosscat_column_types), \
+                               dict(csv_path=csv_path)
                 else:
-                    return 'help', self.help_create_btable()
+                    return 'help', self.help_create_btable(), None
 
 
                     
@@ -250,7 +248,7 @@ class Parser(object):
     def parse_drop_btable(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
-                return 'drop_btable', dict(tablename=words[2])
+                return 'drop_btable', dict(tablename=words[2]), None
 
 
     def help_analyze(self):
@@ -268,7 +266,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None or (match.group('iterations') is None and match.group('seconds') is None):
             if words[0] == 'analyze':
-                return 'help', self.help_analyze()
+                return 'help', self.help_analyze(), None
         else:
             model_indices = None
             tablename = match.group('btable')
@@ -290,7 +288,7 @@ class Parser(object):
                 seconds = int(seconds)
                 
             return 'analyze', dict(tablename=tablename, model_indices=model_indices,
-                                   iterations=iterations, seconds=seconds)
+                                   iterations=iterations, seconds=seconds), None
 
             
     def help_infer(self):
@@ -371,13 +369,8 @@ class Parser(object):
                 return 'help', self.help_save_models()
         else:
             tablename = match.group('btable')
-            pklpath = match.group('pklpath')
-            if pklpath[-7:] != '.pkl.gz':
-                if pklpath[-4:] == '.pkl':
-                    pklpath = pklpath + ".gz"
-                else:
-                    pklpath = pklpath + ".pkl.gz"
-            return 'save_models', dict(tablename=tablename), dict(pkl_path=pklpath)
+            pkl_path = match.group('pklpath')
+            return 'save_models', dict(tablename=tablename), dict(pkl_path=pkl_path)
 
 
             
@@ -397,20 +390,8 @@ class Parser(object):
                 return 'help', self.help_load_models()
         else:
             tablename = match.group('btable')
-            pklpath = match.group('pklpath')
-            try:
-                ## TODO: remove this code that actually does stuff from the parser...                
-                models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
-            except IOError as e:
-                if pklpath[-7:] != '.pkl.gz':
-                    if pklpath[-4:] == '.pkl':
-                        models = pickle.load(open(self.get_absolute_path(pklpath), 'rb'))
-                    else:
-                        pklpath = pklpath + ".pkl.gz"
-                        models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
-                else:
-                    raise e
-            return 'load_models', dict(tablename=tablename, models=models)
+            pkl_path = match.group('pklpath')
+            return 'load_models', dict(tablename=tablename), dict(pkl_path=pkl_path)
 
 
             
@@ -535,7 +516,7 @@ class Parser(object):
         else:
             tablename = match.group('btable')
             column_list = match.group('columnlist')
-            return 'show_columns', dict(tablename=tablename, column_list=column_list)
+            return 'show_columns', dict(tablename=tablename, column_list=column_list), None
 
             
     def help_estimate_columns(self):
@@ -581,7 +562,7 @@ class Parser(object):
                 name = None
 
             return 'estimate_columns', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                            limit=limit, order_by=order_by, name=name)
+                                            limit=limit, order_by=order_by, name=name), None
             
     def help_estimate_pairwise(self):
         return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <columnlist>]: estimate a pairwise function of columns."
@@ -652,7 +633,7 @@ class Parser(object):
                 else:
                     return 'help', self.help_update_datatypes()
                 mappings[vals[0]] = datatype
-            return 'update_schema', dict(tablename=tablename, mappings=mappings)
+            return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
 ############################################################
 # Parsing helper functions: "extract" functions

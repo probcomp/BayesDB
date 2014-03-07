@@ -20,7 +20,6 @@
 
 import time
 import inspect
-import psycopg2
 import pickle
 import os
 
@@ -29,74 +28,64 @@ from bayesdb.parser import Parser
 engine = Engine('local')
 parser = Parser()
 
-def test_start_from_scratch():
-    method, args = parser.parse_line('start from scratch')
-    assert method == 'start_from_scratch'
-    assert args == {}
-    
 def test_list_btables():
-    method, args = parser.parse_line('list btables')
+    method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
     assert args == {}
 
 def test_initialize_models():
-    method, args = parser.parse_line('initialize models for t')
+    method, args, client_dict = parser.parse_statement('initialize 5 models for t')
     assert method == 'initialize_models'
-    assert args == dict(tablename='t', n_models=10)
-
-    method, args = parser.parse_line('initialize 5 models for t')
-    assert method == 'initialize_models'
-    assert args == dict(tablename='t', n_models=5)
+    assert args == dict(tablename='t', n_models=5, model_config=None)
 
 def test_create_btable():
-    method, args = parser.parse_line('create btable t from fn')
+    method, args, client_dict = parser.parse_statement('create btable t from fn')
     assert method == 'create_btable'
-    assert args == dict(tablename='t', path='fn')
+    assert args == dict(tablename='t', crosscat_column_types=None)
+    assert client_dict == dict(csv_path=os.path.join(os.getcwd(), 'fn'))
 
 def test_drop_btable():
-    method, args = parser.parse_line('drop btable t')
+    method, args, client_dict = parser.parse_statement('drop btable t')
     assert method == 'drop_btable'
     assert args == dict(tablename='t')
 
 def test_drop_models():
-    method, args = parser.parse_line('drop models for t')
+    method, args, client_dict = parser.parse_statement('drop models for t')
     assert method == 'drop_models'
-    assert args == dict(tablename='t', models='all')
+    assert args == dict(tablename='t', model_indices=None)
 
-    method, args = parser.parse_line('drop models 2 to 6 for t')
-    assert method == 'delete_model'
-    assert args == dict(tablename='t', models=range(2,7))
+    method, args, client_dict = parser.parse_statement('drop models 2-6 for t')
+    assert method == 'drop_models'
+    assert args == dict(tablename='t', model_indices=range(2,7))
 
 def test_analyze():
-    method, args = parser.parse_line('analyze t')
+    method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 3 iterations')
     assert method == 'analyze'
-    assert args == dict(tablename='t', models='all', iterations=2, wait=False, seconds=None)
-    
-    method, args = parser.parse_line('analyze t models 2 to 6')
-    assert method == 'analyze'
-    assert args == dict(tablename='t', models=range(2,7), iterations=2, wait=False, seconds=None)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None)
 
-    method, args = parser.parse_line('analyze t for 6 iterations')
+    method, args, client_dict = parser.parse_statement('analyze t for 6 iterations')
     assert method == 'analyze'
-    assert args == dict(tablename='t', models='all', iterations=6, wait=False, seconds=None)
+    assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None)
 
-    method, args = parser.parse_line('analyze t for 7 seconds')
+    method, args, client_dict = parser.parse_statement('analyze t for 7 seconds')
     assert method == 'analyze'
-    assert args == dict(tablename='t', models='all', iterations=None, wait=False, seconds=7)
+    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7)
     
-    method, args = parser.parse_line('analyze t models 2 to 6 for 7 seconds')
+    method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 7 seconds')
     assert method == 'analyze'
-    assert args == dict(tablename='t', models=range(2,7), iterations=None, wait=False, seconds=7)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7)
 
 def test_load_models():
-    method, args = parser.parse_line('load models fn for t')
+    method, args, client_dict = parser.parse_statement('load models fn for t')
     assert method == 'load_models'
-    assert args == dict(tablename='t', filename='fn')
+    assert args == dict(tablename='t')
+    assert client_dict == dict(pkl_path='fn')
 
 def test_save_models():
-    method, args = parser.parse_line('save models for t to fn')
+    method, args, client_dict = parser.parse_statement('save models for t to fn')
     assert method == 'save_models'
-    assert args == dict(tablename='t', filename='fn')
+    assert args == dict(tablename='t')
+    assert client_dict == dict(pkl_path='fn')
 
 def test_select():
     tablename = 't'
@@ -104,38 +93,40 @@ def test_select():
     whereclause = ''
     limit = float('inf')
     order_by = False
+    plot = False
 
-    method, args = parser.parse_line('select * from t')
+    method, args, client_dict = parser.parse_statement('select * from t')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by)
+             limit=limit, order_by=order_by, plot=plot)
     assert method == 'select'
     assert args == d
 
     columnstring = 'a, b, a_b'
-    method, args = parser.parse_line('select a, b, a_b from t')
+    method, args, client_dict = parser.parse_statement('select a, b, a_b from t')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by)
+             limit=limit, order_by=order_by, plot=plot)
     assert method == 'select'
     assert args == d
 
     whereclause = 'a=6 and b = 7'
-    method, args = parser.parse_line('select * from t where a=6 and b = 7')
+    columnstring = '*'
+    method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by)
+             limit=limit, order_by=order_by, plot=plot)
     assert method == 'select'
     assert args == d
 
     limit = 10
-    method, args = parser.parse_line('select * from t where a=6 and b = 7 limit 10')
+    method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7 limit 10')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by)
+             limit=limit, order_by=order_by, plot=plot)
     assert method == 'select'
     assert args == d
 
-    order_by = [('column', {'desc': False, 'column': 'b'})]
-    method, args = parser.parse_line('select * from t where a=6 and b = 7 order by b limit 10')
+    order_by = [('b', False)]
+    method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7 order by b limit 10')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by)
+             limit=limit, order_by=order_by, plot=plot)
     assert method == 'select'
     assert args == d
 
