@@ -133,9 +133,9 @@ class Parser(object):
         if len(words) >= 1 and words[0] == 'execute':
             if len(words) >= 3 and words[1] == 'file':
                 filename = words[2]
-                return 'execute_file', dict(filename=self.get_absolute_path(filename))
+                return 'execute_file', dict(filename=self.get_absolute_path(filename)), None
             else:
-                return 'help', self.help_execute_file(), None
+                return 'help', self.help_execute_file()
 
                 
     def help_show_schema(self):
@@ -144,9 +144,9 @@ class Parser(object):
     def parse_show_schema(self, words, orig):
         if len(words) >= 4 and words[0] == 'show' and words[1] == 'schema':
             if words[2] == 'for':
-                return 'show_schema', dict(tablename=words[3])
+                return 'show_schema', dict(tablename=words[3]), None
             else:
-                return 'help', self.help_show_schema(), None
+                return 'help', self.help_show_schema()
 
                 
     def help_show_models(self):
@@ -155,9 +155,9 @@ class Parser(object):
     def parse_show_models(self, words, orig):
         if len(words) >= 4 and words[0] == 'show' and words[1] == 'models':
             if words[2] == 'for':
-                return 'show_models', dict(tablename=words[3])
+                return 'show_models', dict(tablename=words[3]), None
             else:
-                return 'help', self.help_show_models(), None
+                return 'help', self.help_show_models()
 
                 
     def help_show_diagnostics(self):
@@ -166,9 +166,9 @@ class Parser(object):
     def parse_show_diagnostics(self, words, orig):
         if len(words) >= 4 and words[0] == 'show' and words[1] == 'diagnostics':
             if words[2] == 'for':
-                return 'show_diagnostics', dict(tablename=words[3])
+                return 'show_diagnostics', dict(tablename=words[3]), None
             else:
-                return 'help', self.help_show_diagnostics(), None
+                return 'help', self.help_show_diagnostics()
 
 
     def help_drop_models(self):
@@ -183,7 +183,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'drop':
-                return 'help', self.help_drop_models(), None
+                return 'help', self.help_drop_models()
         else:
             tablename = match.group('btable')
             
@@ -238,7 +238,7 @@ class Parser(object):
                                dict(tablename=tablename, crosscat_column_types=crosscat_column_types), \
                                dict(csv_path=csv_path)
                 else:
-                    return 'help', self.help_create_btable(), None
+                    return 'help', self.help_create_btable()
 
 
                     
@@ -266,7 +266,7 @@ class Parser(object):
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None or (match.group('iterations') is None and match.group('seconds') is None):
             if words[0] == 'analyze':
-                return 'help', self.help_analyze(), None
+                return 'help', self.help_analyze()
         else:
             model_indices = None
             tablename = match.group('btable')

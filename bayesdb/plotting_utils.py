@@ -48,8 +48,8 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
         f, ax = p.subplots()
         create_plot(parse_data_for_hist(colnames, data, M_c), ax)
     if filename:
-        plot.savefig(filename)
-        plot.close()
+        p.savefig(filename)
+        p.close()
     else:
         p.show()
 
