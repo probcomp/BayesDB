@@ -45,28 +45,27 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
         gsp = gs.GridSpec(1, 1)#temp values for now.
         plots = create_pairwise_plot(colnames, data, M_c, gsp)
     else:
-        plot = create_plot(parse_data_for_hist(colnames, data, M_c))
+        print 'here'
+        f, ax = p.subplots()
+        plot = create_plot(parse_data_for_hist(colnames, data, M_c), ax)
     if filename:
         plot.savefig(filename)
         plot.close()
     else:
         p.show()
 
-def create_plot(parsed_data, subplot):
-#    f, subplot = p.subplots()
-    p.tick_params(labelcolor='w', top='off', bottom='off', left='off', right='off')
+def create_plot(parsed_data, subplot, label_x=False, label_y=False):
+    
     if parsed_data['datatype'] == 'mult1D':
+        subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
+        subplot.axes.get_xaxis().set_ticks([])
         labels = parsed_data['labels']
         datapoints = parsed_data['data']
         num_vals = len(labels)
-        ind = np.arange(num_vals)
+        ind = np.arange(1, 1 + num_vals)
         width = .5
-        subplot.bar(ind, datapoints, width, color='lightseagreen')
-        subplot.set_xticks(ind + width/2, labels)
-        subplot.set_xlabel(parsed_data['axis_label'])
-        x0,x1 = subplot.get_xlim()
-        y0,y1 = subplot.get_ylim()
-        subplot.set_aspect((x1-x0)/(y1-y0))
+        subplot.bar(ind, datapoints, width, color='lightseagreen', align='center')
+        subplot.axes.get_xaxis().set_ticks(labels)
 
     elif parsed_data['datatype'] == 'cont1D':
         datapoints = parsed_data['data']
@@ -76,12 +75,14 @@ def create_plot(parsed_data, subplot):
         subplot.set_xlabel(parsed_data['axis_label'])
         
     elif parsed_data['datatype'] == 'contcont':
-        subplot.hist2d(parsed_data['data_x'], parsed_data['data_y'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm(), cmap='cool')
+        subplot.hist2d(parsed_data['data_y'], parsed_data['data_x'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm(), cmap='cool')
         #subplot.colorbar()
         subplot.set_ylabel(parsed_data['axis_label_y'])
         subplot.set_xlabel(parsed_data['axis_label_x'])
 
     elif parsed_data['datatype'] == 'multmult':
+        subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
+        subplot.axes.get_xaxis().set_ticks([])
         unique_xs = parsed_data['labels_x']
         unique_ys = parsed_data['labels_y']
         dat = parsed_data['data']
@@ -94,16 +95,21 @@ def create_plot(parsed_data, subplot):
         subplot.set_xlabel(parsed_data['axis_label_x'])
 
     elif parsed_data['datatype'] == 'multcont':
-        raise Exception('categorical by continuous not working in pairwise yet')
+        #raise Exception('categorical by continuous not working in pairwise yet')
         #p.close() #statsmodels beanplot creates its own figures, so closing the existing figure prevents a blank figure from being displayed.
         pltopts = {}
         pltopts['violin_fc'] = 'lightseagreen'
-        subplot = smplt.beanplot(parsed_data['values'], labels=parsed_data['groups'], plot_opts = pltopts)
+        smplt.beanplot(parsed_data['values'], labels=parsed_data['groups'], plot_opts = pltopts, ax=subplot)
         subplot.set_ylabel(parsed_data['axis_label_y'])
         subplot.set_xlabel(parsed_data['axis_label_x'])
     else:
         raise Exception('Unexpected data type')
     #subplot.suptitle(parsed_data['title'])
+
+    x0,x1 = subplot.get_xlim()
+    y0,y1 = subplot.get_ylim()
+    aspect = (abs(float((x1-x0)))/abs(float((y1-y0))))
+    subplot.set_aspect(aspect)
     return subplot
 
 def parse_data_for_hist(colnames, data, M_c):
@@ -154,8 +160,8 @@ def parse_data_for_hist(colnames, data, M_c):
         col_idx_2 = M_c['name_to_idx'][columns[1]]
         types = (M_c['column_metadata'][col_idx_1]['modeltype'], M_c['column_metadata'][col_idx_2]['modeltype'])
         
-        output['axis_label_x'] = columns[0]
-        output['axis_label_y'] = columns[1]
+        output['axis_label_x'] = columns[1]
+        output['axis_label_y'] = columns[0]
         output['title'] = columns[0] + ' -versus- ' + columns[1]
  
         if M_c['column_metadata'][col_idx_1]['modeltype'] == 'normal_inverse_gamma' and M_c['column_metadata'][col_idx_2]['modeltype'] == 'normal_inverse_gamma':
@@ -170,11 +176,11 @@ def parse_data_for_hist(colnames, data, M_c):
                     counts[i]+=1
                 else:
                     counts[i]=1
-            unique_xs = sort_mult_list(list(M_c['column_metadata'][col_idx_1]['code_to_value'].keys()))
-            unique_ys = sort_mult_list(list(M_c['column_metadata'][col_idx_2]['code_to_value'].keys()))
+            unique_xs = sort_mult_list(list(M_c['column_metadata'][col_idx_2]['code_to_value'].keys()))
+            unique_ys = sort_mult_list(list(M_c['column_metadata'][col_idx_1]['code_to_value'].keys()))
             counts_array = numpy.zeros(shape=(len(unique_ys), len(unique_xs)))
             for i in counts:
-                counts_array[M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]]][M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]]] = float(counts[i])
+                counts_array[M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]]] [M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]]] = float(counts[i])
             output['datatype'] = 'multmult'
             output['data'] = counts_array
             output['labels_x'] = unique_xs
@@ -194,9 +200,6 @@ def parse_data_for_hist(colnames, data, M_c):
                 groups = list(set([x[1] for x in data_no_id]))
                 output['groups'] = groups
                 output['values'] = [beans[x] for x in groups]
-                temp = output['axis_label_x']
-                output['axis_label_x'] = output['axis_label_y']
-                output['axis_label_y'] = temp
             else:
                 data_no_id = sort_mult_tuples(data_no_id, 0)
                 for i in data_no_id:
@@ -208,6 +211,9 @@ def parse_data_for_hist(colnames, data, M_c):
                 groups = list(set([x[0] for x in data_no_id]))
                 output['groups'] = groups
                 output['values'] = [beans[x] for x in groups]
+                temp = output['axis_label_x']
+                output['axis_label_x'] = output['axis_label_y']
+                output['axis_label_y'] = temp
 
             group_types = set(output['groups'])
     else:
@@ -234,7 +240,6 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
 
     gsp = gs.GridSpec(len(columns), len(columns))
     plots = []
-    ###
     for i in range(len(columns)):
         for j in range(len(columns)):
             if i == j:
@@ -244,24 +249,9 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
             else:
                 sub_colnames = [columns[i], columns[j]]
                 sub_data = [[x[i], x[j]] for x in data_no_id]
-                #plot[i][j] =  create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gs[i, j]))
                 create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], aspect=1.0))
-                print 'seth berg'
-    ###
     return plots
-    '''
-    for i in columns:
-        if M_c['column_metadata'][M_c['name_to_idx'][i]]['modeltype'] != 'normal_inverse_gamma':
-            raise Exception('Pairwise plots currently only support continuous data')
 
-    data_dict = {}
-    for i in range(len(columns)):
-        data_dict[columns[i]] = [x[i] for x in data_no_id]
-    output['datatype'] = 'pairwise_scatter'
-    output['title'] = 'this is a test'
-    output['data'] = data_dict
-    return output
-    '''                 
 
 #Takes a list of multinomial variables and if they are all numeric, it sorts the list.
 def sort_mult_list(mult):
