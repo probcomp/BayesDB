@@ -45,18 +45,16 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
         gsp = gs.GridSpec(1, 1)#temp values for now.
         plots = create_pairwise_plot(colnames, data, M_c, gsp)
     else:
-        print 'here'
         f, ax = p.subplots()
-        plot = create_plot(parse_data_for_hist(colnames, data, M_c), ax)
+        create_plot(parse_data_for_hist(colnames, data, M_c), ax)
     if filename:
         plot.savefig(filename)
         plot.close()
     else:
         p.show()
 
-def create_plot(parsed_data, subplot, label_x=False, label_y=False):
-    #subplot.axes.xaxis.set_ticklabels([])
-    #subplot.axes.yaxis.set_ticklabels([])
+def create_plot(parsed_data, subplot, pairwise=False, label_x=False, label_y=False):
+
     if parsed_data['datatype'] == 'mult1D':
         subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
         subplot.axes.get_xaxis().set_ticks([])
@@ -68,6 +66,7 @@ def create_plot(parsed_data, subplot, label_x=False, label_y=False):
         subplot.bar(ind, datapoints, width, color='lightseagreen', align='center')
         subplot.axes.get_xaxis().set_ticks(range(len(labels)))
         subplot.axes.get_xaxis().set_ticklabels(labels)
+        subplot.set_xlabel(parsed_data['axis_label'])
 
     elif parsed_data['datatype'] == 'cont1D':
         datapoints = parsed_data['data']
@@ -106,7 +105,7 @@ def create_plot(parsed_data, subplot, label_x=False, label_y=False):
         subplot.set_ylabel(parsed_data['axis_label_y'])
 
     else:
-        raise Exception('Unexpected data type')
+        raise Exception('Unexpected data type, or too many arguments')
 
     x0,x1 = subplot.get_xlim()
     y0,y1 = subplot.get_ylim()
@@ -242,7 +241,6 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
         data_no_id = data_c[:]
 
     gsp = gs.GridSpec(len(columns), len(columns))
-    plots = []
     for i in range(len(columns)):
         for j in range(len(columns)):
             if i == j:
@@ -253,7 +251,6 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
                 sub_colnames = [columns[i], columns[j]]
                 sub_data = [[x[i], x[j]] for x in data_no_id]
                 create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], aspect=1.0))
-    return plots
 
 
 #Takes a list of multinomial variables and if they are all numeric, it sorts the list.
