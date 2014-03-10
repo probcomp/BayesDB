@@ -122,12 +122,16 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, **k
 
 
     elif parsed_data['datatype'] == 'multcont':
-        pltopts = {}
-        pltopts['violin_fc'] = 'lightseagreen'
-        smplt.beanplot(parsed_data['values'], labels=parsed_data['groups'], plot_opts = pltopts, ax=subplot)
+        values = parsed_data['values']
+        groups = parsed_data['groups']
+        output = []
+        for i in range(len(groups)):
+            for j in values[i]:
+                output.append([groups[i], j])
+        df = pd.DataFrame(output)
+        df.boxplot(by=0, ax=subplot)
         subplot.set_xlabel(parsed_data['axis_label_x'])
         subplot.set_ylabel(parsed_data['axis_label_y'])
-
     else:
         raise Exception('Unexpected data type, or too many arguments')
 
