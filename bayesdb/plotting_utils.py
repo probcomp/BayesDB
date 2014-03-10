@@ -33,12 +33,12 @@ import math
 import statsmodels.graphics.boxplots as smplt
 
 def turn_off_labels(subplot, xl, yl):
-    '''
+    
     if not xl:
         subplot.axes.get_xaxis().set_visible(False)
     if not yl:
         subplot.axes.get_yaxis().set_visible(False)
-    '''     
+         
 
 def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pairwise=False):
     '''
@@ -60,7 +60,7 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
     else:
         p.show()
 
-def create_plot(parsed_data, subplot, label_x=False, label_y=False, text=None, **kwargs):
+def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, **kwargs):
 
     if parsed_data['datatype'] == 'mult1D':
         if 'horizontal' in kwargs and kwargs['horizontal']:
@@ -137,7 +137,7 @@ def create_plot(parsed_data, subplot, label_x=False, label_y=False, text=None, *
     subplot.set_aspect(aspect)
     turn_off_labels(subplot, label_x, label_y)
     if text:
-        subplot.text(0.5, 0.9,text , horizontalalignment='center', verticalalignment='center', transform=subplot.transAxes, fontsize = 18, color = 'blue', bbox={'facecolor':'red', 'alpha':.8, 'pad':2})
+        subplot.text(0.5, 0.9,text , horizontalalignment='center', verticalalignment='center', transform=subplot.transAxes, fontsize = 14, color = 'blue', bbox={'facecolor':'red', 'alpha':.8, 'pad':2}) #heuristic for font size
     return subplot
 
 def parse_data_for_hist(colnames, data, M_c):
@@ -173,7 +173,6 @@ def parse_data_for_hist(colnames, data, M_c):
             output['datatype'] = 'mult1D'
             output['labels'] = unique_labels
             output['data'] = counts
-
         elif M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma':
             output['datatype'] = 'cont1D'
             output['data'] = np.array(data_no_id)
@@ -269,18 +268,33 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
     gsp = gs.GridSpec(len(columns), len(columns))
     for i in range(len(columns)):
         for j in range(len(columns)):
-            if j > i:
-                pass
-            elif i == j:
+            if j == 0 and i < len(columns) - 1:
+                #left hand marginals
                 sub_colnames = [columns[i]]
                 sub_data = [[x[i]] for x in data_no_id]
-                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], adjustable='box', aspect=1), True, True, columns[i])
+                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[i], horizontal=True)
+                
+            elif i == len(columns) - 1 and j > 0:
+                #bottom marginals
+                subdata = None
+                if j == 1:
+                    sub_colnames = [columns[len(columns)-1]]
+                    sub_data = [[x[len(columns) - 1]] for x in data_no_id]
+                else:
+                    sub_colnames = [columns[j-2]]
+                    sub_data = [[x[j-2]] for x in data_no_id]
+                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[j-2], horizontal=False)
+
+            elif (j != 0 and i != len(columns)-1) and j < i+2:
+                
+                j_col = j-2
+                if j == 1:
+                    j_col = len(columns) - 1
+                sub_colnames = [columns[i], columns[j_col]]
+                sub_data = [[x[i], x[j_col]] for x in data_no_id]
+                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, horizontal=True)
             else:
-                sub_colnames = [columns[i], columns[j]]
-                sub_data = [[x[i], x[j]] for x in data_no_id]
-                label_y = (j == 0)
-                label_x = (i == len(columns)-1)
-                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], aspect=1.0),True, True)#label_x, label_y)
+                pass
 
 
 #Takes a list of multinomial variables and if they are all numeric, it sorts the list.
