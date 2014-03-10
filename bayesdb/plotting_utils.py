@@ -32,6 +32,13 @@ import data_utils as du
 import math
 import statsmodels.graphics.boxplots as smplt
 
+def turn_off_labels(subplot, xl, yl):
+    '''
+    if not xl:
+        subplot.axes.get_xaxis().set_visible(False)
+    if not yl:
+        subplot.axes.get_yaxis().set_visible(False)
+    '''     
 
 def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pairwise=False):
     '''
@@ -53,28 +60,45 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
     else:
         p.show()
 
-def create_plot(parsed_data, subplot, pairwise=False, label_x=False, label_y=False):
+def create_plot(parsed_data, subplot, label_x=False, label_y=False, text=None, **kwargs):
 
     if parsed_data['datatype'] == 'mult1D':
-        subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
-        subplot.axes.get_xaxis().set_ticks([])
-        labels = parsed_data['labels']
-        datapoints = parsed_data['data']
-        num_vals = len(labels)
-        ind = np.arange(num_vals)
-        width = .5
-        subplot.bar(ind, datapoints, width, color='lightseagreen', align='center')
-        subplot.axes.get_xaxis().set_ticks(range(len(labels)))
-        subplot.axes.get_xaxis().set_ticklabels(labels)
-        subplot.set_xlabel(parsed_data['axis_label'])
-
+        if 'horizontal' in kwargs and kwargs['horizontal']:
+            subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
+            subplot.axes.get_yaxis().set_ticks([])
+            labels = parsed_data['labels']
+            datapoints = parsed_data['data']
+            num_vals = len(labels)
+            ind = np.arange(num_vals)
+            width = .5
+            subplot.barh(ind, datapoints, width, color='lightseagreen', align='center')
+            subplot.axes.get_yaxis().set_ticks(range(len(labels)))
+            subplot.axes.get_yaxis().set_ticklabels(labels)
+            subplot.set_ylabel(parsed_data['axis_label'])
+        else:
+            subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
+            subplot.axes.get_xaxis().set_ticks([])
+            labels = parsed_data['labels']
+            datapoints = parsed_data['data']
+            num_vals = len(labels)
+            ind = np.arange(num_vals)
+            width = .5
+            subplot.bar(ind, datapoints, width, color='lightseagreen', align='center')
+            subplot.axes.get_xaxis().set_ticks(range(len(labels)))
+            subplot.axes.get_xaxis().set_ticklabels(labels)
+            subplot.set_xlabel(parsed_data['axis_label'])
+        
     elif parsed_data['datatype'] == 'cont1D':
         datapoints = parsed_data['data']
         subplot.series = pd.Series(datapoints)
-        subplot.series.hist(normed=True, color='lightseagreen')
-        subplot.series.dropna().plot(kind='kde', style='r--') 
-        subplot.set_xlabel(parsed_data['axis_label'])
-        
+        if 'horizontal' in kwargs and kwargs['horizontal']:
+            subplot.series.hist(normed=True, color='lightseagreen', orientation='horizontal')
+            subplot.set_xlabel(parsed_data['axis_label'])
+        else:
+            subplot.series.hist(normed=True, color='lightseagreen')
+            subplot.series.dropna().plot(kind='kde', style='r--') 
+            subplot.set_xlabel(parsed_data['axis_label'])
+
     elif parsed_data['datatype'] == 'contcont':
         subplot.hist2d(parsed_data['data_y'], parsed_data['data_x'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm(), cmap='cool')
         subplot.set_ylabel(parsed_data['axis_label_y'])
@@ -111,7 +135,9 @@ def create_plot(parsed_data, subplot, pairwise=False, label_x=False, label_y=Fal
     y0,y1 = subplot.get_ylim()
     aspect = (abs(float((x1-x0)))/abs(float((y1-y0))))
     subplot.set_aspect(aspect)
-
+    turn_off_labels(subplot, label_x, label_y)
+    if text:
+        subplot.text(0.5, 0.9,text , horizontalalignment='center', verticalalignment='center', transform=subplot.transAxes, fontsize = 18, color = 'blue', bbox={'facecolor':'red', 'alpha':.8, 'pad':2})
     return subplot
 
 def parse_data_for_hist(colnames, data, M_c):
@@ -243,14 +269,18 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
     gsp = gs.GridSpec(len(columns), len(columns))
     for i in range(len(columns)):
         for j in range(len(columns)):
-            if i == j:
+            if j > i:
+                pass
+            elif i == j:
                 sub_colnames = [columns[i]]
                 sub_data = [[x[i]] for x in data_no_id]
-                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], adjustable='box', aspect=1), True, True)
+                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], adjustable='box', aspect=1), True, True, columns[i])
             else:
                 sub_colnames = [columns[i], columns[j]]
                 sub_data = [[x[i], x[j]] for x in data_no_id]
-                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], aspect=1.0))
+                label_y = (j == 0)
+                label_x = (i == len(columns)-1)
+                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], aspect=1.0),True, True)#label_x, label_y)
 
 
 #Takes a list of multinomial variables and if they are all numeric, it sorts the list.
