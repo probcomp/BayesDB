@@ -61,7 +61,9 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
         p.show()
 
 def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, **kwargs):
-
+    """
+    Takes parsed data and a subplot object, and creates a plot of the data on that subplot object.
+    """
     if parsed_data['datatype'] == 'mult1D':
         if 'horizontal' in kwargs and kwargs['horizontal']:
             subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
@@ -122,14 +124,25 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, **k
 
 
     elif parsed_data['datatype'] == 'multcont':
+        # Multinomial is always on X axis, and is always first.
         values = parsed_data['values']
         groups = parsed_data['groups']
         output = []
-        for i in range(len(groups)):
-            for j in values[i]:
-                output.append([groups[i], j])
-        df = pd.DataFrame(output)
-        df.boxplot(by=0, ax=subplot)
+
+        value_lengths = [len(v) for v in values]
+        max_value_length = max(value_lengths)
+        
+        # pad values with None, for the values lists shorter than the max-length list.
+        for i in range(len(values)):
+            if len(values[i]) < max_value_length:
+                values[i] += [None]*(max_value_length-len(values[i]))
+
+        # create dataframe
+        d = {groups[i]:values[i] for i in range(len(values))}
+        df = pd.DataFrame(d)
+        
+        df.boxplot(ax=subplot)
+
         subplot.set_xlabel(parsed_data['axis_label_x'])
         subplot.set_ylabel(parsed_data['axis_label_y'])
     else:
