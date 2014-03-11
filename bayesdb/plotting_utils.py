@@ -51,9 +51,10 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
     if pairwise:
         gsp = gs.GridSpec(1, 1)#temp values for now.
         plots = create_pairwise_plot(colnames, data, M_c, gsp)
+        print gsp
     else:
         f, ax = p.subplots()
-        create_plot(parse_data_for_hist(colnames, data, M_c), ax)
+        create_plot(parse_data_for_hist(colnames, data, M_c), ax, by=True)
     if filename:
         p.savefig(filename)
         p.close()
@@ -309,7 +310,7 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
                     j_col = len(columns) - 1
                 sub_colnames = [columns[i], columns[j_col]]
                 sub_data = [[x[i], x[j_col]] for x in data_no_id]
-                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, horizontal=True)
+                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j]), False, False, horizontal=True)
             else:
                 pass
 
