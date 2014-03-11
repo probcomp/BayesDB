@@ -141,8 +141,9 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, **k
         # create dataframe
         d = {groups[i]:values[i] for i in range(len(values))}
         df = pd.DataFrame(d)
-        
-        df.boxplot(ax=subplot)
+
+        vert = not parsed_data['transpose']
+        df.boxplot(ax=subplot, vert=vert)
 
         subplot.set_xlabel(parsed_data['axis_label_x'])
         subplot.set_ylabel(parsed_data['axis_label_y'])
@@ -245,6 +246,7 @@ def parse_data_for_hist(colnames, data, M_c):
                 groups = list(set([x[1] for x in data_no_id]))
                 output['groups'] = groups
                 output['values'] = [beans[x] for x in groups]
+                output['transpose'] = False
             else:
                 data_no_id = sort_mult_tuples(data_no_id, 0)
                 for i in data_no_id:
@@ -256,9 +258,7 @@ def parse_data_for_hist(colnames, data, M_c):
                 groups = list(set([x[0] for x in data_no_id]))
                 output['groups'] = groups
                 output['values'] = [beans[x] for x in groups]
-                temp = output['axis_label_x']
-                output['axis_label_x'] = output['axis_label_y']
-                output['axis_label_y'] = temp
+                output['transpose'] = True
 
             group_types = set(output['groups'])
     else:
