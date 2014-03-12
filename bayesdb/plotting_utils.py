@@ -49,7 +49,6 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
     if pairwise:
         gsp = gs.GridSpec(1, 1)#temp values for now.
         plots = create_pairwise_plot(colnames, data, M_c, gsp)
-        print gsp
     else:
         f, ax = p.subplots()
         create_plot(parse_data_for_hist(colnames, data, M_c), ax)
@@ -74,7 +73,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
             num_vals = len(labels)
             ind = np.arange(num_vals)
             width = .5
-            subplot.barh(ind, datapoints, width, color='lightseagreen', align='center')
+            subplot.barh(ind, datapoints, width, color=matplotlib.cm.Blues(0.5), align='center')
             subplot.axes.get_yaxis().set_ticks(range(len(labels)))
             subplot.axes.get_yaxis().set_ticklabels(labels)
             subplot.set_ylabel(parsed_data['axis_label'])
@@ -88,7 +87,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
             num_vals = len(labels)
             ind = np.arange(num_vals)
             width = .5
-            subplot.bar(ind, datapoints, width, color='lightseagreen', align='center')
+            subplot.bar(ind, datapoints, width, color=matplotlib.cm.Blues(0.5), align='center')
             subplot.axes.get_xaxis().set_ticks(range(len(labels)))
             subplot.axes.get_xaxis().set_ticklabels(labels)
             subplot.set_xlabel(parsed_data['axis_label'])
@@ -101,13 +100,13 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         datapoints = parsed_data['data']
         subplot.series = pd.Series(datapoints)
         if 'horizontal' in kwargs and kwargs['horizontal']:
-            subplot.series.hist(normed=True, color='lightseagreen', orientation='horizontal')
+            subplot.series.hist(normed=True, color=matplotlib.cm.Blues(0.5), orientation='horizontal')
             subplot.set_ylabel(parsed_data['axis_label'])
             if compress:
                 subplot.axes.get_xaxis().set_visible(False)
                 subplot.axes.get_yaxis().set_major_locator(MaxNLocator(nbins = 3))                
         else:
-            subplot.series.hist(normed=True, color='lightseagreen')
+            subplot.series.hist(normed=True, color=matplotlib.cm.Blues(0.5))
             subplot.set_xlabel(parsed_data['axis_label'])
             if compress:
                 subplot.axes.get_xaxis().set_major_locator(MaxNLocator(nbins = 3))
@@ -118,7 +117,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
     elif parsed_data['datatype'] == 'contcont':
         if len(parsed_data['data_y']) == 0 or len(parsed_data['data_x']) == 0:
             return
-        subplot.hist2d(parsed_data['data_y'], parsed_data['data_x'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm(), cmap='cool')
+        subplot.hist2d(parsed_data['data_y'], parsed_data['data_x'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm(), cmap=matplotlib.cm.Blues)
         if not compress:
             subplot.set_xlabel(parsed_data['axis_label_x'])
             subplot.set_ylabel(parsed_data['axis_label_y'])
@@ -134,7 +133,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         unique_ys = parsed_data['labels_y']
         dat = parsed_data['data']
         norm_a = Normalize(vmin=dat.min(), vmax=dat.max()) 
-        subplot.imshow(parsed_data['data'],norm=Normalize(), interpolation='nearest',  cmap=matplotlib.cm.cool, aspect = float(len(unique_xs))/len(unique_ys))
+        subplot.imshow(parsed_data['data'],norm=Normalize(), interpolation='nearest',  cmap=matplotlib.cm.Blues, aspect = float(len(unique_xs))/len(unique_ys))
 
         subplot.axes.get_xaxis().set_ticks(range(len(unique_xs)))
         subplot.axes.get_xaxis().set_ticklabels(unique_xs)
@@ -378,7 +377,7 @@ def plot_matrix(matrix, column_names, title='', filename=None):
     fig = p.figure()
     fig.set_size_inches(16, 12)
     p.imshow(matrix, interpolation='none',
-                 cmap=matplotlib.cm.gray_r, vmin=0, vmax=1)
+                 cmap=matplotlib.cm.Blues, vmin=0, vmax=1)
     p.colorbar()
     p.gca().set_yticks(range(len(column_names)))
     p.gca().set_yticklabels(column_names, size='small')
