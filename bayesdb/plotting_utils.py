@@ -22,6 +22,7 @@ import numpy as np
 import pylab as p
 import os
 from matplotlib.colors import LogNorm, Normalize
+from matplotlib.ticker import MaxNLocator
 import matplotlib.gridspec as gs
 import matplotlib.cm
 import pandas as pd
@@ -32,12 +33,9 @@ import data_utils as du
 import math
 import statsmodels.graphics.boxplots as smplt
 
-def turn_off_labels(subplot, xl, yl):
-    
-    if not xl:
-        subplot.axes.get_xaxis().set_visible(False)
-    if not yl:
-        subplot.axes.get_yaxis().set_visible(False)
+def turn_off_labels(subplot):
+    subplot.axes.get_xaxis().set_visible(False)
+    subplot.axes.get_yaxis().set_visible(False)
          
 
 def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pairwise=False):
@@ -54,20 +52,22 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
         print gsp
     else:
         f, ax = p.subplots()
-        create_plot(parse_data_for_hist(colnames, data, M_c), ax, by=True)
+        create_plot(parse_data_for_hist(colnames, data, M_c), ax)
     if filename:
         p.savefig(filename)
         p.close()
     else:
         p.show()
 
-def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, **kwargs):
+def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, compress=False, **kwargs):
     """
     Takes parsed data and a subplot object, and creates a plot of the data on that subplot object.
     """
     if parsed_data['datatype'] == 'mult1D':
+        if len(parsed_data['data']) == 0:
+            return
         if 'horizontal' in kwargs and kwargs['horizontal']:
-            subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
+            subplot.tick_params(top='off', bottom='off', left='off', right='off')
             subplot.axes.get_yaxis().set_ticks([])
             labels = parsed_data['labels']
             datapoints = parsed_data['data']
@@ -78,8 +78,10 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, **k
             subplot.axes.get_yaxis().set_ticks(range(len(labels)))
             subplot.axes.get_yaxis().set_ticklabels(labels)
             subplot.set_ylabel(parsed_data['axis_label'])
+            if compress:
+                subplot.axes.get_xaxis().set_visible(False)            
         else:
-            subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
+            subplot.tick_params(top='off', bottom='off', left='off', right='off')
             subplot.axes.get_xaxis().set_ticks([])
             labels = parsed_data['labels']
             datapoints = parsed_data['data']
@@ -90,24 +92,42 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, **k
             subplot.axes.get_xaxis().set_ticks(range(len(labels)))
             subplot.axes.get_xaxis().set_ticklabels(labels)
             subplot.set_xlabel(parsed_data['axis_label'])
+            if compress:
+                subplot.axes.get_yaxis().set_visible(False)
         
     elif parsed_data['datatype'] == 'cont1D':
+        if len(parsed_data['data']) == 0:
+            return
         datapoints = parsed_data['data']
         subplot.series = pd.Series(datapoints)
         if 'horizontal' in kwargs and kwargs['horizontal']:
             subplot.series.hist(normed=True, color='lightseagreen', orientation='horizontal')
-            subplot.set_xlabel(parsed_data['axis_label'])
+            subplot.set_ylabel(parsed_data['axis_label'])
+            if compress:
+                subplot.axes.get_xaxis().set_visible(False)
+                subplot.axes.get_yaxis().set_major_locator(MaxNLocator(nbins = 3))                
         else:
             subplot.series.hist(normed=True, color='lightseagreen')
-            subplot.series.dropna().plot(kind='kde', style='r--') 
             subplot.set_xlabel(parsed_data['axis_label'])
+            if compress:
+                subplot.axes.get_xaxis().set_major_locator(MaxNLocator(nbins = 3))
+                subplot.axes.get_yaxis().set_visible(False)
+            else:
+                subplot.series.dropna().plot(kind='kde', style='r--')                 
 
     elif parsed_data['datatype'] == 'contcont':
+        if len(parsed_data['data_y']) == 0 or len(parsed_data['data_x']) == 0:
+            return
         subplot.hist2d(parsed_data['data_y'], parsed_data['data_x'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm(), cmap='cool')
-        subplot.set_ylabel(parsed_data['axis_label_y'])
-        subplot.set_xlabel(parsed_data['axis_label_x'])
-
+        if not compress:
+            subplot.set_xlabel(parsed_data['axis_label_x'])
+            subplot.set_ylabel(parsed_data['axis_label_y'])
+        else:
+            turn_off_labels(subplot)
+        
     elif parsed_data['datatype'] == 'multmult':
+        if len(parsed_data['data']) == 0:
+            return
         subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
         subplot.axes.get_xaxis().set_ticks([])
         unique_xs = parsed_data['labels_x']
@@ -118,16 +138,21 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, **k
 
         subplot.axes.get_xaxis().set_ticks(range(len(unique_xs)))
         subplot.axes.get_xaxis().set_ticklabels(unique_xs)
-        subplot.set_xlabel(parsed_data['axis_label_x'])
         subplot.axes.get_yaxis().set_ticks(range(len(unique_ys)))
         subplot.axes.get_yaxis().set_ticklabels(unique_ys)
-        subplot.set_ylabel(parsed_data['axis_label_y'])
+        if not compress:
+            subplot.set_xlabel(parsed_data['axis_label_x'])
+            subplot.set_ylabel(parsed_data['axis_label_y'])
+        else:
+            turn_off_labels(subplot)
 
 
     elif parsed_data['datatype'] == 'multcont':
-        # Multinomial is always on X axis, and is always first.
+        # Multinomial is always first. parsed_data['transpose'] is true if multinomial should be on Y axis.
         values = parsed_data['values']
         groups = parsed_data['groups']
+        if len(values) == 0 or len(groups) == 0:
+            return
         output = []
 
         value_lengths = [len(v) for v in values]
@@ -145,8 +170,12 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, **k
         vert = not parsed_data['transpose']
         df.boxplot(ax=subplot, vert=vert)
 
-        subplot.set_xlabel(parsed_data['axis_label_x'])
-        subplot.set_ylabel(parsed_data['axis_label_y'])
+        if not compress:
+            subplot.set_xlabel(parsed_data['axis_label_x'])
+            subplot.set_ylabel(parsed_data['axis_label_y'])
+        else:
+            turn_off_labels(subplot)
+
     else:
         raise Exception('Unexpected data type, or too many arguments')
 
@@ -154,9 +183,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, **k
     y0,y1 = subplot.get_ylim()
     aspect = (abs(float((x1-x0)))/abs(float((y1-y0))))
     subplot.set_aspect(aspect)
-    turn_off_labels(subplot, label_x, label_y)
-    if text:
-        subplot.text(0.5, 0.9,text , horizontalalignment='center', verticalalignment='center', transform=subplot.transAxes, fontsize = 14, color = 'blue', bbox={'facecolor':'red', 'alpha':.8, 'pad':2}) #heuristic for font size
+
     return subplot
 
 def parse_data_for_hist(colnames, data, M_c):
@@ -290,7 +317,8 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
                 #left hand marginals
                 sub_colnames = [columns[i]]
                 sub_data = [[x[i]] for x in data_no_id]
-                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[i], horizontal=True)
+                data = parse_data_for_hist(sub_colnames, sub_data, M_c)
+                create_plot(data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[i], horizontal=True, compress=True)
                 
             elif i == len(columns) - 1 and j > 0:
                 #bottom marginals
@@ -301,7 +329,8 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
                 else:
                     sub_colnames = [columns[j-2]]
                     sub_data = [[x[j-2]] for x in data_no_id]
-                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[j-2], horizontal=False)
+                data = parse_data_for_hist(sub_colnames, sub_data, M_c)
+                create_plot(data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[j-2], horizontal=False, compress=True)
 
             elif (j != 0 and i != len(columns)-1) and j < i+2:
                 
@@ -310,7 +339,8 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
                     j_col = len(columns) - 1
                 sub_colnames = [columns[i], columns[j_col]]
                 sub_data = [[x[i], x[j_col]] for x in data_no_id]
-                create_plot(parse_data_for_hist(sub_colnames, sub_data, M_c), p.subplot(gsp[i, j]), False, False, horizontal=True)
+                data = parse_data_for_hist(sub_colnames, sub_data, M_c)
+                create_plot(data, p.subplot(gsp[i, j]), False, False, horizontal=True, compress=True)
             else:
                 pass
 
