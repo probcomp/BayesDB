@@ -32,7 +32,7 @@ class Parser(object):
         self.method_name_to_args = be.get_method_name_to_args()
         self.reset_root_dir()
     
-    def parse(self, bql_string):
+    def split_lines(self, bql_string):
         """
         Accepts a large chunk of BQL (such as a file containing many BQL statements)
         as a string, and returns individual SQL statements as a list of strings.
