@@ -145,6 +145,8 @@ def _mutual_information(mutual_information_args, row_id, data_values, M_c, X_L_l
 def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine):
     col1, col2 = correlation_args
     t_array = numpy.array(T, dtype=float)
+    nan_index = numpy.logical_or(numpy.isnan(t_array[:,col1]), numpy.isnan(t_array[:,col2]))
+    t_array = t_array[numpy.logical_not(nan_index),:]
     correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
     return correlation
 
