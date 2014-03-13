@@ -1,4 +1,4 @@
-Bayesian Query Language (BQL)
+﻿Bayesian Query Language (BQL)
 ==================================
 Bayesian Query Language is a SQL-like language that adds support for running inference and executing predictive queries based on a bayesian model of the data.
 
@@ -197,7 +197,7 @@ Mutual information between two columns measures how much information a value in 
 
   CORRELATION [OF <column1> WITH <column2>]
 
-This is the standard Pearson correlation coefficient between the two columns. Currently it does not work on columns with missing values.
+This is the standard Pearson correlation coefficient between the two columns. All rows with missing values in either or both of the two columns will be removed before calculating the correlation coefficient.
 
 Here are some examples::
 
