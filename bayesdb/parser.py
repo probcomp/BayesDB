@@ -601,7 +601,7 @@ class Parser(object):
 
             
     def help_update_schema(self):
-        return "UPDATE SCHEMA FOR <btable> SET (col0=numerical|categorical|key|ignore)[,...]: must be done before creating models or analyzing."
+        return "UPDATE SCHEMA FOR <btable> SET [<column_name>=(numerical|categorical|key|ignore)[,...]]: must be done before creating models or analyzing."
         
     def parse_update_schema(self, words, orig):
         match = re.search(r"""

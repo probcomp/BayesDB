@@ -324,7 +324,7 @@ class PersistenceLayer():
 
     def update_schema(self, tablename, mappings):
         """
-        mappings is a dict of column name to 'continuous', 'multinomial', or 'ignore'.
+        mappings is a dict of column name to 'continuous', 'multinomial', 'ignore', or 'key'.
         TODO: can we get rid of cctypes?
         """
         metadata_full = self.get_metadata_full(tablename)
@@ -334,9 +334,17 @@ class PersistenceLayer():
         colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
 
         # Now, update cctypes_full (cctypes updated later, after removing ignores).
+        mapping_set = 'continuous', 'multinomial', 'ignore', 'key'
         for col, mapping in mappings.items():
+            if col.lower() not in M_c_full['name_to_idx']:
+                raise utils.BayesDBError('Error: column %s does not exist.' % col)
+            if mapping not in mapping_set:
+                raise utils.BayesDBError('Error: datatype %s is not one of the valid datatypes: %s.' % (mapping, str(mapping_set)))
+                
             cidx = M_c_full['name_to_idx'][col.lower()]
             cctypes_full[cidx] = mapping
+
+        assert len(filter(lambda x: x=='key', cctypes_full)) <= 1
 
         if cctypes_full is None:
             cctypes_full = data_utils.guess_column_types(raw_T_full)

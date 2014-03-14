@@ -91,7 +91,7 @@ class Engine(object):
   def update_schema(self, tablename, mappings):
     """
     mappings is a dict of column name to 'continuous', 'multinomial',
-    or 'ignore'.
+    or 'ignore', or 'key'.
     Requires that models are already initialized.
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
