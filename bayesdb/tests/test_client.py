@@ -52,7 +52,7 @@ def teardown_function(function):
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
-  client('create btable %s from %s' % (test_tablename, 'data/dha.csv'))  
+  client('create btable %s from %s' % (test_tablename, path))
   
   global test_tablenames
   test_tablenames.append(test_tablename)
@@ -282,4 +282,6 @@ def test_select():
   client("select typicality of qual_score, typicality of name from %s" % (test_tablename))
   client("select typicality of qual_score from %s" % (test_tablename))
 
-  
+  # correlation with missing values
+  test_tablename = create_dha(path='data/dha_missing.csv')
+  client("select name, qual_score, correlation of name with qual_score from %s" % (test_tablename))
