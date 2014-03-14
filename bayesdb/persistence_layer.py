@@ -26,7 +26,7 @@ import pickle
 import shutil
 import contextlib
 
-import data_utils as du
+import data_utils
 import utils
 
 import bayesdb.settings as S
@@ -38,7 +38,7 @@ class PersistenceLayer():
     bayesdb/data/
       btable_index.pkl
       <tablename>/
-        data.csv
+        metadata_full.pkl
         metadata.pkl
         column_lists.pkl
         models/
@@ -47,6 +47,7 @@ class PersistenceLayer():
     table_index.pkl: list of btable names.
     
     metadata.pkl: dict. keys: M_r, M_c, T, cctypes
+    metadata_full.pkl: dict. keys: M_r_full, M_c_full, T_full, cctypes_full
     column_lists.pkl: dict. keys: column list names, values: list of column names.
     models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views, model_config]. Idx starting at 1.
     data.csv: the raw csv file that the data was loaded from.
@@ -91,13 +92,30 @@ class PersistenceLayer():
         self.write_btable_index()
 
     def get_metadata(self, tablename):
-        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'r')
+        try:
+            f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'r')
+        except Exception as e:
+            raise utils.BayesDBError("Error: metadata does not exist. Has %s been corrupted?" % self.data_dir)
+        metadata = pickle.load(f)
+        f.close()
+        return metadata
+
+    def get_metadata_full(self, tablename):
+        try:
+            f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'r')
+        except Exception as e:
+            raise utils.BayesDBError("Error: metadata_full file doesn't exist. This is most likely a result of this btable being created with an old version of BayesDB. Please try recreating the table from the original csv, and loading any models you might have.")
         metadata = pickle.load(f)
         f.close()
         return metadata
 
     def write_metadata(self, tablename, metadata):
         metadata_f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'w')
+        pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
+        metadata_f.close()
+
+    def write_metadata_full(self, tablename, metadata):
+        metadata_f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'w')
         pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
         metadata_f.close()
 
@@ -189,25 +207,6 @@ class PersistenceLayer():
         pickle.dump(column_lists, column_lists_f, pickle.HIGHEST_PROTOCOL)
         column_lists_f.close()
 
-    def get_csv(self, tablename):
-        f = open(os.path.join(self.data_dir, tablename, 'data.csv'), 'r')
-        text = f.read()
-        f.close()
-        return text
-
-    def write_csv(self, tablename, csv):
-        """
-        Input: csv is the raw csv data, which gets persisted as data.csv.
-        Called by create_btable_from_csv as a helper function.
-        """
-        if not os.path.exists(os.path.join(self.data_dir, tablename)):
-            os.mkdir(os.path.join(self.data_dir, tablename))        
-        f = open(os.path.join(self.data_dir, tablename, 'data.csv'), 'w')
-        csv_abs_path = os.path.abspath(f.name)
-        f.write(csv)
-        f.close()
-        return csv_abs_path
-
     def drop_btable(self, tablename):
         """Delete a single btable."""
         if tablename in self.btable_index:
@@ -287,36 +286,6 @@ class PersistenceLayer():
         metadata = self.get_metadata(tablename)
         return metadata['cctypes']
 
-    def update_schema(self, tablename, mappings):
-        """
-        mappings is a dict of column name to 'continuous', 'multinomial',
-        or an int, which signifies multinomial of a specific type.
-        TODO: FIX HACKS. Current works by reloading all the data from csv,
-        and it ignores multinomials' specific number of outcomes.
-        Also, disastrous things may happen if you update a schema after creating models.
-        """
-        max_modelid = self.get_max_model_id(tablename)
-        if max_modelid is not None and max_modelid > 0:
-            raise utils.BayesDBError("Cannot update datatypes after models have already been created. Please create a new table.")
-          
-        metadata = self.get_metadata(tablename)
-        cctypes = metadata['cctypes']
-        M_c = metadata['M_c']
-        M_r = metadata['M_r']
-        T = metadata['T']
-
-        # Now, update cctypes, T, M_c, and M_r
-        for col, mapping in mappings.items():
-          ## TODO: fix this hack! See method's docstring.
-          if type(mapping) == int:
-            mapping = 'multinomial'
-          cctypes[M_c['name_to_idx'][col]] = mapping
-        T, M_r, M_c, header = du.read_data_objects(os.path.join(self.data_dir, tablename, 'data.csv'), cctypes=cctypes)
-
-        # Now, put cctypes, T, M_c, and M_r back into the DB
-        self.update_metadata(tablename, M_r, M_c, T, cctypes)
-        
-        return self.get_metadata(tablename)
 
     def update_metadata(self, tablename, M_r=None, M_c=None, T=None, cctypes=None):
         """Overwrite M_r, M_c, and T (not cctypes) for the table."""
@@ -333,11 +302,59 @@ class PersistenceLayer():
         pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
         f.close()
 
+    def update_metadata_full(self, tablename, M_r_full=None, M_c_full=None, T_full=None, cctypes_full=None):
+        """Overwrite M_r, M_c, and T (not cctypes) for the table."""
+        metadata = self.get_metadata_full(tablename)
+        if M_r_full:
+            metadata['M_r_full'] = M_r_full
+        if M_c_full:
+            metadata['M_c_full'] = M_c_full
+        if T_full:
+            metadata['T_full'] = T_full
+        if cctypes_full:
+            metadata['cctypes_full'] = cctypes_full
+        f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'w')            
+        pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
+        f.close()
+        
+
     def check_if_table_exists(self, tablename):
         """Return true iff this tablename exists in the persistence layer."""
         return tablename in self.btable_index
 
-    def create_btable_from_csv(self, tablename, csv_path, csv, cctypes, postgres_coltypes, colnames):
+    def update_schema(self, tablename, mappings):
+        """
+        mappings is a dict of column name to 'continuous', 'multinomial', or 'ignore'.
+        TODO: can we get rid of cctypes?
+        """
+        metadata_full = self.get_metadata_full(tablename)
+        cctypes_full = metadata_full['cctypes_full']
+        M_c_full = metadata_full['M_c_full']
+        raw_T_full = metadata_full['raw_T_full']
+        colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
+
+        # Now, update cctypes_full (cctypes updated later, after removing ignores).
+        for col, mapping in mappings.items():
+            cidx = M_c_full['name_to_idx'][col.lower()]
+            cctypes_full[cidx] = mapping
+
+        if cctypes_full is None:
+            cctypes_full = data_utils.guess_column_types(raw_T_full)
+        T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+
+        # variables without "_full" don't include ignored columns.
+        raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
+        T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+          
+
+        # Now, put cctypes, T, M_c, and M_r back into the DB
+        self.update_metadata(tablename, M_r, M_c, T, cctypes)
+        self.update_metadata_full(tablename, M_r_full, M_c_full, T_full, cctypes_full)
+        
+        return self.get_metadata_full(tablename)
+        
+
+    def create_btable(self, tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full):
         """
         This function is called to create a btable.
         It creates the table's persistence directory, saves data.csv and metadata.pkl.
@@ -347,12 +364,10 @@ class PersistenceLayer():
         if not os.path.exists(os.path.join(self.data_dir, tablename)):
             os.mkdir(os.path.join(self.data_dir, tablename))        
 
-        # Write csv
-        self.write_csv(tablename, csv)
-
-        # Write metadata
-        T, M_r, M_c, header = du.read_data_objects(csv_path, cctypes=cctypes)
-        metadata = dict(M_c=M_c, M_r= M_r, T=T, cctypes=cctypes)
+        # Write metadata and metadata_full
+        metadata_full = dict(M_c_full=M_c_full, M_r_full=M_r_full, T_full=T_full, cctypes_full=cctypes_full, raw_T_full=raw_T_full)
+        self.write_metadata_full(tablename, metadata_full)
+        metadata = dict(M_c=M_c, M_r= M_r, T=T, cctypes=cctypes_full)
         self.write_metadata(tablename, metadata)
 
         # Write models
@@ -365,6 +380,7 @@ class PersistenceLayer():
 
         # Add to btable name index
         self.add_btable_to_index(tablename)
+
 
     def add_models(self, tablename, model_list):
         """

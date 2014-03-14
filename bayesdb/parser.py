@@ -235,7 +235,7 @@ class Parser(object):
                     if words[3] == 'from':
                         csv_path = self.get_absolute_path(orig.split()[4])
                         return 'create_btable', \
-                               dict(tablename=tablename, crosscat_column_types=crosscat_column_types), \
+                               dict(tablename=tablename, cctypes_full=crosscat_column_types), \
                                dict(csv_path=csv_path)
                 else:
                     return 'help', self.help_create_btable()

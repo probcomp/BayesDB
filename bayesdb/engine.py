@@ -91,63 +91,43 @@ class Engine(object):
   def update_schema(self, tablename, mappings):
     """
     mappings is a dict of column name to 'continuous', 'multinomial',
-    or an int, which signifies multinomial of a specific type.
-    TODO: FIX HACKS. Currently works by reloading all the data from csv,
-    and it ignores multinomials' specific number of outcomes.
-    Also, disastrous things may happen if you update a schema after creating models.
+    or 'ignore'.
+    Requires that models are already initialized.
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
+    if self.persistence_layer.has_models(tablename):
+      raise utils.BayesDBError("Error: btable %s already has models. The schema may not be updated after models have been initialized; please either create a new btable or drop the models from this one." % tablename)
     
     msg = self.persistence_layer.update_schema(tablename, mappings)
     ret = self.show_schema(tablename)
     ret['message'] = 'Updated schema.'
     return ret
     
-  def _guess_schema(self, colnames, values, crosscat_column_types):
-    # TODO: should this be deleted in favor of using crosscat's datatype guessing?
-    # If so, then call data_utils.read_model_data_from_csv(...) in create_btable instead of data_utils.read_csv(...)
-    """Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes
-    Also make the corresponding postgres column types."""
-    postgres_coltypes = []
-    cctypes = []
-    column_data_lookup = dict(zip(colnames, numpy.array(values).T))
-    have_column_tpes = type(crosscat_column_types) == dict
-    for colname in colnames:
-      if have_column_tpes and colname in crosscat_column_types:
-        cctype = crosscat_column_types[colname]
-      else:
-        column_data = column_data_lookup[colname]
-        cctype = data_utils.guess_column_type(column_data)
-        # cctype = 'continuous'
-      cctypes.append(cctype)
-      if cctype == 'ignore':
-        postgres_coltypes.append('varchar(1000)')
-      elif cctype == 'continuous':
-        postgres_coltypes.append('float8')
-      elif cctype == 'multinomial':
-        postgres_coltypes.append('varchar(1000)')
-    return postgres_coltypes, cctypes
-        
-  def create_btable(self, tablename, csv, crosscat_column_types):
+  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None):
     """Uplooad a csv table to the predictive db.
-    Crosscat_column_types must be a dictionary mapping column names
+    cctypes must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
     column name must be present in the dictionary: default is continuous."""
+    
     ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
-    
-    csv_abs_path = self.persistence_layer.write_csv(tablename, csv)
+      
+    # variables with "_full" include ignored columns.
+    colnames_full = [h.lower().strip() for h in header]
+    raw_T_full = data_utils.convert_nans(raw_T_full)
+    if cctypes_full is None:
+      cctypes_full = data_utils.guess_column_types(raw_T_full)
+    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
-    ## Guess schema and create table
-    header, values = data_utils.read_csv(csv_abs_path, has_header=True)
-    colnames = [h.lower() for h in header]
-    values = data_utils.convert_nans(values)
-    postgres_coltypes, cctypes = self._guess_schema(colnames, values, crosscat_column_types)
-    self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, csv, cctypes, postgres_coltypes, colnames)
+    # variables without "_full" don't include ignored columns.
+    raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
+    T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+      
+    self.persistence_layer.create_btable(tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full)
 
-    return dict(columns=colnames, data=[cctypes], message='Created btable %s. Inferred schema:' % tablename)
+    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Inferred schema:' % tablename)
 
   def show_schema(self, tablename):
     if not self.persistence_layer.check_if_table_exists(tablename):

@@ -93,6 +93,13 @@ def gen_M_r_from_T(T):
     M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
     return M_r
 
+def gen_ignore_metadata(column_data):
+    return dict(
+        modeltype="ignore",
+        value_to_code=dict(),
+        code_to_value=dict(),
+        )
+
 def gen_continuous_metadata(column_data):
     return dict(
         modeltype="normal_inverse_gamma",
@@ -123,6 +130,7 @@ def gen_multinomial_metadata(column_data):
 metadata_generator_lookup = dict(
     continuous=gen_continuous_metadata,
     multinomial=gen_multinomial_metadata,
+    ignore=gen_ignore_metadata,
 )
 
 def gen_M_c_from_T(T, cctypes=None, colnames=None):
@@ -390,11 +398,12 @@ def read_data_objects(filename, max_rows=None, gen_seed=0,
     # remove excess rows
     raw_T = at_most_N_rows(raw_T, N=max_rows, gen_seed=gen_seed)
     raw_T = convert_nans(raw_T)
-    # remove ignore columns
+
     if cctypes is None:
         cctypes = ['continuous'] * len(header)
         pass
-    T_uncast_arr, cctypes, header = remove_ignore_cols(raw_T, cctypes, header)
+
+    T_uncast_arr, cctypes, header = remove_ignore_cols(raw_T, cctypes, header) # remove ignore columns
     # determine value mappings and map T to continuous castable values
     M_r = gen_M_r_from_T(T_uncast_arr)
     M_c = gen_M_c_from_T(T_uncast_arr, cctypes, colnames)
@@ -434,14 +443,18 @@ def guess_column_types(T, count_cutoff=20, ratio_cutoff=0.02):
 def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
                              cctypes=None):
     colnames, T = read_csv(filename)
-    T = at_most_N_rows(T, max_rows, gen_seed)
+    return gen_T_and_metadata(colnames, raw_T, max_rows, gen_seed, cctypes)
+
+def gen_T_and_metadata(colnames, raw_T, max_rows=None, gen_seed=0,
+                       cctypes=None):
+    T = at_most_N_rows(raw_T, max_rows, gen_seed)
     T = convert_nans(T)
     if cctypes is None:
         cctypes = guess_column_types(T)
     M_c = gen_M_c_from_T(T, cctypes, colnames)
     T = map_to_T_with_M_c(numpy.array(T), M_c)
     M_r = gen_M_r_from_T(T)
-    return T, M_r, M_c
+    return T, M_r, M_c, cctypes
 
 extract_view_count = lambda X_L: len(X_L['view_state'])
 extract_cluster_count = lambda view_state_i: view_state_i['row_partition_model']['counts']
