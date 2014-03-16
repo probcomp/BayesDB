@@ -18,6 +18,8 @@
 #   limitations under the License.
 #
 
+import pdb
+
 import numpy as np
 import pylab as p
 import os
@@ -45,7 +47,7 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
     scatter: False if histogram, True if scatterplot
     '''
-
+#    pdb.set_trace()
     if pairwise:
         gsp = gs.GridSpec(1, 1)#temp values for now.
         plots = create_pairwise_plot(colnames, data, M_c, gsp)
@@ -152,6 +154,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         groups = parsed_data['groups']
         if len(values) == 0 or len(groups) == 0:
             return
+            #Better failure here
         output = []
 
         value_lengths = [len(v) for v in values]
@@ -160,8 +163,11 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         # pad values with None, for the values lists shorter than the max-length list.
         for i in range(len(values)):
             if len(values[i]) < max_value_length:
+                print '----------'
+                print values[i]
                 values[i] += [None]*(max_value_length-len(values[i]))
-
+                print values[i]
+                print '----------'
         # create dataframe
         d = {groups[i]:values[i] for i in range(len(values))}
         df = pd.DataFrame(d)
@@ -269,19 +275,24 @@ def parse_data_for_hist(colnames, data, M_c):
                     else:
                         beans[i[1]] = [i[0]]
 
-                groups = list(set([x[1] for x in data_no_id]))
+                #groups = list(set([x[1] for x in data_no_id]))
+                groups = sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[1]]]['code_to_value'].keys())
                 output['groups'] = groups
                 output['values'] = [beans[x] for x in groups]
                 output['transpose'] = False
             else:
+                groups = sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[0]]]['code_to_value'].keys())
+                for i in groups:
+                    beans[i] = []
                 data_no_id = sort_mult_tuples(data_no_id, 0)
                 for i in data_no_id:
-                    if i[0] in beans:
-                        beans[i[0]].append(i[1])
-                    else:
-                        beans[i[0]] = [i[1]]
+                    #if i[0] in beans:
+                    beans[i[0]].append(i[1])
+                    #else:
+                    #    beans[i[0]] = [i[1]]
 
-                groups = list(set([x[0] for x in data_no_id]))
+                #groups = list(set([x[0] for x in data_no_id]))
+                print groups
                 output['groups'] = groups
                 output['values'] = [beans[x] for x in groups]
                 output['transpose'] = True
