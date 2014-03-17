@@ -160,18 +160,15 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         value_lengths = [len(v) for v in values]
         max_value_length = max(value_lengths)
         
+
         # pad values with None, for the values lists shorter than the max-length list.
         for i in range(len(values)):
             if len(values[i]) < max_value_length:
-                print '----------'
-                print values[i]
-                values[i] += [None]*(max_value_length-len(values[i]))
-                print values[i]
-                print '----------'
+                values[i] += [np.nan]*(max_value_length-len(values[i]))
+                    
         # create dataframe
         d = {groups[i]:values[i] for i in range(len(values))}
         df = pd.DataFrame(d)
-
         vert = not parsed_data['transpose']
         df.boxplot(ax=subplot, vert=vert)
 
@@ -215,8 +212,7 @@ def parse_data_for_hist(colnames, data, M_c):
         output['title'] = columns[0]
         col_idx = M_c['name_to_idx'][columns[0]]
         if M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
-            unique_labels = sort_mult_list(list(set(data_no_id)))
-
+            unique_labels = sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[0]]]['code_to_value'].keys())
             np_data = np.array(data_no_id)
             counts = []
             for label in unique_labels:
@@ -224,6 +220,7 @@ def parse_data_for_hist(colnames, data, M_c):
             output['datatype'] = 'mult1D'
             output['labels'] = unique_labels
             output['data'] = counts
+
         elif M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma':
             output['datatype'] = 'cont1D'
             output['data'] = np.array(data_no_id)
@@ -267,16 +264,15 @@ def parse_data_for_hist(colnames, data, M_c):
         elif 'normal_inverse_gamma' in types and 'symmetric_dirichlet_discrete' in types:
             output['datatype'] = 'multcont'
             beans = {}
+            #TODO combine these cases with a variable to set the thigns that are different.
             if types[0] == 'normal_inverse_gamma':                
+                groups = sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[1]]]['code_to_value'].keys())
+                for i in groups:
+                    beans[i] = []
                 data_no_id = sort_mult_tuples(data_no_id, 1)
                 for i in data_no_id:
-                    if i[1] in beans:
                         beans[i[1]].append(i[0])
-                    else:
-                        beans[i[1]] = [i[0]]
 
-                #groups = list(set([x[1] for x in data_no_id]))
-                groups = sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[1]]]['code_to_value'].keys())
                 output['groups'] = groups
                 output['values'] = [beans[x] for x in groups]
                 output['transpose'] = False
@@ -286,13 +282,8 @@ def parse_data_for_hist(colnames, data, M_c):
                     beans[i] = []
                 data_no_id = sort_mult_tuples(data_no_id, 0)
                 for i in data_no_id:
-                    #if i[0] in beans:
                     beans[i[0]].append(i[1])
-                    #else:
-                    #    beans[i[0]] = [i[1]]
 
-                #groups = list(set([x[0] for x in data_no_id]))
-                print groups
                 output['groups'] = groups
                 output['values'] = [beans[x] for x in groups]
                 output['transpose'] = True
