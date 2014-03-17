@@ -31,63 +31,128 @@ import ast
 import utils
 import functions
 import data_utils as du
+from pyparsing import *
 
 def get_conditions_from_whereclause(whereclause, M_c, T):
+  whereclause = whereclause.lower()
+  print "parsing whereclause: ", whereclause
+
+
+  ## ------------------------- whereclause grammar ----------------------------
+
+  operation = oneOf("<= >= < > =")
+  column_identifier = Word(alphanums, alphanums + "_")
+  float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
+  value = Word(alphanums + "'.")
+
+  and_literal = CaselessLiteral("and")
+
+  similarity_literal = Regex(r'similarity\sto')
+  probability_of_literal = Regex(r'probability\sof')
+  predictive_probability_of_literal = Regex(r'predictive\sprobability\sof')
+  typicality_literal = CaselessLiteral("typicality")
+
+  probability_of_function = Group(probability_of_literal.setResultsName("fun_name")+ 
+                                  column_identifier.setResultsName("column")+ 
+                                  operation.setResultsName("operation") + 
+                                  value.setResultsName("value"))
+  predictive_probability_of_function = Group(predictive_probability_of_literal.setResultsName("fun_name") +
+                                             column_identifier.setResultsName("column"))
+  similarity_function = Group(similarity_literal.setResultsName("fun_name") + 
+                              column_identifier.setResultsName("row_id"))
+  typicality_function = Group(typicality_literal.setResultsName("fun_name"))
+
+
+
+  function_literal = similarity_function | predictive_probability_of_function | typicality_function | probability_of_function
+
+  single_where_clause = Group((function_literal | column_identifier) + 
+                              operation.setResultsName("operation") + 
+                              value.setResultsName("value"))
+
+  where_clause = single_where_clause + ZeroOrMore(and_literal + single_where_clause)
+
+
+  ## --------------------------------------------------------------------------------
+
+  
+  if len(whereclause) == 0:
+    return
+ 
   ## Create conds: the list of conditions in the whereclause.
   ## List of (c_idx, op, val) tuples.
   conds = list() 
-  if len(whereclause) > 0:
-    conditions = re.split(r'and', whereclause, flags=re.IGNORECASE)
-    ## Order matters: need <= and >= before < and > and =.
-    operator_list = ['<=', '>=', '=', '>', '<']
-    operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
 
-    # TODO: parse this properly with pyparsing
-    # note that there can be more than one operator!
-    # if 1 total: we want that one. if 2 total: we want 2nd (assuming probably query on left). if 3 total: we want 2nd.
+  ## Order matters: need <= and >= before < and > and =.
+  operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
+
+  top_level_parse = where_clause.parseString(whereclause)
+  for inner_element in top_level_parse:
+    if inner_element == 'and':
+      pass
+    op = operator_map[inner_element[1]]
+   
     
-    for condition in conditions:
-      for operator_str in operator_list:
-        if operator_str in condition:
-          op_str = operator_str
-          op = operator_map[op_str]
-          break
-      vals = condition.split(op_str)
-      colname = vals[0].strip().lower()
+    # value is last element in clause - to be matched on by the first
+    raw_val = inner_element[2]
+    print "raw_val", raw_val
+    if utils.is_int(raw_val):
+  
+      val = int(raw_val)
+    elif utils.is_float(raw_val):
+      val = float(raw_val)
+    else:
+      ## val could have matching single or double quotes, which we can safely eliminate
+      ## with the following safe (string literal only) implementation of eval
+      val = ast.literal_eval(raw_val)
 
-      ## Determine what type the value is
-      raw_val = vals[1].strip()
-      if utils.is_int(raw_val):
-        val = int(raw_val)
-      elif utils.is_float(raw_val):
-        val = float(raw_val)
-      else:
-        ## val could have matching single or double quotes, which we can safely eliminate
-        ## with the following safe (string literal only) implementation of eval
-        val = ast.literal_eval(raw_val)
-
-        
-      s = functions.parse_similarity(colname, M_c, T)
-      if s is not None:
-        conds.append(((functions._similarity, s), op, val))
-        continue
-
-      t = functions.parse_row_typicality(colname)
-      if t is not None:
-        conds.append(((functions._row_typicality, None), op, val))
-        continue
-
-      p = functions.parse_predictive_probability(colname, M_c)
-      if p is not None:
-        conds.append(((functions._predictive_probability, p), op, val))
-        continue
-
-      ## If none of above query types matched, then this is a normal column query.
-      if colname.lower() in M_c['name_to_idx']:
+    # simple where column = value statement
+    if type(inner_element[0]) is str:
+      colname = inner_element[0]
+      if M_c['name_to_idx'].has_key(colname.lower()):
         conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
         continue
-        
       raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
+
+    else:
+      functon_parse = inner_element[0]
+      
+    
+    if inner_element[0].fun_name=="similarity to":
+      
+      print "similarity"
+      row_id = inner_element[0].row_id
+      target_column = None #TODO grammar doesn't support with respect to yet, only int rows
+      conds.append((functions._similarity, (row_id, target_column), op, val))
+      
+#      conds.append(((functions._similarity, functions.parse_similarity(colname, M_c, T)), op, val))
+      continue
+
+    elif inner_element[0] == "typicality":
+      print "typicality"
+#      colname = inner_element[0]
+      conds.append(((functions._row_typicality, None), op, val)) 
+      continue
+    '''
+    t = functions.parse_row_typicality(colname)
+    if t is not None:
+      conds.append(((functions._row_typicality, None), op, val))
+      continue
+    '''
+
+    p = functions.parse_predictive_probability(colname, M_c)
+    if p is not None:
+      conds.append(((functions._predictive_probability, p), op, val))
+      continue
+    '''
+    ## If none of above query types matched, then this is a normal column query.
+    if colname.lower() in M_c['name_to_idx']:
+      conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
+      continue
+    '''
+    raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
+
+  
   return conds
 
 def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend):
