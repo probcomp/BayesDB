@@ -150,8 +150,6 @@ def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list,
     return correlation
 
 
-
-
 ##############################################
 # function parsing
 ##############################################

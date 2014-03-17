@@ -77,7 +77,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
 
   
   if len(whereclause) == 0:
-    return
+    return ""
  
   ## Create conds: the list of conditions in the whereclause.
   ## List of (c_idx, op, val) tuples.
@@ -87,11 +87,11 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
 
   top_level_parse = where_clause.parseString(whereclause)
+  print top_level_parse
   for inner_element in top_level_parse:
     if inner_element == 'and':
-      pass
+      continue
     op = operator_map[inner_element[1]]
-   
     
     # value is last element in clause - to be matched on by the first
     raw_val = inner_element[2]
@@ -116,7 +116,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
 
     else:
       functon_parse = inner_element[0]
-      
     
     if inner_element[0].fun_name=="similarity to":
       
@@ -124,29 +123,26 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       row_id = inner_element[0].row_id
       target_column = None #TODO grammar doesn't support with respect to yet, only int rows
       conds.append((functions._similarity, (row_id, target_column), op, val))
-      
+      #old way using funcstions.parse_similarity:
 #      conds.append(((functions._similarity, functions.parse_similarity(colname, M_c, T)), op, val))
       continue
-#    print inner_element[0]
     elif inner_element[0].fun_name == "typicality":
       print "typicality"
-#      colname = inner_element[0]
       conds.append(((functions._row_typicality, True), op, val)) 
       continue
+    
+#    print inner_element[0]
+    if inner_element[0].fun_name == "predictive probability of":
+      print "predictive_probability_of"
+      if M_c['name_to_idx'].has_key(inner_element[0].column.lower()):
+        column_index = M_c['name_to_idx'][inner_element[0].column.lower()]
+        conds.append((functions._predictive_probability,column_index, op, val))
+        continue
+        #old way using functions.parse_predictive_probability
+#      conds.append(((functions._predictive_probability, p), op, val))
 
-    p = functions.parse_predictive_probability(colname, M_c)
-    if p is not None:
-      conds.append(((functions._predictive_probability, p), op, val))
-      continue
-    '''
-    ## If none of above query types matched, then this is a normal column query.
-    if colname.lower() in M_c['name_to_idx']:
-      conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
-      continue
-    '''
-    raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
+    raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
 
-  
   return conds
 
 def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend):
