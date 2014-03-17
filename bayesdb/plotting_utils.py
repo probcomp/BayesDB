@@ -47,7 +47,6 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
     scatter: False if histogram, True if scatterplot
     '''
-#    pdb.set_trace()
     if pairwise:
         gsp = gs.GridSpec(1, 1)#temp values for now.
         plots = create_pairwise_plot(colnames, data, M_c, gsp)
@@ -154,7 +153,6 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         groups = parsed_data['groups']
         if len(values) == 0 or len(groups) == 0:
             return
-            #Better failure here
         output = []
 
         value_lengths = [len(v) for v in values]
@@ -202,7 +200,8 @@ def parse_data_for_hist(colnames, data, M_c):
     data_no_id = [] #This will be the data with the row_ids removed if present
     if colnames[0] == 'row_id':
         columns.pop(0)
-
+    if len(data_c) == 0:
+        raise Exception('There are no datapoints that contain values from every category specified. Try excluding columns with many NaN values.')
     if len(columns) == 1:
         if colnames[0] == 'row_id':
             data_no_id = [x[1] for x in data_c]
@@ -294,22 +293,14 @@ def parse_data_for_hist(colnames, data, M_c):
     return output
 
 def create_pairwise_plot(colnames, data, M_c, gsp):
-    data_c = []
-    for i in data:
-        no_nan = True
-        for j in i:
-            if isinstance(j, float) and math.isnan(j):
-                no_nan = False
-        if no_nan:
-            data_c.append(i)
     output = {}
     columns = colnames[:]
     data_no_id = [] #This will be the data with the row_ids removed if present
     if colnames[0] == 'row_id':
         columns.pop(0)
-        data_no_id = [x[1:] for x in data_c]
+        data_no_id = [x[1:] for x in data]
     else:
-        data_no_id = data_c[:]
+        data_no_id = data[:]
 
     gsp = gs.GridSpec(len(columns), len(columns))
     for i in range(len(columns)):
