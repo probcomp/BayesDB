@@ -127,18 +127,12 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       
 #      conds.append(((functions._similarity, functions.parse_similarity(colname, M_c, T)), op, val))
       continue
-
-    elif inner_element[0] == "typicality":
+#    print inner_element[0]
+    elif inner_element[0].fun_name == "typicality":
       print "typicality"
 #      colname = inner_element[0]
-      conds.append(((functions._row_typicality, None), op, val)) 
+      conds.append(((functions._row_typicality, True), op, val)) 
       continue
-    '''
-    t = functions.parse_row_typicality(colname)
-    if t is not None:
-      conds.append(((functions._row_typicality, None), op, val))
-      continue
-    '''
 
     p = functions.parse_predictive_probability(colname, M_c)
     if p is not None:
