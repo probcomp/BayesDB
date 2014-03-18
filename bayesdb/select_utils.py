@@ -45,6 +45,10 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   value = QuotedString('"', unquoteResults=False) | QuotedString("'", unquoteResults=False) | float_number
   and_literal = CaselessLiteral("and")
 
+  row_identifier = Word(nums) | Group( column_identifier.setResultsName("column") + 
+                                     operation.setResultsName("op") + 
+                                     value.setResultsName("value"))
+
   similarity_literal = Regex(r'similarity\sto')
   probability_of_literal = Regex(r'probability\sof')
   predictive_probability_of_literal = Regex(r'predictive\sprobability\sof')
@@ -60,10 +64,10 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
                                              column_identifier.setResultsName("column"))
   with_respect_to_clause = Group(with_respect_to_literal.setResultsName("literal") + 
                                  column_identifier.setResultsName("column"))
-
   similarity_function = Group(similarity_literal.setResultsName("fun_name") + 
-                              column_identifier.setResultsName("row_id") + 
-                              Optional(with_respect_to_clause).setResultsName('respect_to'))
+                            row_identifier.setResultsName("row_id") + 
+                            Optional(with_respect_to_clause))
+
   typicality_function = Group(typicality_literal.setResultsName("fun_name"))
 
   function_literal = similarity_function | predictive_probability_of_function | typicality_function | probability_of_function
@@ -71,10 +75,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   single_where_clause = Group((function_literal | column_identifier) + operation + value)
 
   where_clause = single_where_clause + ZeroOrMore(and_literal + single_where_clause).leaveWhitespace()
-
-
   ## --------------------------------------------------------------------------------
-
   
   if len(whereclause) == 0:
     return ""
@@ -93,7 +94,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       continue
     op = operator_map[inner_element[1]]
     
-    # value is last element in clause - to be matched on by the first
     raw_val = inner_element[2]
     print "raw_val", raw_val
     if utils.is_int(raw_val):
@@ -107,7 +107,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       val = ast.literal_eval(raw_val)
       # TODO name = 'val'
 
-    # simple where column = value statement
+    ## simple where column = value statement
     if type(inner_element[0]) is str:
       colname = inner_element[0]
       if M_c['name_to_idx'].has_key(colname.lower()):
@@ -121,17 +121,35 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
     if inner_element[0].fun_name=="similarity to":
       
       print "similarity"
-      row_id = int(inner_element[0].row_id)
+      print inner_element[0]
+      row_id = inner_element[0].row_id
+      
+      ## case where row_id is simiple
+      if type(row_id) == str:
+        target_row_id = int(row_id)
+
+      ## case where row_id is of the form "column_name = value"
+      else:
+        column_name = row_id.column
+        column_value = ast.literal_eval(row_id.value)
+        
+        ## look up row_id where column_name has column_value
+        column_index = M_c['name_to_idx'][column_name.lower()]
+        for row_id, T_row in enumerate(T):
+          row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
+          if row_values[column_index] == where_val:
+            target_row_id = row_id
+            break
+        
+        
       respect_to_clause = inner_element[0].respect_to
 
       target_column = None
       if respect_to_clause != '':
         target_column = M_c['name_to_idx'][respect_to_clause[0][1]] #TODO should be able to fix double index
 
-        
-      
-      conds.append(((functions._similarity, (row_id, target_column)), op, val))
-      #old way using funcstions.parse_similarity:
+      conds.append(((functions._similarity, (target_row_id, target_column)), op, val))
+      ## old way using funcstions.parse_similarity:
 #      conds.append(((functions._similarity, functions.parse_similarity(colname, M_c, T)), op, val))
       continue
     elif inner_element[0].fun_name == "typicality":
@@ -139,7 +157,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       conds.append(((functions._row_typicality, True), op, val)) 
       continue
     
-#    print inner_element[0]
     if inner_element[0].fun_name == "predictive probability of":
       print "predictive_probability_of"
       if M_c['name_to_idx'].has_key(inner_element[0].column.lower()):
