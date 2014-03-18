@@ -31,7 +31,6 @@ import utils
 import functions
 import data_utils as du
 import math
-import statsmodels.graphics.boxplots as smplt
 
 def turn_off_labels(subplot):
     subplot.axes.get_xaxis().set_visible(False)
@@ -45,13 +44,12 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
     scatter: False if histogram, True if scatterplot
     '''
-
     if pairwise:
         gsp = gs.GridSpec(1, 1)#temp values for now.
         plots = create_pairwise_plot(colnames, data, M_c, gsp)
     else:
         f, ax = p.subplots()
-        create_plot(parse_data_for_hist(colnames, data, M_c), ax)
+        create_plot(parse_data_for_hist(colnames, data, M_c), ax, horizontal=True)
     if filename:
         p.savefig(filename)
         p.close()
@@ -150,30 +148,18 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         # Multinomial is always first. parsed_data['transpose'] is true if multinomial should be on Y axis.
         values = parsed_data['values']
         groups = parsed_data['groups']
-        if len(values) == 0 or len(groups) == 0:
-            return
-        output = []
-
-        value_lengths = [len(v) for v in values]
-        max_value_length = max(value_lengths)
-        
-        # pad values with None, for the values lists shorter than the max-length list.
-        for i in range(len(values)):
-            if len(values[i]) < max_value_length:
-                values[i] += [None]*(max_value_length-len(values[i]))
-
-        # create dataframe
-        d = {groups[i]:values[i] for i in range(len(values))}
-        df = pd.DataFrame(d)
-
         vert = not parsed_data['transpose']
-        df.boxplot(ax=subplot, vert=vert)
+        subplot.boxplot(values, vert=vert)
+       
 
-        if not compress:
-            subplot.set_xlabel(parsed_data['axis_label_x'])
-            subplot.set_ylabel(parsed_data['axis_label_y'])
-        else:
+        if compress:
             turn_off_labels(subplot)
+        else:
+            if vert:
+                xtickNames = p.setp(subplot, xticklabels=groups)
+                p.setp(xtickNames, rotation=90, fontsize=8)
+            else:
+                p.setp(subplot, yticklabels=groups)
 
     else:
         raise Exception('Unexpected data type, or too many arguments')
@@ -199,7 +185,8 @@ def parse_data_for_hist(colnames, data, M_c):
     data_no_id = [] #This will be the data with the row_ids removed if present
     if colnames[0] == 'row_id':
         columns.pop(0)
-
+    if len(data_c) == 0:
+        raise Exception('There are no datapoints that contain values from every category specified. Try excluding columns with many NaN values.')
     if len(columns) == 1:
         if colnames[0] == 'row_id':
             data_no_id = [x[1] for x in data_c]
@@ -209,8 +196,7 @@ def parse_data_for_hist(colnames, data, M_c):
         output['title'] = columns[0]
         col_idx = M_c['name_to_idx'][columns[0]]
         if M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
-            unique_labels = sort_mult_list(list(set(data_no_id)))
-
+            unique_labels = sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[0]]]['code_to_value'].keys())#changed from code_to_value to value_to_code
             np_data = np.array(data_no_id)
             counts = []
             for label in unique_labels:
@@ -218,6 +204,7 @@ def parse_data_for_hist(colnames, data, M_c):
             output['datatype'] = 'mult1D'
             output['labels'] = unique_labels
             output['data'] = counts
+
         elif M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma':
             output['datatype'] = 'cont1D'
             output['data'] = np.array(data_no_id)
@@ -250,9 +237,10 @@ def parse_data_for_hist(colnames, data, M_c):
                     counts[i]=1
             unique_xs = sort_mult_list(list(M_c['column_metadata'][col_idx_2]['code_to_value'].keys()))
             unique_ys = sort_mult_list(list(M_c['column_metadata'][col_idx_1]['code_to_value'].keys()))
+            unique_ys.reverse()#Hack to reverse the y's
             counts_array = numpy.zeros(shape=(len(unique_ys), len(unique_xs)))
             for i in counts:
-                counts_array[M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]]] [M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]]] = float(counts[i])
+                counts_array[len(unique_ys) - 1 - M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]]] [M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]]] = float(counts[i])#hack to reverse ys
             output['datatype'] = 'multmult'
             output['data'] = counts_array
             output['labels_x'] = unique_xs
@@ -261,27 +249,26 @@ def parse_data_for_hist(colnames, data, M_c):
         elif 'normal_inverse_gamma' in types and 'symmetric_dirichlet_discrete' in types:
             output['datatype'] = 'multcont'
             beans = {}
+            #TODO combine these cases with a variable to set the thigns that are different.
             if types[0] == 'normal_inverse_gamma':                
+                groups = sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[1]]]['code_to_value'].keys())
+                for i in groups:
+                    beans[i] = []
                 data_no_id = sort_mult_tuples(data_no_id, 1)
                 for i in data_no_id:
-                    if i[1] in beans:
                         beans[i[1]].append(i[0])
-                    else:
-                        beans[i[1]] = [i[0]]
 
-                groups = list(set([x[1] for x in data_no_id]))
                 output['groups'] = groups
                 output['values'] = [beans[x] for x in groups]
                 output['transpose'] = False
             else:
+                groups = sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[0]]]['code_to_value'].keys())
+                for i in groups:
+                    beans[i] = []
                 data_no_id = sort_mult_tuples(data_no_id, 0)
                 for i in data_no_id:
-                    if i[0] in beans:
-                        beans[i[0]].append(i[1])
-                    else:
-                        beans[i[0]] = [i[1]]
+                    beans[i[0]].append(i[1])
 
-                groups = list(set([x[0] for x in data_no_id]))
                 output['groups'] = groups
                 output['values'] = [beans[x] for x in groups]
                 output['transpose'] = True
@@ -292,22 +279,14 @@ def parse_data_for_hist(colnames, data, M_c):
     return output
 
 def create_pairwise_plot(colnames, data, M_c, gsp):
-    data_c = []
-    for i in data:
-        no_nan = True
-        for j in i:
-            if isinstance(j, float) and math.isnan(j):
-                no_nan = False
-        if no_nan:
-            data_c.append(i)
     output = {}
     columns = colnames[:]
     data_no_id = [] #This will be the data with the row_ids removed if present
     if colnames[0] == 'row_id':
         columns.pop(0)
-        data_no_id = [x[1:] for x in data_c]
+        data_no_id = [x[1:] for x in data]
     else:
-        data_no_id = data_c[:]
+        data_no_id = data[:]
 
     gsp = gs.GridSpec(len(columns), len(columns))
     for i in range(len(columns)):
@@ -346,6 +325,8 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
 
 #Takes a list of multinomial variables and if they are all numeric, it sorts the list.
 def sort_mult_list(mult):
+    #testing this
+    return mult
     num_mult = []
     for i in mult:
         try:
@@ -358,6 +339,9 @@ def sort_mult_list(mult):
 #it returns a list of tuples sorted by the value at ind, which has been converted to an int.
 def sort_mult_tuples(mult, ind):
 
+    #testing this next line
+    return mult
+
     def sort_func(tup):
         return float(tup[ind])
 
@@ -369,7 +353,6 @@ def sort_mult_tuples(mult, ind):
             num_mult.append(tuple(i_l)) 
         except ValueError:
             return mult
-
     return sorted(num_mult, key = sort_func)
 
 def plot_matrix(matrix, column_names, title='', filename=None):
