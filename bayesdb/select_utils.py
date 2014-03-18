@@ -39,12 +39,10 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
 
 
   ## ------------------------- whereclause grammar ----------------------------
-
   operation = oneOf("<= >= < > =")
-  column_identifier = Word(alphanums, alphanums + "_")
+  column_identifier = Word(alphanums , alphanums + "_")
   float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
-  value = Word(alphanums + "'.")
-
+  value = QuotedString('"', unquoteResults=False) | QuotedString("'", unquoteResults=False) | float_number
   and_literal = CaselessLiteral("and")
 
   similarity_literal = Regex(r'similarity\sto')
@@ -52,25 +50,27 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   predictive_probability_of_literal = Regex(r'predictive\sprobability\sof')
   typicality_literal = CaselessLiteral("typicality")
 
+  with_respect_to_literal = Regex(r'with\srespect\sto')
+
   probability_of_function = Group(probability_of_literal.setResultsName("fun_name")+ 
                                   column_identifier.setResultsName("column")+ 
                                   operation.setResultsName("operation") + 
                                   value.setResultsName("value"))
   predictive_probability_of_function = Group(predictive_probability_of_literal.setResultsName("fun_name") +
                                              column_identifier.setResultsName("column"))
+  with_respect_to_clause = Group(with_respect_to_literal.setResultsName("literal") + 
+                                 column_identifier.setResultsName("column"))
+
   similarity_function = Group(similarity_literal.setResultsName("fun_name") + 
-                              column_identifier.setResultsName("row_id"))
+                              column_identifier.setResultsName("row_id") + 
+                              Optional(with_respect_to_clause).setResultsName('respect_to'))
   typicality_function = Group(typicality_literal.setResultsName("fun_name"))
-
-
 
   function_literal = similarity_function | predictive_probability_of_function | typicality_function | probability_of_function
 
-  single_where_clause = Group((function_literal | column_identifier) + 
-                              operation.setResultsName("operation") + 
-                              value.setResultsName("value"))
+  single_where_clause = Group((function_literal | column_identifier) + operation + value)
 
-  where_clause = single_where_clause + ZeroOrMore(and_literal + single_where_clause)
+  where_clause = single_where_clause + ZeroOrMore(and_literal + single_where_clause).leaveWhitespace()
 
 
   ## --------------------------------------------------------------------------------
@@ -105,6 +105,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       ## val could have matching single or double quotes, which we can safely eliminate
       ## with the following safe (string literal only) implementation of eval
       val = ast.literal_eval(raw_val)
+      # TODO name = 'val'
 
     # simple where column = value statement
     if type(inner_element[0]) is str:
@@ -120,9 +121,16 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
     if inner_element[0].fun_name=="similarity to":
       
       print "similarity"
-      row_id = inner_element[0].row_id
-      target_column = None #TODO grammar doesn't support with respect to yet, only int rows
-      conds.append((functions._similarity, (row_id, target_column), op, val))
+      row_id = int(inner_element[0].row_id)
+      respect_to_clause = inner_element[0].respect_to
+
+      target_column = None
+      if respect_to_clause != '':
+        target_column = M_c['name_to_idx'][respect_to_clause[0][1]] #TODO should be able to fix double index
+
+        
+      
+      conds.append(((functions._similarity, (row_id, target_column)), op, val))
       #old way using funcstions.parse_similarity:
 #      conds.append(((functions._similarity, functions.parse_similarity(colname, M_c, T)), op, val))
       continue
@@ -136,7 +144,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       print "predictive_probability_of"
       if M_c['name_to_idx'].has_key(inner_element[0].column.lower()):
         column_index = M_c['name_to_idx'][inner_element[0].column.lower()]
-        conds.append((functions._predictive_probability,column_index, op, val))
+        conds.append(((functions._predictive_probability,column_index), op, val))
         continue
         #old way using functions.parse_predictive_probability
 #      conds.append(((functions._predictive_probability, p), op, val))
