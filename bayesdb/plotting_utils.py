@@ -18,8 +18,6 @@
 #   limitations under the License.
 #
 
-import pdb
-
 import numpy as np
 import pylab as p
 import os
