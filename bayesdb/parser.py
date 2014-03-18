@@ -621,18 +621,14 @@ class Parser(object):
                 if 'continuous' in vals[1] or 'numerical' in vals[1]:
                     datatype = 'continuous'
                 elif 'multinomial' in vals[1] or 'categorical' in vals[1]:
-                    m = re.search(r'\((?P<num>[^\)]+)\)', vals[1])
-                    if m:
-                        datatype = int(m.group('num'))
-                    else:
-                        datatype = 'multinomial'
+                    datatype = 'multinomial'
                 elif 'key' in vals[1]:
                     datatype = 'key'
                 elif 'ignore' in vals[1]:
                     datatype = 'ignore'
                 else:
                     return 'help', self.help_update_datatypes()
-                mappings[vals[0]] = datatype
+                mappings[vals[0].strip().lower()] = datatype
             return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
 ############################################################

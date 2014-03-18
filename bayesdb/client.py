@@ -213,7 +213,7 @@ class Client(object):
                 plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], client_dict['pairwise'])
                 return self.pretty_print(result)
             else:
-                if not result['message']:
+                if 'message' not in result or not result['message']:
                     result['message'] = ""
                 result['message'] = "Your query indicates that you would like to make a plot, but in order to do so, you must either enable plotting in a window or specify a filename to save to by appending 'SAVE TO <filename>' to this command.\n" + result['message']
 

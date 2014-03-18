@@ -133,10 +133,10 @@ class Engine(object):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     
-    metadata = self.persistence_layer.get_metadata(tablename)
-    colnames = utils.get_all_column_names_in_original_order(metadata['M_c'])
-    cctypes = metadata['cctypes']
-    return dict(columns=colnames, data=[cctypes])
+    metadata_full = self.persistence_layer.get_metadata_full(tablename)
+    colnames = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
+    cctypes_full = metadata_full['cctypes_full']
+    return dict(columns=colnames, data=[cctypes_full])
 
   def save_models(self, tablename):    
     """Opposite of load models! Returns the models, including the contents, which

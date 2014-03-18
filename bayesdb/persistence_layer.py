@@ -344,13 +344,12 @@ class PersistenceLayer():
             cidx = M_c_full['name_to_idx'][col.lower()]
             cctypes_full[cidx] = mapping
 
+        # Make sure there isn't more than one key.
         assert len(filter(lambda x: x=='key', cctypes_full)) <= 1
 
-        if cctypes_full is None:
-            cctypes_full = data_utils.guess_column_types(raw_T_full)
         T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
-        # variables without "_full" don't include ignored columns.
+        # Variables without "_full" don't include ignored columns.
         raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
         T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
           
