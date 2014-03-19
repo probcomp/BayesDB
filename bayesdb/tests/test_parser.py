@@ -41,7 +41,7 @@ def test_initialize_models():
 def test_create_btable():
     method, args, client_dict = parser.parse_statement('create btable t from fn')
     assert method == 'create_btable'
-    assert args == dict(tablename='t', crosscat_column_types=None)
+    assert args == dict(tablename='t', cctypes_full=None)
     assert client_dict == dict(csv_path=os.path.join(os.getcwd(), 'fn'))
 
 def test_drop_btable():

@@ -239,7 +239,7 @@ class Parser(object):
                     if words[3] == 'from':
                         csv_path = self.get_absolute_path(orig.split()[4])
                         return 'create_btable', \
-                               dict(tablename=tablename, crosscat_column_types=crosscat_column_types), \
+                               dict(tablename=tablename, cctypes_full=crosscat_column_types), \
                                dict(csv_path=csv_path)
                 else:
                     return 'help', self.help_create_btable()
@@ -605,7 +605,7 @@ class Parser(object):
 
             
     def help_update_schema(self):
-        return "UPDATE SCHEMA FOR <btable> SET (col0=numerical|categorical|key|ignore)[,...]: must be done before creating models or analyzing."
+        return "UPDATE SCHEMA FOR <btable> SET [<column_name>=(numerical|categorical|key|ignore)[,...]]: must be done before creating models or analyzing."
         
     def parse_update_schema(self, words, orig):
         match = re.search(r"""

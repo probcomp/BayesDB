@@ -28,6 +28,7 @@ import time
 import ast
 
 import utils
+import data_utils
 import plotting_utils
 import api_utils
 from parser import Parser
@@ -180,9 +181,9 @@ class Client(object):
                     raise utils.BayesDBError('Models file %s could not be found.' % pklpath)
             args_dict['models'] = models
         elif method_name == 'create_btable':
-            f = open(client_dict['csv_path'], 'r')
-            args_dict['csv'] = f.read()
-            f.close()
+            header, rows = data_utils.read_csv(client_dict['csv_path'])
+            args_dict['header'] = header
+            args_dict['raw_T_full'] = rows
 
 
         ## Call engine.
