@@ -35,8 +35,6 @@ from pyparsing import *
 
 def get_conditions_from_whereclause(whereclause, M_c, T):
   whereclause = whereclause.lower()
-  print "parsing whereclause: ", whereclause
-
 
   ## ------------------------- whereclause grammar ----------------------------
   operation = oneOf("<= >= < > =")
@@ -88,14 +86,12 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
 
   top_level_parse = where_clause.parseString(whereclause)
-  print top_level_parse
   for inner_element in top_level_parse:
     if inner_element == 'and':
       continue
     op = operator_map[inner_element[1]]
     
     raw_val = inner_element[2]
-    print "raw_val", raw_val
     if utils.is_int(raw_val):
   
       val = int(raw_val)
@@ -105,7 +101,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       ## val could have matching single or double quotes, which we can safely eliminate
       ## with the following safe (string literal only) implementation of eval
       val = ast.literal_eval(raw_val)
-      # TODO name = 'val'
 
     ## simple where column = value statement
     if type(inner_element[0]) is str:
@@ -120,8 +115,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
     
     if inner_element[0].fun_name=="similarity to":
       
-      print "similarity"
-      print inner_element[0]
       row_id = inner_element[0].row_id
       
       ## case where row_id is simiple
@@ -141,7 +134,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
             target_row_id = row_id
             break
         
-        
       respect_to_clause = inner_element[0].respect_to
 
       target_column = None
@@ -149,22 +141,17 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
         target_column = M_c['name_to_idx'][respect_to_clause[0][1]] #TODO should be able to fix double index
 
       conds.append(((functions._similarity, (target_row_id, target_column)), op, val))
-      ## old way using funcstions.parse_similarity:
-#      conds.append(((functions._similarity, functions.parse_similarity(colname, M_c, T)), op, val))
+
       continue
     elif inner_element[0].fun_name == "typicality":
-      print "typicality"
       conds.append(((functions._row_typicality, True), op, val)) 
       continue
     
     if inner_element[0].fun_name == "predictive probability of":
-      print "predictive_probability_of"
       if M_c['name_to_idx'].has_key(inner_element[0].column.lower()):
         column_index = M_c['name_to_idx'][inner_element[0].column.lower()]
         conds.append(((functions._predictive_probability,column_index), op, val))
         continue
-        #old way using functions.parse_predictive_probability
-#      conds.append(((functions._predictive_probability, p), op, val))
 
     raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
 
