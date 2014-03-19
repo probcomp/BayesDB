@@ -37,6 +37,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   whereclause = whereclause.lower()
 
   ## ------------------------- whereclause grammar ----------------------------
+  # TODO outside function
   operation = oneOf("<= >= < > =")
   column_identifier = Word(alphanums , alphanums + "_")
   float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
@@ -54,10 +55,10 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
 
   with_respect_to_literal = Regex(r'with\srespect\sto')
 
-  probability_of_function = Group(probability_of_literal.setResultsName("fun_name")+ 
-                                  column_identifier.setResultsName("column")+ 
-                                  operation.setResultsName("operation") + 
-                                  value.setResultsName("value"))
+#  probability_of_function = Group(probability_of_literal.setResultsName("fun_name")+ 
+#                                  column_identifier.setResultsName("column")+ 
+#                                  operation.setResultsName("operation") + 
+#                                  value.setResultsName("value"))
   predictive_probability_of_function = Group(predictive_probability_of_literal.setResultsName("fun_name") +
                                              column_identifier.setResultsName("column"))
   with_respect_to_clause = Group(with_respect_to_literal.setResultsName("literal") + 
@@ -68,7 +69,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
 
   typicality_function = Group(typicality_literal.setResultsName("fun_name"))
 
-  function_literal = similarity_function | predictive_probability_of_function | typicality_function | probability_of_function
+  function_literal = similarity_function | predictive_probability_of_function | typicality_function
 
   single_where_clause = Group((function_literal | column_identifier) + operation + value)
 

@@ -24,7 +24,6 @@ import pickle
 import gzip
 import utils
 import os
-import pyparsing
 
 class Parser(object):
     def __init__(self):
@@ -72,11 +71,8 @@ class Parser(object):
             return
         if bql_statement_string[-1] == ';':
             bql_statement_string = bql_statement_string[:-1]
-
-        
         
         words = bql_statement_string.lower().split()
-
         if len(words) >= 1 and words[0] == 'help':
             print "Welcome to BQL help. Here is a list of BQL commands and their syntax:\n"
             for method_name in sorted(self.method_names):
