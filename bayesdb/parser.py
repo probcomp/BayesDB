@@ -35,7 +35,7 @@ class Parser(object):
     def parse(self, bql_string):
         """
         Accepts a large chunk of BQL (such as a file containing many BQL statements)
-        as a string, and returns individual SQL statements as a list of strings.
+        as a string, and returns individual BQL statements as a list of strings.
 
         Uses semicolons to split statements.
         """
@@ -208,7 +208,7 @@ class Parser(object):
             (?P<num_models>[^\s]+)
             \s+model(s)?\s+for\s+
             (?P<btable>[^\s]+)
-            (\s+with\s+config\s+(?P<model_config>)$)?
+            (\s+with\s+config\s+(?P<model_config>.*))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'initialize' or (words[0] == 'create' and len(words) >= 2 and words[1] != 'models'):
