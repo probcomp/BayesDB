@@ -191,7 +191,6 @@ class Engine(object):
 
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    max_modelid = self.persistence_layer.get_max_model_id(tablename)
 
     # Set model configuration parameters.
     if type(model_config) == str and model_config.lower() == 'naive bayes':
@@ -211,6 +210,11 @@ class Engine(object):
                           row_initialization='from_the_prior')
     else:
       raise utils.BayesDBError("Invalid model config")
+
+    # Make sure the model config matches existing model config, if there are other models.
+    existing_model_config = self.persistence_layer.get_model_config(tablename)
+    if existing_model_config is not None and existing_model_config != model_config:
+      raise utils.BayesDBError("Error: model config must match existing model config: %s" % str(existing_model_config))
       
     # Call initialize on backend
     X_L_list, X_D_list = self.call_backend('initialize',
