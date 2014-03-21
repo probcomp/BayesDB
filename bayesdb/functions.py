@@ -41,12 +41,18 @@ import data_utils as du
 # f(args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine)
 #
 # ESTIMATE COLUMNS
+#
+#
+# First argument of each of these functions is the function-specific argument list,
+# which is parsed from parse_<function_name>(), also in this file.
+#
 ##
 
 ###################################################################
 # NORMAL FUNCTIONS (have a separate output value for each row: can ORDER BY, SELECT, etc.)
 ###################################################################
-  
+
+
 def _column(column_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine):
     col_idx = column_args
     return data_values[col_idx]
@@ -54,7 +60,6 @@ def _column(column_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine
 def _row_id(args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine):
     return row_id
 
-# similarity_arge are from parse_similarity
 def _similarity(similarity_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine):
     target_row_id, target_column = similarity_args
     return engine.call_backend('similarity', dict(M_c=M_c, X_L_list=X_L_list, X_D_list=X_D_list, given_row_id=row_id, target_row_id=target_row_id, target_columns=target_column))

@@ -570,6 +570,7 @@ class Parser(object):
     def parse_estimate_pairwise(self, words, orig):
         match = re.search(r"""
             estimate\s+pairwise\s+
+            (?P<row>row\s+)?
             (?P<functionname>.*?((?=\sfrom)))
             \s*from\s+
             (?P<btable>[^\s]+)
@@ -582,6 +583,7 @@ class Parser(object):
                 return 'help', self.help_estimate_pairwise()
         else:
             tablename = match.group('btable').strip()
+            row = match.group('row') is not None
             function_name = match.group('functionname').strip().lower()
             if function_name not in ["mutual information", "correlation", "dependence probability"]:
                 return 'help', self.help_estimate_pairwise()
