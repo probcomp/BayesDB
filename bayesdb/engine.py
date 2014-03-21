@@ -300,8 +300,8 @@ class Engine(object):
     X_D_list = [models[i]['X_D'] for i in modelids]
 
     first_model = models[modelids[0]]
-    if 'kernel_list' in first_model:
-      kernel_list = first_model['kernel_list']
+    if 'model_config' in first_model and 'kernel_list' in first_model['model_config']:
+      kernel_list = first_model['model_config']['kernel_list']
     else:
       kernel_list = () # default kernel list
 
