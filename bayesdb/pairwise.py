@@ -134,7 +134,7 @@ def get_connected_components(matrix, component_threshold):
             components.append(component)
     return components
 
-def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', confidence=None, limit=None, engine=None, column_names=None, component_threshold=None):
+def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', limit=None, engine=None, column_names=None, component_threshold=None):
     """
     Compute a matrix. In using a function that requires engine (currently only
     mutual information), engine must not be None.
@@ -145,7 +145,6 @@ def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, t
 
     # Get appropriate column information from column_names
     column_names, column_indices = get_columns(column_names, M_c)
-    num_cols = len(column_names)
 
     # Actually compute each function between each pair of columns
     matrix = compute_raw_column_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, engine, column_indices)
@@ -168,3 +167,40 @@ def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, t
     column_names_reordered = column_names[reorder_indices]
             
     return matrix, column_names_reordered, components
+
+def generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', engine=None, row_indices=None, component_threshold=None):
+    """
+    Compute a matrix. In using a function that requires engine (currently only
+    mutual information), engine must not be None.
+    """
+
+    # Get appropriate function
+    function = parse_pairwise_function(function_name, column=False)
+
+    # Get appropriate row list
+    # TODO
+    if row_indices is None:
+        row_indices = numpy.array(range(len(T)))
+
+    # Actually compute each function between each pair of columns
+    matrix = compute_raw_row_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, engine, row_indices)
+
+    if component_threshold is not None:
+        # Components is a list of lists, where the inner list contains the ids (into the matrix)
+        # of the columns in each component.
+        components = get_connected_components(matrix, component_threshold)
+        
+        # Now, convert the components from their matrix indices to their btable indices
+        new_comps = []
+        for comp in components:
+            new_comps.append([row_indices[c] for c in comp])
+        components = new_comps
+    else:
+        components = None
+
+    # reorder the matrix
+    matrix, reorder_indices = reorder_indices_by_cluster(matrix)
+    row_indices_reordered = row_indices[reorder_indices]
+            
+    return matrix, row_indices_reordered, components
+    

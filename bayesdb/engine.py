@@ -552,11 +552,7 @@ class Engine(object):
     
     return {'columns': column_names}
 
-  def estimate_pairwise_row(self, tablename, function_name, threshold):
-    # TODO
-    pass
-  
-  def estimate_pairwise(self, tablename, function_name, column_list=None, components_name=None, threshold=None, row=False):
+  def estimate_pairwise_row(self, tablename, function_name, row_list, components_name=None, threshold=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
@@ -564,9 +560,38 @@ class Engine(object):
     if len(X_L_list) == 0:
       raise utils.BayesDBNoModelsError(tablename)
 
-    if row:
-      self.estimate_pairwise_row(tablename, function_name, threshold)
+    # TODO: deal with row_list
     
+    # Do the heavy lifting: generate the matrix itself
+    matrix, row_indices_reordered, components = pairwise.generate_pairwise_row_matrix(   \
+        function_name, X_L_list, X_D_list, M_c, T, tablename,
+        engine=self, row_indices=row_list, component_threshold=threshold)
+    
+    title = 'Pairwise row %s for %s' % (function_name, tablename)      
+    ret = dict(
+      matrix=matrix,
+      column_names=row_indices_reordered, # this is called column_names so that the plotting code displays them
+      title=title,
+      message = "Created " + title
+      )
+
+    # Create new btables from connected components (like into), if desired. Overwrites old ones with same name.
+    if components is not None:
+      # TODO
+      ret['components'] = components
+      #ret['column_lists'] = component_name_tuples
+
+    return ret
+    
+  
+  def estimate_pairwise(self, tablename, function_name, column_list=None, components_name=None, threshold=None):
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    if len(X_L_list) == 0:
+      raise utils.BayesDBNoModelsError(tablename)
+
     if column_list:
       column_names = self.persistence_layer.get_column_list(tablename, column_list)
       if len(column_names) == 0:

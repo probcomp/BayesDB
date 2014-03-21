@@ -563,14 +563,48 @@ class Parser(object):
 
             return 'estimate_columns', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
                                             limit=limit, order_by=order_by, name=name), None
-            
+
+    def help_estimate_pairwise_row(self):
+        return "ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]: estimate a pairwise function of columns."
+
+    def parse_estimate_pairwise_row(self, words, orig):
+        match = re.search(r"""
+            estimate\s+pairwise\s+row\s+
+            (?P<functionname>.*?((?=\sfrom)))
+            \s*from\s+
+            (?P<btable>[^\s]+)
+            (\s+for\s+rows\s+(?P<rows>[^\s]+))?
+            (\s+save\s+to\s+(?P<filename>[^\s]+))?
+            (\s+save\s+connected\s+components\s+with\s+threshold\s+(?P<threshold>[^\s]+)\s+(as|into)\s+(?P<components_name>[^\s]+))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'estimate' and words[1] == 'pairwise':
+                return 'help', self.help_estimate_pairwise()
+        else:
+            tablename = match.group('btable').strip()
+            function_name = match.group('functionname').strip().lower()
+            if function_name not in ["similarity"]:
+                return 'help', self.help_estimate_pairwise()
+            filename = match.group('filename') # Could be None
+            row_list = match.group('rows') # Could be None
+            if match.group('components_name') and match.group('threshold'):
+                components_name = match.group('components_name')
+                threshold = float(match.group('threshold'))
+            else:
+                components_name = None
+                threshold = None
+            return 'estimate_pairwise_row', \
+              dict(tablename=tablename, function_name=function_name,
+                   row_list=row_list, components_name=components_name, threshold=threshold), \
+              dict(filename=filename)
+
+        
     def help_estimate_pairwise(self):
         return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <columnlist>]: estimate a pairwise function of columns."
         
     def parse_estimate_pairwise(self, words, orig):
         match = re.search(r"""
             estimate\s+pairwise\s+
-            (?P<row>row\s+)?
             (?P<functionname>.*?((?=\sfrom)))
             \s*from\s+
             (?P<btable>[^\s]+)
@@ -583,10 +617,8 @@ class Parser(object):
                 return 'help', self.help_estimate_pairwise()
         else:
             tablename = match.group('btable').strip()
-            row = match.group('row') is not None
             function_name = match.group('functionname').strip().lower()
-            if row and function_name.split()[0] not in ["similarity"] or \
-               not row and function_name not in ["mutual information", "correlation", "dependence probability"]:
+            if function_name not in ["mutual information", "correlation", "dependence probability"]:
                 return 'help', self.help_estimate_pairwise()
             filename = match.group('filename') # Could be None
             column_list = match.group('columns') # Could be None
@@ -598,7 +630,7 @@ class Parser(object):
                 threshold = None
             return 'estimate_pairwise', \
               dict(tablename=tablename, function_name=function_name,
-                   column_list=column_list, components_name=components_name, threshold=threshold, row=row), \
+                   column_list=column_list, components_name=components_name, threshold=threshold), \
               dict(filename=filename)
 
 
