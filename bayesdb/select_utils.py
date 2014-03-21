@@ -55,10 +55,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
 
   with_respect_to_literal = Regex(r'with\srespect\sto')
 
-#  probability_of_function = Group(probability_of_literal.setResultsName("fun_name")+ 
-#                                  column_identifier.setResultsName("column")+ 
-#                                  operation.setResultsName("operation") + 
-#                                  value.setResultsName("value"))
   predictive_probability_of_function = Group(predictive_probability_of_literal.setResultsName("fun_name") +
                                              column_identifier.setResultsName("column"))
   with_respect_to_clause = Group(with_respect_to_literal.setResultsName("literal") + 
@@ -83,7 +79,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   ## List of (c_idx, op, val) tuples.
   conds = list() 
 
-  ## Order matters: need <= and >= before < and > and =.
   operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
 
   top_level_parse = where_clause.parseString(whereclause)
