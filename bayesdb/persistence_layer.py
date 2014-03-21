@@ -119,6 +119,18 @@ class PersistenceLayer():
         pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
         metadata_f.close()
 
+    def get_model_config(self, tablename):
+        """
+        Just loads one model, and gets the model_config from it.
+        """
+        model = self.get_models(tablename, modelid=self.get_max_model_id(tablename))
+        if model is None:
+            return None
+        if 'model_config' in model:
+            return model['model_config']
+        else:
+            return None
+
     def get_models(self, tablename, modelid=None):
         """
         Return the models dict for the table if modelid is None.
@@ -129,6 +141,8 @@ class PersistenceLayer():
             if modelid is not None:
                 # Only return one of the models
                 full_fname = os.path.join(models_dir, 'model_%d.pkl' % modelid)
+                if not os.path.exists(full_fname):
+                    return None
                 f = open(full_fname, 'r')
                 m = pickle.load(f)
                 f.close()

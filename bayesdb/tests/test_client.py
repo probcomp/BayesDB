@@ -27,6 +27,7 @@ import pytest
 import random
 import shutil
 
+import bayesdb.utils as utils
 from bayesdb.client import Client
 from bayesdb.engine import Engine
 
@@ -211,7 +212,38 @@ def test_select_whereclause_functions():
   # TODO: these two tests are failing!
   #client('select qual_score from %s where probability of qual_score = 6 > 0.01' % (test_tablename))
   #client("select qual_score from %s where probability of name='Albany NY' > 0.01" % (test_tablename))  
-  
+
+def test_model_config():
+  test_tablename = create_dha()
+  global client, test_filenames
+
+  # test naive bayes
+  client('initialize 2 models for %s with config naive bayes' % (test_tablename))
+  client('analyze %s for 2 iterations' % (test_tablename))
+  dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, pretty=False)[0]['matrix']
+  ## assert that all dependencies are _0_ (not 1, because there should only be 1 view and 1 cluster!)
+  assert numpy.all(dep_mat == 0)
+
+  # test crp
+  client('drop models for %s' % test_tablename, yes=True)
+  client('initialize 2 models for %s with config crp mixture' % (test_tablename))
+  client('analyze %s for 2 iterations' % (test_tablename))
+  dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, pretty=False)[0]['matrix']
+  ## assert that all dependencies are 1 (because there's 1 view, and many clusters)
+  ## (with _very_ low probability, this test may fail due to bad luck)
+  assert numpy.all(dep_mat == 1)
+
+  # test crosscat
+  client('drop models for %s' % test_tablename, yes=True)
+  client('initialize 2 models for %s' % (test_tablename))
+  client('analyze %s for 2 iterations' % (test_tablename))
+  dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, pretty=False)[0]['matrix']
+  ## assert that all dependencies are not all the same
+  assert (not numpy.all(dep_mat == 1)) and (not numpy.all(dep_mat == 0))
+
+  # test that you can't change model config
+  with pytest.raises(utils.BayesDBError):
+    client.engine.initialize_models(test_tablename, 2, 'crp mixture')
 
 def test_select():
   """ smoke test """

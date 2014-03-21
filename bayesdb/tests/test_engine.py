@@ -353,7 +353,6 @@ def test_list_btables():
   list_btables_result = engine.list_btables()['list']  
   assert len(list_btables_result) == 0 + initial_btable_count
 
-
 def test_execute_file():
   pass #TODO
 
@@ -399,7 +398,6 @@ def test_show_models():
     for iter_id, m in enumerate(models):
       assert iter_id == m[0]
       assert it == m[1]
-  
 
 def test_show_diagnostics():
   pass #TODO
