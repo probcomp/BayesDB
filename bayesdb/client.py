@@ -94,7 +94,7 @@ class Client(object):
         if not pretty:
             return_list = []
             
-        lines = self.parser.parse(bql_string)
+        lines = self.parser.split_lines(bql_string)
         # Iterate through lines with while loop so we can append within loop.
         while len(lines) > 0:
             line = lines.pop(0)
@@ -108,7 +108,7 @@ class Client(object):
 
             if type(result) == dict and 'message' in result and result['message'] == 'execute_file':
                 ## special case for one command: execute_file
-                new_lines = self.parser.parse(result['bql_string'])
+                new_lines = self.parser.split_lines(result['bql_string'])
                 lines += new_lines
             elif not pretty:
                 return_list.append(result)

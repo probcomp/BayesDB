@@ -54,6 +54,7 @@ def _column(column_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine
 def _row_id(args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine):
     return row_id
 
+# similarity_arge are from parse_similarity
 def _similarity(similarity_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine):
     target_row_id, target_column = similarity_args
     return engine.call_backend('similarity', dict(M_c=M_c, X_L_list=X_L_list, X_D_list=X_D_list, given_row_id=row_id, target_row_id=target_row_id, target_columns=target_column))
@@ -151,8 +152,6 @@ def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list,
     return correlation
 
 
-
-
 ##############################################
 # function parsing
 ##############################################
@@ -192,6 +191,7 @@ def parse_similarity(colname, M_c, T):
   colname: this is the thing that we want to try to parse as a similarity.
   It is an entry in a query's columnstring. eg: SELECT colname1, colname2 FROM...
   We are checking if colname matches "SIMILARITY TO <rowid> [WITH RESPECT TO <col>]"
+  it is NOT just the column name
   """
   similarity_match = re.search(r"""
       similarity\s+to\s+

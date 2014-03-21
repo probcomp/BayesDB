@@ -32,7 +32,7 @@ class Parser(object):
         self.method_name_to_args = be.get_method_name_to_args()
         self.reset_root_dir()
     
-    def parse(self, bql_string):
+    def split_lines(self, bql_string):
         """
         Accepts a large chunk of BQL (such as a file containing many BQL statements)
         as a string, and returns individual BQL statements as a list of strings.
@@ -71,8 +71,8 @@ class Parser(object):
             return
         if bql_statement_string[-1] == ';':
             bql_statement_string = bql_statement_string[:-1]
+        
         words = bql_statement_string.lower().split()
-
         if len(words) >= 1 and words[0] == 'help':
             print "Welcome to BQL help. Here is a list of BQL commands and their syntax:\n"
             for method_name in sorted(self.method_names):
