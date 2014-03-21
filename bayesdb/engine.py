@@ -188,7 +188,7 @@ class Engine(object):
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-    
+
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     max_modelid = self.persistence_layer.get_max_model_id(tablename)
@@ -209,7 +209,9 @@ class Engine(object):
       model_config = dict(kernel_list=(), # uses default
                           initialization='from_the_prior',
                           row_initialization='from_the_prior')
-
+    else:
+      raise utils.BayesDBError("Invalid model config")
+      
     # Call initialize on backend
     X_L_list, X_D_list = self.call_backend('initialize',
                                            dict(M_c=M_c, M_r=M_r, T=T, n_chains=n_models,
@@ -299,10 +301,10 @@ class Engine(object):
 
     first_model = models[modelids[0]]
     if 'kernel_list' in first_model:
-      kernel_list = ['kernel_list']
+      kernel_list = first_model['kernel_list']
     else:
       kernel_list = () # default kernel list
-      
+
     analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True,
                         kernel_list=kernel_list)
     
