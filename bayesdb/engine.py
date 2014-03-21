@@ -41,6 +41,7 @@ from persistence_layer import PersistenceLayer
 import api_utils
 import data_utils
 import utils
+import pairwise
 import functions
 import select_utils
 import estimate_columns_utils
@@ -550,14 +551,21 @@ class Engine(object):
       self.persistence_layer.add_column_list(tablename, name, column_names)
     
     return {'columns': column_names}
+
+  def estimate_pairwise_row(self, tablename, function_name, threshold):
+    # TODO
+    pass
   
-  def estimate_pairwise(self, tablename, function_name, column_list=None, components_name=None, threshold=None):
+  def estimate_pairwise(self, tablename, function_name, column_list=None, components_name=None, threshold=None, row=False):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     if len(X_L_list) == 0:
       raise utils.BayesDBNoModelsError(tablename)
+
+    if row:
+      self.estimate_pairwise_row(tablename, function_name, threshold)
     
     if column_list:
       column_names = self.persistence_layer.get_column_list(tablename, column_list)
@@ -569,22 +577,29 @@ class Engine(object):
       column_names = None
 
     # Do the heavy lifting: generate the matrix itself
-    ret = utils.generate_pairwise_matrix(function_name,
-                                         X_L_list, X_D_list, M_c, T, tablename,
-                                         engine=self, column_names=column_names,
-                                         component_threshold=threshold)
+    matrix, column_names_reordered, components = pairwise.generate_pairwise_column_matrix(   \
+        function_name, X_L_list, X_D_list, M_c, T, tablename,
+        engine=self, column_names=column_names, component_threshold=threshold)
+    
+    title = 'Pairwise column %s for %s' % (function_name, tablename)      
+    ret = dict(
+      matrix=matrix,
+      column_names=column_names_reordered,
+      title=title,
+      message = "Created " + title
+      )
 
     # Add the column lists for connected components, if desired. Overwrites old ones with same name.
-    if components_name is not None and threshold is not None:
-      components = ret['components']
+    if components is not None:
       component_name_tuples = []
       for i, component in enumerate(components):
         name = "%s_%d" % (components_name, i)
         column_names = [M_c['idx_to_name'][str(idx)] for idx in component]
         self.persistence_layer.add_column_list(tablename, name, column_names)
         component_name_tuples.append((name, column_names))
+      ret['components'] = components
       ret['column_lists'] = component_name_tuples
-        
+
     return ret
 
 # helper functions

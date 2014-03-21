@@ -585,7 +585,8 @@ class Parser(object):
             tablename = match.group('btable').strip()
             row = match.group('row') is not None
             function_name = match.group('functionname').strip().lower()
-            if function_name not in ["mutual information", "correlation", "dependence probability"]:
+            if row and function_name.split()[0] not in ["similarity"] or \
+               not row and function_name not in ["mutual information", "correlation", "dependence probability"]:
                 return 'help', self.help_estimate_pairwise()
             filename = match.group('filename') # Could be None
             column_list = match.group('columns') # Could be None
@@ -597,7 +598,7 @@ class Parser(object):
                 threshold = None
             return 'estimate_pairwise', \
               dict(tablename=tablename, function_name=function_name,
-                   column_list=column_list, components_name=components_name, threshold=threshold), \
+                   column_list=column_list, components_name=components_name, threshold=threshold, row=row), \
               dict(filename=filename)
 
 
