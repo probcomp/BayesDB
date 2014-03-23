@@ -20,6 +20,7 @@
 import sys
 import csv
 import copy
+import StringIO
 #
 import numpy
 
@@ -237,6 +238,26 @@ def at_most_N_rows(T, N, gen_seed=0):
         which_rows = which_rows[:N]
         T = [T[which_row] for which_row in which_rows]
     return T
+
+def parse_csv_line(csv_line):
+    """
+    Remove endline character and split the line by commas.
+    """
+    csv_line_parsed = csv_line.rstrip('\n').split(',')
+    return csv_line_parsed
+
+def read_pandas_df(pandas_df):
+    """
+    Takes pandas data frame object and writes it to a StringIO object
+    in CSV format, then uses parse_csv_line() to strip newline characters
+    and split by commas to return the header and the data rows.
+    """
+    data_string = StringIO.StringIO()
+    pandas_df.to_csv(data_string, header=True, index=False)
+    data_string.seek(0)
+    header = parse_csv_line(data_string.readline())
+    rows = [parse_csv_line(row) for row in data_string.readlines()]
+    return header, rows
 
 def read_csv(filename, has_header=True):
     with open(filename, 'rU') as fh:
