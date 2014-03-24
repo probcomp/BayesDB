@@ -667,7 +667,7 @@ class Parser(object):
                     datatype = 'ignore'
                 else:
                     return 'help', self.help_update_datatypes()
-                mappings[vals[0]] = datatype
+                mappings[vals[0].strip()] = datatype
             return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
 ############################################################
