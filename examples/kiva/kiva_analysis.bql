@@ -19,16 +19,16 @@
 --
 
 -- Import the data and samples.
-DROP BTABLE kiva;
-CREATE BTABLE kiva FROM kiva.csv;
-LOAD MODELS kiva_models.pkl.gz FOR kiva;
+DROP BTABLE kiva_demo;
+CREATE BTABLE kiva_demo FROM kiva.csv;
+LOAD MODELS kiva_models.pkl.gz FOR kiva_demo;
 
-SELECT journal_entries, num_borrowers, gender_ratio FROM kiva LIMIT 20;
-SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 0 FROM kiva LIMIT 20;
-SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 0 FROM kiva ORDER BY SIMILARITY TO 0 LIMIT 20;
+SELECT journal_entries, num_borrowers, gender_ratio FROM kiva_demo LIMIT 20;
+SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 0 FROM kiva_demo LIMIT 20;
+SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 0 FROM kiva_demo ORDER BY SIMILARITY TO 0 LIMIT 20;
 
-SELECT journal_entries, num_borrowers, gender_ratio FROM kiva LIMIT 20;
-SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 16 WITH RESPECT TO journal_entries FROM kiva LIMIT 10 ORDER BY SIMILARITY TO 16 WITH RESPECT TO journal_entries;
+SELECT journal_entries, num_borrowers, gender_ratio FROM kiva_demo LIMIT 20;
+SELECT journal_entries, num_borrowers, gender_ratio, SIMILARITY TO 16 WITH RESPECT TO journal_entries FROM kiva_demo LIMIT 10 ORDER BY SIMILARITY TO 16 WITH RESPECT TO journal_entries;
 
-SELECT partner_rating, loan_amount, paid_date, default_rate FROM kiva LIMIT 20;
-INFER partner_rating, loan_amount, paid_date, default_rate FROM kiva WITH CONFIDENCE 0.96 LIMIT 20;
+SELECT partner_rating, loan_amount, paid_date, default_rate FROM kiva_demo LIMIT 20;
+INFER partner_rating, loan_amount, paid_date, default_rate FROM kiva_demo WITH CONFIDENCE 0.96 LIMIT 20;
