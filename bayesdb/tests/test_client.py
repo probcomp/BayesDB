@@ -164,7 +164,18 @@ def test_column_lists():
   client('infer %s from %s with confidence 0.1 limit 10' % (cname2, test_tablename))
 
   client('simulate %s from %s times 10' % (cname1, test_tablename))  
-  client('simulate %s from %s times 10' % (cname2, test_tablename))  
+  client('simulate %s from %s times 10' % (cname2, test_tablename))
+
+def test_simulate():
+  """ smoke test """
+  test_tablename = create_dha()
+  global client, test_filenames
+  client('initialize 2 models for %s' % (test_tablename))
+
+  client("simulate qual_score from %s given name='Albany NY' times 5")
+  client("simulate qual_score from %s given name='Albany NY' and ami_score = 80 times 5")
+  client("simulate name from %s given name='Albany NY' and ami_score = 80 times 5")
+  client("simulate name from %s given ami_score = 80 times 5")
 
 def test_estimate_columns():
   """ smoke test """

@@ -1,8 +1,8 @@
 #
 #   Copyright (c) 2010-2014, MIT Probabilistic Computing Project
 #
-#   Lead Developers: Dan Lovell and Jay Baxter
-#   Authors: Dan Lovell, Baxter Eaves, Jay Baxter, Vikash Mansinghka
+#   Lead Developers: Jay Baxter and Dan Lovell
+#   Authors: Jay Baxter, Dan Lovell, Baxter Eaves, Vikash Mansinghka
 #   Research Leads: Vikash Mansinghka, Patrick Shafto
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,9 +22,9 @@ import csv
 import copy
 import pandas
 import re
-#
 import numpy
 
+import utils
 
 def get_ith_ordering(in_list, i):
     temp_list = [in_list[j::(i+1)][:] for j in range(i+1)]
@@ -260,7 +260,7 @@ def read_csv(filename, has_header=True):
         header = None
         if has_header:
             header = csv_reader.next()
-        rows = [row for row in csv_reader]
+        rows = [[r.strip() for r in row] for row in csv_reader]
     return header, rows
 
 def write_csv(filename, T, header = None):
@@ -327,7 +327,10 @@ def convert_value_to_code(M_c, cidx, value):
     if M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
         return float(value)
     else:
-        return M_c['column_metadata'][cidx]['code_to_value'][str(value)] 
+        try:
+            return M_c['column_metadata'][cidx]['code_to_value'][str(value)]
+        except KeyError:
+            raise utils.BayesDBError("Error: value '%s' not in btable." % str(value))
 
 def map_from_T_with_M_c(coordinate_value_tuples, M_c):
     coordinate_code_tuples = []

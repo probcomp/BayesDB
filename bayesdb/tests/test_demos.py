@@ -31,7 +31,7 @@ def run_example(name):
     file_path = os.path.join('../../examples/%s/%s_analysis.bql' % (name, name))
     results = client(open(file_path, 'r'), yes=True, pretty=False, plots=False)
     for r in results:
-        if 'Error' in r:
+        if 'Error' in r or ('error' in r and r['error']):
             raise Exception(str(r))
 
 def test_dha_example():
@@ -51,4 +51,7 @@ def test_flights_example():
 def test_kiva_example():
     run_example('kiva')
 
+def test_employees_example():
+    run_example('employees')
+    
     

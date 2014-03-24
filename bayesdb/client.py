@@ -64,7 +64,7 @@ class Client(object):
             try:
                 out = method(**args_dict)
             except utils.BayesDBError as e:
-                out = dict(message=str(e))
+                out = dict(message=str(e), error=True)
         return out
 
     def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False):
@@ -188,6 +188,14 @@ class Client(object):
 
         ## Call engine.
         result = self.call_bayesdb_engine(method_name, args_dict)
+
+        ## If error occurred, exit now.
+        if 'error' in result and result['error']:
+            if pretty:
+                print result['message']
+                return result['message']
+            else:
+                return result
 
         ## Do stuff now that engine has given you output, but before printing the result.
         result = self.callback(method_name, args_dict, client_dict, result)
