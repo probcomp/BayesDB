@@ -20,7 +20,8 @@
 import sys
 import csv
 import copy
-import StringIO
+import pandas
+import re
 #
 import numpy
 
@@ -239,24 +240,18 @@ def at_most_N_rows(T, N, gen_seed=0):
         T = [T[which_row] for which_row in which_rows]
     return T
 
-def parse_csv_line(csv_line):
-    """
-    Remove endline character and split the line by commas.
-    """
-    csv_line_parsed = csv_line.rstrip('\n').split(',')
-    return csv_line_parsed
-
 def read_pandas_df(pandas_df):
     """
-    Takes pandas data frame object and writes it to a StringIO object
-    in CSV format, then uses parse_csv_line() to strip newline characters
-    and split by commas to return the header and the data rows.
+    Takes pandas data frame object, or pickled file name, and converts data
+    into list-of-lists format
     """
-    data_string = StringIO.StringIO()
-    pandas_df.to_csv(data_string, header=True, index=False)
-    data_string.seek(0)
-    header = parse_csv_line(data_string.readline())
-    rows = [parse_csv_line(row) for row in data_string.readlines()]
+    
+    # if this is a pkl file and not an actual DataFrame, open it using pandas.read_pickle()
+    if not isinstance(pandas_df, pandas.DataFrame) and re.search(r"\.pkl$", pandas_df):  
+        pandas_df = pandas.read_pickle(pandas_df)
+    
+    header = list(pandas_df.columns)
+    rows = [map(str, row) for index, row in pandas_df.iterrows()]
     return header, rows
 
 def read_csv(filename, has_header=True):
