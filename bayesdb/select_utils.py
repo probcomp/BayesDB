@@ -37,7 +37,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   whereclause = whereclause.lower()
 
   ## ------------------------- whereclause grammar ----------------------------
-  # TODO outside function
+  # TODO outside function, TODO make whitespace regex \s+
   operation = oneOf("<= >= < > =")
   column_identifier = Word(alphanums , alphanums + "_")
   float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
@@ -54,7 +54,10 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   typicality_literal = CaselessLiteral("typicality")
 
   with_respect_to_literal = Regex(r'with\srespect\sto')
+  with_confidence_literal = Regex(r'with\sconfidence')
 
+  with_confidence_clause = Group(with_confidence_literal.setResultsName("literal") + 
+                                 float_number.setResultsName("confidence"))
   predictive_probability_of_function = Group(predictive_probability_of_literal.setResultsName("fun_name") +
                                              column_identifier.setResultsName("column"))
   with_respect_to_clause = Group(with_respect_to_literal.setResultsName("literal") + 
@@ -67,7 +70,8 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
 
   function_literal = similarity_function | predictive_probability_of_function | typicality_function
 
-  single_where_clause = Group((function_literal | column_identifier) + operation + value)
+  single_where_clause = Group((function_literal | column_identifier) + operation + value + 
+                              Optional(with_confidence_clause).setResultsName("with_confidence"))
 
   where_clause = single_where_clause + ZeroOrMore(and_literal + single_where_clause).leaveWhitespace()
   ## --------------------------------------------------------------------------------
@@ -86,10 +90,8 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
     if inner_element == 'and':
       continue
     op = operator_map[inner_element[1]]
-    
     raw_val = inner_element[2]
     if utils.is_int(raw_val):
-  
       val = int(raw_val)
     elif utils.is_float(raw_val):
       val = float(raw_val)
