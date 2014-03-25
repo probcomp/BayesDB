@@ -109,7 +109,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
     if type(inner_element[0]) is str:
       colname = inner_element[0]
       if M_c['name_to_idx'].has_key(colname.lower()):
-        conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
+        conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val, confidence))
         continue
       raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
 
@@ -143,17 +143,17 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       if respect_to_clause != '':
         target_column = M_c['name_to_idx'][respect_to_clause[0][1]] #TODO should be able to fix double index
 
-      conds.append(((functions._similarity, (target_row_id, target_column)), op, val))
+      conds.append(((functions._similarity, (target_row_id, target_column)), op, val, confidence))
 
       continue
     elif inner_element[0].fun_name == "typicality":
-      conds.append(((functions._row_typicality, True), op, val)) 
+      conds.append(((functions._row_typicality, True), op, val, confidence)) 
       continue
     
     if inner_element[0].fun_name == "predictive probability of":
       if M_c['name_to_idx'].has_key(inner_element[0].column.lower()):
         column_index = M_c['name_to_idx'][inner_element[0].column.lower()]
-        conds.append(((functions._predictive_probability,column_index), op, val))
+        conds.append(((functions._predictive_probability,column_index), op, val, confidence))
         continue
 
     raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
