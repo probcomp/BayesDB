@@ -120,7 +120,7 @@ Instead of manually typing in a comma-separated list of columns for queries, you
    
    ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>]
 
-Since it may be hard to see example what you'd put in the WHERE or ORDER by clause, take a look at an example, and be sure to read the `ref:functions` section below::
+Since it may be hard to see example what you'd put in the WHERE or ORDER by clause, take a look at an example, and be sure to read the :ref:`functions` section below::
 
   ESTIMATE COLUMNS FROM table WHERE TYPICALITY > 0.6 ORDER BY DEPENDENCE PROBABILITY WITH name;  
 

@@ -36,13 +36,13 @@ class PersistenceLayer():
     """
     Stores btables in the following format in the "data" directory:
     bayesdb/data/
-      btable_index.pkl
-      <tablename>/
-        metadata_full.pkl
-        metadata.pkl
-        column_lists.pkl
-        models/
-          model_<id>.pkl
+    ..btable_index.pkl
+    ..<tablename>/
+    ....metadata_full.pkl
+    ....metadata.pkl
+    ....column_lists.pkl
+    ....models/
+    ......model_<id>.pkl
 
     table_index.pkl: list of btable names.
     
