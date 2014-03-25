@@ -86,9 +86,14 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
 
   top_level_parse = where_clause.parseString(whereclause)
+  print top_level_parse
   for inner_element in top_level_parse:
     if inner_element == 'and':
       continue
+    if inner_element.with_confidence != '':
+      confidence = inner_element.with_confidence[0].confidence #TODO figure out how to avoid these nested indexing issues
+    else:
+      confidence = None
     op = operator_map[inner_element[1]]
     raw_val = inner_element[2]
     if utils.is_int(raw_val):
