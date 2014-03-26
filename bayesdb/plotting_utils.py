@@ -74,11 +74,12 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
             subplot.barh(ind, datapoints, width, color=matplotlib.cm.Blues(0.5), align='center')
 
             # rotate major label if super compress
+            subplot.set_ylabel(parsed_data['axis_label'])                            
             if super_compress:
                 rot = 0
             else:
                 rot = 90
-                subplot.set_ylabel(parsed_data['axis_label'], rotation=rot)                
+                #subplot.set_ylabel(parsed_data['axis_label'], rotation=rot)                
             
             if (not compress and len(labels) < 15) or (compress and len(labels) < 5):
                 subplot.axes.get_yaxis().set_ticks(range(len(labels)))
@@ -96,11 +97,12 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
             subplot.bar(ind, datapoints, width, color=matplotlib.cm.Blues(0.5), align='center')
 
             # rotate major label if super compress
+            subplot.set_xlabel(parsed_data['axis_label'])                            
             if super_compress:
                 rot = 90
             else:
                 rot = 0
-                subplot.set_xlabel(parsed_data['axis_label'], rotation=rot)                
+                #subplot.set_xlabel(parsed_data['axis_label'], rotation=rot)                
             
             if (not compress and len(labels) < 15) or (compress and len(labels) < 5):
                 subplot.axes.get_xaxis().set_ticks(range(len(labels)))
