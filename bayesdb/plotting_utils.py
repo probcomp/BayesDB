@@ -182,11 +182,11 @@ def parse_data_for_hist(colnames, data, M_c):
             data_c.append(i)
     output = {}
     columns = colnames[:]
-    data_no_id = [] #This will be the data with the row_ids removed if present
+    data_no_id = [] # This will be the data with the row_ids removed if present
     if colnames[0] == 'row_id':
         columns.pop(0)
     if len(data_c) == 0:
-        raise Exception('There are no datapoints that contain values from every category specified. Try excluding columns with many NaN values.')
+        raise utils.BayesDBError('There are no datapoints that contain values from every category specified. Try excluding columns with many NaN values.')
     if len(columns) == 1:
         if colnames[0] == 'row_id':
             data_no_id = [x[1] for x in data_c]
@@ -194,8 +194,19 @@ def parse_data_for_hist(colnames, data, M_c):
             data_no_id = [x[0] for x in data_c]
         output['axis_label'] = columns[0]
         output['title'] = columns[0]
-        col_idx = M_c['name_to_idx'][columns[0]]
-        if M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
+
+        # Allow col_idx to be None, to allow for predictive functions to be plotted.
+        if columns[0] in M_c['name_to_idx']:
+            col_idx = M_c['name_to_idx'][columns[0]]
+        else:
+            col_idx = None
+
+        # Treat not-column (e.g. function) the same as continuous, since no code to value conversion.            
+        if col_idx is None or M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma':
+            output['datatype'] = 'cont1D'
+            output['data'] = np.array(data_no_id)
+            
+        elif M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
             unique_labels = sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[0]]]['code_to_value'].keys())#changed from code_to_value to value_to_code
             np_data = np.array(data_no_id)
             counts = []
@@ -205,30 +216,39 @@ def parse_data_for_hist(colnames, data, M_c):
             output['labels'] = unique_labels
             output['data'] = counts
 
-        elif M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma':
-            output['datatype'] = 'cont1D'
-            output['data'] = np.array(data_no_id)
-
     elif len(columns) == 2:
         if colnames[0] == 'row_id':
             data_no_id = [(x[1], x[2]) for x in data_c]
         else:
             data_no_id = [(x[0], x[1]) for x in data_c]
 
-        col_idx_1 = M_c['name_to_idx'][columns[0]]
-        col_idx_2 = M_c['name_to_idx'][columns[1]]
-        types = (M_c['column_metadata'][col_idx_1]['modeltype'], M_c['column_metadata'][col_idx_2]['modeltype'])
+        types = []
+
+        # Treat not-column (e.g. function) the same as continuous, since no code to value conversion.
+        if columns[0] in M_c['name_to_idx']:
+            col_idx_1 = M_c['name_to_idx'][columns[0]]
+            types.append(M_c['column_metadata'][col_idx_1]['modeltype'])
+        else:
+            col_idx_1 = None
+            types.append('normal_inverse_gamma')
+        if columns[1] in M_c['name_to_idx']:
+            col_idx_2 = M_c['name_to_idx'][columns[1]]
+            types.append(M_c['column_metadata'][col_idx_2]['modeltype'])            
+        else:
+            col_idx_2 = None
+            types.append('normal_inverse_gamma')            
+        types = tuple(types)
         
         output['axis_label_x'] = columns[1]
         output['axis_label_y'] = columns[0]
         output['title'] = columns[0] + ' -versus- ' + columns[1]
  
-        if M_c['column_metadata'][col_idx_1]['modeltype'] == 'normal_inverse_gamma' and M_c['column_metadata'][col_idx_2]['modeltype'] == 'normal_inverse_gamma':
+        if types[0] == 'normal_inverse_gamma' and types[1] == 'normal_inverse_gamma':
             output['datatype'] = 'contcont'
             output['data_x'] = [x[0] for x in data_no_id]
             output['data_y'] = [x[1] for x in data_no_id]
 
-        elif M_c['column_metadata'][col_idx_1]['modeltype'] == 'symmetric_dirichlet_discrete' and M_c['column_metadata'][col_idx_2]['modeltype'] == 'symmetric_dirichlet_discrete':
+        elif types[0] == 'symmetric_dirichlet_discrete' and types[1] == 'symmetric_dirichlet_discrete':
             counts = {}
             for i in data_no_id:
                 if i in counts:
