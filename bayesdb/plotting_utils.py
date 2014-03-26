@@ -134,7 +134,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         subplot.imshow(parsed_data['data'],norm=Normalize(), interpolation='nearest',  cmap=matplotlib.cm.Blues, aspect = float(len(unique_xs))/len(unique_ys))
 
         subplot.axes.get_xaxis().set_ticks(range(len(unique_xs)))
-        subplot.axes.get_xaxis().set_ticklabels(unique_xs)
+        subplot.axes.get_xaxis().set_ticklabels(unique_xs, rotation=90)
         subplot.axes.get_yaxis().set_ticks(range(len(unique_ys)))
         subplot.axes.get_yaxis().set_ticklabels(unique_ys)
         if not compress:
@@ -157,9 +157,9 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         else:
             if vert:
                 xtickNames = p.setp(subplot, xticklabels=groups)
-                p.setp(xtickNames, rotation=90, fontsize=8)
+                p.setp(xtickNames, fontsize=8)
             else:
-                p.setp(subplot, yticklabels=groups)
+                p.setp(subplot, yticklabels=groups, rotation=90)
 
     else:
         raise Exception('Unexpected data type, or too many arguments')
@@ -255,8 +255,8 @@ def parse_data_for_hist(colnames, data, M_c):
                     counts[i]+=1
                 else:
                     counts[i]=1
-            unique_xs = sort_mult_list(list(M_c['column_metadata'][col_idx_2]['code_to_value'].keys()))
-            unique_ys = sort_mult_list(list(M_c['column_metadata'][col_idx_1]['code_to_value'].keys()))
+            unique_xs = sorted(sort_mult_list(list(M_c['column_metadata'][col_idx_2]['code_to_value'].keys())))
+            unique_ys = sorted(sort_mult_list(list(M_c['column_metadata'][col_idx_1]['code_to_value'].keys())))
             unique_ys.reverse()#Hack to reverse the y's
             counts_array = numpy.zeros(shape=(len(unique_ys), len(unique_xs)))
             for i in counts:
