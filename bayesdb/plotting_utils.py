@@ -207,7 +207,7 @@ def parse_data_for_hist(colnames, data, M_c):
             output['data'] = np.array(data_no_id)
             
         elif M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
-            unique_labels = sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[0]]]['code_to_value'].keys())#changed from code_to_value to value_to_code
+            unique_labels = sorted(sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[0]]]['code_to_value'].keys()))
             np_data = np.array(data_no_id)
             counts = []
             for label in unique_labels:
@@ -271,7 +271,7 @@ def parse_data_for_hist(colnames, data, M_c):
             beans = {}
             #TODO combine these cases with a variable to set the thigns that are different.
             if types[0] == 'normal_inverse_gamma':                
-                groups = sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[1]]]['code_to_value'].keys())
+                groups = sorted(sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[1]]]['code_to_value'].keys()))
                 for i in groups:
                     beans[i] = []
                 data_no_id = sort_mult_tuples(data_no_id, 1)
