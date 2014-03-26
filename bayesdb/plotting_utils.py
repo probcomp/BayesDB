@@ -56,7 +56,7 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pa
     else:
         p.show()
 
-def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, compress=False, **kwargs):
+def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, compress=False, super_compress=False, **kwargs):
     """
     Takes parsed data and a subplot object, and creates a plot of the data on that subplot object.
     """
@@ -72,11 +72,19 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
             ind = np.arange(num_vals)
             width = .5
             subplot.barh(ind, datapoints, width, color=matplotlib.cm.Blues(0.5), align='center')
-            subplot.axes.get_yaxis().set_ticks(range(len(labels)))
-            subplot.axes.get_yaxis().set_ticklabels(labels)
-            subplot.set_ylabel(parsed_data['axis_label'])
+
+            # rotate major label if super compress
+            if super_compress:
+                rot = 0
+            else:
+                rot = 90
+                subplot.set_ylabel(parsed_data['axis_label'], rotation=rot)                
+            
+            if (not compress and len(labels) < 15) or (compress and len(labels) < 5):
+                subplot.axes.get_yaxis().set_ticks(range(len(labels)))
+                subplot.axes.get_yaxis().set_ticklabels(labels)
             if compress:
-                subplot.axes.get_xaxis().set_visible(False)            
+                subplot.axes.get_xaxis().set_visible(False)
         else:
             subplot.tick_params(top='off', bottom='off', left='off', right='off')
             subplot.axes.get_xaxis().set_ticks([])
@@ -86,9 +94,17 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
             ind = np.arange(num_vals)
             width = .5
             subplot.bar(ind, datapoints, width, color=matplotlib.cm.Blues(0.5), align='center')
-            subplot.axes.get_xaxis().set_ticks(range(len(labels)))
-            subplot.axes.get_xaxis().set_ticklabels(labels)
-            subplot.set_xlabel(parsed_data['axis_label'])
+
+            # rotate major label if super compress
+            if super_compress:
+                rot = 90
+            else:
+                rot = 0
+                subplot.set_xlabel(parsed_data['axis_label'], rotation=rot)                
+            
+            if (not compress and len(labels) < 15) or (compress and len(labels) < 5):
+                subplot.axes.get_xaxis().set_ticks(range(len(labels)))
+                subplot.axes.get_xaxis().set_ticklabels(labels, rotation=50)
             if compress:
                 subplot.axes.get_yaxis().set_visible(False)
         
@@ -157,9 +173,9 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         else:
             if vert:
                 xtickNames = p.setp(subplot, xticklabels=groups)
-                p.setp(xtickNames, fontsize=8)
+                p.setp(xtickNames, fontsize=8, rotation=90)
             else:
-                p.setp(subplot, yticklabels=groups, rotation=90)
+                p.setp(subplot, yticklabels=groups)
 
     else:
         raise Exception('Unexpected data type, or too many arguments')
@@ -249,18 +265,29 @@ def parse_data_for_hist(colnames, data, M_c):
             output['data_y'] = [x[1] for x in data_no_id]
 
         elif types[0] == 'symmetric_dirichlet_discrete' and types[1] == 'symmetric_dirichlet_discrete':
-            counts = {}
+            counts = {} # keys are (var 1 value, var 2 value)
+            # data_no_id is a tuple for each datapoint: (value of var 1, value of var 2)
             for i in data_no_id:
                 if i in counts:
                     counts[i]+=1
                 else:
                     counts[i]=1
-            unique_xs = sorted(sort_mult_list(list(M_c['column_metadata'][col_idx_2]['code_to_value'].keys())))
-            unique_ys = sorted(sort_mult_list(list(M_c['column_metadata'][col_idx_1]['code_to_value'].keys())))
+
+            # these are the values.
+            unique_xs = sorted(M_c['column_metadata'][col_idx_2]['code_to_value'].keys())
+            unique_ys = sorted(M_c['column_metadata'][col_idx_1]['code_to_value'].keys())
+            x_ordered_codes = [du.convert_value_to_code(M_c, col_idx_2, xval) for xval in unique_xs]
+            y_ordered_codes = [du.convert_value_to_code(M_c, col_idx_1, yval) for yval in unique_ys]
             unique_ys.reverse()#Hack to reverse the y's
+
+            # Make count array: indexed by y index, x index
             counts_array = numpy.zeros(shape=(len(unique_ys), len(unique_xs)))
             for i in counts:
-                counts_array[len(unique_ys) - 1 - M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]]] [M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]]] = float(counts[i])#hack to reverse ys
+                # this converts from value to code
+                #import pdb; pdb.set_trace()
+                y_index = y_ordered_codes.index(M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]])
+                x_index = x_ordered_codes.index(M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]])
+                counts_array[y_index][x_index] = float(counts[i])
             output['datatype'] = 'multmult'
             output['data'] = counts_array
             output['labels_x'] = unique_xs
@@ -270,7 +297,7 @@ def parse_data_for_hist(colnames, data, M_c):
             output['datatype'] = 'multcont'
             beans = {}
             #TODO combine these cases with a variable to set the thigns that are different.
-            if types[0] == 'normal_inverse_gamma':                
+            if types[0] == 'normal_inverse_gamma':
                 groups = sorted(sort_mult_list(M_c['column_metadata'][M_c['name_to_idx'][columns[1]]]['code_to_value'].keys()))
                 for i in groups:
                     beans[i] = []
@@ -308,6 +335,7 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
     else:
         data_no_id = data[:]
 
+    super_compress=len(columns) > 6 # rotate outer labels
     gsp = gs.GridSpec(len(columns), len(columns))
     for i in range(len(columns)):
         for j in range(len(columns)):
@@ -316,7 +344,7 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
                 sub_colnames = [columns[i]]
                 sub_data = [[x[i]] for x in data_no_id]
                 data = parse_data_for_hist(sub_colnames, sub_data, M_c)
-                create_plot(data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[i], horizontal=True, compress=True)
+                create_plot(data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[i], horizontal=True, compress=True, super_compress=super_compress)
                 
             elif i == len(columns) - 1 and j > 0:
                 #bottom marginals
@@ -328,7 +356,7 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
                     sub_colnames = [columns[j-2]]
                     sub_data = [[x[j-2]] for x in data_no_id]
                 data = parse_data_for_hist(sub_colnames, sub_data, M_c)
-                create_plot(data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[j-2], horizontal=False, compress=True)
+                create_plot(data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[j-2], horizontal=False, compress=True, super_compress=super_compress)
 
             elif (j != 0 and i != len(columns)-1) and j < i+2:
                 
@@ -338,7 +366,7 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
                 sub_colnames = [columns[i], columns[j_col]]
                 sub_data = [[x[i], x[j_col]] for x in data_no_id]
                 data = parse_data_for_hist(sub_colnames, sub_data, M_c)
-                create_plot(data, p.subplot(gsp[i, j]), False, False, horizontal=True, compress=True)
+                create_plot(data, p.subplot(gsp[i, j]), False, False, horizontal=True, compress=True, super_compress=super_compress)
             else:
                 pass
 
@@ -354,7 +382,7 @@ def sort_mult_list(mult):
         except ValueError:
             return mult
     return sorted(num_mult)
-
+    
 #Takes a list of tuples and if the all the elements at index ind are numeric,
 #it returns a list of tuples sorted by the value at ind, which has been converted to an int.
 def sort_mult_tuples(mult, ind):
