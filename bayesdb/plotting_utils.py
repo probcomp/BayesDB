@@ -276,9 +276,9 @@ def parse_data_for_hist(colnames, data, M_c):
             # these are the values.
             unique_xs = sorted(M_c['column_metadata'][col_idx_2]['code_to_value'].keys())
             unique_ys = sorted(M_c['column_metadata'][col_idx_1]['code_to_value'].keys())
+            unique_ys.reverse()#Hack to reverse the y's            
             x_ordered_codes = [du.convert_value_to_code(M_c, col_idx_2, xval) for xval in unique_xs]
             y_ordered_codes = [du.convert_value_to_code(M_c, col_idx_1, yval) for yval in unique_ys]
-            unique_ys.reverse()#Hack to reverse the y's
 
             # Make count array: indexed by y index, x index
             counts_array = numpy.zeros(shape=(len(unique_ys), len(unique_xs)))
