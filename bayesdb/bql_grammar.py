@@ -25,3 +25,13 @@ operation = oneOf("<= >= = < >")
 equal_literal = Literal("=")
 and_literal = CaselessLiteral("and")
 
+## Values
+file_name = Word()
+
+## Functions
+
+
+
+## Clauses
+
+

@@ -42,7 +42,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   operation = oneOf("<= >= < > =")
   column_identifier = Word(alphanums , alphanums + "_")
   float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
-  value = QuotedString('"', unquoteResults=False) | QuotedString("'", unquoteResults=False) | float_number | Word(alphanums + "_")
+  value = QuotedString('"') | QuotedString("'") | float_number | Word(alphanums + "_")
   and_literal = CaselessLiteral("and")
 
   row_identifier = Word(nums) | Group( column_identifier.setResultsName("column") + 
@@ -102,7 +102,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
     else:
       ## val could have matching single or double quotes, which we can safely eliminate
       ## with the following safe (string literal only) implementation of eval
-      val = string.strip(raw_val, "\"'")
+      val = raw_val
     ## simple where column = value statement
     if type(inner_element[0]) is str:
       colname = inner_element[0]
