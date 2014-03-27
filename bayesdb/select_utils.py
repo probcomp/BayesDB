@@ -103,7 +103,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       ## val could have matching single or double quotes, which we can safely eliminate
       ## with the following safe (string literal only) implementation of eval
       val = string.strip(raw_val, "\"'")
-#      val = ast.literal_eval(raw_val)
     ## simple where column = value statement
     if type(inner_element[0]) is str:
       colname = inner_element[0]
