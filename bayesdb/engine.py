@@ -48,7 +48,7 @@ import estimate_columns_utils
 import plotting_utils
 
 class Engine(object):
-  def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing', **kwargs):
+  def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing', seed=None, **kwargs):
     """ One optional argument that you may find yourself using frequently is seed.
     It defaults to random seed, but for testing/reproduceability purposes you may
     want a deterministic one. """
@@ -61,7 +61,7 @@ class Engine(object):
       # Only dependent on CrossCat when you actually instantiate Engine
       # (i.e., allow engine to be imported in order to examine the API, without CrossCat)
       from crosscat.CrossCatClient import get_CrossCatClient
-      self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
+      self.backend = get_CrossCatClient(crosscat_engine_type, seed, **kwargs)
     else:
       self.online = True
       self.hostname = crosscat_host
