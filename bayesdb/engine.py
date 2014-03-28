@@ -61,7 +61,7 @@ class Engine(object):
       # Only dependent on CrossCat when you actually instantiate Engine
       # (i.e., allow engine to be imported in order to examine the API, without CrossCat)
       from crosscat.CrossCatClient import get_CrossCatClient
-      self.backend = get_CrossCatClient(crosscat_engine_type, seed, **kwargs)
+      self.backend = get_CrossCatClient(crosscat_engine_type, seed=seed, **kwargs)
     else:
       self.online = True
       self.hostname = crosscat_host
