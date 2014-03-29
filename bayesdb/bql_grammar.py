@@ -21,12 +21,27 @@
 from pyparsing import *
 
 ## basica literals
-operation = oneOf("<= >= = < >")
+operation_literal = oneOf("<= >= = < >")
 equal_literal = Literal("=")
 and_literal = CaselessLiteral("and")
+from_literal = CaselessLiteral("from")
+for_literal = CaselessLiteral("for")
+into_literal = CaselessLiteral("into")
+of_literal = CaselessLiteral("of")
+
+## Many basic literals will never be used alone
+## creating them separately like this allows for simpler whitespace and case flexibility
+create_literal = CaselessLiteral("create")
+btable_literal = CaselessLiteral("btable")
+execute_literal = CaselessLiteral("execute")
+file_literal = CaselessLiteral("file")
+initialize_literal = CaselessLiteral("initialize")
+
+## Composite literals: Inseparable elements that can have whitespace
+
 
 ## Values
-file_name = Word()
+#file_name = Word()
 
 ## Functions
 
