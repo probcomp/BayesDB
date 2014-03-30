@@ -20,6 +20,9 @@
 
 from pyparsing import *
 
+## Matches any white space and stores it as a single space
+single_white = White().setParseAction(replaceWith(' '))
+
 ## basica keywords
 operation_keyword = oneOf("<= >= = < >")
 equal_keyword = Keyword("=")
@@ -95,28 +98,28 @@ btable_keyword = single_btable_keyword | multiple_btable_keyword
 btable_keyword.setParseAction(replaceWith("btable"))
 
 ## Composite keywords: Inseparable elements that can have whitespace
-## Using White() and Combine to make them one string
-execute_file_keyword = Combine(execute_keyword + White() + file_keyword)
-create_btable_keyword = Combine(create_keyword + White() + btable_keyword)
-update_schema_for_keyword = Combine(update_keyword + White() + schema_keyword + White() + for_keyword)
-models_for_keyword = Combine(model_keyword + White() + for_keyword)
-model_index_keyword = Combine(model_keyword + White() + index_keyword)
-load_model_keyword = Combine(load_keyword + White() + model_keyword)
-save_model_keyword = Combine(save_keyword + White() + model_keyword)
-save_to_keyword = Combine(save_keyword + White() + to_keyword)
-list_btables_keyword = Combine(list_keyword + White() + btable_keyword)
+## Using single_white and Combine to make them one string
+execute_file_keyword = Combine(execute_keyword + single_white + file_keyword)
+create_btable_keyword = Combine(create_keyword + single_white + btable_keyword)
+update_schema_for_keyword = Combine(update_keyword + single_white + schema_keyword + single_white + for_keyword)
+models_for_keyword = Combine(model_keyword + single_white + for_keyword)
+model_index_keyword = Combine(model_keyword + single_white + index_keyword)
+load_model_keyword = Combine(load_keyword + single_white + model_keyword)
+save_model_keyword = Combine(save_keyword + single_white + model_keyword)
+save_to_keyword = Combine(save_keyword + single_white + to_keyword)
+list_btables_keyword = Combine(list_keyword + single_white + btable_keyword)
 
-show_schema_for_keyword = Combine(show_keyword + White() + schema_keyword + White() + for_keyword)
-show_models_for_keyword = Combine(show_keyword + White() + model_keyword + White() + for_keyword)
-estimate_pairwise_keyword = Combine(estimate_keyword + White() + pairwise_keyword)
-with_confidence_keyword = Combine(with_keyword + White() + confidence_keyword)
-dependence_probability_keyword = Combine(dependence_keyword + White() + probability_keyword)
-mutual_information_keyword = Combine(mutual_keyword + White() + information_keyword)
-estimate_columns_from_keyword = Combine(estimate_keyword + White() + column_keyword + White() + from_keyword)
-column_lists_keyword = Combine(column_keyword + White() + list_keyword)
-similarity_to_keyword = Combine(similarity_keyword + White() + to_keyword)
-with_respect_to_keyword = Combine(with_keyword + White() + respect_keyword + White() + to_keyword)
-probability_of_keyword = Combine(probability_keyword + White() + of_keyword)
+show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword + single_white + for_keyword)
+show_models_for_keyword = Combine(show_keyword + single_white + model_keyword + single_white + for_keyword)
+estimate_pairwise_keyword = Combine(estimate_keyword + single_white + pairwise_keyword)
+with_confidence_keyword = Combine(with_keyword + single_white + confidence_keyword)
+dependence_probability_keyword = Combine(dependence_keyword + single_white + probability_keyword)
+mutual_information_keyword = Combine(mutual_keyword + single_white + information_keyword)
+estimate_columns_from_keyword = Combine(estimate_keyword + single_white + column_keyword + single_white + from_keyword)
+column_lists_keyword = Combine(column_keyword + single_white + list_keyword)
+similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword)
+with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
+probability_of_keyword = Combine(probability_keyword + single_white + of_keyword)
 
 ## Values
 
