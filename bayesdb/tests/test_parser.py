@@ -22,11 +22,83 @@ import time
 import inspect
 import pickle
 import os
+from pyparsing import *
 
+from bayesdb.bql_grammar import *
 from bayesdb.engine import Engine
 from bayesdb.parser import Parser
 engine = Engine('local')
 parser = Parser()
+
+def test_keyword_plurality_ambiguity():
+    model = model_keyword.parseString("model")
+    models = model_keyword.parseString("models")
+    assert model[0] == 'model'
+    assert models[0] == 'model'
+    iteration = iteration_keyword.parseString("iteration")
+    iterations = iteration_keyword.parseString("iterations")
+    assert iteration[0] == 'iteration'
+    assert iterations[0] == 'iteration'
+    sample = sample_keyword.parseString("sample")
+    samples = sample_keyword.parseString("samples")
+    assert sample[0] == 'sample'
+    assert samples[0] == 'sample'
+    column = column_keyword.parseString('column')
+    columns = column_keyword.parseString('columns')
+    assert column[0] == 'column'
+    assert columns[0] == 'column'
+    list_ = list_keyword.parseString('list')
+    lists = list_keyword.parseString('lists')
+    assert list_[0] == 'list'
+    assert lists[0] == 'list'
+    btable = btable_keyword.parseString('btable')
+    btables = btable_keyword.parseString('btables')
+    assert btable[0] == 'btable'
+    assert btables[0] == 'btable'
+
+def test_composite_keywords():
+    execute_file = execute_file_keyword.parseString('eXecute file')
+    assert execute_file[0] == 'execute file'
+    create_btable = create_btable_keyword.parseString('cReate btable')
+    assert create_btable[0] == 'create btable'
+    update_schema_for = update_schema_for_keyword.parseString('update Schema for')
+    assert update_schema_for[0] == 'update schema for'
+    models_for = models_for_keyword.parseString('Models for')
+    assert models_for[0] == 'model for'
+    model_index = model_index_keyword.parseString('model Index')
+    assert model_index[0] == 'model index'
+    save_model = save_model_keyword.parseString("save modeL")
+    assert save_model[0] == 'save model'
+    load_model = load_model_keyword.parseString("load Models")
+    assert load_model[0] == 'load model'
+    save_to = save_to_keyword.parseString('save To')
+    assert save_to[0] == 'save to'
+    list_btables = list_btables_keyword.parseString('list bTables')
+    assert list_btables[0] == 'list btable'
+    show_schema_for = show_schema_for_keyword.parseString('show Schema for')
+    assert show_schema_for[0] == 'show schema for'
+    show_models_for = show_models_for_keyword.parseString("show modeLs for")
+    assert show_models_for[0] == 'show model for'
+    estimate_pairwise = estimate_pairwise_keyword.parseString("estimate Pairwise")
+    assert estimate_pairwise[0] == 'estimate pairwise'
+    with_confidence = with_confidence_keyword.parseString('with  confIdence')
+    assert with_confidence[0] == 'with confidence'
+    dependence_probability = dependence_probability_keyword.parseString('dependence probability')
+    assert dependence_probability[0] == 'dependence probability'
+    mutual_information = mutual_information_keyword.parseString('mutual inFormation')
+    assert mutual_information[0] == 'mutual information'
+    estimate_columns_from = estimate_columns_from_keyword.parseString("estimate columns froM")
+    assert estimate_columns_from[0] == 'estimate column from'
+    column_lists = column_lists_keyword.parseString('column Lists')
+    assert column_lists[0] == 'column list'
+    similarity_to = similarity_to_keyword.parseString("similarity to")
+    assert similarity_to[0] == 'similarity to'
+    with_respect_to = with_respect_to_keyword.parseString("with Respect to")
+    assert with_respect_to[0] == 'with respect to'
+    probability_of = probability_of_keyword.parseString('probability of')
+    assert probability_of[0] == 'probability of'
+    predictive_probability_of = predictive_probability_of_keyword.parseString('predictive Probability  of')
+    assert predictive_probability_of[0] == 'predictive probability of'
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')

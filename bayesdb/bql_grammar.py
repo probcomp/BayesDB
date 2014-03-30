@@ -108,7 +108,6 @@ load_model_keyword = Combine(load_keyword + single_white + model_keyword)
 save_model_keyword = Combine(save_keyword + single_white + model_keyword)
 save_to_keyword = Combine(save_keyword + single_white + to_keyword)
 list_btables_keyword = Combine(list_keyword + single_white + btable_keyword)
-
 show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword + single_white + for_keyword)
 show_models_for_keyword = Combine(show_keyword + single_white + model_keyword + single_white + for_keyword)
 estimate_pairwise_keyword = Combine(estimate_keyword + single_white + pairwise_keyword)
@@ -120,6 +119,7 @@ column_lists_keyword = Combine(column_keyword + single_white + list_keyword)
 similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword)
 with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
 probability_of_keyword = Combine(probability_keyword + single_white + of_keyword)
+predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_of_keyword)
 
 ## Values
 
