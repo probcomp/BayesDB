@@ -30,17 +30,17 @@ into_keyword = CaselessKeyword("into")
 of_keyword = CaselessKeyword("of")
 with_keyword = CaselessKeyword("with")
 help_keyword = CaselessKeyword("help")
+to_keyword = CaselessKeyword('to')
 ## Many basic keywords will never be used alone
 ## creating them separately like this allows for simpler whitespace and case flexibility
 create_keyword = CaselessKeyword("create")
-btable_keyword = CaselessKeyword("btable")
 execute_keyword = CaselessKeyword("execute")
 file_keyword = CaselessKeyword("file")
 update_keyword = CaselessKeyword("update")
-schema_litearl = CaselessKeyword("schema")
+schema_keyword = CaselessKeyword("schema")
 initialize_keyword = CaselessKeyword("initialize")
 analyze_keyword = CaselessKeyword("analyze")
-index_keyword = CaselessKeyword("caseless")
+index_keyword = CaselessKeyword("index")
 save_keyword = CaselessKeyword("save")
 load_keyword = CaselessKeyword("load")
 show_keyword = CaselessKeyword("show")
@@ -78,32 +78,50 @@ single_column_keyword = CaselessKeyword("column")
 multiple_columns_keyword = CaselessKeyword("columns")
 single_list_keyword = CaselessKeyword("list")
 multiple_lists_keyword = CaselessKeyword("lists")
-## Plural agnostic syntax
+single_btable_keyword = CaselessKeyword("btable")
+multiple_btable_keyword = CaselessKeyword("btables")
+## Plural agnostic syntax, setParseAction makes it all display the singular
 model_keyword = single_model_keyword | multiple_models_keyword
+model_keyword.setParseAction(replaceWith("model"))
 iteration_keyword = single_iteration_keyword | multiple_iterations_keyword
-sample_keyword = single_sample_keyword | multiple_iterations_keyword
-column_keyword = single_column_keyword | multiple_iterations_keyword
+iteration_keyword.setParseAction(replaceWith("iteration"))
+sample_keyword = single_sample_keyword | multiple_samples_keyword
+sample_keyword.setParseAction(replaceWith("sample"))
+column_keyword = single_column_keyword | multiple_columns_keyword
+column_keyword.setParseAction(replaceWith("column"))
 list_keyword = single_list_keyword | multiple_lists_keyword
+list_keyword.setParseAction(replaceWith("list"))
+btable_keyword = single_btable_keyword | multiple_btable_keyword
+btable_keyword.setParseAction(replaceWith("btable"))
 
 ## Composite keywords: Inseparable elements that can have whitespace
 ## Using White() and Combine to make them one string
-execute_file_literal = Combine(execute_keyword + White() + file_keyword)
-create_btable_literal = Combine(create_keyword + White() + btable_keyword)
+execute_file_keyword = Combine(execute_keyword + White() + file_keyword)
+create_btable_keyword = Combine(create_keyword + White() + btable_keyword)
+update_schema_for_keyword = Combine(update_keyword + White() + schema_keyword + White() + for_keyword)
+models_for_keyword = Combine(model_keyword + White() + for_keyword)
+model_index_keyword = Combine(model_keyword + White() + index_keyword)
+load_model_keyword = Combine(load_keyword + White() + model_keyword)
+save_model_keyword = Combine(save_keyword + White() + model_keyword)
+save_to_keyword = Combine(save_keyword + White() + to_keyword)
+list_btables_keyword = Combine(list_keyword + White() + btable_keyword)
+
+show_schema_for_keyword = Combine(show_keyword + White() + schema_keyword + White() + for_keyword)
+show_models_for_keyword = Combine(show_keyword + White() + model_keyword + White() + for_keyword)
+estimate_pairwise_keyword = Combine(estimate_keyword + White() + pairwise_keyword)
+with_confidence_keyword = Combine(with_keyword + White() + confidence_keyword)
+dependence_probability_keyword = Combine(dependence_keyword + White() + probability_keyword)
+mutual_information_keyword = Combine(mutual_keyword + White() + information_keyword)
+estimate_columns_from_keyword = Combine(estimate_keyword + White() + column_keyword + White() + from_keyword)
+column_lists_keyword = Combine(column_keyword + White() + list_keyword)
+similarity_to_keyword = Combine(similarity_keyword + White() + to_keyword)
+with_respect_to_keyword = Combine(with_keyword + White() + respect_keyword + White() + to_keyword)
+probability_of_keyword = Combine(probability_keyword + White() + of_keyword)
 
 ## Values
 
 ## Functions
 
 ## Clauses
-print execute_literal.parseString("execute")
-print file_literal.parseString("file")
-print type(execute_file_literal.parseString("execute file")[0])
-
-
-queries =["execute file", 
-"exECUTE FILE"
-]
-for string in queries: 
-    print execute_file_literal.parseString(string)
 
 print "end"
