@@ -108,6 +108,8 @@ def test_composite_keywords():
     save_connected_components_with_threshold = save_connected_components_with_threshold_keyword.parseString(
         'save cOnnected components with threshold')
     assert save_connected_components_with_threshold[0] == 'save connected components with threshold'
+    estimate_pairwise_row = estimate_pairwise_row_keyword.parseString("estimate Pairwise row")
+    assert estimate_pairwise_row[0] == 'estimate pairwise row'
 
 def test_valid_values_names():
     valid_values=[
