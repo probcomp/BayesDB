@@ -35,7 +35,7 @@ Initializes <num_models> models.
 
 ::
 
-	ANALYZE <btable> [MODEL INDEX <model_index] FOR <num_iterations> ITERATIONS
+	ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
 
 Analyze the specified models for the specified number of iterations (by default, analyze all models).
 
@@ -58,6 +58,12 @@ View each column name, and each column's datatype.
    SHOW MODELS FOR <btable>
 
 Display all models, their ids, and how many iterations of ANALYZE have been performed on each one.
+
+::
+
+   SHOW DIAGNOSTICS FOR <btable>
+
+Advanced feature: show diagnostic information for your btable's models.
 
 Saving and loading models
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,27 +88,37 @@ You may delete an entire btable (including all its associated models - careful!)
 
 ::
 
-	DROP MODEL[S] [<model_index>] FROM <btable>
+	DROP MODEL[S] [<model_index>-<model_index>] FROM <btable>
 
 Querying
 ~~~~~~~~
-BayesDB has four fundamental query statements: SELECT, INFER, SIMULATE, and ESTIMATE PAIRWISE. They bear a strong resemblance to SQL queries.
+BayesDB has five fundamental query statements: SELECT, INFER, SIMULATE, ESTIMATE COLUMNS, and ESTIMATE PAIRWISE. They bear a strong resemblance to SQL queries.
 
 SELECT is just like SQL's SELECT, except in addition to selecting, filtering (with where), and ordering raw column values, you may also use predictive functions in any of those clauses::
 
-   SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>]
+   SELECT [HIST] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <file>]
 
 INFER is just like SELECT, except that it also tries to fill in missing values. The user must specify the desired confidence level to use (a number between 0 and 1, where 0 means "fill in every missing value with whatever your best guess is", and 1 means "only fill in a missing value if you're sure what it is"). Optionally, the user may specify the number of samples to use when filling in missing values: the default value is good in general, but if you know what you're doing and want higher accuracy, you can increase the numer of samples used::
 
-   INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>]
+   INFER [HIST] <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <file>]
 
 SIMULATE generates new rows from the underlying probability model a specified number of times::
 
-   SIMULATE <columns> FROM <btable> [WHERE <whereclause>] TIMES <times>
-   
-With ESTIMATE PAIRWISE, you may use any function that takes two columns as input, i.e. DEPENDENCE PROBABILITY, CORRELATION, or MUTUAL INFORMATION, and generates a matrix showing the value of that function applied to each pair of columns. See the :ref:`functions` section for more information::
+   SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <file>]
 
-   ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>]
+ESTIMATE COLUMNS is like a SELECT statement, but lets you select columns instead of rows::
+
+   ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>]
+   
+With ESTIMATE PAIRWISE, you may use any function that takes two columns as input, i.e. DEPENDENCE PROBABILITY, CORRELATION, or MUTUAL INFORMATION, and generates a matrix showing the value of that function applied to each pair of columns. See the :ref:`functions` section for more information.
+
+In addition, you may also add "SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>" in order to compute groups of columns, where the value of the pairwise function is at least <threshold> between at least one pair of columns in the group. Then, those groups of columns are saved as column lists with names "column_list_<id>", where id is an integer starting with 0::
+
+   ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>]
+
+You may also compute pairwise functions of rows with ESTIMATE PAIRWISE ROW::
+
+  ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
 
 In the above query specifications, you may be wondering what some of the notation, such as <columns|functions> and <whereclause>, means. <columns|functions> just means a list of comma-separated column names or function specifications::
 
