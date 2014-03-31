@@ -55,6 +55,10 @@ def test_keyword_plurality_ambiguity():
     btables = btable_keyword.parseString('btables')
     assert btable[0] == 'btable'
     assert btables[0] == 'btable'
+    second = second_keyword.parseString('second')
+    seconds = second_keyword.parseString('seconds')
+    assert second[0] == 'second'
+    assert seconds[0] == 'second'
 
 def test_composite_keywords():
     execute_file = execute_file_keyword.parseString('eXecute file')

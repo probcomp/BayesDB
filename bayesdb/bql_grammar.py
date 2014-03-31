@@ -81,6 +81,8 @@ single_list_keyword = CaselessKeyword("list")
 multiple_lists_keyword = CaselessKeyword("lists")
 single_btable_keyword = CaselessKeyword("btable")
 multiple_btable_keyword = CaselessKeyword("btables")
+single_second_keyword = CaselessKeyword("second")
+multiple_seconds_keyword = CaselessKeyword("seconds")
 ## Plural agnostic syntax, setParseAction makes it all display the singular
 model_keyword = single_model_keyword | multiple_models_keyword
 model_keyword.setParseAction(replaceWith("model"))
@@ -94,6 +96,8 @@ list_keyword = single_list_keyword | multiple_lists_keyword
 list_keyword.setParseAction(replaceWith("list"))
 btable_keyword = single_btable_keyword | multiple_btable_keyword
 btable_keyword.setParseAction(replaceWith("btable"))
+second_keyword = single_second_keyword | multiple_seconds_keyword
+second_keyword.setParseAction(replaceWith("second"))
 
 ## Composite keywords: Inseparable elements that can have whitespace
 ## Using single_white and Combine to make them one string
