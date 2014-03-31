@@ -127,9 +127,8 @@ equal_literal = Literal("=")
 column_identifier = Word(alphas, alphanums + "_")
 # single and double quotes inside value must be escaped. 
 value = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(printables)| float_number
+filename = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")
 
 ## Functions
 
 ## Clauses
-
-print "end"

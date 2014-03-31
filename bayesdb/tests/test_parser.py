@@ -157,6 +157,9 @@ def test_valid_values_names():
     assert float_number.parseString('11')[0] == '11'
     assert int_number.parseString('11')[0] == '11'
     assert float_number.parseString('11.01')[0] == '11.01'
+    assert filename.parseString("~/filename.csv")[0] == "~/filename.csv"
+    assert filename.parseString("!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")[0] == "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~"
+    assert filename.parseString("'/filename with space.csv'")[0] == "/filename with space.csv"
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
