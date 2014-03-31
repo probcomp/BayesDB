@@ -124,11 +124,14 @@ float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
 int_number = Word(nums)
 operation_literal = oneOf("<= >= = < >")
 equal_literal = Literal("=")
-column_identifier = Word(alphas, alphanums + "_")
+identifier = Word(alphas, alphanums + "_")
 # single and double quotes inside value must be escaped. 
 value = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(printables)| float_number
 filename = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")
 
 ## Functions
+## Loading Data
+create_btable_function = create_btable_keyword + identifier + from_keyword + filename
+
 
 ## Clauses

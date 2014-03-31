@@ -161,6 +161,10 @@ def test_valid_values_names():
     assert filename.parseString("!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")[0] == "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~"
     assert filename.parseString("'/filename with space.csv'")[0] == "/filename with space.csv"
 
+def test_functions_simple():
+    create_btable1 = create_btable_function.parseString("CREATE BTABLE test_table FROM ~/test_file.csv", parseAll=True)
+    create_btable2 = create_btable_function.parseString("CREATE BTABLE test_table FROM '~/test_file.csv'", parseAll=True)
+
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
