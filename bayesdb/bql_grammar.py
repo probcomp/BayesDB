@@ -23,9 +23,7 @@ from pyparsing import *
 ## Matches any white space and stores it as a single space
 single_white = White().setParseAction(replaceWith(' '))
 
-## basica keywords
-operation_keyword = oneOf("<= >= = < >")
-equal_keyword = Keyword("=")
+## basic keywords
 and_keyword = CaselessKeyword("and")
 from_keyword = CaselessKeyword("from")
 for_keyword = CaselessKeyword("for")
@@ -121,7 +119,14 @@ with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword 
 probability_of_keyword = Combine(probability_keyword + single_white + of_keyword)
 predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_of_keyword)
 
-## Values
+## Values/Literals
+float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
+int_number = Word(nums)
+operation_literal = oneOf("<= >= = < >")
+equal_literal = Literal("=")
+column_identifier = Word(alphas, alphanums + "_")
+# single and double quotes inside value must be escaped. 
+value = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(printables)| float_number
 
 ## Functions
 

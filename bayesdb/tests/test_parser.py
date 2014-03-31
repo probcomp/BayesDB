@@ -100,6 +100,64 @@ def test_composite_keywords():
     predictive_probability_of = predictive_probability_of_keyword.parseString('predictive Probability  of')
     assert predictive_probability_of[0] == 'predictive probability of'
 
+def test_valid_values_names():
+    valid_values=[
+        '4',
+        '42.04',
+        '.4',
+        '4.',
+        "'\sjekja8391(*^@(%()!@#$%^&*()_+=-~'",
+        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~",
+        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~',
+        '"c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\\"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~"',
+        "'d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\\'()*+,-./:;<=>?@[\]^_`{|}~'",
+        "'numbers 0'", 
+        "'k skj s'",
+        ]
+    valid_values_results=[
+        '4',
+        '42.04',
+        '.4',
+        '4.',
+        '\sjekja8391(*^@(%()!@#$%^&*()_+=-~',
+        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~",
+        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~',
+        "c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~",
+        "d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~",
+        'numbers 0', 
+        'k skj s',
+        ]
+
+    for i in range(len(valid_values)):
+        assert value.parseString(valid_values[i])[0] == valid_values_results[i]
+
+    valid_column_identifiers = [
+        "a",
+        "a1",
+        "a_1",
+        "a_a",
+        "a_",
+        "aa"
+        ]
+    valid_column_identifiers_results = [
+        "a",
+        "a1",
+        "a_1",
+        "a_a",
+        "a_",
+        "aa"
+        ]
+    for i in range(len(valid_column_identifiers)):
+        assert value.parseString(valid_column_identifiers[i])[0] == valid_column_identifiers_results[i]
+    assert float_number.parseString('1')[0] == '1'
+    assert int_number.parseString('1')[0] == '1'
+    assert float_number.parseString('1.')[0] == '1'
+    assert float_number.parseString('.1')[0] == '.1'
+    assert float_number.parseString('0.1')[0] == '0.1'
+    assert float_number.parseString('11')[0] == '11'
+    assert int_number.parseString('11')[0] == '11'
+    assert float_number.parseString('11.01')[0] == '11.01'
+
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
