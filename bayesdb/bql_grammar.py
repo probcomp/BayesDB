@@ -69,6 +69,7 @@ respect_keyword = CaselessKeyword("respect")
 predictive_keyword = CaselessKeyword("predictive")
 group_keyword = CaselessKeyword("group")
 diagnostics_keyword = CaselessKeyword("diagnostics")
+hist_keyword = CaselessKeyword("hist")
 ## Single and plural keywords
 single_model_keyword = CaselessKeyword("model")
 multiple_models_keyword = CaselessKeyword("models")
