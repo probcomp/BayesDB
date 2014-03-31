@@ -83,6 +83,8 @@ def test_composite_keywords():
     assert show_schema_for[0] == 'show schema for'
     show_models_for = show_models_for_keyword.parseString("show modeLs for")
     assert show_models_for[0] == 'show model for'
+    show_diagnostics_for = show_diagnostics_for_keyword.parseString("show diaGnostics for")
+    assert show_diagnostics_for[0] == 'show diagnostics for'
     estimate_pairwise = estimate_pairwise_keyword.parseString("estimate Pairwise")
     assert estimate_pairwise[0] == 'estimate pairwise'
     with_confidence = with_confidence_keyword.parseString('with  confIdence')
