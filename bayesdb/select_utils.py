@@ -27,6 +27,7 @@ import matplotlib.cm
 import inspect
 import operator
 import ast
+import string
 
 import utils
 import functions
@@ -37,11 +38,11 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   whereclause = whereclause.lower()
 
   ## ------------------------- whereclause grammar ----------------------------
-  # TODO outside function
+  # TODO outside function, TODO make whitespace regex \s+
   operation = oneOf("<= >= < > =")
   column_identifier = Word(alphanums , alphanums + "_")
   float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
-  value = QuotedString('"', unquoteResults=False) | QuotedString("'", unquoteResults=False) | float_number
+  value = QuotedString('"') | QuotedString("'") | float_number | Word(alphanums + "_")
   and_literal = CaselessLiteral("and")
 
   row_identifier = Word(nums) | Group( column_identifier.setResultsName("column") + 
@@ -54,7 +55,10 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   typicality_literal = CaselessLiteral("typicality")
 
   with_respect_to_literal = Regex(r'with\srespect\sto')
+  with_confidence_literal = Regex(r'with\sconfidence')
 
+  with_confidence_clause = Group(with_confidence_literal.setResultsName("literal") + 
+                                 float_number.setResultsName("confidence"))
   predictive_probability_of_function = Group(predictive_probability_of_literal.setResultsName("fun_name") +
                                              column_identifier.setResultsName("column"))
   with_respect_to_clause = Group(with_respect_to_literal.setResultsName("literal") + 
@@ -67,37 +71,38 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
 
   function_literal = similarity_function | predictive_probability_of_function | typicality_function
 
-  single_where_clause = Group((function_literal | column_identifier) + operation + value)
+  single_where_clause = Group((function_literal | column_identifier) + operation + value + 
+                              Optional(with_confidence_clause).setResultsName("with_confidence"))
 
   where_clause = single_where_clause + ZeroOrMore(and_literal + single_where_clause).leaveWhitespace()
   ## --------------------------------------------------------------------------------
   
   if len(whereclause) == 0:
     return ""
- 
   ## Create conds: the list of conditions in the whereclause.
   ## List of (c_idx, op, val) tuples.
   conds = list() 
-
   operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
-
   top_level_parse = where_clause.parseString(whereclause)
+  print top_level_parse
   for inner_element in top_level_parse:
+    # skips dividing literals
     if inner_element == 'and':
       continue
+    if inner_element.with_confidence != '':
+      confidence = inner_element.with_confidence[0].confidence #TODO figure out how to avoid these nested indexing issues
+    else:
+      confidence = None
     op = operator_map[inner_element[1]]
-    
     raw_val = inner_element[2]
     if utils.is_int(raw_val):
-  
       val = int(raw_val)
     elif utils.is_float(raw_val):
       val = float(raw_val)
     else:
       ## val could have matching single or double quotes, which we can safely eliminate
       ## with the following safe (string literal only) implementation of eval
-      val = ast.literal_eval(raw_val)
-
+      val = raw_val
     ## simple where column = value statement
     if type(inner_element[0]) is str:
       colname = inner_element[0]
@@ -105,23 +110,17 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
         conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
         continue
       raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
-
     else:
       functon_parse = inner_element[0]
-    
     if inner_element[0].fun_name=="similarity to":
-      
       row_id = inner_element[0].row_id
-      
       ## case where row_id is simiple
       if type(row_id) == str:
         target_row_id = int(row_id)
-
       ## case where row_id is of the form "column_name = value"
       else:
         column_name = row_id.column
         column_value = ast.literal_eval(row_id.value)
-        
         ## look up row_id where column_name has column_value
         column_index = M_c['name_to_idx'][column_name.lower()]
         for row_id, T_row in enumerate(T):
@@ -129,28 +128,21 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
           if row_values[column_index] == where_val:
             target_row_id = row_id
             break
-        
       respect_to_clause = inner_element[0].respect_to
-
       target_column = None
       if respect_to_clause != '':
         target_column = M_c['name_to_idx'][respect_to_clause[0][1]] #TODO should be able to fix double index
-
       conds.append(((functions._similarity, (target_row_id, target_column)), op, val))
-
       continue
     elif inner_element[0].fun_name == "typicality":
       conds.append(((functions._row_typicality, True), op, val)) 
       continue
-    
     if inner_element[0].fun_name == "predictive probability of":
       if M_c['name_to_idx'].has_key(inner_element[0].column.lower()):
         column_index = M_c['name_to_idx'][inner_element[0].column.lower()]
         conds.append(((functions._predictive_probability,column_index), op, val))
         continue
-
     raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
-
   return conds
 
 def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend):
