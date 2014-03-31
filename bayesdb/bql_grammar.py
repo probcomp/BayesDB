@@ -70,6 +70,9 @@ predictive_keyword = CaselessKeyword("predictive")
 group_keyword = CaselessKeyword("group")
 diagnostics_keyword = CaselessKeyword("diagnostics")
 hist_keyword = CaselessKeyword("hist")
+connected_keyword = CaselessKeyword("connected")
+components_keyword = CaselessKeyword("components")
+threshold_keyword = CaselessKeyword("threshold")
 ## Single and plural keywords
 single_model_keyword = CaselessKeyword("model")
 multiple_models_keyword = CaselessKeyword("models")
@@ -125,6 +128,10 @@ similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword)
 with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
 probability_of_keyword = Combine(probability_keyword + single_white + of_keyword)
 predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_of_keyword)
+save_connected_components_with_threshold_keyword = Combine(save_keyword + single_white + 
+                                                           connected_keyword + single_white + 
+                                                           components_keyword + single_white + 
+                                                           with_keyword + single_white + threshold_keyword)
 
 ## Values/Literals
 float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')

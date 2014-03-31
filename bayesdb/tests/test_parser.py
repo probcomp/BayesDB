@@ -105,6 +105,9 @@ def test_composite_keywords():
     assert probability_of[0] == 'probability of'
     predictive_probability_of = predictive_probability_of_keyword.parseString('predictive Probability  of')
     assert predictive_probability_of[0] == 'predictive probability of'
+    save_connected_components_with_threshold = save_connected_components_with_threshold_keyword.parseString(
+        'save cOnnected components with threshold')
+    assert save_connected_components_with_threshold[0] == 'save connected components with threshold'
 
 def test_valid_values_names():
     valid_values=[
