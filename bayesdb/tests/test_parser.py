@@ -30,7 +30,7 @@ from bayesdb.parser import Parser
 engine = Engine('local')
 parser = Parser()
 
-def test_keyword_plurality_ambiguity():
+def test_keyword_plurality_ambiguity_pyparsing():
     model = model_keyword.parseString("model")
     models = model_keyword.parseString("models")
     assert model[0] == 'model'
@@ -60,7 +60,7 @@ def test_keyword_plurality_ambiguity():
     assert second[0] == 'second'
     assert seconds[0] == 'second'
 
-def test_composite_keywords():
+def test_composite_keywords_pyparsing():
     execute_file = execute_file_keyword.parseString('eXecute file')
     assert execute_file[0] == 'execute file'
     create_btable = create_btable_keyword.parseString('cReate btable')
@@ -111,7 +111,7 @@ def test_composite_keywords():
     estimate_pairwise_row = estimate_pairwise_row_keyword.parseString("estimate Pairwise row")
     assert estimate_pairwise_row[0] == 'estimate pairwise row'
 
-def test_valid_values_names():
+def test_valid_values_names_pyparsing():
     valid_values=[
         '4',
         '42.04',
@@ -172,11 +172,7 @@ def test_valid_values_names():
     assert filename.parseString("!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")[0] == "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~"
     assert filename.parseString("'/filename with space.csv'")[0] == "/filename with space.csv"
 
-def test_functions_simple():
-    create_btable1 = create_btable_function.parseString("CREATE BTABLE test_table FROM ~/test_file.csv", parseAll=True)
-    create_btable2 = create_btable_function.parseString("CREATE BTABLE test_table FROM '~/test_file.csv'", parseAll=True)
-
-def test_update_schema():
+def test_update_schema_pyparsing():
     update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
     assert update_schema_1.function_id == 'update schema for'
     assert update_schema_1.btable == 'test_btablE'
@@ -189,6 +185,15 @@ def test_update_schema():
     update_schema_2 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = key",parseAll=True)
     assert update_schema_2.type_clause[0][0] == 'col_1'
     assert update_schema_2.type_clause[0][1] == 'key'
+
+def test_create_btable_pyparsing():
+    create_btable_1 = create_btable_function.parseString("CREATE BTABLE test.btable FROM '~/filenam e.csv'", parseAll=True)
+    create_btable_2 = create_btable_function.parseString("CREATE BTABLE test_btable FROM ~/filename.csv", parseAll=True)
+    assert create_btable_1.function_id == 'create btable'
+    assert create_btable_1.btable == 'test.btable'
+    assert create_btable_1.filename == '~/filenam e.csv'
+    assert create_btable_2.btable == 'test_btable'
+    assert create_btable_2.filename == '~/filename.csv'
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
@@ -321,7 +326,3 @@ def test_infer():
 #INFER <columns> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [LIMIT <limit>] [WITH <numsamples> SAMPLES] [ORDER BY <columns]
 
 #SIMULATE <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [ORDER BY <columns>]
-
-def test_estimate_pairwise():
-    pass
-

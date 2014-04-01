@@ -112,25 +112,25 @@ second_keyword.setParseAction(replaceWith("second"))
 
 ## Composite keywords: Inseparable elements that can have whitespace
 ## Using single_white and Combine to make them one string
-execute_file_keyword = Combine(execute_keyword + single_white + file_keyword)
-create_btable_keyword = Combine(create_keyword + single_white + btable_keyword)
+execute_file_keyword = Combine(execute_keyword + single_white + file_keyword).setResultsName("function_id")
+create_btable_keyword = Combine(create_keyword + single_white + btable_keyword).setResultsName("function_id")
 update_schema_for_keyword = Combine(update_keyword + single_white + 
                                     schema_keyword + single_white + for_keyword).setResultsName("function_id")
 models_for_keyword = Combine(model_keyword + single_white + for_keyword)
 model_index_keyword = Combine(model_keyword + single_white + index_keyword)
-load_model_keyword = Combine(load_keyword + single_white + model_keyword)
-save_model_keyword = Combine(save_keyword + single_white + model_keyword)
-save_to_keyword = Combine(save_keyword + single_white + to_keyword)
-list_btables_keyword = Combine(list_keyword + single_white + btable_keyword)
-show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword + single_white + for_keyword)
-show_models_for_keyword = Combine(show_keyword + single_white + model_keyword + single_white + for_keyword)
-show_diagnostics_for_keyword = Combine(show_keyword + single_white + diagnostics_keyword + single_white + for_keyword)
-estimate_pairwise_keyword = Combine(estimate_keyword + single_white + pairwise_keyword)
-estimate_pairwise_row_keyword = Combine(estimate_pairwise_keyword + single_white + row_keyword)
+load_model_keyword = Combine(load_keyword + single_white + model_keyword).setResultsName("function_id")
+save_model_keyword = Combine(save_keyword + single_white + model_keyword).setResultsName("function_id")
+save_to_keyword = Combine(save_keyword + single_white + to_keyword).setResultsName("function_id")
+list_btables_keyword = Combine(list_keyword + single_white + btable_keyword).setResultsName("function_id")
+show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword + single_white + for_keyword).setResultsName("function_id")
+show_models_for_keyword = Combine(show_keyword + single_white + model_keyword + single_white + for_keyword).setResultsName("function_id")
+show_diagnostics_for_keyword = Combine(show_keyword + single_white + diagnostics_keyword + single_white + for_keyword).setResultsName("function_id")
+estimate_pairwise_keyword = Combine(estimate_keyword + single_white + pairwise_keyword).setResultsName("function_id")
+estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + single_white + row_keyword).setResultsName("function_id")
 with_confidence_keyword = Combine(with_keyword + single_white + confidence_keyword)
 dependence_probability_keyword = Combine(dependence_keyword + single_white + probability_keyword)
 mutual_information_keyword = Combine(mutual_keyword + single_white + information_keyword)
-estimate_columns_from_keyword = Combine(estimate_keyword + single_white + column_keyword + single_white + from_keyword)
+estimate_columns_from_keyword = Combine(estimate_keyword + single_white + column_keyword + single_white + from_keyword).setResultsName("function_id")
 column_lists_keyword = Combine(column_keyword + single_white + list_keyword)
 similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword)
 with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
@@ -139,7 +139,7 @@ predictive_probability_of_keyword = Combine(predictive_keyword + single_white + 
 save_connected_components_with_threshold_keyword = Combine(save_keyword + single_white + 
                                                            connected_keyword + single_white + 
                                                            components_keyword + single_white + 
-                                                           with_keyword + single_white + threshold_keyword)
+                                                           with_keyword + single_white + threshold_keyword).setResultsName("function_id")
 
 ## Values/Literals
 float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
@@ -151,7 +151,7 @@ comma_literal = Literal(",")
 identifier = Word(alphas, alphanums + "_.")
 # single and double quotes inside value must be escaped. 
 value = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(printables)| float_number
-filename = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")
+filename = (QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")).setResultsName("filename")
 data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword
 
 ##################################################################################
@@ -161,7 +161,7 @@ data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | k
 # ------------------------------- Management functions --------------------------#
 
 # CREATE BTABLE <btable> FROM <filename.csv>
-create_btable_function = create_btable_keyword + identifier + from_keyword + filename
+create_btable_function = create_btable_keyword + identifier.setResultsName("btable") + Suppress(from_keyword) + filename
 
 # UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
 type_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + data_type_literal) + 
