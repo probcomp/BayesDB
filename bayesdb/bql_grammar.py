@@ -189,6 +189,8 @@ def list_from_index_clause(toks):
             index_list.append(int(token))
         elif len(token) == 2:
             index_list += range(int(token[0]), int(token[1])+1)
+        #TODO else throw exception
+        index_list.sort()
     return [list(set(index_list))]
     
 model_index_clause = (model_keyword + 
@@ -197,10 +199,9 @@ model_index_clause = (model_keyword +
                                        (Group(int_number + Suppress(hyphen_literal) + int_number) |
                                         int_number)))
                       .setParseAction(list_from_index_clause)
-                      .setResultsName('index_list')
-                      )
+                      .setResultsName('index_list')).setResultsName('index_clause')
 analyze_function = (analyze_keyword + btable + 
-#                    Optional() + 
+                    Optional(model_index_clause) + 
                     Suppress(for_keyword) + 
                     ((int_number.setResultsName('num_iterations') + iteration_keyword) | 
                      (int_number.setResultsName('num_seconds') + second_keyword)))

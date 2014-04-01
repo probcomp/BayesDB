@@ -211,6 +211,40 @@ def test_initialize_pyparsing():
     assert initialize_2.num_models == '3'
     assert initialize_2.btable == 'test_table'
 
+def test_analyze_pyparsing():
+    analyze_1 = analyze_function.parseString("ANALYZE table_1 FOR 10 ITERATIONS",parseAll=True)
+    analyze_2 = analyze_function.parseString("ANALYZE table_1 FOR 1 ITERATION",parseAll=True)
+    analyze_3 = analyze_function.parseString("ANALYZE table_1 FOR 10 SECONDS",parseAll=True)
+    analyze_4 = analyze_function.parseString("ANALYZE table_1 FOR 1 SECOND",parseAll=True)
+    analyze_5 = analyze_function.parseString("ANALYZE table_1 MODEL 1 FOR 10 SECONDS",parseAll=True)
+    analyze_6 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3 FOR 1 ITERATION",parseAll=True)
+    analyze_7 = analyze_function.parseString("ANALYZE table_1 MODELS 1,2,3 FOR 10 SECONDS",parseAll=True)
+    analyze_8 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 3-5 FOR 1 ITERATION",parseAll=True)
+    analyze_9 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5 FOR 10 SECONDS",parseAll=True)
+    analyze_10 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5-7, 9, 10 FOR 1 ITERATION",parseAll=True)
+    analyze_11 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 1, 2, 2 FOR 10 SECONDS",parseAll=True)
+    analyze_12 = analyze_function.parseString("ANALYZE table_1 MODELS 1-5, 1-5, 5 FOR 1 ITERATION",parseAll=True)
+    assert analyze_1.function_id == 'analyze'
+    assert analyze_1.btable == 'table_1'
+    assert analyze_1.index_lust == ''
+    assert analyze_1.index_clause == ''
+    assert analyze_1.num_iterations == '10'
+    assert analyze_1.num_seconds == ''
+    assert analyze_2.num_iterations == '1'
+    assert analyze_2.num_seconds == ''
+    assert analyze_3.num_iterations == ''
+    assert analyze_3.num_seconds == '10'
+    assert analyze_4.num_iterations == ''
+    assert analyze_4.num_seconds == '1'
+    assert analyze_5.index_list.asList() == [1]
+    assert analyze_6.index_list.asList() == [1,2,3]
+    assert analyze_7.index_list.asList() == [1,2,3]
+    assert analyze_8.index_list.asList() == [1,3,4,5]
+    assert analyze_9.index_list.asList() == [1,2,3,5]
+    assert analyze_10.index_list.asList() == [1,2,3,5,6,7,9,10]
+    assert analyze_11.index_list.asList() == [1,2]
+    assert analyze_12.index_list.asList() == [1,2,3,4,5]
+
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
