@@ -148,6 +148,7 @@ operation_literal = oneOf("<= >= = < >")
 equal_literal = Literal("=")
 semicolon_literal = Literal(";")
 comma_literal = Literal(",")
+hyphen_literal = Literal("-")
 identifier = Word(alphas, alphanums + "_.")
 btable = identifier.setResultsName("btable")
 # single and double quotes inside value must be escaped. 
@@ -178,13 +179,28 @@ execute_file_function = execute_file_keyword + filename
 # INITIALIZE <num_models> MODELS FOR <btable>
 initialize_function = (initialize_keyword + int_number.setResultsName("num_models") + 
                        Suppress(models_for_keyword) + btable)
-'''
-# ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <num_seconds> SECONDS)
+
+# ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
+def list_from_index_clause(toks):
+    index_list = []
+    for token in toks[0]:
+        if type(token)== str:
+            index_list.append(int(token))
+        elif len(token) == 2:
+            index_list += range(int(token[0]), int(token[1]))
+    index_list.sort()
+    return [index_list]
+    
+model_index_clause = (model_keyword + Group(int_number + 
+                      ZeroOrMore(Suppress(comma_literal) + 
+                                 (Group(int_number + Suppress(hyphen_literal) + int_number) | 
+                                  int_number))).setParseAction(list_from_index_clause)
+                      )
 analyze_function = (analyze_keyword + btable + 
-                    Optional() + 
-                    for_keyword + 
+#                    Optional() + 
+                    Suppress(for_keyword) + 
                     ((int_number.setResultsName('num_iterations') + iteration_keyword) | 
                      (int_number.setResultsName('num_seconds') + second_keyword)))
-'''
+
 ## Clauses
 print "imported"
