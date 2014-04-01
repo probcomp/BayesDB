@@ -44,7 +44,7 @@ categorical_keyword = CaselessKeyword("categorical")
 numerical_keyword = CaselessKeyword("numerical")
 ignore_keyword = CaselessKeyword("ignore")
 key_keyword = CaselessKeyword("key")
-initialize_keyword = CaselessKeyword("initialize")
+initialize_keyword = CaselessKeyword("initialize").setResultsName("function_id")
 analyze_keyword = CaselessKeyword("analyze")
 index_keyword = CaselessKeyword("index")
 save_keyword = CaselessKeyword("save")
@@ -173,6 +173,10 @@ update_schema_for_function = (update_schema_for_keyword +
                               type_clause)
 # EXECUTE FILE <filename.bql>
 execute_file_function = execute_file_keyword + filename
+
+# INITIALIZE <num_models> MODELS FOR <btable>
+initialize_function = (initialize_keyword + int_number.setResultsName("num_models") + 
+                       Suppress(models_for_keyword) + identifier.setResultsName("btable"))
 
 ## Clauses
 print "imported"
