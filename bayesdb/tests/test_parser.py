@@ -195,6 +195,13 @@ def test_create_btable_pyparsing():
     assert create_btable_2.btable == 'test_btable'
     assert create_btable_2.filename == '~/filename.csv'
 
+def test_execute_file_pyparsing():
+    execute_file_1 = execute_file_function.parseString("EXECUTE FILE '/filenam e.bql'",parseAll=True)
+    execute_file_2 = execute_file_function.parseString("EXECUTE FILE /filename.bql",parseAll=True)
+    assert execute_file_1.filename == "/filenam e.bql"
+    assert execute_file_2.filename == "/filename.bql"
+
+
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'

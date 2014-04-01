@@ -171,7 +171,7 @@ update_schema_for_function = (update_schema_for_keyword +
                               identifier.setResultsName("btable") + 
                               Suppress(set_keyword) + 
                               type_clause)
-
+# EXECUTE FILE <filename.bql>
 execute_file_function = execute_file_keyword + filename
 
 ## Clauses
