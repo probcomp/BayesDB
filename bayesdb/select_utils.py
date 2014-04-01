@@ -38,7 +38,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   whereclause = whereclause.lower()
 
   ## ------------------------- whereclause grammar ----------------------------
-  # TODO outside function, TODO make whitespace regex \s+
+  # TODO outside function
   operation = oneOf("<= >= < > =")
   column_identifier = Word(alphanums , alphanums + "_")
   float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
@@ -90,7 +90,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
     if inner_element == 'and':
       continue
     if inner_element.with_confidence != '':
-      confidence = inner_element.with_confidence[0].confidence #TODO figure out how to avoid these nested indexing issues
+      confidence = inner_element.with_confidence[0].confidence
     else:
       confidence = None
     op = operator_map[inner_element[1]]
@@ -131,7 +131,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       respect_to_clause = inner_element[0].respect_to
       target_column = None
       if respect_to_clause != '':
-        target_column = M_c['name_to_idx'][respect_to_clause[0][1]] #TODO should be able to fix double index
+        target_column = M_c['name_to_idx'][respect_to_clause[0][1]] 
       conds.append(((functions._similarity, (target_row_id, target_column)), op, val))
       continue
     elif inner_element[0].fun_name == "typicality":
