@@ -39,11 +39,6 @@ execute_keyword = CaselessKeyword("execute")
 file_keyword = CaselessKeyword("file")
 update_keyword = CaselessKeyword("update")
 schema_keyword = CaselessKeyword("schema")
-set_keyword = CaselessKeyword("set")
-categorical_keyword = CaselessKeyword("categorical")
-numerical_keyword = CaselessKeyword("numerical")
-ignore_keyword = CaselessKeyword("ignore")
-key_keyword = CaselessKeyword("key")
 initialize_keyword = CaselessKeyword("initialize")
 analyze_keyword = CaselessKeyword("analyze")
 index_keyword = CaselessKeyword("index")
@@ -114,7 +109,7 @@ second_keyword.setParseAction(replaceWith("second"))
 ## Using single_white and Combine to make them one string
 execute_file_keyword = Combine(execute_keyword + single_white + file_keyword)
 create_btable_keyword = Combine(create_keyword + single_white + btable_keyword)
-update_schema_for_keyword = Combine(update_keyword + single_white + schema_keyword + single_white + for_keyword).setResultsName("function_id")
+update_schema_for_keyword = Combine(update_keyword + single_white + schema_keyword + single_white + for_keyword)
 models_for_keyword = Combine(model_keyword + single_white + for_keyword)
 model_index_keyword = Combine(model_keyword + single_white + index_keyword)
 load_model_keyword = Combine(load_keyword + single_white + model_keyword)
@@ -145,35 +140,14 @@ float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
 int_number = Word(nums)
 operation_literal = oneOf("<= >= = < >")
 equal_literal = Literal("=")
-semicolon_literal = Literal(";")
-comma_literal = Literal(",")
-identifier = Word(alphas, alphanums + "_.")
+identifier = Word(alphas, alphanums + "_")
 # single and double quotes inside value must be escaped. 
 value = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(printables)| float_number
 filename = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")
-data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword
 
-##################################################################################
-# ------------------------------------ Functions --------------------------------#
-##################################################################################
-
-# ------------------------------- Management functions --------------------------#
-
-# CREATE BTABLE <btable> FROM <filename.csv>
+## Functions
+## Loading Data
 create_btable_function = create_btable_keyword + identifier + from_keyword + filename
 
-# UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
-type_clause = Group(ZeroOrMore(identifier + equal_literal + data_type_literal + comma_literal) +
-                    identifier + 
-                    equal_literal + 
-                    data_type_literal).setResultsName("type_clause")
-update_schema_for_function = (update_schema_for_keyword + 
-                                   identifier.setResultsName("btable") + 
-                                   set_keyword + 
-                                   type_clause
-                                   )
-
-execute_file_function = execute_file_keyword + filename
 
 ## Clauses
-print "imported"
