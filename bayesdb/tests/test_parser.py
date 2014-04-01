@@ -206,6 +206,10 @@ def test_initialize_pyparsing():
     assert initialize_1.function_id == 'initialize'
     assert initialize_1.num_models == '3'
     assert initialize_1.btable == 'test_table'
+    initialize_2 = initialize_function.parseString("INITIALIZE 3 MODEL FOR test_table",parseAll=True)
+    assert initialize_2.function_id == 'initialize'
+    assert initialize_2.num_models == '3'
+    assert initialize_2.btable == 'test_table'
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')

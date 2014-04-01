@@ -45,7 +45,7 @@ numerical_keyword = CaselessKeyword("numerical")
 ignore_keyword = CaselessKeyword("ignore")
 key_keyword = CaselessKeyword("key")
 initialize_keyword = CaselessKeyword("initialize").setResultsName("function_id")
-analyze_keyword = CaselessKeyword("analyze")
+analyze_keyword = CaselessKeyword("analyze").setResultsName("function_id")
 index_keyword = CaselessKeyword("index")
 save_keyword = CaselessKeyword("save")
 load_keyword = CaselessKeyword("load")
@@ -149,6 +149,7 @@ equal_literal = Literal("=")
 semicolon_literal = Literal(";")
 comma_literal = Literal(",")
 identifier = Word(alphas, alphanums + "_.")
+btable = identifier.setResultsName("btable")
 # single and double quotes inside value must be escaped. 
 value = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(printables)| float_number
 filename = (QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")).setResultsName("filename")
@@ -161,14 +162,14 @@ data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | k
 # ------------------------------- Management functions --------------------------#
 
 # CREATE BTABLE <btable> FROM <filename.csv>
-create_btable_function = create_btable_keyword + identifier.setResultsName("btable") + Suppress(from_keyword) + filename
+create_btable_function = create_btable_keyword + btable + Suppress(from_keyword) + filename
 
 # UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
 type_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + data_type_literal) + 
                                Suppress(comma_literal)) + 
                     Group(identifier + Suppress(equal_literal) + data_type_literal)).setResultsName("type_clause")
 update_schema_for_function = (update_schema_for_keyword + 
-                              identifier.setResultsName("btable") + 
+                              btable + 
                               Suppress(set_keyword) + 
                               type_clause)
 # EXECUTE FILE <filename.bql>
@@ -176,7 +177,14 @@ execute_file_function = execute_file_keyword + filename
 
 # INITIALIZE <num_models> MODELS FOR <btable>
 initialize_function = (initialize_keyword + int_number.setResultsName("num_models") + 
-                       Suppress(models_for_keyword) + identifier.setResultsName("btable"))
-
+                       Suppress(models_for_keyword) + btable)
+'''
+# ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <num_seconds> SECONDS)
+analyze_function = (analyze_keyword + btable + 
+                    Optional() + 
+                    for_keyword + 
+                    ((int_number.setResultsName('num_iterations') + iteration_keyword) | 
+                     (int_number.setResultsName('num_seconds') + second_keyword)))
+'''
 ## Clauses
 print "imported"
