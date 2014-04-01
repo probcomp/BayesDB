@@ -176,6 +176,20 @@ def test_functions_simple():
     create_btable1 = create_btable_function.parseString("CREATE BTABLE test_table FROM ~/test_file.csv", parseAll=True)
     create_btable2 = create_btable_function.parseString("CREATE BTABLE test_table FROM '~/test_file.csv'", parseAll=True)
 
+def test_update_schema():
+    update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
+    assert update_schema_1.function_id == 'update schema for'
+    assert update_schema_1.btable == 'test_btablE'
+    assert update_schema_1.type_clause[0][0] == 'col_1'
+    assert update_schema_1.type_clause[0][1] == 'categorical'
+    assert update_schema_1.type_clause[1][0] == 'col.2'
+    assert update_schema_1.type_clause[1][1] == 'numerical'
+    assert update_schema_1.type_clause[2][0] == 'col_3'
+    assert update_schema_1.type_clause[2][1] == 'ignore'
+    update_schema_2 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = key",parseAll=True)
+    assert update_schema_2.type_clause[0][0] == 'col_1'
+    assert update_schema_2.type_clause[0][1] == 'key'
+
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
@@ -311,5 +325,3 @@ def test_infer():
 def test_estimate_pairwise():
     pass
 
-def test_update_schema():
-    pass

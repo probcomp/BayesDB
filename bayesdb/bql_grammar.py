@@ -114,7 +114,8 @@ second_keyword.setParseAction(replaceWith("second"))
 ## Using single_white and Combine to make them one string
 execute_file_keyword = Combine(execute_keyword + single_white + file_keyword)
 create_btable_keyword = Combine(create_keyword + single_white + btable_keyword)
-update_schema_for_keyword = Combine(update_keyword + single_white + schema_keyword + single_white + for_keyword).setResultsName("function_id")
+update_schema_for_keyword = Combine(update_keyword + single_white + 
+                                    schema_keyword + single_white + for_keyword).setResultsName("function_id")
 models_for_keyword = Combine(model_keyword + single_white + for_keyword)
 model_index_keyword = Combine(model_keyword + single_white + index_keyword)
 load_model_keyword = Combine(load_keyword + single_white + model_keyword)
@@ -163,15 +164,13 @@ data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | k
 create_btable_function = create_btable_keyword + identifier + from_keyword + filename
 
 # UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
-type_clause = Group(ZeroOrMore(identifier + equal_literal + data_type_literal + comma_literal) +
-                    identifier + 
-                    equal_literal + 
-                    data_type_literal).setResultsName("type_clause")
+type_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + data_type_literal) + 
+                               Suppress(comma_literal)) + 
+                    Group(identifier + Suppress(equal_literal) + data_type_literal)).setResultsName("type_clause")
 update_schema_for_function = (update_schema_for_keyword + 
-                                   identifier.setResultsName("btable") + 
-                                   set_keyword + 
-                                   type_clause
-                                   )
+                              identifier.setResultsName("btable") + 
+                              Suppress(set_keyword) + 
+                              type_clause)
 
 execute_file_function = execute_file_keyword + filename
 
