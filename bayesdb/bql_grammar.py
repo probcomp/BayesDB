@@ -182,19 +182,22 @@ initialize_function = (initialize_keyword + int_number.setResultsName("num_model
 
 # ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
 def list_from_index_clause(toks):
+    ## takes index tokens separated by '-' for range and ',' for individual and returns a list of unique indexes
     index_list = []
     for token in toks[0]:
         if type(token)== str:
             index_list.append(int(token))
         elif len(token) == 2:
-            index_list += range(int(token[0]), int(token[1]))
-    index_list.sort()
-    return [index_list]
+            index_list += range(int(token[0]), int(token[1])+1)
+    return [list(set(index_list))]
     
-model_index_clause = (model_keyword + Group(int_number + 
-                      ZeroOrMore(Suppress(comma_literal) + 
-                                 (Group(int_number + Suppress(hyphen_literal) + int_number) | 
-                                  int_number))).setParseAction(list_from_index_clause)
+model_index_clause = (model_keyword + 
+                      Group((Group(int_number + Suppress(hyphen_literal) + int_number) | int_number) + 
+                            ZeroOrMore(Suppress(comma_literal) + 
+                                       (Group(int_number + Suppress(hyphen_literal) + int_number) |
+                                        int_number)))
+                      .setParseAction(list_from_index_clause)
+                      .setResultsName('index_list')
                       )
 analyze_function = (analyze_keyword + btable + 
 #                    Optional() + 
