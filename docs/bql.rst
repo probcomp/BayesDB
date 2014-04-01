@@ -15,7 +15,7 @@ Creates a btable by importing data from the specified file. The file must be in 
 
    UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
 
-Types are categorical (multinomial), continuous, ignore, and key. “Key” types are ignored for inference, but can be used lower to uniquely identify rows instead of using ID. Note that datatypes cannot be updated once the model has been analyzed.
+Types are categorical (multinomial), numerical (continuous), ignore, and key. “Key” types are ignored for inference, but can be used lower to uniquely identify rows instead of using ID. Note that datatypes cannot be updated once the model has been analyzed.
 
 ::
    
