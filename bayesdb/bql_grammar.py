@@ -235,7 +235,5 @@ drop_btable_function = drop_btable_keyword + btable
 # DROP MODEL[S] [<model_index>-<model_index>] FROM <btable>
 drop_model_function = drop_keyword.setParseAction(replaceWith("drop model")).setResultsName('function_id') + model_index_clause + Suppress(from_keyword) + btable
 
-
-
 ## Clauses
-print "imported"
+
