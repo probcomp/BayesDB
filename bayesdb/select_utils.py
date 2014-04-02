@@ -44,6 +44,8 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
   value = QuotedString('"') | QuotedString("'") | float_number | Word(alphanums + "_")
   and_literal = CaselessLiteral("and")
+  comma_literal = CaselessLiteral(",")
+  column_list = Group(column_identifier + (ZeroOrMore(Suppress(comma_literal) + column_identifier)))
 
   row_identifier = Word(nums) | Group( column_identifier.setResultsName("column") + 
                                      operation.setResultsName("op") + 
@@ -62,8 +64,8 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
                                  float_number.setResultsName("confidence"))
   predictive_probability_of_function = Group(predictive_probability_of_literal.setResultsName("fun_name") +
                                              column_identifier.setResultsName("column"))
-  with_respect_to_clause = Group(with_respect_to_literal.setResultsName("literal") + 
-                                 column_identifier.setResultsName("column"))
+  with_respect_to_clause = Group(with_respect_to_literal.setResultsName("literal") + column_list).setResultsName("respect_to")
+
   similarity_function = Group(similarity_literal.setResultsName("fun_name") + 
                             row_identifier.setResultsName("row_id") + 
                             Optional(with_respect_to_clause))
@@ -133,7 +135,10 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       respect_to_clause = inner_element[0].respect_to
       target_column = None
       if respect_to_clause != '':
-        target_column = M_c['name_to_idx'][respect_to_clause[0][1]] #TODO should be able to fix double index
+        target_column = respect_to_clause[1][0]
+        if len(respect_to_clause[1]) > 1:
+          for column_name in respect_to_clause[1][1:]:
+            target_column += ',' + column_name
       conds.append(((functions._similarity, (target_row_id, target_column)), op, val))
       continue
     elif inner_element[0].fun_name == "typicality":
