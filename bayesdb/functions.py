@@ -61,8 +61,8 @@ def _row_id(args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine):
     return row_id
 
 def _similarity(similarity_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine):
-    target_row_id, target_column = similarity_args
-    return engine.call_backend('similarity', dict(M_c=M_c, X_L_list=X_L_list, X_D_list=X_D_list, given_row_id=row_id, target_row_id=target_row_id, target_columns=target_column))
+    target_row_id, target_columns = similarity_args
+    return engine.call_backend('similarity', dict(M_c=M_c, X_L_list=X_L_list, X_D_list=X_D_list, given_row_id=row_id, target_row_id=target_row_id, target_columns=target_columns))
 
 def _row_typicality(row_typicality_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine):
     return engine.call_backend('row_structural_typicality', dict(X_L_list=X_L_list, X_D_list=X_D_list, row_id=row_id))
@@ -204,8 +204,7 @@ def parse_similarity(colname, M_c, T):
       (?P<rowid>[^,\)\(]+)
       (\))?
       \s+with\s+respect\s+to\s+
-      (?P<column>[^\s\(\)]+)
-      \s*$
+      (?P<columnstring>.*$)
   """, colname, re.VERBOSE | re.IGNORECASE)
   if not similarity_match:
     similarity_match = re.search(r"""
@@ -234,13 +233,17 @@ def parse_similarity(colname, M_c, T):
             target_row_id = row_id
             break
 
-      if 'column' in similarity_match.groupdict() and similarity_match.group('column'):
-          target_column = similarity_match.group('column').strip()
-          target_column = M_c['name_to_idx'][target_column.lower()]
-      else:
-          target_column = None
+      if 'columnstring' in similarity_match.groupdict() and similarity_match.group('columnstring'):
+          columnstring = match.group('columnstring').strip()
 
-      return target_row_id, target_column
+          column_lists = self.persistence_layer.get_column_lists(tablename)          
+          target_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c, column_lists)]
+          utils.check_for_duplicate_columns(target_colnames)
+          target_columns = [M_c['name_to_idx'][colname] for colname in target_colnames]
+      else:
+          target_columns = None
+
+      return target_row_id, target_columns
   else:
       return None
 

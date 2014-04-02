@@ -228,7 +228,8 @@ def test_select_whereclause_functions():
   # similarity
   client('select name from %s where similarity to 0 > 0' % (test_tablename), debug=True)
   client('select name from %s where similarity to 0 = 0 order by similarity to 0' % (test_tablename), debug=True)      
-  client('select name from %s where similarity to 1 with respect to qual_score > 0.01' % (test_tablename), debug=True)        
+  client('select name from %s where similarity to 1 with respect to qual_score > 0.01' % (test_tablename), debug=True)
+  client('select name from %s where similarity to 1 with respect to qual_score, ami_score > 0.01' % (test_tablename), debug=True)  
 
   # row typicality
   client('select * from %s where typicality > 0.04' % (test_tablename), debug=True)
@@ -292,13 +293,15 @@ def test_select():
   client("select * from %s where qual_score > 80 and name = 'Albany NY'" % (test_tablename), debug=True)
   client("select * from %s where qual_score > 80 and ami_score > 85" % (test_tablename), debug=True)    
 
-
+  # create a column list to be used in future queries
+  client('estimate columns from %s limit 5 as clist' % test_tablename, debug=True)    
   # similarity
   client('select name, similarity to 0 from %s' % (test_tablename), debug=True)
   client('select name from %s order by similarity to 0' % (test_tablename), debug=True)      
   client('select name, similarity to 0 from %s order by similarity to 0' % (test_tablename), debug=True)
   client('select name, similarity to 0 with respect to name from %s order by similarity to 1 with respect to qual_score' % (test_tablename), debug=True)        
-  client('select name, similarity to 0 from %s order by similarity to 1 with respect to qual_score' % (test_tablename), debug=True)      
+  client('select name, similarity to 0 from %s order by similarity to 1 with respect to qual_score, ami_score' % (test_tablename), debug=True)
+  client('select name, similarity to 0 from %s order by similarity to 1 with respect to clist' % (test_tablename), debug=True)        
 
   # row typicality
   client('select typicality from %s' % (test_tablename), debug=True)
