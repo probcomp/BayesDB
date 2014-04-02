@@ -53,7 +53,7 @@ def teardown_function(function):
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
-  client('create btable %s from %s' % (test_tablename, path))
+  client('create btable %s from %s' % (test_tablename, path), debug=True)
   
   global test_tablenames
   test_tablenames.append(test_tablename)
@@ -83,25 +83,25 @@ def test_drop_btable():
 def test_btable_list():
   global client, test_filenames
 
-  out = client('list btables', pretty=False)[0]['list']
+  out = client('list btables', pretty=False, debug=True)[0]['list']
   init_btable_count = len(out)
   
   test_tablename1 = create_dha()
 
-  out = client('list btables', pretty=False)[0]['list']
+  out = client('list btables', pretty=False, debug=True)[0]['list']
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 in out
   
   test_tablename2 = create_dha()
 
-  out = client('list btables', pretty=False)[0]['list']
+  out = client('list btables', pretty=False, debug=True)[0]['list']
   assert len(out) == 2 + init_btable_count
   assert test_tablename1 in out
   assert test_tablename2 in out
 
-  client('drop btable %s' % test_tablename1, yes=True)
+  client('drop btable %s' % test_tablename1, yes=True, debug=True)
   
-  out = client('list btables', pretty=False)[0]['list']
+  out = client('list btables', pretty=False, debug=True)[0]['list']
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 not in out
   assert test_tablename2 in out
@@ -110,7 +110,7 @@ def test_btable_list():
   del client
   client = Client()
   
-  out = client('list btables', pretty=False)[0]['list']
+  out = client('list btables', pretty=False, debug=True)[0]['list']
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 not in out
   assert test_tablename2 in out
@@ -120,14 +120,14 @@ def test_save_and_load_models():
   test_tablename1 = create_dha()
   test_tablename2 = create_dha()
   global client, test_filenames
-  client('initialize 2 models for %s' % (test_tablename1))
-  #client('analyze %s for 1 iteration' % (test_tablename1))
+  client('initialize 2 models for %s' % (test_tablename1), debug=True)
+  #client('analyze %s for 1 iteration' % (test_tablename1), debug=True)
   pkl_path = 'test_models.pkl.gz'
   test_filenames.append(pkl_path)
-  client('save models for %s to %s' % (test_tablename1, pkl_path))
+  client('save models for %s to %s' % (test_tablename1, pkl_path), debug=True)
   original_models = client.engine.save_models(test_tablename1)
   
-  client('load models %s for %s' % (pkl_path, test_tablename2))
+  client('load models %s for %s' % (pkl_path, test_tablename2), debug=True)
   new_models = client.engine.save_models(test_tablename1)         
 
   assert new_models.values() == original_models.values()
@@ -136,132 +136,133 @@ def test_column_lists():
   """ smoke test """
   test_tablename = create_dha()
   global client, test_filenames
-  client('initialize 2 models for %s' % (test_tablename))
+  client('initialize 2 models for %s' % (test_tablename), debug=True)
 
   cname1 = 'cname1'
   cname2 = 'cname2'
-  client('show column lists for %s' % test_tablename)
-  client('estimate columns from %s as %s' % (test_tablename, cname1))
-  client('show column lists for %s' % test_tablename)
-  client('show columns %s from %s' % (cname1, test_tablename))
-  client('show columns %s from %s' % (cname2, test_tablename))  
-  client('estimate columns from %s where typicality > 0.1 as %s' % (test_tablename, cname1))
-  client('estimate columns from %s limit 5 as %s' % (test_tablename, cname2))  
-  client('show column lists for %s' % test_tablename)
-  client('show columns %s from %s' % (cname1, test_tablename))
-  client('show columns %s from %s' % (cname2, test_tablename))
+  client('show column lists for %s' % test_tablename, debug=True)
+  client('estimate columns from %s as %s' % (test_tablename, cname1), debug=True)
+  client('show column lists for %s' % test_tablename, debug=True)
+  client('show columns %s from %s' % (cname1, test_tablename), debug=True)
+  client('show columns %s from %s' % (cname2, test_tablename), debug=True)  
+  client('estimate columns from %s where typicality > 0.1 as %s' % (test_tablename, cname1), debug=True)
+  client('estimate columns from %s limit 5 as %s' % (test_tablename, cname2), debug=True)  
+  client('show column lists for %s' % test_tablename, debug=True)
+  client('show columns %s from %s' % (cname1, test_tablename), debug=True)
+  client('show columns %s from %s' % (cname2, test_tablename), debug=True)
 
   tmp = 'asdf.png'
   test_filenames.append(tmp)
-  client('estimate pairwise dependence probability from %s for columns %s save to %s' % (test_tablename, cname1, tmp))
+  client('estimate pairwise dependence probability from %s for columns %s save to %s' % (test_tablename, cname1, tmp), debug=True)
   # TODO: assert tmp exists
-  client('estimate pairwise dependence probability from %s for columns %s' % (test_tablename, cname2))
+  client('estimate pairwise dependence probability from %s for columns %s' % (test_tablename, cname2), debug=True)
 
-  client('select %s from %s limit 10' % (cname1, test_tablename))
-  client('select %s from %s limit 10' % (cname2, test_tablename))
+  client('select %s from %s limit 10' % (cname1, test_tablename), debug=True)
+  client('select %s from %s limit 10' % (cname2, test_tablename), debug=True)
 
-  client('infer %s from %s with confidence 0.1 limit 10' % (cname1, test_tablename))
-  client('infer %s from %s with confidence 0.1 limit 10' % (cname2, test_tablename))
+  client('infer %s from %s with confidence 0.1 limit 10' % (cname1, test_tablename), debug=True)
+  client('infer %s from %s with confidence 0.1 limit 10' % (cname2, test_tablename), debug=True)
 
-  client('simulate %s from %s times 10' % (cname1, test_tablename))  
-  client('simulate %s from %s times 10' % (cname2, test_tablename))
+  client('simulate %s from %s times 10' % (cname1, test_tablename), debug=True)  
+  client('simulate %s from %s times 10' % (cname2, test_tablename), debug=True)
 
 def test_simulate():
   """ smoke test """
   test_tablename = create_dha()
   global client, test_filenames
-  client('initialize 2 models for %s' % (test_tablename))
+  client('initialize 2 models for %s' % (test_tablename), debug=True)
 
-  client("simulate qual_score from %s given name='Albany NY' times 5")
-  client("simulate qual_score from %s given name='Albany NY' and ami_score = 80 times 5")
-  client("simulate name from %s given name='Albany NY' and ami_score = 80 times 5")
-  client("simulate name from %s given ami_score = 80 times 5")
+  client("simulate qual_score from %s given name='Albany NY' times 5", debug=True)
+  client("simulate qual_score from %s given name='Albany NY' and ami_score = 80 times 5", debug=True)
+  client("simulate name from %s given name='Albany NY' and ami_score = 80 times 5", debug=True)
+  client("simulate name from %s given ami_score = 80 times 5", debug=True)
 
 def test_estimate_columns():
   """ smoke test """
   test_tablename = create_dha()
   global client, test_filenames
-  client('initialize 2 models for %s' % (test_tablename))
+  client('initialize 2 models for %s' % (test_tablename), debug=True)
 
-#  client('estimate columns from %s' % test_tablename)
+#  client('estimate columns from %s' % test_tablename, debug=True)
 
-  client('estimate columns from %s where typicality > 1' % test_tablename)  
-  client('estimate columns from %s where typicality > 0' % test_tablename)
-  client('estimate columns from %s where typicality > 0 order by typicality' % test_tablename)
-#  client('estimate columns from %s order by typicality limit 5' % test_tablename)
+  client('estimate columns from %s where typicality > 1' % test_tablename, debug=True)  
+  client('estimate columns from %s where typicality > 0' % test_tablename, debug=True)
+  client('estimate columns from %s where typicality > 0 order by typicality' % test_tablename, debug=True)
+#  client('estimate columns from %s order by typicality limit 5' % test_tablename, debug=True)
 
-  client('estimate columns from %s where dependence probability with qual_score > 0' % test_tablename)
-  client('estimate columns from %s order by dependence probability with qual_score' % test_tablename)
-  client('estimate columns from %s order by dependence probability with qual_score limit 5' % test_tablename)
+  client('estimate columns from %s where dependence probability with qual_score > 0' % test_tablename, debug=True)
+  client('estimate columns from %s order by dependence probability with qual_score' % test_tablename, debug=True)
+  client('estimate columns from %s order by dependence probability with qual_score limit 5' % test_tablename, debug=True)
 
-  client('estimate columns from %s order by correlation with qual_score limit 5' % test_tablename)
-  client('estimate columns from %s where correlation with qual_score > 0 order by correlation with qual_score limit 5' % test_tablename)  
+  client('estimate columns from %s order by correlation with qual_score limit 5' % test_tablename, debug=True)
+  client('estimate columns from %s where correlation with qual_score > 0 order by correlation with qual_score limit 5' % test_tablename, debug=True)  
 
-  client('estimate columns from %s order by mutual information with qual_score limit 5' % test_tablename)
-  client('estimate columns from %s where mutual information with qual_score > 1 order by typicality' % test_tablename)
+  client('estimate columns from %s order by mutual information with qual_score limit 5' % test_tablename, debug=True)
+  client('estimate columns from %s where mutual information with qual_score > 1 order by typicality' % test_tablename, debug=True)
 
 def test_row_clusters():
   """ smoke test """
   test_tablename = create_dha()
   global client, test_filenames
-  client('initialize 5 models for %s' % (test_tablename))
-
-  
-  client('estimate pairwise row similarity from %s save connected components as rcc' % test_tablename)
-  client('select * from %s where row in rcc' % test_tablename)
-  
-  #client("select * from %s where similarity to name='McAllen TX' > 0.5 order by similarity to name='McAllen TX' as mcallenrows" % test_tablename)
-  #client('select * from %s where row in mcallenrows' % test_tablename)
+  client('initialize 2 models for %s' % (test_tablename), debug=True)
+  row_lists = client('show row lists for %s' % test_tablename, debug=True, pretty=False)[0]['row_lists']
+  assert len(row_lists) == 0
+  client('estimate pairwise row similarity from %s save connected components with threshold 0.5 as rcc' % test_tablename, debug=True)
+  row_lists = client('show row lists for %s' % test_tablename, debug=True, pretty=False)[0]['row_lists']
+  assert len(row_lists) > 0
+  client('select * from %s where key in rcc_0' % test_tablename, debug=True)
+  #client("select * from %s where similarity to name='McAllen TX' > 0.5 order by similarity to name='McAllen TX' as mcallenrows" % test_tablename, debug=True)
+  #client('select * from %s where key in mcallenrows' % test_tablename, debug=True)
 
 def test_select_whereclause_functions():
   """ smoke test """
   test_tablename = create_dha()
   global client, test_filenames
-  client('initialize 2 models for %s' % (test_tablename))
+  client('initialize 2 models for %s' % (test_tablename), debug=True)
 
   # similarity
-  client('select name from %s where similarity to 0 > 0' % (test_tablename))
-  client('select name from %s where similarity to 0 = 0 order by similarity to 0' % (test_tablename))      
-  client('select name from %s where similarity to 1 with respect to qual_score > 0.01' % (test_tablename))        
+  client('select name from %s where similarity to 0 > 0' % (test_tablename), debug=True)
+  client('select name from %s where similarity to 0 = 0 order by similarity to 0' % (test_tablename), debug=True)      
+  client('select name from %s where similarity to 1 with respect to qual_score > 0.01' % (test_tablename), debug=True)        
 
   # row typicality
-  client('select * from %s where typicality > 0.04' % (test_tablename))
-  client('select *, typicality from %s where typicality > 0.06' % (test_tablename))  
+  client('select * from %s where typicality > 0.04' % (test_tablename), debug=True)
+  client('select *, typicality from %s where typicality > 0.06' % (test_tablename), debug=True)  
 
   # predictive probability
-  client("select qual_score from %s where predictive probability of qual_score > 0.01" % (test_tablename))
-  client("select qual_score from %s where predictive probability of name > 0.01" % (test_tablename))
+  client("select qual_score from %s where predictive probability of qual_score > 0.01" % (test_tablename), debug=True)
+  client("select qual_score from %s where predictive probability of name > 0.01" % (test_tablename), debug=True)
   
   # probability
   # TODO: these two tests are failing!
-  #client('select qual_score from %s where probability of qual_score = 6 > 0.01' % (test_tablename))
-  #client("select qual_score from %s where probability of name='Albany NY' > 0.01" % (test_tablename))  
+  #client('select qual_score from %s where probability of qual_score = 6 > 0.01' % (test_tablename), debug=True)
+  #client("select qual_score from %s where probability of name='Albany NY' > 0.01" % (test_tablename), debug=True)  
 
 def test_model_config():
   test_tablename = create_dha()
   global client, test_filenames
 
   # test naive bayes
-  client('initialize 2 models for %s with config naive bayes' % (test_tablename))
-  client('analyze %s for 2 iterations' % (test_tablename))
-  dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, pretty=False)[0]['matrix']
+  client('initialize 2 models for %s with config naive bayes' % (test_tablename), debug=True)
+  client('analyze %s for 2 iterations' % (test_tablename), debug=True)
+  dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, pretty=False, debug=True)[0]['matrix']
   ## assert that all dependencies are _0_ (not 1, because there should only be 1 view and 1 cluster!)
   assert numpy.all(dep_mat == 0)
 
   # test crp
-  client('drop models for %s' % test_tablename, yes=True)
-  client('initialize 2 models for %s with config crp mixture' % (test_tablename))
-  client('analyze %s for 2 iterations' % (test_tablename))
-  dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, pretty=False)[0]['matrix']
+  client('drop models for %s' % test_tablename, yes=True, debug=True)
+  client('initialize 2 models for %s with config crp mixture' % (test_tablename), debug=True)
+  client('analyze %s for 2 iterations' % (test_tablename), debug=True)
+  dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, pretty=False, debug=True)[0]['matrix']
   ## assert that all dependencies are 1 (because there's 1 view, and many clusters)
   ## (with _very_ low probability, this test may fail due to bad luck)
   assert numpy.all(dep_mat == 1)
 
   # test crosscat
-  client('drop models for %s' % test_tablename, yes=True)
-  client('initialize 2 models for %s' % (test_tablename))
-  client('analyze %s for 2 iterations' % (test_tablename))
-  dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, pretty=False)[0]['matrix']
+  client('drop models for %s' % test_tablename, yes=True, debug=True)
+  client('initialize 2 models for %s' % (test_tablename), debug=True)
+  client('analyze %s for 2 iterations' % (test_tablename), debug=True)
+  dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, pretty=False, debug=True)[0]['matrix']
   ## assert that all dependencies are not all the same
   assert (not numpy.all(dep_mat == 1)) and (not numpy.all(dep_mat == 0))
 
@@ -273,31 +274,31 @@ def test_select():
   """ smoke test """
   test_tablename = create_dha()
   global client, test_filenames
-  client('initialize 2 models for %s' % (test_tablename))
+  client('initialize 2 models for %s' % (test_tablename), debug=True)
 
-  client('select name, qual_score from %s' % (test_tablename))
-  client('select name, qual_score from %s limit 10' % (test_tablename))
-  client('select name, qual_score from %s order by qual_score limit 10' % (test_tablename))
-  client('select name, qual_score from %s order by qual_score ASC limit 10' % (test_tablename))
-  client('select name, qual_score from %s order by qual_score DESC limit 10' % (test_tablename))
-  client('select * from %s order by qual_score DESC limit 10' % (test_tablename))
-  client('select name, qual_score from %s where qual_score > 6' % (test_tablename))
-  client('select * from %s where qual_score > 6' % (test_tablename))
-  client("select * from %s where qual_score > 80 and name = 'Albany NY'" % (test_tablename))
-  client("select * from %s where qual_score > 80 and ami_score > 85" % (test_tablename))    
+  client('select name, qual_score from %s' % (test_tablename), debug=True)
+  client('select name, qual_score from %s limit 10' % (test_tablename), debug=True)
+  client('select name, qual_score from %s order by qual_score limit 10' % (test_tablename), debug=True)
+  client('select name, qual_score from %s order by qual_score ASC limit 10' % (test_tablename), debug=True)
+  client('select name, qual_score from %s order by qual_score DESC limit 10' % (test_tablename), debug=True)
+  client('select * from %s order by qual_score DESC limit 10' % (test_tablename), debug=True)
+  client('select name, qual_score from %s where qual_score > 6' % (test_tablename), debug=True)
+  client('select * from %s where qual_score > 6' % (test_tablename), debug=True)
+  client("select * from %s where qual_score > 80 and name = 'Albany NY'" % (test_tablename), debug=True)
+  client("select * from %s where qual_score > 80 and ami_score > 85" % (test_tablename), debug=True)    
 
 
   # similarity
-  client('select name, similarity to 0 from %s' % (test_tablename))
-  client('select name from %s order by similarity to 0' % (test_tablename))      
-  client('select name, similarity to 0 from %s order by similarity to 0' % (test_tablename))
-  client('select name, similarity to 0 with respect to name from %s order by similarity to 1 with respect to qual_score' % (test_tablename))        
-  client('select name, similarity to 0 from %s order by similarity to 1 with respect to qual_score' % (test_tablename))      
+  client('select name, similarity to 0 from %s' % (test_tablename), debug=True)
+  client('select name from %s order by similarity to 0' % (test_tablename), debug=True)      
+  client('select name, similarity to 0 from %s order by similarity to 0' % (test_tablename), debug=True)
+  client('select name, similarity to 0 with respect to name from %s order by similarity to 1 with respect to qual_score' % (test_tablename), debug=True)        
+  client('select name, similarity to 0 from %s order by similarity to 1 with respect to qual_score' % (test_tablename), debug=True)      
 
   # row typicality
-  client('select typicality from %s' % (test_tablename))
-  client('select *, typicality from %s' % (test_tablename))  
-  client('select typicality from %s order by typicality limit 10' % (test_tablename))
+  client('select typicality from %s' % (test_tablename), debug=True)
+  client('select *, typicality from %s' % (test_tablename), debug=True)  
+  client('select typicality from %s order by typicality limit 10' % (test_tablename), debug=True)
 
   # probability
   # why is this so slow, when predictive probability is really fast? these are _observed_
@@ -305,39 +306,39 @@ def test_select():
   # for name (multinomial): probability takes extremely long (about 75 seconds for 300 rows)
   #  while predictive probability takes under one second for 300 rows
   st = time.time()
-  client('select probability of qual_score = 6 from %s' % (test_tablename))
+  client('select probability of qual_score = 6 from %s' % (test_tablename), debug=True)
   el = time.time() - st
   st = time.time()  
-  client("select probability of name='Albany NY' from %s" % (test_tablename))
+  client("select probability of name='Albany NY' from %s" % (test_tablename), debug=True)
   el2 = time.time() - st
 
-  #client("select name from %s order by probability of name='Albany NY' DESC" % (test_tablename))  
+  #client("select name from %s order by probability of name='Albany NY' DESC" % (test_tablename), debug=True)  
   # TODO: test that probability function doesn't get evaluated 2x for each row
-  #client("select probability of name='Albany NY' from %s order by probability of name='Albany NY' DESC" % (test_tablename))
+  #client("select probability of name='Albany NY' from %s order by probability of name='Albany NY' DESC" % (test_tablename), debug=True)
 
   # predictive probability
   # these are really fast! :) simple predictive probability, unobserved
-  client("select predictive probability of qual_score from %s" % (test_tablename))
-  client("select predictive probability of name from %s" % (test_tablename))
-  client("select predictive probability of qual_score from %s order by predictive probability of name" % (test_tablename))
-  client("select predictive probability of qual_score from %s order by predictive probability of qual_score" % (test_tablename))
+  client("select predictive probability of qual_score from %s" % (test_tablename), debug=True)
+  client("select predictive probability of name from %s" % (test_tablename), debug=True)
+  client("select predictive probability of qual_score from %s order by predictive probability of name" % (test_tablename), debug=True)
+  client("select predictive probability of qual_score from %s order by predictive probability of qual_score" % (test_tablename), debug=True)
 
   ## Aggregate functions: can't order by these.
 
   # mutual information
-  client("select name, qual_score, mutual information of name with qual_score from %s" % (test_tablename))
+  client("select name, qual_score, mutual information of name with qual_score from %s" % (test_tablename), debug=True)
 
   # dependence probability
-  client("select dependence probability of name with qual_score from %s" % (test_tablename))
-  client("select name, qual_score, dependence probability of name with qual_score from %s" % (test_tablename))
+  client("select dependence probability of name with qual_score from %s" % (test_tablename), debug=True)
+  client("select name, qual_score, dependence probability of name with qual_score from %s" % (test_tablename), debug=True)
 
   # correlation
-  client("select name, qual_score, correlation of name with qual_score from %s" % (test_tablename))
+  client("select name, qual_score, correlation of name with qual_score from %s" % (test_tablename), debug=True)
 
   # column typicality
-  client("select typicality of qual_score, typicality of name from %s" % (test_tablename))
-  client("select typicality of qual_score from %s" % (test_tablename))
+  client("select typicality of qual_score, typicality of name from %s" % (test_tablename), debug=True)
+  client("select typicality of qual_score from %s" % (test_tablename), debug=True)
 
   # correlation with missing values
   test_tablename = create_dha(path='data/dha_missing.csv')
-  client("select name, qual_score, correlation of name with qual_score from %s" % (test_tablename))
+  client("select name, qual_score, correlation of name with qual_score from %s" % (test_tablename), debug=True)

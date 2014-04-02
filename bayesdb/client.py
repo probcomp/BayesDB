@@ -52,26 +52,30 @@ class Client(object):
             self.port = bayesdb_port
             self.URI = 'http://' + self.hostname + ':%d' % self.port
 
-    def call_bayesdb_engine(self, method_name, args_dict):
+    def call_bayesdb_engine(self, method_name, args_dict, debug=False):
         """
         Helper function used to call the BayesDB engine, whether it is remote or local.
         Accepts method name and arguments for that method as input.
         """
         if self.online:
-            out, id = api_utils.call(method_name, args_dict, self.URI)
+            out, id = aqupi_utils.call(method_name, args_dict, self.URI)
         else:
             method = getattr(self.engine, method_name)
-            try:
+            if debug:
                 out = method(**args_dict)
-            except utils.BayesDBError as e:
-                out = dict(message=str(e), error=True)
+            else:
+                # when not in debug mode, catch all BayesDBErrors
+                try:
+                    out = method(**args_dict)
+                except utils.BayesDBError as e:
+                    out = dict(message=str(e), error=True)
         return out
 
-    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False):
+    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False):
         """Wrapper around execute."""
-        return self.execute(call_input, pretty, timing, wait, plots, yes)
+        return self.execute(call_input, pretty, timing, wait, plots, yes, debug)
 
-    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False):
+    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False):
         """
         Execute a chunk of BQL. This method breaks a large chunk of BQL (like a file)
         consisting of possibly many BQL statements, breaks them up into individual statements,
@@ -104,7 +108,7 @@ class Client(object):
                 user_input = raw_input()
                 if len(user_input) > 0 and (user_input[0] == 'q' or user_input[0] == 's'):
                     continue
-            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes)
+            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, debug=debug)
 
             if type(result) == dict and 'message' in result and result['message'] == 'execute_file':
                 ## special case for one command: execute_file
@@ -120,7 +124,7 @@ class Client(object):
         if not pretty:
             return return_list
 
-    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False):
+    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, debug=False):
         """
         Accepts a SINGLE BQL STATEMENT as input, parses it, and executes it if it was parsed
         successfully.
@@ -187,7 +191,7 @@ class Client(object):
 
 
         ## Call engine.
-        result = self.call_bayesdb_engine(method_name, args_dict)
+        result = self.call_bayesdb_engine(method_name, args_dict, debug)
 
         ## If error occurred, exit now.
         if 'error' in result and result['error']:
