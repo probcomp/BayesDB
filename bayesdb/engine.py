@@ -433,7 +433,7 @@ class Engine(object):
     if givens=="" or '=' not in givens:
       Y = None
     else:
-      varlist = [[c.strip() for c in b.split('=')] for b in givens.split('AND')]
+      varlist = [[c.strip() for c in b.split('=')] for b in re.split(r'and|,', givens, flags=re.IGNORECASE)]
       Y = []
       for colname, colval in varlist:
         if type(colval) == str or type(colval) == unicode:

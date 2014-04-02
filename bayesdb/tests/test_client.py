@@ -172,10 +172,14 @@ def test_simulate():
   global client, test_filenames
   client('initialize 2 models for %s' % (test_tablename), debug=True)
 
-  client("simulate qual_score from %s given name='Albany NY' times 5", debug=True)
-  client("simulate qual_score from %s given name='Albany NY' and ami_score = 80 times 5", debug=True)
-  client("simulate name from %s given name='Albany NY' and ami_score = 80 times 5", debug=True)
-  client("simulate name from %s given ami_score = 80 times 5", debug=True)
+  client("simulate qual_score from %s given name='Albany NY' times 5" % test_tablename, debug=True)
+  client("simulate qual_score from %s given name='Albany NY' and ami_score = 80 times 5" % test_tablename, debug=True)
+
+  # TODO: returning 0 rows when simulating name?  
+  client("simulate name from %s given name='Albany NY' and ami_score = 80 times 5" % test_tablename, debug=True)
+  client("simulate name from %s given name='Albany NY', ami_score = 80 times 5" % test_tablename, debug=True)
+  client("simulate name from %s given name='Albany NY' AND ami_score = 80 times 5" % test_tablename, debug=True)    
+  client("simulate name from %s given ami_score = 80 times 5" % test_tablename, debug=True)
 
 def test_estimate_columns():
   """ smoke test """
@@ -207,7 +211,7 @@ def test_row_clusters():
   client('initialize 2 models for %s' % (test_tablename), debug=True)
   row_lists = client('show row lists for %s' % test_tablename, debug=True, pretty=False)[0]['row_lists']
   assert len(row_lists) == 0
-  client('estimate pairwise row similarity from %s save connected components with threshold 0.5 as rcc' % test_tablename, debug=True)
+  client('estimate pairwise row similarity from %s save connected components with threshold 0.1 as rcc' % test_tablename, debug=True)
   row_lists = client('show row lists for %s' % test_tablename, debug=True, pretty=False)[0]['row_lists']
   assert len(row_lists) > 0
   client('select * from %s where key in rcc_0' % test_tablename, debug=True)
