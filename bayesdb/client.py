@@ -181,7 +181,10 @@ class Client(object):
                     raise utils.BayesDBError('Models file %s could not be found.' % pklpath)
             args_dict['models'] = models
         elif method_name == 'create_btable':
-            header, rows = data_utils.read_csv(client_dict['csv_path'])
+            if pandas_df is None:
+                header, rows = data_utils.read_csv(client_dict['csv_path'])
+            else:
+                header, rows = data_utils.read_pandas_df(pandas_df)
             args_dict['header'] = header
             args_dict['raw_T_full'] = rows
 
