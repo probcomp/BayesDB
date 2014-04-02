@@ -395,7 +395,7 @@ class Engine(object):
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
     filtered_rows = select_utils.filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, self,
-                                                        query_colnames, impute_confidence, num_impute_samples)
+                                                        query_colnames, impute_confidence, num_impute_samples, tablename)
 
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
