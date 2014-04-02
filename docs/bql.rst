@@ -142,7 +142,7 @@ Since it may be hard to see example what you'd put in the WHERE or ORDER by clau
 
 You can print out the names of the stored column lists in your btable with::
 
-   SHOW COLUMN LISTS FOR <btable>"
+   SHOW COLUMN LISTS FOR <btable>
 
 And you can view the columns in a given column list with::
 

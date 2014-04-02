@@ -241,10 +241,37 @@ help_function = help_keyword
 
 ## TOP LEVEL STATEMENTS FOR BAYESDB MANAGEMENT
 
+# ------------------------------ Helper Clauses ---------------------------#
+
+# SAVE TO <file>
+
+# SIMILARITY TO <row> [WITH RESPECT TO <column>]
+
+# TYPICALITY
+
+# DEPENDENCE PROBABILITY (WITH <column> | OF <column1> WITH <column2>)
+
+# PROBABILITY OF <column>=<value>
+
+# PREDICTIVE PROBABILITY OF <column>
+
+# ORDER BY <columns|functions>
+
+# WITH CONFIDENCE <confidence>
+
+# WHERE <whereclause>
 
 # ------------------------------- Query functions --------------------------#
 
+# SELECT
 
+# INFER
+
+# SIMULATE 
+
+# ESTIMATE COLUMNS
+
+# ESTIMATE PAIRWISE
 
 
 # for debugging
