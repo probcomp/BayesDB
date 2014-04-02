@@ -291,6 +291,26 @@ class Client(object):
             pt = prettytable.PrettyTable()
             pt.field_names = query_obj['columns']
             result += str(pt)
+        elif 'row_lists' in query_obj:
+            """ Pretty-print multiple row lists, which are just names and row sizes. """
+            pt = prettytable.PrettyTable()
+            pt.field_names = ('Row List Name', 'Row Count')
+            
+            def get_row_list_sorting_key(x):
+                """ To be used as the key function in a sort. Puts cc_2 ahead of cc_10, e.g. """
+                name, count = x
+                if '_' not in name:
+                    return name
+                s = name.split('_')
+                end = s[-1]
+                start = '_'.join(s[:-1])
+                if utils.is_int(end):
+                    return (start, int(end))
+                return name
+                    
+            for name, count in sorted(query_obj['row_lists'], key=get_row_list_sorting_key):
+                pt.add_row((name, count))
+            result += str(pt)
         elif 'column_lists' in query_obj:
             """ Pretty-print multiple column lists. """
             print

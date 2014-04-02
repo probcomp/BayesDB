@@ -487,6 +487,17 @@ class Engine(object):
     column_lists = self.persistence_layer.get_column_lists(tablename)
     return dict(columns=list(column_lists.keys()))
 
+  def show_row_lists(self, tablename):
+    """
+    Return a list of all row lists, and their row counts.
+    """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+      
+    row_lists = self.persistence_layer.get_row_lists(tablename)
+    return dict(row_lists=[(name, len(rows)) for (name, rows) in row_lists.items()])
+
+    
   def show_columns(self, tablename, column_list=None):
     """
     Return the specified columnlist. If None, return all columns in original order.
@@ -577,9 +588,14 @@ class Engine(object):
 
     # Create new btables from connected components (like into), if desired. Overwrites old ones with same name.
     if components is not None:
-      # TODO
+      component_name_tuples = []
+      for i, component in enumerate(components):
+        name = "%s_%d" % (components_name, i)
+        num_rows = len(component)
+        self.persistence_layer.add_row_list(tablename, name, component)
+        component_name_tuples.append((name, num_rows))
       ret['components'] = components
-      #ret['column_lists'] = component_name_tuples
+      ret['row_lists'] = component_name_tuples
 
     return ret
     
