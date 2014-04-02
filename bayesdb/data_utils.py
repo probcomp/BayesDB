@@ -242,14 +242,9 @@ def at_most_N_rows(T, N, gen_seed=0):
 
 def read_pandas_df(pandas_df):
     """
-    Takes pandas data frame object, or pickled file name, and converts data
+    Takes pandas data frame object and converts data
     into list-of-lists format
     """
-    
-    # if this is a pkl file and not an actual DataFrame, open it using pandas.read_pickle()
-    if not isinstance(pandas_df, pandas.DataFrame) and re.search(r"\.pkl$", pandas_df):  
-        pandas_df = pandas.read_pickle(pandas_df)
-    
     header = list(pandas_df.columns)
     rows = [map(str, row) for index, row in pandas_df.iterrows()]
     return header, rows
