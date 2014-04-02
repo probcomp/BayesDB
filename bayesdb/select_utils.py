@@ -38,7 +38,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   whereclause = whereclause.lower()
 
   ## ------------------------- whereclause grammar ----------------------------
-  # TODO outside function, TODO make whitespace regex \s+
+  # TODO outside function
   operation = oneOf("<= >= < > = in")
   equal_literal = Literal("=")
   column_identifier = Word(alphanums , alphanums + "_")
