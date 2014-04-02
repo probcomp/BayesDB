@@ -120,7 +120,7 @@ class Client(object):
         if not pretty:
             return return_list
 
-    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, pandas_df=None):
+    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, pandas_df=None, pandas_output=True):
         """
         Accepts a SINGLE BQL STATEMENT as input, parses it, and executes it if it was parsed
         successfully.
@@ -235,11 +235,9 @@ class Client(object):
             pp = self.pretty_print(result)
             print pp
         
-        if pandas_df is not None and 'data' in query_obj and 'columns' in result:
+        if pandas_output and 'data' in result and 'columns' in result:
             result_pandas_df = data_utils.construct_pandas_df(result)
             return result_pandas_df
-        elif pretty:
-            return pp
         else:
             if type(result) == dict and 'message' in result.keys():
                 print result['message']
