@@ -67,11 +67,11 @@ class Client(object):
                 out = dict(message=str(e), error=True)
         return out
 
-    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, pandas_df=None):
+    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """Wrapper around execute."""
         return self.execute(call_input, pretty, timing, wait, plots, yes)
 
-    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, pandas_df=None):
+    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """
         Execute a chunk of BQL. This method breaks a large chunk of BQL (like a file)
         consisting of possibly many BQL statements, breaks them up into individual statements,
@@ -104,7 +104,7 @@ class Client(object):
                 user_input = raw_input()
                 if len(user_input) > 0 and (user_input[0] == 'q' or user_input[0] == 's'):
                     continue
-            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, pandas_df=pandas)
+            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, debug=False, pandas_df=pandas, pandas_output=pandas_output)
 
             if type(result) == dict and 'message' in result and result['message'] == 'execute_file':
                 ## special case for one command: execute_file
@@ -120,7 +120,7 @@ class Client(object):
         if not pretty:
             return return_list
 
-    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, pandas_df=None, pandas_output=True):
+    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """
         Accepts a SINGLE BQL STATEMENT as input, parses it, and executes it if it was parsed
         successfully.
