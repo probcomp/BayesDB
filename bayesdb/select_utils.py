@@ -40,6 +40,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   ## ------------------------- whereclause grammar ----------------------------
   # TODO outside function, TODO make whitespace regex \s+
   operation = oneOf("<= >= < > = in")
+  equal_literal = Literal("=")
   column_identifier = Word(alphanums , alphanums + "_")
   float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
   value = QuotedString('"') | QuotedString("'") | float_number | Word(alphanums + "_")
@@ -48,7 +49,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   column_list = Group(column_identifier + (ZeroOrMore(Suppress(comma_literal) + column_identifier)))
 
   row_identifier = Word(nums) | Group( column_identifier.setResultsName("column") + 
-                                     operation.setResultsName("op") + 
+                                     equal_literal.setResultsName("op") + 
                                      value.setResultsName("value"))
 
   similarity_literal = Regex(r'similarity\sto')
@@ -124,7 +125,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       ## case where row_id is of the form "column_name = value"
       else:
         column_name = row_id.column
-        column_value = ast.literal_eval(row_id.value)
+        column_value = row_id.value #TODO probable bugs where with int values
         ## look up row_id where column_name has column_value
         column_index = M_c['name_to_idx'][column_name.lower()]
         for row_id, T_row in enumerate(T):
