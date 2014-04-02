@@ -245,11 +245,9 @@ def construct_pandas_df(query_obj):
     Take a result from a BQL statement (dict with 'data' and 'colnames')
     and constructs a pandas data frame.
 
-    Currently this is only called if the user provides a pandas data frame
-    as input.
+    Currently this is only called if the user specifies pandas_output = True
     """
-    
-
+    pandas_df = pandas.DataFrame(data = query_obj['data'], columns = query_obj['colnames'])
     return pandas_df
 
 def read_pandas_df(pandas_df):
