@@ -30,7 +30,7 @@ for_keyword = CaselessKeyword("for")
 into_keyword = CaselessKeyword("into")
 of_keyword = CaselessKeyword("of")
 with_keyword = CaselessKeyword("with")
-help_keyword = CaselessKeyword("help")
+help_keyword = CaselessKeyword("help").setResultsName("function_id")
 to_keyword = CaselessKeyword('to')
 ## Many basic keywords will never be used alone
 ## creating them separately like this allows for simpler whitespace and case flexibility
@@ -156,7 +156,9 @@ identifier = Word(alphas, alphanums + "_.")
 btable = identifier.setResultsName("btable")
 # single and double quotes inside value must be escaped. 
 value = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(printables)| float_number
-filename = (QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")).setResultsName("filename")
+filename = (QuotedString('"', escChar='\\') | 
+            QuotedString("'", escChar='\\') | 
+            Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")).setResultsName("filename")
 data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword
 
 ##################################################################################
@@ -235,5 +237,15 @@ drop_btable_function = drop_btable_keyword + btable
 # DROP MODEL[S] [<model_index>-<model_index>] FROM <btable>
 drop_model_function = drop_keyword.setParseAction(replaceWith("drop model")).setResultsName('function_id') + model_index_clause + Suppress(from_keyword) + btable
 
-## Clauses
+help_function = help_keyword
 
+## TOP LEVEL STATEMENTS FOR BAYESDB MANAGEMENT
+
+
+# ------------------------------- Query functions --------------------------#
+
+
+
+
+# for debugging
+print 'imported bql_grammar'

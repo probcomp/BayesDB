@@ -31,84 +31,84 @@ engine = Engine('local')
 parser = Parser()
 
 def test_keyword_plurality_ambiguity_pyparsing():
-    model = model_keyword.parseString("model")
-    models = model_keyword.parseString("models")
+    model = model_keyword.parseString("model",parseAll=True)
+    models = model_keyword.parseString("models",parseAll=True)
     assert model[0] == 'model'
     assert models[0] == 'model'
-    iteration = iteration_keyword.parseString("iteration")
-    iterations = iteration_keyword.parseString("iterations")
+    iteration = iteration_keyword.parseString("iteration",parseAll=True)
+    iterations = iteration_keyword.parseString("iterations",parseAll=True)
     assert iteration[0] == 'iteration'
     assert iterations[0] == 'iteration'
-    sample = sample_keyword.parseString("sample")
-    samples = sample_keyword.parseString("samples")
+    sample = sample_keyword.parseString("sample",parseAll=True)
+    samples = sample_keyword.parseString("samples",parseAll=True)
     assert sample[0] == 'sample'
     assert samples[0] == 'sample'
-    column = column_keyword.parseString('column')
-    columns = column_keyword.parseString('columns')
+    column = column_keyword.parseString('column',parseAll=True)
+    columns = column_keyword.parseString('columns',parseAll=True)
     assert column[0] == 'column'
     assert columns[0] == 'column'
-    list_ = list_keyword.parseString('list')
-    lists = list_keyword.parseString('lists')
+    list_ = list_keyword.parseString('list',parseAll=True)
+    lists = list_keyword.parseString('lists',parseAll=True)
     assert list_[0] == 'list'
     assert lists[0] == 'list'
-    btable = btable_keyword.parseString('btable')
-    btables = btable_keyword.parseString('btables')
+    btable = btable_keyword.parseString('btable',parseAll=True)
+    btables = btable_keyword.parseString('btables',parseAll=True)
     assert btable[0] == 'btable'
     assert btables[0] == 'btable'
-    second = second_keyword.parseString('second')
-    seconds = second_keyword.parseString('seconds')
+    second = second_keyword.parseString('second',parseAll=True)
+    seconds = second_keyword.parseString('seconds',parseAll=True)
     assert second[0] == 'second'
     assert seconds[0] == 'second'
 
 def test_composite_keywords_pyparsing():
-    execute_file = execute_file_keyword.parseString('eXecute file')
+    execute_file = execute_file_keyword.parseString('eXecute file',parseAll=True)
     assert execute_file[0] == 'execute file'
-    create_btable = create_btable_keyword.parseString('cReate btable')
+    create_btable = create_btable_keyword.parseString('cReate btable',parseAll=True)
     assert create_btable[0] == 'create btable'
-    update_schema_for = update_schema_for_keyword.parseString('update Schema for')
+    update_schema_for = update_schema_for_keyword.parseString('update Schema for',parseAll=True)
     assert update_schema_for[0] == 'update schema for'
-    models_for = models_for_keyword.parseString('Models for')
+    models_for = models_for_keyword.parseString('Models for',parseAll=True)
     assert models_for[0] == 'model for'
-    model_index = model_index_keyword.parseString('model Index')
+    model_index = model_index_keyword.parseString('model Index',parseAll=True)
     assert model_index[0] == 'model index'
-    save_model = save_model_keyword.parseString("save modeL")
+    save_model = save_model_keyword.parseString("save modeL",parseAll=True)
     assert save_model[0] == 'save model'
-    load_model = load_model_keyword.parseString("load Models")
+    load_model = load_model_keyword.parseString("load Models",parseAll=True)
     assert load_model[0] == 'load model'
-    save_to = save_to_keyword.parseString('save To')
+    save_to = save_to_keyword.parseString('save To',parseAll=True)
     assert save_to[0] == 'save to'
-    list_btables = list_btables_keyword.parseString('list bTables')
+    list_btables = list_btables_keyword.parseString('list bTables',parseAll=True)
     assert list_btables[0] == 'list btable'
-    show_schema_for = show_schema_for_keyword.parseString('show Schema for')
+    show_schema_for = show_schema_for_keyword.parseString('show Schema for',parseAll=True)
     assert show_schema_for[0] == 'show schema for'
-    show_models_for = show_models_for_keyword.parseString("show modeLs for")
+    show_models_for = show_models_for_keyword.parseString("show modeLs for",parseAll=True)
     assert show_models_for[0] == 'show model for'
-    show_diagnostics_for = show_diagnostics_for_keyword.parseString("show diaGnostics for")
+    show_diagnostics_for = show_diagnostics_for_keyword.parseString("show diaGnostics for",parseAll=True)
     assert show_diagnostics_for[0] == 'show diagnostics for'
-    estimate_pairwise = estimate_pairwise_keyword.parseString("estimate Pairwise")
+    estimate_pairwise = estimate_pairwise_keyword.parseString("estimate Pairwise",parseAll=True)
     assert estimate_pairwise[0] == 'estimate pairwise'
-    with_confidence = with_confidence_keyword.parseString('with  confIdence')
+    with_confidence = with_confidence_keyword.parseString('with  confIdence',parseAll=True)
     assert with_confidence[0] == 'with confidence'
-    dependence_probability = dependence_probability_keyword.parseString('dependence probability')
+    dependence_probability = dependence_probability_keyword.parseString('dependence probability',parseAll=True)
     assert dependence_probability[0] == 'dependence probability'
-    mutual_information = mutual_information_keyword.parseString('mutual inFormation')
+    mutual_information = mutual_information_keyword.parseString('mutual inFormation',parseAll=True)
     assert mutual_information[0] == 'mutual information'
-    estimate_columns_from = estimate_columns_from_keyword.parseString("estimate columns froM")
+    estimate_columns_from = estimate_columns_from_keyword.parseString("estimate columns froM",parseAll=True)
     assert estimate_columns_from[0] == 'estimate column from'
-    column_lists = column_lists_keyword.parseString('column Lists')
+    column_lists = column_lists_keyword.parseString('column Lists',parseAll=True)
     assert column_lists[0] == 'column list'
-    similarity_to = similarity_to_keyword.parseString("similarity to")
+    similarity_to = similarity_to_keyword.parseString("similarity to",parseAll=True)
     assert similarity_to[0] == 'similarity to'
-    with_respect_to = with_respect_to_keyword.parseString("with Respect to")
+    with_respect_to = with_respect_to_keyword.parseString("with Respect to",parseAll=True)
     assert with_respect_to[0] == 'with respect to'
-    probability_of = probability_of_keyword.parseString('probability of')
+    probability_of = probability_of_keyword.parseString('probability of',parseAll=True)
     assert probability_of[0] == 'probability of'
-    predictive_probability_of = predictive_probability_of_keyword.parseString('predictive Probability  of')
+    predictive_probability_of = predictive_probability_of_keyword.parseString('predictive Probability  of',parseAll=True)
     assert predictive_probability_of[0] == 'predictive probability of'
     save_connected_components_with_threshold = save_connected_components_with_threshold_keyword.parseString(
-        'save cOnnected components with threshold')
+        'save cOnnected components with threshold',parseAll=True)
     assert save_connected_components_with_threshold[0] == 'save connected components with threshold'
-    estimate_pairwise_row = estimate_pairwise_row_keyword.parseString("estimate Pairwise row")
+    estimate_pairwise_row = estimate_pairwise_row_keyword.parseString("estimate Pairwise row",parseAll=True)
     assert estimate_pairwise_row[0] == 'estimate pairwise row'
 
 def test_valid_values_names_pyparsing():
@@ -140,7 +140,7 @@ def test_valid_values_names_pyparsing():
         ]
 
     for i in range(len(valid_values)):
-        assert value.parseString(valid_values[i])[0] == valid_values_results[i]
+        assert value.parseString(valid_values[i],parseAll=True)[0] == valid_values_results[i]
 
     valid_column_identifiers = [
         "a",
@@ -159,49 +159,50 @@ def test_valid_values_names_pyparsing():
         "aa"
         ]
     for i in range(len(valid_column_identifiers)):
-        assert value.parseString(valid_column_identifiers[i])[0] == valid_column_identifiers_results[i]
-    assert float_number.parseString('1')[0] == '1'
-    assert int_number.parseString('1')[0] == '1'
+        assert value.parseString(valid_column_identifiers[i],parseAll=True)[0] == valid_column_identifiers_results[i]
+    assert float_number.parseString('1',parseAll=True)[0] == '1'
+    assert int_number.parseString('1',parseAll=True)[0] == '1'
     assert float_number.parseString('1.')[0] == '1'
-    assert float_number.parseString('.1')[0] == '.1'
-    assert float_number.parseString('0.1')[0] == '0.1'
-    assert float_number.parseString('11')[0] == '11'
-    assert int_number.parseString('11')[0] == '11'
-    assert float_number.parseString('11.01')[0] == '11.01'
-    assert filename.parseString("~/filename.csv")[0] == "~/filename.csv"
-    assert filename.parseString("!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")[0] == "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~"
-    assert filename.parseString("'/filename with space.csv'")[0] == "/filename with space.csv"
+    assert float_number.parseString('.1',parseAll=True)[0] == '.1'
+    assert float_number.parseString('0.1',parseAll=True)[0] == '0.1'
+    assert float_number.parseString('11',parseAll=True)[0] == '11'
+    assert int_number.parseString('11',parseAll=True)[0] == '11'
+    assert float_number.parseString('11.01',parseAll=True)[0] == '11.01'
+    assert filename.parseString("~/filename.csv",parseAll=True)[0] == "~/filename.csv"
+    assert filename.parseString("!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~",parseAll=True)[0] == "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~"
+    assert filename.parseString("'/filename with space.csv'",parseAll=True)[0] == "/filename with space.csv"
 
 def test_simple_functions():
-    assert list_btables_function.parseString("LIST BTABLES").function_id == 'list btable'
-    assert list_btables_function.parseString("LIST BTABLE").function_id == 'list btable'
-    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1").function_id == 'show schema for'
-    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1").btable == 'table_1'
-    assert show_models_for_function.parseString("SHOW MODELS FOR table_1").function_id == 'show model for'
-    assert show_models_for_function.parseString("SHOW MODEL FOR table_1").btable == 'table_1'
-    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1").function_id == 'show diagnostics for'
-    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1").btable == 'table_1'
-    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1").function_id == 'load model'
-    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1").function_id == 'load model'
-    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1").filename == '~/filename.csv'
-    assert load_model_function.parseString("LOAD MODELS '~/filena me.csv' INTO table_1").filename == '~/filena me.csv'
-    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1").btable == 'table_1'
-    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz").btable == 'table_1'
-    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz").function_id == 'save model'
-    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz").filename == 'filename.pkl.gz'
-    assert drop_btable_function.parseString("DROP BTABLE table_1").function_id == 'drop btable'
-    assert drop_btable_function.parseString("DROP BTABLES table_1").function_id == 'drop btable'
-    assert drop_btable_function.parseString("DROP BTABLE table_1").btable == 'table_1'
-    drop_model_1 = drop_model_function.parseString("DROP MODEL 1 FROM table_1")
-    drop_model_2 = drop_model_function.parseString("DROP MODELS 1-5 FROM table_1")
-    drop_model_3 = drop_model_function.parseString("DROP MODELS 1,2,6-9 FROM table_1")
-    drop_model_4 = drop_model_function.parseString("DROP MODELS 1-5,1-5 FROM table_1")
+    assert list_btables_function.parseString("LIST BTABLES",parseAll=True).function_id == 'list btable'
+    assert list_btables_function.parseString("LIST BTABLE",parseAll=True).function_id == 'list btable'
+    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).function_id == 'show schema for'
+    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).btable == 'table_1'
+    assert show_models_for_function.parseString("SHOW MODELS FOR table_1",parseAll=True).function_id == 'show model for'
+    assert show_models_for_function.parseString("SHOW MODEL FOR table_1",parseAll=True).btable == 'table_1'
+    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).function_id == 'show diagnostics for'
+    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).btable == 'table_1'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).function_id == 'load model'
+    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1",parseAll=True).function_id == 'load model'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).filename == '~/filename.csv'
+    assert load_model_function.parseString("LOAD MODELS '~/filena me.csv' INTO table_1",parseAll=True).filename == '~/filena me.csv'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).btable == 'table_1'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).btable == 'table_1'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).function_id == 'save model'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).filename == 'filename.pkl.gz'
+    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).function_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLES table_1",parseAll=True).function_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).btable == 'table_1'
+    drop_model_1 = drop_model_function.parseString("DROP MODEL 1 FROM table_1",parseAll=True)
+    drop_model_2 = drop_model_function.parseString("DROP MODELS 1-5 FROM table_1",parseAll=True)
+    drop_model_3 = drop_model_function.parseString("DROP MODELS 1,2,6-9 FROM table_1",parseAll=True)
+    drop_model_4 = drop_model_function.parseString("DROP MODELS 1-5,1-5 FROM table_1",parseAll=True)
     assert drop_model_1.function_id == 'drop model'
     assert drop_model_1.btable == 'table_1'
     assert drop_model_1.index_list.asList() == [1]
     assert drop_model_2.index_list.asList() == [1,2,3,4,5]
     assert drop_model_3.index_list.asList() == [1,2,6,7,8,9]
     assert drop_model_4.index_list.asList() == [1,2,3,4,5]
+    assert help_function.parseString("HELp",parseAll=True).function_id == 'help'
 
 def test_update_schema_pyparsing():
     update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
