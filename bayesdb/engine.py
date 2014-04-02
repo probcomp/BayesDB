@@ -395,7 +395,7 @@ class Engine(object):
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
     filtered_rows = select_utils.filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, self,
-                                                        query_colnames, impute_confidence, num_impute_samples)
+                                                        query_colnames, impute_confidence, num_impute_samples, tablename)
 
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
@@ -403,7 +403,7 @@ class Engine(object):
     ## If only being selected: then want to compute after ordering...
 
     # Simply rearranges the order of the rows in filtered_rows according to the order_by query.
-    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self)
+    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self, column_lists)
 
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
@@ -433,7 +433,7 @@ class Engine(object):
     if givens=="" or '=' not in givens:
       Y = None
     else:
-      varlist = [[c.strip() for c in b.split('=')] for b in givens.split('AND')]
+      varlist = [[c.strip() for c in b.split('=')] for b in re.split(r'and|,', givens, flags=re.IGNORECASE)]
       Y = []
       for colname, colval in varlist:
         if type(colval) == str or type(colval) == unicode:
@@ -487,6 +487,17 @@ class Engine(object):
     column_lists = self.persistence_layer.get_column_lists(tablename)
     return dict(columns=list(column_lists.keys()))
 
+  def show_row_lists(self, tablename):
+    """
+    Return a list of all row lists, and their row counts.
+    """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+      
+    row_lists = self.persistence_layer.get_row_lists(tablename)
+    return dict(row_lists=[(name, len(rows)) for (name, rows) in row_lists.items()])
+
+    
   def show_columns(self, tablename, column_list=None):
     """
     Return the specified columnlist. If None, return all columns in original order.
@@ -577,9 +588,14 @@ class Engine(object):
 
     # Create new btables from connected components (like into), if desired. Overwrites old ones with same name.
     if components is not None:
-      # TODO
+      component_name_tuples = []
+      for i, component in enumerate(components):
+        name = "%s_%d" % (components_name, i)
+        num_rows = len(component)
+        self.persistence_layer.add_row_list(tablename, name, component)
+        component_name_tuples.append((name, num_rows))
       ret['components'] = components
-      #ret['column_lists'] = component_name_tuples
+      ret['row_lists'] = component_name_tuples
 
     return ret
     

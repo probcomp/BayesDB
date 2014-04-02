@@ -485,6 +485,21 @@ class Parser(object):
                          givens=givens, numpredictions=numpredictions, order_by=order_by, plot=plot), \
                     dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
+    def help_show_row_lists(self):
+        return "SHOW ROW LISTS FOR <btable>"
+
+    def parse_show_row_lists(self, words, orig):
+        match = re.search(r"""
+          SHOW\s+ROW\s+LISTS\s+FOR\s+
+          (?P<btable>[^\s]+)\s*$
+        """, orig, flags=re.VERBOSE|re.IGNORECASE)
+        if not match:
+            if words[0] == 'show':
+                return 'help', self.help_show_row_lists()
+        else:
+            tablename = match.group('btable')
+            return 'show_row_lists', dict(tablename=tablename), None
+
     def help_show_column_lists(self):
         return "SHOW COLUMN LISTS FOR <btable>"
 

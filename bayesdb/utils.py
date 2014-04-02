@@ -75,6 +75,14 @@ class BayesDBColumnListDoesNotExistError(BayesDBError):
     def __str__(self):
         return "Column list %s does not exist in btable %s." % (self.column_list, self.tablename)
 
+class BayesDBRowListDoesNotExistError(BayesDBError):
+    def __init__(self, row_list, tablename):
+        self.row_list = row_list
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Row list %s does not exist in btable %s." % (self.row_list, self.tablename)
+        
         
 def is_int(s):
     try:

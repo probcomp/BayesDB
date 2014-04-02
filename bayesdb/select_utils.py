@@ -38,21 +38,25 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   whereclause = whereclause.lower()
 
   ## ------------------------- whereclause grammar ----------------------------
-  # TODO outside function
-  operation = oneOf("<= >= < > =")
+  # TODO outside function, TODO make whitespace regex \s+
+  operation = oneOf("<= >= < > = in")
+  equal_literal = Literal("=")
   column_identifier = Word(alphanums , alphanums + "_")
   float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
   value = QuotedString('"') | QuotedString("'") | float_number | Word(alphanums + "_")
   and_literal = CaselessLiteral("and")
+  comma_literal = CaselessLiteral(",")
+  column_list = Group(column_identifier + (ZeroOrMore(Suppress(comma_literal) + column_identifier)))
 
   row_identifier = Word(nums) | Group( column_identifier.setResultsName("column") + 
-                                     operation.setResultsName("op") + 
+                                     equal_literal.setResultsName("op") + 
                                      value.setResultsName("value"))
 
   similarity_literal = Regex(r'similarity\sto')
   probability_of_literal = Regex(r'probability\sof')
   predictive_probability_of_literal = Regex(r'predictive\sprobability\sof')
   typicality_literal = CaselessLiteral("typicality")
+  key_literal = CaselessLiteral("key")
 
   with_respect_to_literal = Regex(r'with\srespect\sto')
   with_confidence_literal = Regex(r'with\sconfidence')
@@ -61,15 +65,17 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
                                  float_number.setResultsName("confidence"))
   predictive_probability_of_function = Group(predictive_probability_of_literal.setResultsName("fun_name") +
                                              column_identifier.setResultsName("column"))
-  with_respect_to_clause = Group(with_respect_to_literal.setResultsName("literal") + 
-                                 column_identifier.setResultsName("column"))
+  with_respect_to_clause = Group(with_respect_to_literal.setResultsName("literal") + column_list).setResultsName("respect_to")
+
   similarity_function = Group(similarity_literal.setResultsName("fun_name") + 
                             row_identifier.setResultsName("row_id") + 
                             Optional(with_respect_to_clause))
 
   typicality_function = Group(typicality_literal.setResultsName("fun_name"))
 
-  function_literal = similarity_function | predictive_probability_of_function | typicality_function
+  key_function = Group(key_literal.setResultsName("fun_name"))
+
+  function_literal = similarity_function | predictive_probability_of_function | typicality_function | key_function
 
   single_where_clause = Group((function_literal | column_identifier) + operation + value + 
                               Optional(with_confidence_clause).setResultsName("with_confidence"))
@@ -82,9 +88,8 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
   ## Create conds: the list of conditions in the whereclause.
   ## List of (c_idx, op, val) tuples.
   conds = list() 
-  operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
+  operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
   top_level_parse = where_clause.parseString(whereclause)
-  print top_level_parse
   for inner_element in top_level_parse:
     # skips dividing literals
     if inner_element == 'and':
@@ -114,13 +119,19 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       functon_parse = inner_element[0]
     if inner_element[0].fun_name=="similarity to":
       row_id = inner_element[0].row_id
-      ## case where row_id is simiple
+      ## case where row_id is simple
       if type(row_id) == str:
         target_row_id = int(row_id)
       ## case where row_id is of the form "column_name = value"
       else:
         column_name = row_id.column
-        column_value = ast.literal_eval(row_id.value)
+        try:#TODO probable bugs where with int values
+          column_value = int(row_id.value)
+        except ValueError:
+          try:
+            column_value = float(row_id.value)
+          except ValueError:
+            column_value = row_id.value 
         ## look up row_id where column_name has column_value
         column_index = M_c['name_to_idx'][column_name.lower()]
         for row_id, T_row in enumerate(T):
@@ -131,7 +142,10 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       respect_to_clause = inner_element[0].respect_to
       target_column = None
       if respect_to_clause != '':
-        target_column = M_c['name_to_idx'][respect_to_clause[0][1]] 
+        target_column = respect_to_clause[1][0]
+        if len(respect_to_clause[1]) > 1:
+          for column_name in respect_to_clause[1][1:]:
+            target_column += ',' + column_name
       conds.append(((functions._similarity, (target_row_id, target_column)), op, val))
       continue
     elif inner_element[0].fun_name == "typicality":
@@ -142,14 +156,25 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
         column_index = M_c['name_to_idx'][inner_element[0].column.lower()]
         conds.append(((functions._predictive_probability,column_index), op, val))
         continue
+    if inner_element[0].fun_name == "key":
+      conds.append(((functions._row_id, None), op, val))
+      continue
     raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
   return conds
 
-def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend):
+def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend, tablename):
   """Helper function that applies WHERE conditions to row, returning True if row satisfies where clause."""
   for ((func, f_args), op, val) in where_conditions:
-    where_value = func(f_args, idx, row, M_c, X_L_list, X_D_list, T, backend)
-    return op(where_value, val)
+    where_value = func(f_args, idx, row, M_c, X_L_list, X_D_list, T, backend)    
+    if func != functions._row_id:
+      if not op(where_value, val):
+        return False
+    else:
+      ## val should be a row list name in this case. look up the row list, and set val to be the list of row indices
+      ## in the row list. Throws BayesDBRowListDoesNotExistError if row list does not exist.
+      val = backend.persistence_layer.get_row_list(tablename, val)
+      if not op(val, where_value): # for operator.contains, op(a,b) means 'b in a': so need to switch args.
+        return False
   return True
 
 def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
@@ -197,7 +222,7 @@ def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
       #####################
       ## Normal functions (of a cell)
       ######################
-      s = functions.parse_similarity(colname, M_c, T)
+      s = functions.parse_similarity(colname, M_c, T, column_lists)
       if s is not None:
         queries.append((functions._similarity, s, False))
         continue
@@ -239,7 +264,7 @@ def convert_row_from_codes_to_values(row, M_c):
   return tuple(ret)
 
 def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, engine, query_colnames,
-                           impute_confidence, num_impute_samples):
+                           impute_confidence, num_impute_samples, tablename):
     """
     impute_confidence: if None, don't impute. otherwise, this is the imput confidence
     Iterate through all rows of T, convert codes to values, filter by all predicates in where clause,
@@ -254,7 +279,7 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
 
     for row_id, T_row in enumerate(T):
       row_values = convert_row_from_codes_to_values(T_row, M_c) ## Convert row from codes to values
-      if is_row_valid(row_id, row_values, where_conditions, M_c, X_L_list, X_D_list, T, engine): ## Where clause filtering.
+      if is_row_valid(row_id, row_values, where_conditions, M_c, X_L_list, X_D_list, T, engine, tablename): ## Where clause filtering.
         if impute_confidence is not None:
           ## Determine which values are 'nan', which need to be imputed.
           ## Only impute columns in 'query_colnames'
@@ -275,7 +300,7 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
         filtered_rows.append((row_id, row_values))
     return filtered_rows
 
-def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine):
+def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine, column_lists):
   """Input: rows are list of (row_id, row_values) tuples."""
   if not order_by:
       return rows
@@ -289,7 +314,7 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine):
     ## function_list is a list of
     ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, engine), args, desc)
     
-    s = functions.parse_similarity(raw_orderable_string, M_c, T)
+    s = functions.parse_similarity(raw_orderable_string, M_c, T, column_lists)
     if s:
       function_list.append((functions._similarity, s, desc))
       continue
