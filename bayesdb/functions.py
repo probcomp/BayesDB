@@ -234,7 +234,7 @@ def parse_similarity(colname, M_c, T):
             break
 
       if 'columnstring' in similarity_match.groupdict() and similarity_match.group('columnstring'):
-          columnstring = match.group('columnstring').strip()
+          columnstring = similarity_match.group('columnstring').strip()
 
           column_lists = self.persistence_layer.get_column_lists(tablename)          
           target_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c, column_lists)]
