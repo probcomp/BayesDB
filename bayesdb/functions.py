@@ -191,7 +191,7 @@ def parse_probability(colname, M_c):
   else:
     return None
 
-def parse_similarity(colname, M_c, T):
+def parse_similarity(colname, M_c, T, column_lists):
   """
   colname: this is the thing that we want to try to parse as a similarity.
   It is an entry in a query's columnstring. eg: SELECT colname1, colname2 FROM...
@@ -236,7 +236,6 @@ def parse_similarity(colname, M_c, T):
       if 'columnstring' in similarity_match.groupdict() and similarity_match.group('columnstring'):
           columnstring = similarity_match.group('columnstring').strip()
 
-          column_lists = self.persistence_layer.get_column_lists(tablename)          
           target_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c, column_lists)]
           utils.check_for_duplicate_columns(target_colnames)
           target_columns = [M_c['name_to_idx'][colname] for colname in target_colnames]

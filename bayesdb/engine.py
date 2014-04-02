@@ -403,7 +403,7 @@ class Engine(object):
     ## If only being selected: then want to compute after ordering...
 
     # Simply rearranges the order of the rows in filtered_rows according to the order_by query.
-    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self)
+    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self, column_lists)
 
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)

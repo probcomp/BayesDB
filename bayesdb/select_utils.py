@@ -210,7 +210,7 @@ def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
       #####################
       ## Normal functions (of a cell)
       ######################
-      s = functions.parse_similarity(colname, M_c, T)
+      s = functions.parse_similarity(colname, M_c, T, column_lists)
       if s is not None:
         queries.append((functions._similarity, s, False))
         continue
@@ -288,7 +288,7 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
         filtered_rows.append((row_id, row_values))
     return filtered_rows
 
-def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine):
+def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine, column_lists):
   """Input: rows are list of (row_id, row_values) tuples."""
   if not order_by:
       return rows
@@ -302,7 +302,7 @@ def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine):
     ## function_list is a list of
     ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, engine), args, desc)
     
-    s = functions.parse_similarity(raw_orderable_string, M_c, T)
+    s = functions.parse_similarity(raw_orderable_string, M_c, T, column_lists)
     if s:
       function_list.append((functions._similarity, s, desc))
       continue
