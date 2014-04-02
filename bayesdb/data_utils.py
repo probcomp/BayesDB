@@ -240,6 +240,18 @@ def at_most_N_rows(T, N, gen_seed=0):
         T = [T[which_row] for which_row in which_rows]
     return T
 
+def construct_pandas_df(query_obj):
+    """
+    Take a result from a BQL statement (dict with 'data' and 'colnames')
+    and constructs a pandas data frame.
+
+    Currently this is only called if the user provides a pandas data frame
+    as input.
+    """
+    
+
+    return pandas_df
+
 def read_pandas_df(pandas_df):
     """
     Takes pandas data frame object and converts data

@@ -234,6 +234,11 @@ class Client(object):
         if pretty:
             pp = self.pretty_print(result)
             print pp
+        
+        if pandas_df is not None and 'data' in query_obj and 'columns' in result:
+            result_pandas_df = data_utils.construct_pandas_df(result)
+            return result_pandas_df
+        elif pretty:
             return pp
         else:
             if type(result) == dict and 'message' in result.keys():
