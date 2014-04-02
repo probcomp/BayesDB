@@ -147,7 +147,7 @@ save_connected_components_with_threshold_keyword = Combine(save_keyword + single
 ## Values/Literals
 float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
 int_number = Word(nums)
-operation_literal = oneOf("<= >= = < >")
+operation_literal = oneOf("<= >= = < > in")
 equal_literal = Literal("=")
 semicolon_literal = Literal(";")
 comma_literal = Literal(",")
