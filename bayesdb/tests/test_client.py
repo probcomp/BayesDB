@@ -200,6 +200,19 @@ def test_estimate_columns():
   client('estimate columns from %s order by mutual information with qual_score limit 5' % test_tablename)
   client('estimate columns from %s where mutual information with qual_score > 1 order by typicality' % test_tablename)
 
+def test_row_clusters():
+  """ smoke test """
+  test_tablename = create_dha()
+  global client, test_filenames
+  client('initialize 5 models for %s' % (test_tablename))
+
+  
+  client('estimate pairwise row similarity from %s save connected components as rcc' % test_tablename)
+  client('select * from %s where row in rcc' % test_tablename)
+  
+  #client("select * from %s where similarity to name='McAllen TX' > 0.5 order by similarity to name='McAllen TX' as mcallenrows" % test_tablename)
+  #client('select * from %s where row in mcallenrows' % test_tablename)
+
 def test_select_whereclause_functions():
   """ smoke test """
   test_tablename = create_dha()
