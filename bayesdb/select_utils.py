@@ -125,7 +125,13 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
       ## case where row_id is of the form "column_name = value"
       else:
         column_name = row_id.column
-        column_value = row_id.value #TODO probable bugs where with int values, takes everything as a string here
+        try:#TODO probable bugs where with int values
+          column_value = int(row_id.value)
+        except ValueError:
+          try:
+            column_value = float(row_id.value)
+          except ValueError:
+            column_value = row_id.value 
         ## look up row_id where column_name has column_value
         column_index = M_c['name_to_idx'][column_name.lower()]
         for row_id, T_row in enumerate(T):
