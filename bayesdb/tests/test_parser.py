@@ -172,6 +172,37 @@ def test_valid_values_names_pyparsing():
     assert filename.parseString("!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")[0] == "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~"
     assert filename.parseString("'/filename with space.csv'")[0] == "/filename with space.csv"
 
+def test_simple_functions():
+    assert list_btables_function.parseString("LIST BTABLES").function_id == 'list btable'
+    assert list_btables_function.parseString("LIST BTABLE").function_id == 'list btable'
+    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1").function_id == 'show schema for'
+    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1").btable == 'table_1'
+    assert show_models_for_function.parseString("SHOW MODELS FOR table_1").function_id == 'show model for'
+    assert show_models_for_function.parseString("SHOW MODEL FOR table_1").btable == 'table_1'
+    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1").function_id == 'show diagnostics for'
+    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1").btable == 'table_1'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1").function_id == 'load model'
+    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1").function_id == 'load model'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1").filename == '~/filename.csv'
+    assert load_model_function.parseString("LOAD MODELS '~/filena me.csv' INTO table_1").filename == '~/filena me.csv'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1").btable == 'table_1'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz").btable == 'table_1'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz").function_id == 'save model'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz").filename == 'filename.pkl.gz'
+    assert drop_btable_function.parseString("DROP BTABLE table_1").function_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLES table_1").function_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLE table_1").btable == 'table_1'
+    drop_model_1 = drop_model_function.parseString("DROP MODEL 1 FROM table_1")
+    drop_model_2 = drop_model_function.parseString("DROP MODELS 1-5 FROM table_1")
+    drop_model_3 = drop_model_function.parseString("DROP MODELS 1,2,6-9 FROM table_1")
+    drop_model_4 = drop_model_function.parseString("DROP MODELS 1-5,1-5 FROM table_1")
+    assert drop_model_1.function_id == 'drop model'
+    assert drop_model_1.btable == 'table_1'
+    assert drop_model_1.index_list.asList() == [1]
+    assert drop_model_2.index_list.asList() == [1,2,3,4,5]
+    assert drop_model_3.index_list.asList() == [1,2,6,7,8,9]
+    assert drop_model_4.index_list.asList() == [1,2,3,4,5]
+
 def test_update_schema_pyparsing():
     update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
     assert update_schema_1.function_id == 'update schema for'
@@ -244,6 +275,8 @@ def test_analyze_pyparsing():
     assert analyze_10.index_list.asList() == [1,2,3,5,6,7,9,10]
     assert analyze_11.index_list.asList() == [1,2]
     assert analyze_12.index_list.asList() == [1,2,3,4,5]
+
+
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')

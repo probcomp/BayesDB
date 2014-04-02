@@ -49,6 +49,7 @@ analyze_keyword = CaselessKeyword("analyze").setResultsName("function_id")
 index_keyword = CaselessKeyword("index")
 save_keyword = CaselessKeyword("save")
 load_keyword = CaselessKeyword("load")
+drop_keyword = CaselessKeyword("drop")
 show_keyword = CaselessKeyword("show")
 select_keyword = CaselessKeyword("select")
 infer_keyword = CaselessKeyword("infer")
@@ -122,6 +123,8 @@ load_model_keyword = Combine(load_keyword + single_white + model_keyword).setRes
 save_model_keyword = Combine(save_keyword + single_white + model_keyword).setResultsName("function_id")
 save_to_keyword = Combine(save_keyword + single_white + to_keyword).setResultsName("function_id")
 list_btables_keyword = Combine(list_keyword + single_white + btable_keyword).setResultsName("function_id")
+drop_btable_keyword = Combine(drop_keyword + single_white + btable_keyword).setResultsName("function_id")
+drop_model_keyword = Combine(drop_keyword + single_white + model_keyword).setResultsName("function_id")
 show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword + single_white + for_keyword).setResultsName("function_id")
 show_models_for_keyword = Combine(show_keyword + single_white + model_keyword + single_white + for_keyword).setResultsName("function_id")
 show_diagnostics_for_keyword = Combine(show_keyword + single_white + diagnostics_keyword + single_white + for_keyword).setResultsName("function_id")
@@ -192,7 +195,8 @@ def list_from_index_clause(toks):
         #TODO else throw exception
         index_list.sort()
     return [list(set(index_list))]
-    
+
+# TODO separate out model_keyword for generic use
 model_index_clause = (model_keyword + 
                       Group((Group(int_number + Suppress(hyphen_literal) + int_number) | int_number) + 
                             ZeroOrMore(Suppress(comma_literal) + 
@@ -205,6 +209,33 @@ analyze_function = (analyze_keyword + btable +
                     Suppress(for_keyword) + 
                     ((int_number.setResultsName('num_iterations') + iteration_keyword) | 
                      (int_number.setResultsName('num_seconds') + second_keyword)))
+                    
+
+# LIST BTABLES
+list_btables_function = list_btables_keyword
+
+# SHOW SCHEMA FOR <btable>
+show_schema_for_function = show_schema_for_keyword + btable
+
+# SHOW MODELS FOR <btable>
+show_models_for_function = show_models_for_keyword + btable
+
+# SHOW DIAGNOSTICS FOR <btable>
+show_diagnostics_for_function = show_diagnostics_for_keyword + btable
+
+# LOAD MODELS <filename.pkl.gz> INTO <btable>
+load_model_function = load_model_keyword + filename + Suppress(into_keyword) + btable
+
+# SAVE MODELS FROM <btable> TO <filename.pkl.gz>
+save_model_from_function = save_model_keyword + Suppress(from_keyword) + btable + Suppress(to_keyword) + filename
+
+# DROP BTABLE <btable>
+drop_btable_function = drop_btable_keyword + btable
+
+# DROP MODEL[S] [<model_index>-<model_index>] FROM <btable>
+drop_model_function = drop_keyword.setParseAction(replaceWith("drop model")).setResultsName('function_id') + model_index_clause + Suppress(from_keyword) + btable
+
+
 
 ## Clauses
 print "imported"
