@@ -41,6 +41,7 @@ class PersistenceLayer():
     ....metadata_full.pkl
     ....metadata.pkl
     ....column_lists.pkl
+    ....row_lists.pkl
     ....models/
     ......model_<id>.pkl
 
@@ -49,6 +50,7 @@ class PersistenceLayer():
     metadata.pkl: dict. keys: M_r, M_c, T, cctypes
     metadata_full.pkl: dict. keys: M_r_full, M_c_full, T_full, cctypes_full
     column_lists.pkl: dict. keys: column list names, values: list of column names.
+    row_lists.pkl: dict. keys: row list names, values: list of row keys (need to update all these if table key is changed!).
     models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views, model_config]. Idx starting at 1.
     data.csv: the raw csv file that the data was loaded from.
     """
@@ -182,11 +184,25 @@ class PersistenceLayer():
         except IOError:
             return dict()
 
+    def get_row_lists(self, tablename):
+        try:
+            f = open(os.path.join(self.data_dir, tablename, 'row_lists.pkl'), 'r')
+            row_lists = pickle.load(f)
+            f.close()
+            return row_lists
+        except IOError:
+            return dict()
+            
     def add_column_list(self, tablename, column_list_name, column_list):
         column_lists = self.get_column_lists(tablename)
         column_lists[column_list_name] = column_list
         self.write_column_lists(tablename, column_lists)
 
+    def add_row_list(self, tablename, row_list_name, row_list):
+        row_lists = self.get_row_lists(tablename)
+        row_lists[row_list_name] = row_list
+        self.write_row_lists(tablename, row_lists)
+        
     def get_column_list(self, tablename, column_list):
         column_lists = self.get_column_lists(tablename)
         if column_list in column_lists:
@@ -194,6 +210,13 @@ class PersistenceLayer():
         else:
             raise utils.BayesDBColumnListDoesNotExistError(column_list, tablename)
 
+    def get_row_list(self, tablename, row_list):
+        row_lists = self.get_row_lists(tablename)
+        if row_list in row_lists:
+            return row_lists[row_list]
+        else:
+            raise utils.BayesDBRowListDoesNotExistError(row_list, tablename)
+            
     def write_model(self, tablename, model, modelid):
         # Make models dir
         models_dir = os.path.join(self.data_dir, tablename, 'models')
@@ -221,6 +244,11 @@ class PersistenceLayer():
         pickle.dump(column_lists, column_lists_f, pickle.HIGHEST_PROTOCOL)
         column_lists_f.close()
 
+    def write_row_lists(self, tablename, row_lists):
+        row_lists_f = open(os.path.join(self.data_dir, tablename, 'row_lists.pkl'), 'w')
+        pickle.dump(row_lists, row_lists_f, pickle.HIGHEST_PROTOCOL)
+        row_lists_f.close()
+        
     def drop_btable(self, tablename):
         """Delete a single btable."""
         if tablename in self.btable_index:
@@ -399,6 +427,10 @@ class PersistenceLayer():
         # Write column lists
         column_lists = dict()
         self.write_column_lists(tablename, column_lists)
+
+        # Write row lists
+        row_lists = dict()
+        self.write_row_lists(tablename, row_lists)
 
         # Add to btable name index
         self.add_btable_to_index(tablename)
