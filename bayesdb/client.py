@@ -71,11 +71,11 @@ class Client(object):
                     out = dict(message=str(e), error=True)
         return out
 
-    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False):
+    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """Wrapper around execute."""
-        return self.execute(call_input, pretty, timing, wait, plots, yes, debug)
+        return self.execute(call_input, pretty, timing, wait, plots, yes, debug, pandas_df, pandas_output)
 
-    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False):
+    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """
         Execute a chunk of BQL. This method breaks a large chunk of BQL (like a file)
         consisting of possibly many BQL statements, breaks them up into individual statements,
@@ -95,8 +95,7 @@ class Client(object):
         else:
             print "Invalid input type: expected file or string."
 
-        if not pretty:
-            return_list = []
+        return_list = []
             
         lines = self.parser.split_lines(bql_string)
         # Iterate through lines with while loop so we can append within loop.
@@ -108,23 +107,25 @@ class Client(object):
                 user_input = raw_input()
                 if len(user_input) > 0 and (user_input[0] == 'q' or user_input[0] == 's'):
                     continue
-            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, debug=debug)
+            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, debug=debug, pandas_df=pandas_df, pandas_output=pandas_output)
 
             if type(result) == dict and 'message' in result and result['message'] == 'execute_file':
                 ## special case for one command: execute_file
                 new_lines = self.parser.split_lines(result['bql_string'])
                 lines += new_lines
-            elif not pretty:
-                return_list.append(result)
             if type(call_input) == file:
                 print
 
+            return_list.append(result)
+
         self.parser.reset_root_dir()
         
-        if not pretty:
-            return return_list
+        if len(return_list) == 1:
+            return_list = return_list[0]
 
-    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, debug=False):
+        return return_list
+
+    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """
         Accepts a SINGLE BQL STATEMENT as input, parses it, and executes it if it was parsed
         successfully.
@@ -185,7 +186,10 @@ class Client(object):
                     raise utils.BayesDBError('Models file %s could not be found.' % pklpath)
             args_dict['models'] = models
         elif method_name == 'create_btable':
-            header, rows = data_utils.read_csv(client_dict['csv_path'])
+            if pandas_df is None:
+                header, rows = data_utils.read_csv(client_dict['csv_path'])
+            else:
+                header, rows = data_utils.read_pandas_df(pandas_df)
             args_dict['header'] = header
             args_dict['raw_T_full'] = rows
 
@@ -235,7 +239,10 @@ class Client(object):
         if pretty:
             pp = self.pretty_print(result)
             print pp
-            return pp
+        
+        if pandas_output and 'data' in result and 'columns' in result:
+            result_pandas_df = data_utils.construct_pandas_df(result)
+            return result_pandas_df
         else:
             if type(result) == dict and 'message' in result.keys():
                 print result['message']
