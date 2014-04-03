@@ -9,7 +9,13 @@ Loading data
    
    CREATE BTABLE <btable> FROM <filename.csv>
 
-Creates a btable by importing data from the specified file. The file must be in CSV format, and the first line must be a header indicating the names of each column.
+Creates a btable by importing data from the specified CSV file. The file must be in CSV format, and the first line must be a header indicating the names of each column.
+
+::
+   
+   CREATE BTABLE <btable> FROM PANDAS
+
+Creates a btable from a pandas DataFrame object, which must be passed as an additional argument to the client.
 
 ::
 
