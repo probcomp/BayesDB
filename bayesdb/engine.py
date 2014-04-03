@@ -572,11 +572,17 @@ class Engine(object):
       raise utils.BayesDBNoModelsError(tablename)
 
     # TODO: deal with row_list
+    if row_list:
+      row_indices = self.persistence_layer.get_row_list(tablename, row_list)
+      if len(row_indices) == 0:
+        raise utils.BayesDBError("Error: Row list %s has no rows." % row_list)
+    else:
+      row_indices = None
     
     # Do the heavy lifting: generate the matrix itself
     matrix, row_indices_reordered, components = pairwise.generate_pairwise_row_matrix(   \
         function_name, X_L_list, X_D_list, M_c, T, tablename,
-        engine=self, row_indices=row_list, component_threshold=threshold)
+        engine=self, row_indices=row_indices, component_threshold=threshold)
     
     title = 'Pairwise row %s for %s' % (function_name, tablename)      
     ret = dict(

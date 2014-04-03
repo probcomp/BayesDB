@@ -178,9 +178,10 @@ def generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tabl
     function = parse_pairwise_function(function_name, column=False)
 
     # Get appropriate row list
-    # TODO
     if row_indices is None:
         row_indices = numpy.array(range(len(T)))
+    else:
+        row_indices = numpy.array(row_indices)
 
     # Actually compute each function between each pair of columns
     matrix = compute_raw_row_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, engine, row_indices)
