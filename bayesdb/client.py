@@ -69,7 +69,7 @@ class Client(object):
 
     def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """Wrapper around execute."""
-        return self.execute(call_input, pretty, timing, wait, plots, yes)
+        return self.execute(call_input, pretty, timing, wait, plots, yes, debug, pandas_df, pandas_output)
 
     def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """
@@ -91,8 +91,7 @@ class Client(object):
         else:
             print "Invalid input type: expected file or string."
 
-        if not pretty:
-            return_list = []
+        return_list = []
             
         lines = self.parser.split_lines(bql_string)
         # Iterate through lines with while loop so we can append within loop.
@@ -104,21 +103,23 @@ class Client(object):
                 user_input = raw_input()
                 if len(user_input) > 0 and (user_input[0] == 'q' or user_input[0] == 's'):
                     continue
-            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, debug=False, pandas_df=pandas, pandas_output=pandas_output)
+            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, debug=False, pandas_df=pandas_df, pandas_output=pandas_output)
 
             if type(result) == dict and 'message' in result and result['message'] == 'execute_file':
                 ## special case for one command: execute_file
                 new_lines = self.parser.split_lines(result['bql_string'])
                 lines += new_lines
-            elif not pretty:
-                return_list.append(result)
             if type(call_input) == file:
                 print
 
+            return_list.append(result)
+
         self.parser.reset_root_dir()
         
-        if not pretty:
-            return return_list
+        if len(return_list) == 1:
+            return_list = return_list[0]
+
+        return return_list
 
     def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """

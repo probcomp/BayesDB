@@ -242,12 +242,12 @@ def at_most_N_rows(T, N, gen_seed=0):
 
 def construct_pandas_df(query_obj):
     """
-    Take a result from a BQL statement (dict with 'data' and 'colnames')
+    Take a result from a BQL statement (dict with 'data' and 'columns')
     and constructs a pandas data frame.
 
     Currently this is only called if the user specifies pandas_output = True
     """
-    pandas_df = pandas.DataFrame(data = query_obj['data'], columns = query_obj['colnames'])
+    pandas_df = pandas.DataFrame(data = query_obj['data'], columns = query_obj['columns'])
     return pandas_df
 
 def read_pandas_df(pandas_df):
