@@ -31,6 +31,7 @@ into_keyword = CaselessKeyword("into")
 of_keyword = CaselessKeyword("of")
 with_keyword = CaselessKeyword("with")
 help_keyword = CaselessKeyword("help").setResultsName("function_id")
+quit_keyword = CaselessKeyword("quit").setResultsName("function_id")
 to_keyword = CaselessKeyword('to')
 ## Many basic keywords will never be used alone
 ## creating them separately like this allows for simpler whitespace and case flexibility
@@ -125,27 +126,34 @@ save_to_keyword = Combine(save_keyword + single_white + to_keyword).setResultsNa
 list_btables_keyword = Combine(list_keyword + single_white + btable_keyword).setResultsName("function_id")
 drop_btable_keyword = Combine(drop_keyword + single_white + btable_keyword).setResultsName("function_id")
 drop_model_keyword = Combine(drop_keyword + single_white + model_keyword).setResultsName("function_id")
-show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword + single_white + for_keyword).setResultsName("function_id")
-show_models_for_keyword = Combine(show_keyword + single_white + model_keyword + single_white + for_keyword).setResultsName("function_id")
-show_diagnostics_for_keyword = Combine(show_keyword + single_white + diagnostics_keyword + single_white + for_keyword).setResultsName("function_id")
-estimate_pairwise_keyword = Combine(estimate_keyword + single_white + pairwise_keyword).setResultsName("function_id")
-estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + single_white + row_keyword).setResultsName("function_id")
+show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword + 
+                                  single_white + for_keyword).setResultsName("function_id")
+show_models_for_keyword = Combine(show_keyword + single_white + model_keyword + 
+                                  single_white + for_keyword).setResultsName("function_id")
+show_diagnostics_for_keyword = Combine(show_keyword + single_white + diagnostics_keyword + 
+                                       single_white + for_keyword).setResultsName("function_id")
+estimate_pairwise_keyword = Combine(estimate_keyword + single_white + 
+                                    pairwise_keyword).setResultsName("function_id")
+estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
+                                        single_white + row_keyword).setResultsName("function_id")
 with_confidence_keyword = Combine(with_keyword + single_white + confidence_keyword)
 dependence_probability_keyword = Combine(dependence_keyword + single_white + probability_keyword)
 mutual_information_keyword = Combine(mutual_keyword + single_white + information_keyword)
-estimate_columns_from_keyword = Combine(estimate_keyword + single_white + column_keyword + single_white + from_keyword).setResultsName("function_id")
+estimate_columns_from_keyword = Combine(estimate_keyword + single_white + column_keyword + 
+                                        single_white + from_keyword).setResultsName("function_id")
 column_lists_keyword = Combine(column_keyword + single_white + list_keyword)
-similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword)
+similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword).setResultsName("function_id")
 with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
 probability_of_keyword = Combine(probability_keyword + single_white + of_keyword)
 predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_of_keyword)
 save_connected_components_with_threshold_keyword = Combine(save_keyword + single_white + 
                                                            connected_keyword + single_white + 
                                                            components_keyword + single_white + 
-                                                           with_keyword + single_white + threshold_keyword).setResultsName("function_id")
+                                                           with_keyword + single_white + 
+                                                           threshold_keyword).setResultsName("function_id")
 
 ## Values/Literals
-float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
+float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+') #TODO setParseAction to float/int
 int_number = Word(nums)
 operation_literal = oneOf("<= >= = < > in")
 equal_literal = Literal("=")
@@ -187,6 +195,7 @@ initialize_function = (initialize_keyword + int_number.setResultsName("num_model
 
 # ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
 def list_from_index_clause(toks):
+    print toks
     ## takes index tokens separated by '-' for range and ',' for individual and returns a list of unique indexes
     index_list = []
     for token in toks[0]:
@@ -212,7 +221,6 @@ analyze_function = (analyze_keyword + btable +
                     ((int_number.setResultsName('num_iterations') + iteration_keyword) | 
                      (int_number.setResultsName('num_seconds') + second_keyword)))
                     
-
 # LIST BTABLES
 list_btables_function = list_btables_keyword
 
@@ -238,18 +246,31 @@ drop_btable_function = drop_btable_keyword + btable
 drop_model_function = drop_keyword.setParseAction(replaceWith("drop model")).setResultsName('function_id') + model_index_clause + Suppress(from_keyword) + btable
 
 help_function = help_keyword
-
-## TOP LEVEL STATEMENTS FOR BAYESDB MANAGEMENT
+quit_keyword = quit_keyword
 
 # ------------------------------ Helper Clauses ---------------------------#
 
+# Rows can be identified either by an integer or <column> = <value> where value is unique for the given column
+row_clause = (int_number.setResultsName("row_id") | 
+              (identifier.setResultsName("column") + 
+              Suppress(equal_literal) + 
+               value.setResultsName("column_value")))
+
+column_list_clause = Group(identifier + 
+                           ZeroOrMore(Suppress(comma_literal) + 
+                                      identifier)).setResultsName("column_list")
+
 # SAVE TO <file>
+save_to_clause = save_to_keyword + filename
 
 # SIMILARITY TO <row> [WITH RESPECT TO <column>]
+similarity_to_function = similarity_to_keyword.setResultsName('row_function_id') + row_clause + Optional(with_respect_to_keyword + column_list_clause).setResultsName('with_respect_to')
 
 # TYPICALITY
+typicality_to_function = typicality_keyword.setResultsName('row_function_id') 
 
 # DEPENDENCE PROBABILITY (WITH <column> | OF <column1> WITH <column2>)
+
 
 # PROBABILITY OF <column>=<value>
 

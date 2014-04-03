@@ -277,7 +277,57 @@ def test_analyze_pyparsing():
     assert analyze_11.index_list.asList() == [1,2]
     assert analyze_12.index_list.asList() == [1,2,3,4,5]
 
+def test_subclauses_pyparsing():
+    assert save_to_clause.parseString("save to filename.csv").filename == 'filename.csv'
 
+def test_row_clause_pyparsing():
+    row_1 = row_clause.parseString('1', parseAll=True)
+    row_2 = row_clause.parseString("column = 1", parseAll=True)
+    row_3 = row_clause.parseString("column = 'value'", parseAll=True)
+    row_4 = row_clause.parseString("column = value", parseAll=True)
+    assert row_1.row_id == '1'
+    assert row_1.column == ''
+    assert row_2.row_id == ''
+    assert row_2.column == 'column'
+    assert row_2.column_value == '1'
+    assert row_3.column_value == 'value'
+    assert row_4.column_value == 'value'
+    
+def test_row_functions():
+    similarity_1 = similarity_to_function.parseString("SIMILARITY TO 1", 
+                                                      parseAll=True)
+    similarity_2 = similarity_to_function.parseString("SIMILARITY TO col_2 = 1", 
+                                                      parseAll=True)
+    similarity_3 = similarity_to_function.parseString("SIMILARITY TO col_2 = 'a'", 
+                                                      parseAll=True)
+    similarity_4 = similarity_to_function.parseString("SIMILARITY TO col_2 = a", 
+                                                      parseAll=True)
+    similarity_5 = similarity_to_function.parseString("SIMILARITY TO 1 WITH RESPECT TO col_1", 
+                                                      parseAll=True)
+    similarity_6 = similarity_to_function.parseString("SIMILARITY TO col_2 = 1 WITH RESPECT TO col_1,col_2", 
+                                                      parseAll=True)
+    similarity_7 = similarity_to_function.parseString("SIMILARITY TO col_2 = 'a' WITH RESPECT TO col_1 , col_3", 
+                                                      parseAll=True)
+    similarity_8 = similarity_to_function.parseString("SIMILARITY TO col_2 = a WITH RESPECT TO col_1", 
+                                                      parseAll=True)
+    assert similarity_1.row_function_id == 'similarity to'
+    assert similarity_1.row_id == '1'
+    assert similarity_2.column == 'col_2'
+    assert similarity_2.column_value == '1'
+    assert similarity_3.column == 'col_2'
+    assert similarity_3.column_value == 'a'
+    assert similarity_4.column == 'col_2'
+    assert similarity_4.column_value == 'a'
+    assert similarity_4.with_respect_to == ''
+    assert not similarity_5.with_respect_to == ''
+    assert similarity_5.column_list.asList() == ['col_1']
+    assert similarity_6.column_list.asList() == ['col_1', 'col_2']
+    assert similarity_7.column_list.asList() == ['col_1', 'col_3']
+    assert similarity_8.column_list.asList() == ['col_1']
+    assert typicality_to_function.parseString('Typicality',parseAll=True).row_function_id == 'typicality'
+
+
+    
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
