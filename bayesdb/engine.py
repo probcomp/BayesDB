@@ -374,7 +374,7 @@ class Engine(object):
 
     # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
     # TODO: support functions in where_conditions. right now we only support actual column values.
-    where_conditions = select_utils.get_conditions_from_whereclause(whereclause, M_c, T)
+    where_conditions = select_utils.get_conditions_from_whereclause(whereclause, M_c, T, column_lists)
 
     # If there are no models, make sure that we aren't using functions that require models.
     # TODO: make this less hardcoded

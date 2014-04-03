@@ -34,7 +34,7 @@ import functions
 import data_utils as du
 from pyparsing import *
 
-def get_conditions_from_whereclause(whereclause, M_c, T):
+def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
   whereclause = whereclause.lower()
 
   ## ------------------------- whereclause grammar ----------------------------
@@ -140,13 +140,13 @@ def get_conditions_from_whereclause(whereclause, M_c, T):
             target_row_id = row_id
             break
       respect_to_clause = inner_element[0].respect_to
-      target_column = None
+      target_column_ids = None
       if respect_to_clause != '':
-        target_column = respect_to_clause[1][0]
-        if len(respect_to_clause[1]) > 1:
-          for column_name in respect_to_clause[1][1:]:
-            target_column += ',' + column_name
-      conds.append(((functions._similarity, (target_row_id, target_column)), op, val))
+        target_columns = respect_to_clause[1]
+        target_colnames = [colname.strip() for colname in utils.column_string_splitter(','.join(target_columns), M_c, column_lists)]
+        utils.check_for_duplicate_columns(target_colnames)
+        target_column_ids = [M_c['name_to_idx'][colname] for colname in target_colnames]
+      conds.append(((functions._similarity, (target_row_id, target_column_ids)), op, val))
       continue
     elif inner_element[0].fun_name == "typicality":
       conds.append(((functions._row_typicality, True), op, val)) 
