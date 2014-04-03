@@ -326,9 +326,6 @@ def test_row_functions():
     assert similarity_8.column_list.asList() == ['col_1']
     assert typicality_to_function.parseString('Typicality',parseAll=True).row_function_id == 'typicality'
 
-
-    
-
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
