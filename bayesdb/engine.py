@@ -578,11 +578,11 @@ class Engine(object):
         raise utils.BayesDBError("Error: Row list %s has no rows." % row_list)
     else:
       row_indices = None
+
+    column_lists = self.persistence_layer.get_column_lists(tablename)
     
     # Do the heavy lifting: generate the matrix itself
-    matrix, row_indices_reordered, components = pairwise.generate_pairwise_row_matrix(   \
-        function_name, X_L_list, X_D_list, M_c, T, tablename,
-        engine=self, row_indices=row_indices, component_threshold=threshold)
+    matrix, row_indices_reordered, components = pairwise.generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, component_threshold=threshold, column_lists=column_lists)
     
     title = 'Pairwise row %s for %s' % (function_name, tablename)      
     ret = dict(

@@ -32,7 +32,7 @@ import select_utils
 import functions
 import utils
 
-def parse_pairwise_function(function_name, column=True):
+def parse_pairwise_function(function_name, column=True, M_c=None, column_lists={}):
     if column:
         if function_name == 'mutual information':
             return functions._mutual_information
@@ -45,8 +45,11 @@ def parse_pairwise_function(function_name, column=True):
     else:
         # TODO: need to refactor to support similarity with respect to column, because then we need to parse
         # and return the column id here.
-        if function_name == 'similarity':
-            return functions._similarity
+        target_columns = functions.parse_similarity_pairwise(function_name, M_c, None, column_lists)
+        if target_columns is None:
+            return (functions._similarity, None)
+        elif type(target_columns) == list:
+            return (functions._similarity, target_columns)
         else:
             raise utils.BayesDBParseError('Invalid row function: %s' % function_name)
 
@@ -74,7 +77,7 @@ def compute_raw_column_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, eng
             matrix[j][i] = func_val
     return matrix
 
-def compute_raw_row_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, engine, row_indices=None):
+def compute_raw_row_pairwise_matrix(function, arg, X_L_list, X_D_list, M_c, T, engine, row_indices=None):
     # TODO: currently assume that the only function possible is similarity
     if row_indices is None:
         row_indices = range(len(T))
@@ -83,7 +86,7 @@ def compute_raw_row_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, engine
     for i, orig_i in enumerate(row_indices):
         for j in range(i, num_rows):
             orig_j = row_indices[j]
-            func_val = function((orig_i, None), orig_j, None, M_c, X_L_list, X_D_list, T, engine)
+            func_val = function((orig_i, arg), orig_j, None, M_c, X_L_list, X_D_list, T, engine)
             matrix[i][j] = func_val
             matrix[j][i] = func_val
     return matrix
@@ -141,7 +144,7 @@ def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, t
     """
 
     # Get appropriate function
-    function = parse_pairwise_function(function_name, column=True)
+    function = parse_pairwise_function(function_name, M_c, column=True)
 
     # Get appropriate column information from column_names
     column_names, column_indices = get_columns(column_names, M_c)
@@ -168,14 +171,14 @@ def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, t
             
     return matrix, column_names_reordered, components
 
-def generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', engine=None, row_indices=None, component_threshold=None):
+def generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', engine=None, row_indices=None, component_threshold=None, column_lists={}):
     """
     Compute a matrix. In using a function that requires engine (currently only
     mutual information), engine must not be None.
     """
 
     # Get appropriate function
-    function = parse_pairwise_function(function_name, column=False)
+    function, arg = parse_pairwise_function(function_name, column=False, M_c=M_c, column_lists=column_lists)
 
     # Get appropriate row list
     if row_indices is None:
@@ -184,7 +187,7 @@ def generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tabl
         row_indices = numpy.array(row_indices)
 
     # Actually compute each function between each pair of columns
-    matrix = compute_raw_row_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, engine, row_indices)
+    matrix = compute_raw_row_pairwise_matrix(function, arg, X_L_list, X_D_list, M_c, T, engine, row_indices)
 
     if component_threshold is not None:
         # Components is a list of lists, where the inner list contains the ids (into the matrix)

@@ -597,8 +597,8 @@ class Parser(object):
                 return 'help', self.help_estimate_pairwise()
         else:
             tablename = match.group('btable').strip()
-            function_name = match.group('functionname').strip().lower()
-            if function_name not in ["similarity"]:
+            function_name = match.group('functionname')
+            if function_name.strip().lower().split()[0] not in ["similarity"]:
                 return 'help', self.help_estimate_pairwise()
             filename = match.group('filename') # Could be None
             row_list = match.group('rows') # Could be None
