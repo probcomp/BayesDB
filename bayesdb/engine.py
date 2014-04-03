@@ -374,7 +374,7 @@ class Engine(object):
 
     # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
     # TODO: support functions in where_conditions. right now we only support actual column values.
-    where_conditions = select_utils.get_conditions_from_whereclause(whereclause, M_c, T)
+    where_conditions = select_utils.get_conditions_from_whereclause(whereclause, M_c, T, column_lists)
 
     # If there are no models, make sure that we aren't using functions that require models.
     # TODO: make this less hardcoded
@@ -572,11 +572,17 @@ class Engine(object):
       raise utils.BayesDBNoModelsError(tablename)
 
     # TODO: deal with row_list
+    if row_list:
+      row_indices = self.persistence_layer.get_row_list(tablename, row_list)
+      if len(row_indices) == 0:
+        raise utils.BayesDBError("Error: Row list %s has no rows." % row_list)
+    else:
+      row_indices = None
+
+    column_lists = self.persistence_layer.get_column_lists(tablename)
     
     # Do the heavy lifting: generate the matrix itself
-    matrix, row_indices_reordered, components = pairwise.generate_pairwise_row_matrix(   \
-        function_name, X_L_list, X_D_list, M_c, T, tablename,
-        engine=self, row_indices=row_list, component_threshold=threshold)
+    matrix, row_indices_reordered, components = pairwise.generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, component_threshold=threshold, column_lists=column_lists)
     
     title = 'Pairwise row %s for %s' % (function_name, tablename)      
     ret = dict(

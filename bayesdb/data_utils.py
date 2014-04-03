@@ -240,16 +240,21 @@ def at_most_N_rows(T, N, gen_seed=0):
         T = [T[which_row] for which_row in which_rows]
     return T
 
+def construct_pandas_df(query_obj):
+    """
+    Take a result from a BQL statement (dict with 'data' and 'columns')
+    and constructs a pandas data frame.
+
+    Currently this is only called if the user specifies pandas_output = True
+    """
+    pandas_df = pandas.DataFrame(data = query_obj['data'], columns = query_obj['columns'])
+    return pandas_df
+
 def read_pandas_df(pandas_df):
     """
-    Takes pandas data frame object, or pickled file name, and converts data
+    Takes pandas data frame object and converts data
     into list-of-lists format
     """
-    
-    # if this is a pkl file and not an actual DataFrame, open it using pandas.read_pickle()
-    if not isinstance(pandas_df, pandas.DataFrame) and re.search(r"\.pkl$", pandas_df):  
-        pandas_df = pandas.read_pickle(pandas_df)
-    
     header = list(pandas_df.columns)
     rows = [map(str, row) for index, row in pandas_df.iterrows()]
     return header, rows

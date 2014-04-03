@@ -232,11 +232,13 @@ class Parser(object):
             if (words[0] == 'upload' or words[0] == 'create') and (words[1] == 'ptable' or words[1] == 'btable'):
                 if len(words) >= 5:
                     tablename = words[2]
-                    if words[3] == 'from':
+                    if words[3] == 'from' and re.search("\.csv$", words[4]):
                         csv_path = self.get_absolute_path(orig.split()[4])
-                        return 'create_btable', \
-                               dict(tablename=tablename, cctypes_full=crosscat_column_types), \
-                               dict(csv_path=csv_path)
+                    else:
+                        csv_path = None
+                    return 'create_btable', \
+                       dict(tablename=tablename, cctypes_full=crosscat_column_types), \
+                       dict(csv_path=csv_path)
                 else:
                     return 'help', self.help_create_btable()
 
@@ -597,8 +599,8 @@ class Parser(object):
                 return 'help', self.help_estimate_pairwise()
         else:
             tablename = match.group('btable').strip()
-            function_name = match.group('functionname').strip().lower()
-            if function_name not in ["similarity"]:
+            function_name = match.group('functionname')
+            if function_name.strip().lower().split()[0] not in ["similarity"]:
                 return 'help', self.help_estimate_pairwise()
             filename = match.group('filename') # Could be None
             row_list = match.group('rows') # Could be None

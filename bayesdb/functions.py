@@ -246,6 +246,39 @@ def parse_similarity(colname, M_c, T, column_lists):
   else:
       return None
 
+def parse_similarity_pairwise(colname, M_c, _, column_lists):
+  """
+  TODO: this is horribly hacky.
+  Note that this function returns False if it doesn't parse; different from normal.
+  
+  colname: this is the thing that we want to try to parse as a similarity.
+  It is an entry in a query's columnstring. eg: SELECT colname1, colname2 FROM...
+  We are checking if colname matches "SIMILARITY TO <rowid> [WITH RESPECT TO <col>]"
+  it is NOT just the column name
+  """
+  similarity_match = re.search(r"""
+      similarity\s+with\s+respect\s+to\s+
+      (?P<columnstring>.*$)
+  """, colname, re.VERBOSE | re.IGNORECASE)
+  if not similarity_match:
+    similarity_match = re.search(r"""
+      similarity
+    """, colname, re.VERBOSE | re.IGNORECASE)
+  if similarity_match:
+      if 'columnstring' in similarity_match.groupdict() and similarity_match.group('columnstring'):
+          columnstring = similarity_match.group('columnstring').strip()
+
+          target_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c, column_lists)]
+          utils.check_for_duplicate_columns(target_colnames)
+          target_columns = [M_c['name_to_idx'][colname] for colname in target_colnames]
+      else:
+          target_columns = None
+
+      return target_columns
+  else:
+      return False
+      
+
 def parse_row_typicality(colname):
     row_typicality_match = re.search(r"""
         ^\s*    
