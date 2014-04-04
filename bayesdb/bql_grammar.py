@@ -281,8 +281,9 @@ probability_of_function = (probability_of_keyword.setResultsName("column_functio
                            Suppress(equal_literal) + 
                            value.setResultsName("value"))
 
-
 # PREDICTIVE PROBABILITY OF <column>
+predictive_probability_of_function = predictive_probability_of_keyword.setResultsName("column_function_id") + identifier.setResultsName("column")
+                                            
 
 # ORDER BY <columns|functions>
 

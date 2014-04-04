@@ -347,6 +347,13 @@ def test_probability_of_function_pyparsing():
     assert probability_of_2.value == 'value'
     assert probability_of_3.value == 'value'
 
+def test_predictive_probability_of_pyparsing():
+    assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
+                                                          parseAll=True).column_function_id == 'predictive probability of'
+    assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
+                                                          parseAll=True).column == 'column_1'
+    
+
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
