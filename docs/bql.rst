@@ -12,10 +12,12 @@ Loading data
 Creates a btable by importing data from the specified CSV file. The file must be in CSV format, and the first line must be a header indicating the names of each column.
 
 ::
-   
-   CREATE BTABLE <btable> FROM PANDAS
 
-Creates a btable from a pandas DataFrame object, which must be passed as an additional argument to the client.
+   from bayesdb.client import Client
+   c = Client()
+   c('CREATE BTABLE <btable> FROM PANDAS', pandas_df=my_dataframe)
+
+If you don't have a csv of your dataset, but you have a Pandas dataframe in Python, you can create a btable from a pandas DataFrame object by using the BayesDB Python Client. The dataframe must be passed as an additional argument to the client, as shown above.
 
 ::
 
@@ -153,6 +155,17 @@ You can print out the names of the stored column lists in your btable with::
 And you can view the columns in a given column list with::
 
    SHOW COLUMNS <column_list> FROM <btable>
+
+Row Lists
+~~~~~~~~~
+In addition to storing lists of columns, BayesDB also allows you to store lists of rows. Currently, the only way to create row lists is by running ESTIMATE PAIRWISE ROW SIMILARITY with SAVE CONNECTED COMPONENTS. The components will be saved as row lists, which you can then view with the following command::
+
+    SHOW ROW LISTS FOR <table>
+
+To execute a query only on rows that are in a specific row list, just add the following predicate to any WHERE clause in a SELECT or INFER statment::
+
+    WHERE key in <row_list>
+
 
 .. _functions:
 

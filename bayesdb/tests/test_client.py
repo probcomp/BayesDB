@@ -26,6 +26,7 @@ import numpy
 import pytest
 import random
 import shutil
+import pandas
 
 import bayesdb.utils as utils
 from bayesdb.client import Client
@@ -152,10 +153,13 @@ def test_column_lists():
   client('show columns %s from %s' % (cname1, test_tablename), debug=True, pretty=False)
   client('show columns %s from %s' % (cname2, test_tablename), debug=True, pretty=False)
 
-  tmp = 'asdf.png'
+  tmp = 'asdf_test.png'
   test_filenames.append(tmp)
+  if os.path.exists(tmp):
+    os.remove(tmp)
   client('estimate pairwise dependence probability from %s for columns %s save to %s' % (test_tablename, cname1, tmp), debug=True, pretty=False)
-  # TODO: assert tmp exists
+  assert os.path.exists(tmp)
+
   client('estimate pairwise dependence probability from %s for columns %s' % (test_tablename, cname2), debug=True, pretty=False)
 
   client('select %s from %s limit 10' % (cname1, test_tablename), debug=True, pretty=False)
@@ -173,15 +177,13 @@ def test_simulate():
   global client, test_filenames
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
 
-  assert len(client("simulate qual_score from %s given name='Albany NY' times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
-  assert len(client("simulate qual_score from %s given name='Albany NY' and ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
+  assert len(client("simulate qual_score from %s given name='Albany NY' times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
+  assert len(client("simulate qual_score from %s given name='Albany NY' and ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
 
-  # TODO: returning 0 rows when simulating name?  
-  assert len(client("simulate name from %s given name='Albany NY' and ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
-  assert len(data) == 5
-  assert len(client("simulate name from %s given name='Albany NY', ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
-  assert len(client("simulate name from %s given name='Albany NY' AND ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
-  assert len(client("simulate name from %s given ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
+  assert len(client("simulate name from %s given name='Albany NY' and ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
+  assert len(client("simulate name from %s given name='Albany NY', ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
+  assert len(client("simulate name from %s given name='Albany NY' AND ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
+  assert len(client("simulate name from %s given ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
 
 def test_estimate_columns():
   """ smoke test """
@@ -240,10 +242,11 @@ def test_select_whereclause_functions():
   client("select qual_score from %s where predictive probability of qual_score > 0.01" % (test_tablename), debug=True, pretty=False)
   client("select qual_score from %s where predictive probability of name > 0.01" % (test_tablename), debug=True, pretty=False)
   
-  # probability
-  # TODO: these two tests are failing!
-  #client('select qual_score from %s where probability of qual_score = 6 > 0.01' % (test_tablename), debug=True, pretty=False)
-  #client("select qual_score from %s where probability of name='Albany NY' > 0.01" % (test_tablename), debug=True, pretty=False)  
+  # probability: aggregate, shouldn't work
+  with pytest.raises(utils.BayesDBError):  
+    client('select qual_score from %s where probability of qual_score = 6 > 0.01' % (test_tablename), debug=True, pretty=False)
+  with pytest.raises(utils.BayesDBError):      
+    client("select qual_score from %s where probability of name='Albany NY' > 0.01" % (test_tablename), debug=True, pretty=False)  
 
 def test_model_config():
   test_tablename = create_dha()
@@ -351,3 +354,23 @@ def test_select():
   # correlation with missing values
   test_tablename = create_dha(path='data/dha_missing.csv')
   client("select name, qual_score, correlation of name with qual_score from %s" % (test_tablename), debug=True, pretty=False)
+
+def test_pandas():
+  test_tablename = create_dha()
+  global client
+
+  # Test that output is a dict if pretty=False and pandas_output=False
+  out = client("select name, qual_score from %s limit 10" % (test_tablename), debug=True, pretty=False, pandas_output=False)
+  assert type(out[0]) == dict
+
+  # Test that output is pandas DataFrame when pretty=False and a table-like object is returned (pandas_output=True by default)
+  out = client("select name, qual_score from %s limit 10" % (test_tablename), debug=True, pretty=False)
+  assert type(out[0]) == pandas.DataFrame
+
+  # Get the returned data frame from the first list element of the previous result.
+  test_df = out[0]
+
+  # Test creation of a btable from pandas DataFrame
+  client("drop btable %s" % (test_tablename), yes=True)
+  client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df)
+
