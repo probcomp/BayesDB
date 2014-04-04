@@ -358,45 +358,43 @@ def test_order_by_clause_pyparsing():
                                              ,parseAll=True)
     order_by_2 = order_by_clause.parseString("ORDER BY column_1,column_2 , column_3"
                                              ,parseAll=True)
-    assert order_by_1.order_by_set[0]=='column_1'
-    assert order_by_2.order_by_set.asList()==['column_1','column_2','column_3']
+    assert order_by_1.order_by.order_by_set[0]=='column_1'
+    assert order_by_2.order_by.order_by_set.asList()==['column_1','column_2','column_3']
     order_by_3 = order_by_clause.parseString("ORDER BY TYPICALITY",
                                              parseAll=True)
-    assert order_by_3.order_by_set[0].function_id == 'typicality'
+    assert order_by_3.order_by.order_by_set[0].function_id == 'typicality'
     order_by_4 = order_by_clause.parseString("ORDER BY TYPICALITY, column_1",
                                              parseAll=True)
-    assert order_by_4.order_by_set[0].function_id == 'typicality'
-    assert order_by_4.order_by_set[1] == 'column_1'    
+    assert order_by_4.order_by.order_by_set[0].function_id == 'typicality'
+    assert order_by_4.order_by.order_by_set[1] == 'column_1'    
     order_by_5 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY",
                                              parseAll=True)
-    assert order_by_5.order_by_set[0] == 'column_1'
-    assert order_by_5.order_by_set[1].function_id == 'typicality'
+    assert order_by_5.order_by.order_by_set[0] == 'column_1'
+    assert order_by_5.order_by.order_by_set[1].function_id == 'typicality'
     order_by_6 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1",
                                              parseAll=True)
-    assert order_by_6.order_by_set[0].function_id == 'predictive probability of'
-    assert order_by_6.order_by_set[0].column == 'column_1'
+    assert order_by_6.order_by.order_by_set[0].function_id == 'predictive probability of'
+    assert order_by_6.order_by.order_by_set[0].column == 'column_1'
     
     order_by_7 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1, column_1",
                                              parseAll=True)
-    assert order_by_7.order_by_set[1] == 'column_1'
-    assert order_by_7.order_by_set[0].function_id == 'predictive probability of'
-    assert order_by_7.order_by_set[0].column == 'column_1'
+    assert order_by_7.order_by.order_by_set[1] == 'column_1'
+    assert order_by_7.order_by.order_by_set[0].function_id == 'predictive probability of'
+    assert order_by_7.order_by.order_by_set[0].column == 'column_1'
 
     order_by_8 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY, PREDICTIVE PROBABILITY OF column_1, column_2, SIMILARITY TO 2, SIMILARITY TO column_1 = 1 WITH RESPECT TO column_4",
                                              parseAll=True)
-    assert order_by_8.order_by_set[0] == 'column_1'
-    assert order_by_8.order_by_set[1].function_id == 'typicality'
-    assert order_by_8.order_by_set[2].function_id == 'predictive probability of'
-    assert order_by_8.order_by_set[2].column == 'column_1'
-    assert order_by_8.order_by_set[3] == 'column_2'
-    assert order_by_8.order_by_set[4].function_id == 'similarity to'
-    assert order_by_8.order_by_set[4].row_id == '2'
-    assert order_by_8.order_by_set[5].function_id == 'similarity to'
-    assert order_by_8.order_by_set[5].column == 'column_1'
-    assert order_by_8.order_by_set[5].column_value == '1'
-    assert order_by_8.order_by_set[5].with_respect_to[1][0] == 'column_4' #todo names instead of indexes
-    
-
+    assert order_by_8.order_by.order_by_set[0] == 'column_1'
+    assert order_by_8.order_by.order_by_set[1].function_id == 'typicality'
+    assert order_by_8.order_by.order_by_set[2].function_id == 'predictive probability of'
+    assert order_by_8.order_by.order_by_set[2].column == 'column_1'
+    assert order_by_8.order_by.order_by_set[3] == 'column_2'
+    assert order_by_8.order_by.order_by_set[4].function_id == 'similarity to'
+    assert order_by_8.order_by.order_by_set[4].row_id == '2'
+    assert order_by_8.order_by.order_by_set[5].function_id == 'similarity to'
+    assert order_by_8.order_by.order_by_set[5].column == 'column_1'
+    assert order_by_8.order_by.order_by_set[5].column_value == '1'
+    assert order_by_8.order_by.order_by_set[5].with_respect_to[1][0] == 'column_4' #todo names instead of indexes
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')

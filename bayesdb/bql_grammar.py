@@ -294,14 +294,25 @@ probability_of_function = Group((probability_of_keyword.setResultsName("function
 predictive_probability_of_function = Group(predictive_probability_of_keyword.setResultsName("function_id") + 
                                            identifier.setResultsName("column")).setResultsName("function")
 
-non_aggregate_function = similarity_to_function | typicality_function | predictive_probability_of_function
+non_aggregate_function = similarity_to_function | typicality_function | predictive_probability_of_function | identifier
 
 # -------------------------------- other clauses --------------------------- #
 
 # ORDER BY <column|non-aggregate-function>[<column|function>...]
-order_by_clause = order_by_keyword + Group((non_aggregate_function | identifier) + ZeroOrMore(Suppress(comma_literal) + (non_aggregate_function | identifier))).setResultsName("order_by_set")
+order_by_clause = Group(order_by_keyword + Group((non_aggregate_function) + ZeroOrMore(Suppress(comma_literal) + (non_aggregate_function))).setResultsName("order_by_set")).setResultsName('order_by')
 
 # WHERE <whereclause>
+where_clause = (where_keyword.setResultsName('where_keyword') + 
+                 Group(Group(non_aggregate_function.setResultsName('function') + 
+                             operation_literal.setResultsName('operation') + 
+                             value.setResultsName('value') + 
+                             Optional(with_confidence_clause)) + 
+                       ZeroOrMore(Suppress(and_keyword) + 
+                                  Group(non_aggregate_function.setResultsName('function') + 
+                                        operation_literal.setResultsName('operation') + 
+                                        value.setResultsName('value') + 
+                                        Optional(with_confidence_clause))))
+                 .setResultsName("where_conditions"))
 
 # ------------------------------- Query functions -------------------------- #
 
