@@ -367,10 +367,12 @@ def test_pandas():
   out = client("select name, qual_score from %s limit 10" % (test_tablename), debug=True, pretty=False)
   assert type(out[0]) == pandas.DataFrame
 
+  # Test that it still works when no rows are returned
+  client("select name, qual_score from %s where qual_score < 0" % (test_tablename), debug=True, pretty=False)
+
   # Get the returned data frame from the first list element of the previous result.
   test_df = out[0]
 
   # Test creation of a btable from pandas DataFrame
   client("drop btable %s" % (test_tablename), yes=True)
   client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df)
-
