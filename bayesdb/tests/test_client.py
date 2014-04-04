@@ -369,6 +369,6 @@ def test_pandas():
   test_df = out[0]
 
   # Test creation of a btable from pandas DataFrame
-  client("drop btable %s from pandas" % (test_tablename), yes=True)
+  client("drop btable %s" % (test_tablename), yes=True)
   client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df)
 
