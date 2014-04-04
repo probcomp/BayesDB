@@ -293,10 +293,11 @@ class Parser(object):
 
             
     def help_infer(self):
-        return "INFER [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <file>]: like select, but imputes (fills in) missing values."
+        return "[SUMMARIZE] INFER [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <file>]: like select, but imputes (fills in) missing values."
         
     def parse_infer(self, words, orig):
         match = re.search(r"""
+            ((?P<summarize>summarize)?)?\s*
             infer\s+
             ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
@@ -311,6 +312,7 @@ class Parser(object):
             if words[0] == 'infer':
                 return 'help', self.help_infer()
         else:
+            summarize = match.group('summarize') is not None
             columnstring = match.group('columnstring').strip()
             tablename = match.group('btable')
             whereclause = match.group('whereclause')
@@ -348,7 +350,7 @@ class Parser(object):
             return 'infer', \
                    dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
                         confidence=confidence, whereclause=whereclause, limit=limit,
-                        numsamples=numsamples, order_by=order_by, plot=plot), \
+                        numsamples=numsamples, order_by=order_by, plot=plot, summarize=summarize), \
                    dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
 
             
@@ -397,10 +399,11 @@ class Parser(object):
 
             
     def help_select(self):
-        return 'SELECT [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <filename>]'
+        return '[SUMMARIZE] SELECT [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <filename>]'
         
     def parse_select(self, words, orig):
         match = re.search(r"""
+            ((?P<summarize>summarize)?)?\s*        
             select\s+
             ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*      
             (?P<columnstring>.*?((?=from)))
@@ -413,6 +416,7 @@ class Parser(object):
             if words[0] == 'select':
                 return 'help', self.help_select()
         else:
+            summarize = match.group('summarize') is not None
             columnstring = match.group('columnstring').strip()
             tablename = match.group('btable')
             whereclause = match.group('whereclause')
@@ -437,15 +441,16 @@ class Parser(object):
                 filename = None
 
             return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                  limit=limit, order_by=order_by, plot=plot), \
+                                  limit=limit, order_by=order_by, plot=plot, summarize=summarize), \
               dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
 
     def help_simulate(self):
-        return "SIMULATE [HIST|SCATTER [PAIRWISE]] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <filename>]: simulate new datapoints based on the underlying model."
+        return "[SUMMARIZE] SIMULATE [HIST|SCATTER [PAIRWISE]] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <filename>]: simulate new datapoints based on the underlying model."
 
     def parse_simulate(self, words, orig):
         match = re.search(r"""
+            ((?P<summarize>summarize)?)?\s*        
             simulate\s+
             ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
@@ -458,6 +463,7 @@ class Parser(object):
             if words[0] == 'simulate':
                 return 'help', self.help_simulate()
         else:
+            summarize = match.group('summarize') is not None
             columnstring = match.group('columnstring').strip()
             tablename = match.group('btable')
             givens = match.group('givens')
@@ -483,7 +489,7 @@ class Parser(object):
                 filename = None            
             return 'simulate', \
                     dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
-                         givens=givens, numpredictions=numpredictions, order_by=order_by, plot=plot), \
+                         givens=givens, numpredictions=numpredictions, order_by=order_by, plot=plot, summarize=summarize), \
                     dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
     def help_show_row_lists(self):

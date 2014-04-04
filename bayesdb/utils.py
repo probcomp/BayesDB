@@ -120,6 +120,19 @@ def get_all_column_names_in_original_order(M_c):
     colnames = map(lambda tup: tup[0], sorted(colname_to_idx_dict.items(), key=lambda tup: tup[1]))
     return colnames
 
+def summarize_table(data, columns, M_c):
+    """
+    Returns a summary of the data.
+    Input: data is a list of lists, of raw data values about to be shown to the user.
+    Input: columns is a list of column names, as they will be displayed to the user. Note
+    that some column names may be things like "row_id" or predictive functions, not actually
+    columns.
+
+    Return: columns should be the same, except with another column prepended called like "summaries" or something.
+    Return: data should be summaries now.
+    """
+    return data, columns
+
 def column_string_splitter(columnstring, M_c=None, column_lists=None):
     """
     If '*' is a possible input, M_c must not be None.
