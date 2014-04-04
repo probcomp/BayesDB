@@ -48,10 +48,10 @@ class bayesdbSetup(ClusterSetup):
             cmd_strs = [
                 # FIXME: do this somewhere else
                 'pip install pyparsing==2.0.1',
+                'pip install patsy',
+                'pip install statsmodels',
                 'rm -rf %s' % repo_dir,
                 'git clone %s %s' % (repo_url, repo_dir),
-                # FIXME: remove the line below after merging into master
-                'cd %s && git checkout starcluster' % (repo_dir,),
                 'python %s develop' % setup_script,
                 # 'python %s build_ext --inplace' % setup_script,
                 'chown -R %s %s' % (user, repo_dir),

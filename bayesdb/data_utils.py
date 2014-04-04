@@ -1,8 +1,8 @@
 #
 #   Copyright (c) 2010-2014, MIT Probabilistic Computing Project
 #
-#   Lead Developers: Dan Lovell and Jay Baxter
-#   Authors: Dan Lovell, Baxter Eaves, Jay Baxter, Vikash Mansinghka
+#   Lead Developers: Jay Baxter and Dan Lovell
+#   Authors: Jay Baxter, Dan Lovell, Baxter Eaves, Vikash Mansinghka
 #   Research Leads: Vikash Mansinghka, Patrick Shafto
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,9 +20,11 @@
 import sys
 import csv
 import copy
-#
+import pandas
+import re
 import numpy
 
+import utils
 
 def get_ith_ordering(in_list, i):
     temp_list = [in_list[j::(i+1)][:] for j in range(i+1)]
@@ -93,6 +95,13 @@ def gen_M_r_from_T(T):
     M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
     return M_r
 
+def gen_ignore_metadata(column_data):
+    return dict(
+        modeltype="ignore",
+        value_to_code=dict(),
+        code_to_value=dict(),
+        )
+
 def gen_continuous_metadata(column_data):
     return dict(
         modeltype="normal_inverse_gamma",
@@ -123,6 +132,7 @@ def gen_multinomial_metadata(column_data):
 metadata_generator_lookup = dict(
     continuous=gen_continuous_metadata,
     multinomial=gen_multinomial_metadata,
+    ignore=gen_ignore_metadata,
 )
 
 def gen_M_c_from_T(T, cctypes=None, colnames=None):
@@ -230,13 +240,32 @@ def at_most_N_rows(T, N, gen_seed=0):
         T = [T[which_row] for which_row in which_rows]
     return T
 
+def construct_pandas_df(query_obj):
+    """
+    Take a result from a BQL statement (dict with 'data' and 'columns')
+    and constructs a pandas data frame.
+
+    Currently this is only called if the user specifies pandas_output = True
+    """
+    pandas_df = pandas.DataFrame(data = query_obj['data'], columns = query_obj['columns'])
+    return pandas_df
+
+def read_pandas_df(pandas_df):
+    """
+    Takes pandas data frame object and converts data
+    into list-of-lists format
+    """
+    header = list(pandas_df.columns)
+    rows = [map(str, row) for index, row in pandas_df.iterrows()]
+    return header, rows
+
 def read_csv(filename, has_header=True):
-    with open(filename) as fh:
+    with open(filename, 'rU') as fh:
         csv_reader = csv.reader(fh)
         header = None
         if has_header:
             header = csv_reader.next()
-        rows = [row for row in csv_reader]
+        rows = [[r.strip() for r in row] for row in csv_reader]
     return header, rows
 
 def write_csv(filename, T, header = None):
@@ -303,7 +332,10 @@ def convert_value_to_code(M_c, cidx, value):
     if M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
         return float(value)
     else:
-        return M_c['column_metadata'][cidx]['code_to_value'][str(value)] 
+        try:
+            return M_c['column_metadata'][cidx]['code_to_value'][str(value)]
+        except KeyError:
+            raise utils.BayesDBError("Error: value '%s' not in btable." % str(value))
 
 def map_from_T_with_M_c(coordinate_value_tuples, M_c):
     coordinate_code_tuples = []
@@ -356,7 +388,7 @@ def get_pop_indices(cctypes, colnames):
     pop_columns = [
             colname
             for (cctype, colname) in zip(cctypes, colnames)
-            if cctype == 'ignore'
+            if (cctype == 'ignore' or cctype == 'key')
             ]
     pop_indices = get_list_indices(colnames, pop_columns)
     return pop_indices
@@ -390,11 +422,12 @@ def read_data_objects(filename, max_rows=None, gen_seed=0,
     # remove excess rows
     raw_T = at_most_N_rows(raw_T, N=max_rows, gen_seed=gen_seed)
     raw_T = convert_nans(raw_T)
-    # remove ignore columns
+
     if cctypes is None:
         cctypes = ['continuous'] * len(header)
         pass
-    T_uncast_arr, cctypes, header = remove_ignore_cols(raw_T, cctypes, header)
+
+    T_uncast_arr, cctypes, header = remove_ignore_cols(raw_T, cctypes, header) # remove ignore columns
     # determine value mappings and map T to continuous castable values
     M_r = gen_M_r_from_T(T_uncast_arr)
     M_c = gen_M_c_from_T(T_uncast_arr, cctypes, colnames)
@@ -434,14 +467,18 @@ def guess_column_types(T, count_cutoff=20, ratio_cutoff=0.02):
 def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
                              cctypes=None):
     colnames, T = read_csv(filename)
-    T = at_most_N_rows(T, max_rows, gen_seed)
+    return gen_T_and_metadata(colnames, raw_T, max_rows, gen_seed, cctypes)
+
+def gen_T_and_metadata(colnames, raw_T, max_rows=None, gen_seed=0,
+                       cctypes=None):
+    T = at_most_N_rows(raw_T, max_rows, gen_seed)
     T = convert_nans(T)
     if cctypes is None:
         cctypes = guess_column_types(T)
     M_c = gen_M_c_from_T(T, cctypes, colnames)
     T = map_to_T_with_M_c(numpy.array(T), M_c)
     M_r = gen_M_r_from_T(T)
-    return T, M_r, M_c
+    return T, M_r, M_c, cctypes
 
 extract_view_count = lambda X_L: len(X_L['view_state'])
 extract_cluster_count = lambda view_state_i: view_state_i['row_partition_model']['counts']

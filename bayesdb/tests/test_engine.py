@@ -26,6 +26,7 @@ import numpy
 import pytest
 import random
 
+import bayesdb.data_utils as data_utils
 from bayesdb.client import Client
 from bayesdb.engine import Engine
 engine = Engine()
@@ -45,10 +46,9 @@ def teardown_function(function):
     
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
-  csv_file_contents = open(path, 'r').read()
-  create_btable_result = engine.create_btable(test_tablename, csv_file_contents, None)
+  header, rows = data_utils.read_csv(path)  
+  create_btable_result = engine.create_btable(test_tablename, header, rows)
   metadata = engine.persistence_layer.get_metadata(test_tablename)
-  #import pytest; pytest.set_trace()
   
   global test_tablenames
   test_tablenames.append(test_tablename)
@@ -216,8 +216,8 @@ def test_initialize_models():
   model_ids = engine.persistence_layer.get_model_ids(test_tablename)
   assert sorted(model_ids) == range(num_models)
   for i in range(num_models):
-    X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
-    assert iters == 0
+    model = engine.persistence_layer.get_models(test_tablename, i)
+    assert model['iterations'] == 0
 
 def test_analyze():
   test_tablename, _ = create_dha()
@@ -229,8 +229,8 @@ def test_analyze():
     model_ids = engine.persistence_layer.get_model_ids(test_tablename)
     assert sorted(model_ids) == range(num_models)
     for i in range(num_models):
-      X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
-      assert iters == it
+      model = engine.persistence_layer.get_models(test_tablename, i)
+      assert model['iterations'] == it      
 
 def test_nan_handling():
   test_tablename1, _ = create_dha(path='data/dha_missing.csv') 
@@ -353,7 +353,6 @@ def test_list_btables():
   list_btables_result = engine.list_btables()['list']  
   assert len(list_btables_result) == 0 + initial_btable_count
 
-
 def test_execute_file():
   pass #TODO
 
@@ -389,8 +388,8 @@ def test_show_models():
     model_ids = engine.persistence_layer.get_model_ids(test_tablename)
     assert sorted(model_ids) == range(num_models)
     for i in range(num_models):
-      X_L, X_D, iters = engine.persistence_layer.get_model(test_tablename, i)
-      assert iters == it
+      model = engine.persistence_layer.get_models(test_tablename, i)
+      assert model['iterations'] == it
 
     ## models should be a list of (id, iterations) tuples.
     models = engine.show_models(test_tablename)['models']
@@ -399,7 +398,6 @@ def test_show_models():
     for iter_id, m in enumerate(models):
       assert iter_id == m[0]
       assert it == m[1]
-  
 
 def test_show_diagnostics():
   pass #TODO

@@ -31,6 +31,59 @@ import data_utils as du
 import select_utils
 import functions
 
+class BayesDBError(Exception):
+    """ Base class for all other exceptions in this module. """
+    pass
+
+class BayesDBParseError(BayesDBError):
+    def __init__(self, msg=None):
+        if msg:
+            self.msg = msg
+        else:
+            self.msg = "BayesDB parsing error. Try using 'help' to see the help menu for BQL syntax."
+    
+    def __str__(self):
+        return self.msg
+
+class BayesDBNoModelsError(BayesDBError):
+    def __init__(self, tablename):
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Btable %s has no models, but this command requires models. Please create models first with INITIALIZE MODELS, and then ANALYZE." % self.tablename
+
+class BayesDBInvalidBtableError(BayesDBError):
+    def __init__(self, tablename):
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Btable %s does not exist. Please create it first with CREATE BTABLE, or view existing btables with LIST BTABLES." % self.tablename
+
+class BayesDBColumnDoesNotExistError(BayesDBError):
+    def __init__(self, column, tablename):
+        self.column = column
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Column %s does not exist in btable %s." % (self.column, self.tablename)
+
+class BayesDBColumnListDoesNotExistError(BayesDBError):
+    def __init__(self, column_list, tablename):
+        self.column_list = column_list
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Column list %s does not exist in btable %s." % (self.column_list, self.tablename)
+
+class BayesDBRowListDoesNotExistError(BayesDBError):
+    def __init__(self, row_list, tablename):
+        self.row_list = row_list
+        self.tablename = tablename
+
+    def __str__(self):
+        return "Row list %s does not exist in btable %s." % (self.row_list, self.tablename)
+        
+        
 def is_int(s):
     try:
         int(s)
@@ -53,6 +106,14 @@ def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, en
       return code
     else:
       return None
+
+def check_for_duplicate_columns(column_names):
+    column_names_set = set()
+    for name in column_names:
+        if name in column_names_set:
+            raise BayesDBError("Error: Column list has duplicate entries of column: %s" % name)
+        column_names_set.add(name)
+    
 
 def get_all_column_names_in_original_order(M_c):
     colname_to_idx_dict = M_c['name_to_idx']
@@ -96,77 +157,4 @@ def column_string_splitter(columnstring, M_c=None, column_lists=None):
     output = end_column(current_column, output)
     return output
 
-def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', col=None, confidence=None, limit=None, submatrix=False, engine=None, column_names=None):
-    """ Compute a matrix. If using a function that requires engine (currently only
-    mutual information), engine must not be None. """
-
-    assert len(X_L_list) == len(X_D_list)
-    if col_function_name == 'mutual information':
-      if len(X_L_list) == 0:
-        return {'message': 'You must initialize models before computing mutual information.'}    
-      col_function = functions._mutual_information
-    elif col_function_name == 'dependence probability':
-      if len(X_L_list) == 0:
-        return {'message': 'You must initialize models before computing dependence probability.'}
-      col_function = functions._dependence_probability
-    elif col_function_name == 'correlation':
-      col_function = functions._correlation
-    else:
-      raise Exception('Invalid column function: %s' % col_function_name)
-
-    if column_names:
-        num_cols = len(column_names)
-    else:
-        num_cols = len(X_L_list[0]['column_partition']['assignments'])
-        column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]
-    column_names = numpy.array(column_names)
-    
-    # extract unordered z_matrix
-    num_latent_states = len(X_L_list)
-    z_matrix = numpy.zeros((num_cols, num_cols))
-    for i in range(num_cols):
-      for j in range(num_cols):
-        z_matrix[i][j] = col_function((i, j), None, None, M_c, X_L_list, X_D_list, T, engine)
-
-    if col:
-      z_column = list(z_matrix[M_c['name_to_idx'][col]])
-      data_tuples = zip(z_column, range(num_cols))
-      data_tuples.sort(reverse=True)
-      if confidence:
-        data_tuples = filter(lambda tup: tup[0] >= float(confidence), data_tuples)
-      if limit and limit != float("inf"):
-        data_tuples = data_tuples[:int(limit)]
-      data = [tuple([d[0] for d in data_tuples])]
-      columns = [d[1] for d in data_tuples]
-      column_names = [M_c['idx_to_name'][str(idx)] for idx in range(num_cols)]      
-      column_names = numpy.array(column_names)
-      column_names_reordered = column_names[columns]
-      if submatrix:
-        z_matrix = z_matrix[columns,:][:,columns]
-        z_matrix_reordered = z_matrix
-      else:
-        return {'data': data, 'columns': column_names_reordered}
-    else:
-      # hierachically cluster z_matrix
-      import hcluster
-      Y = hcluster.pdist(z_matrix)
-      Z = hcluster.linkage(Y)
-      pylab.figure()
-      hcluster.dendrogram(Z)
-      intify = lambda x: int(x.get_text())
-      reorder_indices = map(intify, pylab.gca().get_xticklabels())
-      pylab.clf() ## use instead of close to avoid error spam
-      # REORDER! 
-      z_matrix_reordered = z_matrix[:, reorder_indices][reorder_indices, :]
-      column_names_reordered = column_names[reorder_indices]
-
-    title = 'Pairwise column %s for %s' % (col_function_name, tablename)
-
-    return dict(
-      matrix=z_matrix_reordered,
-      column_names=column_names_reordered,
-      title=title,
-      message = "Created " + title
-      )
-        
     
