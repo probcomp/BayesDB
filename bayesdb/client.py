@@ -119,11 +119,9 @@ class Client(object):
             return_list.append(result)
 
         self.parser.reset_root_dir()
-        
-        if len(return_list) == 1:
-            return_list = return_list[0]
 
-        return return_list
+        if not pretty:
+            return return_list
 
     def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """

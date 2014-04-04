@@ -144,7 +144,7 @@ def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, t
     """
 
     # Get appropriate function
-    function = parse_pairwise_function(function_name, M_c, column=True)
+    function = parse_pairwise_function(function_name, column=True, M_c=M_c)
 
     # Get appropriate column information from column_names
     column_names, column_indices = get_columns(column_names, M_c)
