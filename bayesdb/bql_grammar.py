@@ -145,7 +145,7 @@ column_lists_keyword = Combine(column_keyword + single_white + list_keyword)
 similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword).setResultsName("function_id")
 with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
 probability_of_keyword = Combine(probability_keyword + single_white + of_keyword)
-predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_of_keyword)
+predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_keyword + single_white + of_keyword)
 save_connected_components_with_threshold_keyword = Combine(save_keyword + single_white + 
                                                            connected_keyword + single_white + 
                                                            components_keyword + single_white + 
@@ -270,9 +270,17 @@ similarity_to_function = similarity_to_keyword.setResultsName('row_function_id')
 typicality_to_function = typicality_keyword.setResultsName('row_function_id') 
 
 # DEPENDENCE PROBABILITY (WITH <column> | OF <column1> WITH <column2>)
-
+dependence_probability_function = (dependence_probability_keyword.setResultsName('column_function_id') + 
+                                   ((Suppress(with_keyword) + identifier.setResultsName("with_column")) | 
+                                    (Suppress(of_keyword) + identifier.setResultsName("of_column") + 
+                                     Suppress(with_keyword) + identifier.setResultsName("with_column"))))
 
 # PROBABILITY OF <column>=<value>
+probability_of_function = (probability_of_keyword.setResultsName("column_function_id") + 
+                           identifier.setResultsName("column") + 
+                           Suppress(equal_literal) + 
+                           value.setResultsName("value"))
+
 
 # PREDICTIVE PROBABILITY OF <column>
 
