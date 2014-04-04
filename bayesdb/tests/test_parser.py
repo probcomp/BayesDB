@@ -310,48 +310,69 @@ def test_row_functions_pyparsing():
                                                       parseAll=True)
     similarity_8 = similarity_to_function.parseString("SIMILARITY TO col_2 = a WITH RESPECT TO col_1", 
                                                       parseAll=True)
-    assert similarity_1.row_function_id == 'similarity to'
-    assert similarity_1.row_id == '1'
-    assert similarity_2.column == 'col_2'
-    assert similarity_2.column_value == '1'
-    assert similarity_3.column == 'col_2'
-    assert similarity_3.column_value == 'a'
-    assert similarity_4.column == 'col_2'
-    assert similarity_4.column_value == 'a'
-    assert similarity_4.with_respect_to == ''
-    assert not similarity_5.with_respect_to == ''
-    assert similarity_5.column_list.asList() == ['col_1']
-    assert similarity_6.column_list.asList() == ['col_1', 'col_2']
-    assert similarity_7.column_list.asList() == ['col_1', 'col_3']
-    assert similarity_8.column_list.asList() == ['col_1']
-    assert typicality_function.parseString('Typicality',parseAll=True).row_function_id == 'typicality'
+    assert similarity_1.function.function_id == 'similarity to'
+    assert similarity_1.function.row_id == '1'
+    assert similarity_2.function.column == 'col_2'
+    assert similarity_2.function.column_value == '1'
+    assert similarity_3.function.column == 'col_2'
+    assert similarity_3.function.column_value == 'a'
+    assert similarity_4.function.column == 'col_2'
+    assert similarity_4.function.column_value == 'a'
+    assert similarity_4.function.with_respect_to == ''
+    assert not similarity_5.function.with_respect_to == ''
+    assert similarity_5.function.column_list.asList() == ['col_1']
+    assert similarity_6.function.column_list.asList() == ['col_1', 'col_2']
+    assert similarity_7.function.column_list.asList() == ['col_1', 'col_3']
+    assert similarity_8.function.column_list.asList() == ['col_1']
+    assert typicality_function.parseString('Typicality',parseAll=True).function.function_id == 'typicality'
 
 def test_column_functions_pyparsing():
     dependence_1 = dependence_probability_function.parseString('DEPENDENCE PROBABILITY WITH column_1',
                                                                     parseAll=True)
     dependence_2 = dependence_probability_function.parseString('DEPENDENCE PROBABILITY OF column_2 WITH column_1',
                                                                     parseAll=True)
-    assert dependence_1.column_function_id == 'dependence probability'
-    assert dependence_2.column_function_id == 'dependence probability'
-    assert dependence_1.with_column == 'column_1'
-    assert dependence_2.with_column == 'column_1'
-    assert dependence_2.of_column == 'column_2'
+    assert dependence_1.function.function_id == 'dependence probability'
+    assert dependence_2.function.function_id == 'dependence probability'
+    assert dependence_1.function.with_column == 'column_1'
+    assert dependence_2.function.with_column == 'column_1'
+    assert dependence_2.function.of_column == 'column_2'
 
 def test_probability_of_function_pyparsing():
     probability_of_1 = probability_of_function.parseString("PROBABILITY OF col_1 = 1",parseAll=True)
     probability_of_2 = probability_of_function.parseString("PROBABILITY OF col_1 = 'value'",parseAll=True)
     probability_of_3 = probability_of_function.parseString("PROBABILITY OF col_1 = value",parseAll=True)
-    assert probability_of_1.column_function_id == 'probability of'
-    assert probability_of_1.column == 'col_1'
-    assert probability_of_1.value == '1'
-    assert probability_of_2.value == 'value'
-    assert probability_of_3.value == 'value'
+    assert probability_of_1.function.function_id == 'probability of'
+    assert probability_of_1.function.column == 'col_1'
+    assert probability_of_1.function.value == '1'
+    assert probability_of_2.function.value == 'value'
+    assert probability_of_3.function.value == 'value'
 
 def test_predictive_probability_of_pyparsing():
     assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
-                                                          parseAll=True).column_function_id == 'predictive probability of'
+                                                          parseAll=True).function.function_id == 'predictive probability of'
     assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
-                                                          parseAll=True).column == 'column_1'
+                                                          parseAll=True).function.column == 'column_1'
+
+def test_order_by_clause_pyparsing():
+    order_by_1 = order_by_clause.parseString("ORDER BY column_1"
+                                             ,parseAll=True)
+    order_by_2 = order_by_clause.parseString("ORDER BY column_1,column_2 , column_3"
+                                             ,parseAll=True)
+    assert order_by_1.order_by_set[0]=='column_1'
+    assert order_by_2.order_by_set.asList()==['column_1','column_2','column_3']
+    order_by_3 = order_by_clause.parseString("ORDER BY TYPICALITY",
+                                             parseAll=True)
+    order_by_3.order_by_set[0].function_id == 'typicality'
+    order_by_4 = order_by_clause.parseString("ORDER BY TYPICALITY, column_1",
+                                             parseAll=True)
+    order_by_5 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY",
+                                             parseAll=True)
+    order_by_6 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1",
+                                             parseAll=True)
+    order_by_7 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1, column_1",
+                                             parseAll=True)
+    order_by_8 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY, PREDICTIVE PROBABILITY OF column_1, column_2, SIMILARITY TO 2, SIMILARITY TO column_1 = 1 WITH RESPECT TO column_4",
+                                             parseAll=True)
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
@@ -363,12 +384,11 @@ def test_initialize_models():
     assert method == 'initialize_models'
     assert args == dict(tablename='t', n_models=5, model_config=None)
 
-# TODO Broken test from elsewhere
-#def test_create_btable():
-#    method, args, client_dict = parser.parse_statement('create btable t from fn')
-#    assert method == 'create_btable'
-#    assert args == dict(tablename='t', cctypes_full=None)
-#    assert client_dict == dict(csv_path=os.path.join(os.getcwd(), 'fn'))
+def test_create_btable():
+    method, args, client_dict = parser.parse_statement('create btable t from fn')
+    assert method == 'create_btable'
+    assert args == dict(tablename='t', cctypes_full=None)
+    assert client_dict == dict(csv_path=os.path.join(os.getcwd(), 'fn'))
 
 def test_drop_btable():
     method, args, client_dict = parser.parse_statement('drop btable t')

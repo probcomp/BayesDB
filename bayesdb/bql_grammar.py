@@ -137,6 +137,7 @@ estimate_pairwise_keyword = Combine(estimate_keyword + single_white +
 estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
                                         single_white + row_keyword).setResultsName("statement_id")
 with_confidence_keyword = Combine(with_keyword + single_white + confidence_keyword)
+order_by_keyword = Combine(order_keyword + single_white + by_keyword)
 dependence_probability_keyword = Combine(dependence_keyword + single_white + probability_keyword)
 mutual_information_keyword = Combine(mutual_keyword + single_white + information_keyword)
 estimate_columns_from_keyword = Combine(estimate_keyword + single_white + column_keyword + 
@@ -169,11 +170,11 @@ filename = (QuotedString('"', escChar='\\') |
             Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")).setResultsName("filename")
 data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword
 
-##################################################################################
-# ------------------------------------ Functions --------------------------------#
-##################################################################################
+###################################################################################
+# ------------------------------------ Functions -------------------------------- #
+###################################################################################
 
-# ------------------------------- Management statements -------------------------#
+# ------------------------------- Management statements ------------------------- #
 
 # CREATE BTABLE <btable> FROM <filename.csv>
 create_btable_function = create_btable_keyword + btable + Suppress(from_keyword) + filename
@@ -248,7 +249,7 @@ drop_model_function = drop_keyword.setParseAction(replaceWith("drop model")).set
 help_function = help_keyword
 quit_keyword = quit_keyword
 
-# ------------------------------ Helper Clauses ---------------------------#
+# ------------------------------ Helper Clauses --------------------------- #
 
 # Rows can be identified either by an integer or <column> = <value> where value is unique for the given column
 row_clause = (int_number.setResultsName("row_id") | 
@@ -266,37 +267,43 @@ save_to_clause = save_to_keyword + filename#todo names
 # WITH CONFIDENCE <confidence>
 with_confidence_clause = with_confidence_keyword + float_number.setResultsName("confidence")#todo names
 
-# -------------------------------- Functions ------------------------------#
+# -------------------------------- Functions ------------------------------ #
 
 # SIMILARITY TO <row> [WITH RESPECT TO <column>]
-similarity_to_function = similarity_to_keyword.setResultsName('row_function_id') + row_clause + Optional(with_respect_to_keyword + column_list_clause).setResultsName('with_respect_to')
+similarity_to_function = Group(similarity_to_keyword.setResultsName('function_id') + row_clause + Optional(with_respect_to_keyword + column_list_clause).setResultsName('with_respect_to')).setResultsName("function")
 
 # TYPICALITY
-typicality_function = typicality_keyword.setResultsName('row_function_id') 
+typicality_function = Group(typicality_keyword.setResultsName('function_id')).setResultsName('function')
 
 # DEPENDENCE PROBABILITY (WITH <column> | OF <column1> WITH <column2>)
-dependence_probability_function = (dependence_probability_keyword.setResultsName('column_function_id') + 
-                                   ((Suppress(with_keyword) + identifier.setResultsName("with_column")) | 
-                                    (Suppress(of_keyword) + identifier.setResultsName("of_column") + 
-                                     Suppress(with_keyword) + identifier.setResultsName("with_column"))))
+dependence_probability_function = Group((dependence_probability_keyword.setResultsName('function_id') + 
+                                         ((Suppress(with_keyword) + 
+                                           identifier.setResultsName("with_column")) | 
+                                          (Suppress(of_keyword) + 
+                                           identifier.setResultsName("of_column") + 
+                                           Suppress(with_keyword) + 
+                                           identifier.setResultsName("with_column"))))).setResultsName("function")
 
 # PROBABILITY OF <column>=<value>
-probability_of_function = (probability_of_keyword.setResultsName("column_function_id") + 
-                           identifier.setResultsName("column") + 
-                           Suppress(equal_literal) + 
-                           value.setResultsName("value"))
+probability_of_function = Group((probability_of_keyword.setResultsName("function_id") + 
+                                 identifier.setResultsName("column") + 
+                                 Suppress(equal_literal) + 
+                                 value.setResultsName("value"))).setResultsName('function')
 
 # PREDICTIVE PROBABILITY OF <column>
-predictive_probability_of_function = predictive_probability_of_keyword.setResultsName("column_function_id") + identifier.setResultsName("column")
+predictive_probability_of_function = Group(predictive_probability_of_keyword.setResultsName("function_id") + 
+                                           identifier.setResultsName("column")).setResultsName("function")
 
 non_aggregate_function = similarity_to_function | typicality_function | predictive_probability_of_function
 
+# -------------------------------- other clauses --------------------------- #
+
 # ORDER BY <column|non-aggregate-function>[<column|function>...]
-order_by_function = Group((identifier | non_aggregate_function) + ZeroOrMore(Suppress(comma_literal) + (identifier|non_aggregate_function)))
+order_by_clause = order_by_keyword + Group((non_aggregate_function | identifier) + ZeroOrMore(Suppress(comma_literal) + (non_aggregate_function | identifier))).setResultsName("order_by_set")
 
 # WHERE <whereclause>
 
-# ------------------------------- Query functions --------------------------#
+# ------------------------------- Query functions -------------------------- #
 
 # SELECT
 
