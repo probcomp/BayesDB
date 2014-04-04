@@ -26,6 +26,7 @@ import numpy
 import pytest
 import random
 import shutil
+import pandas
 
 import bayesdb.utils as utils
 from bayesdb.client import Client
@@ -350,3 +351,23 @@ def test_select():
   # correlation with missing values
   test_tablename = create_dha(path='data/dha_missing.csv')
   client("select name, qual_score, correlation of name with qual_score from %s" % (test_tablename), debug=True, pretty=False)
+
+def test_pandas():
+  test_tablename = create_dha()
+  global client
+
+  # Test that output is a dict if pretty=False and pandas_output=False
+  out = client("select name, qual_score from %s limit 10" % (test_tablename), debug=True, pretty=False, pandas_output=False)
+  assert type(out[0]) == dict
+
+  # Test that output is pandas DataFrame when pretty=False and a table-like object is returned (pandas_output=True by default)
+  out = client("select name, qual_score from %s limit 10" % (test_tablename), debug=True, pretty=False)
+  assert type(out[0]) == pandas.DataFrame
+
+  # Get the returned data frame from the first list element of the previous result.
+  test_df = out[0]
+
+  # Test creation of a btable from pandas DataFrame
+  client("drop btable %s" % (test_tablename), yes=True)
+  client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df)
+
