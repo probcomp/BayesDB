@@ -22,11 +22,262 @@ import time
 import inspect
 import pickle
 import os
+from pyparsing import *
 
+from bayesdb.bql_grammar import *
 from bayesdb.engine import Engine
 from bayesdb.parser import Parser
 engine = Engine('local')
 parser = Parser()
+
+def test_keyword_plurality_ambiguity_pyparsing():
+    model = model_keyword.parseString("model",parseAll=True)
+    models = model_keyword.parseString("models",parseAll=True)
+    assert model[0] == 'model'
+    assert models[0] == 'model'
+    iteration = iteration_keyword.parseString("iteration",parseAll=True)
+    iterations = iteration_keyword.parseString("iterations",parseAll=True)
+    assert iteration[0] == 'iteration'
+    assert iterations[0] == 'iteration'
+    sample = sample_keyword.parseString("sample",parseAll=True)
+    samples = sample_keyword.parseString("samples",parseAll=True)
+    assert sample[0] == 'sample'
+    assert samples[0] == 'sample'
+    column = column_keyword.parseString('column',parseAll=True)
+    columns = column_keyword.parseString('columns',parseAll=True)
+    assert column[0] == 'column'
+    assert columns[0] == 'column'
+    list_ = list_keyword.parseString('list',parseAll=True)
+    lists = list_keyword.parseString('lists',parseAll=True)
+    assert list_[0] == 'list'
+    assert lists[0] == 'list'
+    btable = btable_keyword.parseString('btable',parseAll=True)
+    btables = btable_keyword.parseString('btables',parseAll=True)
+    assert btable[0] == 'btable'
+    assert btables[0] == 'btable'
+    second = second_keyword.parseString('second',parseAll=True)
+    seconds = second_keyword.parseString('seconds',parseAll=True)
+    assert second[0] == 'second'
+    assert seconds[0] == 'second'
+
+def test_composite_keywords_pyparsing():
+    execute_file = execute_file_keyword.parseString('eXecute file',parseAll=True)
+    assert execute_file[0] == 'execute file'
+    create_btable = create_btable_keyword.parseString('cReate btable',parseAll=True)
+    assert create_btable[0] == 'create btable'
+    update_schema_for = update_schema_for_keyword.parseString('update Schema for',parseAll=True)
+    assert update_schema_for[0] == 'update schema for'
+    models_for = models_for_keyword.parseString('Models for',parseAll=True)
+    assert models_for[0] == 'model for'
+    model_index = model_index_keyword.parseString('model Index',parseAll=True)
+    assert model_index[0] == 'model index'
+    save_model = save_model_keyword.parseString("save modeL",parseAll=True)
+    assert save_model[0] == 'save model'
+    load_model = load_model_keyword.parseString("load Models",parseAll=True)
+    assert load_model[0] == 'load model'
+    save_to = save_to_keyword.parseString('save To',parseAll=True)
+    assert save_to[0] == 'save to'
+    list_btables = list_btables_keyword.parseString('list bTables',parseAll=True)
+    assert list_btables[0] == 'list btable'
+    show_schema_for = show_schema_for_keyword.parseString('show Schema for',parseAll=True)
+    assert show_schema_for[0] == 'show schema for'
+    show_models_for = show_models_for_keyword.parseString("show modeLs for",parseAll=True)
+    assert show_models_for[0] == 'show model for'
+    show_diagnostics_for = show_diagnostics_for_keyword.parseString("show diaGnostics for",parseAll=True)
+    assert show_diagnostics_for[0] == 'show diagnostics for'
+    estimate_pairwise = estimate_pairwise_keyword.parseString("estimate Pairwise",parseAll=True)
+    assert estimate_pairwise[0] == 'estimate pairwise'
+    with_confidence = with_confidence_keyword.parseString('with  confIdence',parseAll=True)
+    assert with_confidence[0] == 'with confidence'
+    dependence_probability = dependence_probability_keyword.parseString('dependence probability',parseAll=True)
+    assert dependence_probability[0] == 'dependence probability'
+    mutual_information = mutual_information_keyword.parseString('mutual inFormation',parseAll=True)
+    assert mutual_information[0] == 'mutual information'
+    estimate_columns_from = estimate_columns_from_keyword.parseString("estimate columns froM",parseAll=True)
+    assert estimate_columns_from[0] == 'estimate column from'
+    column_lists = column_lists_keyword.parseString('column Lists',parseAll=True)
+    assert column_lists[0] == 'column list'
+    similarity_to = similarity_to_keyword.parseString("similarity to",parseAll=True)
+    assert similarity_to[0] == 'similarity to'
+    with_respect_to = with_respect_to_keyword.parseString("with Respect to",parseAll=True)
+    assert with_respect_to[0] == 'with respect to'
+    probability_of = probability_of_keyword.parseString('probability of',parseAll=True)
+    assert probability_of[0] == 'probability of'
+    predictive_probability_of = predictive_probability_of_keyword.parseString('predictive Probability  of',parseAll=True)
+    assert predictive_probability_of[0] == 'predictive probability of'
+    save_connected_components_with_threshold = save_connected_components_with_threshold_keyword.parseString(
+        'save cOnnected components with threshold',parseAll=True)
+    assert save_connected_components_with_threshold[0] == 'save connected components with threshold'
+    estimate_pairwise_row = estimate_pairwise_row_keyword.parseString("estimate Pairwise row",parseAll=True)
+    assert estimate_pairwise_row[0] == 'estimate pairwise row'
+
+def test_valid_values_names_pyparsing():
+    valid_values=[
+        '4',
+        '42.04',
+        '.4',
+        '4.',
+        "'\sjekja8391(*^@(%()!@#$%^&*()_+=-~'",
+        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~",
+        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~',
+        '"c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\\"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~"',
+        "'d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\\'()*+,-./:;<=>?@[\]^_`{|}~'",
+        "'numbers 0'", 
+        "'k skj s'",
+        ]
+    valid_values_results=[
+        '4',
+        '42.04',
+        '.4',
+        '4.',
+        '\sjekja8391(*^@(%()!@#$%^&*()_+=-~',
+        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~",
+        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~',
+        "c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~",
+        "d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~",
+        'numbers 0', 
+        'k skj s',
+        ]
+
+    for i in range(len(valid_values)):
+        assert value.parseString(valid_values[i],parseAll=True)[0] == valid_values_results[i]
+
+    valid_column_identifiers = [
+        "a",
+        "a1",
+        "a_1",
+        "a_a",
+        "a_",
+        "aa"
+        ]
+    valid_column_identifiers_results = [
+        "a",
+        "a1",
+        "a_1",
+        "a_a",
+        "a_",
+        "aa"
+        ]
+    for i in range(len(valid_column_identifiers)):
+        assert value.parseString(valid_column_identifiers[i],parseAll=True)[0] == valid_column_identifiers_results[i]
+    assert float_number.parseString('1',parseAll=True)[0] == '1'
+    assert int_number.parseString('1',parseAll=True)[0] == '1'
+    assert float_number.parseString('1.')[0] == '1'
+    assert float_number.parseString('.1',parseAll=True)[0] == '.1'
+    assert float_number.parseString('0.1',parseAll=True)[0] == '0.1'
+    assert float_number.parseString('11',parseAll=True)[0] == '11'
+    assert int_number.parseString('11',parseAll=True)[0] == '11'
+    assert float_number.parseString('11.01',parseAll=True)[0] == '11.01'
+    assert filename.parseString("~/filename.csv",parseAll=True)[0] == "~/filename.csv"
+    assert filename.parseString("!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~",parseAll=True)[0] == "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~"
+    assert filename.parseString("'/filename with space.csv'",parseAll=True)[0] == "/filename with space.csv"
+
+def test_simple_functions():
+    assert list_btables_function.parseString("LIST BTABLES",parseAll=True).function_id == 'list btable'
+    assert list_btables_function.parseString("LIST BTABLE",parseAll=True).function_id == 'list btable'
+    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).function_id == 'show schema for'
+    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).btable == 'table_1'
+    assert show_models_for_function.parseString("SHOW MODELS FOR table_1",parseAll=True).function_id == 'show model for'
+    assert show_models_for_function.parseString("SHOW MODEL FOR table_1",parseAll=True).btable == 'table_1'
+    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).function_id == 'show diagnostics for'
+    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).btable == 'table_1'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).function_id == 'load model'
+    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1",parseAll=True).function_id == 'load model'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).filename == '~/filename.csv'
+    assert load_model_function.parseString("LOAD MODELS '~/filena me.csv' INTO table_1",parseAll=True).filename == '~/filena me.csv'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).btable == 'table_1'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).btable == 'table_1'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).function_id == 'save model'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).filename == 'filename.pkl.gz'
+    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).function_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLES table_1",parseAll=True).function_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).btable == 'table_1'
+    drop_model_1 = drop_model_function.parseString("DROP MODEL 1 FROM table_1",parseAll=True)
+    drop_model_2 = drop_model_function.parseString("DROP MODELS 1-5 FROM table_1",parseAll=True)
+    drop_model_3 = drop_model_function.parseString("DROP MODELS 1,2,6-9 FROM table_1",parseAll=True)
+    drop_model_4 = drop_model_function.parseString("DROP MODELS 1-5,1-5 FROM table_1",parseAll=True)
+    assert drop_model_1.function_id == 'drop model'
+    assert drop_model_1.btable == 'table_1'
+    assert drop_model_1.index_list.asList() == [1]
+    assert drop_model_2.index_list.asList() == [1,2,3,4,5]
+    assert drop_model_3.index_list.asList() == [1,2,6,7,8,9]
+    assert drop_model_4.index_list.asList() == [1,2,3,4,5]
+    assert help_function.parseString("HELp",parseAll=True).function_id == 'help'
+
+def test_update_schema_pyparsing():
+    update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
+    assert update_schema_1.function_id == 'update schema for'
+    assert update_schema_1.btable == 'test_btablE'
+    assert update_schema_1.type_clause[0][0] == 'col_1'
+    assert update_schema_1.type_clause[0][1] == 'categorical'
+    assert update_schema_1.type_clause[1][0] == 'col.2'
+    assert update_schema_1.type_clause[1][1] == 'numerical'
+    assert update_schema_1.type_clause[2][0] == 'col_3'
+    assert update_schema_1.type_clause[2][1] == 'ignore'
+    update_schema_2 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = key",parseAll=True)
+    assert update_schema_2.type_clause[0][0] == 'col_1'
+    assert update_schema_2.type_clause[0][1] == 'key'
+
+def test_create_btable_pyparsing():
+    create_btable_1 = create_btable_function.parseString("CREATE BTABLE test.btable FROM '~/filenam e.csv'", parseAll=True)
+    create_btable_2 = create_btable_function.parseString("CREATE BTABLE test_btable FROM ~/filename.csv", parseAll=True)
+    assert create_btable_1.function_id == 'create btable'
+    assert create_btable_1.btable == 'test.btable'
+    assert create_btable_1.filename == '~/filenam e.csv'
+    assert create_btable_2.btable == 'test_btable'
+    assert create_btable_2.filename == '~/filename.csv'
+
+def test_execute_file_pyparsing():
+    execute_file_1 = execute_file_function.parseString("EXECUTE FILE '/filenam e.bql'",parseAll=True)
+    execute_file_2 = execute_file_function.parseString("EXECUTE FILE /filename.bql",parseAll=True)
+    assert execute_file_1.filename == "/filenam e.bql"
+    assert execute_file_2.filename == "/filename.bql"
+
+def test_initialize_pyparsing():
+    initialize_1 = initialize_function.parseString("INITIALIZE 3 MODELS FOR test_table",parseAll=True)
+    assert initialize_1.function_id == 'initialize'
+    assert initialize_1.num_models == '3'
+    assert initialize_1.btable == 'test_table'
+    initialize_2 = initialize_function.parseString("INITIALIZE 3 MODEL FOR test_table",parseAll=True)
+    assert initialize_2.function_id == 'initialize'
+    assert initialize_2.num_models == '3'
+    assert initialize_2.btable == 'test_table'
+
+def test_analyze_pyparsing():
+    analyze_1 = analyze_function.parseString("ANALYZE table_1 FOR 10 ITERATIONS",parseAll=True)
+    analyze_2 = analyze_function.parseString("ANALYZE table_1 FOR 1 ITERATION",parseAll=True)
+    analyze_3 = analyze_function.parseString("ANALYZE table_1 FOR 10 SECONDS",parseAll=True)
+    analyze_4 = analyze_function.parseString("ANALYZE table_1 FOR 1 SECOND",parseAll=True)
+    analyze_5 = analyze_function.parseString("ANALYZE table_1 MODEL 1 FOR 10 SECONDS",parseAll=True)
+    analyze_6 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3 FOR 1 ITERATION",parseAll=True)
+    analyze_7 = analyze_function.parseString("ANALYZE table_1 MODELS 1,2,3 FOR 10 SECONDS",parseAll=True)
+    analyze_8 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 3-5 FOR 1 ITERATION",parseAll=True)
+    analyze_9 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5 FOR 10 SECONDS",parseAll=True)
+    analyze_10 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5-7, 9, 10 FOR 1 ITERATION",parseAll=True)
+    analyze_11 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 1, 2, 2 FOR 10 SECONDS",parseAll=True)
+    analyze_12 = analyze_function.parseString("ANALYZE table_1 MODELS 1-5, 1-5, 5 FOR 1 ITERATION",parseAll=True)
+    assert analyze_1.function_id == 'analyze'
+    assert analyze_1.btable == 'table_1'
+    assert analyze_1.index_lust == ''
+    assert analyze_1.index_clause == ''
+    assert analyze_1.num_iterations == '10'
+    assert analyze_1.num_seconds == ''
+    assert analyze_2.num_iterations == '1'
+    assert analyze_2.num_seconds == ''
+    assert analyze_3.num_iterations == ''
+    assert analyze_3.num_seconds == '10'
+    assert analyze_4.num_iterations == ''
+    assert analyze_4.num_seconds == '1'
+    assert analyze_5.index_list.asList() == [1]
+    assert analyze_6.index_list.asList() == [1,2,3]
+    assert analyze_7.index_list.asList() == [1,2,3]
+    assert analyze_8.index_list.asList() == [1,3,4,5]
+    assert analyze_9.index_list.asList() == [1,2,3,5]
+    assert analyze_10.index_list.asList() == [1,2,3,5,6,7,9,10]
+    assert analyze_11.index_list.asList() == [1,2]
+    assert analyze_12.index_list.asList() == [1,2,3,4,5]
+
+
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
@@ -159,9 +410,3 @@ def test_infer():
 #INFER <columns> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [LIMIT <limit>] [WITH <numsamples> SAMPLES] [ORDER BY <columns]
 
 #SIMULATE <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [ORDER BY <columns>]
-
-def test_estimate_pairwise():
-    pass
-
-def test_update_schema():
-    pass

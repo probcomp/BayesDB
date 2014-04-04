@@ -32,10 +32,10 @@ class Parser(object):
         self.method_name_to_args = be.get_method_name_to_args()
         self.reset_root_dir()
     
-    def parse(self, bql_string):
+    def split_lines(self, bql_string):
         """
         Accepts a large chunk of BQL (such as a file containing many BQL statements)
-        as a string, and returns individual SQL statements as a list of strings.
+        as a string, and returns individual BQL statements as a list of strings.
 
         Uses semicolons to split statements.
         """
@@ -71,8 +71,8 @@ class Parser(object):
             return
         if bql_statement_string[-1] == ';':
             bql_statement_string = bql_statement_string[:-1]
+        
         words = bql_statement_string.lower().split()
-
         if len(words) >= 1 and words[0] == 'help':
             print "Welcome to BQL help. Here is a list of BQL commands and their syntax:\n"
             for method_name in sorted(self.method_names):
@@ -208,7 +208,7 @@ class Parser(object):
             (?P<num_models>[^\s]+)
             \s+model(s)?\s+for\s+
             (?P<btable>[^\s]+)
-            (\s+with\s+config\s+(?P<model_config>)$)?
+            (\s+with\s+config\s+(?P<model_config>.*))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'initialize' or (words[0] == 'create' and len(words) >= 2 and words[1] != 'models'):
@@ -235,11 +235,12 @@ class Parser(object):
                     if words[3] == 'from':
                         csv_path = self.get_absolute_path(orig.split()[4])
                         return 'create_btable', \
-                               dict(tablename=tablename, cctypes_full=crosscat_column_types), \
-                               dict(csv_path=csv_path)
+                            dict(tablename=tablename, cctypes_full=crosscat_column_types), \
+                            dict(csv_path=csv_path)
+                    else:
+                        return 'help', self.help_create_btable()
                 else:
                     return 'help', self.help_create_btable()
-
 
                     
     def help_drop_btable(self):
@@ -485,6 +486,21 @@ class Parser(object):
                          givens=givens, numpredictions=numpredictions, order_by=order_by, plot=plot), \
                     dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
+    def help_show_row_lists(self):
+        return "SHOW ROW LISTS FOR <btable>"
+
+    def parse_show_row_lists(self, words, orig):
+        match = re.search(r"""
+          SHOW\s+ROW\s+LISTS\s+FOR\s+
+          (?P<btable>[^\s]+)\s*$
+        """, orig, flags=re.VERBOSE|re.IGNORECASE)
+        if not match:
+            if words[0] == 'show':
+                return 'help', self.help_show_row_lists()
+        else:
+            tablename = match.group('btable')
+            return 'show_row_lists', dict(tablename=tablename), None
+
     def help_show_column_lists(self):
         return "SHOW COLUMN LISTS FOR <btable>"
 
@@ -563,7 +579,42 @@ class Parser(object):
 
             return 'estimate_columns', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
                                             limit=limit, order_by=order_by, name=name), None
-            
+
+    def help_estimate_pairwise_row(self):
+        return "ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]: estimate a pairwise function of columns."
+
+    def parse_estimate_pairwise_row(self, words, orig):
+        match = re.search(r"""
+            estimate\s+pairwise\s+row\s+
+            (?P<functionname>.*?((?=\sfrom)))
+            \s*from\s+
+            (?P<btable>[^\s]+)
+            (\s+for\s+rows\s+(?P<rows>[^\s]+))?
+            (\s+save\s+to\s+(?P<filename>[^\s]+))?
+            (\s+save\s+connected\s+components\s+with\s+threshold\s+(?P<threshold>[^\s]+)\s+(as|into)\s+(?P<components_name>[^\s]+))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'estimate' and words[1] == 'pairwise':
+                return 'help', self.help_estimate_pairwise()
+        else:
+            tablename = match.group('btable').strip()
+            function_name = match.group('functionname')
+            if function_name.strip().lower().split()[0] not in ["similarity"]:
+                return 'help', self.help_estimate_pairwise()
+            filename = match.group('filename') # Could be None
+            row_list = match.group('rows') # Could be None
+            if match.group('components_name') and match.group('threshold'):
+                components_name = match.group('components_name')
+                threshold = float(match.group('threshold'))
+            else:
+                components_name = None
+                threshold = None
+            return 'estimate_pairwise_row', \
+              dict(tablename=tablename, function_name=function_name,
+                   row_list=row_list, components_name=components_name, threshold=threshold), \
+              dict(filename=filename)
+
+        
     def help_estimate_pairwise(self):
         return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <columnlist>]: estimate a pairwise function of columns."
         
