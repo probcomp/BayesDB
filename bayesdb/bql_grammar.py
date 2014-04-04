@@ -270,7 +270,7 @@ with_confidence_clause = with_confidence_keyword + float_number.setResultsName("
 # -------------------------------- Functions ------------------------------ #
 
 # SIMILARITY TO <row> [WITH RESPECT TO <column>]
-similarity_to_function = Group(similarity_to_keyword.setResultsName('function_id') + row_clause + Optional(with_respect_to_keyword + column_list_clause).setResultsName('with_respect_to')).setResultsName("function")
+similarity_to_function = Group(similarity_to_keyword.setResultsName('function_id') + row_clause + Optional(with_respect_to_keyword + column_list_clause).setResultsName('with_respect_to')).setResultsName("function") # todo more names less indexes
 
 # TYPICALITY
 typicality_function = Group(typicality_keyword.setResultsName('function_id')).setResultsName('function')
