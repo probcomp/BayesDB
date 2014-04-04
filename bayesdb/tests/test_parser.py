@@ -173,40 +173,40 @@ def test_valid_values_names_pyparsing():
     assert filename.parseString("'/filename with space.csv'",parseAll=True)[0] == "/filename with space.csv"
 
 def test_simple_functions():
-    assert list_btables_function.parseString("LIST BTABLES",parseAll=True).function_id == 'list btable'
-    assert list_btables_function.parseString("LIST BTABLE",parseAll=True).function_id == 'list btable'
-    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).function_id == 'show schema for'
+    assert list_btables_function.parseString("LIST BTABLES",parseAll=True).statement_id == 'list btable'
+    assert list_btables_function.parseString("LIST BTABLE",parseAll=True).statement_id == 'list btable'
+    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).statement_id == 'show schema for'
     assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_models_for_function.parseString("SHOW MODELS FOR table_1",parseAll=True).function_id == 'show model for'
+    assert show_models_for_function.parseString("SHOW MODELS FOR table_1",parseAll=True).statement_id == 'show model for'
     assert show_models_for_function.parseString("SHOW MODEL FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).function_id == 'show diagnostics for'
+    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).statement_id == 'show diagnostics for'
     assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).btable == 'table_1'
-    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).function_id == 'load model'
-    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1",parseAll=True).function_id == 'load model'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load model'
+    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load model'
     assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).filename == '~/filename.csv'
     assert load_model_function.parseString("LOAD MODELS '~/filena me.csv' INTO table_1",parseAll=True).filename == '~/filena me.csv'
     assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).btable == 'table_1'
     assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).btable == 'table_1'
-    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).function_id == 'save model'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).statement_id == 'save model'
     assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).filename == 'filename.pkl.gz'
-    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).function_id == 'drop btable'
-    assert drop_btable_function.parseString("DROP BTABLES table_1",parseAll=True).function_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).statement_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLES table_1",parseAll=True).statement_id == 'drop btable'
     assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).btable == 'table_1'
     drop_model_1 = drop_model_function.parseString("DROP MODEL 1 FROM table_1",parseAll=True)
     drop_model_2 = drop_model_function.parseString("DROP MODELS 1-5 FROM table_1",parseAll=True)
     drop_model_3 = drop_model_function.parseString("DROP MODELS 1,2,6-9 FROM table_1",parseAll=True)
     drop_model_4 = drop_model_function.parseString("DROP MODELS 1-5,1-5 FROM table_1",parseAll=True)
-    assert drop_model_1.function_id == 'drop model'
+    assert drop_model_1.statement_id == 'drop model'
     assert drop_model_1.btable == 'table_1'
     assert drop_model_1.index_list.asList() == [1]
     assert drop_model_2.index_list.asList() == [1,2,3,4,5]
     assert drop_model_3.index_list.asList() == [1,2,6,7,8,9]
     assert drop_model_4.index_list.asList() == [1,2,3,4,5]
-    assert help_function.parseString("HELp",parseAll=True).function_id == 'help'
+    assert help_function.parseString("HELp",parseAll=True).statement_id == 'help'
 
 def test_update_schema_pyparsing():
     update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
-    assert update_schema_1.function_id == 'update schema for'
+    assert update_schema_1.statement_id == 'update schema for'
     assert update_schema_1.btable == 'test_btablE'
     assert update_schema_1.type_clause[0][0] == 'col_1'
     assert update_schema_1.type_clause[0][1] == 'categorical'
@@ -221,7 +221,7 @@ def test_update_schema_pyparsing():
 def test_create_btable_pyparsing():
     create_btable_1 = create_btable_function.parseString("CREATE BTABLE test.btable FROM '~/filenam e.csv'", parseAll=True)
     create_btable_2 = create_btable_function.parseString("CREATE BTABLE test_btable FROM ~/filename.csv", parseAll=True)
-    assert create_btable_1.function_id == 'create btable'
+    assert create_btable_1.statement_id == 'create btable'
     assert create_btable_1.btable == 'test.btable'
     assert create_btable_1.filename == '~/filenam e.csv'
     assert create_btable_2.btable == 'test_btable'
@@ -235,11 +235,11 @@ def test_execute_file_pyparsing():
 
 def test_initialize_pyparsing():
     initialize_1 = initialize_function.parseString("INITIALIZE 3 MODELS FOR test_table",parseAll=True)
-    assert initialize_1.function_id == 'initialize'
+    assert initialize_1.statement_id == 'initialize'
     assert initialize_1.num_models == '3'
     assert initialize_1.btable == 'test_table'
     initialize_2 = initialize_function.parseString("INITIALIZE 3 MODEL FOR test_table",parseAll=True)
-    assert initialize_2.function_id == 'initialize'
+    assert initialize_2.statement_id == 'initialize'
     assert initialize_2.num_models == '3'
     assert initialize_2.btable == 'test_table'
 
@@ -256,7 +256,7 @@ def test_analyze_pyparsing():
     analyze_10 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5-7, 9, 10 FOR 1 ITERATION",parseAll=True)
     analyze_11 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 1, 2, 2 FOR 10 SECONDS",parseAll=True)
     analyze_12 = analyze_function.parseString("ANALYZE table_1 MODELS 1-5, 1-5, 5 FOR 1 ITERATION",parseAll=True)
-    assert analyze_1.function_id == 'analyze'
+    assert analyze_1.statement_id == 'analyze'
     assert analyze_1.btable == 'table_1'
     assert analyze_1.index_lust == ''
     assert analyze_1.index_clause == ''
@@ -324,7 +324,7 @@ def test_row_functions_pyparsing():
     assert similarity_6.column_list.asList() == ['col_1', 'col_2']
     assert similarity_7.column_list.asList() == ['col_1', 'col_3']
     assert similarity_8.column_list.asList() == ['col_1']
-    assert typicality_to_function.parseString('Typicality',parseAll=True).row_function_id == 'typicality'
+    assert typicality_function.parseString('Typicality',parseAll=True).row_function_id == 'typicality'
 
 def test_column_functions_pyparsing():
     dependence_1 = dependence_probability_function.parseString('DEPENDENCE PROBABILITY WITH column_1',
@@ -352,7 +352,6 @@ def test_predictive_probability_of_pyparsing():
                                                           parseAll=True).column_function_id == 'predictive probability of'
     assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
                                                           parseAll=True).column == 'column_1'
-    
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
