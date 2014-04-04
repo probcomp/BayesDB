@@ -12,8 +12,11 @@ Welcome to BayesDB's documentation!
    installation.rst
    gettingstarted.rst
    bql.rst
-   examples.rst
-   developer.rst
+   examples.rst      
+   developer.rst   
+
+
+   
    
 
 Indices and tables

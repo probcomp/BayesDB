@@ -19,14 +19,14 @@
 --
 
 -- Create a fresh btable for the demo, and load in pre-existing samples
-DROP BTABLE flights;
-CREATE BTABLE flights FROM flights.csv;
-LOAD MODELS flights_models.pkl.gz FOR flights;
+DROP BTABLE flights_demo;
+CREATE BTABLE flights_demo FROM flights.csv;
+LOAD MODELS flights_models.pkl.gz FOR flights_demo;
 
 -- Do analysis
-SELECT * FROM flights ORDER BY arrdelay;
-ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM flights;
-INFER * FROM flights WITH CONFIDENCE 0.9 ORDER BY arrdelay;
-SELECT *, SIMILARITY TO 4 FROM flights ORDER BY SIMILARITY TO 4;
---SIMULATE arrdelay FROM flights TIMES 20;
+SELECT * FROM flights_demo ORDER BY arrdelay;
+ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM flights_demo;
+INFER * FROM flights_demo WITH CONFIDENCE 0.9 ORDER BY arrdelay;
+SELECT *, SIMILARITY TO 4 FROM flights_demo ORDER BY SIMILARITY TO 4;
+--SIMULATE arrdelay FROM flights_demo TIMES 20;
 

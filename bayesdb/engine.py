@@ -43,13 +43,14 @@ from persistence_layer import PersistenceLayer
 import api_utils
 import data_utils
 import utils
+import pairwise
 import functions
 import select_utils
 import estimate_columns_utils
 import plotting_utils
 
 class Engine(object):
-  def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing', **kwargs):
+  def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing', seed=None, **kwargs):
     """ One optional argument that you may find yourself using frequently is seed.
     It defaults to random seed, but for testing/reproduceability purposes you may
     want a deterministic one. """
@@ -62,7 +63,7 @@ class Engine(object):
       # Only dependent on CrossCat when you actually instantiate Engine
       # (i.e., allow engine to be imported in order to examine the API, without CrossCat)
       from crosscat.CrossCatClient import get_CrossCatClient
-      self.backend = get_CrossCatClient(crosscat_engine_type, **kwargs)
+      self.backend = get_CrossCatClient(crosscat_engine_type, seed=seed, **kwargs)
     else:
       self.online = True
       self.hostname = crosscat_host
@@ -93,68 +94,43 @@ class Engine(object):
   def update_schema(self, tablename, mappings):
     """
     mappings is a dict of column name to 'continuous', 'multinomial',
-    or an int, which signifies multinomial of a specific type.
-    TODO: FIX HACKS. Current works by reloading all the data from csv,
-    and it ignores multinomials' specific number of outcomes.
-    Also, disastrous things may happen if you update a schema after creating models.
+    or 'ignore', or 'key'.
+    Requires that models are already initialized.
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
+    if self.persistence_layer.has_models(tablename):
+      raise utils.BayesDBError("Error: btable %s already has models. The schema may not be updated after models have been initialized; please either create a new btable or drop the models from this one." % tablename)
     
     msg = self.persistence_layer.update_schema(tablename, mappings)
-    if 'Error' in msg:
-      return dict(message=msg)
     ret = self.show_schema(tablename)
     ret['message'] = 'Updated schema.'
     return ret
     
-  def _guess_schema(self, header, values, crosscat_column_types, colnames):
-    # TODO: should this be deleted in favor of using crosscat's datatype guessing?
-    # If so, then call data_utils.read_model_data_from_csv(...) in create_btable instead of data_utils.read_csv(...)
-    """Guess the schema. Complete the given crosscat_column_types, which may have missing data, into cctypes
-    Also make the corresponding postgres column types."""
-    postgres_coltypes = []
-    cctypes = []
-    column_data_lookup = dict(zip(header, numpy.array(values).T))
-    have_column_tpes = type(crosscat_column_types) == dict
-    for colname in colnames:
-      if have_column_tpes and colname in crosscat_column_types:
-        cctype = crosscat_column_types[colname]
-      else:
-        column_data = column_data_lookup[colname]
-        cctype = data_utils.guess_column_type(column_data)
-        # cctype = 'continuous'
-      cctypes.append(cctype)
-      if cctype == 'ignore':
-        postgres_coltypes.append('varchar(1000)')
-      elif cctype == 'continuous':
-        postgres_coltypes.append('float8')
-      elif cctype == 'multinomial':
-        postgres_coltypes.append('varchar(1000)')
-    return postgres_coltypes, cctypes
-        
-  def create_btable(self, tablename, csv, crosscat_column_types):
+  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None):
     """Uplooad a csv table to the predictive db.
-    Crosscat_column_types must be a dictionary mapping column names
+    cctypes must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
     column name must be present in the dictionary: default is continuous."""
+    
     ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
-      raise Exception('Error: btable with that name already exists.')
-    
-    csv_abs_path = self.persistence_layer.write_csv(tablename, csv)
+      raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
+      
+    # variables with "_full" include ignored columns.
+    colnames_full = [h.lower().strip() for h in header]
+    raw_T_full = data_utils.convert_nans(raw_T_full)
+    if cctypes_full is None:
+      cctypes_full = data_utils.guess_column_types(raw_T_full)
+    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
-    ## Parse column names to create table
-    csv = csv.replace('\r', '')
-    colnames = csv.split('\n')[0].split(',')
+    # variables without "_full" don't include ignored columns.
+    raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
+    T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+      
+    self.persistence_layer.create_btable(tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full)
 
-    ## Guess schema and create table
-    header, values = data_utils.read_csv(csv_abs_path, has_header=True)
-    values = data_utils.convert_nans(values)
-    postgres_coltypes, cctypes = self._guess_schema(header, values, crosscat_column_types, colnames)
-    self.persistence_layer.create_btable_from_csv(tablename, csv_abs_path, csv, cctypes, postgres_coltypes, colnames)
-
-    return dict(columns=colnames, data=[cctypes], message='Created btable %s. Inferred schema:' % tablename)
+    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Inferred schema:' % tablename)
 
   def show_schema(self, tablename):
     if not self.persistence_layer.check_if_table_exists(tablename):
@@ -215,10 +191,9 @@ class Engine(object):
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-    
+
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    max_modelid = self.persistence_layer.get_max_model_id(tablename)
 
     # Set model configuration parameters.
     if type(model_config) == str and model_config.lower() == 'naive bayes':
@@ -236,7 +211,14 @@ class Engine(object):
       model_config = dict(kernel_list=(), # uses default
                           initialization='from_the_prior',
                           row_initialization='from_the_prior')
+    else:
+      raise utils.BayesDBError("Invalid model config")
 
+    # Make sure the model config matches existing model config, if there are other models.
+    existing_model_config = self.persistence_layer.get_model_config(tablename)
+    if existing_model_config is not None and existing_model_config != model_config:
+      raise utils.BayesDBError("Error: model config must match existing model config: %s" % str(existing_model_config))
+      
     # Call initialize on backend
     X_L_list, X_D_list = self.call_backend('initialize',
                                            dict(M_c=M_c, M_r=M_r, T=T, n_chains=n_models,
@@ -325,10 +307,19 @@ class Engine(object):
     X_D_list = [models[i]['X_D'] for i in modelids]
 
     first_model = models[modelids[0]]
-    if 'kernel_list' in first_model:
-      kernel_list = ['kernel_list']
+    if 'model_config' in first_model and 'kernel_list' in first_model['model_config']:
+      kernel_list = first_model['model_config']['kernel_list']
     else:
       kernel_list = () # default kernel list
+
+    """ New stuff: scrutinize carefully 
+    analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True,
+                        kernel_list=kernel_list)
+    
+    analyze_args['n_steps'] = iterations
+    if seconds is not None:
+      analyze_args['max_time'] = seconds
+    """
 
     ## CrossCat analyze works by trying to do the specified number of iterations (which MUST be at least 1,
     ##   and it never does more than that number), and doesn't start a new iteration if the specified time
@@ -422,10 +413,11 @@ class Engine(object):
     #   arguments that that function takes (in addition to the normal arguments, like M_c, X_L_list, etc).
     #   aggregate specifies whether that individual function is aggregate or not
     queries, query_colnames = select_utils.get_queries_from_columnstring(columnstring, M_c, T, column_lists)
+    utils.check_for_duplicate_columns(query_colnames)
 
     # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
     # TODO: support functions in where_conditions. right now we only support actual column values.
-    where_conditions = select_utils.get_conditions_from_whereclause(whereclause, M_c, T)
+    where_conditions = select_utils.get_conditions_from_whereclause(whereclause, M_c, T, column_lists)
 
     # If there are no models, make sure that we aren't using functions that require models.
     # TODO: make this less hardcoded
@@ -446,7 +438,7 @@ class Engine(object):
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
     filtered_rows = select_utils.filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, self,
-                                                        query_colnames, impute_confidence, num_impute_samples)
+                                                        query_colnames, impute_confidence, num_impute_samples, tablename)
 
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
@@ -454,7 +446,7 @@ class Engine(object):
     ## If only being selected: then want to compute after ordering...
 
     # Simply rearranges the order of the rows in filtered_rows according to the order_by query.
-    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self)
+    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self, column_lists)
 
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
@@ -484,7 +476,7 @@ class Engine(object):
     if givens=="" or '=' not in givens:
       Y = None
     else:
-      varlist = [[c.strip() for c in b.split('=')] for b in givens.split('AND')]
+      varlist = [[c.strip() for c in b.split('=')] for b in re.split(r'and|,', givens, flags=re.IGNORECASE)]
       Y = []
       for colname, colval in varlist:
         if type(colval) == str or type(colval) == unicode:
@@ -499,6 +491,7 @@ class Engine(object):
     column_lists = self.persistence_layer.get_column_lists(tablename)
     colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
     colnames = [c.lower() for c in colnames]
+    utils.check_for_duplicate_columns(colnames)
     col_indices = [name_to_idx[colname] for colname in colnames]
     query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
@@ -506,19 +499,20 @@ class Engine(object):
     if len(Q) > 0:
       out = self.call_backend('simple_predictive_sample', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=Q, n=numpredictions))
     else:
-      out = []
-
+      out = [[] for x in range(numpredictions)]
+    assert type(out) == list and len(out) >= 1 and type(out[0]) == list and len(out) == numpredictions
+    
     # convert to data, columns dict output format
     # map codes to original values
     data = []
-    for vals in out:
+    for out_row in out:
       row = []
       i = 0
       for idx in col_indices:
         if idx in given_col_idxs_to_vals:
           row.append(given_col_idxs_to_vals[idx])
         else:
-          row.append(data_utils.convert_code_to_value(M_c, idx, vals[i]))
+          row.append(data_utils.convert_code_to_value(M_c, idx, out_row[i]))
           i += 1
       data.append(row)
       
@@ -537,6 +531,17 @@ class Engine(object):
     column_lists = self.persistence_layer.get_column_lists(tablename)
     return dict(columns=list(column_lists.keys()))
 
+  def show_row_lists(self, tablename):
+    """
+    Return a list of all row lists, and their row counts.
+    """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+      
+    row_lists = self.persistence_layer.get_row_lists(tablename)
+    return dict(row_lists=[(name, len(rows)) for (name, rows) in row_lists.items()])
+
+    
   def show_columns(self, tablename, column_list=None):
     """
     Return the specified columnlist. If None, return all columns in original order.
@@ -601,6 +606,49 @@ class Engine(object):
       self.persistence_layer.add_column_list(tablename, name, column_names)
     
     return {'columns': column_names}
+
+  def estimate_pairwise_row(self, tablename, function_name, row_list, components_name=None, threshold=None):
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    if len(X_L_list) == 0:
+      raise utils.BayesDBNoModelsError(tablename)
+
+    # TODO: deal with row_list
+    if row_list:
+      row_indices = self.persistence_layer.get_row_list(tablename, row_list)
+      if len(row_indices) == 0:
+        raise utils.BayesDBError("Error: Row list %s has no rows." % row_list)
+    else:
+      row_indices = None
+
+    column_lists = self.persistence_layer.get_column_lists(tablename)
+    
+    # Do the heavy lifting: generate the matrix itself
+    matrix, row_indices_reordered, components = pairwise.generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, component_threshold=threshold, column_lists=column_lists)
+    
+    title = 'Pairwise row %s for %s' % (function_name, tablename)      
+    ret = dict(
+      matrix=matrix,
+      column_names=row_indices_reordered, # this is called column_names so that the plotting code displays them
+      title=title,
+      message = "Created " + title
+      )
+
+    # Create new btables from connected components (like into), if desired. Overwrites old ones with same name.
+    if components is not None:
+      component_name_tuples = []
+      for i, component in enumerate(components):
+        name = "%s_%d" % (components_name, i)
+        num_rows = len(component)
+        self.persistence_layer.add_row_list(tablename, name, component)
+        component_name_tuples.append((name, num_rows))
+      ret['components'] = components
+      ret['row_lists'] = component_name_tuples
+
+    return ret
+    
   
   def estimate_pairwise(self, tablename, function_name, column_list=None, components_name=None, threshold=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
@@ -609,29 +657,40 @@ class Engine(object):
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     if len(X_L_list) == 0:
       raise utils.BayesDBNoModelsError(tablename)
-    
+
     if column_list:
       column_names = self.persistence_layer.get_column_list(tablename, column_list)
+      if len(column_names) == 0:
+        raise utils.BayesDBError("Error: Column list %s has no columns." % column_list)
+
+      utils.check_for_duplicate_columns(column_names)
     else:
       column_names = None
 
     # Do the heavy lifting: generate the matrix itself
-    ret = utils.generate_pairwise_matrix(function_name,
-                                         X_L_list, X_D_list, M_c, T, tablename,
-                                         engine=self, column_names=column_names,
-                                         component_threshold=threshold)
+    matrix, column_names_reordered, components = pairwise.generate_pairwise_column_matrix(   \
+        function_name, X_L_list, X_D_list, M_c, T, tablename,
+        engine=self, column_names=column_names, component_threshold=threshold)
+    
+    title = 'Pairwise column %s for %s' % (function_name, tablename)      
+    ret = dict(
+      matrix=matrix,
+      column_names=column_names_reordered,
+      title=title,
+      message = "Created " + title
+      )
 
     # Add the column lists for connected components, if desired. Overwrites old ones with same name.
-    if components_name is not None and threshold is not None:
-      components = ret['components']
+    if components is not None:
       component_name_tuples = []
       for i, component in enumerate(components):
         name = "%s_%d" % (components_name, i)
         column_names = [M_c['idx_to_name'][str(idx)] for idx in component]
         self.persistence_layer.add_column_list(tablename, name, column_names)
         component_name_tuples.append((name, column_names))
+      ret['components'] = components
       ret['column_lists'] = component_name_tuples
-        
+
     return ret
 
 # helper functions

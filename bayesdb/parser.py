@@ -32,10 +32,10 @@ class Parser(object):
         self.method_name_to_args = be.get_method_name_to_args()
         self.reset_root_dir()
     
-    def parse(self, bql_string):
+    def split_lines(self, bql_string):
         """
         Accepts a large chunk of BQL (such as a file containing many BQL statements)
-        as a string, and returns individual SQL statements as a list of strings.
+        as a string, and returns individual BQL statements as a list of strings.
 
         Uses semicolons to split statements.
         """
@@ -71,8 +71,8 @@ class Parser(object):
             return
         if bql_statement_string[-1] == ';':
             bql_statement_string = bql_statement_string[:-1]
+        
         words = bql_statement_string.lower().split()
-
         if len(words) >= 1 and words[0] == 'help':
             print "Welcome to BQL help. Here is a list of BQL commands and their syntax:\n"
             for method_name in sorted(self.method_names):
@@ -123,7 +123,7 @@ class Parser(object):
     def parse_list_btables(self, words, orig):
         if len(words) >= 2:
             if words[0] == 'list' and words[1] == 'btables':
-                return 'list_btables', dict()
+                return 'list_btables', dict(), None
 
 
     def help_execute_file(self):
@@ -133,7 +133,7 @@ class Parser(object):
         if len(words) >= 1 and words[0] == 'execute':
             if len(words) >= 3 and words[1] == 'file':
                 filename = words[2]
-                return 'execute_file', dict(filename=self.get_absolute_path(filename))
+                return 'execute_file', dict(filename=self.get_absolute_path(filename)), None
             else:
                 return 'help', self.help_execute_file()
 
@@ -144,7 +144,7 @@ class Parser(object):
     def parse_show_schema(self, words, orig):
         if len(words) >= 4 and words[0] == 'show' and words[1] == 'schema':
             if words[2] == 'for':
-                return 'show_schema', dict(tablename=words[3])
+                return 'show_schema', dict(tablename=words[3]), None
             else:
                 return 'help', self.help_show_schema()
 
@@ -155,7 +155,7 @@ class Parser(object):
     def parse_show_models(self, words, orig):
         if len(words) >= 4 and words[0] == 'show' and words[1] == 'models':
             if words[2] == 'for':
-                return 'show_models', dict(tablename=words[3])
+                return 'show_models', dict(tablename=words[3]), None
             else:
                 return 'help', self.help_show_models()
 
@@ -166,7 +166,7 @@ class Parser(object):
     def parse_show_diagnostics(self, words, orig):
         if len(words) >= 4 and words[0] == 'show' and words[1] == 'diagnostics':
             if words[2] == 'for':
-                return 'show_diagnostics', dict(tablename=words[3])
+                return 'show_diagnostics', dict(tablename=words[3]), None
             else:
                 return 'help', self.help_show_diagnostics()
 
@@ -196,7 +196,7 @@ class Parser(object):
             if id is not None:
                 model_indices = [int(id)]
             
-            return 'drop_models', dict(tablename=tablename, model_indices=model_indices)
+            return 'drop_models', dict(tablename=tablename, model_indices=model_indices), None
                 
                 
     def help_initialize_models(self):
@@ -208,7 +208,7 @@ class Parser(object):
             (?P<num_models>[^\s]+)
             \s+model(s)?\s+for\s+
             (?P<btable>[^\s]+)
-            (\s+with\s+config\s+(?P<model_config>)$)?
+            (\s+with\s+config\s+(?P<model_config>.*))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'initialize' or (words[0] == 'create' and len(words) >= 2 and words[1] != 'models'):
@@ -221,7 +221,7 @@ class Parser(object):
             if model_config is not None:
                 model_config = model_config.strip()
             return 'initialize_models', dict(tablename=tablename, n_models=n_models,
-                                             model_config=model_config)
+                                             model_config=model_config), None
                     
     def help_create_btable(self):
         return "CREATE BTABLE <tablename> FROM <filename>: create a table from a csv file"
@@ -233,15 +233,14 @@ class Parser(object):
                 if len(words) >= 5:
                     tablename = words[2]
                     if words[3] == 'from':
-                        f = open(self.get_absolute_path(orig.split()[4]), 'r')
-                        csv = f.read()
-                        result = ('create_btable',
-                                 dict(tablename=tablename, csv=csv,
-                                      crosscat_column_types=crosscat_column_types))
-                        return result
+                        csv_path = self.get_absolute_path(orig.split()[4])
+                        return 'create_btable', \
+                            dict(tablename=tablename, cctypes_full=crosscat_column_types), \
+                            dict(csv_path=csv_path)
+                    else:
+                        return 'help', self.help_create_btable()
                 else:
                     return 'help', self.help_create_btable()
-
 
                     
     def help_drop_btable(self):
@@ -250,7 +249,7 @@ class Parser(object):
     def parse_drop_btable(self, words, orig):
         if len(words) >= 3:
             if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
-                return 'drop_btable', dict(tablename=words[2])
+                return 'drop_btable', dict(tablename=words[2]), None
 
 
     def help_analyze(self):
@@ -290,7 +289,7 @@ class Parser(object):
                 max_time = int(seconds)
                 
             return 'analyze', dict(tablename=tablename, model_indices=model_indices,
-                                   iterations=iterations, max_time=max_time)
+                                   iterations=iterations, max_time=max_time), None
 
             
     def help_infer(self):
@@ -371,13 +370,8 @@ class Parser(object):
                 return 'help', self.help_save_models()
         else:
             tablename = match.group('btable')
-            pklpath = match.group('pklpath')
-            if pklpath[-7:] != '.pkl.gz':
-                if pklpath[-4:] == '.pkl':
-                    pklpath = pklpath + ".gz"
-                else:
-                    pklpath = pklpath + ".pkl.gz"
-            return 'save_models', dict(tablename=tablename), dict(pkl_path=pklpath)
+            pkl_path = match.group('pklpath')
+            return 'save_models', dict(tablename=tablename), dict(pkl_path=pkl_path)
 
 
             
@@ -397,20 +391,8 @@ class Parser(object):
                 return 'help', self.help_load_models()
         else:
             tablename = match.group('btable')
-            pklpath = match.group('pklpath')
-            try:
-                ## TODO: remove this code that actually does stuff from the parser...                
-                models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
-            except IOError as e:
-                if pklpath[-7:] != '.pkl.gz':
-                    if pklpath[-4:] == '.pkl':
-                        models = pickle.load(open(self.get_absolute_path(pklpath), 'rb'))
-                    else:
-                        pklpath = pklpath + ".pkl.gz"
-                        models = pickle.load(gzip.open(self.get_absolute_path(pklpath), 'rb'))
-                else:
-                    raise e
-            return 'load_models', dict(tablename=tablename, models=models)
+            pkl_path = match.group('pklpath')
+            return 'load_models', dict(tablename=tablename), dict(pkl_path=pkl_path)
 
 
             
@@ -425,7 +407,7 @@ class Parser(object):
             \s*from\s+(?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
             (\s*limit\s+(?P<limit>\d+))?
-            (\s*save\s+to\s+(?P<filename>[^\s]+))?\s*$ 
+            (\s*save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'select':
@@ -470,7 +452,7 @@ class Parser(object):
             from\s+(?P<btable>[^\s]+)\s+
             ((given|where)\s+(?P<givens>.*(?=times)))?
             times\s+(?P<times>\d+)
-            (\s*save\s+to\s+(?P<filename>[^\s]+))?\s*$     
+            (\s*save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'simulate':
@@ -504,6 +486,21 @@ class Parser(object):
                          givens=givens, numpredictions=numpredictions, order_by=order_by, plot=plot), \
                     dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
+    def help_show_row_lists(self):
+        return "SHOW ROW LISTS FOR <btable>"
+
+    def parse_show_row_lists(self, words, orig):
+        match = re.search(r"""
+          SHOW\s+ROW\s+LISTS\s+FOR\s+
+          (?P<btable>[^\s]+)\s*$
+        """, orig, flags=re.VERBOSE|re.IGNORECASE)
+        if not match:
+            if words[0] == 'show':
+                return 'help', self.help_show_row_lists()
+        else:
+            tablename = match.group('btable')
+            return 'show_row_lists', dict(tablename=tablename), None
+
     def help_show_column_lists(self):
         return "SHOW COLUMN LISTS FOR <btable>"
 
@@ -517,7 +514,7 @@ class Parser(object):
                 return 'help', self.help_show_column_lists()
         else:
             tablename = match.group('btable')
-            return 'show_column_lists', dict(tablename=tablename)
+            return 'show_column_lists', dict(tablename=tablename), None
 
     def help_show_columns(self):
         return "SHOW COLUMNS <column_list> FROM <btable>"
@@ -535,7 +532,7 @@ class Parser(object):
         else:
             tablename = match.group('btable')
             column_list = match.group('columnlist')
-            return 'show_columns', dict(tablename=tablename, column_list=column_list)
+            return 'show_columns', dict(tablename=tablename, column_list=column_list), None
 
             
     def help_estimate_columns(self):
@@ -547,7 +544,7 @@ class Parser(object):
             (?P<columnstring>.*?((?=from)))
             \s*from\s+
             (?P<btable>[^\s]+)\s*
-            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|(?=as)|$)))?\s*$
+            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|(?=as)|$)))?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if (words[0] == 'estimate' and words[2] == 'columns') or (words[0] == 'create' and words[1] == 'column'):
@@ -581,8 +578,43 @@ class Parser(object):
                 name = None
 
             return 'estimate_columns', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                            limit=limit, order_by=order_by, name=name)
-            
+                                            limit=limit, order_by=order_by, name=name), None
+
+    def help_estimate_pairwise_row(self):
+        return "ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]: estimate a pairwise function of columns."
+
+    def parse_estimate_pairwise_row(self, words, orig):
+        match = re.search(r"""
+            estimate\s+pairwise\s+row\s+
+            (?P<functionname>.*?((?=\sfrom)))
+            \s*from\s+
+            (?P<btable>[^\s]+)
+            (\s+for\s+rows\s+(?P<rows>[^\s]+))?
+            (\s+save\s+to\s+(?P<filename>[^\s]+))?
+            (\s+save\s+connected\s+components\s+with\s+threshold\s+(?P<threshold>[^\s]+)\s+(as|into)\s+(?P<components_name>[^\s]+))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'estimate' and words[1] == 'pairwise':
+                return 'help', self.help_estimate_pairwise()
+        else:
+            tablename = match.group('btable').strip()
+            function_name = match.group('functionname')
+            if function_name.strip().lower().split()[0] not in ["similarity"]:
+                return 'help', self.help_estimate_pairwise()
+            filename = match.group('filename') # Could be None
+            row_list = match.group('rows') # Could be None
+            if match.group('components_name') and match.group('threshold'):
+                components_name = match.group('components_name')
+                threshold = float(match.group('threshold'))
+            else:
+                components_name = None
+                threshold = None
+            return 'estimate_pairwise_row', \
+              dict(tablename=tablename, function_name=function_name,
+                   row_list=row_list, components_name=components_name, threshold=threshold), \
+              dict(filename=filename)
+
+        
     def help_estimate_pairwise(self):
         return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <columnlist>]: estimate a pairwise function of columns."
         
@@ -620,7 +652,7 @@ class Parser(object):
 
             
     def help_update_schema(self):
-        return "UPDATE SCHEMA FOR <btable> SET (col0=numerical|categorical|key|ignore)[,...]: must be done before creating models or analyzing."
+        return "UPDATE SCHEMA FOR <btable> SET [<column_name>=(numerical|categorical|key|ignore)[,...]]: must be done before creating models or analyzing."
         
     def parse_update_schema(self, words, orig):
         match = re.search(r"""
@@ -651,8 +683,8 @@ class Parser(object):
                     datatype = 'ignore'
                 else:
                     return 'help', self.help_update_datatypes()
-                mappings[vals[0]] = datatype
-            return 'update_schema', dict(tablename=tablename, mappings=mappings)
+                mappings[vals[0].strip()] = datatype
+            return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
 ############################################################
 # Parsing helper functions: "extract" functions

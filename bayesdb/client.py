@@ -28,6 +28,7 @@ import time
 import ast
 
 import utils
+import data_utils
 import plotting_utils
 import api_utils
 from parser import Parser
@@ -35,7 +36,7 @@ from engine import Engine
 
 class Client(object):
     def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing',
-                 bayesdb_host=None, bayesdb_port=8008):
+                 bayesdb_host=None, bayesdb_port=8008, seed=None):
         """
         Create a client object. The client creates a parser, that is uses to parse all commands,
         and an engine, which is uses to execute all commands. The engine can be remote or local.
@@ -44,33 +45,37 @@ class Client(object):
         self.parser = Parser()
         if bayesdb_host is None or bayesdb_host=='localhost':
             self.online = False
-            self.engine = Engine(crosscat_host, crosscat_port, crosscat_engine_type)
+            self.engine = Engine(crosscat_host, crosscat_port, crosscat_engine_type, seed)
         else:
             self.online = True
             self.hostname = bayesdb_host
             self.port = bayesdb_port
             self.URI = 'http://' + self.hostname + ':%d' % self.port
 
-    def call_bayesdb_engine(self, method_name, args_dict):
+    def call_bayesdb_engine(self, method_name, args_dict, debug=False):
         """
         Helper function used to call the BayesDB engine, whether it is remote or local.
         Accepts method name and arguments for that method as input.
         """
         if self.online:
-            out, id = api_utils.call(method_name, args_dict, self.URI)
+            out, id = aqupi_utils.call(method_name, args_dict, self.URI)
         else:
             method = getattr(self.engine, method_name)
-            try:
+            if debug:
                 out = method(**args_dict)
-            except utils.BayesDBError as e:
-                out = dict(message=str(e))
+            else:
+                # when not in debug mode, catch all BayesDBErrors
+                try:
+                    out = method(**args_dict)
+                except utils.BayesDBError as e:
+                    out = dict(message=str(e), error=True)
         return out
 
-    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False):
+    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """Wrapper around execute."""
-        return self.execute(call_input, pretty, timing, wait, plots, yes)
+        return self.execute(call_input, pretty, timing, wait, plots, yes, debug, pandas_df, pandas_output)
 
-    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False):
+    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """
         Execute a chunk of BQL. This method breaks a large chunk of BQL (like a file)
         consisting of possibly many BQL statements, breaks them up into individual statements,
@@ -90,10 +95,9 @@ class Client(object):
         else:
             print "Invalid input type: expected file or string."
 
-        if not pretty:
-            return_list = []
+        return_list = []
             
-        lines = self.parser.parse(bql_string)
+        lines = self.parser.split_lines(bql_string)
         # Iterate through lines with while loop so we can append within loop.
         while len(lines) > 0:
             line = lines.pop(0)
@@ -103,23 +107,23 @@ class Client(object):
                 user_input = raw_input()
                 if len(user_input) > 0 and (user_input[0] == 'q' or user_input[0] == 's'):
                     continue
-            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes)
+            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, debug=debug, pandas_df=pandas_df, pandas_output=pandas_output)
 
             if type(result) == dict and 'message' in result and result['message'] == 'execute_file':
                 ## special case for one command: execute_file
-                new_lines = self.parser.parse(result['bql_string'])
+                new_lines = self.parser.split_lines(result['bql_string'])
                 lines += new_lines
-            elif not pretty:
-                return_list.append(result)
             if type(call_input) == file:
                 print
 
+            return_list.append(result)
+
         self.parser.reset_root_dir()
-        
+
         if not pretty:
             return return_list
 
-    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False):
+    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
         """
         Accepts a SINGLE BQL STATEMENT as input, parses it, and executes it if it was parsed
         successfully.
@@ -146,12 +150,10 @@ class Client(object):
         elif not parser_out:
             return
 
-        if len(parser_out) == 2:
-            method_name, args_dict = parser_out
+        method_name, args_dict, client_dict = parser_out
+        if client_dict is None:
             client_dict = {}
-        else:
-            method_name, args_dict, client_dict = parser_out
-        
+            
         ## Do stuff now that you know the user's command, but before passing it to engine.
         if method_name == 'execute_file':
             return dict(message='execute_file', bql_string=open(args_dict['filename'], 'r').read())
@@ -167,9 +169,39 @@ class Client(object):
             user_confirmation = raw_input()
             if 'y' != user_confirmation.strip():
                 return dict(message="Operation canceled by user.")
+        elif method_name == 'load_models':
+            pklpath = client_dict['pkl_path']
+            try:
+                models = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
+            except IOError as e:
+                if pklpath[-7:] != '.pkl.gz':
+                    if pklpath[-4:] == '.pkl':
+                        models = pickle.load(open(self.parser.get_absolute_path(pklpath), 'rb'))
+                    else:
+                        pklpath = pklpath + ".pkl.gz"
+                        models = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
+                else:
+                    raise utils.BayesDBError('Models file %s could not be found.' % pklpath)
+            args_dict['models'] = models
+        elif method_name == 'create_btable':
+            if pandas_df is None:
+                header, rows = data_utils.read_csv(client_dict['csv_path'])
+            else:
+                header, rows = data_utils.read_pandas_df(pandas_df)
+            args_dict['header'] = header
+            args_dict['raw_T_full'] = rows
+
 
         ## Call engine.
-        result = self.call_bayesdb_engine(method_name, args_dict)
+        result = self.call_bayesdb_engine(method_name, args_dict, debug)
+
+        ## If error occurred, exit now.
+        if 'error' in result and result['error']:
+            if pretty:
+                print result['message']
+                return result['message']
+            else:
+                return result
 
         ## Do stuff now that engine has given you output, but before printing the result.
         result = self.callback(method_name, args_dict, client_dict, result)
@@ -186,23 +218,29 @@ class Client(object):
         if 'matrix' in result and (plots or client_dict['filename']):
             # Plot matrices
             plotting_utils.plot_matrix(result['matrix'], result['column_names'], result['title'], client_dict['filename'])
-            if 'column_lists' in result:
-                print self.pretty_print(dict(column_lists=result['column_lists']))
-            return self.pretty_print(result)
+            if pretty:
+                if 'column_lists' in result:
+                    print self.pretty_print(dict(column_lists=result['column_lists']))
+                return self.pretty_print(result)
+            else:
+                return result
         if ('plot' in client_dict and client_dict['plot']):
             if (plots or client_dict['filename']):
                 # Plot generalized histograms or scatterplots
                 plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], client_dict['pairwise'])
                 return self.pretty_print(result)
             else:
-                if not result['message']:
+                if 'message' not in result:
                     result['message'] = ""
                 result['message'] = "Your query indicates that you would like to make a plot, but in order to do so, you must either enable plotting in a window or specify a filename to save to by appending 'SAVE TO <filename>' to this command.\n" + result['message']
 
         if pretty:
             pp = self.pretty_print(result)
             print pp
-            return pp
+        
+        if pandas_output and 'data' in result and 'columns' in result:
+            result_pandas_df = data_utils.construct_pandas_df(result)
+            return result_pandas_df
         else:
             if type(result) == dict and 'message' in result.keys():
                 print result['message']
@@ -217,7 +255,13 @@ class Client(object):
         if method_name == 'save_models':
             samples_dict = result
             ## Here is where the models get saved.
-            samples_file = gzip.GzipFile(client_dict['pkl_path'], 'w')
+            pkl_path = client_dict['pkl_path']
+            if pkl_path[-7:] != '.pkl.gz':
+                if pkl_path[-4:] == '.pkl':
+                    pkl_path = pkl_path + ".gz"
+                else:
+                    pkl_path = pkl_path + ".pkl.gz"
+            samples_file = gzip.GzipFile(pkl_path, 'w')
             pickle.dump(samples_dict, samples_file)
             return dict(message="Successfully saved the samples to %s" % client_dict['pkl_path'])
 
@@ -255,6 +299,26 @@ class Client(object):
             """ Pretty-print column list."""
             pt = prettytable.PrettyTable()
             pt.field_names = query_obj['columns']
+            result += str(pt)
+        elif 'row_lists' in query_obj:
+            """ Pretty-print multiple row lists, which are just names and row sizes. """
+            pt = prettytable.PrettyTable()
+            pt.field_names = ('Row List Name', 'Row Count')
+            
+            def get_row_list_sorting_key(x):
+                """ To be used as the key function in a sort. Puts cc_2 ahead of cc_10, e.g. """
+                name, count = x
+                if '_' not in name:
+                    return name
+                s = name.split('_')
+                end = s[-1]
+                start = '_'.join(s[:-1])
+                if utils.is_int(end):
+                    return (start, int(end))
+                return name
+                    
+            for name, count in sorted(query_obj['row_lists'], key=get_row_list_sorting_key):
+                pt.add_row((name, count))
             result += str(pt)
         elif 'column_lists' in query_obj:
             """ Pretty-print multiple column lists. """

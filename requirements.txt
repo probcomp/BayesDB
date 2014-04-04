@@ -11,7 +11,11 @@ pyOpenSSL==0.13
 # numerics and plotting
 numpy==1.7.0
 scipy>=0.11.0
-matplotlib==1.2.0
+matplotlib==1.3.1
+scikit-learn
+pandas >= 0.7.1
+patsy
+statsmodels
 
 # install via install_hcluster.sh if this doesn't work
 hcluster==0.2.0
