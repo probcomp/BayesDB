@@ -12,10 +12,12 @@ Loading data
 Creates a btable by importing data from the specified CSV file. The file must be in CSV format, and the first line must be a header indicating the names of each column.
 
 ::
-   
-   CREATE BTABLE <btable> FROM PANDAS
 
-Creates a btable from a pandas DataFrame object, which must be passed as an additional argument to the client.
+   from bayesdb.client import Client
+   c = Client()
+   c('CREATE BTABLE <btable> FROM PANDAS', pandas_df=my_dataframe)
+
+If you don't have a csv of your dataset, but you have a Pandas dataframe in Python, you can create a btable from a pandas DataFrame object by using the BayesDB Python Client. The dataframe must be passed as an additional argument to the client, as shown above.
 
 ::
 
