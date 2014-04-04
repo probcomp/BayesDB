@@ -173,15 +173,13 @@ def test_simulate():
   global client, test_filenames
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
 
-  assert len(client("simulate qual_score from %s given name='Albany NY' times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
-  assert len(client("simulate qual_score from %s given name='Albany NY' and ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
+  assert len(client("simulate qual_score from %s given name='Albany NY' times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
+  assert len(client("simulate qual_score from %s given name='Albany NY' and ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
 
-  # TODO: returning 0 rows when simulating name?  
-  assert len(client("simulate name from %s given name='Albany NY' and ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
-  assert len(data) == 5
-  assert len(client("simulate name from %s given name='Albany NY', ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
-  assert len(client("simulate name from %s given name='Albany NY' AND ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
-  assert len(client("simulate name from %s given ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]['data']) == 5
+  assert len(client("simulate name from %s given name='Albany NY' and ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
+  assert len(client("simulate name from %s given name='Albany NY', ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
+  assert len(client("simulate name from %s given name='Albany NY' AND ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
+  assert len(client("simulate name from %s given ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
 
 def test_estimate_columns():
   """ smoke test """
@@ -240,10 +238,11 @@ def test_select_whereclause_functions():
   client("select qual_score from %s where predictive probability of qual_score > 0.01" % (test_tablename), debug=True, pretty=False)
   client("select qual_score from %s where predictive probability of name > 0.01" % (test_tablename), debug=True, pretty=False)
   
-  # probability
-  # TODO: these two tests are failing!
-  #client('select qual_score from %s where probability of qual_score = 6 > 0.01' % (test_tablename), debug=True, pretty=False)
-  #client("select qual_score from %s where probability of name='Albany NY' > 0.01" % (test_tablename), debug=True, pretty=False)  
+  # probability: aggregate, shouldn't work
+  with pytest.raises(utils.BayesDBError):  
+    client('select qual_score from %s where probability of qual_score = 6 > 0.01' % (test_tablename), debug=True, pretty=False)
+  with pytest.raises(utils.BayesDBError):      
+    client("select qual_score from %s where probability of name='Albany NY' > 0.01" % (test_tablename), debug=True, pretty=False)  
 
 def test_model_config():
   test_tablename = create_dha()

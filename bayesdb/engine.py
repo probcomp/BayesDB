@@ -456,19 +456,20 @@ class Engine(object):
     if len(Q) > 0:
       out = self.call_backend('simple_predictive_sample', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=Q, n=numpredictions))
     else:
-      out = []
-
+      out = [[] for x in range(numpredictions)]
+    assert type(out) == list and len(out) >= 1 and type(out[0]) == list and len(out) == numpredictions
+    
     # convert to data, columns dict output format
     # map codes to original values
     data = []
-    for vals in out:
+    for out_row in out:
       row = []
       i = 0
       for idx in col_indices:
         if idx in given_col_idxs_to_vals:
           row.append(given_col_idxs_to_vals[idx])
         else:
-          row.append(data_utils.convert_code_to_value(M_c, idx, vals[i]))
+          row.append(data_utils.convert_code_to_value(M_c, idx, out_row[i]))
           i += 1
       data.append(row)
       
