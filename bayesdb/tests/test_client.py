@@ -153,10 +153,13 @@ def test_column_lists():
   client('show columns %s from %s' % (cname1, test_tablename), debug=True, pretty=False)
   client('show columns %s from %s' % (cname2, test_tablename), debug=True, pretty=False)
 
-  tmp = 'asdf.png'
+  tmp = 'asdf_test.png'
   test_filenames.append(tmp)
+  if os.path.exists(tmp):
+    os.remove(tmp)
   client('estimate pairwise dependence probability from %s for columns %s save to %s' % (test_tablename, cname1, tmp), debug=True, pretty=False)
-  # TODO: assert tmp exists
+  assert os.path.exists(tmp)
+
   client('estimate pairwise dependence probability from %s for columns %s' % (test_tablename, cname2), debug=True, pretty=False)
 
   client('select %s from %s limit 10' % (cname1, test_tablename), debug=True, pretty=False)
