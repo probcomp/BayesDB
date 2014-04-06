@@ -302,17 +302,15 @@ non_aggregate_function = similarity_to_function | typicality_function | predicti
 order_by_clause = Group(order_by_keyword + Group((non_aggregate_function) + ZeroOrMore(Suppress(comma_literal) + (non_aggregate_function))).setResultsName("order_by_set")).setResultsName('order_by')
 
 # WHERE <whereclause>
+single_where_condition = Group(non_aggregate_function.setResultsName('function') + 
+                               operation_literal.setResultsName('operation') + 
+                               value.setResultsName('value') + 
+                               Optional(with_confidence_clause))
+
 where_clause = (where_keyword.setResultsName('where_keyword') + 
-                 Group(Group(non_aggregate_function.setResultsName('function') + 
-                             operation_literal.setResultsName('operation') + 
-                             value.setResultsName('value') + 
-                             Optional(with_confidence_clause)) + 
-                       ZeroOrMore(Suppress(and_keyword) + 
-                                  Group(non_aggregate_function.setResultsName('function') + 
-                                        operation_literal.setResultsName('operation') + 
-                                        value.setResultsName('value') + 
-                                        Optional(with_confidence_clause))))
-                 .setResultsName("where_conditions"))
+                Group(single_where_condition + 
+                      ZeroOrMore(Suppress(and_keyword + single_where_condition)))
+                .setResultsName("where_conditions"))
 
 # ------------------------------- Query functions -------------------------- #
 
