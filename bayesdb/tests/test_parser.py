@@ -519,6 +519,16 @@ def test_whereclause_pyparsing():
     assert parsed_25.where_conditions[0].confidence == '.4'
     assert parsed_25.where_conditions[1].confidence == '.6'
     assert parsed_25.where_conditions[2].confidence == '.5'
+    whereclause_26 = "WHERE KEY IN row_list_1 AND column_1 = 'a' AND TYPICALITY > .4"
+    parsed_26 = where_clause.parseString(whereclause_26,parseAll=True)
+    assert parsed_26.where_conditions[0].function.function_id == 'key in'
+    assert parsed_26.where_conditions[0].function.row_list == 'row_list_1'
+    assert parsed_26.where_conditions[1].function.column == 'column_1'
+    assert parsed_26.where_conditions[2].function.function_id == 'typicality'
+
+def test_key_in_rowlist():
+    assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).function.function_id == "key in"
+    assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).function.row_list == "row_list_1"
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')

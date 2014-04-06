@@ -156,6 +156,7 @@ save_connected_components_with_threshold_keyword = Combine(save_keyword + single
                                                            components_keyword + single_white + 
                                                            with_keyword + single_white + 
                                                            threshold_keyword).setResultsName("statement_id")
+key_in_keyword = Combine(key_keyword + single_white + in_keyword)
 
 ## Values/Literals
 float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+') #TODO setParseAction to float/int
@@ -302,9 +303,10 @@ probability_of_function = Group((probability_of_keyword.setResultsName("function
 predictive_probability_of_function = Group(predictive_probability_of_keyword.setResultsName("function_id") + 
                                            identifier.setResultsName("column")).setResultsName("function")
 
-key_in_rowlist_clause = Group(key_keyword.setResultsName("function_id") + in_keyword + identifier.setResultsName("row_list"))
+# KEY IN <row_list>
+key_in_rowlist_clause = Group(key_in_keyword.setResultsName("function_id") + identifier.setResultsName("row_list")).setResultsName('function')
 
-non_aggregate_function = similarity_to_function | typicality_function | predictive_probability_of_function | key_in_rowlist_clause | Group(identifier.setResultsName('column'))
+non_aggregate_function = similarity_to_function | typicality_function | predictive_probability_of_function | Group(identifier.setResultsName('column'))
 
 # -------------------------------- other clauses --------------------------- #
 
@@ -312,9 +314,9 @@ non_aggregate_function = similarity_to_function | typicality_function | predicti
 order_by_clause = Group(order_by_keyword + Group((non_aggregate_function) + ZeroOrMore(Suppress(comma_literal) + (non_aggregate_function))).setResultsName("order_by_set")).setResultsName('order_by')
 
 # WHERE <whereclause>
-single_where_condition = Group(non_aggregate_function.setResultsName('function') + 
-                               operation_literal.setResultsName('operation') + 
-                               value.setResultsName('value') + 
+single_where_condition = Group(((non_aggregate_function.setResultsName('function') + 
+                                 operation_literal.setResultsName('operation') + 
+                                 value.setResultsName('value')) | key_in_rowlist_clause) + 
                                Optional(with_confidence_clause))
 
 where_clause = (where_keyword.setResultsName('where_keyword') + 
