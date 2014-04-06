@@ -112,7 +112,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
     if type(inner_element[0]) is str:
       colname = inner_element[0]
       if M_c['name_to_idx'].has_key(colname.lower()):
-        conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val, confidence))
+        conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
         continue
       raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
     else:
@@ -149,12 +149,12 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
       conds.append(((functions._similarity, (target_row_id, target_column_ids)), op, val))
       continue
     elif inner_element[0].fun_name == "typicality":
-      conds.append(((functions._row_typicality, True), op, val, confidence)) 
+      conds.append(((functions._row_typicality, True), op, val)) 
       continue
     if inner_element[0].fun_name == "predictive probability of":
       if M_c['name_to_idx'].has_key(inner_element[0].column.lower()):
         column_index = M_c['name_to_idx'][inner_element[0].column.lower()]
-        conds.append(((functions._predictive_probability,column_index), op, val, confidence))
+        conds.append(((functions._predictive_probability,column_index), op, val))
         continue
     if inner_element[0].fun_name == "key":
       conds.append(((functions._row_id, None), op, val))
