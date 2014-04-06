@@ -26,6 +26,7 @@ import ast
 import pylab
 import matplotlib.cm
 import time
+import pandas
 
 import data_utils as du
 import select_utils
@@ -131,6 +132,27 @@ def summarize_table(data, columns, M_c):
     Return: columns should be the same, except with another column prepended called like "summaries" or something.
     Return: data should be summaries now.
     """
+
+    # Figure out which columns are continuous and which are discrete
+    cctypes = [x['modeltype'] for x in M_c['column_metadata']]
+
+    # Construct a pandas.DataFrame out of data and columns
+    df = pandas.DataFrame(data=data, columns=columns)
+
+    # Summarizing continuous columns is easy - just run df.describe()
+    summary_continuous = df.describe()
+
+    # Summarize discrete columns here:
+    # number of unique values
+    # 1st-5th most common values, as empirical probabilities
+    #
+
+
+    # Attach continuous and discrete summaries along column axis (unaligned values will be assigned NaN)
+    data = pandas.concat([summary_continuous, summary_discrete], axis=1)
+
+    # Remove row_id column since summary stats of row_id are meaningless?
+
     return data, columns
 
 def column_string_splitter(columnstring, M_c=None, column_lists=None):
