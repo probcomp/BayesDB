@@ -19,6 +19,8 @@
 #
 
 from pyparsing import *
+## uses the module pyparsing. This document provides a very good explanation of pyparsing: 
+## http://www.nmt.edu/tcc/help/pubs/pyparsing/pyparsing.pdf
 
 ## Matches any white space and stores it as a single space
 single_white = White().setParseAction(replaceWith(' '))
@@ -81,6 +83,8 @@ connected_keyword = CaselessKeyword("connected")
 components_keyword = CaselessKeyword("components")
 threshold_keyword = CaselessKeyword("threshold")
 row_keyword = CaselessKeyword("row")
+key_keyword = CaselessKeyword("key")
+in_keyword = CaselessKeyword("in")
 ## Single and plural keywords
 single_model_keyword = CaselessKeyword("model")
 multiple_models_keyword = CaselessKeyword("models")
@@ -254,7 +258,7 @@ quit_keyword = quit_keyword
 # Rows can be identified either by an integer or <column> = <value> where value is unique for the given column
 row_clause = (int_number.setResultsName("row_id") | 
               (identifier.setResultsName("column") + 
-              Suppress(equal_literal) + 
+               Suppress(equal_literal) + 
                value.setResultsName("column_value")))
 
 column_list_clause = Group(identifier + 
@@ -270,7 +274,11 @@ with_confidence_clause = with_confidence_keyword + float_number.setResultsName("
 # -------------------------------- Functions ------------------------------ #
 
 # SIMILARITY TO <row> [WITH RESPECT TO <column>]
-similarity_to_function = Group(similarity_to_keyword.setResultsName('function_id') + row_clause + Optional(with_respect_to_keyword + column_list_clause).setResultsName('with_respect_to')).setResultsName("function") # todo more names less indexes
+similarity_to_function = (Group(similarity_to_keyword.setResultsName('function_id') + 
+                                row_clause + 
+                                Optional(with_respect_to_keyword + column_list_clause)
+                                .setResultsName('with_respect_to'))
+                          .setResultsName("function")) # todo more names less indexes
 
 # TYPICALITY
 typicality_function = Group(typicality_keyword.setResultsName('function_id')).setResultsName('function')
@@ -294,7 +302,9 @@ probability_of_function = Group((probability_of_keyword.setResultsName("function
 predictive_probability_of_function = Group(predictive_probability_of_keyword.setResultsName("function_id") + 
                                            identifier.setResultsName("column")).setResultsName("function")
 
-non_aggregate_function = similarity_to_function | typicality_function | predictive_probability_of_function | identifier
+key_in_rowlist_clause = Group(key_keyword.setResultsName("function_id") + in_keyword + identifier.setResultsName("row_list"))
+
+non_aggregate_function = similarity_to_function | typicality_function | predictive_probability_of_function | key_in_rowlist_clause | Group(identifier.setResultsName('column'))
 
 # -------------------------------- other clauses --------------------------- #
 
@@ -309,7 +319,7 @@ single_where_condition = Group(non_aggregate_function.setResultsName('function')
 
 where_clause = (where_keyword.setResultsName('where_keyword') + 
                 Group(single_where_condition + 
-                      ZeroOrMore(Suppress(and_keyword + single_where_condition)))
+                      ZeroOrMore(Suppress(and_keyword) + single_where_condition))
                 .setResultsName("where_conditions"))
 
 # ------------------------------- Query functions -------------------------- #

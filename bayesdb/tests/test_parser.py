@@ -358,18 +358,18 @@ def test_order_by_clause_pyparsing():
                                              ,parseAll=True)
     order_by_2 = order_by_clause.parseString("ORDER BY column_1,column_2 , column_3"
                                              ,parseAll=True)
-    assert order_by_1.order_by.order_by_set[0]=='column_1'
-    assert order_by_2.order_by.order_by_set.asList()==['column_1','column_2','column_3']
+    assert order_by_1.order_by.order_by_set[0].column=='column_1'
+    assert order_by_2.order_by.order_by_set[1].column=='column_2'
     order_by_3 = order_by_clause.parseString("ORDER BY TYPICALITY",
                                              parseAll=True)
     assert order_by_3.order_by.order_by_set[0].function_id == 'typicality'
     order_by_4 = order_by_clause.parseString("ORDER BY TYPICALITY, column_1",
                                              parseAll=True)
     assert order_by_4.order_by.order_by_set[0].function_id == 'typicality'
-    assert order_by_4.order_by.order_by_set[1] == 'column_1'    
+    assert order_by_4.order_by.order_by_set[1].column == 'column_1'    
     order_by_5 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY",
                                              parseAll=True)
-    assert order_by_5.order_by.order_by_set[0] == 'column_1'
+    assert order_by_5.order_by.order_by_set[0].column == 'column_1'
     assert order_by_5.order_by.order_by_set[1].function_id == 'typicality'
     order_by_6 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1",
                                              parseAll=True)
@@ -378,23 +378,147 @@ def test_order_by_clause_pyparsing():
     
     order_by_7 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1, column_1",
                                              parseAll=True)
-    assert order_by_7.order_by.order_by_set[1] == 'column_1'
+    assert order_by_7.order_by.order_by_set[1].column == 'column_1'
     assert order_by_7.order_by.order_by_set[0].function_id == 'predictive probability of'
     assert order_by_7.order_by.order_by_set[0].column == 'column_1'
 
     order_by_8 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY, PREDICTIVE PROBABILITY OF column_1, column_2, SIMILARITY TO 2, SIMILARITY TO column_1 = 1 WITH RESPECT TO column_4",
                                              parseAll=True)
-    assert order_by_8.order_by.order_by_set[0] == 'column_1'
+    assert order_by_8.order_by.order_by_set[0].column == 'column_1'
     assert order_by_8.order_by.order_by_set[1].function_id == 'typicality'
     assert order_by_8.order_by.order_by_set[2].function_id == 'predictive probability of'
     assert order_by_8.order_by.order_by_set[2].column == 'column_1'
-    assert order_by_8.order_by.order_by_set[3] == 'column_2'
+    assert order_by_8.order_by.order_by_set[3].column == 'column_2'
     assert order_by_8.order_by.order_by_set[4].function_id == 'similarity to'
     assert order_by_8.order_by.order_by_set[4].row_id == '2'
     assert order_by_8.order_by.order_by_set[5].function_id == 'similarity to'
     assert order_by_8.order_by.order_by_set[5].column == 'column_1'
     assert order_by_8.order_by.order_by_set[5].column_value == '1'
     assert order_by_8.order_by.order_by_set[5].with_respect_to[1][0] == 'column_4' #todo names instead of indexes
+
+def test_whereclause_pyparsing():
+    # WHERE <column> <operation> <value>
+    whereclause_1 = "WHERE column_1 = 1"
+    parsed_1 = where_clause.parseString(whereclause_1,parseAll=True)
+    assert parsed_1.where_keyword == 'where'
+    assert parsed_1.where_conditions[0].function.column == 'column_1'
+    assert parsed_1.where_conditions[0].operation == '='
+    assert parsed_1.where_conditions[0].value == '1'
+    whereclause_2 = "WHERE column_1 <= 1"
+    parsed_2 = where_clause.parseString(whereclause_2,parseAll=True)
+    assert parsed_2.where_conditions[0].function.column == 'column_1'
+    assert parsed_2.where_conditions[0].operation == '<='
+    assert parsed_2.where_conditions[0].value == '1'
+    whereclause_3 = "WHERE column_1 > 1.0"
+    parsed_3 = where_clause.parseString(whereclause_3,parseAll=True)
+    assert parsed_3.where_conditions[0].operation == '>'
+    assert parsed_3.where_conditions[0].value == '1.0'
+    whereclause_4 = "WHERE column_1 = a"
+    parsed_4 = where_clause.parseString(whereclause_4,parseAll=True)
+    assert parsed_4.where_conditions[0].operation == '='
+    assert parsed_4.where_conditions[0].value == 'a'
+    whereclause_5 = "WHERE column_1 = 'a'"
+    parsed_5 = where_clause.parseString(whereclause_5,parseAll=True)
+    assert parsed_5.where_conditions[0].value == 'a'
+    whereclause_6 = "WHERE column_1 = 'two words'"
+    parsed_6 = where_clause.parseString(whereclause_6,parseAll=True)
+    assert parsed_6.where_conditions[0].value == 'two words'
+    # Functions
+    whereclause_7 = "WHERE TYPICALITY > .8"
+    parsed_7 = where_clause.parseString(whereclause_7,parseAll=True)
+    assert parsed_7.where_conditions[0].function.function_id == 'typicality'
+    assert parsed_7.where_conditions[0].operation == '>'
+    assert parsed_7.where_conditions[0].value == '.8'
+    whereclause_8 = "WHERE PREDICTIVE PROBABILITY OF column_1 > .1"
+    parsed_8 = where_clause.parseString(whereclause_8,parseAll=True)
+    assert parsed_8.where_conditions[0].function.function_id == 'predictive probability of'
+    assert parsed_8.where_conditions[0].function.column == 'column_1'
+    assert parsed_8.where_conditions[0].operation == '>'
+    assert parsed_8.where_conditions[0].value == '.1'
+    whereclause_9 = "WHERE SIMILARITY TO 2 > .1"
+    parsed_9 = where_clause.parseString(whereclause_9,parseAll=True)
+    assert parsed_9.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_9.where_conditions[0].function.row_id == '2'
+    assert parsed_9.where_conditions[0].operation == '>'
+    assert parsed_9.where_conditions[0].value == '.1'
+    whereclause_10 = "WHERE SIMILARITY TO 2 WITH RESPECT TO column_1 > .4"
+    parsed_10 = where_clause.parseString(whereclause_10,parseAll=True)
+    assert parsed_10.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_10.where_conditions[0].function.row_id == '2'
+    assert parsed_10.where_conditions[0].function.with_respect_to.column_list[0] == 'column_1'
+    assert parsed_10.where_conditions[0].operation == '>'
+    assert parsed_10.where_conditions[0].value == '.4'
+    whereclause_11 = "WHERE SIMILARITY TO column_1 = 1 = .5"
+    parsed_11 = where_clause.parseString(whereclause_11,parseAll=True)
+    assert parsed_11.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_11.where_conditions[0].function.column == 'column_1'
+    assert parsed_11.where_conditions[0].function.column_value == '1'
+    assert parsed_11.where_conditions[0].operation == '='
+    assert parsed_11.where_conditions[0].value == '.5'
+    whereclause_12 = "WHERE SIMILARITY TO column_1 = 'a' WITH RESPECT TO column_2 > .5"
+    parsed_12 = where_clause.parseString(whereclause_12,parseAll=True)
+    assert parsed_12.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_12.where_conditions[0].function.column == 'column_1'
+    assert parsed_12.where_conditions[0].function.column_value == 'a'
+    assert parsed_12.where_conditions[0].operation == '>'
+    assert parsed_12.where_conditions[0].value == '.5'    
+    assert parsed_12.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
+    whereclause_13 = "WHERE SIMILARITY TO column_1 = 1.2 WITH RESPECT TO column_2 > .5"
+    parsed_13 = where_clause.parseString(whereclause_13,parseAll=True)
+    assert parsed_13.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_13.where_conditions[0].function.column == 'column_1'
+    assert parsed_13.where_conditions[0].function.column_value == '1.2'
+    assert parsed_13.where_conditions[0].operation == '>'
+    assert parsed_13.where_conditions[0].value == '.5'    
+    assert parsed_13.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
+    whereclause_14 = "WHERE SIMILARITY TO column_1 = a WITH RESPECT TO column_2 > .5"
+    parsed_14 = where_clause.parseString(whereclause_14,parseAll=True)
+    assert parsed_14.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_14.where_conditions[0].function.column == 'column_1'
+    assert parsed_14.where_conditions[0].function.column_value == 'a'
+    assert parsed_14.where_conditions[0].operation == '>'
+    assert parsed_14.where_conditions[0].value == '.5'    
+    assert parsed_14.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
+    # With Confidence
+    whereclause_15 = "WHERE TYPICALITY > .8 WITH CONFIDENCE .5"
+    parsed_15 = where_clause.parseString(whereclause_15,parseAll=True)
+    assert parsed_15.where_conditions[0].confidence == '.5'
+    whereclause_16 = "WHERE PREDICTIVE PROBABILITY OF column_1 > .1 WITH CONFIDENCE .5"
+    parsed_16 = where_clause.parseString(whereclause_16,parseAll=True)
+    assert parsed_16.where_conditions[0].confidence == '.5'
+    whereclause_17 = "WHERE SIMILARITY TO 2 > .1 WITH CONFIDENCE .5"
+    parsed_17 = where_clause.parseString(whereclause_17,parseAll=True)
+    assert parsed_17.where_conditions[0].confidence == '.5'
+    whereclause_18 = "WHERE SIMILARITY TO 2 WITH RESPECT TO column_1 > .4 WITH CONFIDENCE .5"
+    parsed_18 = where_clause.parseString(whereclause_18,parseAll=True)
+    assert parsed_18.where_conditions[0].confidence == '.5'
+    whereclause_19 = "WHERE SIMILARITY TO column_1 = 1 = .5 WITH CONFIDENCE .5"
+    parsed_19 = where_clause.parseString(whereclause_19,parseAll=True)
+    assert parsed_19.where_conditions[0].confidence == '.5'
+    whereclause_20 = "WHERE SIMILARITY TO column_1 = 'a' WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    parsed_20 = where_clause.parseString(whereclause_20,parseAll=True)
+    assert parsed_20.where_conditions[0].confidence == '.5'
+    whereclause_21 = "WHERE SIMILARITY TO column_1 = 1.2 WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    parsed_21 = where_clause.parseString(whereclause_21,parseAll=True)
+    assert parsed_21.where_conditions[0].confidence == '.5'
+    whereclause_22 = "WHERE SIMILARITY TO column_1 = a WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    parsed_22 = where_clause.parseString(whereclause_22,parseAll=True)
+    assert parsed_22.where_conditions[0].confidence == '.5'
+    # AND
+    whereclause_23 = "WHERE column_1 = 'a' AND column_2 >= 3"
+    parsed_23 = where_clause.parseString(whereclause_23,parseAll=True)
+    assert parsed_23.where_conditions[0].function.column == 'column_1'
+    assert parsed_23.where_conditions[1].function.column == 'column_2'
+    whereclause_24 = "WHERE TYPICALITY > .8 AND PREDICTIVE PROBABILITY OF column_1 > .1 AND SIMILARITY TO 2 > .1"
+    parsed_24 = where_clause.parseString(whereclause_24,parseAll=True)
+    assert parsed_24.where_conditions[0].function.function_id == 'typicality'
+    assert parsed_24.where_conditions[1].function.function_id == 'predictive probability of'
+    assert parsed_24.where_conditions[2].function.function_id == 'similarity to'
+    whereclause_25 = "WHERE TYPICALITY > .8 WITH CONFIDENCE .4 AND PREDICTIVE PROBABILITY OF column_1 > .1 WITH CONFIDENCE .6 AND SIMILARITY TO 2 > .1 WITH CONFIDENCE .5"
+    parsed_25 = where_clause.parseString(whereclause_25,parseAll=True)
+    assert parsed_25.where_conditions[0].confidence == '.4'
+    assert parsed_25.where_conditions[1].confidence == '.6'
+    assert parsed_25.where_conditions[2].confidence == '.5'
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
