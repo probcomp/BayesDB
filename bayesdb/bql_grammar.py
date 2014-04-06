@@ -314,9 +314,10 @@ non_aggregate_function = similarity_to_function | typicality_function | predicti
 order_by_clause = Group(order_by_keyword + Group((non_aggregate_function) + ZeroOrMore(Suppress(comma_literal) + (non_aggregate_function))).setResultsName("order_by_set")).setResultsName('order_by')
 
 # WHERE <whereclause>
-single_where_condition = Group((non_aggregate_function.setResultsName('function') + 
+single_where_condition = Group(((non_aggregate_function.setResultsName('function') + 
                                  operation_literal.setResultsName('operation') + 
-                                 value.setResultsName('value')) | key_in_rowlist_clause)
+                                 value.setResultsName('value')) | key_in_rowlist_clause) + 
+                               Optional(with_confidence_clause))
 
 where_clause = (where_keyword.setResultsName('where_keyword') + 
                 Group(single_where_condition + 
