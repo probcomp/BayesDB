@@ -312,19 +312,23 @@ def test_drop_models():
 def test_analyze():
     method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 3 iterations')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None, ct_kernel=0)
 
     method, args, client_dict = parser.parse_statement('analyze t for 6 iterations')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None)
+    assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None, ct_kernel=0)
 
     method, args, client_dict = parser.parse_statement('analyze t for 7 seconds')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7)
+    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7, ct_kernel=0)
     
     method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 7 seconds')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=0)
+
+    method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 7 seconds with mh kernel')
+    assert method == 'analyze'
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=1)    
 
 def test_load_models():
     method, args, client_dict = parser.parse_statement('load models fn for t')
