@@ -374,3 +374,7 @@ def test_pandas():
   client("drop btable %s" % (test_tablename), yes=True)
   client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df)
 
+def test_select_where_col_equal_val():
+  basic_similarity = client('select * from dha where similarity to 1 > .6 limit 5',pretty=False, debug=True)[0]['row_id']
+  col_val_similarity = client('select * from dha where similarity to name = "Akron OH" > .6 limit 5',pretty=False, debug=True)[0]['row_id']
+  assert all(basic_similarity & col_val_similarity)
