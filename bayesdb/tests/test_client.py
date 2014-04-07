@@ -147,7 +147,7 @@ def test_column_lists():
   client('show columns %s from %s' % (cname1, test_tablename), debug=True, pretty=False)
   with pytest.raises(utils.BayesDBColumnListDoesNotExistError):  
     client('show columns %s from %s' % (cname2, test_tablename), debug=True, pretty=False)  
-  client('estimate columns from %s where typicality > 0.1 as %s' % (test_tablename, cname1), debug=True, pretty=False)
+  client('estimate columns from %s order by typicality limit 5 as %s' % (test_tablename, cname1), debug=True, pretty=False)
   client('estimate columns from %s limit 5 as %s' % (test_tablename, cname2), debug=True, pretty=False)  
   client('show column lists for %s' % test_tablename, debug=True, pretty=False)
   client('show columns %s from %s' % (cname1, test_tablename), debug=True, pretty=False)
