@@ -24,11 +24,13 @@ import sys
 
 class BayesDBApp(Cmd):
   """Provides "interactive mode" features."""
+  Cmd.redirector = '>>>'
 
   def __init__(self, client):
     self.client = client
     self.prompt = 'bql> '
     Cmd.__init__(self, 'tab')
+
 
   def do_show(self, line):
     self.client('show ' + str(line))
