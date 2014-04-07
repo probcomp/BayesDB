@@ -374,3 +374,16 @@ def test_pandas():
   client("drop btable %s" % (test_tablename), yes=True)
   client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df)
 
+def test_summarize():
+  test_tablename = create_dha()
+  global client
+
+  # Test that summarize produces a count and mode for continuous and discrete columns.
+  out = client('summarize select name, qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
+  modes = out.ix[['count', 'mode1'],:]
+
+  # Test that it works on columns of predictive functions.
+  client('summarize select typicality of qual_score, predictive probability of name from %s' % (test_tablename), debug=True, pretty=False)
+
+  # Test shorthand: summary for all columns in btable
+  client('summarize %s' % (test_tablename), debug=True, pretty=False)
