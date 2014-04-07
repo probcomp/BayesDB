@@ -134,22 +134,40 @@ def summarize_table(data, columns, M_c):
     """
 
     # Figure out which columns are continuous and which are discrete
-    cctypes = [x['modeltype'] for x in M_c['column_metadata']]
+    # cctypes = [x['modeltype'] for x in M_c['column_metadata']]
 
     # Construct a pandas.DataFrame out of data and columns
     df = pandas.DataFrame(data=data, columns=columns)
 
-    # Summarizing continuous columns is easy - just run df.describe()
-    summary_continuous = df.describe()
+    # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
+    # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a 
+    # discrete variable with numeric values might not have meaning, but it's easier just to do it and 
+    # leave interpretation to the user, rather than try to figure out what's meaningful, especially with 
+    # columns that are the result of predictive functions.
+    summary_describe = df.apply(lambda x: x.describe())
 
-    # Summarize discrete columns here:
-    # number of unique values
-    # 1st-5th most common values, as empirical probabilities
-    #
+    # Add the top 5 most frequent values for each column:
+    def get_column_freqs(x, n=5):
+        """
+        Function to return most frequent n values of each column of the DataFrame being summarized.
+        Input: a DataFrame column, by default as Series type
 
+        Return: most frequent n values in x. Fill with numpy.nan if fewer than n unique values exist.
+        """
+        x_values = list(x.value_counts().index)
+        if len(x_values) < n:
+            extend_length = n - len(x_values)
+            x_values.extend([numpy.nan] * extend_length)
 
-    # Attach continuous and discrete summaries along column axis (unaligned values will be assigned NaN)
-    data = pandas.concat([summary_continuous, summary_discrete], axis=1)
+        stats_index = ['mode1', 'mode2', 'mode3', 'mode4', 'mode5']
+        return pandas.Series(data = x_values, index = stats_index)
+
+    summary_freqs = df.apply(lambda x: get_column_freqs(x))
+
+    # Replace 'top' in row index with 'mode' for clearer meaning
+
+    # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
+    data = pandas.concat([summary_describe, summary_freqs], axis=0)
 
     # Remove row_id column since summary stats of row_id are meaningless?
 
