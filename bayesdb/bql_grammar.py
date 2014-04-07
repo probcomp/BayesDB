@@ -166,7 +166,7 @@ equal_literal = Literal("=")
 semicolon_literal = Literal(";")
 comma_literal = Literal(",")
 hyphen_literal = Literal("-")
-identifier = Word(alphas, alphanums + "_.")
+identifier = Word(alphas, alphanums + "_.").setParseAction(downcaseTokens)
 btable = identifier.setResultsName("btable")
 # single and double quotes inside value must be escaped. 
 value = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(printables)| float_number

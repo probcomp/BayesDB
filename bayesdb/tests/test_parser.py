@@ -207,7 +207,7 @@ def test_simple_functions():
 def test_update_schema_pyparsing():
     update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
     assert update_schema_1.statement_id == 'update schema for'
-    assert update_schema_1.btable == 'test_btablE'
+    assert update_schema_1.btable == 'test_btable'
     assert update_schema_1.type_clause[0][0] == 'col_1'
     assert update_schema_1.type_clause[0][1] == 'categorical'
     assert update_schema_1.type_clause[1][0] == 'col.2'
