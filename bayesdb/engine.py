@@ -270,7 +270,7 @@ class Engine(object):
       return dict(columns=['model_id', 'iterations', 'model_config'], data=data)
     
 
-  def analyze(self, tablename, model_indices=None, iterations=None, seconds=None):
+  def analyze(self, tablename, model_indices=None, iterations=None, seconds=None, ct_kernel=0):
     """
     Run analyze for the selected table. model_indices may be 'all' or None to indicate all models.
 
@@ -312,6 +312,8 @@ class Engine(object):
 
     analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True,
                         kernel_list=kernel_list)
+    if ct_kernel != 0:
+      analyze_args['CT_KERNEL'] = ct_kernel
     
     analyze_args['n_steps'] = iterations
     if seconds is not None:

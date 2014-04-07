@@ -264,6 +264,7 @@ class Parser(object):
             \s*for\s+
             ((?P<iterations>\d+)\s+iteration(s)?)?
             ((?P<seconds>\d+)\s+second(s)?)?
+            (\s*with\s+(?P<kernel>[^\s]+)\s+kernel)?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None or (match.group('iterations') is None and match.group('seconds') is None):
             if words[0] == 'analyze':
@@ -287,9 +288,15 @@ class Parser(object):
             seconds = match.group('seconds')
             if seconds is not None:
                 seconds = int(seconds)
+
+            kernel = match.group('kernel')
+            if kernel is not None and kernel.strip().lower()=='mh':
+                ct_kernel = 1
+            else:
+                ct_kernel = 0
                 
             return 'analyze', dict(tablename=tablename, model_indices=model_indices,
-                                   iterations=iterations, seconds=seconds), None
+                                   iterations=iterations, seconds=seconds, ct_kernel=ct_kernel), None
 
             
     def help_infer(self):
