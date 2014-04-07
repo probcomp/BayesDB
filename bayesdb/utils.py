@@ -137,7 +137,7 @@ def summarize_table(data, columns, M_c):
     df = pandas.DataFrame(data=data, columns=columns)
 
     # Remove row_id column since summary stats of row_id are meaningless.
-    summary_data.drop(['row_id'], inplace=True, axis=1)
+    df.drop(['row_id'], inplace=True, axis=1)
 
     # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
     # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a 
@@ -158,6 +158,8 @@ def summarize_table(data, columns, M_c):
         if len(x_values) < n:
             extend_length = n - len(x_values)
             x_values.extend([numpy.nan] * extend_length)
+        elif len(x_values) > n:
+            x_values = x_values[:n]
 
         x_index = ['mode' + str(i) for i in range(1, n + 1)]
         return pandas.Series(data = x_values, index = x_index)
@@ -169,6 +171,11 @@ def summarize_table(data, columns, M_c):
     # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
     summary_data = pandas.concat([summary_describe, summary_freqs], axis=0)
 
+    # Insert column of stat descriptions
+    summary_data.insert(0, 'stat', summary_data.index)
+
+    data = summary_data.to_records(index=False)
+    columns = list(summary_data.columns)
     return data, columns
 
 def column_string_splitter(columnstring, M_c=None, column_lists=None):
