@@ -603,14 +603,14 @@ def test_select():
 
     method, args, client_dict = parser.parse_statement('select * from t')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot)
+             limit=limit, order_by=order_by, plot=plot, modelids=None)
     assert method == 'select'
     assert args == d
 
     columnstring = 'a, b, a_b'
     method, args, client_dict = parser.parse_statement('select a, b, a_b from t')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot)
+             limit=limit, order_by=order_by, plot=plot, modelids=None)
     assert method == 'select'
     assert args == d
 
@@ -618,21 +618,21 @@ def test_select():
     columnstring = '*'
     method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot)
+             limit=limit, order_by=order_by, plot=plot, modelids=None)
     assert method == 'select'
     assert args == d
 
     limit = 10
     method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7 limit 10')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot)
+             limit=limit, order_by=order_by, plot=plot, modelids=None)
     assert method == 'select'
     assert args == d
 
     order_by = [('b', False)]
     method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7 order by b limit 10')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot)
+             limit=limit, order_by=order_by, plot=plot, modelids=None)
     assert method == 'select'
     assert args == d
 
