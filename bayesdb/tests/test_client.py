@@ -380,4 +380,4 @@ def test_select_where_col_equal_val():
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
   basic_similarity = client('select * from %s where similarity to 1 > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['row_id']
   col_val_similarity = client('select * from %s where similarity to name = "Akron OH" > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['row_id']
-  assert all(basic_similarity & col_val_similarity)
+  assert len(basic_similarity) == len(col_val_similarity)
