@@ -133,11 +133,11 @@ def summarize_table(data, columns, M_c):
     Return: data should be summaries now.
     """
 
-    # Figure out which columns are continuous and which are discrete
-    # cctypes = [x['modeltype'] for x in M_c['column_metadata']]
-
     # Construct a pandas.DataFrame out of data and columns
     df = pandas.DataFrame(data=data, columns=columns)
+
+    # Remove row_id column since summary stats of row_id are meaningless.
+    summary_data.drop(['row_id'], inplace=True, axis=1)
 
     # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
     # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a 
@@ -146,7 +146,7 @@ def summarize_table(data, columns, M_c):
     # columns that are the result of predictive functions.
     summary_describe = df.apply(lambda x: x.describe())
 
-    # Add the top 5 most frequent values for each column:
+    # Function to calculate the most frequent values for each column
     def get_column_freqs(x, n=5):
         """
         Function to return most frequent n values of each column of the DataFrame being summarized.
@@ -159,17 +159,15 @@ def summarize_table(data, columns, M_c):
             extend_length = n - len(x_values)
             x_values.extend([numpy.nan] * extend_length)
 
-        stats_index = ['mode1', 'mode2', 'mode3', 'mode4', 'mode5']
-        return pandas.Series(data = x_values, index = stats_index)
+        x_index = ['mode' + str(i) for i in range(1, n + 1)]
+        return pandas.Series(data = x_values, index = x_index)
 
     summary_freqs = df.apply(lambda x: get_column_freqs(x))
 
     # Replace 'top' in row index with 'mode' for clearer meaning
 
     # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
-    data = pandas.concat([summary_describe, summary_freqs], axis=0)
-
-    # Remove row_id column since summary stats of row_id are meaningless?
+    summary_data = pandas.concat([summary_describe, summary_freqs], axis=0)
 
     return data, columns
 
