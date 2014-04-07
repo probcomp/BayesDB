@@ -280,6 +280,19 @@ def test_model_config():
   with pytest.raises(utils.BayesDBError):
     client.engine.initialize_models(test_tablename, 2, 'crp mixture')
 
+def test_using_models():
+  """ smoke test """
+  test_tablename = create_dha()
+  global client, test_filenames
+  client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
+
+  client('select name from %s using models 1' % test_tablename, debug=True, pretty=False)
+  client('infer name from %s with confidence 0.1 limit 10 using models 2' % test_tablename, debug=True, pretty=False)
+  client("simulate qual_score from %s given name='Albany NY' times 5 using models 1-2" % test_tablename, debug=True, pretty=False)
+  client('estimate columns from %s limit 5 using models 1-2' % test_tablename, debug=True, pretty=False)
+  client('estimate pairwise dependence probability from %s using models 1' % (test_tablename), debug=True, pretty=False)
+  client('estimate pairwise row similarity from %s save connected components with threshold 0.1 as rcc using models 1-2' % test_tablename, debug=True, pretty=False)  
+  
 def test_select():
   """ smoke test """
   test_tablename = create_dha()

@@ -300,7 +300,7 @@ class Parser(object):
 
             
     def help_infer(self):
-        return "INFER [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <file>]: like select, but imputes (fills in) missing values."
+        return "INFER [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [SAVE TO <file>]: like select, but imputes (fills in) missing values."
         
     def parse_infer(self, words, orig):
         match = re.search(r"""
@@ -338,7 +338,7 @@ class Parser(object):
                 numsamples = int(numsamples)
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-
+            modelids = self.extract_using_models(orig)
 
             plot = match.group('plot') is not None
             if plot:
@@ -346,7 +346,7 @@ class Parser(object):
                 pairwise = match.group('pairwise') is not None
             else:
                 scatter = False
-                pairwise = False
+                pairwise = False                
                 
             if match.group('filename'):
                 filename = match.group('filename')
@@ -355,7 +355,7 @@ class Parser(object):
             return 'infer', \
                    dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
                         confidence=confidence, whereclause=whereclause, limit=limit,
-                        numsamples=numsamples, order_by=order_by, plot=plot), \
+                        numsamples=numsamples, order_by=order_by, plot=plot, modelids=modelids), \
                    dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
 
             
@@ -404,7 +404,7 @@ class Parser(object):
 
             
     def help_select(self):
-        return 'SELECT [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <filename>]'
+        return 'SELECT [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [SAVE TO <filename>]'
         
     def parse_select(self, words, orig):
         match = re.search(r"""
@@ -429,6 +429,7 @@ class Parser(object):
                 whereclause = whereclause.strip()
             limit = self.extract_limit(orig)
             orig, order_by = self.extract_order_by(orig)
+            modelids = self.extract_using_models(orig)
 
             plot = match.group('plot') is not None
             if plot:
@@ -444,12 +445,12 @@ class Parser(object):
                 filename = None
 
             return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                  limit=limit, order_by=order_by, plot=plot), \
+                                  limit=limit, order_by=order_by, plot=plot, modelids=modelids), \
               dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
 
     def help_simulate(self):
-        return "SIMULATE [HIST|SCATTER [PAIRWISE]] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <filename>]: simulate new datapoints based on the underlying model."
+        return "SIMULATE [HIST|SCATTER [PAIRWISE]] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [USING MODEL[S] <id>-<id>] [SAVE TO <filename>]: simulate new datapoints based on the underlying model."
 
     def parse_simulate(self, words, orig):
         match = re.search(r"""
@@ -475,7 +476,8 @@ class Parser(object):
             numpredictions = int(match.group('times'))
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-
+            modelids = self.extract_using_models(orig)
+            
             plot = match.group('plot') is not None
             if plot:
                 scatter = 'scatter' in match.group('plot')
@@ -490,7 +492,7 @@ class Parser(object):
                 filename = None            
             return 'simulate', \
                     dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
-                         givens=givens, numpredictions=numpredictions, order_by=order_by, plot=plot), \
+                         givens=givens, numpredictions=numpredictions, order_by=order_by, plot=plot, modelids=modelids), \
                     dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
     def help_show_row_lists(self):
@@ -543,7 +545,7 @@ class Parser(object):
 
             
     def help_estimate_columns(self):
-        return "(ESTIMATE COLUMNS | CREATE COLUMN LIST) [<column_names>] FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>] [AS <column_list>]"
+        return "(ESTIMATE COLUMNS | CREATE COLUMN LIST) [<column_names>] FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [AS <column_list>]"
 
     def parse_estimate_columns(self, words, orig):
         match = re.search(r"""
@@ -573,6 +575,7 @@ class Parser(object):
                 
             limit = self.extract_limit(orig)                
             orig, order_by = self.extract_order_by(orig)
+            modelids = self.extract_using_models(orig)            
             
             name_match = re.search(r"""
               as\s+
@@ -585,10 +588,10 @@ class Parser(object):
                 name = None
 
             return 'estimate_columns', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                            limit=limit, order_by=order_by, name=name), None
+                                            limit=limit, order_by=order_by, name=name, modelids=modelids), None
 
     def help_estimate_pairwise_row(self):
-        return "ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]: estimate a pairwise function of columns."
+        return "ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [USING MODEL[S] <id>-<id>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]: estimate a pairwise function of columns."
 
     def parse_estimate_pairwise_row(self, words, orig):
         match = re.search(r"""
@@ -616,14 +619,15 @@ class Parser(object):
             else:
                 components_name = None
                 threshold = None
+            modelids = self.extract_using_models(orig)                            
             return 'estimate_pairwise_row', \
               dict(tablename=tablename, function_name=function_name,
-                   row_list=row_list, components_name=components_name, threshold=threshold), \
+                   row_list=row_list, components_name=components_name, threshold=threshold, modelids=modelids), \
               dict(filename=filename)
 
         
     def help_estimate_pairwise(self):
-        return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <columnlist>]: estimate a pairwise function of columns."
+        return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [USING MODEL[S] <id>-<id>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <columnlist>]: estimate a pairwise function of columns."
         
     def parse_estimate_pairwise(self, words, orig):
         match = re.search(r"""
@@ -651,9 +655,10 @@ class Parser(object):
             else:
                 components_name = None
                 threshold = None
+            modelids = self.extract_using_models(orig)                            
             return 'estimate_pairwise', \
               dict(tablename=tablename, function_name=function_name,
-                   column_list=column_list, components_name=components_name, threshold=threshold), \
+                   column_list=column_list, components_name=components_name, threshold=threshold, modelids=modelids), \
               dict(filename=filename)
 
 
@@ -712,6 +717,24 @@ class Parser(object):
             return limit
         else:
             return float('inf')
+
+    def extract_using_models(self, orig):
+        """
+        """
+        match = re.search(r"""
+            (model(s)?\s+
+              (((?P<start>\d+)\s*-\s*(?P<end>\d+)) | (?P<id>\d+)) )?
+        """, orig, flags = re.VERBOSE | re.IGNORECASE)
+        if match:
+            modelids = None
+            start = match.group('start')
+            end = match.group('end')
+            if start is not None and end is not None:
+                modelids = range(int(start), int(end)+1)
+            id = match.group('id')
+            if id is not None:
+                modelids = [int(id)]
+            return modelids
 
 
     def extract_order_by(self, orig):
