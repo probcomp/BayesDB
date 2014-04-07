@@ -161,7 +161,7 @@ key_in_keyword = Combine(key_keyword + single_white + in_keyword)
 ## Values/Literals
 float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+') #TODO setParseAction to float/int
 int_number = Word(nums)
-operation_literal = oneOf("<= >= = < > in")
+operation_literal = oneOf("<= >= = < >")
 equal_literal = Literal("=")
 semicolon_literal = Literal(";")
 comma_literal = Literal(",")
@@ -335,7 +335,3 @@ where_clause = (where_keyword.setResultsName('where_keyword') +
 # ESTIMATE COLUMNS
 
 # ESTIMATE PAIRWISE
-
-
-# for debugging
-print 'imported bql_grammar'
