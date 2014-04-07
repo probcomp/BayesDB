@@ -43,7 +43,11 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
   ## List of (c_idx, op, val) tuples.
   conds = list() 
   operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
-  top_level_parse = bql_grammar.where_clause.parseString(whereclause,parseAll=True)
+  try:
+    top_level_parse = bql_grammar.where_clause.parseString(whereclause,parseAll=True)
+  except ParseException as x:
+    
+    raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
   for inner_element in top_level_parse.where_conditions:
     if inner_element.confidence != '':
       confidence = inner_element.confidence
