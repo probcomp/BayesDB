@@ -45,7 +45,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
   operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
   top_level_parse = bql_grammar.where_clause.parseString(whereclause,parseAll=True)
   for inner_element in top_level_parse.where_conditions:
-
     if inner_element.confidence != '':
       confidence = inner_element.confidence
     else:
@@ -68,10 +67,8 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
     elif inner_element.function.function_id == 'typicality':
       conds.append(((functions._row_typicality, True), op, val))
       continue
-      
     elif inner_element.function.function_id == 'similarity to':
       if inner_element.function.row_id == '':
-
         column_name = inner_element.function.column
         try:
           column_value = int(inner_element.function.column_value)
@@ -81,7 +78,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
           except ValueError:
             column_value = inner_element.function.column_value 
         column_index =  M_c['name_to_idx'][column_name]
-
         for row_id, T_row in enumerate(T):
           row_values = convert_row_from_codes_to_values(T_row, M_c)
           if row_values[column_index] == column_value:
@@ -98,7 +94,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
         target_column_ids = [M_c['name_to_idx'][colname] for colname in target_colnames]
       conds.append(((functions._similarity, (target_row_id, target_column_ids)), op, val))
       continue
-
     elif inner_element.function.function_id == "key in":
       val = inner_element.function.row_list
       op = operator_map['in']
@@ -110,7 +105,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
         conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
         continue
       raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
-
     raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
   return conds
 
