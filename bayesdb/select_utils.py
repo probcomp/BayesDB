@@ -37,7 +37,6 @@ import bayesdb.bql_grammar as bql_grammar
 
 def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
   whereclause = "WHERE " + whereclause # Temporary while partially switched to pyparsing
-  
   if whereclause == "WHERE ":
     return ""
   ## Create conds: the list of conditions in the whereclause.
@@ -46,6 +45,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
   operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
   top_level_parse = bql_grammar.where_clause.parseString(whereclause,parseAll=True)
   for inner_element in top_level_parse.where_conditions:
+
     if inner_element.confidence != '':
       confidence = inner_element.confidence
     else:
@@ -60,13 +60,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
     else:
       val = raw_val
     ## simple where column = value statement
-    if inner_element.function.column != '':
-      colname = inner_element.function.column
-      if M_c['name_to_idx'].has_key(colname.lower()):
-        conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
-        continue
-      raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
-    elif inner_element.function.function_id == 'predictive probability of':
+    if inner_element.function.function_id == 'predictive probability of':
       if M_c['name_to_idx'].has_key(inner_element.function.column):
         column_index = M_c['name_to_idx'][inner_element.function.column]
         conds.append(((functions._predictive_probability,column_index), op, val))
@@ -87,8 +81,9 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
           except ValueError:
             column_value = inner_element.function.column_value 
         column_index =  M_c['name_to_idx'][column_name]
+
         for row_id, T_row in enumerate(T):
-          row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
+          row_values = convert_row_from_codes_to_values(T_row, M_c)
           if row_values[column_index] == column_value:
             target_row_id = row_id
             break
@@ -109,6 +104,13 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
       op = operator_map['in']
       conds.append(((functions._row_id, None), op, val))
       continue
+    elif inner_element.function.column != '':
+      colname = inner_element.function.column
+      if M_c['name_to_idx'].has_key(colname.lower()):
+        conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
+        continue
+      raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
+
     raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
   return conds
 
