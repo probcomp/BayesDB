@@ -154,14 +154,21 @@ def summarize_table(data, columns, M_c):
 
         Return: most frequent n values in x. Fill with numpy.nan if fewer than n unique values exist.
         """
-        x_values = list(x.value_counts().index)
-        if len(x_values) < n:
-            extend_length = n - len(x_values)
-            x_values.extend([numpy.nan] * extend_length)
-        elif len(x_values) > n:
+        x_freqs  = x.value_counts()
+        x_probs  = list(x_freqs / len(x))
+        x_values = list(x_freqs.index)
+
+        if len(x_values) > n:
+            x_probs = x_probs[:n]
             x_values = x_values[:n]
 
-        x_index = ['mode' + str(i) for i in range(1, n + 1)]
+        # Create index labels ('mode1/2/3/... and prob_mode1/2/3...')
+        x_index = ['mode' + str(i) for i in range(1, len(x_values) + 1)]
+        x_index += ['prob_mode' + str(i) for i in range(1, len(x_values) + 1)]
+
+        # Combine values and probabilities into a single
+        x_values.extend(x_probs)
+
         return pandas.Series(data = x_values, index = x_index)
 
     summary_freqs = df.apply(lambda x: get_column_freqs(x))
@@ -173,6 +180,9 @@ def summarize_table(data, columns, M_c):
 
     # Insert column of stat descriptions
     summary_data.insert(0, 'stat', summary_data.index)
+
+    # Recreate row_index for summary output
+    summary_data.insert(0, 'row_index', range(summary_data.shape[0]))
 
     data = summary_data.to_records(index=False)
     columns = list(summary_data.columns)
