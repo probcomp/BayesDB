@@ -136,7 +136,7 @@ def summarize_table(data, columns, M_c):
     # Construct a pandas.DataFrame out of data and columns
     df = pandas.DataFrame(data=data, columns=columns)
 
-    # Remove row_id column since summary stats of row_id are meaningless.
+    # Remove row_id column since summary stats of row_id are meaningless - add it back at the end
     df.drop(['row_id'], inplace=True, axis=1)
 
     # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
@@ -145,6 +145,9 @@ def summarize_table(data, columns, M_c):
     # leave interpretation to the user, rather than try to figure out what's meaningful, especially with 
     # columns that are the result of predictive functions.
     summary_describe = df.apply(lambda x: x.describe())
+
+    # Remove 'top' and 'freq' rows, because we'll replace those with the mode and empirical probabilities
+    summary_describe.drop(['top', 'freq'], inplace=True)
 
     # Function to calculate the most frequent values for each column
     def get_column_freqs(x, n=5):
@@ -163,10 +166,11 @@ def summarize_table(data, columns, M_c):
             x_values = x_values[:n]
 
         # Create index labels ('mode1/2/3/... and prob_mode1/2/3...')
-        x_index = ['mode' + str(i) for i in range(1, len(x_values) + 1)]
-        x_index += ['prob_mode' + str(i) for i in range(1, len(x_values) + 1)]
+        x_range = range(1, len(x_values) + 1)
+        x_index = ['mode' + str(i) for i in x_range]
+        x_index += ['prob_mode' + str(i) for i in x_range]
 
-        # Combine values and probabilities into a single
+        # Combine values and probabilities into a single list
         x_values.extend(x_probs)
 
         return pandas.Series(data = x_values, index = x_index)
@@ -178,11 +182,11 @@ def summarize_table(data, columns, M_c):
     # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
     summary_data = pandas.concat([summary_describe, summary_freqs], axis=0)
 
-    # Insert column of stat descriptions
-    summary_data.insert(0, 'stat', summary_data.index)
+    # Insert column of stat descriptions - allow duplication of column name in case user's data has a column named stat
+    summary_data.insert(0, 'stat', summary_data.index, allow_duplicates=True)
 
     # Recreate row_index for summary output
-    summary_data.insert(0, 'row_index', range(summary_data.shape[0]))
+    summary_data.insert(0, 'row_index', range(summary_data.shape[0]), allow_duplicates=True)
 
     data = summary_data.to_records(index=False)
     columns = list(summary_data.columns)
