@@ -173,41 +173,41 @@ def test_valid_values_names_pyparsing():
     assert filename.parseString("'/filename with space.csv'",parseAll=True)[0] == "/filename with space.csv"
 
 def test_simple_functions():
-    assert list_btables_function.parseString("LIST BTABLES",parseAll=True).function_id == 'list btable'
-    assert list_btables_function.parseString("LIST BTABLE",parseAll=True).function_id == 'list btable'
-    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).function_id == 'show schema for'
+    assert list_btables_function.parseString("LIST BTABLES",parseAll=True).statement_id == 'list btable'
+    assert list_btables_function.parseString("LIST BTABLE",parseAll=True).statement_id == 'list btable'
+    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).statement_id == 'show schema for'
     assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_models_for_function.parseString("SHOW MODELS FOR table_1",parseAll=True).function_id == 'show model for'
+    assert show_models_for_function.parseString("SHOW MODELS FOR table_1",parseAll=True).statement_id == 'show model for'
     assert show_models_for_function.parseString("SHOW MODEL FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).function_id == 'show diagnostics for'
+    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).statement_id == 'show diagnostics for'
     assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).btable == 'table_1'
-    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).function_id == 'load model'
-    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1",parseAll=True).function_id == 'load model'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load model'
+    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load model'
     assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).filename == '~/filename.csv'
     assert load_model_function.parseString("LOAD MODELS '~/filena me.csv' INTO table_1",parseAll=True).filename == '~/filena me.csv'
     assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).btable == 'table_1'
     assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).btable == 'table_1'
-    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).function_id == 'save model'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).statement_id == 'save model'
     assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).filename == 'filename.pkl.gz'
-    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).function_id == 'drop btable'
-    assert drop_btable_function.parseString("DROP BTABLES table_1",parseAll=True).function_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).statement_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLES table_1",parseAll=True).statement_id == 'drop btable'
     assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).btable == 'table_1'
     drop_model_1 = drop_model_function.parseString("DROP MODEL 1 FROM table_1",parseAll=True)
     drop_model_2 = drop_model_function.parseString("DROP MODELS 1-5 FROM table_1",parseAll=True)
     drop_model_3 = drop_model_function.parseString("DROP MODELS 1,2,6-9 FROM table_1",parseAll=True)
     drop_model_4 = drop_model_function.parseString("DROP MODELS 1-5,1-5 FROM table_1",parseAll=True)
-    assert drop_model_1.function_id == 'drop model'
+    assert drop_model_1.statement_id == 'drop model'
     assert drop_model_1.btable == 'table_1'
     assert drop_model_1.index_list.asList() == [1]
     assert drop_model_2.index_list.asList() == [1,2,3,4,5]
     assert drop_model_3.index_list.asList() == [1,2,6,7,8,9]
     assert drop_model_4.index_list.asList() == [1,2,3,4,5]
-    assert help_function.parseString("HELp",parseAll=True).function_id == 'help'
+    assert help_function.parseString("HELp",parseAll=True).statement_id == 'help'
 
 def test_update_schema_pyparsing():
     update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
-    assert update_schema_1.function_id == 'update schema for'
-    assert update_schema_1.btable == 'test_btablE'
+    assert update_schema_1.statement_id == 'update schema for'
+    assert update_schema_1.btable == 'test_btable'
     assert update_schema_1.type_clause[0][0] == 'col_1'
     assert update_schema_1.type_clause[0][1] == 'categorical'
     assert update_schema_1.type_clause[1][0] == 'col.2'
@@ -221,7 +221,7 @@ def test_update_schema_pyparsing():
 def test_create_btable_pyparsing():
     create_btable_1 = create_btable_function.parseString("CREATE BTABLE test.btable FROM '~/filenam e.csv'", parseAll=True)
     create_btable_2 = create_btable_function.parseString("CREATE BTABLE test_btable FROM ~/filename.csv", parseAll=True)
-    assert create_btable_1.function_id == 'create btable'
+    assert create_btable_1.statement_id == 'create btable'
     assert create_btable_1.btable == 'test.btable'
     assert create_btable_1.filename == '~/filenam e.csv'
     assert create_btable_2.btable == 'test_btable'
@@ -235,11 +235,11 @@ def test_execute_file_pyparsing():
 
 def test_initialize_pyparsing():
     initialize_1 = initialize_function.parseString("INITIALIZE 3 MODELS FOR test_table",parseAll=True)
-    assert initialize_1.function_id == 'initialize'
+    assert initialize_1.statement_id == 'initialize'
     assert initialize_1.num_models == '3'
     assert initialize_1.btable == 'test_table'
     initialize_2 = initialize_function.parseString("INITIALIZE 3 MODEL FOR test_table",parseAll=True)
-    assert initialize_2.function_id == 'initialize'
+    assert initialize_2.statement_id == 'initialize'
     assert initialize_2.num_models == '3'
     assert initialize_2.btable == 'test_table'
 
@@ -256,7 +256,7 @@ def test_analyze_pyparsing():
     analyze_10 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5-7, 9, 10 FOR 1 ITERATION",parseAll=True)
     analyze_11 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 1, 2, 2 FOR 10 SECONDS",parseAll=True)
     analyze_12 = analyze_function.parseString("ANALYZE table_1 MODELS 1-5, 1-5, 5 FOR 1 ITERATION",parseAll=True)
-    assert analyze_1.function_id == 'analyze'
+    assert analyze_1.statement_id == 'analyze'
     assert analyze_1.btable == 'table_1'
     assert analyze_1.index_lust == ''
     assert analyze_1.index_clause == ''
@@ -277,7 +277,258 @@ def test_analyze_pyparsing():
     assert analyze_11.index_list.asList() == [1,2]
     assert analyze_12.index_list.asList() == [1,2,3,4,5]
 
+def test_subclauses_pyparsing():
+    assert save_to_clause.parseString("save to filename.csv").filename == 'filename.csv'
 
+def test_row_clause_pyparsing():
+    row_1 = row_clause.parseString('1', parseAll=True)
+    row_2 = row_clause.parseString("column = 1", parseAll=True)
+    row_3 = row_clause.parseString("column = 'value'", parseAll=True)
+    row_4 = row_clause.parseString("column = value", parseAll=True)
+    assert row_1.row_id == '1'
+    assert row_1.column == ''
+    assert row_2.row_id == ''
+    assert row_2.column == 'column'
+    assert row_2.column_value == '1'
+    assert row_3.column_value == 'value'
+    assert row_4.column_value == 'value'
+    
+def test_row_functions_pyparsing():
+    similarity_1 = similarity_to_function.parseString("SIMILARITY TO 1", 
+                                                      parseAll=True)
+    similarity_2 = similarity_to_function.parseString("SIMILARITY TO col_2 = 1", 
+                                                      parseAll=True)
+    similarity_3 = similarity_to_function.parseString("SIMILARITY TO col_2 = 'a'", 
+                                                      parseAll=True)
+    similarity_4 = similarity_to_function.parseString("SIMILARITY TO col_2 = a", 
+                                                      parseAll=True)
+    similarity_5 = similarity_to_function.parseString("SIMILARITY TO 1 WITH RESPECT TO col_1", 
+                                                      parseAll=True)
+    similarity_6 = similarity_to_function.parseString("SIMILARITY TO col_2 = 1 WITH RESPECT TO col_1,col_2", 
+                                                      parseAll=True)
+    similarity_7 = similarity_to_function.parseString("SIMILARITY TO col_2 = 'a' WITH RESPECT TO col_1 , col_3", 
+                                                      parseAll=True)
+    similarity_8 = similarity_to_function.parseString("SIMILARITY TO col_2 = a WITH RESPECT TO col_1", 
+                                                      parseAll=True)
+    assert similarity_1.function.function_id == 'similarity to'
+    assert similarity_1.function.row_id == '1'
+    assert similarity_2.function.column == 'col_2'
+    assert similarity_2.function.column_value == '1'
+    assert similarity_3.function.column == 'col_2'
+    assert similarity_3.function.column_value == 'a'
+    assert similarity_4.function.column == 'col_2'
+    assert similarity_4.function.column_value == 'a'
+    assert similarity_4.function.with_respect_to == ''
+    assert not similarity_5.function.with_respect_to == ''
+    assert similarity_5.function.column_list.asList() == ['col_1']
+    assert similarity_6.function.column_list.asList() == ['col_1', 'col_2']
+    assert similarity_7.function.column_list.asList() == ['col_1', 'col_3']
+    assert similarity_8.function.column_list.asList() == ['col_1']
+    assert typicality_function.parseString('Typicality',parseAll=True).function.function_id == 'typicality'
+
+def test_column_functions_pyparsing():
+    dependence_1 = dependence_probability_function.parseString('DEPENDENCE PROBABILITY WITH column_1',
+                                                                    parseAll=True)
+    dependence_2 = dependence_probability_function.parseString('DEPENDENCE PROBABILITY OF column_2 WITH column_1',
+                                                                    parseAll=True)
+    assert dependence_1.function.function_id == 'dependence probability'
+    assert dependence_2.function.function_id == 'dependence probability'
+    assert dependence_1.function.with_column == 'column_1'
+    assert dependence_2.function.with_column == 'column_1'
+    assert dependence_2.function.of_column == 'column_2'
+
+def test_probability_of_function_pyparsing():
+    probability_of_1 = probability_of_function.parseString("PROBABILITY OF col_1 = 1",parseAll=True)
+    probability_of_2 = probability_of_function.parseString("PROBABILITY OF col_1 = 'value'",parseAll=True)
+    probability_of_3 = probability_of_function.parseString("PROBABILITY OF col_1 = value",parseAll=True)
+    assert probability_of_1.function.function_id == 'probability of'
+    assert probability_of_1.function.column == 'col_1'
+    assert probability_of_1.function.value == '1'
+    assert probability_of_2.function.value == 'value'
+    assert probability_of_3.function.value == 'value'
+
+def test_predictive_probability_of_pyparsing():
+    assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
+                                                          parseAll=True).function.function_id == 'predictive probability of'
+    assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
+                                                          parseAll=True).function.column == 'column_1'
+
+def test_order_by_clause_pyparsing():
+    order_by_1 = order_by_clause.parseString("ORDER BY column_1"
+                                             ,parseAll=True)
+    order_by_2 = order_by_clause.parseString("ORDER BY column_1,column_2 , column_3"
+                                             ,parseAll=True)
+    assert order_by_1.order_by.order_by_set[0].column=='column_1'
+    assert order_by_2.order_by.order_by_set[1].column=='column_2'
+    order_by_3 = order_by_clause.parseString("ORDER BY TYPICALITY",
+                                             parseAll=True)
+    assert order_by_3.order_by.order_by_set[0].function_id == 'typicality'
+    order_by_4 = order_by_clause.parseString("ORDER BY TYPICALITY, column_1",
+                                             parseAll=True)
+    assert order_by_4.order_by.order_by_set[0].function_id == 'typicality'
+    assert order_by_4.order_by.order_by_set[1].column == 'column_1'    
+    order_by_5 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY",
+                                             parseAll=True)
+    assert order_by_5.order_by.order_by_set[0].column == 'column_1'
+    assert order_by_5.order_by.order_by_set[1].function_id == 'typicality'
+    order_by_6 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1",
+                                             parseAll=True)
+    assert order_by_6.order_by.order_by_set[0].function_id == 'predictive probability of'
+    assert order_by_6.order_by.order_by_set[0].column == 'column_1'
+    
+    order_by_7 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1, column_1",
+                                             parseAll=True)
+    assert order_by_7.order_by.order_by_set[1].column == 'column_1'
+    assert order_by_7.order_by.order_by_set[0].function_id == 'predictive probability of'
+    assert order_by_7.order_by.order_by_set[0].column == 'column_1'
+
+    order_by_8 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY, PREDICTIVE PROBABILITY OF column_1, column_2, SIMILARITY TO 2, SIMILARITY TO column_1 = 1 WITH RESPECT TO column_4",
+                                             parseAll=True)
+    assert order_by_8.order_by.order_by_set[0].column == 'column_1'
+    assert order_by_8.order_by.order_by_set[1].function_id == 'typicality'
+    assert order_by_8.order_by.order_by_set[2].function_id == 'predictive probability of'
+    assert order_by_8.order_by.order_by_set[2].column == 'column_1'
+    assert order_by_8.order_by.order_by_set[3].column == 'column_2'
+    assert order_by_8.order_by.order_by_set[4].function_id == 'similarity to'
+    assert order_by_8.order_by.order_by_set[4].row_id == '2'
+    assert order_by_8.order_by.order_by_set[5].function_id == 'similarity to'
+    assert order_by_8.order_by.order_by_set[5].column == 'column_1'
+    assert order_by_8.order_by.order_by_set[5].column_value == '1'
+    assert order_by_8.order_by.order_by_set[5].with_respect_to[1][0] == 'column_4' #todo names instead of indexes
+
+def test_whereclause_pyparsing():
+    # WHERE <column> <operation> <value>
+    whereclause_1 = "WHERE column_1 = 1"
+    parsed_1 = where_clause.parseString(whereclause_1,parseAll=True)
+    assert parsed_1.where_keyword == 'where'
+    assert parsed_1.where_conditions[0].function.column == 'column_1'
+    assert parsed_1.where_conditions[0].operation == '='
+    assert parsed_1.where_conditions[0].value == '1'
+    whereclause_2 = "WHERE column_1 <= 1"
+    parsed_2 = where_clause.parseString(whereclause_2,parseAll=True)
+    assert parsed_2.where_conditions[0].function.column == 'column_1'
+    assert parsed_2.where_conditions[0].operation == '<='
+    assert parsed_2.where_conditions[0].value == '1'
+    whereclause_3 = "WHERE column_1 > 1.0"
+    parsed_3 = where_clause.parseString(whereclause_3,parseAll=True)
+    assert parsed_3.where_conditions[0].operation == '>'
+    assert parsed_3.where_conditions[0].value == '1.0'
+    whereclause_4 = "WHERE column_1 = a"
+    parsed_4 = where_clause.parseString(whereclause_4,parseAll=True)
+    assert parsed_4.where_conditions[0].operation == '='
+    assert parsed_4.where_conditions[0].value == 'a'
+    whereclause_5 = "WHERE column_1 = 'a'"
+    parsed_5 = where_clause.parseString(whereclause_5,parseAll=True)
+    assert parsed_5.where_conditions[0].value == 'a'
+    whereclause_6 = "WHERE column_1 = 'two words'"
+    parsed_6 = where_clause.parseString(whereclause_6,parseAll=True)
+    assert parsed_6.where_conditions[0].value == 'two words'
+    # Functions
+    whereclause_7 = "WHERE TYPICALITY > .8"
+    parsed_7 = where_clause.parseString(whereclause_7,parseAll=True)
+    assert parsed_7.where_conditions[0].function.function_id == 'typicality'
+    assert parsed_7.where_conditions[0].operation == '>'
+    assert parsed_7.where_conditions[0].value == '.8'
+    whereclause_8 = "WHERE PREDICTIVE PROBABILITY OF column_1 > .1"
+    parsed_8 = where_clause.parseString(whereclause_8,parseAll=True)
+    assert parsed_8.where_conditions[0].function.function_id == 'predictive probability of'
+    assert parsed_8.where_conditions[0].function.column == 'column_1'
+    assert parsed_8.where_conditions[0].operation == '>'
+    assert parsed_8.where_conditions[0].value == '.1'
+    whereclause_9 = "WHERE SIMILARITY TO 2 > .1"
+    parsed_9 = where_clause.parseString(whereclause_9,parseAll=True)
+    assert parsed_9.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_9.where_conditions[0].function.row_id == '2'
+    assert parsed_9.where_conditions[0].operation == '>'
+    assert parsed_9.where_conditions[0].value == '.1'
+    whereclause_10 = "WHERE SIMILARITY TO 2 WITH RESPECT TO column_1 > .4"
+    parsed_10 = where_clause.parseString(whereclause_10,parseAll=True)
+    assert parsed_10.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_10.where_conditions[0].function.row_id == '2'
+    assert parsed_10.where_conditions[0].function.with_respect_to.column_list[0] == 'column_1'
+    assert parsed_10.where_conditions[0].operation == '>'
+    assert parsed_10.where_conditions[0].value == '.4'
+    whereclause_11 = "WHERE SIMILARITY TO column_1 = 1 = .5"
+    parsed_11 = where_clause.parseString(whereclause_11,parseAll=True)
+    assert parsed_11.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_11.where_conditions[0].function.column == 'column_1'
+    assert parsed_11.where_conditions[0].function.column_value == '1'
+    assert parsed_11.where_conditions[0].operation == '='
+    assert parsed_11.where_conditions[0].value == '.5'
+    whereclause_12 = "WHERE SIMILARITY TO column_1 = 'a' WITH RESPECT TO column_2 > .5"
+    parsed_12 = where_clause.parseString(whereclause_12,parseAll=True)
+    assert parsed_12.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_12.where_conditions[0].function.column == 'column_1'
+    assert parsed_12.where_conditions[0].function.column_value == 'a'
+    assert parsed_12.where_conditions[0].operation == '>'
+    assert parsed_12.where_conditions[0].value == '.5'    
+    assert parsed_12.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
+    whereclause_13 = "WHERE SIMILARITY TO column_1 = 1.2 WITH RESPECT TO column_2 > .5"
+    parsed_13 = where_clause.parseString(whereclause_13,parseAll=True)
+    assert parsed_13.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_13.where_conditions[0].function.column == 'column_1'
+    assert parsed_13.where_conditions[0].function.column_value == '1.2'
+    assert parsed_13.where_conditions[0].operation == '>'
+    assert parsed_13.where_conditions[0].value == '.5'    
+    assert parsed_13.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
+    whereclause_14 = "WHERE SIMILARITY TO column_1 = a WITH RESPECT TO column_2 > .5"
+    parsed_14 = where_clause.parseString(whereclause_14,parseAll=True)
+    assert parsed_14.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_14.where_conditions[0].function.column == 'column_1'
+    assert parsed_14.where_conditions[0].function.column_value == 'a'
+    assert parsed_14.where_conditions[0].operation == '>'
+    assert parsed_14.where_conditions[0].value == '.5'    
+    assert parsed_14.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
+    # With Confidence
+    whereclause_15 = "WHERE TYPICALITY > .8 WITH CONFIDENCE .5"
+    parsed_15 = where_clause.parseString(whereclause_15,parseAll=True)
+    assert parsed_15.where_conditions[0].confidence == '.5'
+    whereclause_16 = "WHERE PREDICTIVE PROBABILITY OF column_1 > .1 WITH CONFIDENCE .5"
+    parsed_16 = where_clause.parseString(whereclause_16,parseAll=True)
+    assert parsed_16.where_conditions[0].confidence == '.5'
+    whereclause_17 = "WHERE SIMILARITY TO 2 > .1 WITH CONFIDENCE .5"
+    parsed_17 = where_clause.parseString(whereclause_17,parseAll=True)
+    assert parsed_17.where_conditions[0].confidence == '.5'
+    whereclause_18 = "WHERE SIMILARITY TO 2 WITH RESPECT TO column_1 > .4 WITH CONFIDENCE .5"
+    parsed_18 = where_clause.parseString(whereclause_18,parseAll=True)
+    assert parsed_18.where_conditions[0].confidence == '.5'
+    whereclause_19 = "WHERE SIMILARITY TO column_1 = 1 = .5 WITH CONFIDENCE .5"
+    parsed_19 = where_clause.parseString(whereclause_19,parseAll=True)
+    assert parsed_19.where_conditions[0].confidence == '.5'
+    whereclause_20 = "WHERE SIMILARITY TO column_1 = 'a' WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    parsed_20 = where_clause.parseString(whereclause_20,parseAll=True)
+    assert parsed_20.where_conditions[0].confidence == '.5'
+    whereclause_21 = "WHERE SIMILARITY TO column_1 = 1.2 WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    parsed_21 = where_clause.parseString(whereclause_21,parseAll=True)
+    assert parsed_21.where_conditions[0].confidence == '.5'
+    whereclause_22 = "WHERE SIMILARITY TO column_1 = a WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    parsed_22 = where_clause.parseString(whereclause_22,parseAll=True)
+    assert parsed_22.where_conditions[0].confidence == '.5'
+    # AND
+    whereclause_23 = "WHERE column_1 = 'a' AND column_2 >= 3"
+    parsed_23 = where_clause.parseString(whereclause_23,parseAll=True)
+    assert parsed_23.where_conditions[0].function.column == 'column_1'
+    assert parsed_23.where_conditions[1].function.column == 'column_2'
+    whereclause_24 = "WHERE TYPICALITY > .8 AND PREDICTIVE PROBABILITY OF column_1 > .1 AND SIMILARITY TO 2 > .1"
+    parsed_24 = where_clause.parseString(whereclause_24,parseAll=True)
+    assert parsed_24.where_conditions[0].function.function_id == 'typicality'
+    assert parsed_24.where_conditions[1].function.function_id == 'predictive probability of'
+    assert parsed_24.where_conditions[2].function.function_id == 'similarity to'
+    whereclause_25 = "WHERE TYPICALITY > .8 WITH CONFIDENCE .4 AND PREDICTIVE PROBABILITY OF column_1 > .1 WITH CONFIDENCE .6 AND SIMILARITY TO 2 > .1 WITH CONFIDENCE .5"
+    parsed_25 = where_clause.parseString(whereclause_25,parseAll=True)
+    assert parsed_25.where_conditions[0].confidence == '.4'
+    assert parsed_25.where_conditions[1].confidence == '.6'
+    assert parsed_25.where_conditions[2].confidence == '.5'
+    whereclause_26 = "WHERE KEY IN row_list_1 AND column_1 = 'a' AND TYPICALITY > .4"
+    parsed_26 = where_clause.parseString(whereclause_26,parseAll=True)
+    assert parsed_26.where_conditions[0].function.function_id == 'key in'
+    assert parsed_26.where_conditions[0].function.row_list == 'row_list_1'
+    assert parsed_26.where_conditions[1].function.column == 'column_1'
+    assert parsed_26.where_conditions[2].function.function_id == 'typicality'
+
+def test_key_in_rowlist():
+    assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).function.function_id == "key in"
+    assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).function.row_list == "row_list_1"
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
@@ -312,19 +563,23 @@ def test_drop_models():
 def test_analyze():
     method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 3 iterations')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None, ct_kernel=0)
 
     method, args, client_dict = parser.parse_statement('analyze t for 6 iterations')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None)
+    assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None, ct_kernel=0)
 
     method, args, client_dict = parser.parse_statement('analyze t for 7 seconds')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7)
+    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7, ct_kernel=0)
     
     method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 7 seconds')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=0)
+
+    method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 7 seconds with mh kernel')
+    assert method == 'analyze'
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=1)    
 
 def test_load_models():
     method, args, client_dict = parser.parse_statement('load models fn for t')
@@ -348,20 +603,20 @@ def test_select():
 
     method, args, client_dict = parser.parse_statement('select * from t')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot, summarize=False)
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args == d
 
     method, args, client_dict = parser.parse_statement('summarize select * from t')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot, summarize=True)
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=True)
     assert method == 'select'
     assert args == d
     
     columnstring = 'a, b, a_b'
     method, args, client_dict = parser.parse_statement('select a, b, a_b from t')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot, summarize=False)
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args == d
 
@@ -369,21 +624,21 @@ def test_select():
     columnstring = '*'
     method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot, summarize=False))
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False))
     assert method == 'select'
     assert args == d
 
     limit = 10
     method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7 limit 10')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot, summarize=False))
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False))
     assert method == 'select'
     assert args == d
 
     order_by = [('b', False)]
     method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7 order by b limit 10')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot, summarize=False))
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False))
     assert method == 'select'
     assert args == d
 

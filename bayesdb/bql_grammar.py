@@ -19,6 +19,8 @@
 #
 
 from pyparsing import *
+## uses the module pyparsing. This document provides a very good explanation of pyparsing: 
+## http://www.nmt.edu/tcc/help/pubs/pyparsing/pyparsing.pdf
 
 ## Matches any white space and stores it as a single space
 single_white = White().setParseAction(replaceWith(' '))
@@ -30,7 +32,8 @@ for_keyword = CaselessKeyword("for")
 into_keyword = CaselessKeyword("into")
 of_keyword = CaselessKeyword("of")
 with_keyword = CaselessKeyword("with")
-help_keyword = CaselessKeyword("help").setResultsName("function_id")
+help_keyword = CaselessKeyword("help").setResultsName("statement_id")
+quit_keyword = CaselessKeyword("quit").setResultsName("statement_id")
 to_keyword = CaselessKeyword('to')
 ## Many basic keywords will never be used alone
 ## creating them separately like this allows for simpler whitespace and case flexibility
@@ -44,8 +47,8 @@ categorical_keyword = CaselessKeyword("categorical")
 numerical_keyword = CaselessKeyword("numerical")
 ignore_keyword = CaselessKeyword("ignore")
 key_keyword = CaselessKeyword("key")
-initialize_keyword = CaselessKeyword("initialize").setResultsName("function_id")
-analyze_keyword = CaselessKeyword("analyze").setResultsName("function_id")
+initialize_keyword = CaselessKeyword("initialize").setResultsName("statement_id")
+analyze_keyword = CaselessKeyword("analyze").setResultsName("statement_id")
 index_keyword = CaselessKeyword("index")
 save_keyword = CaselessKeyword("save")
 load_keyword = CaselessKeyword("load")
@@ -80,6 +83,8 @@ connected_keyword = CaselessKeyword("connected")
 components_keyword = CaselessKeyword("components")
 threshold_keyword = CaselessKeyword("threshold")
 row_keyword = CaselessKeyword("row")
+key_keyword = CaselessKeyword("key")
+in_keyword = CaselessKeyword("in")
 ## Single and plural keywords
 single_model_keyword = CaselessKeyword("model")
 multiple_models_keyword = CaselessKeyword("models")
@@ -113,46 +118,55 @@ second_keyword.setParseAction(replaceWith("second"))
 
 ## Composite keywords: Inseparable elements that can have whitespace
 ## Using single_white and Combine to make them one string
-execute_file_keyword = Combine(execute_keyword + single_white + file_keyword).setResultsName("function_id")
-create_btable_keyword = Combine(create_keyword + single_white + btable_keyword).setResultsName("function_id")
+execute_file_keyword = Combine(execute_keyword + single_white + file_keyword).setResultsName("statement_id")
+create_btable_keyword = Combine(create_keyword + single_white + btable_keyword).setResultsName("statement_id")
 update_schema_for_keyword = Combine(update_keyword + single_white + 
-                                    schema_keyword + single_white + for_keyword).setResultsName("function_id")
+                                    schema_keyword + single_white + for_keyword).setResultsName("statement_id")
 models_for_keyword = Combine(model_keyword + single_white + for_keyword)
 model_index_keyword = Combine(model_keyword + single_white + index_keyword)
-load_model_keyword = Combine(load_keyword + single_white + model_keyword).setResultsName("function_id")
-save_model_keyword = Combine(save_keyword + single_white + model_keyword).setResultsName("function_id")
-save_to_keyword = Combine(save_keyword + single_white + to_keyword).setResultsName("function_id")
-list_btables_keyword = Combine(list_keyword + single_white + btable_keyword).setResultsName("function_id")
-drop_btable_keyword = Combine(drop_keyword + single_white + btable_keyword).setResultsName("function_id")
-drop_model_keyword = Combine(drop_keyword + single_white + model_keyword).setResultsName("function_id")
-show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword + single_white + for_keyword).setResultsName("function_id")
-show_models_for_keyword = Combine(show_keyword + single_white + model_keyword + single_white + for_keyword).setResultsName("function_id")
-show_diagnostics_for_keyword = Combine(show_keyword + single_white + diagnostics_keyword + single_white + for_keyword).setResultsName("function_id")
-estimate_pairwise_keyword = Combine(estimate_keyword + single_white + pairwise_keyword).setResultsName("function_id")
-estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + single_white + row_keyword).setResultsName("function_id")
+load_model_keyword = Combine(load_keyword + single_white + model_keyword).setResultsName("statement_id")
+save_model_keyword = Combine(save_keyword + single_white + model_keyword).setResultsName("statement_id")
+save_to_keyword = Combine(save_keyword + single_white + to_keyword).setResultsName("statement_id")
+list_btables_keyword = Combine(list_keyword + single_white + btable_keyword).setResultsName("statement_id")
+drop_btable_keyword = Combine(drop_keyword + single_white + btable_keyword).setResultsName("statement_id")
+drop_model_keyword = Combine(drop_keyword + single_white + model_keyword).setResultsName("statement_id")
+show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword + 
+                                  single_white + for_keyword).setResultsName("statement_id")
+show_models_for_keyword = Combine(show_keyword + single_white + model_keyword + 
+                                  single_white + for_keyword).setResultsName("statement_id")
+show_diagnostics_for_keyword = Combine(show_keyword + single_white + diagnostics_keyword + 
+                                       single_white + for_keyword).setResultsName("statement_id")
+estimate_pairwise_keyword = Combine(estimate_keyword + single_white + 
+                                    pairwise_keyword).setResultsName("statement_id")
+estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
+                                        single_white + row_keyword).setResultsName("statement_id")
 with_confidence_keyword = Combine(with_keyword + single_white + confidence_keyword)
+order_by_keyword = Combine(order_keyword + single_white + by_keyword)
 dependence_probability_keyword = Combine(dependence_keyword + single_white + probability_keyword)
 mutual_information_keyword = Combine(mutual_keyword + single_white + information_keyword)
-estimate_columns_from_keyword = Combine(estimate_keyword + single_white + column_keyword + single_white + from_keyword).setResultsName("function_id")
+estimate_columns_from_keyword = Combine(estimate_keyword + single_white + column_keyword + 
+                                        single_white + from_keyword).setResultsName("statement_id")
 column_lists_keyword = Combine(column_keyword + single_white + list_keyword)
-similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword)
+similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword).setResultsName("statement_id")
 with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
 probability_of_keyword = Combine(probability_keyword + single_white + of_keyword)
-predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_of_keyword)
+predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_keyword + single_white + of_keyword)
 save_connected_components_with_threshold_keyword = Combine(save_keyword + single_white + 
                                                            connected_keyword + single_white + 
                                                            components_keyword + single_white + 
-                                                           with_keyword + single_white + threshold_keyword).setResultsName("function_id")
+                                                           with_keyword + single_white + 
+                                                           threshold_keyword).setResultsName("statement_id")
+key_in_keyword = Combine(key_keyword + single_white + in_keyword)
 
 ## Values/Literals
-float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
+float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+') #TODO setParseAction to float/int
 int_number = Word(nums)
 operation_literal = oneOf("<= >= = < >")
 equal_literal = Literal("=")
 semicolon_literal = Literal(";")
 comma_literal = Literal(",")
 hyphen_literal = Literal("-")
-identifier = Word(alphas, alphanums + "_.")
+identifier = Word(alphas, alphanums + "_.").setParseAction(downcaseTokens)
 btable = identifier.setResultsName("btable")
 # single and double quotes inside value must be escaped. 
 value = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(printables)| float_number
@@ -161,11 +175,11 @@ filename = (QuotedString('"', escChar='\\') |
             Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")).setResultsName("filename")
 data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword
 
-##################################################################################
-# ------------------------------------ Functions --------------------------------#
-##################################################################################
+###################################################################################
+# ------------------------------------ Functions -------------------------------- #
+###################################################################################
 
-# ------------------------------- Management functions --------------------------#
+# ------------------------------- Management statements ------------------------- #
 
 # CREATE BTABLE <btable> FROM <filename.csv>
 create_btable_function = create_btable_keyword + btable + Suppress(from_keyword) + filename
@@ -187,6 +201,7 @@ initialize_function = (initialize_keyword + int_number.setResultsName("num_model
 
 # ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
 def list_from_index_clause(toks):
+    print toks
     ## takes index tokens separated by '-' for range and ',' for individual and returns a list of unique indexes
     index_list = []
     for token in toks[0]:
@@ -212,7 +227,6 @@ analyze_function = (analyze_keyword + btable +
                     ((int_number.setResultsName('num_iterations') + iteration_keyword) | 
                      (int_number.setResultsName('num_seconds') + second_keyword)))
                     
-
 # LIST BTABLES
 list_btables_function = list_btables_keyword
 
@@ -235,33 +249,82 @@ save_model_from_function = save_model_keyword + Suppress(from_keyword) + btable 
 drop_btable_function = drop_btable_keyword + btable
 
 # DROP MODEL[S] [<model_index>-<model_index>] FROM <btable>
-drop_model_function = drop_keyword.setParseAction(replaceWith("drop model")).setResultsName('function_id') + model_index_clause + Suppress(from_keyword) + btable
+drop_model_function = drop_keyword.setParseAction(replaceWith("drop model")).setResultsName("statement_id") + model_index_clause + Suppress(from_keyword) + btable
 
 help_function = help_keyword
+quit_keyword = quit_keyword
 
-## TOP LEVEL STATEMENTS FOR BAYESDB MANAGEMENT
+# ------------------------------ Helper Clauses --------------------------- #
 
-# ------------------------------ Helper Clauses ---------------------------#
+# Rows can be identified either by an integer or <column> = <value> where value is unique for the given column
+row_clause = (int_number.setResultsName("row_id") | 
+              (identifier.setResultsName("column") + 
+               Suppress(equal_literal) + 
+               value.setResultsName("column_value")))
+
+column_list_clause = Group(identifier + 
+                           ZeroOrMore(Suppress(comma_literal) + 
+                                      identifier)).setResultsName("column_list")
 
 # SAVE TO <file>
-
-# SIMILARITY TO <row> [WITH RESPECT TO <column>]
-
-# TYPICALITY
-
-# DEPENDENCE PROBABILITY (WITH <column> | OF <column1> WITH <column2>)
-
-# PROBABILITY OF <column>=<value>
-
-# PREDICTIVE PROBABILITY OF <column>
-
-# ORDER BY <columns|functions>
+save_to_clause = save_to_keyword + filename#todo names
 
 # WITH CONFIDENCE <confidence>
+with_confidence_clause = with_confidence_keyword + float_number.setResultsName("confidence")#todo names
+
+# -------------------------------- Functions ------------------------------ #
+
+# SIMILARITY TO <row> [WITH RESPECT TO <column>]
+similarity_to_function = (Group(similarity_to_keyword.setResultsName('function_id') + 
+                                row_clause + 
+                                Optional(with_respect_to_keyword + column_list_clause)
+                                .setResultsName('with_respect_to'))
+                          .setResultsName("function")) # todo more names less indexes
+
+# TYPICALITY
+typicality_function = Group(typicality_keyword.setResultsName('function_id')).setResultsName('function')
+
+# DEPENDENCE PROBABILITY (WITH <column> | OF <column1> WITH <column2>)
+dependence_probability_function = Group((dependence_probability_keyword.setResultsName('function_id') + 
+                                         ((Suppress(with_keyword) + 
+                                           identifier.setResultsName("with_column")) | 
+                                          (Suppress(of_keyword) + 
+                                           identifier.setResultsName("of_column") + 
+                                           Suppress(with_keyword) + 
+                                           identifier.setResultsName("with_column"))))).setResultsName("function")
+
+# PROBABILITY OF <column>=<value>
+probability_of_function = Group((probability_of_keyword.setResultsName("function_id") + 
+                                 identifier.setResultsName("column") + 
+                                 Suppress(equal_literal) + 
+                                 value.setResultsName("value"))).setResultsName('function')
+
+# PREDICTIVE PROBABILITY OF <column>
+predictive_probability_of_function = Group(predictive_probability_of_keyword.setResultsName("function_id") + 
+                                           identifier.setResultsName("column")).setResultsName("function")
+
+# KEY IN <row_list>
+key_in_rowlist_clause = Group(key_in_keyword.setResultsName("function_id") + identifier.setResultsName("row_list")).setResultsName('function')
+
+non_aggregate_function = similarity_to_function | typicality_function | predictive_probability_of_function | Group(identifier.setResultsName('column'))
+
+# -------------------------------- other clauses --------------------------- #
+
+# ORDER BY <column|non-aggregate-function>[<column|function>...]
+order_by_clause = Group(order_by_keyword + Group((non_aggregate_function) + ZeroOrMore(Suppress(comma_literal) + (non_aggregate_function))).setResultsName("order_by_set")).setResultsName('order_by')
 
 # WHERE <whereclause>
+single_where_condition = Group(((non_aggregate_function.setResultsName('function') + 
+                                 operation_literal.setResultsName('operation') + 
+                                 value.setResultsName('value')) | key_in_rowlist_clause) + 
+                               Optional(with_confidence_clause))
 
-# ------------------------------- Query functions --------------------------#
+where_clause = (where_keyword.setResultsName('where_keyword') + 
+                Group(single_where_condition + 
+                      ZeroOrMore(Suppress(and_keyword) + single_where_condition))
+                .setResultsName("where_conditions"))
+
+# ------------------------------- Query functions -------------------------- #
 
 # SELECT
 
@@ -272,7 +335,3 @@ help_function = help_keyword
 # ESTIMATE COLUMNS
 
 # ESTIMATE PAIRWISE
-
-
-# for debugging
-print 'imported bql_grammar'
