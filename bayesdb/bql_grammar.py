@@ -78,7 +78,7 @@ respect_keyword = CaselessKeyword("respect")
 predictive_keyword = CaselessKeyword("predictive")
 group_keyword = CaselessKeyword("group")
 diagnostics_keyword = CaselessKeyword("diagnostics")
-hist_keyword = CaselessKeyword("hist")
+hist_keyword = CaselessKeyword("hist").setResultsName("hist")
 connected_keyword = CaselessKeyword("connected")
 components_keyword = CaselessKeyword("components")
 threshold_keyword = CaselessKeyword("threshold")
@@ -166,6 +166,7 @@ equal_literal = Literal("=")
 semicolon_literal = Literal(";")
 comma_literal = Literal(",")
 hyphen_literal = Literal("-")
+all_column_literal = Literal('*')
 identifier = Word(alphas, alphanums + "_.").setParseAction(downcaseTokens)
 btable = identifier.setResultsName("btable")
 # single and double quotes inside value must be escaped. 
@@ -327,6 +328,22 @@ where_clause = (where_keyword.setResultsName('where_keyword') +
 # ------------------------------- Query functions -------------------------- #
 
 # SELECT
+select_query = (select_keyword.setResultsName("query_id") + 
+                Optional(hist_keyword).setResultsName("hist") +
+                (Group((column_list_clause | 
+                        all_column_literal).setResultsName("columns")).setResultsName("function") | 
+                 predictive_probability_of_function | 
+                 probability_of_function | 
+                 typicality_function | 
+                 similarity_to_function) + 
+                Suppress(from_keyword) + 
+                identifier.setResultsName("btable") + 
+                Optional(where_clause) + 
+                Each(Optional(order_by_clause) + 
+                     Optional(Suppress(limit_keyword) + 
+                              int_number.setResultsName("limit")) + 
+                     Optional(Suppress(save_to_keyword) + 
+                              filename)))
 
 # INFER
 
