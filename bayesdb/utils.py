@@ -139,7 +139,8 @@ def summarize_table(data, columns, M_c):
         if 'inplace' in inspect.getargspec(df.drop).args:
             df.drop(column_list, inplace=True, **kwargs)
         else:
-            df.drop(column_list, **kwargs)            
+            df = df.drop(column_list, **kwargs)
+        return df
 
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
@@ -147,7 +148,7 @@ def summarize_table(data, columns, M_c):
 
         # Remove row_id column since summary stats of row_id are meaningless
         if 'row_id' in df.columns:
-            df.drop(['row_id'], inplace=True, axis=1)
+            df = df_drop(df, ['row_id'], axis=1)
 
         # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
         # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a
@@ -159,7 +160,7 @@ def summarize_table(data, columns, M_c):
         # If there were discrete columns, remove 'top' and 'freq' rows, because we'll replace those
         # with the mode and empirical probabilities
         if 'top' in summary_describe.index and 'freq' in summary_describe.index:
-            summary_describe.drop(['top', 'freq'], inplace=True)
+            summary_describe = df_drop(summary_describe, ['top', 'freq'])
 
         # Function to calculate the most frequent values for each column
         def get_column_freqs(x, n=5):
@@ -200,8 +201,9 @@ def summarize_table(data, columns, M_c):
         reorder_index = potential_index[potential_index.isin(summary_data.index)]
         summary_data = summary_data.loc[reorder_index]
 
-        # Insert column of stat descriptions - allow duplication of column name in case user's data has a column named stat
-        summary_data.insert(0, 'stat', summary_data.index, allow_duplicates=True)
+        # Insert column of stat descriptions - we're going to leave this column name as an empty string to avoid
+        # having to prevent column name duplication (allow_duplicates is a newer pandas argument, and can't be sure it's available)
+        summary_data.insert(0, ' ', summary_data.index)
 
         data = summary_data.to_records(index=False)
         columns = list(summary_data.columns)
