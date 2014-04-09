@@ -133,62 +133,64 @@ def summarize_table(data, columns, M_c):
     Return: data should be summaries now.
     """
 
-    # Construct a pandas.DataFrame out of data and columns
-    df = pandas.DataFrame(data=data, columns=columns)
+    if len(data) > 0:
+        # Construct a pandas.DataFrame out of data and columns
+        df = pandas.DataFrame(data=data, columns=columns)
 
-    # Remove row_id column since summary stats of row_id are meaningless - add it back at the end
-    df.drop(['row_id'], inplace=True, axis=1)
+        # Remove row_id column since summary stats of row_id are meaningless - add it back at the end
+        df.drop(['row_id'], inplace=True, axis=1)
 
-    # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
-    # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a 
-    # discrete variable with numeric values might not have meaning, but it's easier just to do it and 
-    # leave interpretation to the user, rather than try to figure out what's meaningful, especially with 
-    # columns that are the result of predictive functions.
-    summary_describe = df.apply(lambda x: x.describe())
+        # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
+        # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a
+        # discrete variable with numeric values might not have meaning, but it's easier just to do it and
+        # leave interpretation to the user, rather than try to figure out what's meaningful, especially with
+        # columns that are the result of predictive functions.
+        summary_describe = df.apply(lambda x: x.describe())
 
-    # If there were discrete columns, remove 'top' and 'freq' rows, because we'll replace those
-    # with the mode and empirical probabilities
-    if 'top' in summary_describe.index and 'freq' in summary_describe.index:
-        summary_describe.drop(['top', 'freq'], inplace=True)
+        # If there were discrete columns, remove 'top' and 'freq' rows, because we'll replace those
+        # with the mode and empirical probabilities
+        if 'top' in summary_describe.index and 'freq' in summary_describe.index:
+            summary_describe.drop(['top', 'freq'], inplace=True)
 
-    # Function to calculate the most frequent values for each column
-    def get_column_freqs(x, n=5):
-        """
-        Function to return most frequent n values of each column of the DataFrame being summarized.
-        Input: a DataFrame column, by default as Series type
+        # Function to calculate the most frequent values for each column
+        def get_column_freqs(x, n=5):
+            """
+            Function to return most frequent n values of each column of the DataFrame being summarized.
+            Input: a DataFrame column, by default as Series type
 
-        Return: most frequent n values in x. Fill with numpy.nan if fewer than n unique values exist.
-        """
-        x_freqs  = x.value_counts()
-        x_probs  = list(x_freqs / len(x))
-        x_values = list(x_freqs.index)
+            Return: most frequent n values in x. Fill with numpy.nan if fewer than n unique values exist.
+            """
+            x_freqs  = x.value_counts()
+            x_probs  = list(x_freqs / len(x))
+            x_values = list(x_freqs.index)
 
-        if len(x_values) > n:
-            x_probs = x_probs[:n]
-            x_values = x_values[:n]
+            if len(x_values) > n:
+                x_probs = x_probs[:n]
+                x_values = x_values[:n]
 
-        # Create index labels ('mode1/2/3/... and prob_mode1/2/3...')
-        x_range = range(1, len(x_values) + 1)
-        x_index = ['mode' + str(i) for i in x_range]
-        x_index += ['prob_mode' + str(i) for i in x_range]
+            # Create index labels ('mode1/2/3/... and prob_mode1/2/3...')
+            x_range = range(1, len(x_values) + 1)
+            x_index = ['mode' + str(i) for i in x_range]
+            x_index += ['prob_mode' + str(i) for i in x_range]
 
-        # Combine values and probabilities into a single list
-        x_values.extend(x_probs)
+            # Combine values and probabilities into a single list
+            x_values.extend(x_probs)
 
-        return pandas.Series(data = x_values, index = x_index)
+            return pandas.Series(data = x_values, index = x_index)
 
-    summary_freqs = df.apply(lambda x: get_column_freqs(x))
+        summary_freqs = df.apply(lambda x: get_column_freqs(x))
 
-    # Replace 'top' in row index with 'mode' for clearer meaning
+        # Replace 'top' in row index with 'mode' for clearer meaning
 
-    # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
-    summary_data = pandas.concat([summary_describe, summary_freqs], axis=0)
+        # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
+        summary_data = pandas.concat([summary_describe, summary_freqs], axis=0)
 
-    # Insert column of stat descriptions - allow duplication of column name in case user's data has a column named stat
-    summary_data.insert(0, 'stat', summary_data.index, allow_duplicates=True)
+        # Insert column of stat descriptions - allow duplication of column name in case user's data has a column named stat
+        summary_data.insert(0, 'stat', summary_data.index, allow_duplicates=True)
 
-    data = summary_data.to_records(index=False)
-    columns = list(summary_data.columns)
+        data = summary_data.to_records(index=False)
+        columns = list(summary_data.columns)
+
     return data, columns
 
 def column_string_splitter(columnstring, M_c=None, column_lists=None):
