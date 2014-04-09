@@ -137,8 +137,9 @@ def summarize_table(data, columns, M_c):
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
 
-        # Remove row_id column since summary stats of row_id are meaningless - add it back at the end
-        df.drop(['row_id'], inplace=True, axis=1)
+        # Remove row_id column since summary stats of row_id are meaningless
+        if 'row_id' in df.index:
+            df.drop(['row_id'], inplace=True, axis=1)
 
         # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
         # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a
