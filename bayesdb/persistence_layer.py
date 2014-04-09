@@ -137,18 +137,31 @@ class PersistenceLayer():
         """
         Return the models dict for the table if modelid is None.
         If modelid is an int, then return the model specified by that id.
+        If modelid is a list, then get each individual model specified by each int in that list.
         """
         models_dir = os.path.join(self.data_dir, tablename, 'models')
         if os.path.exists(models_dir):
             if modelid is not None:
-                # Only return one of the models
-                full_fname = os.path.join(models_dir, 'model_%d.pkl' % modelid)
-                if not os.path.exists(full_fname):
-                    return None
-                f = open(full_fname, 'r')
-                m = pickle.load(f)
-                f.close()
-                return m
+                def get_single_model(modelid):
+                    # Only return one of the models
+                    full_fname = os.path.join(models_dir, 'model_%d.pkl' % modelid)
+                    if not os.path.exists(full_fname):
+                        return None
+                    f = open(full_fname, 'r')
+                    m = pickle.load(f)
+                    f.close()
+                    return m
+                if type(modelid) == list:
+                    models = {}
+                    for i in modelid:
+                        if not utils.is_int(i):
+                            raise utils.BayesDBError('Invalid modelid: %s' % str(modelid))
+                        models[i] = get_single_model(int(i))
+                    return models
+                elif utils.is_int(modelid):
+                    return get_single_model(int(modelid))
+                else:
+                    raise utils.BayesDBError('Invalid modelid: %s' % str(modelid))
             else:
                 # Return all the models
                 models = {}
@@ -281,10 +294,10 @@ class PersistenceLayer():
             self.drop_models(tablename, model_ids)
 
             
-    def get_latent_states(self, tablename):
+    def get_latent_states(self, tablename, modelid=None):
         """Return X_L_list, X_D_list, and M_c"""
         metadata = self.get_metadata(tablename)
-        models = self.get_models(tablename)
+        models = self.get_models(tablename, modelid)
         M_c = metadata['M_c']
         X_L_list = [model['X_L'] for model in models.values()]
         X_D_list = [model['X_D'] for model in models.values()]

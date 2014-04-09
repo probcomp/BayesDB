@@ -18,6 +18,7 @@
 #   limitations under the License.
 #
 
+import inspect
 import numpy
 import os
 import re
@@ -132,6 +133,13 @@ def summarize_table(data, columns, M_c):
     Return: columns should be the same, except with another column prepended called like "summaries" or something.
     Return: data should be summaries now.
     """
+    # The 'inplace' argument to df.drop() was added to pandas in a version (which one??) that many people may
+    # not have. So, check to see if 'inplace' exists, otherwise don't pass it -- this just copies the dataframe.
+    def df_drop(df, column_list, **kwargs):
+        if 'inplace' in inspect.getargspec(df.drop).args:
+            df.drop(column_list, inplace=True, **kwargs)
+        else:
+            df.drop(column_list, **kwargs)            
 
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
