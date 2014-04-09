@@ -285,14 +285,26 @@ similarity_to_function = (Group(similarity_to_keyword.setResultsName('function_i
 # TYPICALITY
 typicality_function = Group(typicality_keyword.setResultsName('function_id')).setResultsName('function')
 
+# Functions of two columns for use in dependence probability, mutual information, correlation
+functions_of_two_columns_subclause = ((Suppress(with_keyword) + 
+                                       identifier.setResultsName("with_column")) | 
+                                      (Suppress(of_keyword) + 
+                                       identifier.setResultsName("of_column") + 
+                                       Suppress(with_keyword) + 
+                                       identifier.setResultsName("with_column")))
+
 # DEPENDENCE PROBABILITY (WITH <column> | OF <column1> WITH <column2>)
-dependence_probability_function = Group((dependence_probability_keyword.setResultsName('function_id') + 
-                                         ((Suppress(with_keyword) + 
-                                           identifier.setResultsName("with_column")) | 
-                                          (Suppress(of_keyword) + 
-                                           identifier.setResultsName("of_column") + 
-                                           Suppress(with_keyword) + 
-                                           identifier.setResultsName("with_column"))))).setResultsName("function")
+dependence_probability_function = Group(dependence_probability_keyword.setResultsName('function_id') + 
+                                        functions_of_two_columns_subclause).setResultsName("function")
+
+# MUTUAL INFORMATION [OF <column1> WITH <column2>]
+mutual_information_function = Group(mutual_information_keyword.setResultsName('function_id') + 
+                                    functions_of_two_columns_subclause).setResultsName("function")
+
+# CORRELATION [OF <column1> WITH <column2>]
+correlation_function = Group(correlation_keyword.setResultsName('function_id') + 
+                             functions_of_two_columns_subclause).setResultsName("function")
+
 
 # PROBABILITY OF <column>=<value>
 probability_of_function = Group((probability_of_keyword.setResultsName("function_id") + 

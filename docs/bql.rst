@@ -216,21 +216,21 @@ Functions of two columns may be used in the following queries::
   ESTIMATE PAIRWISE (omit the 'OF' clause)
   SELECT (include the 'OF' clause; they only return one row)  
 
-Here are the four functions::  
+Here are the three functions::  
       
-  DEPENDENCE PROBABILITY [OF <column1> WITH <column2>]
+  DEPENDENCE PROBABILITY [OF <column1>] WITH <column2>
 
 The dependence probability between two columns is a measure of how likely it is that the two columns are dependent (opposite of indepdendent). Note that this does not measure the strength of the relationship between the two columns; it merely measures the probability that there is any relationship at all.
   
 ::
    
-  MUTUAL INFORMATION [OF <column1> WITH <column2>]
+  MUTUAL INFORMATION [OF <column1>] WITH <column2>
 
 Mutual information between two columns measures how much information a value in one column gives you about the value in the other column. If mutual information is 0, then knowing the first column tells you nothing about the other column (they are independent). Mutual information is always nonnegative, and is measured in bits.
 
 ::
 
-  CORRELATION [OF <column1> WITH <column2>]
+  CORRELATION [OF <column1>] WITH <column2>
 
 This is the standard Pearson correlation coefficient between the two columns. All rows with missing values in either or both of the two columns will be removed before calculating the correlation coefficient.
 

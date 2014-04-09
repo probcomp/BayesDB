@@ -336,6 +336,25 @@ def test_column_functions_pyparsing():
     assert dependence_1.function.with_column == 'column_1'
     assert dependence_2.function.with_column == 'column_1'
     assert dependence_2.function.of_column == 'column_2'
+    mutual_1 = mutual_information_function.parseString('MUTUAL INFORMATION WITH column_1',
+                                                                    parseAll=True)
+    mutual_2 = mutual_information_function.parseString('MUTUAL INFORMATION OF column_2 WITH column_1',
+                                                                    parseAll=True)
+    assert mutual_1.function.function_id == 'mutual information'
+    assert mutual_2.function.function_id == 'mutual information'
+    assert mutual_1.function.with_column == 'column_1'
+    assert mutual_2.function.with_column == 'column_1'
+    assert mutual_2.function.of_column == 'column_2'
+    correlation_1 = correlation_function.parseString('CORRELATION WITH column_1',
+                                                                    parseAll=True)
+    correlation_2 = correlation_function.parseString('CORRELATION OF column_2 WITH column_1',
+                                                                    parseAll=True)
+    assert correlation_1.function.function_id == 'correlation'
+    assert correlation_2.function.function_id == 'correlation'
+    assert correlation_1.function.with_column == 'column_1'
+    assert correlation_2.function.with_column == 'column_1'
+    assert correlation_2.function.of_column == 'column_2'
+    
 
 def test_probability_of_function_pyparsing():
     probability_of_1 = probability_of_function.parseString("PROBABILITY OF col_1 = 1",parseAll=True)
@@ -553,6 +572,8 @@ def test_select_pyparsing():
     assert select_4_parse.order_by.order_by_set[0].function_id == 'typicality'
     assert select_4_parse.limit == '10'
     assert select_4_parse.filename == '~/test.txt'
+    
+
     
     
 def test_list_btables():
