@@ -18,6 +18,7 @@
 #   limitations under the License.
 #
 
+import inspect
 import numpy
 import os
 import re
@@ -137,7 +138,12 @@ def summarize_table(data, columns, M_c):
     df = pandas.DataFrame(data=data, columns=columns)
 
     # Remove row_id column since summary stats of row_id are meaningless - add it back at the end
-    df.drop(['row_id'], inplace=True, axis=1)
+    # The 'inplace' argument to df.drop() was added to pandas in a version (which one??) that many people may
+    # not have. So, check to see if 'inplace' exists, otherwise don't pass it -- this just copies the dataframe.
+    if 'inplace' in inspect.getargspec(df.drop).args:
+        df.drop(['row_id'], inplace=True, axis=1)
+    else:
+        df.drop(['row_id'], axis=1)
 
     # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
     # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a 
