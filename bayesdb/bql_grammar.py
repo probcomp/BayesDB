@@ -136,6 +136,14 @@ show_models_for_keyword = Combine(show_keyword + single_white + model_keyword +
                                   single_white + for_keyword).setResultsName("statement_id")
 show_diagnostics_for_keyword = Combine(show_keyword + single_white + diagnostics_keyword + 
                                        single_white + for_keyword).setResultsName("statement_id")
+show_column_lists_for_keyword = Combine(show_keyword + single_white + column_keyword + 
+                                        single_white + list_keyword + 
+                                        single_white + for_keyword).setResultsName("statement_id")
+show_columns_for_keyword = Combine(show_keyword + single_white + column_keyword + 
+                                   single_white + for_keyword).setResultsName("statement_id")
+show_row_lists_for_keyword = Combine(show_keyword + single_white + row_keyword + 
+                                 single_white + list_keyword + 
+                                 single_white + for_keyword).setResultsName("statement_id")
 estimate_pairwise_keyword = Combine(estimate_keyword + single_white + 
                                     pairwise_keyword).setResultsName("statement_id")
 estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
@@ -231,14 +239,13 @@ analyze_function = (analyze_keyword + btable +
 # LIST BTABLES
 list_btables_function = list_btables_keyword
 
-# SHOW SCHEMA FOR <btable>
-show_schema_for_function = show_schema_for_keyword + btable
-
-# SHOW MODELS FOR <btable>
-show_models_for_function = show_models_for_keyword + btable
-
-# SHOW DIAGNOSTICS FOR <btable>
-show_diagnostics_for_function = show_diagnostics_for_keyword + btable
+show_for_btable_statement = ((show_schema_for_keyword | 
+                              show_models_for_keyword | 
+                              show_diagnostics_for_keyword | 
+                              show_column_lists_for_keyword |  
+                              show_columns_for_keyword | 
+                              show_row_lists_for_keyword) + 
+                             btable)
 
 # LOAD MODELS <filename.pkl.gz> INTO <btable>
 load_model_function = load_model_keyword + filename + Suppress(into_keyword) + btable
@@ -349,7 +356,7 @@ select_query = (select_keyword.setResultsName("query_id") +
                  typicality_function | 
                  similarity_to_function) + 
                 Suppress(from_keyword) + 
-                identifier.setResultsName("btable") + 
+                btable + 
                 Optional(where_clause) + 
                 Each(Optional(order_by_clause) + 
                      Optional(Suppress(limit_keyword) + 
