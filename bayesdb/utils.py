@@ -133,17 +133,20 @@ def summarize_table(data, columns, M_c):
     Return: columns should be the same, except with another column prepended called like "summaries" or something.
     Return: data should be summaries now.
     """
+    # The 'inplace' argument to df.drop() was added to pandas in a version (which one??) that many people may
+    # not have. So, check to see if 'inplace' exists, otherwise don't pass it -- this just copies the dataframe.
+    def df_drop(df, column_list, **kwargs):
+        if 'inplace' in inspect.getargspec(df.drop).args:
+            df.drop(column_list, inplace=True, **kwargs)
+        else:
+            df.drop(column_list, **kwargs)            
 
+            
     # Construct a pandas.DataFrame out of data and columns
     df = pandas.DataFrame(data=data, columns=columns)
 
     # Remove row_id column since summary stats of row_id are meaningless - add it back at the end
-    # The 'inplace' argument to df.drop() was added to pandas in a version (which one??) that many people may
-    # not have. So, check to see if 'inplace' exists, otherwise don't pass it -- this just copies the dataframe.
-    if 'inplace' in inspect.getargspec(df.drop).args:
-        df.drop(['row_id'], inplace=True, axis=1)
-    else:
-        df.drop(['row_id'], axis=1)
+    df_drop(df, ['row_id'], axis=1)
 
     # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
     # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a 
@@ -155,7 +158,7 @@ def summarize_table(data, columns, M_c):
     # If there were discrete columns, remove 'top' and 'freq' rows, because we'll replace those
     # with the mode and empirical probabilities
     if 'top' in summary_describe.index and 'freq' in summary_describe.index:
-        summary_describe.drop(['top', 'freq'], inplace=True)
+        df_drop(summary_describe, ['top', 'freq'])
 
     # Function to calculate the most frequent values for each column
     def get_column_freqs(x, n=5):
