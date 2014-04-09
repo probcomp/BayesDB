@@ -187,9 +187,6 @@ def summarize_table(data, columns, M_c):
     # Insert column of stat descriptions - allow duplication of column name in case user's data has a column named stat
     summary_data.insert(0, 'stat', summary_data.index, allow_duplicates=True)
 
-    # Recreate row_index for summary output
-    summary_data.insert(0, 'row_index', range(summary_data.shape[0]), allow_duplicates=True)
-
     data = summary_data.to_records(index=False)
     columns = list(summary_data.columns)
     return data, columns
