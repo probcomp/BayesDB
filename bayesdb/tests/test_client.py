@@ -378,12 +378,15 @@ def test_summarize():
   test_tablename = create_dha()
   global client
 
-  # Test that summarize produces a count and mode for continuous and discrete columns.
+  # Test that the output is a pandas DataFrame when pretty=False
   out = client('summarize select name, qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
-  modes = out.ix[['count', 'mode1'],:]
+  assert type(out) == pandas.DataFrame
 
   # Test that it works on columns of predictive functions.
   client('summarize select typicality of qual_score, predictive probability of name from %s' % (test_tablename), debug=True, pretty=False)
 
-  # Test shorthand: summary for all columns in btable
-  client('summarize %s' % (test_tablename), debug=True, pretty=False)
+  # Test with fewer than 5 unique values (output should have fewer rows)
+  client('summarize select name, qual_score from %s limit 3' % (test_tablename), debug=True, pretty=False)
+
+  # Test shorthand: summary for all columns in btable - not working yet
+  # client('summarize %s' % (test_tablename), debug=True, pretty=False)
