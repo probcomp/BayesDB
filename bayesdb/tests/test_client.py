@@ -383,10 +383,17 @@ def test_summarize():
   assert type(out) == pandas.DataFrame
 
   # Test that it works on columns of predictive functions.
-  client('summarize select typicality of qual_score, predictive probability of name from %s' % (test_tablename), debug=True, pretty=False)
+  client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
+  client('summarize select correlation of name with qual_score from %s' % (test_tablename), debug=True, pretty=False)
 
   # Test with fewer than 5 unique values (output should have fewer rows)
   client('summarize select name, qual_score from %s limit 3' % (test_tablename), debug=True, pretty=False)
+
+  # Test with only a discrete column
+  client('summarize select name from %s' % (test_tablename), debug=True, pretty=False)
+
+  # Test with only a continuous column
+  client('summarize select qual_score from %s' % (test_tablename), debug=True, pretty=False)
 
   # Test shorthand: summary for all columns in btable - not working yet
   # client('summarize %s' % (test_tablename), debug=True, pretty=False)
