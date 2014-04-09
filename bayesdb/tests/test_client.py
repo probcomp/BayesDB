@@ -405,6 +405,9 @@ def test_summarize():
   # Test with fewer than 5 unique values (output should have fewer rows)
   client('summarize select name, qual_score from %s limit 3' % (test_tablename), debug=True, pretty=False)
 
+  # Test with no rows
+  client('summarize select name, qual_score from %s where qual_score < 0' % (test_tablename), debug=True, pretty=False)
+
   # Test with only a discrete column
   client('summarize select name from %s' % (test_tablename), debug=True, pretty=False)
 
