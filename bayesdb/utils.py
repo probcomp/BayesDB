@@ -138,7 +138,7 @@ def summarize_table(data, columns, M_c):
         df = pandas.DataFrame(data=data, columns=columns)
 
         # Remove row_id column since summary stats of row_id are meaningless
-        if 'row_id' in df.index:
+        if 'row_id' in df.columns:
             df.drop(['row_id'], inplace=True, axis=1)
 
         # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
@@ -181,10 +181,16 @@ def summarize_table(data, columns, M_c):
 
         summary_freqs = df.apply(lambda x: get_column_freqs(x))
 
-        # Replace 'top' in row index with 'mode' for clearer meaning
-
         # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
         summary_data = pandas.concat([summary_describe, summary_freqs], axis=0)
+
+        # Reorder rows: count, unique, mean, std, min, 25%, 50%, 75%, max, modes, prob_modes
+        potential_index = pandas.Index(['count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
+            'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
+            'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5'])
+
+        reorder_index = potential_index[potential_index.isin(summary_data.index)]
+        summary_data = summary_data.loc[reorder_index]
 
         # Insert column of stat descriptions - allow duplication of column name in case user's data has a column named stat
         summary_data.insert(0, 'stat', summary_data.index, allow_duplicates=True)
