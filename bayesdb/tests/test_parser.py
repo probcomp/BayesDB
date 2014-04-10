@@ -710,6 +710,15 @@ def test_infer_pyparsing():
     assert infer_ast_9.samples == '4'
     assert infer_ast_9.confidence == '.4'
 
+def test_simulate_pyparsing():
+    query_1 = "SIMULATE * FROM table_1 WHERE column_1 = 4 TIMES 4 SAVE TO ~/test.csv"
+    simulate_ast = simulate_query.parseString(query_1,parseAll=True)
+    assert simulate_ast.query_id == 'simulate'
+    assert simulate_ast.columns == '*'
+    assert simulate_ast.where_keyword == 'where'
+    assert simulate_ast.times == '4'
+    assert simulate_ast.filename == '~/test.csv'
+
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'

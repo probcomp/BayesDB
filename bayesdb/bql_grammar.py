@@ -396,10 +396,17 @@ infer_query = (infer_keyword.setResultsName("query_id") +
                               Suppress(sample_keyword))))
 
 
-# SIMULATE 
+# SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <file>]
+simulate_query = (simulate_keyword.setResultsName('query_id') + 
+                  Optional(hist_keyword.setResultsName('hist')) + 
+                  (column_list_clause | all_column_literal).setResultsName('columns') + 
+                  Suppress(from_keyword) + btable + 
+                  Optional(where_clause) + 
+                  Suppress(times_keyword) + int_number.setResultsName("times") + 
+                  Optional(Suppress(save_to_keyword) + filename))
+                  
+# ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>]
 
-# ESTIMATE COLUMNS
+# ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>]
 
-# ESTIMATE PAIRWISE
-
-# ESTIMATE PAIRWISE ROWS
+# ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
