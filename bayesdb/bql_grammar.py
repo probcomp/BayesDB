@@ -158,12 +158,13 @@ column_lists_keyword = Combine(column_keyword + single_white + list_keyword)
 similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword).setResultsName("statement_id")
 with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
 probability_of_keyword = Combine(probability_keyword + single_white + of_keyword)
+typicality_of_keyword = Combine(typicality_keyword + single_white + of_keyword)
 predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_keyword + single_white + of_keyword)
 save_connected_components_with_threshold_keyword = Combine(save_keyword + single_white + 
                                                            connected_keyword + single_white + 
                                                            components_keyword + single_white + 
                                                            with_keyword + single_white + 
-                                                           threshold_keyword).setResultsName("statement_id")
+                                                           threshold_keyword)
 key_in_keyword = Combine(key_keyword + single_white + in_keyword)
 
 ## Values/Literals
@@ -292,6 +293,9 @@ similarity_to_function = (Group(similarity_to_keyword.setResultsName('function_i
 # TYPICALITY
 typicality_function = Group(typicality_keyword.setResultsName('function_id')).setResultsName('function')
 
+typicality_of_function = Group(typicality_of_keyword.setResultsName("function_id") + 
+                                           identifier.setResultsName("column")).setResultsName("function")
+
 # Functions of two columns for use in dependence probability, mutual information, correlation
 functions_of_two_columns_subclause = ((Suppress(with_keyword) + 
                                        identifier.setResultsName("with_column")) | 
@@ -347,14 +351,20 @@ where_clause = (where_keyword.setResultsName('where_keyword') +
 # ------------------------------- Query functions -------------------------- #
 
 # SELECT
+selectable_functions = (predictive_probability_of_function | 
+                        probability_of_function | 
+                        typicality_of_function | 
+                        typicality_function | 
+                        similarity_to_function | 
+                        dependence_probability_function | 
+                        mutual_information_function | 
+                        correlation_function)
+
 select_query = (select_keyword.setResultsName("query_id") + 
                 Optional(hist_keyword).setResultsName("hist") +
                 (Group((column_list_clause | 
                         all_column_literal).setResultsName("columns")).setResultsName("function") | 
-                 predictive_probability_of_function | 
-                 probability_of_function | 
-                 typicality_function | 
-                 similarity_to_function) + 
+                 selectable_functions) + 
                 Suppress(from_keyword) + 
                 btable + 
                 Optional(where_clause) + 

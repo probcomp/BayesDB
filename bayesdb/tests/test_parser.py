@@ -379,6 +379,12 @@ def test_predictive_probability_of_pyparsing():
     assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
                                                           parseAll=True).function.column == 'column_1'
 
+def test_typicality_of_pyparsing():
+    assert typicality_of_function.parseString("TYPICALITY OF column_1",
+                                                          parseAll=True).function.function_id == 'typicality of'
+    assert typicality_of_function.parseString("TYPICALITY OF column_1",
+                                                          parseAll=True).function.column == 'column_1'
+
 def test_order_by_clause_pyparsing():
     order_by_1 = order_by_clause.parseString("ORDER BY column_1"
                                              ,parseAll=True)
