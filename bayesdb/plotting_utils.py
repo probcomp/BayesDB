@@ -296,30 +296,24 @@ def parse_data_for_hist(colnames, data, M_c):
 
         elif 'normal_inverse_gamma' in types and 'symmetric_dirichlet_discrete' in types:
             output['datatype'] = 'multcont'
-            beans = {}
-            #TODO combine these cases with a variable to set the thigns that are different.
+            categories = {}
+
+            col = 0
+            type = 1
             if types[0] == 'normal_inverse_gamma':
-                groups = sorted(M_c['column_metadata'][M_c['name_to_idx'][columns[1]]]['code_to_value'].keys())
-                for i in groups:
-                    beans[i] = []
-                for i in data_no_id:
-                        beans[i[1]].append(i[0])
+                type = 0
+                col = 1
+            
+            groups = sorted(M_c['column_metadata'][M_c['name_to_idx'][columns[col]]]['code_to_value'].keys())
+            for i in groups:
+                categories[i] = []
+            for i in data_no_id:
+                categories[i[col]].append(i[type])
+                
+            output['groups'] = groups
+            output['values'] = [categories[x] for x in groups]
+            output['transpose'] = (type == 1)
 
-                output['groups'] = groups
-                output['values'] = [beans[x] for x in groups]
-                output['transpose'] = False
-            else:
-                groups = M_c['column_metadata'][M_c['name_to_idx'][columns[0]]]['code_to_value'].keys()
-                for i in groups:
-                    beans[i] = []
-                for i in data_no_id:
-                    beans[i[0]].append(i[1])
-
-                output['groups'] = groups
-                output['values'] = [beans[x] for x in groups]
-                output['transpose'] = True
-
-            group_types = set(output['groups'])
     else:
         output['datatype'] = None
     return output
