@@ -193,12 +193,13 @@ def summarize_table(data, columns, M_c):
         summary_data = pandas.concat([summary_describe, summary_freqs], axis=0)
 
         # Reorder rows: count, unique, mean, std, min, 25%, 50%, 75%, max, modes, prob_modes
-        potential_index = pandas.Index(['count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
-            'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
-            'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5'])
+        if hasattr(summary_data, 'loc'):
+            potential_index = pandas.Index(['count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
+                'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
+                'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5'])
 
-        reorder_index = potential_index[potential_index.isin(summary_data.index)]
-        summary_data = summary_data.loc[reorder_index]
+            reorder_index = potential_index[potential_index.isin(summary_data.index)]
+            summary_data = summary_data.loc[reorder_index]
 
         # Insert column of stat descriptions - we're going to leave this column name as a single space to avoid
         # having to prevent column name duplication (allow_duplicates is a newer pandas argument, and can't be sure it's available)
