@@ -351,12 +351,14 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
                 create_plot(data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[j-2], horizontal=False, compress=True, super_compress=super_compress)
 
             elif (j != 0 and i != len(columns)-1) and j < i+2:
-                
+                #pairwise joints
                 j_col = j-2
                 if j == 1:
                     j_col = len(columns) - 1
                 sub_colnames = [columns[i], columns[j_col]]
                 sub_data = [[x[i], x[j_col]] for x in data_no_id]
+                data = parse_data_for_hist(sub_colnames, sub_data, M_c)
+                create_plot(data, p.subplot(gsp[i, j]), False, False, horizontal=True, compress=True, super_compress=super_compress)
             else:
                 pass
 
