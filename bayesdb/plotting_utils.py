@@ -185,7 +185,6 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
     y0,y1 = subplot.get_ylim()
     aspect = (abs(float((x1-x0)))/abs(float((y1-y0))))
     subplot.set_aspect(aspect)
-
     return subplot
 
 def parse_data_for_hist(colnames, data, M_c):
@@ -358,8 +357,6 @@ def create_pairwise_plot(colnames, data, M_c, gsp):
                     j_col = len(columns) - 1
                 sub_colnames = [columns[i], columns[j_col]]
                 sub_data = [[x[i], x[j_col]] for x in data_no_id]
-                data = parse_data_for_hist(sub_colnames, sub_data, M_c)
-                create_plot(data, p.subplot(gsp[i, j]), False, False, horizontal=True, compress=True, super_compress=super_compress)
             else:
                 pass
 
