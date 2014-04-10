@@ -140,7 +140,6 @@ def summarize_table(data, columns, M_c):
             df.drop(column_list, inplace=True, **kwargs)
         else:
             df = df.drop(column_list, **kwargs)
-        return df
 
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
@@ -148,7 +147,7 @@ def summarize_table(data, columns, M_c):
 
         # Remove row_id column since summary stats of row_id are meaningless
         if 'row_id' in df.columns:
-            df = df_drop(df, ['row_id'], axis=1)
+            df_drop(df, ['row_id'], axis=1)
 
         # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
         # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a
@@ -201,7 +200,7 @@ def summarize_table(data, columns, M_c):
         reorder_index = potential_index[potential_index.isin(summary_data.index)]
         summary_data = summary_data.loc[reorder_index]
 
-        # Insert column of stat descriptions - we're going to leave this column name as an empty string to avoid
+        # Insert column of stat descriptions - we're going to leave this column name as a single space to avoid
         # having to prevent column name duplication (allow_duplicates is a newer pandas argument, and can't be sure it's available)
         summary_data.insert(0, ' ', summary_data.index)
 
