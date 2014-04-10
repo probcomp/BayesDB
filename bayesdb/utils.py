@@ -18,6 +18,7 @@
 #   limitations under the License.
 #
 
+import inspect
 import numpy
 import os
 import re
@@ -26,6 +27,7 @@ import ast
 import pylab
 import matplotlib.cm
 import time
+import pandas
 
 import data_utils as du
 import select_utils
@@ -119,6 +121,94 @@ def get_all_column_names_in_original_order(M_c):
     colname_to_idx_dict = M_c['name_to_idx']
     colnames = map(lambda tup: tup[0], sorted(colname_to_idx_dict.items(), key=lambda tup: tup[1]))
     return colnames
+
+def summarize_table(data, columns, M_c):
+    """
+    Returns a summary of the data.
+    Input: data is a list of lists, of raw data values about to be shown to the user.
+    Input: columns is a list of column names, as they will be displayed to the user. Note
+    that some column names may be things like "row_id" or predictive functions, not actually
+    columns.
+
+    Return: columns should be the same, except with another column prepended called like "summaries" or something.
+    Return: data should be summaries now.
+    """
+    # The 'inplace' argument to df.drop() was added to pandas in a version (which one??) that many people may
+    # not have. So, check to see if 'inplace' exists, otherwise don't pass it -- this just copies the dataframe.
+    def df_drop(df, column_list, **kwargs):
+        if 'inplace' in inspect.getargspec(df.drop).args:
+            df.drop(column_list, inplace=True, **kwargs)
+        else:
+            df = df.drop(column_list, **kwargs)
+
+    if len(data) > 0:
+        # Construct a pandas.DataFrame out of data and columns
+        df = pandas.DataFrame(data=data, columns=columns)
+
+        # Remove row_id column since summary stats of row_id are meaningless
+        if 'row_id' in df.columns:
+            df_drop(df, ['row_id'], axis=1)
+
+        # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
+        # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a
+        # discrete variable with numeric values might not have meaning, but it's easier just to do it and
+        # leave interpretation to the user, rather than try to figure out what's meaningful, especially with
+        # columns that are the result of predictive functions.
+        summary_describe = df.apply(lambda x: x.describe())
+
+        # If there were discrete columns, remove 'top' and 'freq' rows, because we'll replace those
+        # with the mode and empirical probabilities
+        if 'top' in summary_describe.index and 'freq' in summary_describe.index:
+            summary_describe = df_drop(summary_describe, ['top', 'freq'])
+
+        # Function to calculate the most frequent values for each column
+        def get_column_freqs(x, n=5):
+            """
+            Function to return most frequent n values of each column of the DataFrame being summarized.
+            Input: a DataFrame column, by default as Series type
+
+            Return: most frequent n values in x. Fill with numpy.nan if fewer than n unique values exist.
+            """
+            x_freqs  = x.value_counts()
+            x_probs  = list(x_freqs / len(x))
+            x_values = list(x_freqs.index)
+
+            if len(x_values) > n:
+                x_probs = x_probs[:n]
+                x_values = x_values[:n]
+
+            # Create index labels ('mode1/2/3/... and prob_mode1/2/3...')
+            x_range = range(1, len(x_values) + 1)
+            x_index = ['mode' + str(i) for i in x_range]
+            x_index += ['prob_mode' + str(i) for i in x_range]
+
+            # Combine values and probabilities into a single list
+            x_values.extend(x_probs)
+
+            return pandas.Series(data = x_values, index = x_index)
+
+        summary_freqs = df.apply(lambda x: get_column_freqs(x))
+
+        # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
+        summary_data = pandas.concat([summary_describe, summary_freqs], axis=0)
+
+        # Reorder rows: count, unique, mean, std, min, 25%, 50%, 75%, max, modes, prob_modes
+        if hasattr(summary_data, 'loc'):
+            potential_index = pandas.Index(['count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
+                'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
+                'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5'])
+
+            reorder_index = potential_index[potential_index.isin(summary_data.index)]
+            summary_data = summary_data.loc[reorder_index]
+
+        # Insert column of stat descriptions - we're going to leave this column name as a single space to avoid
+        # having to prevent column name duplication (allow_duplicates is a newer pandas argument, and can't be sure it's available)
+        summary_data.insert(0, ' ', summary_data.index)
+
+        data = summary_data.to_records(index=False)
+        columns = list(summary_data.columns)
+
+    return data, columns
 
 def column_string_splitter(columnstring, M_c=None, column_lists=None):
     """
