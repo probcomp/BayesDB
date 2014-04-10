@@ -718,6 +718,11 @@ def test_simulate_pyparsing():
     assert simulate_ast.where_keyword == 'where'
     assert simulate_ast.times == '4'
     assert simulate_ast.filename == '~/test.csv'
+    query_2 = "SIMULATE col1,col2 FROM table_1 WHERE column_1 = 4 TIMES 4 SAVE TO ~/test.csv"
+    simulate_ast = simulate_query.parseString(query_2,parseAll=True)
+    assert simulate_ast.columns.asList() == ['col1','col2']
+
+
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
