@@ -351,7 +351,10 @@ where_clause = (where_keyword.setResultsName('where_keyword') +
 # ------------------------------- Query functions -------------------------- #
 
 # SELECT
-selectable_functions = (predictive_probability_of_function | 
+selectable_functions = (Group((column_list_clause | 
+                               all_column_literal)
+                              .setResultsName("columns")).setResultsName("function") |
+                        predictive_probability_of_function | 
                         probability_of_function | 
                         typicality_of_function | 
                         typicality_function | 
@@ -360,11 +363,11 @@ selectable_functions = (predictive_probability_of_function |
                         mutual_information_function | 
                         correlation_function)
 
+select_clause = Group(selectable_functions + ZeroOrMore(Suppress(comma_literal + selectable_functions))).setResultsName("select_clause")
+
 select_query = (select_keyword.setResultsName("query_id") + 
                 Optional(hist_keyword).setResultsName("hist") +
-                (Group((column_list_clause | 
-                        all_column_literal).setResultsName("columns")).setResultsName("function") | 
-                 selectable_functions) + 
+                select_clause + 
                 Suppress(from_keyword) + 
                 btable + 
                 Optional(where_clause) + 
@@ -381,3 +384,5 @@ select_query = (select_keyword.setResultsName("query_id") +
 # ESTIMATE COLUMNS
 
 # ESTIMATE PAIRWISE
+
+# ESTIMATE PAIRWISE ROWS

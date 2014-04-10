@@ -567,21 +567,21 @@ def test_select_pyparsing():
     select_1_parse = select_query.parseString(select_1,parseAll=True)
     assert select_1_parse.query_id == 'select'
     assert select_1_parse.btable == 'table_1'
-    assert select_1_parse.function.columns == '*'
+    assert select_1_parse.select_clause[0].columns == '*'
     select_2 = "SELECT column_1,column_3 FROM table_1"
     select_2_parse = select_query.parseString(select_2,parseAll=True)
-    assert select_2_parse.function.columns.asList() == ['column_1','column_3']
+    assert select_2_parse.select_clause[0].columns.asList() == ['column_1','column_3']
     select_3 = "SELECT HIST column_1 FROM table_1 WHERE column_2 = 3"
     select_3_parse = select_query.parseString(select_3,parseAll=True)
     assert select_3_parse.hist == 'hist'
-    assert select_3_parse.function.columns.asList() == ['column_1']
+    assert select_3_parse.select_clause[0].columns.asList() == ['column_1']
     assert select_3_parse.where_keyword == 'where'
     assert select_3_parse.where_conditions[0].value == '3'
     assert select_3_parse.where_conditions[0].function.column == 'column_2'
     assert select_3_parse.where_conditions[0].operation == '='
     select_4 = "SELECT col_1 FROM table_1 ORDER BY TYPICALITY LIMIT 10 SAVE TO ~/test.txt"
     select_4_parse = select_query.parseString(select_4,parseAll=True)
-    assert select_4_parse.function.columns.asList() == ['col_1']
+    assert select_4_parse.select_clause[0].columns.asList() == ['col_1']
     assert select_4_parse.order_by.order_by_set[0].function_id == 'typicality'
     assert select_4_parse.limit == '10'
     assert select_4_parse.filename == '~/test.txt'
