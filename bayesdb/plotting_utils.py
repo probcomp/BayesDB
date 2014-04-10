@@ -36,6 +36,7 @@ def turn_off_labels(subplot):
     subplot.axes.get_xaxis().set_visible(False)
     subplot.axes.get_yaxis().set_visible(False)
          
+
 def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pairwise=False):
     '''
     colnames: list of column names
@@ -62,16 +63,14 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
     if parsed_data['datatype'] == 'mult1D':
         if len(parsed_data['data']) == 0:
             return
-        
-        subplot.tick_params(top='off', bottom='off', left='off', right='off')
-        labels = parsed_data['labels']
-        datapoints = parsed_data['data']
-        num_vals = len(labels)
-        ind = np.arange(num_vals)
-        width = .5
-
         if 'horizontal' in kwargs and kwargs['horizontal']:
+            subplot.tick_params(top='off', bottom='off', left='off', right='off')
             subplot.axes.get_yaxis().set_ticks([])
+            labels = parsed_data['labels']
+            datapoints = parsed_data['data']
+            num_vals = len(labels)
+            ind = np.arange(num_vals)
+            width = .5
             subplot.barh(ind, datapoints, width, color=matplotlib.cm.Blues(0.5), align='center')
 
             # rotate major label if super compress
@@ -80,6 +79,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
                 rot = 0
             else:
                 rot = 90
+                #subplot.set_ylabel(parsed_data['axis_label'], rotation=rot)                
             
             if (not compress and len(labels) < 15) or (compress and len(labels) < 5):
                 subplot.axes.get_yaxis().set_ticks(range(len(labels)))
@@ -87,7 +87,13 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
             if compress:
                 subplot.axes.get_xaxis().set_visible(False)
         else:
+            subplot.tick_params(top='off', bottom='off', left='off', right='off')
             subplot.axes.get_xaxis().set_ticks([])
+            labels = parsed_data['labels']
+            datapoints = parsed_data['data']
+            num_vals = len(labels)
+            ind = np.arange(num_vals)
+            width = .5
             subplot.bar(ind, datapoints, width, color=matplotlib.cm.Blues(0.5), align='center')
 
             # rotate major label if super compress
@@ -96,6 +102,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
                 rot = 90
             else:
                 rot = 0
+                #subplot.set_xlabel(parsed_data['axis_label'], rotation=rot)                
             
             if (not compress and len(labels) < 15) or (compress and len(labels) < 5):
                 subplot.axes.get_xaxis().set_ticks(range(len(labels)))
@@ -104,10 +111,10 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
                 subplot.axes.get_yaxis().set_visible(False)
         
     elif parsed_data['datatype'] == 'cont1D':
-        dat = parsed_data['data']
-        if len(dat) == 0:
+        if len(parsed_data['data']) == 0:
             return
-        subplot.series = pd.Series(dat)
+        datapoints = parsed_data['data']
+        subplot.series = pd.Series(datapoints)
         if 'horizontal' in kwargs and kwargs['horizontal']:
             subplot.series.hist(normed=True, color=matplotlib.cm.Blues(0.5), orientation='horizontal')
             subplot.set_ylabel(parsed_data['axis_label'])
@@ -124,12 +131,9 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
                 subplot.series.dropna().plot(kind='kde', style='r--')                 
 
     elif parsed_data['datatype'] == 'contcont':
-        dat_x = parsed_data['data_x']
-        dat_y = parsed_data['data_y']
-        if len(dat_x) == 0 or len(dat_y) == 0:
+        if len(parsed_data['data_y']) == 0 or len(parsed_data['data_x']) == 0:
             return
-        subplot.hist2d(dat_y, dat_x, bins=max(len(dat_x)/200,40), norm=LogNorm(), cmap=matplotlib.cm.Blues)
-        
+        subplot.hist2d(parsed_data['data_y'], parsed_data['data_x'], bins=max(len(parsed_data['data_x'])/200,40), norm=LogNorm(), cmap=matplotlib.cm.Blues)
         if not compress:
             subplot.set_xlabel(parsed_data['axis_label_x'])
             subplot.set_ylabel(parsed_data['axis_label_y'])
@@ -137,16 +141,13 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
             turn_off_labels(subplot)
         
     elif parsed_data['datatype'] == 'multmult':
-        dat = parsed_data['data']
-        if len(dat) == 0:
+        if len(parsed_data['data']) == 0:
             return
-        
-        unique_xs = parsed_data['labels_x']
-        unique_ys = parsed_data['labels_y']
-
         subplot.tick_params(labelcolor='b', top='off', bottom='off', left='off', right='off')
         subplot.axes.get_xaxis().set_ticks([])
-        
+        unique_xs = parsed_data['labels_x']
+        unique_ys = parsed_data['labels_y']
+        dat = parsed_data['data']
         norm_a = Normalize(vmin=dat.min(), vmax=dat.max()) 
         subplot.imshow(parsed_data['data'],norm=Normalize(), interpolation='nearest',  cmap=matplotlib.cm.Blues, aspect = float(len(unique_xs))/len(unique_ys))
 
@@ -154,7 +155,6 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         subplot.axes.get_xaxis().set_ticklabels(unique_xs, rotation=90)
         subplot.axes.get_yaxis().set_ticks(range(len(unique_ys)))
         subplot.axes.get_yaxis().set_ticklabels(unique_ys)
-        
         if not compress:
             subplot.set_xlabel(parsed_data['axis_label_x'])
             subplot.set_ylabel(parsed_data['axis_label_y'])
