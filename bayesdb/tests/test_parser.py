@@ -562,7 +562,7 @@ def test_key_in_rowlist():
     assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).function.function_id == "key in"
     assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).function.row_list == "row_list_1"
 
-def test_select_pyparsing():
+def test_basic_select_pyparsing():
     select_1 = "SELECT * FROM table_1"
     select_1_parse = select_query.parseString(select_1,parseAll=True)
     assert select_1_parse.query_id == 'select'
@@ -586,9 +586,48 @@ def test_select_pyparsing():
     assert select_4_parse.limit == '10'
     assert select_4_parse.filename == '~/test.txt'
     
+def test_select_functions_pyparsing():
+    query_1 = "SELECT TYPICALITY FROM table_1"
+    query_2 = "SELECT TYPICALITY OF column_1 FROM table_1"
+    query_3 = "SELECT PREDICTIVE PROBABILITY OF column_1 FROM table_1"
+    query_4 = "SELECT PROBABILITY OF column_1 = 4 FROM table_1"
+    query_5 = "SELECT SIMILARITY TO 0 FROM table_1"
+    query_5 = "SELECT SIMILARITY TO column_1 = 4 FROM table_1"
+    query_6 = "SELECT DEPENDENCE PROBABILITY WITH column_1 FROM table_1"
+    query_7 = "SELECT MUTUAL INFORMATION OF column_1 WITH column_2 FROM table_1"
+    query_8 = "SELECT CORRELATION OF column_1 WITH column_2 FROM table_1"
+    query_9 = "SELECT TYPICALITY, PREDICTIVE PROBABILITY OF column_1 FROM table_1"
+    select_ast_1 = select_query.parseString(query_1,parseAll=True)
+    select_ast_2 = select_query.parseString(query_2,parseAll=True)
+    select_ast_3 = select_query.parseString(query_3,parseAll=True)
+    select_ast_4 = select_query.parseString(query_4,parseAll=True)
+    select_ast_5 = select_query.parseString(query_5,parseAll=True)
+    select_ast_6 = select_query.parseString(query_6,parseAll=True)
+    select_ast_7 = select_query.parseString(query_7,parseAll=True)
+    select_ast_8 = select_query.parseString(query_8,parseAll=True)
+    select_ast_9 = select_query.parseString(query_9,parseAll=True)
+    assert select_ast_1.query_id == 'select'
+    assert select_ast_2.query_id == 'select'
+    assert select_ast_3.query_id == 'select'
+    assert select_ast_4.query_id == 'select'
+    assert select_ast_5.query_id == 'select'
+    assert select_ast_5.query_id == 'select'
+    assert select_ast_6.query_id == 'select'
+    assert select_ast_7.query_id == 'select'
+    assert select_ast_8.query_id == 'select'
+    assert select_ast_9.query_id == 'select'    
+    assert select_ast_1.select_clause[0].function_id == 'typicality'
+    assert select_ast_2.select_clause[0].function_id == 'typicality of'
+    assert select_ast_3.select_clause[0].function_id == 'predictive probability of'
+    assert select_ast_4.select_clause[0].function_id == 'probability of'
+    assert select_ast_5.select_clause[0].function_id == 'similarity to'
+    assert select_ast_5.select_clause[0].function_id == 'similarity to'
+    assert select_ast_6.select_clause[0].function_id == 'dependence probability'
+    assert select_ast_7.select_clause[0].function_id == 'mutual information'
+    assert select_ast_8.select_clause[0].function_id == 'correlation'
+    assert select_ast_9.select_clause[0].function_id == 'typicality'
+    assert select_ast_9.select_clause[1].function_id == 'predictive probability of'
 
-    
-    
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
