@@ -364,11 +364,11 @@ selectable_functions = (predictive_probability_of_function |
                               .setResultsName("columns"))
                         .setResultsName("function"))
 
-select_clause = Group(selectable_functions + ZeroOrMore(Suppress(comma_literal) + selectable_functions)).setResultsName("select_clause")
+select_clause = Group(selectable_functions + ZeroOrMore(Suppress(comma_literal) + selectable_functions))
 
 select_query = (select_keyword.setResultsName("query_id") + 
                 Optional(hist_keyword).setResultsName("hist") +
-                select_clause + 
+                select_clause.setResultsName("select_clause") + 
                 Suppress(from_keyword) + 
                 btable + 
                 Optional(where_clause) + 
@@ -379,6 +379,22 @@ select_query = (select_keyword.setResultsName("query_id") +
                               filename)))
 
 # INFER
+infer_query = (infer_keyword.setResultsName("query_id") + 
+                Optional(hist_keyword).setResultsName("hist") +
+                select_clause.setResultsName("infer_clause") + 
+                Suppress(from_keyword) + 
+                btable + 
+                Optional(where_clause) + 
+                Each(Optional(order_by_clause) + 
+                     Optional(Suppress(limit_keyword) + 
+                              int_number.setResultsName("limit")) + 
+                     Optional(Suppress(save_to_keyword) + 
+                              filename) + 
+                     Optional(with_confidence_clause) +
+                     Optional(Suppress(with_keyword) + 
+                              int_number.setResultsName('samples') + 
+                              Suppress(sample_keyword))))
+
 
 # SIMULATE 
 

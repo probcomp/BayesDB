@@ -628,6 +628,88 @@ def test_select_functions_pyparsing():
     assert select_ast_9.select_clause[0].function_id == 'typicality'
     assert select_ast_9.select_clause[1].function_id == 'predictive probability of'
 
+def test_infer_pyparsing():
+    infer_1 = "INFER * FROM table_1"
+    infer_1_parse = infer_query.parseString(infer_1,parseAll=True)
+    assert infer_1_parse.query_id == 'infer'
+    assert infer_1_parse.btable == 'table_1'
+    assert infer_1_parse.infer_clause[0].columns == '*'
+    infer_2 = "infer column_1,column_3 FROM table_1"
+    infer_2_parse = infer_query.parseString(infer_2,parseAll=True)
+    assert infer_2_parse.infer_clause[0].columns.asList() == ['column_1','column_3']
+    infer_3 = "infer HIST column_1 FROM table_1 WHERE column_2 = 3"
+    infer_3_parse = infer_query.parseString(infer_3,parseAll=True)
+    assert infer_3_parse.hist == 'hist'
+    assert infer_3_parse.infer_clause[0].columns.asList() == ['column_1']
+    assert infer_3_parse.where_keyword == 'where'
+    assert infer_3_parse.where_conditions[0].value == '3'
+    assert infer_3_parse.where_conditions[0].function.column == 'column_2'
+    assert infer_3_parse.where_conditions[0].operation == '='
+    infer_4 = "infer col_1 FROM table_1 ORDER BY TYPICALITY LIMIT 10 SAVE TO ~/test.txt"
+    infer_4_parse = infer_query.parseString(infer_4,parseAll=True)
+    assert infer_4_parse.infer_clause[0].columns.asList() == ['col_1']
+    assert infer_4_parse.order_by.order_by_set[0].function_id == 'typicality'
+    assert infer_4_parse.limit == '10'
+    assert infer_4_parse.filename == '~/test.txt'
+    query_1 = "INFER TYPICALITY FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_2 = "INFER TYPICALITY OF column_1 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_3 = "INFER PREDICTIVE PROBABILITY OF column_1 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_4 = "INFER PROBABILITY OF column_1 = 4 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_5 = "INFER SIMILARITY TO 0 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_5 = "INFER SIMILARITY TO column_1 = 4 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_6 = "INFER DEPENDENCE PROBABILITY WITH column_1 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_7 = "INFER MUTUAL INFORMATION OF column_1 WITH column_2 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_8 = "INFER CORRELATION OF column_1 WITH column_2 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_9 = "INFER TYPICALITY, PREDICTIVE PROBABILITY OF column_1 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    infer_ast_1 = infer_query.parseString(query_1,parseAll=True)
+    infer_ast_2 = infer_query.parseString(query_2,parseAll=True)
+    infer_ast_3 = infer_query.parseString(query_3,parseAll=True)
+    infer_ast_4 = infer_query.parseString(query_4,parseAll=True)
+    infer_ast_5 = infer_query.parseString(query_5,parseAll=True)
+    infer_ast_6 = infer_query.parseString(query_6,parseAll=True)
+    infer_ast_7 = infer_query.parseString(query_7,parseAll=True)
+    infer_ast_8 = infer_query.parseString(query_8,parseAll=True)
+    infer_ast_9 = infer_query.parseString(query_9,parseAll=True)
+    assert infer_ast_1.query_id == 'infer'
+    assert infer_ast_2.query_id == 'infer'
+    assert infer_ast_3.query_id == 'infer'
+    assert infer_ast_4.query_id == 'infer'
+    assert infer_ast_5.query_id == 'infer'
+    assert infer_ast_5.query_id == 'infer'
+    assert infer_ast_6.query_id == 'infer'
+    assert infer_ast_7.query_id == 'infer'
+    assert infer_ast_8.query_id == 'infer'
+    assert infer_ast_9.query_id == 'infer'    
+    assert infer_ast_1.infer_clause[0].function_id == 'typicality'
+    assert infer_ast_2.infer_clause[0].function_id == 'typicality of'
+    assert infer_ast_3.infer_clause[0].function_id == 'predictive probability of'
+    assert infer_ast_4.infer_clause[0].function_id == 'probability of'
+    assert infer_ast_5.infer_clause[0].function_id == 'similarity to'
+    assert infer_ast_5.infer_clause[0].function_id == 'similarity to'
+    assert infer_ast_6.infer_clause[0].function_id == 'dependence probability'
+    assert infer_ast_7.infer_clause[0].function_id == 'mutual information'
+    assert infer_ast_8.infer_clause[0].function_id == 'correlation'
+    assert infer_ast_9.infer_clause[0].function_id == 'typicality'
+    assert infer_ast_9.infer_clause[1].function_id == 'predictive probability of'
+    assert infer_ast_1.samples == '4'
+    assert infer_ast_1.confidence == '.4'
+    assert infer_ast_2.samples == '4'
+    assert infer_ast_2.confidence == '.4'
+    assert infer_ast_3.samples == '4'
+    assert infer_ast_3.confidence == '.4'
+    assert infer_ast_4.samples == '4'
+    assert infer_ast_4.confidence == '.4'
+    assert infer_ast_5.samples == '4'
+    assert infer_ast_5.confidence == '.4'
+    assert infer_ast_6.samples == '4'
+    assert infer_ast_6.confidence == '.4'
+    assert infer_ast_7.samples == '4'
+    assert infer_ast_7.confidence == '.4'
+    assert infer_ast_8.samples == '4'
+    assert infer_ast_8.confidence == '.4'
+    assert infer_ast_9.samples == '4'
+    assert infer_ast_9.confidence == '.4'
+
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
