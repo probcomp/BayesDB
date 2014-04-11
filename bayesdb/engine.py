@@ -327,8 +327,9 @@ class Engine(object):
     ret['message'] = 'Analyze complete.'
     return ret
 
-  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None):
-    """Impute missing values.
+  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False):
+    """
+    Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
     Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
     Argument newtablename == null/emptystring if we don't want to do INTO
@@ -342,9 +343,9 @@ class Engine(object):
       numsamples=50
       
     return self.select(tablename, columnstring, whereclause, limit, order_by,
-                       impute_confidence=confidence, num_impute_samples=numsamples, plot=plot)
+                       impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, summarize=summarize)
     
-  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None):
+  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False):
     """
     BQL's version of the SQL SELECT query.
     
@@ -413,9 +414,13 @@ class Engine(object):
     ret = dict(data=data, columns=query_colnames)
     if plot:
       ret['M_c'] = M_c
+    elif summarize:
+      data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c)
+      ret['data'] = data
+      ret['columns'] = columns
     return ret
 
-  def simulate(self, tablename, columnstring, newtablename, givens, numpredictions, order_by, plot=False, modelids=None):
+  def simulate(self, tablename, columnstring, newtablename, givens, numpredictions, order_by, plot=False, modelids=None, summarize=False):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
@@ -478,6 +483,10 @@ class Engine(object):
     ret = {'columns': colnames, 'data': data}
     if plot:
       ret['M_c'] = M_c
+    elif summarize:
+      data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c)
+      ret['data'] = data
+      ret['columns'] = columns      
     return ret
 
   def show_column_lists(self, tablename):

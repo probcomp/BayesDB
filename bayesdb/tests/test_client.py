@@ -390,6 +390,33 @@ def test_pandas():
   client("drop btable %s" % (test_tablename), yes=True)
   client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df)
 
+def test_summarize():
+  test_tablename = create_dha()
+  global client
+
+  # Test that the output is a pandas DataFrame when pretty=False
+  out = client('summarize select name, qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
+  assert type(out) == pandas.DataFrame
+
+  # Test that it works on columns of predictive functions.
+  client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
+  client('summarize select correlation of name with qual_score from %s' % (test_tablename), debug=True, pretty=False)
+
+  # Test with fewer than 5 unique values (output should have fewer rows)
+  client('summarize select name, qual_score from %s limit 3' % (test_tablename), debug=True, pretty=False)
+
+  # Test with no rows
+  client('summarize select name, qual_score from %s where qual_score < 0' % (test_tablename), debug=True, pretty=False)
+
+  # Test with only a discrete column
+  client('summarize select name from %s' % (test_tablename), debug=True, pretty=False)
+
+  # Test with only a continuous column
+  client('summarize select qual_score from %s' % (test_tablename), debug=True, pretty=False)
+
+  # Test shorthand: summary for all columns in btable - not working yet
+  # client('summarize %s' % (test_tablename), debug=True, pretty=False)
+
 def test_select_where_col_equal_val():
   test_tablename = create_dha()
   global client, test_filenames
@@ -397,3 +424,4 @@ def test_select_where_col_equal_val():
   basic_similarity = client('select * from %s where similarity to 1 > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['row_id']
   col_val_similarity = client('select * from %s where similarity to name = "Akron OH" > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['row_id']
   assert len(basic_similarity) == len(col_val_similarity)
+
