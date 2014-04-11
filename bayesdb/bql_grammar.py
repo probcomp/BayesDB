@@ -272,9 +272,9 @@ row_clause = (int_number.setResultsName("row_id") |
                Suppress(equal_literal) + 
                value.setResultsName("column_value")))
 
-column_list_clause = Group(identifier + 
+column_list_clause = Group((identifier | all_column_literal) + 
                            ZeroOrMore(Suppress(comma_literal) + 
-                                      identifier)).setResultsName("column_list")
+                                      (identifier | all_column_literal))).setResultsName("column_list")
 
 # SAVE TO <file>
 save_to_clause = save_to_keyword + filename#todo names
@@ -351,7 +351,7 @@ where_clause = (where_keyword.setResultsName('where_keyword') +
 
 # ------------------------------- Query functions -------------------------- #
 
-# SELECT
+# SELECT # TODO wrap into master query
 selectable_functions = (predictive_probability_of_function | 
                         probability_of_function | 
                         typicality_of_function | 
@@ -365,8 +365,10 @@ selectable_functions = (predictive_probability_of_function |
                               .setResultsName("columns"))
                         .setResultsName("function"))
 
+# TODO wrap into master query
 select_clause = Group(selectable_functions + ZeroOrMore(Suppress(comma_literal) + selectable_functions))
 
+# TODO wrap into master query
 select_query = (select_keyword.setResultsName("query_id") + 
                 Optional(hist_keyword).setResultsName("hist") +
                 select_clause.setResultsName("select_clause") + 
@@ -380,6 +382,7 @@ select_query = (select_keyword.setResultsName("query_id") +
                               filename)))
 
 # INFER
+# TODO wrap into master query
 infer_query = (infer_keyword.setResultsName("query_id") + 
                 Optional(hist_keyword).setResultsName("hist") +
                 select_clause.setResultsName("infer_clause") + 
@@ -398,6 +401,7 @@ infer_query = (infer_keyword.setResultsName("query_id") +
 
 
 # SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <file>]
+# TODO wrap into master query
 simulate_query = (simulate_keyword.setResultsName('query_id') + 
                   Optional(hist_keyword.setResultsName('hist')) + 
                   (column_list_clause | all_column_literal).setResultsName('columns') + 
@@ -407,6 +411,7 @@ simulate_query = (simulate_keyword.setResultsName('query_id') +
                   Optional(Suppress(save_to_keyword) + filename))
                   
 # ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>]
+# TODO wrap into master query
 estimate_columns_from_function = (estimate_columns_from_keyword.setResultsName('query_id') + 
                                   btable + 
                                   Optional(where_clause) + 
@@ -415,6 +420,7 @@ estimate_columns_from_function = (estimate_columns_from_keyword.setResultsName('
                                   Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list")))
 
 # ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>]
+# TODO wrap into master query
 estimate_pairwise_function = (estimate_pairwise_keyword.setResultsName('query_id') + 
                               (correlation_function | 
                                dependence_probability_function | 
@@ -432,10 +438,10 @@ estimate_pairwise_function = (estimate_pairwise_keyword.setResultsName('query_id
                                        identifier.setResultsName('as_column_list')))
 
 # ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
-column_list_clause = Group(int_number + 
+row_list_clause = Group(int_number + 
                            ZeroOrMore(Suppress(comma_literal) + 
                                       int_number)).setResultsName("row_list")
-
+# TODO wrap into master query
 estimate_pairwise_row_function = (estimate_pairwise_keyword.setResultsName('query_id') + 
                                   Combine(row_keyword + 
                                           single_white + 
@@ -443,7 +449,7 @@ estimate_pairwise_row_function = (estimate_pairwise_keyword.setResultsName('quer
                                   Suppress(from_keyword) + 
                                   btable + 
                                   Optional(for_keyword + 
-                                           column_list_clause.setResultsName('rows')) + 
+                                           row_list_clause.setResultsName('rows')) + 
                                   Optional(save_to_keyword + 
                                            filename) + 
                                   Optional(save_connected_components_keyword
@@ -451,3 +457,27 @@ estimate_pairwise_row_function = (estimate_pairwise_keyword.setResultsName('quer
                                            float_number.setResultsName("threshold") + 
                                            ((as_keyword + identifier.setResultsName('as_btable')) | 
                                             (into_keyword + identifier.setResultsName('into_btable')))))
+
+
+# ----------------------------- Master Query Syntax ---------------------------------------- #
+
+query_ids = (select_keyword | 
+             infer_keyword | 
+             simulate_keyword | 
+             estimate_columns_from_keyword | 
+             estimate_pairwise_keyword | 
+             estimate_pairwise_row_keyword).setResultsName('query_id')
+
+function_in_query = (predictive_probability_of_function | 
+                     probability_of_function | 
+                     typicality_of_function | 
+                     typicality_function | 
+                     similarity_to_function | 
+                     dependence_probability_function | 
+                     mutual_information_function | 
+                     correlation_function | 
+                     Group((column_list_clause)
+                           .setResultsName("columns"))
+                     .setResultsName("function"))
+
+#query = query_id + 

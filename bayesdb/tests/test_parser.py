@@ -1,4 +1,4 @@
-#
+7#
 #   Copyright (c) 2010-2014, MIT Probabilistic Computing Project
 #
 #   Lead Developers: Jay Baxter and Dan Lovell
@@ -567,7 +567,7 @@ def test_basic_select_pyparsing():
     select_1_parse = select_query.parseString(select_1,parseAll=True)
     assert select_1_parse.query_id == 'select'
     assert select_1_parse.btable == 'table_1'
-    assert select_1_parse.select_clause[0].columns == '*'
+    assert select_1_parse.select_clause[0].columns[0] == '*'
     select_2 = "SELECT column_1,column_3 FROM table_1"
     select_2_parse = select_query.parseString(select_2,parseAll=True)
     assert select_2_parse.select_clause[0].columns.asList() == ['column_1','column_3']
@@ -633,7 +633,7 @@ def test_infer_pyparsing():
     infer_1_parse = infer_query.parseString(infer_1,parseAll=True)
     assert infer_1_parse.query_id == 'infer'
     assert infer_1_parse.btable == 'table_1'
-    assert infer_1_parse.infer_clause[0].columns == '*'
+    assert infer_1_parse.infer_clause[0].columns[0] == '*'
     infer_2 = "infer column_1,column_3 FROM table_1"
     infer_2_parse = infer_query.parseString(infer_2,parseAll=True)
     assert infer_2_parse.infer_clause[0].columns.asList() == ['column_1','column_3']
@@ -714,7 +714,7 @@ def test_simulate_pyparsing():
     query_1 = "SIMULATE * FROM table_1 WHERE column_1 = 4 TIMES 4 SAVE TO ~/test.csv"
     simulate_ast = simulate_query.parseString(query_1,parseAll=True)
     assert simulate_ast.query_id == 'simulate'
-    assert simulate_ast.columns == '*'
+    assert simulate_ast.columns[0] == '*'
     assert simulate_ast.where_keyword == 'where'
     assert simulate_ast.times == '4'
     assert simulate_ast.filename == '~/test.csv'
