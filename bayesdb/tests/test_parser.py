@@ -722,7 +722,17 @@ def test_simulate_pyparsing():
     simulate_ast = simulate_query.parseString(query_2,parseAll=True)
     assert simulate_ast.columns.asList() == ['col1','col2']
 
-
+def test_estimate_columns_from_pyparsing():
+    query_1 = "ESTIMATE COLUMNS FROM table_1 WHERE col_1 = 4 ORDER BY TYPICALITY LIMIT 10 AS col_list_1"
+    est_col_ast_1 = estimate_columns_from_function.parseString(query_1,parseAll=True)
+    assert est_col_ast_1.query_id == 'estimate column from'
+    assert est_col_ast_1.btable == 'table_1'
+    assert est_col_ast_1.where_keyword == 'where'
+    assert est_col_ast_1.where_conditions[0].function.column == 'col_1'
+    assert est_col_ast_1.where_conditions[0].value == '4'
+    assert est_col_ast_1.order_by.order_by_set[0].function_id == 'typicality'
+    assert est_col_ast_1.limit == '10'
+    assert est_col_ast_1.as_column_list == 'col_list_1'
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')

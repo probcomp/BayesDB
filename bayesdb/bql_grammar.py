@@ -406,7 +406,16 @@ simulate_query = (simulate_keyword.setResultsName('query_id') +
                   Optional(Suppress(save_to_keyword) + filename))
                   
 # ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>]
+estimate_columns_from_function = (estimate_columns_from_keyword.setResultsName('query_id') + 
+                                  btable + 
+                                  Optional(where_clause) + 
+                                  Optional(order_by_clause) + 
+                                  Optional(Suppress(limit_keyword) + int_number.setResultsName("limit")) + 
+                                  Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list")))
 
 # ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>]
 
+
 # ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
+
+
