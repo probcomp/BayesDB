@@ -165,6 +165,7 @@ save_connected_components_with_threshold_keyword = Combine(save_keyword + single
                                                            components_keyword + single_white + 
                                                            with_keyword + single_white + 
                                                            threshold_keyword)
+save_connected_components_keyword = save_connected_components_with_threshold_keyword
 key_in_keyword = Combine(key_keyword + single_white + in_keyword)
 
 ## Values/Literals
@@ -414,7 +415,21 @@ estimate_columns_from_function = (estimate_columns_from_keyword.setResultsName('
                                   Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list")))
 
 # ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>]
-
+estimate_pairwise_function = (estimate_pairwise_keyword.setResultsName('query_id') + 
+                              (correlation_function | 
+                               dependence_probability_function | 
+                               mutual_information_function) + 
+                              Suppress(from_keyword) + 
+                              btable + 
+                              Optional(for_keyword + 
+                                       column_list_clause.setResultsName('columns')) + 
+                              Optional(save_to_keyword + 
+                                       filename) + 
+                              Optional(save_connected_components_keyword
+                                       .setResultsName("save_connected_components") + 
+                                       float_number.setResultsName("threshold") + 
+                                       Suppress(as_keyword) + 
+                                       identifier.setResultsName('as_column_list')))
 
 # ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
 

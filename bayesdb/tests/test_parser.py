@@ -733,6 +733,31 @@ def test_estimate_columns_from_pyparsing():
     assert est_col_ast_1.order_by.order_by_set[0].function_id == 'typicality'
     assert est_col_ast_1.limit == '10'
     assert est_col_ast_1.as_column_list == 'col_list_1'
+    query_2 = "ESTIMATE COLUMNS FROM table_1"
+    est_col_ast_2 = estimate_columns_from_function.parseString(query_2,parseAll=True)
+    assert est_col_ast_2.query_id == 'estimate column from'
+    assert est_col_ast_2.btable == 'table_1'
+
+def test_estimate_pairwise_pyparsing():
+    query_1 = "ESTIMATE PAIRWISE CORRELATION WITH col_1 FROM table_1"
+    est_pairwise_ast_1 = estimate_pairwise_function.parseString(query_1,parseAll=True)
+    assert est_pairwise_ast_1.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_1.function.function_id == 'correlation'
+    assert est_pairwise_ast_1.function.with_column == 'col_1'
+    assert est_pairwise_ast_1.btable == 'table_1'
+    query_2 = "ESTIMATE PAIRWISE DEPENDENCE PROBABILITY WITH col_1 FROM table_1 FOR col_1,col_2 SAVE TO file.csv SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 AS col_list_1"
+    est_pairwise_ast_2 = estimate_pairwise_function.parseString(query_2,parseAll=True)
+    assert est_pairwise_ast_2.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_2.function.function_id == 'dependence probability'
+    assert est_pairwise_ast_2.function.with_column == 'col_1'
+    assert est_pairwise_ast_2.btable == 'table_1'
+    assert est_pairwise_ast_2.columns.asList() == ['col_1','col_2']
+    assert est_pairwise_ast_2.filename == 'file.csv'
+    assert est_pairwise_ast_2.threshold == '.4'
+    assert est_pairwise_ast_2.as_column_list == 'col_list_1'
+    query_3 = "ESTIMATE PAIRWISE MUTUAL INFORMATION WITH col_1 FROM table_1"
+    est_pairwise_ast_3 = estimate_pairwise_function.parseString(query_3,parseAll=True)
+    assert est_pairwise_ast_3.function.function_id == 'mutual information'
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
