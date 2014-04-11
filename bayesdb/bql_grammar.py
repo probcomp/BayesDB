@@ -432,5 +432,22 @@ estimate_pairwise_function = (estimate_pairwise_keyword.setResultsName('query_id
                                        identifier.setResultsName('as_column_list')))
 
 # ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
+column_list_clause = Group(int_number + 
+                           ZeroOrMore(Suppress(comma_literal) + 
+                                      int_number)).setResultsName("row_list")
 
-
+estimate_pairwise_row_function = (estimate_pairwise_keyword.setResultsName('query_id') + 
+                                  Combine(row_keyword + 
+                                          single_white + 
+                                          similarity_keyword).setResultsName('function') + 
+                                  Suppress(from_keyword) + 
+                                  btable + 
+                                  Optional(for_keyword + 
+                                           column_list_clause.setResultsName('rows')) + 
+                                  Optional(save_to_keyword + 
+                                           filename) + 
+                                  Optional(save_connected_components_keyword
+                                           .setResultsName("save_connected_components") + 
+                                           float_number.setResultsName("threshold") + 
+                                           ((as_keyword + identifier.setResultsName('as_btable')) | 
+                                            (into_keyword + identifier.setResultsName('into_btable')))))

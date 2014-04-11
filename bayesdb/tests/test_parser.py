@@ -759,6 +759,22 @@ def test_estimate_pairwise_pyparsing():
     est_pairwise_ast_3 = estimate_pairwise_function.parseString(query_3,parseAll=True)
     assert est_pairwise_ast_3.function.function_id == 'mutual information'
 
+def test_estimate_pairwise_row_pyparsing():
+    query_1 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 INTO table_2"
+    est_pairwise_ast_1 = estimate_pairwise_row_function.parseString(query_1,parseAll=True)
+    assert est_pairwise_ast_1.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_1.function == 'row similarity'
+    assert est_pairwise_ast_1.btable == 'table_1'
+    query_2 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 FOR 1,2 SAVE TO file.csv SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 AS table_2"
+    est_pairwise_ast_2 = estimate_pairwise_row_function.parseString(query_2,parseAll=True)
+    assert est_pairwise_ast_2.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_2.function == 'row similarity'
+    assert est_pairwise_ast_2.btable == 'table_1'
+    assert est_pairwise_ast_2.rows.asList() == ['1','2']
+    assert est_pairwise_ast_2.filename == 'file.csv'
+    assert est_pairwise_ast_2.threshold == '.4'
+    assert est_pairwise_ast_2.as_btable == 'table_2'
+
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
