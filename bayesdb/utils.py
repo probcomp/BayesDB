@@ -122,6 +122,16 @@ def get_all_column_names_in_original_order(M_c):
     colnames = map(lambda tup: tup[0], sorted(colname_to_idx_dict.items(), key=lambda tup: tup[1]))
     return colnames
 
+def get_cctype_from_M_c(M_c, column):
+    if column in M_c['name_to_idx'].keys():
+        column_index = M_c['name_to_idx'][column]
+        modeltype = M_c['column_metadata'][column_index]['modeltype']
+        cctype = 'continuous' if modeltype == 'normal_inverse_gamma' else 'multinomial'
+    else:
+        # If the column name wasn't found in metadata, it's a function, so the output will be continuous
+        cctype = 'continuous'
+    return cctype
+
 def summarize_table(data, columns, M_c):
     """
     Returns a summary of the data.
@@ -148,6 +158,9 @@ def summarize_table(data, columns, M_c):
         # Remove row_id column since summary stats of row_id are meaningless
         if 'row_id' in df.columns:
             df_drop(df, ['row_id'], axis=1)
+
+        # Get column types as one-row DataFrame
+        cctypes = pandas.DataFrame([[get_cctype_from_M_c(M_c, col) for col in df.columns]], columns=df.columns, index=['type'])
 
         # Run pandas.DataFrame.describe() on each column - it'll compute every stat that it can for each column,
         # depending on its type (assume it's not a problem to overcompute here - for example, computing a mean on a
@@ -190,11 +203,11 @@ def summarize_table(data, columns, M_c):
         summary_freqs = df.apply(get_column_freqs)
 
         # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
-        summary_data = pandas.concat([summary_describe, summary_freqs], axis=0)
+        summary_data = pandas.concat([cctypes, summary_describe, summary_freqs], axis=0)
 
         # Reorder rows: count, unique, mean, std, min, 25%, 50%, 75%, max, modes, prob_modes
         if hasattr(summary_data, 'loc'):
-            potential_index = pandas.Index(['count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
+            potential_index = pandas.Index(['type', 'count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
                 'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
                 'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5'])
 

@@ -399,7 +399,9 @@ def test_summarize():
   assert type(out) == pandas.DataFrame
 
   # Test that stats from summary_describe and summary_freqs made it into the output DataFrame
-  expected_indices = ['count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
+  # Note that all of these stats won't be present in EVERY summarize output, but all should be in the output
+  # from the previous test.
+  expected_indices = ['type', 'count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
     'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
     'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5']
   assert all([x in list(out[' ']) for x in expected_indices])
