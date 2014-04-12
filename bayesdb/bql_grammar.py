@@ -427,4 +427,4 @@ query = (Optional(summarize_keyword | plot_keyword) +
               Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list"))))
 
 
-bql_statement = query | management_query
+bql_statement = (query | management_query) + Optional(semicolon_literal)
