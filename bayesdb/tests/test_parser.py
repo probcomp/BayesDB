@@ -571,9 +571,9 @@ def test_basic_select_pyparsing():
     select_2 = "SELECT column_1,column_3 FROM table_1"
     select_2_parse = query.parseString(select_2,parseAll=True)
     assert select_2_parse.functions[0].columns.asList() == ['column_1','column_3']
-    select_3 = "SELECT HIST column_1 FROM table_1 WHERE column_2 = 3"
+    select_3 = "PLOT SELECT column_1 FROM table_1 WHERE column_2 = 3"
     select_3_parse = query.parseString(select_3,parseAll=True)
-    assert select_3_parse.hist == 'hist'
+    assert select_3_parse.plot == 'plot'
     assert select_3_parse.functions[0].columns.asList() == ['column_1']
     assert select_3_parse.where_keyword == 'where'
     assert select_3_parse.where_conditions[0].value == '3'
@@ -637,9 +637,9 @@ def test_infer_pyparsing():
     infer_2 = "infer column_1,column_3 FROM table_1"
     infer_2_parse = query.parseString(infer_2,parseAll=True)
     assert infer_2_parse.functions[0].columns.asList() == ['column_1','column_3']
-    infer_3 = "infer HIST column_1 FROM table_1 WHERE column_2 = 3"
+    infer_3 = "SUMMARIZE infer column_1 FROM table_1 WHERE column_2 = 3"
     infer_3_parse = query.parseString(infer_3,parseAll=True)
-    assert infer_3_parse.hist == 'hist'
+    assert infer_3_parse.summarize == 'summarize'
     assert infer_3_parse.functions[0].columns.asList() == ['column_1']
     assert infer_3_parse.where_keyword == 'where'
     assert infer_3_parse.where_conditions[0].value == '3'

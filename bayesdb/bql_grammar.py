@@ -78,7 +78,8 @@ respect_keyword = CaselessKeyword("respect")
 predictive_keyword = CaselessKeyword("predictive")
 group_keyword = CaselessKeyword("group")
 diagnostics_keyword = CaselessKeyword("diagnostics")
-hist_keyword = CaselessKeyword("hist").setResultsName("hist")
+summarize_keyword = CaselessKeyword("summarize").setResultsName("summarize")
+plot_keyword = CaselessKeyword("plot").setResultsName("plot")
 connected_keyword = CaselessKeyword("connected")
 components_keyword = CaselessKeyword("components")
 threshold_keyword = CaselessKeyword("threshold")
@@ -407,8 +408,8 @@ functions_clause = Group(function_in_query +
                          ZeroOrMore(Suppress(comma_literal) + 
                                     function_in_query)).setResultsName('functions')
 
-query = (query_id + 
-         Optional(hist_keyword).setResultsName("hist") +
+query = (Optional(summarize_keyword | plot_keyword) +
+         query_id + 
          functions_clause + 
          Suppress(from_keyword) + 
          btable + 
