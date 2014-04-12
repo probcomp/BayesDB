@@ -398,11 +398,11 @@ def test_summarize():
   out = client('summarize select name, qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
 
-  # The output from the previous test should have every stat that summarize computes
+  # Test that stats from summary_describe and summary_freqs made it into the output DataFrame
   expected_indices = ['count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
     'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
     'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5']
-  assert all([x in expected_indices for x in out[' ']])
+  assert all([x in out[' '] for x in expected_indices)
 
   # Test that it works on columns of predictive functions.
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
