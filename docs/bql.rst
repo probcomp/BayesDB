@@ -293,3 +293,18 @@ Here are some examples::
   ESTIMATE COLUMNS FROM table WHERE TYPICALITY > 0.6 AND CORRELATION WITH name > 0.5 ORDER BY DEPENDENCE PROBABILITY WITH name;
 
 
+Summary Statistics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To view summary statistics of query results, SUMMARIZE can be prepended to SELECT, INFER, and SIMULATE statements::
+
+  SUMMARIZE <SELECT|INFER|SIMULATE> <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>]
+
+The first column of the output from SUMMARIZE will be statistic labels:
+``count``, ``unique``, ``mean``, ``std``, ``min``, ``25%``, ``50%``, ``75%``, and ``max`` correspond to the output from ``pandas.Series.describe``, which is dependent on whether the column is discrete or continuous.
+
+``mode1``, ``mode2``, ``mode3``, ``mode4``, ``mode5`` are the 5 most common values in the column, *excluding missing values*.
+
+``prob_mode1``, ``prob_mode2``, ``prob_mode3``, ``prob_mode4``, ``prob_mode5`` are the empirical probabilities of the corresponding *i*-th most common value (number of occurrences / number of observations *including missing values*)
+
+Modal values and their empirical probabilities are returned for every column, whether discrete or continuous.
