@@ -148,12 +148,14 @@ estimate_pairwise_keyword = Combine(estimate_keyword + single_white +
                                     pairwise_keyword).setResultsName("statement_id")
 estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
                                         single_white + row_keyword).setResultsName("statement_id")
+row_similarity_keyword = Combine(row_keyword + single_white + similarity_keyword)
 with_confidence_keyword = Combine(with_keyword + single_white + confidence_keyword)
 order_by_keyword = Combine(order_keyword + single_white + by_keyword)
 dependence_probability_keyword = Combine(dependence_keyword + single_white + probability_keyword)
 mutual_information_keyword = Combine(mutual_keyword + single_white + information_keyword)
 estimate_columns_from_keyword = Combine(estimate_keyword + single_white + column_keyword + 
                                         single_white + from_keyword).setResultsName("statement_id")
+estimate_columns_keyword = Combine(estimate_keyword + single_white + column_keyword).setResultsName("statement_id")
 column_lists_keyword = Combine(column_keyword + single_white + list_keyword)
 similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword).setResultsName("statement_id")
 with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
@@ -177,7 +179,7 @@ semicolon_literal = Literal(";")
 comma_literal = Literal(",")
 hyphen_literal = Literal("-")
 all_column_literal = Literal('*')
-identifier = Word(alphas, alphanums + "_.").setParseAction(downcaseTokens)
+identifier = (Word(alphas, alphanums + "_.").setParseAction(downcaseTokens))# | QuotedString())
 btable = identifier.setResultsName("btable")
 # single and double quotes inside value must be escaped. 
 value = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(printables)| float_number
@@ -349,135 +351,58 @@ where_clause = (where_keyword.setResultsName('where_keyword') +
                       ZeroOrMore(Suppress(and_keyword) + single_where_condition))
                 .setResultsName("where_conditions"))
 
-# ------------------------------- Query functions -------------------------- #
+save_connected_components_clause = Group(save_connected_components_keyword
+                                         .setResultsName("save_connected_components") + 
+                                         float_number.setResultsName("threshold") + 
+                                         ((as_keyword + 
+                                           identifier.setResultsName('as_label')) | 
+                                          (into_keyword + 
+                                           identifier.setResultsName('into_label')))).setResultsName('connected_components_clause')
 
-# SELECT # TODO wrap into master query
-selectable_functions = (predictive_probability_of_function | 
-                        probability_of_function | 
-                        typicality_of_function | 
-                        typicality_function | 
-                        similarity_to_function | 
-                        dependence_probability_function | 
-                        mutual_information_function | 
-                        correlation_function | 
-                        Group((column_list_clause | 
-                               all_column_literal)
-                              .setResultsName("columns"))
-                        .setResultsName("function"))
-
-# TODO wrap into master query
-select_clause = Group(selectable_functions + ZeroOrMore(Suppress(comma_literal) + selectable_functions))
-
-# TODO wrap into master query
-select_query = (select_keyword.setResultsName("query_id") + 
-                Optional(hist_keyword).setResultsName("hist") +
-                select_clause.setResultsName("select_clause") + 
-                Suppress(from_keyword) + 
-                btable + 
-                Optional(where_clause) + 
-                Each(Optional(order_by_clause) + 
-                     Optional(Suppress(limit_keyword) + 
-                              int_number.setResultsName("limit")) + 
-                     Optional(Suppress(save_to_keyword) + 
-                              filename)))
-
-# INFER
-# TODO wrap into master query
-infer_query = (infer_keyword.setResultsName("query_id") + 
-                Optional(hist_keyword).setResultsName("hist") +
-                select_clause.setResultsName("infer_clause") + 
-                Suppress(from_keyword) + 
-                btable + 
-                Optional(where_clause) + 
-                Each(Optional(order_by_clause) + 
-                     Optional(Suppress(limit_keyword) + 
-                              int_number.setResultsName("limit")) + 
-                     Optional(Suppress(save_to_keyword) + 
-                              filename) + 
-                     Optional(with_confidence_clause) +
-                     Optional(Suppress(with_keyword) + 
-                              int_number.setResultsName('samples') + 
-                              Suppress(sample_keyword))))
-
-
-# SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <file>]
-# TODO wrap into master query
-simulate_query = (simulate_keyword.setResultsName('query_id') + 
-                  Optional(hist_keyword.setResultsName('hist')) + 
-                  (column_list_clause | all_column_literal).setResultsName('columns') + 
-                  Suppress(from_keyword) + btable + 
-                  Optional(where_clause) + 
-                  Suppress(times_keyword) + int_number.setResultsName("times") + 
-                  Optional(Suppress(save_to_keyword) + filename))
-                  
-# ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>]
-# TODO wrap into master query
-estimate_columns_from_function = (estimate_columns_from_keyword.setResultsName('query_id') + 
-                                  btable + 
-                                  Optional(where_clause) + 
-                                  Optional(order_by_clause) + 
-                                  Optional(Suppress(limit_keyword) + int_number.setResultsName("limit")) + 
-                                  Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list")))
-
-# ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>]
-# TODO wrap into master query
-estimate_pairwise_function = (estimate_pairwise_keyword.setResultsName('query_id') + 
-                              (correlation_function | 
-                               dependence_probability_function | 
-                               mutual_information_function) + 
-                              Suppress(from_keyword) + 
-                              btable + 
-                              Optional(for_keyword + 
-                                       column_list_clause.setResultsName('columns')) + 
-                              Optional(save_to_keyword + 
-                                       filename) + 
-                              Optional(save_connected_components_keyword
-                                       .setResultsName("save_connected_components") + 
-                                       float_number.setResultsName("threshold") + 
-                                       Suppress(as_keyword) + 
-                                       identifier.setResultsName('as_column_list')))
-
-# ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
 row_list_clause = Group(int_number + 
                            ZeroOrMore(Suppress(comma_literal) + 
                                       int_number)).setResultsName("row_list")
-# TODO wrap into master query
-estimate_pairwise_row_function = (estimate_pairwise_keyword.setResultsName('query_id') + 
-                                  Combine(row_keyword + 
-                                          single_white + 
-                                          similarity_keyword).setResultsName('function') + 
-                                  Suppress(from_keyword) + 
-                                  btable + 
-                                  Optional(for_keyword + 
-                                           row_list_clause.setResultsName('rows')) + 
-                                  Optional(save_to_keyword + 
-                                           filename) + 
-                                  Optional(save_connected_components_keyword
-                                           .setResultsName("save_connected_components") + 
-                                           float_number.setResultsName("threshold") + 
-                                           ((as_keyword + identifier.setResultsName('as_btable')) | 
-                                            (into_keyword + identifier.setResultsName('into_btable')))))
-
 
 # ----------------------------- Master Query Syntax ---------------------------------------- #
 
-query_ids = (select_keyword | 
-             infer_keyword | 
-             simulate_keyword | 
-             estimate_columns_from_keyword | 
-             estimate_pairwise_keyword | 
-             estimate_pairwise_row_keyword).setResultsName('query_id')
+query_id = (select_keyword | 
+            infer_keyword | 
+            simulate_keyword | 
+            estimate_pairwise_keyword |
+            estimate_keyword).setResultsName('query_id')
 
 function_in_query = (predictive_probability_of_function | 
                      probability_of_function | 
                      typicality_of_function | 
                      typicality_function | 
-                     similarity_to_function | 
+                     similarity_to_function |
                      dependence_probability_function | 
                      mutual_information_function | 
                      correlation_function | 
-                     Group((column_list_clause)
-                           .setResultsName("columns"))
-                     .setResultsName("function"))
+                     row_similarity_keyword |
+                     similarity_keyword |
+                     column_keyword |
+                     Group(column_list_clause.setResultsName("columns"))).setResultsName("function")
 
-#query = query_id + 
+functions_clause = Group(function_in_query + 
+                         ZeroOrMore(Suppress(comma_literal) + 
+                                    function_in_query)).setResultsName('functions')
+
+query = (query_id + 
+         Optional(hist_keyword).setResultsName("hist") +
+         functions_clause + 
+         Suppress(from_keyword) + 
+         btable + 
+         Optional(where_clause) + 
+         Each(Optional(order_by_clause) + 
+              Optional(with_confidence_clause) + 
+              Optional(Suppress(with_keyword) + int_number.setResultsName('samples') + Suppress(sample_keyword)) + 
+              Optional(Suppress(limit_keyword) + int_number.setResultsName("limit")) + 
+              Optional(for_keyword + column_list_clause.setResultsName('columns')) +
+              Optional(for_keyword + row_list_clause.setResultsName('rows')) + 
+              Optional(Suppress(save_to_keyword) + filename) + 
+              Optional(save_connected_components_clause) + 
+              Optional(Suppress(times_keyword) + int_number.setResultsName("times")) + 
+              Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list"))))
+
+
