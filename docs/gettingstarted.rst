@@ -148,7 +148,7 @@ While SELECT, INFER, and SIMULATE return rows at the level of the unit of observ
 
   client('SUMMARIZE SELECT grade FROM mytable')
 
-SUMMARIZE works for both discrete and continuous columns, and will calculate all summary stats that are returned from running pandas.Series.describe on each column of the data::
+SUMMARIZE works for both discrete and continuous columns, and will calculate all summary stats that are returned from running ``pandas.Series.describe`` on each column of the data::
 
   client('SUMMARIZE SELECT age, grade FROM mytable')
 
