@@ -171,18 +171,23 @@ save_connected_components_keyword = save_connected_components_with_threshold_key
 key_in_keyword = Combine(key_keyword + single_white + in_keyword)
 
 ## Values/Literals
-float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+') #TODO setParseAction to float/int
-int_number = Word(nums)
+sub_query = QuotedString("(",endQuoteChar=")").setResultsName('sub_query')
+float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+') | sub_query#TODO setParseAction to float/int
+int_number = Word(nums) | sub_query
 operation_literal = oneOf("<= >= = < >")
 equal_literal = Literal("=")
 semicolon_literal = Literal(";")
 comma_literal = Literal(",")
 hyphen_literal = Literal("-")
 all_column_literal = Literal('*')
-identifier = (Word(alphas, alphanums + "_.").setParseAction(downcaseTokens))# | QuotedString())
-btable = identifier.setResultsName("btable")
+identifier = (Word(alphas, alphanums + "_.").setParseAction(downcaseTokens)) | sub_query
+btable = identifier.setResultsName("btable") | sub_query
 # single and double quotes inside value must be escaped. 
-value = QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | Word(printables)| float_number
+value = (QuotedString('"', escChar='\\') | 
+         QuotedString("'", escChar='\\') | 
+         Word(printables)| 
+         float_number | 
+         sub_query)
 filename = (QuotedString('"', escChar='\\') | 
             QuotedString("'", escChar='\\') | 
             Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")).setResultsName("filename")

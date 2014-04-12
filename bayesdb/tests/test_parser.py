@@ -775,6 +775,15 @@ def test_estimate_pairwise_row_pyparsing():
     assert est_pairwise_ast_2.connected_components_clause.threshold == '.4'
     assert est_pairwise_ast_2.connected_components_clause.as_label == 'table_2'
 
+def test_nested_queries_basic_pyparsing():
+    query_1 = "SELECT * FROM ( SELECT col_1,col_2 FROM table_2)"
+    ast = query.parseString(query_1,parseAll=True)
+    assert ast.query_id == 'select'
+    assert ast.sub_query == " SELECT col_1,col_2 FROM table_2"
+    ast_2 = query.parseString(ast.sub_query,parseAll=True)
+    assert ast_2.query_id == 'select'
+    assert ast_2.functions[0].columns.asList() == ['col_1','col_2']
+
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
