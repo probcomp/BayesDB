@@ -565,7 +565,7 @@ def test_key_in_rowlist():
 def test_basic_select_pyparsing():
     select_1 = "SELECT * FROM table_1"
     select_1_parse = query.parseString(select_1,parseAll=True)
-    assert select_1_parse.query_id == 'select'
+    assert select_1_parse.statement_id == 'select'
     assert select_1_parse.btable == 'table_1'
     assert select_1_parse.functions[0].columns[0] == '*'
     select_2 = "SELECT column_1,column_3 FROM table_1"
@@ -606,16 +606,16 @@ def test_select_functions_pyparsing():
     select_ast_7 = query.parseString(query_7,parseAll=True)
     select_ast_8 = query.parseString(query_8,parseAll=True)
     select_ast_9 = query.parseString(query_9,parseAll=True)
-    assert select_ast_1.query_id == 'select'
-    assert select_ast_2.query_id == 'select'
-    assert select_ast_3.query_id == 'select'
-    assert select_ast_4.query_id == 'select'
-    assert select_ast_5.query_id == 'select'
-    assert select_ast_5.query_id == 'select'
-    assert select_ast_6.query_id == 'select'
-    assert select_ast_7.query_id == 'select'
-    assert select_ast_8.query_id == 'select'
-    assert select_ast_9.query_id == 'select'    
+    assert select_ast_1.statement_id == 'select'
+    assert select_ast_2.statement_id == 'select'
+    assert select_ast_3.statement_id == 'select'
+    assert select_ast_4.statement_id == 'select'
+    assert select_ast_5.statement_id == 'select'
+    assert select_ast_5.statement_id == 'select'
+    assert select_ast_6.statement_id == 'select'
+    assert select_ast_7.statement_id == 'select'
+    assert select_ast_8.statement_id == 'select'
+    assert select_ast_9.statement_id == 'select'    
     assert select_ast_1.functions[0].function_id == 'typicality'
     assert select_ast_2.functions[0].function_id == 'typicality of'
     assert select_ast_3.functions[0].function_id == 'predictive probability of'
@@ -631,7 +631,7 @@ def test_select_functions_pyparsing():
 def test_infer_pyparsing():
     infer_1 = "INFER * FROM table_1"
     infer_1_parse = query.parseString(infer_1,parseAll=True)
-    assert infer_1_parse.query_id == 'infer'
+    assert infer_1_parse.statement_id == 'infer'
     assert infer_1_parse.btable == 'table_1'
     assert infer_1_parse.functions[0].columns[0] == '*'
     infer_2 = "infer column_1,column_3 FROM table_1"
@@ -670,16 +670,16 @@ def test_infer_pyparsing():
     infer_ast_7 = query.parseString(query_7,parseAll=True)
     infer_ast_8 = query.parseString(query_8,parseAll=True)
     infer_ast_9 = query.parseString(query_9,parseAll=True)
-    assert infer_ast_1.query_id == 'infer'
-    assert infer_ast_2.query_id == 'infer'
-    assert infer_ast_3.query_id == 'infer'
-    assert infer_ast_4.query_id == 'infer'
-    assert infer_ast_5.query_id == 'infer'
-    assert infer_ast_5.query_id == 'infer'
-    assert infer_ast_6.query_id == 'infer'
-    assert infer_ast_7.query_id == 'infer'
-    assert infer_ast_8.query_id == 'infer'
-    assert infer_ast_9.query_id == 'infer'    
+    assert infer_ast_1.statement_id == 'infer'
+    assert infer_ast_2.statement_id == 'infer'
+    assert infer_ast_3.statement_id == 'infer'
+    assert infer_ast_4.statement_id == 'infer'
+    assert infer_ast_5.statement_id == 'infer'
+    assert infer_ast_5.statement_id == 'infer'
+    assert infer_ast_6.statement_id == 'infer'
+    assert infer_ast_7.statement_id == 'infer'
+    assert infer_ast_8.statement_id == 'infer'
+    assert infer_ast_9.statement_id == 'infer'    
     assert infer_ast_1.functions[0].function_id == 'typicality'
     assert infer_ast_2.functions[0].function_id == 'typicality of'
     assert infer_ast_3.functions[0].function_id == 'predictive probability of'
@@ -713,7 +713,7 @@ def test_infer_pyparsing():
 def test_simulate_pyparsing():
     query_1 = "SIMULATE * FROM table_1 WHERE column_1 = 4 TIMES 4 SAVE TO ~/test.csv"
     simulate_ast = query.parseString(query_1,parseAll=True)
-    assert simulate_ast.query_id == 'simulate'
+    assert simulate_ast.statement_id == 'simulate'
     assert simulate_ast.functions[0].columns[0] == '*'
     assert simulate_ast.where_keyword == 'where'
     assert simulate_ast.times == '4'
@@ -725,7 +725,7 @@ def test_simulate_pyparsing():
 def test_estimate_columns_from_pyparsing():
     query_1 = "ESTIMATE COLUMNS FROM table_1 WHERE col_1 = 4 ORDER BY TYPICALITY LIMIT 10 AS col_list_1"
     est_col_ast_1 = query.parseString(query_1,parseAll=True)
-    assert est_col_ast_1.query_id == 'estimate'
+    assert est_col_ast_1.statement_id == 'estimate'
     assert est_col_ast_1.btable == 'table_1'
     assert est_col_ast_1.where_keyword == 'where'
     assert est_col_ast_1.where_conditions[0].function.column == 'col_1'
@@ -735,19 +735,19 @@ def test_estimate_columns_from_pyparsing():
     assert est_col_ast_1.as_column_list == 'col_list_1'
     query_2 = "ESTIMATE COLUMNS FROM table_1"
     est_col_ast_2 = query.parseString(query_2,parseAll=True)
-    assert est_col_ast_2.query_id == 'estimate'
+    assert est_col_ast_2.statement_id == 'estimate'
     assert est_col_ast_2.btable == 'table_1'
 
 def test_estimate_pairwise_pyparsing():
     query_1 = "ESTIMATE PAIRWISE CORRELATION WITH col_1 FROM table_1"
     est_pairwise_ast_1 = query.parseString(query_1,parseAll=True)
-    assert est_pairwise_ast_1.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_1.statement_id == 'estimate pairwise'
     assert est_pairwise_ast_1.functions[0].function_id == 'correlation'
     assert est_pairwise_ast_1.functions[0].with_column == 'col_1'
     assert est_pairwise_ast_1.btable == 'table_1'
     query_2 = "ESTIMATE PAIRWISE DEPENDENCE PROBABILITY WITH col_1 FROM table_1 FOR col_1,col_2 SAVE TO file.csv SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 AS col_list_1"
     est_pairwise_ast_2 = query.parseString(query_2,parseAll=True)
-    assert est_pairwise_ast_2.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_2.statement_id == 'estimate pairwise'
     assert est_pairwise_ast_2.functions[0].function_id == 'dependence probability'
     assert est_pairwise_ast_2.functions[0].with_column == 'col_1'
     assert est_pairwise_ast_2.btable == 'table_1'
@@ -762,12 +762,12 @@ def test_estimate_pairwise_pyparsing():
 def test_estimate_pairwise_row_pyparsing():
     query_1 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 INTO table_2"
     est_pairwise_ast_1 = query.parseString(query_1,parseAll=True)
-    assert est_pairwise_ast_1.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_1.statement_id == 'estimate pairwise'
     assert est_pairwise_ast_1.functions[0] == 'row similarity'
     assert est_pairwise_ast_1.btable == 'table_1'
     query_2 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 FOR 1,2 SAVE TO file.csv SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 AS table_2"
     est_pairwise_ast_2 = query.parseString(query_2,parseAll=True)
-    assert est_pairwise_ast_2.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_2.statement_id == 'estimate pairwise'
     assert est_pairwise_ast_2.functions[0] == 'row similarity'
     assert est_pairwise_ast_2.btable == 'table_1'
     assert est_pairwise_ast_2.rows.asList() == ['1','2']
@@ -778,11 +778,45 @@ def test_estimate_pairwise_row_pyparsing():
 def test_nested_queries_basic_pyparsing():
     query_1 = "SELECT * FROM ( SELECT col_1,col_2 FROM table_2)"
     ast = query.parseString(query_1,parseAll=True)
-    assert ast.query_id == 'select'
+    assert ast.statement_id == 'select'
     assert ast.sub_query == " SELECT col_1,col_2 FROM table_2"
     ast_2 = query.parseString(ast.sub_query,parseAll=True)
-    assert ast_2.query_id == 'select'
+    assert ast_2.statement_id == 'select'
     assert ast_2.functions[0].columns.asList() == ['col_1','col_2']
+
+def test_master_query_for_parse_errors():
+    # This test will not test for correct information, just successfull parsing
+    query_list = ["LIST BTABLES",
+                  "SHOW SCHEMA FOR table_1",
+                  "SHOW SCHEMA FOR table_1",
+                  "SHOW DIAGNOSTICS FOR table_1",
+                  "SHOW COLUMN LISTS FOR table_1",
+                  "SHOW COLUMNS FOR table_1",
+                  "LOAD MODELS ~/filename.csv INTO table_1",
+                  "SAVE MODEL FROM table_1 to filename.pkl.gz",
+                  "DROP BTABLE table_1",
+                  "DROP MODEL 1 FROM table_1",
+                  "DROP MODELS 1,2,6-9 FROM table_1",
+                  "UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",
+                  "CREATE BTABLE test.btable FROM '~/filenam e.csv'",
+                  "CREATE BTABLE test_btable FROM ~/filename.csv",
+                  "EXECUTE FILE '/filenam e.bql'",
+                  "ANALYZE table_1 FOR 10 ITERATIONS",
+                  "ANALYZE table_1 MODELS 1-3, 5-7, 9, 10 FOR 1 ITERATION",
+                  "ANALYZE table_1 MODELS 1-3 FOR 1 ITERATION",
+                  "SELECT TYPICALITY FROM table_1",
+                  "SELECT TYPICALITY OF column_1 FROM table_1",
+                  "SELECT PREDICTIVE PROBABILITY OF column_1 FROM table_1",
+                  "SELECT PROBABILITY OF column_1 = 4 FROM table_1",
+                  "SELECT SIMILARITY TO 0 FROM table_1",
+                  "SELECT SIMILARITY TO column_1 = 4 FROM table_1",
+                  "SELECT DEPENDENCE PROBABILITY WITH column_1 FROM table_1",
+                  "SELECT MUTUAL INFORMATION OF column_1 WITH column_2 FROM table_1",
+                  "SELECT CORRELATION OF column_1 WITH column_2 FROM table_1",
+                  "SELECT TYPICALITY, PREDICTIVE PROBABILITY OF column_1 FROM table_1"]
+    for query in query_list:
+        query = bql_statement.parseString(query,parseAll=True)
+        assert query.statement_id != ''
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')

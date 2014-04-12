@@ -272,6 +272,20 @@ drop_model_function = drop_keyword.setParseAction(replaceWith("drop model")).set
 help_function = help_keyword
 quit_function = quit_keyword
 
+management_query = (create_btable_function | 
+                      update_schema_for_function | 
+                      execute_file_function | 
+                      initialize_function | 
+                      analyze_function | 
+                      list_btables_function | 
+                      show_for_btable_statement | 
+                      load_model_function | 
+                      save_model_from_function | 
+                      drop_btable_function | 
+                      drop_model_function | 
+                      help_function | 
+                      quit_function)
+
 # ------------------------------ Helper Clauses --------------------------- #
 
 # Rows can be identified either by an integer or <column> = <value> where value is unique for the given column
@@ -285,24 +299,11 @@ column_list_clause = Group((identifier | all_column_literal) +
                                       (identifier | all_column_literal))).setResultsName("column_list")
 
 # SAVE TO <file>
-save_to_clause = save_to_keyword + filename#todo names
+save_to_clause = save_to_keyword + filename
 
 # WITH CONFIDENCE <confidence>
-with_confidence_clause = with_confidence_keyword + float_number.setResultsName("confidence")#todo names
+with_confidence_clause = with_confidence_keyword + float_number.setResultsName("confidence")
 
-management_queries = (create_btable_function | 
-                      update_schema_for_function | 
-                      execute_file_function | 
-                      initialize_function | 
-                      analyze_function | 
-                      list_btables_function | 
-                      show_for_btable_statement | 
-                      load_model_function | 
-                      save_model_from_function | 
-                      drop_btable_function | 
-                      drop_model_function | 
-                      help_function | 
-                      quit_function)
 
 # -------------------------------- Functions ------------------------------ #
 
@@ -389,7 +390,7 @@ query_id = (select_keyword |
             infer_keyword | 
             simulate_keyword | 
             estimate_pairwise_keyword |
-            estimate_keyword).setResultsName('query_id')
+            estimate_keyword).setResultsName('statement_id')
 
 function_in_query = (predictive_probability_of_function | 
                      probability_of_function | 
@@ -424,3 +425,6 @@ query = (Optional(summarize_keyword | plot_keyword) +
               Optional(save_connected_components_clause) + 
               Optional(Suppress(times_keyword) + int_number.setResultsName("times")) + 
               Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list"))))
+
+
+bql_statement = query | management_query
