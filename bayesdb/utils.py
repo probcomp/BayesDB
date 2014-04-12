@@ -159,7 +159,7 @@ def summarize_table(data, columns, M_c):
         # If there were discrete columns, remove 'top' and 'freq' rows, because we'll replace those
         # with the mode and empirical probabilities
         if 'top' in summary_describe.index and 'freq' in summary_describe.index:
-            summary_describe = df_drop(summary_describe, ['top', 'freq'])
+            summary_describe = summary_describe.drop(['top', 'freq'])
 
         # Function to calculate the most frequent values for each column
         def get_column_freqs(x, n=5):
