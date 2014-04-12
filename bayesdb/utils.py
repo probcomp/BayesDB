@@ -154,7 +154,7 @@ def summarize_table(data, columns, M_c):
         # discrete variable with numeric values might not have meaning, but it's easier just to do it and
         # leave interpretation to the user, rather than try to figure out what's meaningful, especially with
         # columns that are the result of predictive functions.
-        summary_describe = df.apply(lambda x: x.describe())
+        summary_describe = df.apply(pandas.Series.describe)
 
         # If there were discrete columns, remove 'top' and 'freq' rows, because we'll replace those
         # with the mode and empirical probabilities
@@ -187,7 +187,7 @@ def summarize_table(data, columns, M_c):
 
             return pandas.Series(data = x_values, index = x_index)
 
-        summary_freqs = df.apply(lambda x: get_column_freqs(x))
+        summary_freqs = df.apply(get_column_freqs)
 
         # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
         summary_data = pandas.concat([summary_describe, summary_freqs], axis=0)
