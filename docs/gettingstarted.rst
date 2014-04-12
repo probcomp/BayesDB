@@ -140,3 +140,23 @@ BayesDB can estimate which columns depend on each other::
 	client('ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM mytable')
 
 ESTIMATE PAIRWISE generates a column by column table that displays the value of a some function of two columns, for each pair of two columns. In this case the function we chose to use is DEPENDENCE PROBABILITY, which computes the probability that two columns are statistically dependent.
+
+Summarize Output
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+While SELECT, INFER, and SIMULATE return rows at the level of the unit of observation, it's useful to summarize output across rows. BayesDB can summarize output for all columns returned in a query with the SUMMARIZE statement::
+
+  client('SUMMARIZE SELECT grade FROM mytable')
+
+SUMMARIZE works for both discrete and continuous columns, and will calculate all summary stats that are returned from running pandas.Series.describe on each column of the data::
+
+  client('SUMMARIZE SELECT age, grade FROM mytable')
+
+The returned output is a table of summary statistics, with the first column showing which statistic is contained in each row.
+
+Output to pandas.DataFrame
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For users who prefer to make BayesDB queries and then continue with analysis in pandas, output can be returned as a pandas.DataFrame object. First, set the argument ``pretty=False`` to bypass pretty-printing, which will then default to returning a list of output with one element per submitted BQL statement. If only one statement is submitted, select element 0 of the list::
+
+  pandas_df = client('SUMMARIZE SELECT grade FROM mytable', pretty=False)[0]
