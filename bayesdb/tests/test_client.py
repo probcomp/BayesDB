@@ -402,7 +402,7 @@ def test_summarize():
   expected_indices = ['count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
     'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
     'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5']
-  assert all([x in out[' '] for x in expected_indices)
+  assert all([x in list(out[' ']) for x in expected_indices])
 
   # Test that it works on columns of predictive functions.
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
