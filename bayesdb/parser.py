@@ -24,6 +24,8 @@ import pickle
 import gzip
 import utils
 import os
+import bql_grammar as bql
+import pyparsing as pp
 
 class Parser(object):
     def __init__(self):
@@ -72,11 +74,16 @@ class Parser(object):
         if bql_statement_string[-1] == ';':
             bql_statement_string = bql_statement_string[:-1]
         
-        words = bql_statement_string.lower().split()
-        if len(words) >= 1 and words[0] == 'help':
+        # This parses the statement into an abstract syntax tree according to bql_grammar
+        try:
+            statement_ast = bql.bql_statement.parseString(bql_statement_string,parseAll=True)
+        except pp.ParseException as x:
+            raise utils.BayesDBParseError("Invalid query: Could not parse '%s'" %bql_statement_string) #TODO get character number
+        words = bql_statement_string.lower().split()#TODO deprecate #TODO decide about .lower()
+        if len(words) >= 1 and words[0] == 'help':#
             print "Welcome to BQL help. Here is a list of BQL commands and their syntax:\n"
-            for method_name in sorted(self.method_names):
-                help_method = getattr(self, 'help_' +  method_name)
+            for method_name in sorted(self.method_names):#
+                help_method = getattr(self, 'help_' +  method_name)#
                 print help_method()
             return False
 

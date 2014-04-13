@@ -205,10 +205,10 @@ def test_simple_functions():
     drop_model_4 = drop_model_function.parseString("DROP MODELS 1-5,1-5 FROM table_1",parseAll=True)
     assert drop_model_1.statement_id == 'drop model'
     assert drop_model_1.btable == 'table_1'
-    assert drop_model_1.index_list.asList() == [1]
-    assert drop_model_2.index_list.asList() == [1,2,3,4,5]
-    assert drop_model_3.index_list.asList() == [1,2,6,7,8,9]
-    assert drop_model_4.index_list.asList() == [1,2,3,4,5]
+    assert drop_model_1.index_clause.asList() == [1]
+    assert drop_model_2.index_clause.asList() == [1,2,3,4,5]
+    assert drop_model_3.index_clause.asList() == [1,2,6,7,8,9]
+    assert drop_model_4.index_clause.asList() == [1,2,3,4,5]
     assert help_function.parseString("HELp",parseAll=True).statement_id == 'help'
 
 def test_update_schema_pyparsing():
@@ -275,14 +275,14 @@ def test_analyze_pyparsing():
     assert analyze_3.num_seconds == '10'
     assert analyze_4.num_iterations == ''
     assert analyze_4.num_seconds == '1'
-    assert analyze_5.index_list.asList() == [1]
-    assert analyze_6.index_list.asList() == [1,2,3]
-    assert analyze_7.index_list.asList() == [1,2,3]
-    assert analyze_8.index_list.asList() == [1,3,4,5]
-    assert analyze_9.index_list.asList() == [1,2,3,5]
-    assert analyze_10.index_list.asList() == [1,2,3,5,6,7,9,10]
-    assert analyze_11.index_list.asList() == [1,2]
-    assert analyze_12.index_list.asList() == [1,2,3,4,5]
+    assert analyze_5.index_clause.asList() == [1]
+    assert analyze_6.index_clause.asList() == [1,2,3]
+    assert analyze_7.index_clause.asList() == [1,2,3]
+    assert analyze_8.index_clause.asList() == [1,3,4,5]
+    assert analyze_9.index_clause.asList() == [1,2,3,5]
+    assert analyze_10.index_clause.asList() == [1,2,3,5,6,7,9,10]
+    assert analyze_11.index_clause.asList() == [1,2]
+    assert analyze_12.index_clause.asList() == [1,2,3,4,5]
 
 def test_subclauses_pyparsing():
     assert save_to_clause.parseString("save to filename.csv").filename == 'filename.csv'
@@ -840,11 +840,11 @@ def test_drop_btable():
     assert args == dict(tablename='t')
 
 def test_drop_models():
-    method, args, client_dict = parser.parse_statement('drop models for t')
+    method, args, client_dict = parser.parse_statement('drop models from t')
     assert method == 'drop_models'
     assert args == dict(tablename='t', model_indices=None)
 
-    method, args, client_dict = parser.parse_statement('drop models 2-6 for t')
+    method, args, client_dict = parser.parse_statement('drop models 2-6 from t')
     assert method == 'drop_models'
     assert args == dict(tablename='t', model_indices=range(2,7))
 
@@ -870,13 +870,13 @@ def test_analyze():
     assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=1)    
 
 def test_load_models():
-    method, args, client_dict = parser.parse_statement('load models fn for t')
+    method, args, client_dict = parser.parse_statement('load models fn into t')
     assert method == 'load_models'
     assert args == dict(tablename='t')
     assert client_dict == dict(pkl_path='fn')
 
 def test_save_models():
-    method, args, client_dict = parser.parse_statement('save models for t to fn')
+    method, args, client_dict = parser.parse_statement('save models from t to fn')
     assert method == 'save_models'
     assert args == dict(tablename='t')
     assert client_dict == dict(pkl_path='fn')

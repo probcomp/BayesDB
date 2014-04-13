@@ -232,16 +232,14 @@ def list_from_index_clause(toks):
         index_list.sort()
     return [list(set(index_list))]
 
-# TODO separate out model_keyword for generic use
-model_index_clause = (model_keyword + 
-                      Group((Group(int_number + Suppress(hyphen_literal) + int_number) | int_number) + 
-                            ZeroOrMore(Suppress(comma_literal) + 
-                                       (Group(int_number + Suppress(hyphen_literal) + int_number) |
-                                        int_number)))
-                      .setParseAction(list_from_index_clause)
-                      .setResultsName('index_list')).setResultsName('index_clause')
+index_clause = (Group((Group(int_number + Suppress(hyphen_literal) + int_number) | int_number) + 
+                      ZeroOrMore(Suppress(comma_literal) + 
+                                 (Group(int_number + Suppress(hyphen_literal) + int_number) |
+                                  int_number)))
+                .setParseAction(list_from_index_clause)
+                .setResultsName('index_clause'))
 analyze_function = (analyze_keyword + btable + 
-                    Optional(model_index_clause) + 
+                    Optional( model_keyword + index_clause) + 
                     Suppress(for_keyword) + 
                     ((int_number.setResultsName('num_iterations') + iteration_keyword) | 
                      (int_number.setResultsName('num_seconds') + second_keyword)))
@@ -266,8 +264,8 @@ save_model_from_function = save_model_keyword + Suppress(from_keyword) + btable 
 # DROP BTABLE <btable>
 drop_btable_function = drop_btable_keyword + btable
 
-# DROP MODEL[S] [<model_index>-<model_index>] FROM <btable>
-drop_model_function = drop_keyword.setParseAction(replaceWith("drop model")).setResultsName("statement_id") + model_index_clause + Suppress(from_keyword) + btable
+# DROP MODEL[S] [<model_index>-<model_index>] FROM <btable> #TODO combine drop_model_keyword
+drop_model_function = drop_keyword.setParseAction(replaceWith("drop model")).setResultsName("statement_id") + model_keyword + Optional(index_clause) + Suppress(from_keyword) + btable
 
 help_function = help_keyword
 quit_function = quit_keyword
@@ -425,6 +423,5 @@ query = (Optional(summarize_keyword | plot_keyword) +
               Optional(save_connected_components_clause) + 
               Optional(Suppress(times_keyword) + int_number.setResultsName("times")) + 
               Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list"))))
-
 
 bql_statement = (query | management_query) + Optional(semicolon_literal)
