@@ -89,6 +89,18 @@ class Engine(object):
     """Return names of all btables."""
     return dict(list=self.persistence_layer.list_btables())
 
+  def label_columns(self, tablename, mappings):
+    """
+    mappings is a dict of column names and their labels as given by the user
+    no length is enforced on labels - should we?
+    """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+
+    # TODO: label the columns in persistence layer
+    ret['message'] = 'Updated column labels.'
+    return ret
+
   def update_schema(self, tablename, mappings):
     """
     mappings is a dict of column name to 'continuous', 'multinomial',
