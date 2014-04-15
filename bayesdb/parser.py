@@ -667,7 +667,27 @@ class Parser(object):
                    column_list=column_list, components_name=components_name, threshold=threshold, modelids=modelids), \
               dict(filename=filename)
 
+    def help_label_columns(self):
+        return "LABEL COLUMNS FOR <btable> [<column1>=value1[,...]]: "
 
+    def parse_label_columns(self, words, orig):
+        match = re.search(r"""
+            label\s+columns\s+for\s+
+            (?P<btable>[^\s]+)\s+
+            (?P<mappings>[^;]*);?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'label':
+                return 'help', self.help_label_columns()
+        else:
+            tablename = match.group('btable').strip()
+            mapping_string = match.group('mappings').strip()
+            mappings = dict()
+            for mapping in mapping_string.split(','):
+                vals = mapping.split('=')
+                column, label = vals[0].strip(), vals[1].strip()
+                mappings[column.strip()] = label
+            return 'label_columns', dict(tablename=tablename, mappings=mappings), None
             
     def help_update_schema(self):
         return "UPDATE SCHEMA FOR <btable> SET [<column_name>=(numerical|categorical|key|ignore)[,...]]: must be done before creating models or analyzing."
