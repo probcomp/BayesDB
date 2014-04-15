@@ -86,6 +86,10 @@ threshold_keyword = CaselessKeyword("threshold")
 row_keyword = CaselessKeyword("row")
 key_keyword = CaselessKeyword("key")
 in_keyword = CaselessKeyword("in")
+kernel_keyword = CaselessKeyword('kernel')
+asc_keyword = CaselessKeyword("asc")
+desc_keyword = CaselessKeyword("desc")
+given_keyword = CaselessKeyword("given")
 ## Single and plural keywords
 single_model_keyword = CaselessKeyword("model")
 multiple_models_keyword = CaselessKeyword("models")
@@ -142,6 +146,7 @@ show_column_lists_for_keyword = Combine(show_keyword + single_white + column_key
                                         single_white + for_keyword).setResultsName("statement_id")
 show_columns_for_keyword = Combine(show_keyword + single_white + column_keyword + 
                                    single_white + for_keyword).setResultsName("statement_id")
+show_columns_keyword = Combine(show_keyword + single_white + column_keyword)
 show_row_lists_for_keyword = Combine(show_keyword + single_white + row_keyword + 
                                  single_white + list_keyword + 
                                  single_white + for_keyword).setResultsName("statement_id")
@@ -170,6 +175,7 @@ save_connected_components_with_threshold_keyword = Combine(save_keyword + single
                                                            threshold_keyword)
 save_connected_components_keyword = save_connected_components_with_threshold_keyword
 key_in_keyword = Combine(key_keyword + single_white + in_keyword)
+
 
 ## Values/Literals
 sub_query = QuotedString("(",endQuoteChar=")").setResultsName('sub_query')
@@ -238,11 +244,14 @@ index_clause = (Group((Group(int_number + Suppress(hyphen_literal) + int_number)
                                   int_number)))
                 .setParseAction(list_from_index_clause)
                 .setResultsName('index_clause'))
+
+with_kernel_clause = Group(with_keyword + identifier.setResultsName('kernel_id') + kernel_keyword).setResultsName("with_kernel_clause")
+
 analyze_function = (analyze_keyword + btable + 
                     Optional( model_keyword + index_clause) + 
                     Suppress(for_keyword) + 
                     ((int_number.setResultsName('num_iterations') + iteration_keyword) | 
-                     (int_number.setResultsName('num_seconds') + second_keyword)))
+                     (int_number.setResultsName('num_seconds') + second_keyword)) + Optional(with_kernel_clause))
                     
 # LIST BTABLES
 list_btables_function = list_btables_keyword
@@ -302,7 +311,6 @@ save_to_clause = save_to_keyword + filename
 # WITH CONFIDENCE <confidence>
 with_confidence_clause = with_confidence_keyword + float_number.setResultsName("confidence")
 
-
 # -------------------------------- Functions ------------------------------ #
 
 # SIMILARITY TO <row> [WITH RESPECT TO <column>]
@@ -356,8 +364,12 @@ non_aggregate_function = similarity_to_function | typicality_function | predicti
 
 # -------------------------------- other clauses --------------------------- #
 
-# ORDER BY <column|non-aggregate-function>[<column|function>...]
-order_by_clause = Group(order_by_keyword + Group((non_aggregate_function) + ZeroOrMore(Suppress(comma_literal) + (non_aggregate_function))).setResultsName("order_by_set")).setResultsName('order_by')
+# ORDER BY <column|non-aggregate-function>[<column|function>...] [asc|desc]
+order_by_clause = Group(order_by_keyword + 
+                        Group((non_aggregate_function) + 
+                              ZeroOrMore(Suppress(comma_literal) + 
+                                         (non_aggregate_function))).setResultsName("order_by_set") + 
+                        Optional(asc_keyword | desc_keyword).setResultsName('sort_by')).setResultsName('order_by')
 
 # WHERE <whereclause>
 single_where_condition = Group(((non_aggregate_function.setResultsName('function') + 
@@ -382,6 +394,14 @@ row_list_clause = Group(int_number +
                            ZeroOrMore(Suppress(comma_literal) + 
                                       int_number)).setResultsName("row_list")
 
+single_given_condition = Group(identifier.setResultsName('column') + equal_literal + value.setResultsName('value'))
+given_clause = (Group(given_keyword + 
+                      Group(single_given_condition + 
+                            ZeroOrMore(Suppress(comma_literal|and_keyword) + 
+                                       single_given_condition))
+                      .setResultsName("given_conditions"))
+                .setResultsName("given_clause"))
+
 # ----------------------------- Master Query Syntax ---------------------------------------- #
 
 query_id = (select_keyword | 
@@ -401,12 +421,14 @@ function_in_query = (predictive_probability_of_function |
                      row_similarity_keyword |
                      similarity_keyword |
                      column_keyword |
+                     dependence_probability_keyword |
                      Group(column_list_clause.setResultsName("columns"))).setResultsName("function")
 
 functions_clause = Group(function_in_query + 
                          ZeroOrMore(Suppress(comma_literal) + 
                                     function_in_query)).setResultsName('functions')
 
+#TODO needs more separated subqueries 
 query = (Optional(summarize_keyword | plot_keyword) +
          query_id + 
          functions_clause + 
@@ -417,6 +439,7 @@ query = (Optional(summarize_keyword | plot_keyword) +
               Optional(with_confidence_clause) + 
               Optional(Suppress(with_keyword) + int_number.setResultsName('samples') + Suppress(sample_keyword)) + 
               Optional(Suppress(limit_keyword) + int_number.setResultsName("limit")) + 
+              Optional(given_clause) + 
               Optional(for_keyword + column_list_clause.setResultsName('columns')) +
               Optional(for_keyword + row_list_clause.setResultsName('rows')) + 
               Optional(Suppress(save_to_keyword) + filename) + 

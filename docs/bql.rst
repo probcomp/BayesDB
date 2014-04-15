@@ -112,7 +112,7 @@ INFER is just like SELECT, except that it also tries to fill in missing values. 
 
 SIMULATE generates new rows from the underlying probability model a specified number of times::
 
-   SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <file>]
+   SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
 
 ESTIMATE COLUMNS is like a SELECT statement, but lets you select columns instead of rows::
 
@@ -152,9 +152,9 @@ You can print out the names of the stored column lists in your btable with::
 
    SHOW COLUMN LISTS FOR <btable>
 
-And you can view the columns in a given column list with::
+And you can view the columns in a given column list or table with::
 
-   SHOW COLUMNS <column_list> FROM <btable>
+   SHOW COLUMNS FOR <column_list|btable>
 
 Row Lists
 ~~~~~~~~~
