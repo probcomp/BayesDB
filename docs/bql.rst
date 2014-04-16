@@ -37,9 +37,11 @@ It is necessary to run INITIALIZE MODELS and ANALYZE in order for BayesDB to eva
 
 ::
 
-	INITIALIZE <num_models> MODELS FOR <btable>
+	INITIALIZE <num_models> MODELS FOR <btable> [WITH CONFIG <config>]
 
 Initializes <num_models> models. 
+
+Available models include "naive bayes" and "crp mixture"
 
 ::
 

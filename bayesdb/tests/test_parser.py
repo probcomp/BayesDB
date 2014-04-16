@@ -567,21 +567,22 @@ def test_basic_select_pyparsing():
     select_1_parse = query.parseString(select_1,parseAll=True)
     assert select_1_parse.statement_id == 'select'
     assert select_1_parse.btable == 'table_1'
-    assert select_1_parse.functions[0].columns[0] == '*'
+    assert select_1_parse.functions[0].column_id == '*'
     select_2 = "SELECT column_1,column_3 FROM table_1"
     select_2_parse = query.parseString(select_2,parseAll=True)
-    assert select_2_parse.functions[0].columns.asList() == ['column_1','column_3']
+    assert select_2_parse.functions[0].column_id == 'column_1'
+    assert select_2_parse.functions[1].column_id == 'column_3'
     select_3 = "PLOT SELECT column_1 FROM table_1 WHERE column_2 = 3"
     select_3_parse = query.parseString(select_3,parseAll=True)
     assert select_3_parse.plot == 'plot'
-    assert select_3_parse.functions[0].columns.asList() == ['column_1']
+    assert select_3_parse.functions[0].column_id == 'column_1'
     assert select_3_parse.where_keyword == 'where'
     assert select_3_parse.where_conditions[0].value == '3'
     assert select_3_parse.where_conditions[0].function.column == 'column_2'
     assert select_3_parse.where_conditions[0].operation == '='
     select_4 = "SELECT col_1 FROM table_1 ORDER BY TYPICALITY LIMIT 10 SAVE TO ~/test.txt"
     select_4_parse = query.parseString(select_4,parseAll=True)
-    assert select_4_parse.functions[0].columns.asList() == ['col_1']
+    assert select_4_parse.functions[0].column_id == 'col_1'
     assert select_4_parse.order_by.order_by_set[0].function_id == 'typicality'
     assert select_4_parse.limit == '10'
     assert select_4_parse.filename == '~/test.txt'
@@ -633,21 +634,22 @@ def test_infer_pyparsing():
     infer_1_parse = query.parseString(infer_1,parseAll=True)
     assert infer_1_parse.statement_id == 'infer'
     assert infer_1_parse.btable == 'table_1'
-    assert infer_1_parse.functions[0].columns[0] == '*'
+    assert infer_1_parse.functions[0].column_id == '*'
     infer_2 = "infer column_1,column_3 FROM table_1"
     infer_2_parse = query.parseString(infer_2,parseAll=True)
-    assert infer_2_parse.functions[0].columns.asList() == ['column_1','column_3']
+    assert infer_2_parse.functions[0].column_id == 'column_1'
+    assert infer_2_parse.functions[1].column_id == 'column_3'
     infer_3 = "SUMMARIZE infer column_1 FROM table_1 WHERE column_2 = 3"
     infer_3_parse = query.parseString(infer_3,parseAll=True)
     assert infer_3_parse.summarize == 'summarize'
-    assert infer_3_parse.functions[0].columns.asList() == ['column_1']
+    assert infer_3_parse.functions[0].column_id == 'column_1'
     assert infer_3_parse.where_keyword == 'where'
     assert infer_3_parse.where_conditions[0].value == '3'
     assert infer_3_parse.where_conditions[0].function.column == 'column_2'
     assert infer_3_parse.where_conditions[0].operation == '='
     infer_4 = "infer col_1 FROM table_1 ORDER BY TYPICALITY LIMIT 10 SAVE TO ~/test.txt"
     infer_4_parse = query.parseString(infer_4,parseAll=True)
-    assert infer_4_parse.functions[0].columns.asList() == ['col_1']
+    assert infer_4_parse.functions[0].column_id == 'col_1'
     assert infer_4_parse.order_by.order_by_set[0].function_id == 'typicality'
     assert infer_4_parse.limit == '10'
     assert infer_4_parse.filename == '~/test.txt'
@@ -714,13 +716,14 @@ def test_simulate_pyparsing():
     query_1 = "SIMULATE * FROM table_1 WHERE column_1 = 4 TIMES 4 SAVE TO ~/test.csv"
     simulate_ast = query.parseString(query_1,parseAll=True)
     assert simulate_ast.statement_id == 'simulate'
-    assert simulate_ast.functions[0].columns[0] == '*'
+    assert simulate_ast.functions[0].column_id == '*'
     assert simulate_ast.where_keyword == 'where'
     assert simulate_ast.times == '4'
     assert simulate_ast.filename == '~/test.csv'
     query_2 = "SIMULATE col1,col2 FROM table_1 WHERE column_1 = 4 TIMES 4 SAVE TO ~/test.csv"
     simulate_ast = query.parseString(query_2,parseAll=True)
-    assert simulate_ast.functions[0].columns.asList() == ['col1','col2']
+    assert simulate_ast.functions[0].column_id == 'col1'
+    assert simulate_ast.functions[1].column_id == 'col2'
 
 def test_estimate_columns_from_pyparsing():
     query_1 = "ESTIMATE COLUMNS FROM table_1 WHERE col_1 = 4 ORDER BY TYPICALITY LIMIT 10 AS col_list_1"
@@ -782,7 +785,8 @@ def test_nested_queries_basic_pyparsing():
     assert ast.sub_query == " SELECT col_1,col_2 FROM table_2"
     ast_2 = query.parseString(ast.sub_query,parseAll=True)
     assert ast_2.statement_id == 'select'
-    assert ast_2.functions[0].columns.asList() == ['col_1','col_2']
+    assert ast_2.functions[0].column_id == 'col_1'
+    assert ast_2.functions[1].column_id == 'col_2'
 
 def test_master_query_for_parse_errors():
     # This test will not test for correct information, just successfull parsing

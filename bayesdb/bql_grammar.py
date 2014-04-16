@@ -90,6 +90,12 @@ kernel_keyword = CaselessKeyword('kernel')
 asc_keyword = CaselessKeyword("asc")
 desc_keyword = CaselessKeyword("desc")
 given_keyword = CaselessKeyword("given")
+crp_keyword = CaselessKeyword("crp")
+mixture_keyword = CaselessKeyword("mixture")
+naive_keyword = CaselessKeyword("naive")
+bayes_keyword = CaselessKeyword("bayes")
+config_keyword = CaselessKeyword("config")
+using_keyword = CaselessKeyword("using")
 ## Single and plural keywords
 single_model_keyword = CaselessKeyword("model")
 multiple_models_keyword = CaselessKeyword("models")
@@ -175,7 +181,9 @@ save_connected_components_with_threshold_keyword = Combine(save_keyword + single
                                                            threshold_keyword)
 save_connected_components_keyword = save_connected_components_with_threshold_keyword
 key_in_keyword = Combine(key_keyword + single_white + in_keyword)
-
+naive_bayes_keyword = Combine(naive_keyword + single_white + bayes_keyword)
+crp_mixture_keyword = Combine(crp_keyword + single_white + mixture_keyword)
+using_models_keyword = Combine(using_keyword + single_white + model_keyword)
 
 ## Values/Literals
 sub_query = QuotedString("(",endQuoteChar=")").setResultsName('sub_query')
@@ -220,9 +228,14 @@ update_schema_for_function = (update_schema_for_keyword +
 # EXECUTE FILE <filename.bql>
 execute_file_function = execute_file_keyword + filename
 
-# INITIALIZE <num_models> MODELS FOR <btable>
-initialize_function = (initialize_keyword + int_number.setResultsName("num_models") + 
-                       Suppress(models_for_keyword) + btable)
+# INITIALIZE <num_models> MODELS FOR <btable> 
+initialize_function = (initialize_keyword + 
+                       int_number.setResultsName("num_models") + 
+                       Suppress(models_for_keyword) + 
+                       btable + 
+                       Optional(with_keyword + 
+                                config_keyword + 
+                                (naive_bayes_keyword|crp_mixture_keyword).setResultsName('config')))#TODO test config
 
 # ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
 def list_from_index_clause(toks):
@@ -346,6 +359,7 @@ mutual_information_function = Group(mutual_information_keyword.setResultsName('f
 correlation_function = Group(correlation_keyword.setResultsName('function_id') + 
                              functions_of_two_columns_subclause).setResultsName("function")
 
+two_column_function = (dependence_probability_function | mutual_information_function | correlation_function)
 
 # PROBABILITY OF <column>=<value>
 probability_of_function = Group((probability_of_keyword.setResultsName("function_id") + 
@@ -360,19 +374,23 @@ predictive_probability_of_function = Group(predictive_probability_of_keyword.set
 # KEY IN <row_list>
 key_in_rowlist_clause = Group(key_in_keyword.setResultsName("function_id") + identifier.setResultsName("row_list")).setResultsName('function')
 
-non_aggregate_function = similarity_to_function | typicality_function | predictive_probability_of_function | Group(identifier.setResultsName('column'))
+whereclause_potential_function = (similarity_to_function | 
+                                  typicality_function | 
+                                  predictive_probability_of_function | 
+                                  two_column_function |
+                                  Group(identifier.setResultsName('column')))
 
 # -------------------------------- other clauses --------------------------- #
 
 # ORDER BY <column|non-aggregate-function>[<column|function>...] [asc|desc]
 order_by_clause = Group(order_by_keyword + 
-                        Group((non_aggregate_function) + 
+                        Group((whereclause_potential_function) + 
                               ZeroOrMore(Suppress(comma_literal) + 
-                                         (non_aggregate_function))).setResultsName("order_by_set") + 
+                                         (whereclause_potential_function))).setResultsName("order_by_set") + 
                         Optional(asc_keyword | desc_keyword).setResultsName('sort_by')).setResultsName('order_by')
 
 # WHERE <whereclause>
-single_where_condition = Group(((non_aggregate_function.setResultsName('function') + 
+single_where_condition = Group(((whereclause_potential_function.setResultsName('function') + 
                                  operation_literal.setResultsName('operation') + 
                                  value.setResultsName('value')) | key_in_rowlist_clause) + 
                                Optional(with_confidence_clause))
@@ -402,6 +420,8 @@ given_clause = (Group(given_keyword +
                       .setResultsName("given_conditions"))
                 .setResultsName("given_clause"))
 
+using_models_clause = (using_models_keyword + index_clause.setResultsName("using_models_index_clause")) #TODO test
+
 # ----------------------------- Master Query Syntax ---------------------------------------- #
 
 query_id = (select_keyword | 
@@ -422,7 +442,7 @@ function_in_query = (predictive_probability_of_function |
                      similarity_keyword |
                      column_keyword |
                      dependence_probability_keyword |
-                     Group(column_list_clause.setResultsName("columns"))).setResultsName("function")
+                     Group((identifier|all_column_literal).setResultsName("column_id"))).setResultsName("function")
 
 functions_clause = Group(function_in_query + 
                          ZeroOrMore(Suppress(comma_literal) + 
@@ -445,6 +465,7 @@ query = (Optional(summarize_keyword | plot_keyword) +
               Optional(Suppress(save_to_keyword) + filename) + 
               Optional(save_connected_components_clause) + 
               Optional(Suppress(times_keyword) + int_number.setResultsName("times")) + 
+              Optional(using_models_clause) +
               Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list"))))
 
 bql_statement = (query | management_query) + Optional(semicolon_literal)

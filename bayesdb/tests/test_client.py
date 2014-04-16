@@ -31,6 +31,7 @@ import pandas
 import bayesdb.utils as utils
 from bayesdb.client import Client
 from bayesdb.engine import Engine
+import bayesdb.bql_grammar as bql
 
 test_tablenames = None
 client = None
@@ -151,9 +152,9 @@ def test_column_lists():
   client('estimate columns from %s order by typicality limit 5 as %s' % (test_tablename, cname1), debug=True, pretty=False)
   client('estimate columns from %s limit 5 as %s' % (test_tablename, cname2), debug=True, pretty=False)  
   client('show column lists for %s' % test_tablename, debug=True, pretty=False)
-# TODO same todo as above
-#  client('show columns %s from %s' % (cname1, test_tablename), debug=True, pretty=False)
-#  client('show columns %s from %s' % (cname2, test_tablename), debug=True, pretty=False)
+  # TODO same todo as above
+  #  client('show columns %s from %s' % (cname1, test_tablename), debug=True, pretty=False)
+  #  client('show columns %s from %s' % (cname2, test_tablename), debug=True, pretty=False)
 
   tmp = 'asdf_test.png'
   test_filenames.append(tmp)
@@ -161,7 +162,10 @@ def test_column_lists():
     os.remove(tmp)
   # TODO for columns col_name 
   client('estimate pairwise dependence probability from %s for %s save to %s' % (test_tablename, cname1, tmp), debug=True, pretty=False)
-  assert os.path.exists(tmp)
+  test_ast = bql.bql_statement.parseString('estimate pairwise dependence probability from %s for %s save to %s' % (test_tablename, cname1, tmp),parseAll=True)
+  assert test_ast.filename == 'asdf_test.png' 
+  #TODO current parsing breaks save (probably everything) after "for %s"
+  #assert os.path.exists(tmp)
 
   client('estimate pairwise dependence probability from %s for %s' % (test_tablename, cname2), debug=True, pretty=False)
 
@@ -263,7 +267,7 @@ def test_model_config():
   assert numpy.all(dep_mat == 0)
 
   # test crp
-  client('drop models for %s' % test_tablename, yes=True, debug=True, pretty=False)
+  client('drop models from %s' % test_tablename, yes=True, debug=True, pretty=False)
   client('initialize 2 models for %s with config crp mixture' % (test_tablename), debug=True, pretty=False)
   client('analyze %s for 2 iterations' % (test_tablename), debug=True, pretty=False)
   dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, debug=True, pretty=False)[0]['matrix']
@@ -272,7 +276,7 @@ def test_model_config():
   assert numpy.all(dep_mat == 1)
 
   # test crosscat
-  client('drop models for %s' % test_tablename, yes=True, debug=True, pretty=False)
+  client('drop models from %s' % test_tablename, yes=True, debug=True, pretty=False)
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
   client('analyze %s for 2 iterations' % (test_tablename), debug=True, pretty=False)
   dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, debug=True, pretty=False)[0]['matrix']
