@@ -97,6 +97,15 @@ class Engine(object):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
 
+    """
+    These methods are all untested, so you can edit them if they turn out to be broken (they are quite simple).
+    self.persistence_layer.get_column_labels(tablename)
+    self.persistence_layer.get_column_label(tablename, column_name)
+    self.persistence_layer.write_column_labels(tablename, column_labels) # takes a dict, and overwrites the entire existing dict
+    self.persistence_layer.add_column_label(tablename, column_name, column_label) # just overwrites a single column's label
+    """
+    self.persistence_layer.write_column_labels(tablename, mappings)
+
     # TODO: label the columns in persistence layer
     ret['message'] = 'Updated column labels.'
     return ret

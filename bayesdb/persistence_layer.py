@@ -40,6 +40,7 @@ class PersistenceLayer():
     ..<tablename>/
     ....metadata_full.pkl
     ....metadata.pkl
+    ....column_labels.pkl
     ....column_lists.pkl
     ....row_lists.pkl
     ....models/
@@ -188,6 +189,15 @@ class PersistenceLayer():
             except IOError:
                 return {}
 
+    def get_column_labels(self, tablename):
+        try:
+            f = open(os.path.join(self.data_dir, tablename, 'column_labels.pkl'), 'r')
+            column_labels = pickle.load(f)
+            f.close()
+            return column_labels
+        except IOError:
+            return dict()
+
     def get_column_lists(self, tablename):
         try:
             f = open(os.path.join(self.data_dir, tablename, 'column_lists.pkl'), 'r')
@@ -205,6 +215,11 @@ class PersistenceLayer():
             return row_lists
         except IOError:
             return dict()
+
+    def add_column_label(self, tablename, column_name, column_label):
+        column_labels = self.get_column_labels(tablename)
+        column_labels[column_name.lower()] = column_label
+        self.write_column_labels(tablename, column_labels)
             
     def add_column_list(self, tablename, column_list_name, column_list):
         column_lists = self.get_column_lists(tablename)
@@ -215,6 +230,13 @@ class PersistenceLayer():
         row_lists = self.get_row_lists(tablename)
         row_lists[row_list_name] = row_list
         self.write_row_lists(tablename, row_lists)
+
+    def get_column_label(self, tablename, column_name):
+        column_labels = self.get_column_labels(tablename)
+        if column_name.lower() in column_labels:
+            return column_lists[column_name.lower()]
+        else:
+            raise utils.BayesDBError('Column %s in btable %s has no label.' % (column_name, tablename))
         
     def get_column_list(self, tablename, column_list):
         column_lists = self.get_column_lists(tablename)
@@ -251,6 +273,11 @@ class PersistenceLayer():
             model_f = open(os.path.join(models_dir, 'model_%d.pkl' % i), 'w')
             pickle.dump(v, model_f, pickle.HIGHEST_PROTOCOL)
             model_f.close()
+
+    def write_column_labels(self, tablename, column_labels):
+        column_labels_f = open(os.path.join(self.data_dir, tablename, 'column_labels.pkl'), 'w')
+        pickle.dump(column_labels, column_labels_f, pickle.HIGHEST_PROTOCOL)
+        column_labels_f.close()
 
     def write_column_lists(self, tablename, column_lists):
         column_lists_f = open(os.path.join(self.data_dir, tablename, 'column_lists.pkl'), 'w')
@@ -436,6 +463,10 @@ class PersistenceLayer():
         # Write models
         models = {}
         self.write_models(tablename, models)
+        
+        # Write column labels
+        column_labels = dict()
+        self.write_column_labels(tablename, column_labels)
 
         # Write column lists
         column_lists = dict()
