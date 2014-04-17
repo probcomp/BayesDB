@@ -308,3 +308,67 @@ The first column of the output from SUMMARIZE will be statistic labels:
 ``prob_mode1``, ``prob_mode2``, ``prob_mode3``, ``prob_mode4``, ``prob_mode5`` are the empirical probabilities of the corresponding *i*-th most common value (number of occurrences / number of observations *including missing values*)
 
 Modal values and their empirical probabilities are returned for every column, whether discrete or continuous.
+
+
+Saving and Reviewing Metadata (COMING SOON)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Metadata (data describing the data) can remind the user about what's contained in a btable, or what a particular column of data means. For each btable, metadata is stored as pairs consisting of a key and a value, and is saved at two different levels: metadata related to entire btables and metadata related to columns of data (typically referred to as column labels).
+
+For example, a user might set the key ``original_file_name = data_download_2014_04_17.csv`` in order to recall which version of the file is saved in the btable, or might set a column label ``yr = Year of observation``.
+
+Metadata for btables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are no restrictions on metadata keys, but some examples at the btable level might be ``original_file_name``, ``origin_url``, ``date_retrieved``,
+``misc_note``, etc.
+
+To add metadata to a btable by item, directly::
+
+  UPDATE METADATA FOR <btable> SET <metadata-key1 = value1>[, <metadata-key2 = value2>...]
+
+Adding a lot of metadata to a btable might become tedious, especially if the process ever needs to be repeated, so it's also possible to add metadata to a btable from a file::
+
+  LOAD METADATA FROM <filename> INTO <btable>
+
+The file in <filename> should be a text file with one key-value pair per line, separated by ``=``::
+
+  original_file_name = data_download_2014_04_17.csv
+  sample_note = data in btable is a 20% random sample of the full original file
+
+Metadata for columns of btables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Labeling columns is a common metadata operations, and has its own statement::
+
+  LABEL COLUMN[S] FROM <btable> <column1 = column-label-1> [, <column-name-2 = column-label-2>, <column-name-3 = column-label-3>, …]
+
+Column labels should not be quoted unless the quotes are part of the label, and should not include commas. Similarly to btable-level metadata, column labels can be added to a btable from a file::
+
+  LOAD COLUMN LABELS FROM <filename> INTO <btable>
+
+As with loading btable-level metadata from a file, the file in <filename> should be a text file with one pair of column name and label on each line, separated by ``=``::
+
+  age = Observed student's age as of 1 Jan 2014
+  grade = Student's enrolled grade at the beginning of the 2013-14 school year
+
+Reviewing metadata
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To see all metadata stored for a given btable as metadata key and value pairs::
+
+  SHOW METADATA FOR <btable>
+
+However, it’s possible that a btable with a lot of metadata might produce too much output to review efficiently. As an alternative, the user’s first step might be to review which metadata keys have values for the given btable::
+
+  SHOW METADATA KEYS FOR <btable>
+
+The above statement will simply print a sorted list of all metadata keys that have been set, without including the actual values. Once the user knows the metadata keys that he/she wants to review, the associated values for those specific keys can be displayed::
+
+    SHOW METADATA [<metadata-key1>, <metadata-key2>, …] FOR <btable>
+
+Just like labeling columns will probably be the most common purpose for storing metadata, reviewing column labels will probably be the most common purpose for reviewing metadata, so a more direct command is available::
+
+  SHOW COLUMN LABELS [FOR <columns>] FROM <btable>
+
+If no columns are specified, the output shows column name and label pairs for all columns in the. If a set of column names is given, the output shows column name and label pairs for those columns.
