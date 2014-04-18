@@ -334,14 +334,6 @@ class Client(object):
             m = query_obj['models']
             output_list = ['Model %d: %d iterations' % (id, iterations) for id,iterations in m]
             result += ', '.join(output_list)
-        elif 'labels' in query_obj:
-            """ Pretty-print column labels. """
-            labels = query_obj['labels']
-            pt = prettytable.PrettyTable()
-            pt.field_names = ['column name', 'label']
-            for colname, label in query_obj['labels'].items():
-                pt.add_row((colname, label))
-            result += str(pt)
 
         if len(result) >= 1 and result[-1] == '\n':
             result = result[:-1]

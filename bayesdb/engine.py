@@ -110,7 +110,10 @@ class Engine(object):
       else:
         raise utils.BayesDBColumnDoesNotExistError(colname, tablename)
 
-    ret = self.persistence_layer.get_column_labels(tablename)
+    labels = self.persistence_layer.get_column_labels(tablename)
+    print labels
+    ret = {'data': [[c, l] for c, l in labels.items()], 'columns': ['column', 'label']}
+    print ret
     ret['message'] = 'Updated column labels.'
     return ret
 
