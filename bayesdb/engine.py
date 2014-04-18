@@ -92,16 +92,23 @@ class Engine(object):
   def label_columns(self, tablename, mappings):
     """
     Add column labels to table in persistence layer, replacing
-    labels without warning. Mappings is a dict of column names 
+    labels without warning. Mappings is a dict of column names
     and their labels as given by the user.
     No length is enforced on labels - should we?
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
 
+    # Get column names for table so labels don't get written for nonexistent columns.
+    M_c_full = self.persistence_layer.get_metadata_full(tablename)['M_c_full']
+    colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
+
     # Only add labels or overwrite one-by-one.
-    for column, label in mappings.items():
-      self.persistence_layer.add_column_label(tablename, column, label):
+    for colname, label in mappings.items():
+      if colname in colnames_full:
+        self.persistence_layer.add_column_label(tablename, colname, label):
+      else:
+        raise utils.BayesDBColumnDoesNotExistError(colname, tablename)
 
     # TODO: label the columns in persistence layer
     ret['message'] = 'Updated column labels.'
