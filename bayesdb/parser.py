@@ -510,7 +510,7 @@ class Parser(object):
           (?P<btable>[^\s]+)\s*$
         """, orig, flags=re.VERBOSE|re.IGNORECASE)
         if not match:
-            if words[0] == 'show':
+            if words[0] == 'show' and words[1] == 'row':
                 return 'help', self.help_show_row_lists()
         else:
             tablename = match.group('btable')
@@ -525,7 +525,7 @@ class Parser(object):
           (?P<btable>[^\s]+)\s*$
         """, orig, flags=re.VERBOSE|re.IGNORECASE)
         if not match:
-            if words[0] == 'show':
+            if words[0] == 'show' and words[1] == 'column':
                 return 'help', self.help_show_column_lists()
         else:
             tablename = match.group('btable')
@@ -542,7 +542,7 @@ class Parser(object):
           (?P<btable>[^\s]+)\s*$
         """, orig, flags= re.VERBOSE | re.IGNORECASE)
         if not match:
-            if words[0] == 'show':
+            if words[0] == 'show' and words[1] == 'columns':
                 return 'help', self.help_show_columns()
         else:
             tablename = match.group('btable')
@@ -688,7 +688,24 @@ class Parser(object):
                 column, label = vals[0].strip(), vals[1].strip()
                 mappings[column.strip()] = label
             return 'label_columns', dict(tablename=tablename, mappings=mappings), None
-            
+
+    def help_show_labels(self):
+        return "SHOW LABELS FOR <btable> [<column1>[, <column2>..]]: "
+
+    def parse_show_labels(self, words, orig):
+        match = re.search(r"""
+            show\s+labels\s+for\s+
+            (?P<btable>[^\s]+)\s+
+            (?P<columns>[^;]*);?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'show' and words[1] == 'labels':
+                return 'help', self.help_show_columns()
+        else:
+            tablename = match.group('btable').strip()
+            columnstring = match.group('columns').strip()
+            return 'show_labels', dict(tablename=tablename, columnstring=columnstring), None
+
     def help_update_schema(self):
         return "UPDATE SCHEMA FOR <btable> SET [<column_name>=(numerical|categorical|key|ignore)[,...]]: must be done before creating models or analyzing."
         
