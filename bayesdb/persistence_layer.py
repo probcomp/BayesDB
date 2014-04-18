@@ -234,7 +234,7 @@ class PersistenceLayer():
     def get_column_label(self, tablename, column_name):
         column_labels = self.get_column_labels(tablename)
         if column_name.lower() in column_labels:
-            return column_lists[column_name.lower()]
+            return column_labels[column_name.lower()]
         else:
             raise utils.BayesDBError('Column %s in btable %s has no label.' % (column_name, tablename))
         
