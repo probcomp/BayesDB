@@ -111,9 +111,7 @@ class Engine(object):
         raise utils.BayesDBColumnDoesNotExistError(colname, tablename)
 
     labels = self.persistence_layer.get_column_labels(tablename)
-    print labels
     ret = {'data': [[c, l] for c, l in labels.items()], 'columns': ['column', 'label']}
-    print ret
     ret['message'] = 'Updated column labels.'
     return ret
 
@@ -124,14 +122,17 @@ class Engine(object):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
 
-    column_labels = self.persistence_layer.get_column_labels(tablename)
+    # Get colnames from columnstring
     column_lists = self.persistence_layer.get_column_lists(tablename)
     M_c = self.persistence_layer.get_metadata(tablename)['M_c']
     colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
     colnames = [c.lower() for c in colnames]
     utils.check_for_duplicate_columns(colnames)
 
-    ret = {'labels': {key: column_labels[key] for key in colnames if key in column_labels}}
+    labels = self.persistence_layer.get_column_labels(tablename)
+
+    ret = {'data': [[c, l] for c, l in labels.items() if c in colnames], 'columns': ['column', 'label']}
+    ret['message'] = "Showing labels for %s" % (tablename)
     return ret
 
   def update_schema(self, tablename, mappings):
