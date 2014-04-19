@@ -433,3 +433,9 @@ def test_select_where_col_equal_val():
   col_val_similarity = client('select * from %s where similarity to name = "Akron OH" > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['row_id']
   assert len(basic_similarity) == len(col_val_similarity)
 
+def test_labeling():
+  test_tablename = create_dha()
+  global client, test_filenames
+
+  client('label columns for %s name = Name of the hospital, qual_score = Overall quality score' % (test_tablename), debug=True, pretty=False)
+  client('show columns for %s name, qual_score' % (test_tablename), debug=True, pretty=False)
