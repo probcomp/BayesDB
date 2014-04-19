@@ -448,7 +448,7 @@ def test_user_metadata():
   global client, test_filenames
 
   client('update metadata for %s set data_source = Dartmouth Atlas of Health, url = http://www.dartmouthatlas.org/tools/downloads.aspx' % (test_tablename), debug=True, pretty=False)
-  client('update metadata for %s from dha_user_metadata.csv' % (test_tablename), debug=True, pretty=False)
+  client('update metadata for %s from data/dha_user_metadata.csv' % (test_tablename), debug=True, pretty=False)
 
   client('show metadata for %s data_source, url' % (test_tablename), debug=True, pretty=False)
 
