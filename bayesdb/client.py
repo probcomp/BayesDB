@@ -190,7 +190,10 @@ class Client(object):
                 header, rows = data_utils.read_pandas_df(pandas_df)
             args_dict['header'] = header
             args_dict['raw_T_full'] = rows
-
+        elif method_name == 'label_columns':
+            if client_dict['source'] == 'file':
+                header, rows = data_utils.read_csv(client_dict['csv_path'])
+                args_dict['mappings'] = {colname: label for colname, label in rows}
 
         ## Call engine.
         result = self.call_bayesdb_engine(method_name, args_dict, debug)

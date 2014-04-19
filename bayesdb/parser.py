@@ -684,10 +684,10 @@ class Parser(object):
             tablename = match.group('btable').strip()
             mapping_string = match.group('mappings').strip()
 
-            filename, mappings = None, None
+            csv_path, mappings = None, None
             if words[4] == 'from':
                 source = 'file'
-                filename = mapping_string
+                csv_path = mapping_string
             elif words[4] == 'set':
                 source = 'inline'
                 mappings = dict()
@@ -695,7 +695,7 @@ class Parser(object):
                     vals = mapping.split('=')
                     column, label = vals[0].strip(), vals[1].strip()
                     mappings[column.strip()] = label
-            return 'label_columns', dict(tablename=tablename, source=source, filename=filename, mappings=mappings), None
+            return 'label_columns', dict(tablename=tablename, mappings=mappings), dict(source=source, csv_path=csv_path)
 
     def help_show_labels(self):
         return "SHOW LABELS FOR <btable> [<column1>[, <column2>..]]: "
