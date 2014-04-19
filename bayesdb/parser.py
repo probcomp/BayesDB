@@ -703,8 +703,8 @@ class Parser(object):
     def parse_show_labels(self, words, orig):
         match = re.search(r"""
             show\s+labels\s+for\s+
-            (?P<btable>[^\s]+)\s+
-            (?P<columns>[^;]*);?
+            (?P<btable>[^\s]+)
+            \s*(?P<columns>[^;]*);?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
             if words[0] == 'show' and words[1] == 'labels':

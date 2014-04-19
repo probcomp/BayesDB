@@ -124,14 +124,17 @@ class Engine(object):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
 
-    # Get colnames from columnstring
-    column_lists = self.persistence_layer.get_column_lists(tablename)
-    M_c = self.persistence_layer.get_metadata(tablename)['M_c']
-    colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
-    colnames = [c.lower() for c in colnames]
-    utils.check_for_duplicate_columns(colnames)
-
     labels = self.persistence_layer.get_column_labels(tablename)
+
+    # Get colnames from columnstring
+    if columnstring.strip() == '':
+      colnames = labels.keys()
+    else:
+      column_lists = self.persistence_layer.get_column_lists(tablename)
+      M_c = self.persistence_layer.get_metadata(tablename)['M_c']
+      colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
+      colnames = [c.lower() for c in colnames]
+      utils.check_for_duplicate_columns(colnames)
 
     ret = {'data': [[c, l] for c, l in labels.items() if c in colnames], 'columns': ['column', 'label']}
     ret['message'] = "Showing labels for %s." % (tablename)
