@@ -154,6 +154,24 @@ class Engine(object):
     ret['message'] = "Updated user metadata for %s." % (tablename)
     return ret
 
+  def show_metadata(self, tablename, keystring):
+    """
+    Get user metadata from persistence layer and show the values for the keys specified
+    by the user. If no keystring is given, show all metadata key-value pairs.
+    """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+
+    metadata = self.persistence_layer.get_user_metadata(tablename)
+    if keystring.strip() == '':
+      metadata_keys = metadata.keys()
+    else:
+      metadata_keys = [key.strip() for key in keystring.split(',')]
+
+    ret = {'data': [[k, metadata[k]] for k in metadata_keys if k in metadata], 'columns': ['key', 'value']}
+    ret['message'] = "Showing user metadata for %s." % (tablename)
+    return ret
+
   def update_schema(self, tablename, mappings):
     """
     mappings is a dict of column name to 'continuous', 'multinomial',
