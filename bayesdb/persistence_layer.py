@@ -216,6 +216,20 @@ class PersistenceLayer():
         except IOError:
             return dict()
 
+    def get_user_metadata(self, tablename):
+        try:
+            f = open(os.path.join(self.data_dir, tablename, 'user_metadata.pkl'), 'r')
+            column_labels = pickle.load(f)
+            f.close()
+            return column_labels
+        except IOError:
+            return dict()
+
+    def add_user_metadata(self, tablename, metadata_key, metadata_value):
+        user_metadata = self.get_user_metadata(tablename)
+        user_metadata[metadata_key.lower()] = metadata_value
+        self.write_user_metadata(tablename, user_metadata)
+
     def add_column_label(self, tablename, column_name, column_label):
         column_labels = self.get_column_labels(tablename)
         column_labels[column_name.lower()] = column_label
@@ -278,6 +292,11 @@ class PersistenceLayer():
         column_labels_f = open(os.path.join(self.data_dir, tablename, 'column_labels.pkl'), 'w')
         pickle.dump(column_labels, column_labels_f, pickle.HIGHEST_PROTOCOL)
         column_labels_f.close()
+
+    def write_user_metadata(self, tablename, user_metadata):
+        user_metadata_f = open(os.path.join(self.data_dir, tablename, 'user_metadata.pkl'), 'w')
+        pickle.dump(user_metadata, user_metadata_f, pickle.HIGHEST_PROTOCOL)
+        user_metadata_f.close()
 
     def write_column_lists(self, tablename, column_lists):
         column_lists_f = open(os.path.join(self.data_dir, tablename, 'column_lists.pkl'), 'w')

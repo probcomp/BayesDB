@@ -742,7 +742,6 @@ class Parser(object):
                     vals = mapping.split('=')
                     column, label = vals[0].strip(), vals[1].strip()
                     mappings[column.strip()] = label
-            print dict(tablename=tablename, mappings=mappings, source=source, csv_path=csv_path)
             return 'update_metadata', dict(tablename=tablename, mappings=mappings), dict(source=source, csv_path=csv_path)
 
     def help_update_schema(self):

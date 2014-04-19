@@ -137,6 +137,23 @@ class Engine(object):
     ret['message'] = "Showing labels for %s." % (tablename)
     return ret
 
+  def update_metadata(self, tablename, mappings):
+    """
+    Add user metadata to table in persistence layer, replacing
+    values without warning. Mappings is a dict of key names
+    and their values as given by the user.
+    """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+
+    for key, value in mappings.items():
+        self.persistence_layer.add_user_metadata(tablename, key, value)
+
+    metadata = self.persistence_layer.get_user_metadata(tablename)
+    ret = {'data': [[k, v] for k, v in metadata.items() if k in mappings.keys()], 'columns': ['key', 'value']}
+    ret['message'] = "Updated user metadata for %s." % (tablename)
+    return ret
+
   def update_schema(self, tablename, mappings):
     """
     mappings is a dict of column name to 'continuous', 'multinomial',
