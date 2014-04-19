@@ -437,5 +437,8 @@ def test_labeling():
   test_tablename = create_dha()
   global client, test_filenames
 
-  client('label columns for %s name = Name of the hospital, qual_score = Overall quality score' % (test_tablename), debug=True, pretty=False)
+  client('label columns for %s set name = Name of the hospital, qual_score = Overall quality score' % (test_tablename), debug=True, pretty=False)
   client('show columns for %s name, qual_score' % (test_tablename), debug=True, pretty=False)
+
+  # Test getting columns from CSV
+  client('label columns for %s from data/dha_labels.csv' % (test_tablename), debug=True, pretty=False)
