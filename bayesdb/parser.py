@@ -744,6 +744,23 @@ class Parser(object):
                     mappings[column.strip()] = label
             return 'update_metadata', dict(tablename=tablename, mappings=mappings), dict(source=source, csv_path=csv_path)
 
+    def help_show_metadata(self):
+        return "SHOW METADATA FOR <btable> [<metadata-key1> [, <metadata-key2>...]]"
+
+    def parse_show_metadata(self, words, orig):
+        match = re.search(r"""
+            show\s+metadata\s+for\s+
+            (?P<btable>[^\s]+)
+            \s*(?P<keystring>[^;]*);?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'show' and words[1] == 'metadata':
+                return 'help', self.help_show_metadata()
+        else:
+            tablename = match.group('btable').strip()
+            keystring = match.group('keystring').strip()
+            return 'show_metadata', dict(tablename=tablename, keystring=keystring), None
+
     def help_update_schema(self):
         return "UPDATE SCHEMA FOR <btable> SET [<column_name>=(numerical|categorical|key|ignore)[,...]]: must be done before creating models or analyzing."
         
