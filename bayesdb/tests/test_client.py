@@ -442,3 +442,9 @@ def test_labeling():
 
   # Test getting columns from CSV
   client('label columns for %s from data/dha_labels.csv' % (test_tablename), debug=True, pretty=False)
+
+def test_user_metadata():
+  test_tablename = create_dha()
+  global client, test_filenames
+
+  client('update metadata for %s set data_source = Dartmouth Atlas of Health, url = http://www.dartmouthatlas.org/tools/downloads.aspx' % (test_tablename), debug=True, pretty=False)
