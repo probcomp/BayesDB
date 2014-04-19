@@ -668,12 +668,13 @@ class Parser(object):
               dict(filename=filename)
 
     def help_label_columns(self):
-        return "LABEL COLUMNS FOR <btable> [<column1>=value1[,...]]: "
+        return "LABEL COLUMNS FOR <btable> [SET <column1>=value1[,...] | FROM <filename.csv>]: "
 
     def parse_label_columns(self, words, orig):
         match = re.search(r"""
             label\s+columns\s+for\s+
             (?P<btable>[^\s]+)\s+
+            (set|from)\s+
             (?P<mappings>[^;]*);?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
@@ -682,12 +683,19 @@ class Parser(object):
         else:
             tablename = match.group('btable').strip()
             mapping_string = match.group('mappings').strip()
-            mappings = dict()
-            for mapping in mapping_string.split(','):
-                vals = mapping.split('=')
-                column, label = vals[0].strip(), vals[1].strip()
-                mappings[column.strip()] = label
-            return 'label_columns', dict(tablename=tablename, mappings=mappings), None
+
+            filename, mappings = None, None
+            if words[4] == 'from':
+                source = 'file'
+                filename = mapping_string
+            elif words[4] == 'set':
+                source = 'inline'
+                mappings = dict()
+                for mapping in mapping_string.split(','):
+                    vals = mapping.split('=')
+                    column, label = vals[0].strip(), vals[1].strip()
+                    mappings[column.strip()] = label
+            return 'label_columns', dict(tablename=tablename, source=source, filename=filename, mappings=mappings), None
 
     def help_show_labels(self):
         return "SHOW LABELS FOR <btable> [<column1>[, <column2>..]]: "
