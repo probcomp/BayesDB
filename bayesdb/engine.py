@@ -103,15 +103,17 @@ class Engine(object):
     M_c_full = self.persistence_layer.get_metadata_full(tablename)['M_c_full']
     colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
 
+    labels_edited = {}
     # Only add labels or overwrite one-by-one.
     for colname, label in mappings.items():
       if colname in colnames_full:
         self.persistence_layer.add_column_label(tablename, colname, label)
+        labels_edited[colname] = label
       else:
         raise utils.BayesDBColumnDoesNotExistError(colname, tablename)
 
     labels = self.persistence_layer.get_column_labels(tablename)
-    ret = {'data': [[c, l] for c, l in labels.items()], 'columns': ['column', 'label']}
+    ret = {'data': [[c, l] for c, l in labels_edited.items()], 'columns': ['column', 'label']}
     ret['message'] = 'Updated column labels.'
     return ret
 
