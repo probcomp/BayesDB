@@ -114,7 +114,7 @@ class Engine(object):
 
     labels = self.persistence_layer.get_column_labels(tablename)
     ret = {'data': [[c, l] for c, l in labels_edited.items()], 'columns': ['column', 'label']}
-    ret['message'] = 'Updated column labels.'
+    ret['message'] = "Updated column labels for %s." % (tablename)
     return ret
 
   def show_labels(self, tablename, columnstring):
@@ -134,7 +134,7 @@ class Engine(object):
     labels = self.persistence_layer.get_column_labels(tablename)
 
     ret = {'data': [[c, l] for c, l in labels.items() if c in colnames], 'columns': ['column', 'label']}
-    ret['message'] = "Showing labels for %s" % (tablename)
+    ret['message'] = "Showing labels for %s." % (tablename)
     return ret
 
   def update_schema(self, tablename, mappings):
