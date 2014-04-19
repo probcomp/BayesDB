@@ -714,6 +714,37 @@ class Parser(object):
             columnstring = match.group('columns').strip()
             return 'show_labels', dict(tablename=tablename, columnstring=columnstring), None
 
+    def help_update_metadata(self):
+        return "UPDATE METADATA FOR <btable> [SET <metadata-key1>=value1[,...] | FROM <filename.csv>]: "
+
+    def parse_update_metadata(self, words, orig):
+        match = re.search(r"""
+            update\s+metadata\s+for\s+
+            (?P<btable>[^\s]+)\s+
+            (set|from)\s+
+            (?P<mappings>[^;]*);?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'update' and words[1] == 'metadata':
+                return 'help', self.help_update_metadata()
+        else:
+            tablename = match.group('btable').strip()
+            mapping_string = match.group('mappings').strip()
+
+            csv_path, mappings = None, None
+            if words[4] == 'from':
+                source = 'file'
+                csv_path = mapping_string
+            elif words[4] == 'set':
+                source = 'inline'
+                mappings = dict()
+                for mapping in mapping_string.split(','):
+                    vals = mapping.split('=')
+                    column, label = vals[0].strip(), vals[1].strip()
+                    mappings[column.strip()] = label
+            print dict(tablename=tablename, mappings=mappings, source=source, csv_path=csv_path)
+            return 'update_metadata', dict(tablename=tablename, mappings=mappings), dict(source=source, csv_path=csv_path)
+
     def help_update_schema(self):
         return "UPDATE SCHEMA FOR <btable> SET [<column_name>=(numerical|categorical|key|ignore)[,...]]: must be done before creating models or analyzing."
         
@@ -724,7 +755,7 @@ class Parser(object):
             set\s+(?P<mappings>[^;]*);?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
-            if words[0] == 'update':
+            if words[0] == 'update' and words[1] == 'schema':
                 return 'help', self.help_update_schema()
         else:
             tablename = match.group('btable').strip()
