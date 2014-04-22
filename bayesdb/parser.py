@@ -24,10 +24,108 @@ import pickle
 import gzip
 import utils
 import os
+import bql_grammar as bql
+import pyparsing as pp
 
 class Parser(object):
     def __init__(self):
         self.reset_root_dir()
+
+    def pyparse_input(self, input_string):
+        """Uses the grammar defined in bql_grammar to create a pyparsing object out of an input string"""
+        try:
+            bql_blob_ast = bql.bql_input.parseString(input_string)
+        except pp.ParseException as x:
+            raise utils.BayesDBParseError("Invalid query: Could not parse '%s'" %input_string) #TODO get character number
+        return bql_blob_ast
+        
+    def split_statements(self,bql_blob_ast):
+        pass
+
+    def parse_single_statement(self,bql_statement_ast):
+        ## TODO Check for nest
+        parse_method = getattr(self,'parse_' + bql_statement_ast.statement_id)
+        return parse_method(bql_statement_ast)
+
+#####################################################################################
+## -------------------------- Individual Parse Methods --------------------------- ##
+#####################################################################################
+
+    def parse_list_btables(self,bql_statement_ast):
+        if bql_statement_ast.statement_id == "list_btables":
+            return 'list_btables', dict(), None
+        else:
+            raise utils.BayesDBParseError("Parsing statement as LIST BTABLES failed")
+
+    def parse_execute_file(self,bql_statement_ast):
+        print "execute_file"
+
+    def parse_show_schema(self,bql_statement_ast):
+        print "show_schema"
+
+    def parse_show_models(self,bql_statement_ast):
+        print "show_models"
+
+    def parse_show_diagnostics(self,bql_statement_ast):
+        print "show_diagnostics"
+
+    def parse_drop_models(self,bql_statement_ast):
+        print "drop_models"
+
+    def parse_initialize_models(self,bql_statement_ast):
+        print "initialize_models"
+
+    def parse_create_btable(self,bql_statement_ast)
+        print "create_btable"
+
+    def parse_update_schema(self,bql_statement_ast):
+        print "update_schema"
+
+    def parse_drop_btable(self,bql_statement_ast):
+        print "drop_btable"
+
+    def parse_analyze(self,bql_statement_ast):
+        print "parse_analyze"
+
+    def parse_show_row_lists(self,bql_statement_ast):
+        print "show_row_lists"
+
+    def parse_show_column_lists(self,bql_statement_ast):
+        print "show_column_lists"
+
+    def parse_show_columns(self,bql_statement_ast):
+        print "show_columns"
+
+    def parse_save_models(self,bql_statement_ast):
+        print "save_models"
+
+    def parse_load_models(self,bql_statement_ast):
+        print "load_models"
+
+
+    def parse_infer(self,bql_statement_ast):
+        print "infer"
+
+    def parse_select(self,bql_statement_ast):
+        print "select"
+
+    def parse_simulate(self,bql_statement_ast):
+        print "simulate"
+
+    def parse_estimate_columns(self,bql_statement_ast):
+        print "estimate_columns"
+
+    def parse_estimate_pairwise_row(self,bql_statement_ast):
+        print "estimate_pairwise_row"
+
+    def parse_estimate_pairwise(self,bql_statement_ast):
+        print "estimate_pairwise"
+
+
+#####################################################################################
+## --------------------------- Other Helper functions ---------------------------- ##
+#####################################################################################
+
 
     def set_root_dir(self, root_dir):
         """Set the root_directory, used as the base for all relative paths."""
@@ -48,3 +146,5 @@ class Parser(object):
             return relative_path
         else:
             return os.path.join(self.root_directory, relative_path)
+    
+    

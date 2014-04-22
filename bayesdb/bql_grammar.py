@@ -210,6 +210,7 @@ hyphen_literal = Literal("-")
 all_column_literal = Literal('*')
 identifier = (Word(alphas, alphanums + "_.").setParseAction(downcaseTokens)) | sub_query
 btable = identifier.setResultsName("btable") | sub_query
+comment = (Literal('--') + restOfLine).suppress()
 # single and double quotes inside value must be escaped. 
 value = (QuotedString('"', escChar='\\') | 
          QuotedString("'", escChar='\\') | 
@@ -482,4 +483,5 @@ query = (Optional(summarize_keyword | plot_keyword) +
               Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list"))))
 
 bql_statement = (query | management_query) + Optional(semicolon_literal)
-bql_input = OneOrMore(Group(bql_statement)) ## TODO split lines, comments
+bql_input = OneOrMore(Group(bql_statement)) ## TODO split lines
+bql_input.ignore(comment)

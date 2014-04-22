@@ -821,7 +821,7 @@ def test_master_query_for_parse_errors():
     for query in query_list:
         query = bql_statement.parseString(query,parseAll=True)
         assert query.statement_id != ''
-
+'''
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
     assert method == 'list_btables'
@@ -963,3 +963,4 @@ def test_infer():
 #INFER <columns> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [LIMIT <limit>] [WITH <numsamples> SAMPLES] [ORDER BY <columns]
 
 #SIMULATE <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [ORDER BY <columns>]
+'''
