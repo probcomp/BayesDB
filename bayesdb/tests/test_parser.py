@@ -78,7 +78,7 @@ def test_composite_keywords_pyparsing():
     save_to = save_to_keyword.parseString('save To',parseAll=True)
     assert save_to[0] == 'save to'
     list_btables = list_btables_keyword.parseString('list bTables',parseAll=True)
-    assert list_btables[0] == 'list btable'
+    assert list_btables[0] == 'list_btables'
     show_schema_for = show_schema_for_keyword.parseString('show Schema for',parseAll=True)
     assert show_schema_for[0] == 'show schema for'
     show_models_for = show_models_for_keyword.parseString("show modeLs for",parseAll=True)
@@ -173,8 +173,8 @@ def test_valid_values_names_pyparsing():
     assert filename.parseString("'/filename with space.csv'",parseAll=True)[0] == "/filename with space.csv"
 
 def test_simple_functions():
-    assert list_btables_function.parseString("LIST BTABLES",parseAll=True).statement_id == 'list btable'
-    assert list_btables_function.parseString("LIST BTABLE",parseAll=True).statement_id == 'list btable'
+    assert list_btables_function.parseString("LIST BTABLES",parseAll=True).statement_id == 'list_btables'
+    assert list_btables_function.parseString("LIST BTABLE",parseAll=True).statement_id == 'list_btables'
     assert show_for_btable_statement.parseString("SHOW SCHEMA FOR table_1",parseAll=True).statement_id == 'show schema for'
     assert show_for_btable_statement.parseString("SHOW SCHEMA FOR table_1",parseAll=True).btable == 'table_1'
     assert show_for_btable_statement.parseString("SHOW MODELS FOR table_1",parseAll=True).statement_id == 'show model for'

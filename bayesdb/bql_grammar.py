@@ -48,6 +48,7 @@ numerical_keyword = CaselessKeyword("numerical")
 ignore_keyword = CaselessKeyword("ignore")
 key_keyword = CaselessKeyword("key")
 initialize_keyword = CaselessKeyword("initialize").setResultsName("statement_id")
+initialize_keyword.setParseAction("initialize_models")
 analyze_keyword = CaselessKeyword("analyze").setResultsName("statement_id")
 index_keyword = CaselessKeyword("index")
 save_keyword = CaselessKeyword("save")
@@ -130,17 +131,27 @@ second_keyword.setParseAction(replaceWith("second"))
 ## Composite keywords: Inseparable elements that can have whitespace
 ## Using single_white and Combine to make them one string
 execute_file_keyword = Combine(execute_keyword + single_white + file_keyword).setResultsName("statement_id")
+
 create_btable_keyword = Combine(create_keyword + single_white + btable_keyword).setResultsName("statement_id")
+
+create_btable_keyword.setParseAction(replaceWith('create_btable'))
 update_schema_for_keyword = Combine(update_keyword + single_white + 
                                     schema_keyword + single_white + for_keyword).setResultsName("statement_id")
+
 models_for_keyword = Combine(model_keyword + single_white + for_keyword)
 model_index_keyword = Combine(model_keyword + single_white + index_keyword)
 load_model_keyword = Combine(load_keyword + single_white + model_keyword).setResultsName("statement_id")
+
 save_model_keyword = Combine(save_keyword + single_white + model_keyword).setResultsName("statement_id")
+
 save_to_keyword = Combine(save_keyword + single_white + to_keyword).setResultsName("statement_id")
+
 list_btables_keyword = Combine(list_keyword + single_white + btable_keyword).setResultsName("statement_id")
+list_btables_keyword.setParseAction(replaceWith("list_btables"))
 drop_btable_keyword = Combine(drop_keyword + single_white + btable_keyword).setResultsName("statement_id")
+drop_btable_keyword.setParseAction(replaceWith("drop_btable"))
 drop_model_keyword = Combine(drop_keyword + single_white + model_keyword).setResultsName("statement_id")
+drop_model_keyword.setParseAction(replaceWith("drop_models"))
 show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword + 
                                   single_white + for_keyword).setResultsName("statement_id")
 show_models_for_keyword = Combine(show_keyword + single_white + model_keyword + 
@@ -152,10 +163,12 @@ show_column_lists_for_keyword = Combine(show_keyword + single_white + column_key
                                         single_white + for_keyword).setResultsName("statement_id")
 show_columns_for_keyword = Combine(show_keyword + single_white + column_keyword + 
                                    single_white + for_keyword).setResultsName("statement_id")
+
 show_columns_keyword = Combine(show_keyword + single_white + column_keyword)
 show_row_lists_for_keyword = Combine(show_keyword + single_white + row_keyword + 
                                  single_white + list_keyword + 
                                  single_white + for_keyword).setResultsName("statement_id")
+
 estimate_pairwise_keyword = Combine(estimate_keyword + single_white + 
                                     pairwise_keyword).setResultsName("statement_id")
 estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
@@ -469,3 +482,4 @@ query = (Optional(summarize_keyword | plot_keyword) +
               Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list"))))
 
 bql_statement = (query | management_query) + Optional(semicolon_literal)
+bql_input = OneOrMore(Group(bql_statement)) ## TODO split lines, comments
