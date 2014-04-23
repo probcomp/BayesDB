@@ -96,7 +96,7 @@ class Parser(object):
         return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
     def parse_drop_btable(self,bql_statement_ast):
-        print "drop_btable"
+        print "drop_btable" 
 
     def parse_analyze(self,bql_statement_ast):
         print "parse_analyze"
