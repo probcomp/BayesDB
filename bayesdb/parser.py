@@ -160,5 +160,3 @@ class Parser(object):
             return relative_path
         else:
             return os.path.join(self.root_directory, relative_path)
-    
-    

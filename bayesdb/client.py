@@ -190,7 +190,10 @@ class Client(object):
                 header, rows = data_utils.read_pandas_df(pandas_df)
             args_dict['header'] = header
             args_dict['raw_T_full'] = rows
-
+        elif method_name in ['label_columns', 'update_metadata']:
+            if client_dict['source'] == 'file':
+                header, rows = data_utils.read_csv(client_dict['csv_path'])
+                args_dict['mappings'] = {key: value for key, value in rows}
 
         ## Call engine.
         result = self.call_bayesdb_engine(method_name, args_dict, debug)
@@ -330,7 +333,7 @@ class Client(object):
                 pt.field_names = clist
                 print pt
         elif 'models' in query_obj:
-            """ Prety-print model info. """
+            """ Pretty-print model info. """
             m = query_obj['models']
             output_list = ['Model %d: %d iterations' % (id, iterations) for id,iterations in m]
             result += ', '.join(output_list)

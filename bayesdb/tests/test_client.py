@@ -406,7 +406,9 @@ def test_summarize():
   assert type(out) == pandas.DataFrame
 
   # Test that stats from summary_describe and summary_freqs made it into the output DataFrame
-  expected_indices = ['count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
+  # Note that all of these stats won't be present in EVERY summarize output, but all should be in the output
+  # from the previous test.
+  expected_indices = ['type', 'count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
     'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
     'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5']
   assert all([x in list(out[' ']) for x in expected_indices])
@@ -438,3 +440,25 @@ def test_select_where_col_equal_val():
   col_val_similarity = client('select * from %s where similarity to name = "Akron OH" > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['row_id']
   assert len(basic_similarity) == len(col_val_similarity)
 
+def test_labeling():
+  test_tablename = create_dha()
+  global client, test_filenames
+
+  client('label columns for %s set name = Name of the hospital, qual_score = Overall quality score' % (test_tablename), debug=True, pretty=False)
+  client('show labels for %s name, qual_score' % (test_tablename), debug=True, pretty=False)
+  client('show labels for %s' % (test_tablename), debug=True, pretty=False)
+
+  # Test getting columns from CSV
+  client('label columns for %s from data/dha_labels.csv' % (test_tablename), debug=True, pretty=False)
+
+def test_user_metadata():
+  test_tablename = create_dha()
+  global client, test_filenames
+
+  client('update metadata for %s set data_source = Dartmouth Atlas of Health, url = http://www.dartmouthatlas.org/tools/downloads.aspx' % (test_tablename), debug=True, pretty=False)
+  client('update metadata for %s from data/dha_user_metadata.csv' % (test_tablename), debug=True, pretty=False)
+
+  client('show metadata for %s data_source, url' % (test_tablename), debug=True, pretty=False)
+
+  # Test that show metadata also works when no keys are specified
+  client('show metadata for %s' % (test_tablename), debug=True, pretty=False)

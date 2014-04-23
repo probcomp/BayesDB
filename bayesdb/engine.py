@@ -89,6 +89,92 @@ class Engine(object):
     """Return names of all btables."""
     return dict(list=self.persistence_layer.list_btables())
 
+  def label_columns(self, tablename, mappings):
+    """
+    Add column labels to table in persistence layer, replacing
+    labels without warning. Mappings is a dict of column names
+    and their labels as given by the user.
+    No length is enforced on labels - should we?
+    """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+
+    # Get column names for table so labels don't get written for nonexistent columns.
+    M_c_full = self.persistence_layer.get_metadata_full(tablename)['M_c_full']
+    colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
+
+    labels_edited = {}
+    # Only add labels or overwrite one-by-one.
+    for colname, label in mappings.items():
+      if colname in colnames_full:
+        self.persistence_layer.add_column_label(tablename, colname, label)
+        labels_edited[colname] = label
+      else:
+        raise utils.BayesDBColumnDoesNotExistError(colname, tablename)
+
+    labels = self.persistence_layer.get_column_labels(tablename)
+    ret = {'data': [[c, l] for c, l in labels_edited.items()], 'columns': ['column', 'label']}
+    ret['message'] = "Updated column labels for %s." % (tablename)
+    return ret
+
+  def show_labels(self, tablename, columnstring):
+    """
+    Show column labels for the columns in columnstring
+    """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+
+    labels = self.persistence_layer.get_column_labels(tablename)
+
+    # Get colnames from columnstring
+    if columnstring.strip() == '':
+      colnames = labels.keys()
+    else:
+      column_lists = self.persistence_layer.get_column_lists(tablename)
+      M_c = self.persistence_layer.get_metadata(tablename)['M_c']
+      colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
+      colnames = [c.lower() for c in colnames]
+      utils.check_for_duplicate_columns(colnames)
+
+    ret = {'data': [[c, l] for c, l in labels.items() if c in colnames], 'columns': ['column', 'label']}
+    ret['message'] = "Showing labels for %s." % (tablename)
+    return ret
+
+  def update_metadata(self, tablename, mappings):
+    """
+    Add user metadata to table in persistence layer, replacing
+    values without warning. Mappings is a dict of key names
+    and their values as given by the user.
+    """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+
+    for key, value in mappings.items():
+        self.persistence_layer.add_user_metadata(tablename, key, value)
+
+    metadata = self.persistence_layer.get_user_metadata(tablename)
+    ret = {'data': [[k, v] for k, v in metadata.items() if k in mappings.keys()], 'columns': ['key', 'value']}
+    ret['message'] = "Updated user metadata for %s." % (tablename)
+    return ret
+
+  def show_metadata(self, tablename, keystring):
+    """
+    Get user metadata from persistence layer and show the values for the keys specified
+    by the user. If no keystring is given, show all metadata key-value pairs.
+    """
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+
+    metadata = self.persistence_layer.get_user_metadata(tablename)
+    if keystring.strip() == '':
+      metadata_keys = metadata.keys()
+    else:
+      metadata_keys = [key.strip() for key in keystring.split(',')]
+
+    ret = {'data': [[k, metadata[k]] for k in metadata_keys if k in metadata], 'columns': ['key', 'value']}
+    ret['message'] = "Showing user metadata for %s." % (tablename)
+    return ret
+
   def update_schema(self, tablename, mappings):
     """
     mappings is a dict of column name to 'continuous', 'multinomial',
