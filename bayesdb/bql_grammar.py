@@ -48,7 +48,7 @@ numerical_keyword = CaselessKeyword("numerical")
 ignore_keyword = CaselessKeyword("ignore")
 key_keyword = CaselessKeyword("key")
 initialize_keyword = CaselessKeyword("initialize").setResultsName("statement_id")
-initialize_keyword.setParseAction("initialize_models")
+initialize_keyword.setParseAction(replaceWith("initialize_models"))
 analyze_keyword = CaselessKeyword("analyze").setResultsName("statement_id")
 index_keyword = CaselessKeyword("index")
 save_keyword = CaselessKeyword("save")
@@ -131,12 +131,14 @@ second_keyword.setParseAction(replaceWith("second"))
 ## Composite keywords: Inseparable elements that can have whitespace
 ## Using single_white and Combine to make them one string
 execute_file_keyword = Combine(execute_keyword + single_white + file_keyword).setResultsName("statement_id")
+execute_file_keyword.setParseAction(replaceWith("execute_file"))
 
 create_btable_keyword = Combine(create_keyword + single_white + btable_keyword).setResultsName("statement_id")
 
 create_btable_keyword.setParseAction(replaceWith('create_btable'))
 update_schema_for_keyword = Combine(update_keyword + single_white + 
                                     schema_keyword + single_white + for_keyword).setResultsName("statement_id")
+update_schema_for_keyword.setParseAction(replaceWith("update_schema"))
 
 models_for_keyword = Combine(model_keyword + single_white + for_keyword)
 model_index_keyword = Combine(model_keyword + single_white + index_keyword)
@@ -154,10 +156,13 @@ drop_model_keyword = Combine(drop_keyword + single_white + model_keyword).setRes
 drop_model_keyword.setParseAction(replaceWith("drop_models"))
 show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword + 
                                   single_white + for_keyword).setResultsName("statement_id")
+show_schema_for_keyword.setParseAction(replaceWith("show_schema"))
 show_models_for_keyword = Combine(show_keyword + single_white + model_keyword + 
                                   single_white + for_keyword).setResultsName("statement_id")
+show_models_for_keyword.setParseAction(replaceWith("show_models"))
 show_diagnostics_for_keyword = Combine(show_keyword + single_white + diagnostics_keyword + 
                                        single_white + for_keyword).setResultsName("statement_id")
+show_diagnostics_for_keyword.setParseAction(replaceWith("show_diagnostics"))
 show_column_lists_for_keyword = Combine(show_keyword + single_white + column_keyword + 
                                         single_white + list_keyword + 
                                         single_white + for_keyword).setResultsName("statement_id")
@@ -214,7 +219,7 @@ comment = (Literal('--') + restOfLine).suppress()
 # single and double quotes inside value must be escaped. 
 value = (QuotedString('"', escChar='\\') | 
          QuotedString("'", escChar='\\') | 
-         Word(printables)| 
+         Word(printables)| ## TODO printables includes ;
          float_number | 
          sub_query)
 filename = (QuotedString('"', escChar='\\') | 
@@ -253,7 +258,6 @@ initialize_function = (initialize_keyword +
 
 # ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
 def list_from_index_clause(toks):
-    print toks
     ## takes index tokens separated by '-' for range and ',' for individual and returns a list of unique indexes
     index_list = []
     for token in toks[0]:
@@ -301,7 +305,7 @@ save_model_from_function = save_model_keyword + Suppress(from_keyword) + btable 
 drop_btable_function = drop_btable_keyword + btable
 
 # DROP MODEL[S] [<model_index>-<model_index>] FROM <btable> #TODO combine drop_model_keyword
-drop_model_function = drop_keyword.setParseAction(replaceWith("drop model")).setResultsName("statement_id") + model_keyword + Optional(index_clause) + Suppress(from_keyword) + btable
+drop_model_function = drop_model_keyword + Optional(index_clause) + Suppress(from_keyword) + btable
 
 help_function = help_keyword
 quit_function = quit_keyword

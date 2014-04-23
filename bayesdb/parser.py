@@ -58,28 +58,42 @@ class Parser(object):
             raise utils.BayesDBParseError("Parsing statement as LIST BTABLES failed")
 
     def parse_execute_file(self,bql_statement_ast):
-        print "execute_file"
+        return 'execute_file', dict(filename=self.get_absolute_path(bql_statement_ast.filename)), None
 
     def parse_show_schema(self,bql_statement_ast):
-        print "show_schema"
+        return 'show_schema', dict(tablename=bql_statement_ast.btable), None
 
     def parse_show_models(self,bql_statement_ast):
-        print "show_models"
+        return 'show_models', dict(tablename=bql_statement_ast.btable), None
 
     def parse_show_diagnostics(self,bql_statement_ast):
-        print "show_diagnostics"
+        return 'show_diagnostics', dict(tablename=bql_statement_ast.btable), None
 
     def parse_drop_models(self,bql_statement_ast):
-        print "drop_models"
+        model_indices = bql_statement_ast.index_clause.asList()
+        return 'drop_models', dict(tablename=bql_statement_ast.btable, model_indices=model_indices), None
 
     def parse_initialize_models(self,bql_statement_ast):
-        print "initialize_models"
+        n_models = int(bql_statement_ast.num_models)
+        tablename = bql_statement_ast.btable
+        arguments_dict = dict(tablename=tablename, n_models=n_models)
+        if bql_statement_ast.config != '':
+            arguments_dict['model_config'] = bql_statement_ast.config
+        return 'initialize_models', arguments_dict, None
 
-    def parse_create_btable(self,bql_statement_ast)
-        print "create_btable"
+    def parse_create_btable(self,bql_statement_ast):
+        tablename = bql_statement_ast.btable
+        filename = self.get_absolute_path(bql_statement_ast.filename)
+        return 'create_btable', dict(tablename=tablename, cctypes_full=None), dict(csv_path=filename)
+        #TODO types?
 
     def parse_update_schema(self,bql_statement_ast):
-        print "update_schema"
+        tablename = bql_statement_ast.btable
+        mappings = dict()
+        type_clause = bql_statement_ast.type_clause
+        for update in type_clause:
+            mappings[update[0]]=update[1]
+        return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
     def parse_drop_btable(self,bql_statement_ast):
         print "drop_btable"
