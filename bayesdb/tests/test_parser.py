@@ -62,29 +62,29 @@ def test_keyword_plurality_ambiguity_pyparsing():
 
 def test_composite_keywords_pyparsing():
     execute_file = execute_file_keyword.parseString('eXecute file',parseAll=True)
-    assert execute_file[0] == 'execute file'
+    assert execute_file[0] == 'execute_file'
     create_btable = create_btable_keyword.parseString('cReate btable',parseAll=True)
-    assert create_btable[0] == 'create btable'
+    assert create_btable[0] == 'create_btable'
     update_schema_for = update_schema_for_keyword.parseString('update Schema for',parseAll=True)
-    assert update_schema_for[0] == 'update schema for'
+    assert update_schema_for[0] == 'update_schema'
     models_for = models_for_keyword.parseString('Models for',parseAll=True)
     assert models_for[0] == 'model for'
     model_index = model_index_keyword.parseString('model Index',parseAll=True)
     assert model_index[0] == 'model index'
     save_model = save_model_keyword.parseString("save modeL",parseAll=True)
-    assert save_model[0] == 'save model'
+    assert save_model[0] == 'save_models'
     load_model = load_model_keyword.parseString("load Models",parseAll=True)
-    assert load_model[0] == 'load model'
+    assert load_model[0] == 'load_models'
     save_to = save_to_keyword.parseString('save To',parseAll=True)
     assert save_to[0] == 'save to'
     list_btables = list_btables_keyword.parseString('list bTables',parseAll=True)
     assert list_btables[0] == 'list_btables'
     show_schema_for = show_schema_for_keyword.parseString('show Schema for',parseAll=True)
-    assert show_schema_for[0] == 'show schema for'
+    assert show_schema_for[0] == 'show_schema'
     show_models_for = show_models_for_keyword.parseString("show modeLs for",parseAll=True)
-    assert show_models_for[0] == 'show model for'
+    assert show_models_for[0] == 'show_models'
     show_diagnostics_for = show_diagnostics_for_keyword.parseString("show diaGnostics for",parseAll=True)
-    assert show_diagnostics_for[0] == 'show diagnostics for'
+    assert show_diagnostics_for[0] == 'show_diagnostics'
     estimate_pairwise = estimate_pairwise_keyword.parseString("estimate Pairwise",parseAll=True)
     assert estimate_pairwise[0] == 'estimate pairwise'
     with_confidence = with_confidence_keyword.parseString('with  confIdence',parseAll=True)
@@ -175,35 +175,35 @@ def test_valid_values_names_pyparsing():
 def test_simple_functions():
     assert list_btables_function.parseString("LIST BTABLES",parseAll=True).statement_id == 'list_btables'
     assert list_btables_function.parseString("LIST BTABLE",parseAll=True).statement_id == 'list_btables'
-    assert show_for_btable_statement.parseString("SHOW SCHEMA FOR table_1",parseAll=True).statement_id == 'show schema for'
+    assert show_for_btable_statement.parseString("SHOW SCHEMA FOR table_1",parseAll=True).statement_id == 'show_schema'
     assert show_for_btable_statement.parseString("SHOW SCHEMA FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_for_btable_statement.parseString("SHOW MODELS FOR table_1",parseAll=True).statement_id == 'show model for'
+    assert show_for_btable_statement.parseString("SHOW MODELS FOR table_1",parseAll=True).statement_id == 'show_models'
     assert show_for_btable_statement.parseString("SHOW MODEL FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_for_btable_statement.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).statement_id == 'show diagnostics for'
+    assert show_for_btable_statement.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).statement_id == 'show_diagnostics'
     assert show_for_btable_statement.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).btable == 'table_1'
 
     assert show_for_btable_statement.parseString("SHOW COLUMN LISTS FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_for_btable_statement.parseString("SHOW COLUMNS LIST FOR table_1",parseAll=True).statement_id == 'show column list for'
+    assert show_for_btable_statement.parseString("SHOW COLUMNS LIST FOR table_1",parseAll=True).statement_id == 'show_column_lists'
     assert show_for_btable_statement.parseString("SHOW COLUMNS FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_for_btable_statement.parseString("SHOW column FOR table_1",parseAll=True).statement_id == 'show column for'
-    assert show_for_btable_statement.parseString("SHOW ROW LISTS FOR table_1",parseAll=True).statement_id == 'show row list for'
+    assert show_for_btable_statement.parseString("SHOW column FOR table_1",parseAll=True).statement_id == 'show_columns'
+    assert show_for_btable_statement.parseString("SHOW ROW LISTS FOR table_1",parseAll=True).statement_id == 'show_row_lists'
     assert show_for_btable_statement.parseString("SHOW ROW list FOR table_1",parseAll=True).btable == 'table_1'
-    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load model'
-    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load model'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load_models'
+    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load_models'
     assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).filename == '~/filename.csv'
     assert load_model_function.parseString("LOAD MODELS '~/filena me.csv' INTO table_1",parseAll=True).filename == '~/filena me.csv'
     assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).btable == 'table_1'
     assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).btable == 'table_1'
-    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).statement_id == 'save model'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).statement_id == 'save_models'
     assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).filename == 'filename.pkl.gz'
-    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).statement_id == 'drop btable'
-    assert drop_btable_function.parseString("DROP BTABLES table_1",parseAll=True).statement_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).statement_id == 'drop_btable'
+    assert drop_btable_function.parseString("DROP BTABLES table_1",parseAll=True).statement_id == 'drop_btable'
     assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).btable == 'table_1'
     drop_model_1 = drop_model_function.parseString("DROP MODEL 1 FROM table_1",parseAll=True)
     drop_model_2 = drop_model_function.parseString("DROP MODELS 1-5 FROM table_1",parseAll=True)
     drop_model_3 = drop_model_function.parseString("DROP MODELS 1,2,6-9 FROM table_1",parseAll=True)
     drop_model_4 = drop_model_function.parseString("DROP MODELS 1-5,1-5 FROM table_1",parseAll=True)
-    assert drop_model_1.statement_id == 'drop model'
+    assert drop_model_1.statement_id == 'drop_models'
     assert drop_model_1.btable == 'table_1'
     assert drop_model_1.index_clause.asList() == [1]
     assert drop_model_2.index_clause.asList() == [1,2,3,4,5]
@@ -213,7 +213,7 @@ def test_simple_functions():
 
 def test_update_schema_pyparsing():
     update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
-    assert update_schema_1.statement_id == 'update schema for'
+    assert update_schema_1.statement_id == 'update_schema'
     assert update_schema_1.btable == 'test_btable'
     assert update_schema_1.type_clause[0][0] == 'col_1'
     assert update_schema_1.type_clause[0][1] == 'categorical'
@@ -228,7 +228,7 @@ def test_update_schema_pyparsing():
 def test_create_btable_pyparsing():
     create_btable_1 = create_btable_function.parseString("CREATE BTABLE test.btable FROM '~/filenam e.csv'", parseAll=True)
     create_btable_2 = create_btable_function.parseString("CREATE BTABLE test_btable FROM ~/filename.csv", parseAll=True)
-    assert create_btable_1.statement_id == 'create btable'
+    assert create_btable_1.statement_id == 'create_btable'
     assert create_btable_1.btable == 'test.btable'
     assert create_btable_1.filename == '~/filenam e.csv'
     assert create_btable_2.btable == 'test_btable'
@@ -242,11 +242,11 @@ def test_execute_file_pyparsing():
 
 def test_initialize_pyparsing():
     initialize_1 = initialize_function.parseString("INITIALIZE 3 MODELS FOR test_table",parseAll=True)
-    assert initialize_1.statement_id == 'initialize'
+    assert initialize_1.statement_id == 'initialize_models'
     assert initialize_1.num_models == '3'
     assert initialize_1.btable == 'test_table'
     initialize_2 = initialize_function.parseString("INITIALIZE 3 MODEL FOR test_table",parseAll=True)
-    assert initialize_2.statement_id == 'initialize'
+    assert initialize_2.statement_id == 'initialize_models'
     assert initialize_2.num_models == '3'
     assert initialize_2.btable == 'test_table'
 
@@ -821,66 +821,66 @@ def test_master_query_for_parse_errors():
     for query in query_list:
         query = bql_statement.parseString(query,parseAll=True)
         assert query.statement_id != ''
-'''
+
 def test_list_btables():
-    method, args, client_dict = parser.parse_statement('list btables')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('list btables',parseAll=True))
     assert method == 'list_btables'
     assert args == {}
 
 def test_initialize_models():
-    method, args, client_dict = parser.parse_statement('initialize 5 models for t')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('initialize 5 models for t',parseAll=True))
     assert method == 'initialize_models'
     assert args == dict(tablename='t', n_models=5, model_config=None)
 
 def test_create_btable():
-    method, args, client_dict = parser.parse_statement('create btable t from fn')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('create btable t from fn',parseAll=True))
     assert method == 'create_btable'
     assert args == dict(tablename='t', cctypes_full=None)
     assert client_dict == dict(csv_path=os.path.join(os.getcwd(), 'fn'))
 
 def test_drop_btable():
-    method, args, client_dict = parser.parse_statement('drop btable t')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('drop btable t',parseAll=True))
     assert method == 'drop_btable'
     assert args == dict(tablename='t')
 
 def test_drop_models():
-    method, args, client_dict = parser.parse_statement('drop models from t')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('drop models from t',parseAll=True))
     assert method == 'drop_models'
     assert args == dict(tablename='t', model_indices=None)
 
-    method, args, client_dict = parser.parse_statement('drop models 2-6 from t')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('drop models 2-6 from t'))
     assert method == 'drop_models'
     assert args == dict(tablename='t', model_indices=range(2,7))
 
 def test_analyze():
-    method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 3 iterations')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 3 iterations'))
     assert method == 'analyze'
     assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None, ct_kernel=0)
 
-    method, args, client_dict = parser.parse_statement('analyze t for 6 iterations')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t for 6 iterations'))
     assert method == 'analyze'
     assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None, ct_kernel=0)
 
-    method, args, client_dict = parser.parse_statement('analyze t for 7 seconds')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t for 7 seconds'))
     assert method == 'analyze'
     assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7, ct_kernel=0)
     
-    method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 7 seconds')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 seconds'))
     assert method == 'analyze'
     assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=0)
 
-    method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 7 seconds with mh kernel')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 seconds with mh kernel'))
     assert method == 'analyze'
     assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=1)    
 
 def test_load_models():
-    method, args, client_dict = parser.parse_statement('load models fn into t')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('load models fn into t'))
     assert method == 'load_models'
     assert args == dict(tablename='t')
     assert client_dict == dict(pkl_path='fn')
 
 def test_save_models():
-    method, args, client_dict = parser.parse_statement('save models from t to fn')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('save models from t to fn'))
     assert method == 'save_models'
     assert args == dict(tablename='t')
     assert client_dict == dict(pkl_path='fn')
@@ -893,20 +893,20 @@ def test_select():
     order_by = False
     plot = False
 
-    method, args, client_dict = parser.parse_statement('select * from t')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select * from t'))
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args == d
 
-    method, args, client_dict = parser.parse_statement('summarize select * from t')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('summarize select * from t'))
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=True)
     assert method == 'select'
     assert args == d
     
     columnstring = 'a, b, a_b'
-    method, args, client_dict = parser.parse_statement('select a, b, a_b from t')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select a, b, a_b from t'))
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
@@ -914,27 +914,27 @@ def test_select():
 
     whereclause = 'a=6 and b = 7'
     columnstring = '*'
-    method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select * from t where a=6 and b = 7'))
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args == d
 
     limit = 10
-    method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7 limit 10')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select * from t where a=6 and b = 7 limit 10'))
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args == d
 
     order_by = [('b', False)]
-    method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7 order by b limit 10')
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select * from t where a=6 and b = 7 order by b limit 10'))
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args == d
 
-def test_simulate():
+def test_simulate(): ##TODO
     tablename = 't'
     newtablename = ''
     columnstring = ''
@@ -945,7 +945,7 @@ def test_simulate():
              newtablename=newtablename, order_by=order_by, numpredictions=numpredictions)
     
 
-def test_infer():
+def test_infer(): ##TODO 
     tablename = 't'
     newtablename = ''
     columnstring = ''
@@ -963,4 +963,3 @@ def test_infer():
 #INFER <columns> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [LIMIT <limit>] [WITH <numsamples> SAMPLES] [ORDER BY <columns]
 
 #SIMULATE <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [ORDER BY <columns>]
-'''

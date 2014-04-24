@@ -132,22 +132,18 @@ second_keyword.setParseAction(replaceWith("second"))
 ## Using single_white and Combine to make them one string
 execute_file_keyword = Combine(execute_keyword + single_white + file_keyword).setResultsName("statement_id")
 execute_file_keyword.setParseAction(replaceWith("execute_file"))
-
 create_btable_keyword = Combine(create_keyword + single_white + btable_keyword).setResultsName("statement_id")
-
 create_btable_keyword.setParseAction(replaceWith('create_btable'))
 update_schema_for_keyword = Combine(update_keyword + single_white + 
                                     schema_keyword + single_white + for_keyword).setResultsName("statement_id")
 update_schema_for_keyword.setParseAction(replaceWith("update_schema"))
-
 models_for_keyword = Combine(model_keyword + single_white + for_keyword)
 model_index_keyword = Combine(model_keyword + single_white + index_keyword)
 load_model_keyword = Combine(load_keyword + single_white + model_keyword).setResultsName("statement_id")
-
+load_model_keyword.setParseAction(replaceWith('load_models'))
 save_model_keyword = Combine(save_keyword + single_white + model_keyword).setResultsName("statement_id")
-
+save_model_keyword.setParseAction(replaceWith("save_models"))
 save_to_keyword = Combine(save_keyword + single_white + to_keyword).setResultsName("statement_id")
-
 list_btables_keyword = Combine(list_keyword + single_white + btable_keyword).setResultsName("statement_id")
 list_btables_keyword.setParseAction(replaceWith("list_btables"))
 drop_btable_keyword = Combine(drop_keyword + single_white + btable_keyword).setResultsName("statement_id")
@@ -166,13 +162,15 @@ show_diagnostics_for_keyword.setParseAction(replaceWith("show_diagnostics"))
 show_column_lists_for_keyword = Combine(show_keyword + single_white + column_keyword + 
                                         single_white + list_keyword + 
                                         single_white + for_keyword).setResultsName("statement_id")
+show_column_lists_for_keyword.setParseAction(replaceWith("show_column_lists"))
 show_columns_for_keyword = Combine(show_keyword + single_white + column_keyword + 
                                    single_white + for_keyword).setResultsName("statement_id")
-
-show_columns_keyword = Combine(show_keyword + single_white + column_keyword)
+show_columns_for_keyword.setParseAction(replaceWith("show_columns"))
+show_columns_keyword = Combine(show_keyword + single_white + column_keyword)## TODO deprecate
 show_row_lists_for_keyword = Combine(show_keyword + single_white + row_keyword + 
                                  single_white + list_keyword + 
                                  single_white + for_keyword).setResultsName("statement_id")
+show_row_lists_for_keyword.setParseAction(replaceWith("show_row_lists")) #TODO test parser.parse_show_row_lists
 
 estimate_pairwise_keyword = Combine(estimate_keyword + single_white + 
                                     pairwise_keyword).setResultsName("statement_id")

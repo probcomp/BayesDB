@@ -70,13 +70,15 @@ class Parser(object):
         return 'show_diagnostics', dict(tablename=bql_statement_ast.btable), None
 
     def parse_drop_models(self,bql_statement_ast):
-        model_indices = bql_statement_ast.index_clause.asList()
+        model_indices = None
+        if bql_statement_ast.index_clause != '':
+            model_indices = bql_statement_ast.index_clause.asList()
         return 'drop_models', dict(tablename=bql_statement_ast.btable, model_indices=model_indices), None
 
     def parse_initialize_models(self,bql_statement_ast):
         n_models = int(bql_statement_ast.num_models)
         tablename = bql_statement_ast.btable
-        arguments_dict = dict(tablename=tablename, n_models=n_models)
+        arguments_dict = dict(tablename=tablename, n_models=n_models, model_config=None)
         if bql_statement_ast.config != '':
             arguments_dict['model_config'] = bql_statement_ast.config
         return 'initialize_models', arguments_dict, None
@@ -96,32 +98,48 @@ class Parser(object):
         return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
     def parse_drop_btable(self,bql_statement_ast):
-        print "drop_btable" 
+        return 'drop_btable', dict(tablename=bql_statement_ast.btable), None
 
     def parse_analyze(self,bql_statement_ast):
-        print "parse_analyze"
-
+        model_indices = None
+        iterations = None
+        seconds = None
+        kernel = 0
+        tablename = bql_statement_ast.btable
+        if bql_statement_ast.index_clause != '':
+            model_indices = bql_statement_ast.index_clause.asList()
+        if bql_statement_ast.num_seconds !='':
+            seconds = int(bql_statement_ast.num_seconds)
+        if bql_statement_ast.num_iterations !='':
+            iterations = int(bql_statement_ast.num_iterations)
+        if bql_statement_ast.with_kernel_clause != '':
+            kernel = bql_statement_ast.with_kernel_clause.kernel_id
+            if kernel == 'mh': ## TODO should return None or something for invalid kernels
+                kernel=1
+        return 'analyze', dict(tablename=tablename, model_indices=model_indices,
+                                   iterations=iterations, seconds=seconds, ct_kernel=kernel), None
+        
     def parse_show_row_lists(self,bql_statement_ast):
-        print "show_row_lists"
+        return 'show_row_lists', dict(tablename=bql_statement_ast.btable), None
 
     def parse_show_column_lists(self,bql_statement_ast):
-        print "show_column_lists"
+        return 'show_column_lists', dict(tablename=bql_statement_ast.btable), None
 
     def parse_show_columns(self,bql_statement_ast):
-        print "show_columns"
+        return 'show_columns', dict(tablename=bql_statement_ast.btable), None
 
     def parse_save_models(self,bql_statement_ast):
-        print "save_models"
+        return 'save_models', dict(tablename=bql_statement_ast.btable), dict(pkl_path=bql_statement_ast.filename)
 
     def parse_load_models(self,bql_statement_ast):
-        print "load_models"
-
+        return 'load_models', dict(tablename=bql_statement_ast.btable), dict(pkl_path=bql_statement_ast.filename)
 
     def parse_infer(self,bql_statement_ast):
         print "infer"
 
     def parse_select(self,bql_statement_ast):
-        print "select"
+        tablename = bql_statement_ast.btable
+        whereclause = bql_statement_ast.where_conditions
 
     def parse_simulate(self,bql_statement_ast):
         print "simulate"
@@ -135,6 +153,13 @@ class Parser(object):
     def parse_estimate_pairwise(self,bql_statement_ast):
         print "estimate_pairwise"
 
+
+#####################################################################################
+## ----------------------------- Sub query parsing  ------------------------------ ##
+#####################################################################################
+
+    def parse_where_clause(self, where_clause_ast):
+        print "where_clause"
 
 #####################################################################################
 ## --------------------------- Other Helper functions ---------------------------- ##
