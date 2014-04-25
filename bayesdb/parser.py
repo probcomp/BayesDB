@@ -138,8 +138,33 @@ class Parser(object):
         print "infer"
 
     def parse_select(self,bql_statement_ast):
+        ## TODO assert for extra pieces
         tablename = bql_statement_ast.btable
-        whereclause = bql_statement_ast.where_conditions
+        functions = bql_statement_ast.functions
+        summarize = (bql_statement_ast.summarize == 'summarize') #TODO should be mutually exclusive?
+        plot = (bql_statement_ast.plot == 'plot')
+        scatter = (bql_statement_ast.scatter == 'scatter') ##TODO add to grammar
+        pairwise = (bql_statement_ast.pairwise == 'pairwise')
+        whereclause = None
+        if bql_statement_ast.where_conditions != '':
+            whereclause = bql_statement_ast.where_conditions
+        limit = float('inf')
+        if bql_statement_ast.limit != '':
+            limit = int(bql_statement_ast.limit)
+        filename = None
+        if bql_statement_ast.filename != '':
+            filename = bql_statement_ast.filename
+        order_by = False ##TODO maybe change to None
+        if bql_statement_ast.order_by != '':
+            order_by = bql_statement_ast.order_by.order_by_set.asList()
+        modelids = None
+        if bql_statement_ast.using_models_index_clause != '':
+            modelids = bql_statement_ast.using_models_index_clause.asList()
+        #TODO deprecate columnstring
+        return 'select', dict(tablename=tablename, whereclause=whereclause, 
+                              functions=functions, limit=limit, order_by=order_by, plot=plot, 
+                              modelids=modelids, summarize=summarize), \
+            dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
     def parse_simulate(self,bql_statement_ast):
         print "simulate"
@@ -158,8 +183,13 @@ class Parser(object):
 ## ----------------------------- Sub query parsing  ------------------------------ ##
 #####################################################################################
 
-    def parse_where_clause(self, where_clause_ast):
+    def parse_where_clause(self, where_clause_ast): ##Deprecate select_utils.get_conditions_from_whereclause
         print "where_clause"
+
+    def parse_order_by_clause(self, order_by_clause_ast):
+        print "order_by"
+
+    
 
 #####################################################################################
 ## --------------------------- Other Helper functions ---------------------------- ##
