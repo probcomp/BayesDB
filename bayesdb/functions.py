@@ -161,17 +161,17 @@ def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list,
 # function parsing
 ##############################################
 
-def parse_predictive_probability(colname, M_c):
-  prob_match = re.search(r"""
-      PREDICTIVE\s+PROBABILITY\s+OF\s+
-      (?P<column>[^\s]+)
-  """, colname, re.VERBOSE | re.IGNORECASE)
-  if prob_match:
-    column = prob_match.group('column')
-    c_idx = M_c['name_to_idx'][column.lower()]
-    return c_idx
-  else:
-    return None
+def parse_predictive_probability(function_group, M_c):
+    """
+    Returns a tuple of function, column_index, aggregate
+    """
+    if function_group.column != '' and function_group.column in M_c['name_to_idx']:
+        column = function_group.column
+    elif function_group.column != '':
+        raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % function_group.column)
+    else:
+        raise utils.BayesDBParseError("Invalid query: missing column argument")
+    return (_predictive_probability, column, False)
 
 def parse_probability(colname, M_c):
   prob_match = re.search(r"""
@@ -289,9 +289,6 @@ def parse_typicality(function_group, M_c):
         ##TODO Throw incorrect col_name exception
         return (_col_typicality, M_c['name_to_idx'][colname], True)
 
-#def parse_mutual_information(function_group, M_c):
-#    pass
-
 
 def parse_mutual_information(colname, M_c):
   mutual_information_match = re.search(r"""
@@ -353,6 +350,7 @@ def parse_correlation(colname, M_c):
 # single-column versions
 #########################
 
+## TODO deprecate
 def parse_cfun_column_typicality(colname, M_c):
   col_typicality_match = re.search(r"""
       ^\s*

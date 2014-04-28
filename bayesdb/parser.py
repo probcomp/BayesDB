@@ -190,7 +190,7 @@ class Parser(object):
     def parse_order_by_clause(self, order_by_clause_ast):
         print "order_by"
 
-    def parse_functions(self, function_groups, M_c, T, column_lists):
+    def parse_functions(self, function_groups, M_c=None, T=None, column_lists=None):
         '''
         Generates two lists of functions, arguments, aggregate tuples. 
         Returns queries, query_colnames
@@ -205,11 +205,11 @@ class Parser(object):
         '''
         ## Always return row_id as the first column.
         query_colnames = ['row_id'] + query_colnames
-        queries = [(functions._row_id, None, False)] + queries
+        queries = [(functions._row_id, None, False)]
 
         for function_group in function_groups: ##TODO throw exception, make safe
             if function_group.function_id == 'predictive probability':
-                pass
+                queries.append(functions.parse_predictive_probability(function_group))
             elif function_group.function_id == 'typicality':
                 queries.append(functions.parse_typicality(function_group))
             elif function_group.function_id == 'probability':
@@ -224,8 +224,22 @@ class Parser(object):
                 pass
             elif function_group.function_id == 'row similarity':
                 pass
+            ## single column, column_list, or *
+            ## TODO maybe split to function
+            ## TODO handle nesting
             elif function_group.column_id != '':
-                pass
+                column_name = function_group.column_id
+                if column_name == '*':
+                    assert M_c is not None
+                    all_columns = utils.get_all_column_names_in_original_order(M_c)
+                    index_list = [M_c['name_to_idx'][column_name] for column_name in all_columns]
+                elif (column_lists is not None) and (column_name in column_lists.keys()):
+                    index_list = column_lists[column_name]
+                elif column_name in M_c['name_to_idx']:
+                    index_list = [M_c['name_to_idx'][column_name]]
+                else:
+                    raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % column_name)
+                queries += [(functions._column, column_index , False) for column_index in index_list]
 
         return queries, query_colnames
 

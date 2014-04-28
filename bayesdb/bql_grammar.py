@@ -349,11 +349,7 @@ similarity_to_function = (Group(similarity_to_keyword.setResultsName('function_i
                                 .setResultsName('with_respect_to'))
                           .setResultsName("function")) # todo more names less indexes
 
-# TYPICALITY
-#typicality_function = Group(typicality_keyword.setResultsName('function_id')).setResultsName('function')
-## TODO optional combination
-#typicality_of_function = Group(typicality_of_keyword.setResultsName("function_id") + 
-#                                           identifier.setResultsName("column")).setResultsName("function")
+# TYPICALITY [OF <column>]
 typicality_function = Group(typicality_keyword.setResultsName('function_id') + Optional(of_keyword + identifier.setResultsName("column"))).setResultsName("function")
 
 # Functions of two columns for use in dependence probability, mutual information, correlation
@@ -453,7 +449,6 @@ query_id = (select_keyword |
 
 function_in_query = (predictive_probability_of_function | 
                      probability_of_function | 
-                     #typicality_of_function | 
                      typicality_function | 
                      similarity_to_function |
                      dependence_probability_function | 

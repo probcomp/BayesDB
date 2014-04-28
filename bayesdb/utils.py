@@ -223,6 +223,7 @@ def summarize_table(data, columns, M_c):
 
     return data, columns
 
+#TODO replace
 def column_string_splitter(columnstring, M_c=None, column_lists=None):
     """
     If '*' is a possible input, M_c must not be None.
