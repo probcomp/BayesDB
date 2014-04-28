@@ -257,7 +257,8 @@ def test_model_config():
   client('analyze %s for 2 iterations' % (test_tablename), debug=True, pretty=False)
   dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, debug=True, pretty=False)[0]['matrix']
   ## assert that all dependencies are _0_ (not 1, because there should only be 1 view and 1 cluster!)
-  assert numpy.all(dep_mat == 0)
+  ## except the diagonal, where we've hardcoded every column to be dependent with itself
+  assert numpy.all(dep_mat == numpy.identity(dep_mat.shape[0]))
 
   # test crp
   client('drop models for %s' % test_tablename, yes=True, debug=True, pretty=False)
