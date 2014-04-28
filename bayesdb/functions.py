@@ -278,39 +278,20 @@ def parse_similarity_pairwise(colname, M_c, _, column_lists):
   else:
       return False
       
-
-def parse_row_typicality(colname):
-    row_typicality_match = re.search(r"""
-        ^\s*    
-        ((row_typicality)|
-        (^\s*TYPICALITY\s*$))
-        \s*$
-    """, colname, re.VERBOSE | re.IGNORECASE)
-    if row_typicality_match:
-        return True
+def parse_typicality(function_group, M_c):
+    '''
+    Returns a tuple of typicality_function, args, aggregate
+    '''
+    if function_group.column == '':
+        return (_row_typicality, True, False)
     else:
-        return None
+        colname = function_group.column
+        ##TODO Throw incorrect col_name exception
+        return (_col_typicality, M_c['name_to_idx'][colname], True)
 
-def parse_column_typicality(colname, M_c):
-  col_typicality_match = re.search(r"""
-      col_typicality
-      \s*
-      \(\s*
-      (?P<column>[^\s]+)
-      \s*\)
-  """, colname, re.VERBOSE | re.IGNORECASE)
-  if not col_typicality_match:
-      col_typicality_match = re.search(r"""
-      ^\s*
-      TYPICALITY\s+OF\s+
-      (?P<column>[^\s]+)
-      \s*$
-      """, colname, flags=re.VERBOSE | re.IGNORECASE)
-  if col_typicality_match:
-      colname = col_typicality_match.group('column').strip()
-      return M_c['name_to_idx'][colname.lower()]
-  else:
-      return None
+#def parse_mutual_information(function_group, M_c):
+#    pass
+
 
 def parse_mutual_information(colname, M_c):
   mutual_information_match = re.search(r"""

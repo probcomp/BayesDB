@@ -380,9 +380,9 @@ def test_predictive_probability_of_pyparsing():
                                                           parseAll=True).function.column == 'column_1'
 
 def test_typicality_of_pyparsing():
-    assert typicality_of_function.parseString("TYPICALITY OF column_1",
-                                                          parseAll=True).function.function_id == 'typicality of'
-    assert typicality_of_function.parseString("TYPICALITY OF column_1",
+    assert typicality_function.parseString("TYPICALITY OF column_1",
+                                                          parseAll=True).function.function_id == 'typicality'
+    assert typicality_function.parseString("TYPICALITY OF column_1",
                                                           parseAll=True).function.column == 'column_1'
 
 def test_order_by_clause_pyparsing():
@@ -618,7 +618,7 @@ def test_select_functions_pyparsing():
     assert select_ast_8.statement_id == 'select'
     assert select_ast_9.statement_id == 'select'    
     assert select_ast_1.functions[0].function_id == 'typicality'
-    assert select_ast_2.functions[0].function_id == 'typicality of'
+    assert select_ast_2.functions[0].function_id == 'typicality'
     assert select_ast_3.functions[0].function_id == 'predictive probability of'
     assert select_ast_4.functions[0].function_id == 'probability of'
     assert select_ast_5.functions[0].function_id == 'similarity to'
@@ -683,7 +683,7 @@ def test_infer_pyparsing():
     assert infer_ast_8.statement_id == 'infer'
     assert infer_ast_9.statement_id == 'infer'    
     assert infer_ast_1.functions[0].function_id == 'typicality'
-    assert infer_ast_2.functions[0].function_id == 'typicality of'
+    assert infer_ast_2.functions[0].function_id == 'typicality'
     assert infer_ast_3.functions[0].function_id == 'predictive probability of'
     assert infer_ast_4.functions[0].function_id == 'probability of'
     assert infer_ast_5.functions[0].function_id == 'similarity to'

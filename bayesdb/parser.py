@@ -26,6 +26,7 @@ import utils
 import os
 import bql_grammar as bql
 import pyparsing as pp
+import ast
 
 class Parser(object):
     def __init__(self):
@@ -189,7 +190,44 @@ class Parser(object):
     def parse_order_by_clause(self, order_by_clause_ast):
         print "order_by"
 
+    def parse_functions(self, function_groups, M_c, T, column_lists):
+        '''
+        Generates two lists of functions, arguments, aggregate tuples. 
+        Returns queries, query_colnames
+        
+        queries is a list of (query_function, query_args, aggregate) tuples,
+        where query_function is: row_id, column, probability, similarity.
     
+        For row_id: query_args is ignored (so it is None).
+        For column: query_args is a c_idx.
+        For probability: query_args is a (c_idx, value) tuple.
+        For similarity: query_args is a (target_row_id, target_column) tuple.
+        '''
+        ## Always return row_id as the first column.
+        query_colnames = ['row_id'] + query_colnames
+        queries = [(functions._row_id, None, False)] + queries
+
+        for function_group in function_groups: ##TODO throw exception, make safe
+            if function_group.function_id == 'predictive probability':
+                pass
+            elif function_group.function_id == 'typicality':
+                queries.append(functions.parse_typicality(function_group))
+            elif function_group.function_id == 'probability':
+                pass
+            elif function_group.function_id == 'similarity to':
+                pass
+            elif function_group.function_id == 'dependence probability':
+                pass
+            elif function_group.function_id == 'mutual information':
+                pass
+            elif function_group.function_id == 'correlation':
+                pass
+            elif function_group.function_id == 'row similarity':
+                pass
+            elif function_group.column_id != '':
+                pass
+
+        return queries, query_colnames
 
 #####################################################################################
 ## --------------------------- Other Helper functions ---------------------------- ##

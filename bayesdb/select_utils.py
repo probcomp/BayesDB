@@ -127,7 +127,7 @@ def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend
         return False
   return True
 
-def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
+def get_queries_from_columnstring(columnstring, M_c, T, column_lists): ##TODO deprecate
     """
     Iterate through the columnstring portion of the input, and generate the query list.
     queries is a list of (query_function, query_args, aggregate) tuples,
