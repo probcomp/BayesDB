@@ -136,8 +136,8 @@ def row_id_from_col_value(value, column, M_c, T):
     for row_id, T_row in enumerate(T):
         row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
         if row_values[col_idx] == value:
-            if target_row_id is not None:
-                target_row_id = value
+            if target_row_id == None:
+                target_row_id = row_id
             else: 
                 raise BayesDBUniqueValueError("Invalid Query: column '%s' has more than one row with value '%s'." %(column, str(value)))
     return target_row_id
