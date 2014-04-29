@@ -375,12 +375,14 @@ correlation_function = Group(correlation_keyword.setResultsName('function_id') +
 two_column_function = (dependence_probability_function | mutual_information_function | correlation_function)
 
 # PROBABILITY OF <column>=<value>
+## TODO move of
 probability_of_function = Group((probability_of_keyword.setResultsName("function_id") + 
                                  identifier.setResultsName("column") + 
                                  Suppress(equal_literal) + 
                                  value.setResultsName("value"))).setResultsName('function')
 
 # PREDICTIVE PROBABILITY OF <column>
+## TODO move of
 predictive_probability_of_function = Group(predictive_probability_of_keyword.setResultsName("function_id") + 
                                            identifier.setResultsName("column")).setResultsName("function")
 

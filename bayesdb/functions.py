@@ -173,25 +173,47 @@ def parse_predictive_probability(function_group, M_c):
         raise utils.BayesDBParseError("Invalid query: missing column argument")
     return (_predictive_probability, column, False)
 
-def parse_probability(colname, M_c):
-  prob_match = re.search(r"""
-      ^PROBABILITY\s+OF\s+
-      (?P<column>[^\s]+)\s*=\s*(\'|\")?\s*(?P<value>[^\'\"]*)\s*(\'|\")?$
-    """, colname, re.VERBOSE | re.IGNORECASE)
-  if prob_match:
-    column = prob_match.group('column')
-    c_idx = M_c['name_to_idx'][column.lower()]
-    value = prob_match.group('value')
-    if utils.is_int(value):
-      value = int(value)
-    elif utils.is_float(value):
-      value = float(value)
-    ## TODO: need to escape strings here with ast.eval... call?
-    return c_idx, value
-  else:
-    return None
+def parse_probability(function_group, M_c):
+    column = function_group.column
+    c_idx = M_c['name_to_idx'][column]
+    value = utils.string_to_value(function_group.value)
+    return (_probability, (c_idx, value), True)
 
-def parse_similarity(colname, M_c, T, column_lists):
+def parse_similarity(function_group, M_c, T, column_lists):
+    row_clause = function_group.row_clause
+    target_row_id = None
+    ## Case where given row_id
+    if row_clause.row_id != '':
+        target_row_id = int(row_id)
+    ## Row id is of the form: column = value where value is unique
+    elif row_clause.column != '':
+        target_col_name = row_clause.column
+        target_col_value = utils.string_to_value(row_clause.column_value)
+        target_col_idx = M_c['name_to_idx'][target_col_name]
+        for row_id, T_row in enumerate(T):
+          row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
+          if row_values[target_col_idx] == target_col_value:
+            target_row_id = row_id
+            break
+    with_respect_to_clause = function_group.with_respect_to
+    if with_respect_to_clause != '':
+        column_set = with_respect_to_clause.column_list
+        target_column_names = []
+        for column_name in column_set:
+            if column_name == '*':
+                target_columns = None
+                break
+            elif column_lists is not None and column_name in column_lists.keys():
+                target_column_names.append(column_lists[column_name])
+            elif column_name in M_c['name_to_idx']:
+                target_column_names.append(column_name)
+            else:
+                raise utils.BayesDBParseError("Invalid query: column '%s' not found" % column_name)
+        target_columns = [M_c['name_to_idx'][column_name] for column_name in target_column_names]
+    
+    return target_row_id, target_columns
+
+def aparse_similarity(colname, M_c, T, column_lists):
   """
   colname: this is the thing that we want to try to parse as a similarity.
   It is an entry in a query's columnstring. eg: SELECT colname1, colname2 FROM...
@@ -246,6 +268,7 @@ def parse_similarity(colname, M_c, T, column_lists):
   else:
       return None
 
+## TODO deprecate
 def parse_similarity_pairwise(colname, M_c, _, column_lists):
   """
   TODO: this is horribly hacky.
@@ -283,11 +306,11 @@ def parse_typicality(function_group, M_c):
     Returns a tuple of typicality_function, args, aggregate
     '''
     if function_group.column == '':
-        return (_row_typicality, True, False)
+        return _row_typicality, None, False
     else:
         colname = function_group.column
         ##TODO Throw incorrect col_name exception
-        return (_col_typicality, M_c['name_to_idx'][colname], True)
+        return _col_typicality, M_c['name_to_idx'][colname], True
 
 
 def parse_mutual_information(colname, M_c):

@@ -209,13 +209,14 @@ class Parser(object):
 
         for function_group in function_groups: ##TODO throw exception, make safe
             if function_group.function_id == 'predictive probability':
-                queries.append(functions.parse_predictive_probability(function_group))
+                queries.append(functions.parse_predictive_probability(function_group, M_c))
             elif function_group.function_id == 'typicality':
-                queries.append(functions.parse_typicality(function_group))
+                queries.append(functions.parse_typicality(function_group, M_c))
             elif function_group.function_id == 'probability':
-                pass
+                queries.append(functions.parse_probability(function_group, M_c))
             elif function_group.function_id == 'similarity to':
-                pass
+                assert M_c is not None and T is not None
+                queries.append(functions.parse_similarity(function_group, M_c, T, column_lists))
             elif function_group.function_id == 'dependence probability':
                 pass
             elif function_group.function_id == 'mutual information':
