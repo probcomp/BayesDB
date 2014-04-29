@@ -106,7 +106,7 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
     elif inner_element.function.column != '':
       colname = inner_element.function.column
       if M_c['name_to_idx'].has_key(colname.lower()):
-        if M_c['column_metadata'][M_c['name_to_idx'][colname.lower()]]['modeltype'] == 'symmetric_dirichlet_discrete':
+        if utils.get_cctype_from_M_c(M_c, colname.lower()):
           val = str(val)## TODO hack, fix with util
         conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
         continue
