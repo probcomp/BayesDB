@@ -115,7 +115,7 @@ def _dependence_probability(dependence_probability_args, row_id, data_values, M_
         ## Future work can investigate whether more advanced probability of dependence measures
         ## that attempt to take into account the number of outliers do better.
         if (assignments[col1] == assignments[col2]):
-            if len(numpy.unique(X_D[assignments[col1]])) > 1:
+            if len(numpy.unique(X_D[assignments[col1]])) > 1 or col1 == col2:
                 prob_dep += 1
     prob_dep /= float(len(X_L_list))
     return prob_dep
