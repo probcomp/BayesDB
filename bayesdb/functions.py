@@ -171,14 +171,15 @@ def parse_predictive_probability(function_group, M_c):
         raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % function_group.column)
     else:
         raise utils.BayesDBParseError("Invalid query: missing column argument")
-    return (_predictive_probability, column, False)
+    return _predictive_probability, column, False
 
 def parse_probability(function_group, M_c):
     column = function_group.column
     c_idx = M_c['name_to_idx'][column]
     value = utils.string_to_value(function_group.value)
-    return (_probability, (c_idx, value), True)
+    return _probability, (c_idx, value), True
 
+## TODO split to get target row, get target columns
 def parse_similarity(function_group, M_c, T, column_lists):
     row_clause = function_group.row_clause
     target_row_id = None
@@ -211,62 +212,7 @@ def parse_similarity(function_group, M_c, T, column_lists):
                 raise utils.BayesDBParseError("Invalid query: column '%s' not found" % column_name)
         target_columns = [M_c['name_to_idx'][column_name] for column_name in target_column_names]
     
-    return target_row_id, target_columns
-
-def aparse_similarity(colname, M_c, T, column_lists):
-  """
-  colname: this is the thing that we want to try to parse as a similarity.
-  It is an entry in a query's columnstring. eg: SELECT colname1, colname2 FROM...
-  We are checking if colname matches "SIMILARITY TO <rowid> [WITH RESPECT TO <col>]"
-  it is NOT just the column name
-  """
-  similarity_match = re.search(r"""
-      similarity\s+to\s+
-      (\()?
-      (?P<rowid>[^,\)\(]+)
-      (\))?
-      \s+with\s+respect\s+to\s+
-      (?P<columnstring>.*$)
-  """, colname, re.VERBOSE | re.IGNORECASE)
-  if not similarity_match:
-    similarity_match = re.search(r"""
-      similarity\s+to\s+
-      (\()?
-      (?P<rowid>[^,\)\(]+)
-      (\))?
-      \s*$
-    """, colname, re.VERBOSE | re.IGNORECASE)
-  if similarity_match:
-      rowid = similarity_match.group('rowid').strip()
-      if utils.is_int(rowid):
-        target_row_id = int(rowid)
-      else:
-        ## Instead of specifying an integer for rowid, you can specify a simple where clause.
-        where_vals = rowid.split('=')
-        where_colname = where_vals[0]
-        where_val = where_vals[1]
-        if type(where_val) == str or type(where_val) == unicode:
-          where_val = ast.literal_eval(where_val)
-        ## Look up the row_id where this column has this value!
-        c_idx = M_c['name_to_idx'][where_colname.lower()]
-        for row_id, T_row in enumerate(T):
-          row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
-          if row_values[c_idx] == where_val:
-            target_row_id = row_id
-            break
-
-      if 'columnstring' in similarity_match.groupdict() and similarity_match.group('columnstring'):
-          columnstring = similarity_match.group('columnstring').strip()
-
-          target_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c, column_lists)]
-          utils.check_for_duplicate_columns(target_colnames)
-          target_columns = [M_c['name_to_idx'][colname] for colname in target_colnames]
-      else:
-          target_columns = None
-
-      return target_row_id, target_columns
-  else:
-      return None
+    return _similarity, (target_row_id, target_columns), False
 
 ## TODO deprecate
 def parse_similarity_pairwise(colname, M_c, _, column_lists):
@@ -337,7 +283,10 @@ def parse_mutual_information(colname, M_c):
   else:
       return None
 
-def parse_dependence_probability(colname, M_c):
+def get_cols_from_dependence_probability(function_group, M_c):
+    pass
+
+def aparse_dependence_probability(colname, M_c):
   dependence_probability_match = re.search(r"""
     DEPENDENCE\s+PROBABILITY\s+OF\s+
     (?P<col1>[^\s]+)

@@ -47,6 +47,17 @@ class BayesDBParseError(BayesDBError):
     def __str__(self):
         return self.msg
 
+class BayesDBUniqueValueError(BayesDBError):
+    def __init__(self, msg=None):
+        if msg:
+            self.msg = msg
+        else:
+            self.msg = "BayesDB unique value error. More than one row has this value."
+    
+    def __str__(self):
+        return self.msg
+
+
 class BayesDBNoModelsError(BayesDBError):
     def __init__(self, tablename):
         self.tablename = tablename
@@ -85,7 +96,6 @@ class BayesDBRowListDoesNotExistError(BayesDBError):
     def __str__(self):
         return "Row list %s does not exist in btable %s." % (self.row_list, self.tablename)
         
-        
 def is_int(s):
     try:
         int(s)
@@ -100,13 +110,37 @@ def is_float(s):
     except ValueError:
         return False
 
-def string_to_value(value_string):
+def string_to_column_type(value_string, column, M_c):
+    """
+    Checks the type of the column in question based on M_c
+    If continuous, converts the value from string to int or float
+    """
     value = value_string
-    if is_int(value_string) == True:
-        value = int(value)
-    elif is_float(value_string) == True:
-        value = float(value)
+    if get_cctype_from_M_c(M_c, column) == 'continuous':
+        if is_int(value_string) == True:
+            value = int(value)
+        elif is_float(value_string) == True:
+            value = float(value)
     return value
+
+def row_id_from_col_value(value, column, M_c, T):
+    """
+    Returns the row_id of a column where column == value
+    If duplicate rows are found, raises exception
+    If no rows are found, returns None
+    """
+    target_row_id = None
+    col_idx = M_c['name_to_idx'][column]
+    if type(value) == str:
+        value = string_to_column_type(value, column, M_c)
+    for row_id, T_row in enumerate(T):
+        row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
+        if row_values[col_idx] == value:
+            if target_row_id is not None:
+                target_row_id = value
+            else: 
+                raise BayesDBUniqueValueError("Invalid Query: column '%s' has more than one row with value '%s'." %(column, str(value)))
+    return target_row_id
 
 def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, engine):
     q = [row_id, col_id]
@@ -139,6 +173,12 @@ def get_cctype_from_M_c(M_c, column):
         # If the column name wasn't found in metadata, it's a function, so the output will be continuous
         cctype = 'continuous'
     return cctype
+
+def get_index_from_colname(M_c, column):
+    if column in M_c['name_to_idx'].keys():
+        return M_c['name_to_idx'][column]
+    else:
+        utils.BayesDBParseError("Invalid query: column '%s' not found" % column)
 
 def summarize_table(data, columns, M_c):
     """
