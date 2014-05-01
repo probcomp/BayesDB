@@ -171,7 +171,6 @@ show_row_lists_for_keyword = Combine(show_keyword + single_white + row_keyword +
                                  single_white + list_keyword + 
                                  single_white + for_keyword).setResultsName("statement_id")
 show_row_lists_for_keyword.setParseAction(replaceWith("show_row_lists")) #TODO test parser.parse_show_row_lists
-
 estimate_pairwise_keyword = Combine(estimate_keyword + single_white + 
                                     pairwise_keyword).setResultsName("statement_id")
 estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
@@ -188,8 +187,11 @@ column_lists_keyword = Combine(column_keyword + single_white + list_keyword)
 similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword).setResultsName("statement_id")
 with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
 probability_of_keyword = Combine(probability_keyword + single_white + of_keyword)
+probability_of_keyword.setParseAction(replaceWith("probability"))
 typicality_of_keyword = Combine(typicality_keyword + single_white + of_keyword)
 predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_keyword + single_white + of_keyword)
+predictive_probability_of_keyword.setParseAction(replaceWith("predictive probability")) ##TODO
+
 save_connected_components_with_threshold_keyword = Combine(save_keyword + single_white + 
                                                            connected_keyword + single_white + 
                                                            components_keyword + single_white + 
@@ -217,7 +219,7 @@ comment = (Literal('--') + restOfLine).suppress()
 # single and double quotes inside value must be escaped. 
 value = (QuotedString('"', escChar='\\') | 
          QuotedString("'", escChar='\\') | 
-         Word(printables)| ## TODO printables includes ;
+         Word(printables)| ## TODO printables includes ;,
          float_number | 
          sub_query)
 filename = (QuotedString('"', escChar='\\') | 
@@ -342,7 +344,7 @@ with_confidence_clause = with_confidence_keyword + float_number.setResultsName("
 
 # -------------------------------- Functions ------------------------------ #
 
-# SIMILARITY TO <row> [WITH RESPECT TO <column>]
+# SIMILARITY TO <row> [WITH RESPECT TO <column>] ## TODO with respect to clause AND or paren
 similarity_to_function = (Group(similarity_to_keyword.setResultsName('function_id') + 
                                 row_clause + 
                                 Optional(with_respect_to_keyword + column_list_clause)
@@ -360,6 +362,7 @@ functions_of_two_columns_subclause = ((Suppress(with_keyword) +
                                        Suppress(with_keyword) + 
                                        identifier.setResultsName("with_column")))
 
+##TODO make all of these functions one thing
 # DEPENDENCE PROBABILITY (WITH <column> | OF <column1> WITH <column2>)
 dependence_probability_function = Group(dependence_probability_keyword.setResultsName('function_id') + 
                                         functions_of_two_columns_subclause).setResultsName("function")

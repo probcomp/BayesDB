@@ -27,8 +27,35 @@ from pyparsing import *
 from bayesdb.bql_grammar import *
 from bayesdb.engine import Engine
 from bayesdb.parser import Parser
+import bayesdb.functions as functions
+import numpy
 engine = Engine('local')
 parser = Parser()
+
+test_M_c = {'idx_to_name': {'1': 'b', '0': 'a', '3': 'd', '2': 'c'},
+            'column_metadata': [
+                    {'code_to_value': {'a': 0, '1': 1, '2': 2, '4': 3, '6': 4}, 
+                     'value_to_code': {0: 'a', 1: '1', 2: '2', 3: '4', 4: '6'}, 
+                     'modeltype': 'symmetric_dirichlet_discrete'}, 
+                    {'code_to_value': {}, 'value_to_code': {}, 
+                     'modeltype': 'normal_inverse_gamma'}, 
+                    {'code_to_value': {'we': 0, 'e': 1, 'w': 2, 'sd': 3}, 
+                     'value_to_code': {0: 'we', 1: 'e', 2: 'w', 3: 'sd'}, 
+                     'modeltype': 'symmetric_dirichlet_discrete'}, 
+                    {'code_to_value': {'3': 1, '2': 2, '5': 0, '4': 3}, 
+                     'value_to_code': {0: '5', 1: '3', 2: '2', 3: '4'}, 
+                     'modeltype': 'symmetric_dirichlet_discrete'}], 
+            'name_to_idx': {'a': 0, 'c': 2, 'b': 1, 'd': 3}}
+
+test_T = [[1.0, 1.0, 0.0, numpy.nan], 
+          [2.0, 2.0, 0.0, 2.0], 
+          [0.0, 3.0, 0.0, 3.0], 
+          [3.0, 3.0, 2.0, numpy.nan], 
+          [3.0, 4.0, 2.0, 0.0], 
+          [4.0, 5.0, 1.0, numpy.nan], 
+          [numpy.nan, 6.0, 2.0, 1.0], 
+          [numpy.nan, 7.0, 3.0, 1.0], 
+          [numpy.nan, 7.0, 3.0, 1.0]]
 
 def test_keyword_plurality_ambiguity_pyparsing():
     model = model_keyword.parseString("model",parseAll=True)
@@ -104,7 +131,7 @@ def test_composite_keywords_pyparsing():
     probability_of = probability_of_keyword.parseString('probability of',parseAll=True)
     assert probability_of[0] == 'probability of'
     predictive_probability_of = predictive_probability_of_keyword.parseString('predictive Probability  of',parseAll=True)
-    assert predictive_probability_of[0] == 'predictive probability of'
+    assert predictive_probability_of[0] == 'predictive probability'
     save_connected_components_with_threshold = save_connected_components_with_threshold_keyword.parseString(
         'save cOnnected components with threshold',parseAll=True)
     assert save_connected_components_with_threshold[0] == 'save connected components with threshold'
@@ -375,7 +402,7 @@ def test_probability_of_function_pyparsing():
 
 def test_predictive_probability_of_pyparsing():
     assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
-                                                          parseAll=True).function.function_id == 'predictive probability of'
+                                                          parseAll=True).function.function_id == 'predictive probability'
     assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
                                                           parseAll=True).function.column == 'column_1'
 
@@ -405,20 +432,20 @@ def test_order_by_clause_pyparsing():
     assert order_by_5.order_by.order_by_set[1].function_id == 'typicality'
     order_by_6 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1",
                                              parseAll=True)
-    assert order_by_6.order_by.order_by_set[0].function_id == 'predictive probability of'
+    assert order_by_6.order_by.order_by_set[0].function_id == 'predictive probability'
     assert order_by_6.order_by.order_by_set[0].column == 'column_1'
     
     order_by_7 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1, column_1",
                                              parseAll=True)
     assert order_by_7.order_by.order_by_set[1].column == 'column_1'
-    assert order_by_7.order_by.order_by_set[0].function_id == 'predictive probability of'
+    assert order_by_7.order_by.order_by_set[0].function_id == 'predictive probability'
     assert order_by_7.order_by.order_by_set[0].column == 'column_1'
 
     order_by_8 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY, PREDICTIVE PROBABILITY OF column_1, column_2, SIMILARITY TO 2, SIMILARITY TO column_1 = 1 WITH RESPECT TO column_4",
                                              parseAll=True)
     assert order_by_8.order_by.order_by_set[0].column == 'column_1'
     assert order_by_8.order_by.order_by_set[1].function_id == 'typicality'
-    assert order_by_8.order_by.order_by_set[2].function_id == 'predictive probability of'
+    assert order_by_8.order_by.order_by_set[2].function_id == 'predictive probability'
     assert order_by_8.order_by.order_by_set[2].column == 'column_1'
     assert order_by_8.order_by.order_by_set[3].column == 'column_2'
     assert order_by_8.order_by.order_by_set[4].function_id == 'similarity to'
@@ -463,7 +490,7 @@ def test_whereclause_pyparsing():
     assert parsed_7.where_conditions[0].value == '.8'
     whereclause_8 = "WHERE PREDICTIVE PROBABILITY OF column_1 > .1"
     parsed_8 = where_clause.parseString(whereclause_8,parseAll=True)
-    assert parsed_8.where_conditions[0].function.function_id == 'predictive probability of'
+    assert parsed_8.where_conditions[0].function.function_id == 'predictive probability'
     assert parsed_8.where_conditions[0].function.column == 'column_1'
     assert parsed_8.where_conditions[0].operation == '>'
     assert parsed_8.where_conditions[0].value == '.1'
@@ -544,7 +571,7 @@ def test_whereclause_pyparsing():
     whereclause_24 = "WHERE TYPICALITY > .8 AND PREDICTIVE PROBABILITY OF column_1 > .1 AND SIMILARITY TO 2 > .1"
     parsed_24 = where_clause.parseString(whereclause_24,parseAll=True)
     assert parsed_24.where_conditions[0].function.function_id == 'typicality'
-    assert parsed_24.where_conditions[1].function.function_id == 'predictive probability of'
+    assert parsed_24.where_conditions[1].function.function_id == 'predictive probability'
     assert parsed_24.where_conditions[2].function.function_id == 'similarity to'
     whereclause_25 = "WHERE TYPICALITY > .8 WITH CONFIDENCE .4 AND PREDICTIVE PROBABILITY OF column_1 > .1 WITH CONFIDENCE .6 AND SIMILARITY TO 2 > .1 WITH CONFIDENCE .5"
     parsed_25 = where_clause.parseString(whereclause_25,parseAll=True)
@@ -619,7 +646,7 @@ def test_select_functions_pyparsing():
     assert select_ast_9.statement_id == 'select'    
     assert select_ast_1.functions[0].function_id == 'typicality'
     assert select_ast_2.functions[0].function_id == 'typicality'
-    assert select_ast_3.functions[0].function_id == 'predictive probability of'
+    assert select_ast_3.functions[0].function_id == 'predictive probability'
     assert select_ast_4.functions[0].function_id == 'probability of'
     assert select_ast_5.functions[0].function_id == 'similarity to'
     assert select_ast_5.functions[0].function_id == 'similarity to'
@@ -627,7 +654,7 @@ def test_select_functions_pyparsing():
     assert select_ast_7.functions[0].function_id == 'mutual information'
     assert select_ast_8.functions[0].function_id == 'correlation'
     assert select_ast_9.functions[0].function_id == 'typicality'
-    assert select_ast_9.functions[1].function_id == 'predictive probability of'
+    assert select_ast_9.functions[1].function_id == 'predictive probability'
 
 def test_infer_pyparsing():
     infer_1 = "INFER * FROM table_1"
@@ -684,7 +711,7 @@ def test_infer_pyparsing():
     assert infer_ast_9.statement_id == 'infer'    
     assert infer_ast_1.functions[0].function_id == 'typicality'
     assert infer_ast_2.functions[0].function_id == 'typicality'
-    assert infer_ast_3.functions[0].function_id == 'predictive probability of'
+    assert infer_ast_3.functions[0].function_id == 'predictive probability'
     assert infer_ast_4.functions[0].function_id == 'probability of'
     assert infer_ast_5.functions[0].function_id == 'similarity to'
     assert infer_ast_5.functions[0].function_id == 'similarity to'
@@ -692,7 +719,7 @@ def test_infer_pyparsing():
     assert infer_ast_7.functions[0].function_id == 'mutual information'
     assert infer_ast_8.functions[0].function_id == 'correlation'
     assert infer_ast_9.functions[0].function_id == 'typicality'
-    assert infer_ast_9.functions[1].function_id == 'predictive probability of'
+    assert infer_ast_9.functions[1].function_id == 'predictive probability'
     assert infer_ast_1.samples == '4'
     assert infer_ast_1.confidence == '.4'
     assert infer_ast_2.samples == '4'
@@ -817,7 +844,10 @@ def test_master_query_for_parse_errors():
                   "SELECT DEPENDENCE PROBABILITY WITH column_1 FROM table_1",
                   "SELECT MUTUAL INFORMATION OF column_1 WITH column_2 FROM table_1",
                   "SELECT CORRELATION OF column_1 WITH column_2 FROM table_1",
-                  "SELECT TYPICALITY, PREDICTIVE PROBABILITY OF column_1 FROM table_1"]
+                  "SELECT TYPICALITY, PREDICTIVE PROBABILITY OF column_1 FROM table_1", 
+                  "SELECT SIMILARITY TO 0 WITH RESPECT TO column_1, col2 FROM table_1", 
+                  "SELECT SIMILARITY TO a = 1 , PROBABILITY OF a = 1 FROM table_1"]
+#SELECT PREDICTIVE PROBABILITY OF a, MUTUAL INFORMATION OF a WITH b, CORRELATION OF a WITH b, DEPENDENCE PROBABILITY OF a WITH b, SIMILARITY TO 0, SIMILARITY TO a = 1, PROBABILITY OF a = 1 FROM table_1
     for query in query_list:
         query = bql_statement.parseString(query,parseAll=True)
         assert query.statement_id != ''
@@ -885,6 +915,27 @@ def test_save_models():
     assert args == dict(tablename='t')
     assert client_dict == dict(pkl_path='fn')
 
+def test_parse_functions():
+    query_1 = "SELECT PREDICTIVE PROBABILITY OF a, MUTUAL INFORMATION OF a WITH b, CORRELATION OF a WITH b, DEPENDENCE PROBABILITY OF a WITH b, SIMILARITY TO 0, SIMILARITY TO a = 1 , PROBABILITY OF a = 1 , probability of b = 1 , TYPICALITY of a, typicality , a , * FROM table_1"
+    ast_1 = bql_statement.parseString(query_1, parseAll=True)
+    function_groups = ast_1.functions
+    
+    queries, query_cols = parser.parse_functions(function_groups, M_c = test_M_c, T=test_T)
+    assert queries[0] == (functions._row_id, None, False)
+    assert queries[1] == (functions._predictive_probability, 0, False)
+    assert queries[2] == (functions._mutual_information, (0,1), True)
+    assert queries[3] == (functions._correlation, (0,1), True)
+    assert queries[4] == (functions._dependence_probability, (0,1), True)
+    assert queries[5] == (functions._similarity, (0,None), False)
+    assert queries[6] == (functions._similarity, (0,None), False)
+    assert queries[7] == (functions._probability, (0,'1'), True)
+    assert queries[8] == (functions._probability, (1,1), True)
+    assert queries[9] == (functions._col_typicality, 0, True)
+    assert queries[10] == (functions._row_typicality, None, False)
+    assert queries[11] == (functions._column, 0, False)
+    assert queries[12] == (functions._column, 0, False)
+    assert queries[13] == (functions._column, 1, False)
+    
 def test_select():
     tablename = 't'
     columnstring = '*'

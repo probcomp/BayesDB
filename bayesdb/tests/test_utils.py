@@ -97,3 +97,8 @@ def test_row_id_from_col_value():
         assert False
     except utils.BayesDBUniqueValueError:
         assert True
+
+def test_string_to_column_type():
+    assert utils.string_to_column_type('1', 'a', test_M_c) == '1'
+    assert utils.string_to_column_type('1', 'b', test_M_c) == 1
+    assert utils.string_to_column_type(1, 'a', test_M_c) == 1

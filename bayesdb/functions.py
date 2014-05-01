@@ -161,59 +161,6 @@ def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list,
 # function parsing
 ##############################################
 
-def parse_predictive_probability(function_group, M_c):
-    """
-    Returns a tuple of function, column_index, aggregate
-    """
-    if function_group.column != '' and function_group.column in M_c['name_to_idx']:
-        column = function_group.column
-    elif function_group.column != '':
-        raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % function_group.column)
-    else:
-        raise utils.BayesDBParseError("Invalid query: missing column argument")
-    return _predictive_probability, column, False
-
-def parse_probability(function_group, M_c):
-    column = function_group.column
-    c_idx = M_c['name_to_idx'][column]
-    value = utils.string_to_value(function_group.value)
-    return _probability, (c_idx, value), True
-
-## TODO split to get target row, get target columns
-def parse_similarity(function_group, M_c, T, column_lists):
-    row_clause = function_group.row_clause
-    target_row_id = None
-    ## Case where given row_id
-    if row_clause.row_id != '':
-        target_row_id = int(row_id)
-    ## Row id is of the form: column = value where value is unique
-    elif row_clause.column != '':
-        target_col_name = row_clause.column
-        target_col_value = utils.string_to_value(row_clause.column_value)
-        target_col_idx = M_c['name_to_idx'][target_col_name]
-        for row_id, T_row in enumerate(T):
-          row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
-          if row_values[target_col_idx] == target_col_value:
-            target_row_id = row_id
-            break
-    with_respect_to_clause = function_group.with_respect_to
-    if with_respect_to_clause != '':
-        column_set = with_respect_to_clause.column_list
-        target_column_names = []
-        for column_name in column_set:
-            if column_name == '*':
-                target_columns = None
-                break
-            elif column_lists is not None and column_name in column_lists.keys():
-                target_column_names.append(column_lists[column_name])
-            elif column_name in M_c['name_to_idx']:
-                target_column_names.append(column_name)
-            else:
-                raise utils.BayesDBParseError("Invalid query: column '%s' not found" % column_name)
-        target_columns = [M_c['name_to_idx'][column_name] for column_name in target_column_names]
-    
-    return _similarity, (target_row_id, target_columns), False
-
 ## TODO deprecate
 def parse_similarity_pairwise(colname, M_c, _, column_lists):
   """
@@ -247,76 +194,6 @@ def parse_similarity_pairwise(colname, M_c, _, column_lists):
   else:
       return False
       
-def parse_typicality(function_group, M_c):
-    '''
-    Returns a tuple of typicality_function, args, aggregate
-    '''
-    if function_group.column == '':
-        return _row_typicality, None, False
-    else:
-        colname = function_group.column
-        ##TODO Throw incorrect col_name exception
-        return _col_typicality, M_c['name_to_idx'][colname], True
-
-
-def parse_mutual_information(colname, M_c):
-  mutual_information_match = re.search(r"""
-      mutual_information
-      \s*\(\s*
-      (?P<col1>[^\s]+)
-      \s*,\s*
-      (?P<col2>[^\s]+)
-      \s*\)
-  """, colname, re.VERBOSE | re.IGNORECASE)
-  if not mutual_information_match:
-    mutual_information_match = re.search(r"""
-      MUTUAL\s+INFORMATION\s+OF\s+
-      (?P<col1>[^\s]+)
-      \s+(WITH|TO)\s+
-      (?P<col2>[^\s]+)
-    """, colname, re.VERBOSE | re.IGNORECASE)    
-  if mutual_information_match:
-      col1 = mutual_information_match.group('col1')
-      col2 = mutual_information_match.group('col2')
-      col1, col2 = M_c['name_to_idx'][col1.lower()], M_c['name_to_idx'][col2.lower()]
-      return col1, col2
-  else:
-      return None
-
-def get_cols_from_dependence_probability(function_group, M_c):
-    pass
-
-def aparse_dependence_probability(colname, M_c):
-  dependence_probability_match = re.search(r"""
-    DEPENDENCE\s+PROBABILITY\s+OF\s+
-    (?P<col1>[^\s]+)
-    \s+(WITH|TO)\s+
-    (?P<col2>[^\s]+)
-  """, colname, re.VERBOSE | re.IGNORECASE)    
-  if dependence_probability_match:
-      col1 = dependence_probability_match.group('col1')
-      col2 = dependence_probability_match.group('col2')
-      col1, col2 = M_c['name_to_idx'][col1.lower()], M_c['name_to_idx'][col2.lower()]
-      return col1, col2
-  else:
-      return None
-
-        
-def parse_correlation(colname, M_c):
-  correlation_match = re.search(r"""
-    CORRELATION\s+OF\s+
-    (?P<col1>[^\s]+)
-    \s+(WITH|TO)\s+
-    (?P<col2>[^\s]+)
-  """, colname, re.VERBOSE | re.IGNORECASE)    
-  if correlation_match:
-      col1 = correlation_match.group('col1')
-      col2 = correlation_match.group('col2')
-      col1, col2 = M_c['name_to_idx'][col1.lower()], M_c['name_to_idx'][col2.lower()]
-      return col1, col2
-  else:
-      return None
-
         
 #########################
 # single-column versions
