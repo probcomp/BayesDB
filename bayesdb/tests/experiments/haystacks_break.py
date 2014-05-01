@@ -258,8 +258,10 @@ def gen_parser():
     parser.add_argument('--seed', default=0, type=int)                  # data seed
     parser.add_argument('--ct_kernel', default=0, type=int)             # which kernel 0 for gibbs, 1 for MH
     parser.add_argument('--no_plots', action='store_true')              # do not plot
+    parser.add_argument('--no_runner', action='store_true')             # do not use experiment runner
     
     return parser
+
 
 
 if __name__ == "__main__":
@@ -274,21 +276,29 @@ if __name__ == "__main__":
     argsdict = eu.parser_args_to_dict(args)
     generate_plots = not argsdict['no_plots']
 
+    use_runner = not argsdict['no_runner']
+
     results_filename = 'haystacks_break_results'
     dirname_prefix = 'haystacks_break'
 
     er = ExperimentRunner(run_experiment, dirname_prefix=dirname_prefix, bucket_str='experiment_runner', storage_type='fs')
-    er.do_experiments([argsdict])
 
-    if generate_plots:
-        for id in er.frame.index:
-            result = er._get_result(id)
+    if use_runner:
+        er.do_experiments([argsdict], do_multiprocessing=False)
+
+        if generate_plots:
+            for id in er.frame.index:
+                result = er._get_result(id)
+                this_dirname = eru._generate_dirname(dirname_prefix, 10, result['config'])
+                filename_img = os.path.join(dirname_prefix, this_dirname, results_filename+'.png')
+                eu.plot_haystacks_break(result, filename=filename_img)
+                pass
+    else:
+        result = run_experiment(argsdict)
+
+    	if generate_plots:
             this_dirname = eru._generate_dirname(dirname_prefix, 10, result['config'])
             filename_img = os.path.join(dirname_prefix, this_dirname, results_filename+'.png')
-            eu.plot_haystacks(result, filename=filename_img)
-            pass
-        pass
-
-
-
+   	    eu.make_folder(os.path.join(dirname_prefix, this_dirname))
+            eu.plot_haystacks_break(result, filename=filename_img)
 
