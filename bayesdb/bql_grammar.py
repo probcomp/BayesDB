@@ -224,7 +224,7 @@ value = (QuotedString('"', escChar='\\') |
          sub_query)
 filename = (QuotedString('"', escChar='\\') | 
             QuotedString("'", escChar='\\') | 
-            Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")).setResultsName("filename")
+            Word(alphanums + "!\"/#$%&'()*+,-.:<=>?@[\]^_`{|}~")).setResultsName("filename")
 data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword
 
 ###################################################################################

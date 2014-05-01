@@ -129,7 +129,7 @@ def test_composite_keywords_pyparsing():
     with_respect_to = with_respect_to_keyword.parseString("with Respect to",parseAll=True)
     assert with_respect_to[0] == 'with respect to'
     probability_of = probability_of_keyword.parseString('probability of',parseAll=True)
-    assert probability_of[0] == 'probability of'
+    assert probability_of[0] == 'probability'
     predictive_probability_of = predictive_probability_of_keyword.parseString('predictive Probability  of',parseAll=True)
     assert predictive_probability_of[0] == 'predictive probability'
     save_connected_components_with_threshold = save_connected_components_with_threshold_keyword.parseString(
@@ -145,10 +145,10 @@ def test_valid_values_names_pyparsing():
         '.4',
         '4.',
         "'\sjekja8391(*^@(%()!@#$%^&*()_+=-~'",
-        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~",
-        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~',
-        '"c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\\"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~"',
-        "'d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\\'()*+,-./:;<=>?@[\]^_`{|}~'",
+        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+-./:<=>?@[\]^_`{|}~",
+        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+-./:<=>?@[\]^_`{|}~',
+        '"c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\\"#$%&\'()*+-./:<=>?@[\]^_`{|}~"',
+        "'d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\\'()*+-./:<=>?@[\]^_`{|}~'",
         "'numbers 0'", 
         "'k skj s'",
         ]
@@ -158,10 +158,10 @@ def test_valid_values_names_pyparsing():
         '.4',
         '4.',
         '\sjekja8391(*^@(%()!@#$%^&*()_+=-~',
-        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~",
-        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~',
-        "c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~",
-        "d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~",
+        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+-./:<=>?@[\]^_`{|}~",
+        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+-./:<=>?@[\]^_`{|}~',
+        "c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+-./:<=>?@[\]^_`{|}~",
+        "d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+-./:<=>?@[\]^_`{|}~",
         'numbers 0', 
         'k skj s',
         ]
@@ -196,7 +196,7 @@ def test_valid_values_names_pyparsing():
     assert int_number.parseString('11',parseAll=True)[0] == '11'
     assert float_number.parseString('11.01',parseAll=True)[0] == '11.01'
     assert filename.parseString("~/filename.csv",parseAll=True)[0] == "~/filename.csv"
-    assert filename.parseString("!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~",parseAll=True)[0] == "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~"
+    assert filename.parseString("!\"/#$%&'()*+-.:<=>?@[\]^_`{|}~",parseAll=True)[0] == "!\"/#$%&'()*+-.:<=>?@[\]^_`{|}~"
     assert filename.parseString("'/filename with space.csv'",parseAll=True)[0] == "/filename with space.csv"
 
 def test_simple_functions():
@@ -394,7 +394,7 @@ def test_probability_of_function_pyparsing():
     probability_of_1 = probability_of_function.parseString("PROBABILITY OF col_1 = 1",parseAll=True)
     probability_of_2 = probability_of_function.parseString("PROBABILITY OF col_1 = 'value'",parseAll=True)
     probability_of_3 = probability_of_function.parseString("PROBABILITY OF col_1 = value",parseAll=True)
-    assert probability_of_1.function.function_id == 'probability of'
+    assert probability_of_1.function.function_id == 'probability'
     assert probability_of_1.function.column == 'col_1'
     assert probability_of_1.function.value == '1'
     assert probability_of_2.function.value == 'value'
@@ -647,7 +647,7 @@ def test_select_functions_pyparsing():
     assert select_ast_1.functions[0].function_id == 'typicality'
     assert select_ast_2.functions[0].function_id == 'typicality'
     assert select_ast_3.functions[0].function_id == 'predictive probability'
-    assert select_ast_4.functions[0].function_id == 'probability of'
+    assert select_ast_4.functions[0].function_id == 'probability'
     assert select_ast_5.functions[0].function_id == 'similarity to'
     assert select_ast_5.functions[0].function_id == 'similarity to'
     assert select_ast_6.functions[0].function_id == 'dependence probability'
@@ -712,7 +712,7 @@ def test_infer_pyparsing():
     assert infer_ast_1.functions[0].function_id == 'typicality'
     assert infer_ast_2.functions[0].function_id == 'typicality'
     assert infer_ast_3.functions[0].function_id == 'predictive probability'
-    assert infer_ast_4.functions[0].function_id == 'probability of'
+    assert infer_ast_4.functions[0].function_id == 'probability'
     assert infer_ast_5.functions[0].function_id == 'similarity to'
     assert infer_ast_5.functions[0].function_id == 'similarity to'
     assert infer_ast_6.functions[0].function_id == 'dependence probability'
