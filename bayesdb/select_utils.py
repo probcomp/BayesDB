@@ -35,8 +35,10 @@ import data_utils as du
 from pyparsing import *
 import bayesdb.bql_grammar as bql_grammar
 
-def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):## TODO Deprecate
-  if whereclause == None:
+def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
+  whereclause = "WHERE " + whereclause # Temporary while partially switched to pyparsing
+#  print whereclause
+  if whereclause == "WHERE ":
     return ""
   ## Create conds: the list of conditions in the whereclause.
   ## List of (c_idx, op, val) tuples.
@@ -102,12 +104,13 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):## TODO D
     elif inner_element.function.column != '':
       colname = inner_element.function.column
       if M_c['name_to_idx'].has_key(colname.lower()):
-        if utils.get_cctype_from_M_c(M_c, colname.lower()):
+        if utils.get_cctype_from_M_c(M_c, colname.lower()) != 'continuous':
           val = str(val)## TODO hack, fix with util
         conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
         continue
       raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
     raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
+  print conds
   return conds
 
 def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend, tablename):
