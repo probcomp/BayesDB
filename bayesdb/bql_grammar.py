@@ -213,7 +213,7 @@ semicolon_literal = Literal(";")
 comma_literal = Literal(",")
 hyphen_literal = Literal("-")
 all_column_literal = Literal('*')
-identifier = (Word(alphas, alphanums + "_.").setParseAction(downcaseTokens)) | sub_query
+identifier = (Word(alphas + '/', alphanums + "_./").setParseAction(downcaseTokens)) | sub_query
 btable = identifier.setResultsName("btable") | sub_query
 comment = (Literal('--') + restOfLine).suppress()
 # single and double quotes inside value must be escaped. 
