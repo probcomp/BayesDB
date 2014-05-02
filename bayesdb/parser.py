@@ -42,7 +42,10 @@ class Parser(object):
         return bql_blob_ast
         
     def split_statements(self,bql_blob_ast):
-        pass
+        """
+        returns a list of bql statements, not necessarily useful. 
+        """
+        return [bql_statement_ast for bql_statement_ast in bql_blob_ast]
 
     def parse_single_statement(self,bql_statement_ast):
         ## TODO Check for nest
@@ -278,8 +281,23 @@ class Parser(object):
 ## ----------------------------- Sub query parsing  ------------------------------ ##
 #####################################################################################
 
-    def parse_where_clause(self, where_clause_ast): ##Deprecate select_utils.get_conditions_from_whereclause
-        print "where_clause"
+    def parse_where_clause(self, where_clause_ast, M_c, T, column_lists): ##Deprecate select_utils.get_conditions_from_whereclause
+        """
+        Creates conditions: the list of conditions in the whereclause
+        List of (c_idx, op, val)
+        """
+        conditions = []
+        operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq,
+                        '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
+        for single_condition in where_clause_ast.where_conditions:
+            ## TODO implement confidence in whereclause
+            pass
+            
+        
+        
+
+        return conditions
+#        print "where_clause"
 
     def parse_order_by_clause(self, order_by_clause_ast):
         print "order_by"

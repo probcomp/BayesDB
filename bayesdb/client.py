@@ -97,7 +97,8 @@ class Client(object):
 
         return_list = []
             
-        lines = self.parser.split_lines(bql_string)
+        lines = self.parser.split_statements(self.parser.pyparse_input(bql_string))
+        
         # Iterate through lines with while loop so we can append within loop.
         while len(lines) > 0:
             line = lines.pop(0)
@@ -141,7 +142,7 @@ class Client(object):
             start_time = time.time()
 
         try:
-            parser_out  = self.parser.parse_statement(bql_statement_string)
+            parser_out  = self.parser.parse_single_statement(bql_statement_string)
         except Exception as e:
             raise utils.BayesDBParseError(str(e))
         if parser_out is None:

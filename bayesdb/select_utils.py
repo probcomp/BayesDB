@@ -35,19 +35,15 @@ import data_utils as du
 from pyparsing import *
 import bayesdb.bql_grammar as bql_grammar
 
-def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
-  whereclause = "WHERE " + whereclause # Temporary while partially switched to pyparsing
-  if whereclause == "WHERE ":
+def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):## TODO Deprecate
+  if whereclause == None:
     return ""
   ## Create conds: the list of conditions in the whereclause.
   ## List of (c_idx, op, val) tuples.
   conds = list() 
   operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
-  try:
-    top_level_parse = bql_grammar.where_clause.parseString(whereclause,parseAll=True)
-  except ParseException as x:
-    
-    raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
+  
+  top_level_parse = whereclause
   for inner_element in top_level_parse.where_conditions:
     if inner_element.confidence != '':
       confidence = inner_element.confidence
@@ -128,79 +124,6 @@ def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend
       if not op(val, where_value): # for operator.contains, op(a,b) means 'b in a': so need to switch args.
         return False
   return True
-
-def get_queries_from_columnstring(columnstring, M_c, T, column_lists): ##TODO deprecate
-    """
-    Iterate through the columnstring portion of the input, and generate the query list.
-    queries is a list of (query_function, query_args, aggregate) tuples,
-    where query_function is: row_id, column, probability, similarity.
-    
-    For row_id: query_args is ignored (so it is None).
-    For column: query_args is a c_idx.
-    For probability: query_args is a (c_idx, value) tuple.
-    For similarity: query_args is a (target_row_id, target_column) tuple.
-    """
-    query_colnames = [colname.strip() for colname in utils.column_string_splitter(columnstring, M_c, column_lists)]
-    queries = []
-    for idx, colname in enumerate(query_colnames):
-      #####################
-      # Single column functions (aggregate)
-      #####################
-      c = functions.parse_column_typicality(colname, M_c)
-      if c is not None:
-        queries.append((functions._col_typicality, c, True))
-        continue
-        
-      m = functions.parse_mutual_information(colname, M_c)
-      if m is not None:
-        queries.append((functions._mutual_information, m, True))
-        continue
-
-      d = functions.parse_dependence_probability(colname, M_c)
-      if d is not None:
-        queries.append((functions._dependence_probability, d, True))
-        continue
-
-      c = functions.parse_correlation(colname, M_c)
-      if c is not None:
-        queries.append((functions._correlation, c, True))
-        continue
-
-      p = functions.parse_probability(colname, M_c)
-      if p is not None:
-        queries.append((functions._probability, p, True))
-        continue
-
-      #####################
-      ## Normal functions (of a cell)
-      ######################
-      s = functions.parse_similarity(colname, M_c, T, column_lists)
-      if s is not None:
-        queries.append((functions._similarity, s, False))
-        continue
-
-      t = functions.parse_row_typicality(colname)
-      if t is not None:
-        queries.append((functions._row_typicality, None, False))
-        continue
-
-      p = functions.parse_predictive_probability(colname, M_c)
-      if p is not None:
-        queries.append((functions._predictive_probability, p, False))
-        continue
-
-      ## If none of above query types matched, then this is a normal column query.
-      if colname.lower() in M_c['name_to_idx']:
-        queries.append((functions._column, M_c['name_to_idx'][colname], False))
-        continue
-
-      raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)        
-
-    ## Always return row_id as the first column.
-    query_colnames = ['row_id'] + query_colnames
-    queries = [(functions._row_id, None, False)] + queries
-    
-    return queries, query_colnames
 
 def convert_row_from_codes_to_values(row, M_c):
   """
