@@ -290,8 +290,11 @@ class Parser(object):
         operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq,
                         '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
         for single_condition in where_clause_ast.where_conditions:
-            ## TODO implement confidence in whereclause
-            pass
+            ## Confidence in the where clause not yet handled by client/engine. 
+            confidence = None
+            if single_condition.confidence != '':
+                confidence = int(single_condition.confidence)
+            
             
         
         
