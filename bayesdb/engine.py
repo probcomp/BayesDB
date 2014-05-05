@@ -522,6 +522,7 @@ class Engine(object):
     name_to_idx = M_c['name_to_idx']
 
     # parse givens
+    ## TODO throw exception for <,> without dissallowing them in the values. 
     given_col_idxs_to_vals = dict()
     if givens=="" or '=' not in givens:
       Y = None
