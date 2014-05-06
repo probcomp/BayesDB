@@ -28,6 +28,7 @@ import bql_grammar as bql
 import pyparsing as pp
 import ast
 import functions
+import operator
 
 class Parser(object):
     def __init__(self):
@@ -255,11 +256,11 @@ class Parser(object):
 
     def get_args_typicality(self,function_group, M_c):
         """
-        returns column_index if present, if not, returns None. 
+        returns column_index if present, if not, returns True. ##TODO this needs a ton of testing
         if invalid column, raises exception
         """
         if function_group.column == '':
-            return None
+            return True
         else:
             return utils.get_index_from_colname(M_c, function_group.column)
 
@@ -289,18 +290,56 @@ class Parser(object):
         conditions = []
         operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq,
                         '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
-        for single_condition in where_clause_ast.where_conditions:
+
+        for single_condition in where_clause_ast:
             ## Confidence in the where clause not yet handled by client/engine. 
             confidence = None
             if single_condition.confidence != '':
                 confidence = int(single_condition.confidence)
-            
-            
-        
-        
-
+                
+            raw_value = single_condition.value
+            function = None
+            args = None
+            if single_condition.function.function_id == 'typicality':
+                value = utils.value_string_to_num(raw_value)
+                function = functions._row_typicality
+                assert self.get_args_typicality(single_condition.function, M_c) == True
+                args = True
+            elif single_condition.function.function_id == 'similarity to':
+                value = utils.value_string_to_num(raw_value)
+                function = functions._similarity
+                args = self.get_args_similarity(single_condition.function, M_c, T, column_lists)
+            elif single_condition.function.function_id == 'predictive probability':
+                value = utils.value_string_to_num(raw_value)
+                function = functions._predictive_probability
+                args = self.get_args_pred_prob(single_condition.function, M_c)
+            #todo elif column
+            elif single_condition.function.function_id == 'key in':
+                value = raw_value
+                ##TODO 
+            elif single_condition.function.column != '':
+                ## whereclause of the form "where col = val" 
+                column_name = single_condition.function.column
+                assert column_name != '*'
+                if column_name in M_c['name_to_idx']:
+                    args = M_c['name_to_idx'][column_name]
+                    value = utils.string_to_column_type(raw_value, column_name, M_c)
+                    function = functions._column
+                else:
+                    raise utils.BayesDBParseError("Invalid where clause: column %s was not found in the table" % 
+                                                  column_name)
+            else:
+                if single_condition.function.function_id != '':
+                    raise utils.BayesDBParseError("Invalid where clause: %s not allowed." % 
+                                                  single_condition.function.function_id)
+                else: 
+                    raise utils.BayesDBParseError("Invalid where clause. Unrecognized function")
+            if single_condition.operation != '':
+                op = operator_map[single_condition.operation]
+            else: 
+                raise utils.BayesDBParseError("Invalid where clause: no operator found")
+            conditions.append(((function, args), op, value))
         return conditions
-#        print "where_clause"
 
     def parse_order_by_clause(self, order_by_clause_ast):
         print "order_by"

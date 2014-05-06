@@ -110,8 +110,18 @@ def is_float(s):
     except ValueError:
         return False
 
+def value_string_to_num(value_string):
+    if is_int(value_string) == True:
+        value = int(value_string)
+    elif is_float(value_string) == True:
+        value = float(value_string)
+    else: 
+        raise BayesDBParseError("Number expected for value: %s" % value_string)
+    return value
+
 def string_to_column_type(value_string, column, M_c):
     """
+    column is the string of the column name
     Checks the type of the column in question based on M_c
     If continuous, converts the value from string to int or float
     """
