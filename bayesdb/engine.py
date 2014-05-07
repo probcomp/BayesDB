@@ -46,6 +46,8 @@ import functions
 import select_utils
 import estimate_columns_utils
 import plotting_utils
+#from parser import Parser
+import parser as p
 
 class Engine(object):
   def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing', seed=None, **kwargs):
@@ -54,6 +56,7 @@ class Engine(object):
     want a deterministic one. """
     
     self.persistence_layer = PersistenceLayer()
+    self.parser = p.Parser()
 
     if crosscat_host is None or crosscat_host == 'localhost':
       self.online = False
@@ -431,7 +434,8 @@ class Engine(object):
     return self.select(tablename, columnstring, whereclause, limit, order_by,
                        impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, summarize=summarize)
     
-  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False):
+#  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False):
+  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False):
     """
     BQL's version of the SQL SELECT query.
     
@@ -458,13 +462,18 @@ class Engine(object):
     #   a function like row_id, column, similarity, or typicality, and 'query_args' are the function-specific
     #   arguments that that function takes (in addition to the normal arguments, like M_c, X_L_list, etc).
     #   aggregate specifies whether that individual function is aggregate or not
-    queries, query_colnames = select_utils.get_queries_from_columnstring(columnstring, M_c, T, column_lists)
-    utils.check_for_duplicate_columns(query_colnames)
+
+#    queries, query_colnames = select_utils.get_queries_from_columnstring(columnstring, M_c, T, column_lists)
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, column_lists)
+    
+#    utils.check_for_duplicate_columns(query_colnames)
 
     # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
-    # TODO: support functions in where_conditions. right now we only support actual column values.
-    where_conditions = select_utils.get_conditions_from_whereclause(whereclause, M_c, T, column_lists)
-
+    if whereclause == None: 
+      whereclase = ''
+      where_conditions = None
+    else:
+      where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, column_lists)
     # If there are no models, make sure that we aren't using functions that require models.
     # TODO: make this less hardcoded
     if len(X_L_list) == 0:
@@ -480,12 +489,10 @@ class Engine(object):
           for order_by_f in order_by_functions:
             if fname in order_by_f:
               raise utils.BayesDBNoModelsError(tablename)              
-
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
-    filtered_rows = select_utils.filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, self,
+    filtered_rows = select_utils.filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, self,
                                                         query_colnames, impute_confidence, num_impute_samples, tablename)
-
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
     ## (and maybe temporarily augmented with all functions that will be ordered only)

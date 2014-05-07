@@ -358,7 +358,7 @@ class Parser(object):
         For similarity: query_args is a (target_row_id, target_column) tuple.
         '''
         ## Always return row_id as the first column.
-        query_colnames = ['row_id']
+        query_colnames = ['row_id'] ##TODO update for more information
         queries = [(functions._row_id, None, False)]
 
         for function_group in function_groups: ##TODO throw exception, make safe
@@ -366,6 +366,7 @@ class Parser(object):
                 queries.append((functions._predictive_probability, 
                                 self.get_args_pred_prob(function_group, M_c), 
                                 False))
+                query_colnames.append('predictive probability of %s' % function_group.column)
             elif function_group.function_id == 'typicality':
                 if function_group.column != '':
                     queries.append((functions._col_typicality, 
@@ -375,6 +376,7 @@ class Parser(object):
                     queries.append((functions._row_typicality,
                                     self.get_args_typicality(function_group, M_c), 
                                     False))
+                query_colnames.append('typicality') ##TODO of
             elif function_group.function_id == 'probability':
                 queries.append((functions._probability, 
                                 self.get_args_prob(function_group, M_c), 
@@ -384,18 +386,22 @@ class Parser(object):
                 queries.append((functions._similarity, 
                                 self.get_args_similarity(function_group, M_c, T, column_lists), 
                                 False))
+                query_colnames.append('similarity to') ##TODO of/with respect
             elif function_group.function_id == 'dependence probability':
                 queries.append((functions._dependence_probability, 
                                 self.get_args_of_with(function_group, M_c), 
                                 True))
+                query_colnames.append('dependence probability') ##TODO of/with respect
             elif function_group.function_id == 'mutual information':
                 queries.append((functions._mutual_information, 
                                 self.get_args_of_with(function_group, M_c), 
                                 True))
+                query_colnames.append('mutual information') ##TODO of/with respect
             elif function_group.function_id == 'correlation':
                 queries.append((functions._correlation, 
                                 self.get_args_of_with(function_group, M_c), 
                                 True))
+                query_colnames.append('correlation') ##TODO of/with respect
             ## single column, column_list, or *
             ## TODO maybe split to function
             ## TODO handle nesting
@@ -405,20 +411,24 @@ class Parser(object):
                     assert M_c is not None
                     all_columns = utils.get_all_column_names_in_original_order(M_c)
                     index_list = [M_c['name_to_idx'][column_name] for column_name in all_columns]
+                    name_list = [name for name in all_columns]
                 elif (column_lists is not None) and (column_name in column_lists.keys()):
-                    index_list = column_lists[column_name]
+                    index_list = [column_lists[column_name]]
+                    name_list = [column_name]
                 elif column_name in M_c['name_to_idx']:
                     index_list = [M_c['name_to_idx'][column_name]]
+                    name_list = [column_name]
                 else:
                     raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % column_name)
                 queries += [(functions._column, column_index , False) for column_index in index_list]
+                query_colnames += [name for name in name_list]
+                
 
         return queries, query_colnames
 
 #####################################################################################
 ## --------------------------- Other Helper functions ---------------------------- ##
 #####################################################################################
-
 
     def set_root_dir(self, root_dir):
         """Set the root_directory, used as the base for all relative paths."""

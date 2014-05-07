@@ -157,9 +157,9 @@ def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list,
     return correlation
 
 
-##############################################
-# function parsing
-##############################################
+################################################
+# ------------- function parsing ------------- #
+################################################
 
 ## TODO deprecate
 def parse_similarity_pairwise(colname, M_c, _, column_lists):
@@ -195,9 +195,9 @@ def parse_similarity_pairwise(colname, M_c, _, column_lists):
       return False
       
         
-#########################
-# single-column versions
-#########################
+################################################
+# ---------- single-column versions ---------- #
+################################################
 
 ## TODO deprecate
 def parse_cfun_column_typicality(colname, M_c):

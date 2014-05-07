@@ -37,6 +37,9 @@ import bayesdb.bql_grammar as bql_grammar
 
 def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend, tablename):
   """Helper function that applies WHERE conditions to row, returning True if row satisfies where clause."""
+  ## TODO make better, this takes no where conditions to mean that all rows are valid
+  if where_conditions == None:
+    return True
   for ((func, f_args), op, val) in where_conditions:
     where_value = func(f_args, idx, row, M_c, X_L_list, X_D_list, T, backend)    
     if func != functions._row_id:
@@ -63,7 +66,7 @@ def convert_row_from_codes_to_values(row, M_c):
       ret.append(code)
   return tuple(ret)
 
-def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_list, engine, query_colnames,
+def filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, engine, query_colnames,
                            impute_confidence, num_impute_samples, tablename):
     """
     impute_confidence: if None, don't impute. otherwise, this is the imput confidence
@@ -71,7 +74,6 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
     and fill in imputed values.
     """
     filtered_rows = list()
-
     if impute_confidence is not None:
       t_array = numpy.array(T, dtype=float)
       infer_colnames = query_colnames[1:] # remove row_id from front of query_columns, so that infer doesn't infer row_id
@@ -79,6 +81,7 @@ def filter_and_impute_rows(where_conditions, whereclause, T, M_c, X_L_list, X_D_
 
     for row_id, T_row in enumerate(T):
       row_values = convert_row_from_codes_to_values(T_row, M_c) ## Convert row from codes to values
+
       if is_row_valid(row_id, row_values, where_conditions, M_c, X_L_list, X_D_list, T, engine, tablename): ## Where clause filtering.
         if impute_confidence is not None:
           ## Determine which values are 'nan', which need to be imputed.
