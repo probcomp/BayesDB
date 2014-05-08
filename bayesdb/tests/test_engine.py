@@ -296,9 +296,10 @@ def test_simulate():
   
   columnstring = 'name, qual_score'
   whereclause = ''
+  givens = ''
   order_by = False
   numpredictions = 10
-  simulate_result = engine.simulate(test_tablename, columnstring, '', whereclause, numpredictions, order_by)
+  simulate_result = engine.simulate(test_tablename, columnstring, '', givens, whereclause, numpredictions, order_by)
   assert 'columns' in simulate_result
   assert 'data' in simulate_result
   assert simulate_result['columns'] == ['name', 'qual_score']

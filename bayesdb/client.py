@@ -230,7 +230,7 @@ class Client(object):
         if ('plot' in client_dict and client_dict['plot']):
             if (plots or client_dict['filename']):
                 # Plot generalized histograms or scatterplots
-                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], client_dict['pairwise'])
+                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], True) # pairwise always true
                 return self.pretty_print(result)
             else:
                 if 'message' not in result:

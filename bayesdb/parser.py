@@ -300,13 +300,13 @@ class Parser(object):
 
             
     def help_infer(self):
-        return "[SUMMARIZE] INFER [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [SAVE TO <file>]: like select, but imputes (fills in) missing values."
+        return "[SUMMARIZE | PLOT] INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [SAVE TO <file>]: like select, but imputes (fills in) missing values."
         
     def parse_infer(self, words, orig):
         match = re.search(r"""
             ((?P<summarize>summarize)?)?\s*
+            ((?P<plot>(plot|scatter)))?\s*
             infer\s+
-            ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
             (where\s+(?P<whereclause>.*(?=with)))?
@@ -345,10 +345,8 @@ class Parser(object):
             plot = match.group('plot') is not None
             if plot:
                 scatter = 'scatter' in match.group('plot')
-                pairwise = match.group('pairwise') is not None
             else:
                 scatter = False
-                pairwise = False                
                 
             if match.group('filename'):
                 filename = match.group('filename')
@@ -358,7 +356,7 @@ class Parser(object):
                    dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
                         confidence=confidence, whereclause=whereclause, limit=limit,
                         numsamples=numsamples, order_by=order_by, plot=plot, modelids=modelids, summarize=summarize), \
-                   dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
+                   dict(plot=plot, scatter=scatter, filename=filename)
 
             
             
@@ -406,13 +404,13 @@ class Parser(object):
 
             
     def help_select(self):
-        return '[SUMMARIZE] SELECT [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [SAVE TO <filename>]'
+        return '[SUMMARIZE | PLOT] SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [SAVE TO <filename>]'
         
     def parse_select(self, words, orig):
         match = re.search(r"""
-            ((?P<summarize>summarize)?)?\s*        
+            ((?P<summarize>summarize)?)?\s*
+            ((?P<plot>(plot|scatter)))?\s*        
             select\s+
-            ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*      
             (?P<columnstring>.*?((?=from)))
             \s*from\s+(?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
@@ -438,10 +436,8 @@ class Parser(object):
             plot = match.group('plot') is not None
             if plot:
                 scatter = 'scatter' in match.group('plot')
-                pairwise = match.group('pairwise') is not None
             else:
                 scatter = False
-                pairwise = False
 
             if match.group('filename'):
                 filename = match.group('filename')
@@ -450,20 +446,21 @@ class Parser(object):
 
             return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
                                   limit=limit, order_by=order_by, plot=plot, modelids=modelids, summarize=summarize), \
-              dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
+              dict(scatter=scatter, filename=filename, plot=plot)
 
 
     def help_simulate(self):
-        return "[SUMMARIZE] SIMULATE [HIST|SCATTER [PAIRWISE]] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [USING MODEL[S] <id>-<id>] [SAVE TO <filename>]: simulate new datapoints based on the underlying model."
+        return "[SUMMARIZE | PLOT] SIMULATE <columns> FROM <btable> [GIVEN <givens>] [WHERE <whereclause>] TIMES <times> [USING MODEL[S] <id>-<id>] [SAVE TO <filename>]: simulate new datapoints based on the underlying model."
 
     def parse_simulate(self, words, orig):
         match = re.search(r"""
-            ((?P<summarize>summarize)?)?\s*        
+            ((?P<summarize>summarize)?)?\s*
+            ((?P<plot>(plot|scatter)))?\s*        
             simulate\s+
-            ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
-            ((given|where)\s+(?P<givens>.*(?=times)))?
+            (given\s+(?P<givens>.*((?=times)|(?=where))))?
+            (where\s+(?P<whereclause>.*?((?=limit)|(?=times)|$)))?
             times\s+(?P<times>\d+)
             (\s*save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
@@ -479,6 +476,12 @@ class Parser(object):
                 givens = ''
             else:
                 givens = givens.strip()
+            whereclause = match.group('whereclause')
+            if whereclause is None:
+                whereclause = ''
+            else:
+                whereclause = whereclause.strip()
+                
             numpredictions = int(match.group('times'))
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
@@ -487,10 +490,8 @@ class Parser(object):
             plot = match.group('plot') is not None
             if plot:
                 scatter = 'scatter' in match.group('plot')
-                pairwise = match.group('pairwise') is not None
             else:
                 scatter = False
-                pairwise = False
             
             if match.group('filename'):
                 filename = match.group('filename')
@@ -498,8 +499,9 @@ class Parser(object):
                 filename = None            
             return 'simulate', \
                     dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
-                         givens=givens, numpredictions=numpredictions, order_by=order_by, plot=plot, modelids=modelids, summarize=summarize), \
-                    dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
+                         givens=givens, whereclause=whereclause, numpredictions=numpredictions,
+                         order_by=order_by, plot=plot, modelids=modelids, summarize=summarize), \
+                    dict(filename=filename, plot=plot, scatter=scatter)
 
     def help_show_row_lists(self):
         return "SHOW ROW LISTS FOR <btable>"

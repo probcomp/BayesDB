@@ -194,7 +194,7 @@ def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
         queries.append((functions._column, M_c['name_to_idx'][colname], False))
         continue
 
-      raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)        
+      raise utils.BayesDBParseError("Invalid query argument: could not parse '%s'" % colname)        
 
     ## Always return row_id as the first column.
     query_colnames = ['row_id'] + query_colnames

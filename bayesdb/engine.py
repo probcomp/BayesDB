@@ -506,8 +506,9 @@ class Engine(object):
       ret['columns'] = columns
     return ret
 
-  def simulate(self, tablename, columnstring, newtablename, givens, numpredictions, order_by, plot=False, modelids=None, summarize=False):
+  def simulate(self, tablename, columnstring, newtablename, givens, whereclause, numpredictions, order_by, plot=False, modelids=None, summarize=False):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
+    # TODO: whereclause not implemented.
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     if not self.persistence_layer.has_models(tablename):
