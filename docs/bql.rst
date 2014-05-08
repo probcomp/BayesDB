@@ -104,15 +104,15 @@ BayesDB has five fundamental query statements: SELECT, INFER, SIMULATE, ESTIMATE
 
 SELECT is just like SQL's SELECT, except in addition to selecting, filtering (with where), and ordering raw column values, you may also use predictive functions in any of those clauses::
 
-   SELECT [HIST] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <file>]
+   SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>]
 
 INFER is just like SELECT, except that it also tries to fill in missing values. The user must specify the desired confidence level to use (a number between 0 and 1, where 0 means "fill in every missing value with whatever your best guess is", and 1 means "only fill in a missing value if you're sure what it is"). Optionally, the user may specify the number of samples to use when filling in missing values: the default value is good in general, but if you know what you're doing and want higher accuracy, you can increase the numer of samples used::
 
-   INFER [HIST] <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <file>]
+   INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>]
 
 SIMULATE generates new rows from the underlying probability model a specified number of times::
 
-   SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <file>]
+   SIMULATE <columns> FROM <btable> [WHERE <whereclause>] TIMES <times>
 
 ESTIMATE COLUMNS is like a SELECT statement, but lets you select columns instead of rows::
 
@@ -136,6 +136,19 @@ In the above query specifications, you may be wondering what some of the notatio
 <whereclause> specifies an AND-separated list of <column|function> <operator> <value>, where operator must be one of (=, <, <=, >, >=)::
 
   SELECT * FROM table WHERE name = 'Bob' AND age <= 18 AND TYPICALITY > 0.5 ....
+
+Query Modifiers
+~~~~~~~~~~~~~~~
+
+SUMMARIZE or PLOT may be prepended to any query that returns table-formatted output (almost every query) in order to return a summary of the data table instead of the raw data itself. This is extremely useful as a tool to quickly understand a huge result set: it quickly becomes impossible to see trends in data by eye without the assistance of SUMMARIZE or PLOT.
+
+SUMMARIZE displays summary statistics of each of the output columns: for numerical data, it displays information like the mean, standard deviation, min, and max, and for categorical data it displays the most common values and their probabilities::
+
+  SUMMARIZE SELECT * FROM table...
+
+PLOT displays plots of the marginal distributions of every single output column, as well as the joint distributions of every pair of output columns. PLOT displays a heat map for pairs of numerical columns, the exact joint distribution for pairs of categorical columns, and a series of box plots for mixed numerical/categorical data. Many tools, like R and pandas, have functionality similar to PLOT when all the data is the same type, but PLOT is specially designed and implemented from the ground up to behave well with mixed datatypes::
+
+  PLOT SELECT * FROM table...
 
 
 Column Lists
