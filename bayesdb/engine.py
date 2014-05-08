@@ -610,6 +610,12 @@ class Engine(object):
       column_names = list(M_c['name_to_idx'].keys())
     return dict(columns=column_names)
 
+  def show_model(self, tablename, modelid, filename):
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    import crosscat.utils.plot_utils
+    crosscat.utils.plot_utils.plot_views(numpy.array(T), X_D_list[modelid], X_L_list[modelid], M_c, filename)
+
   def estimate_columns(self, tablename, columnstring, whereclause, limit, order_by, name=None, modelids=None):
     """
     Return all the column names from the specified table as a list.
