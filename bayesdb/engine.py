@@ -46,7 +46,6 @@ import functions
 import select_utils
 import estimate_columns_utils
 import plotting_utils
-#from parser import Parser
 import parser as p
 
 class Engine(object):
@@ -416,7 +415,7 @@ class Engine(object):
     ret['message'] = 'Analyze complete.'
     return ret
 
-  def infer(self, tablename, columnstring, newtablename, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False):
+  def infer(self, tablename, functions, newtablename, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False):
     """
     Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
@@ -429,12 +428,11 @@ class Engine(object):
       raise utils.BayesDBNoModelsError(tablename)      
     
     if numsamples is None:
-      numsamples=50
+      numsamples=50 ##TODO maybe put this in a config file
       
-    return self.select(tablename, columnstring, whereclause, limit, order_by,
+    return self.select(tablename, functions, whereclause, limit, order_by,
                        impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, summarize=summarize)
     
-#  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False):
   def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False):
     """
     BQL's version of the SQL SELECT query.
@@ -463,10 +461,8 @@ class Engine(object):
     #   arguments that that function takes (in addition to the normal arguments, like M_c, X_L_list, etc).
     #   aggregate specifies whether that individual function is aggregate or not
 
-#    queries, query_colnames = select_utils.get_queries_from_columnstring(columnstring, M_c, T, column_lists)
     queries, query_colnames = self.parser.parse_functions(functions, M_c, T, column_lists)
-    
-#    utils.check_for_duplicate_columns(query_colnames)
+    ##TODO check duplicates
 
     # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
     if whereclause == None: 
@@ -513,7 +509,7 @@ class Engine(object):
       ret['columns'] = columns
     return ret
 
-  def simulate(self, tablename, columnstring, newtablename, givens, numpredictions, order_by, plot=False, modelids=None, summarize=False):
+  def simulate(self, tablename, functions, newtablename, givens, numpredictions, order_by, plot=False, modelids=None, summarize=False):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
@@ -531,7 +527,7 @@ class Engine(object):
     # parse givens
     ## TODO throw exception for <,> without dissallowing them in the values. 
     given_col_idxs_to_vals = dict()
-    if givens=="" or '=' not in givens:
+    if givens == None or givens=="" or '=' not in givens: ##TODO refactor with pyparsing
       Y = None
     else:
       varlist = [[c.strip() for c in b.split('=')] for b in re.split(r'and|,', givens, flags=re.IGNORECASE)]
@@ -547,13 +543,17 @@ class Engine(object):
 
       # map values to codes
       Y = [(r, c, data_utils.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
-
+    
+    
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
-    colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
-    colnames = [c.lower() for c in colnames]
-    utils.check_for_duplicate_columns(colnames)
-    col_indices = [name_to_idx[colname] for colname in colnames]
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, column_lists)
+    ##TODO check duplicates
+    ##TODO check for no functions
+    
+    ##TODO col_indices, colnames are a hack from old parsing
+    col_indices = [query[1] for query in queries[1:]]
+    colnames = query_colnames[1:]
     query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
 
@@ -762,10 +762,10 @@ class Engine(object):
 get_name = lambda x: getattr(x, '__name__')
 get_Engine_attr = lambda x: getattr(Engine, x)
 is_Engine_method_name = lambda x: inspect.ismethod(get_Engine_attr(x))
-#
+
 def get_method_names():
     return filter(is_Engine_method_name, dir(Engine))
-#
+
 def get_method_name_to_args():
     method_names = get_method_names()
     method_name_to_args = dict()

@@ -140,8 +140,45 @@ class Parser(object):
     def parse_load_models(self,bql_statement_ast):
         return 'load_models', dict(tablename=bql_statement_ast.btable), dict(pkl_path=bql_statement_ast.filename)
 
+    ##TODO merge with parse_select
     def parse_infer(self,bql_statement_ast):
-        print "infer"
+        tablename = bql_statement_ast.btable
+        summarize = (bql_statement_ast.summarize == 'summarize') #TODO should be mutually exclusive?
+        plot = (bql_statement_ast.plot == 'plot')
+        scatter = (bql_statement_ast.scatter == 'scatter') ##TODO add to grammar
+        pairwise = (bql_statement_ast.pairwise == 'pairwise')
+        whereclause = None
+        if bql_statement_ast.where_conditions != '':
+            whereclause = bql_statement_ast.where_conditions
+        limit = float('inf')
+        if bql_statement_ast.limit != '':
+            limit = int(bql_statement_ast.limit)
+        filename = None
+        if bql_statement_ast.filename != '':
+            filename = bql_statement_ast.filename
+        order_by = False ##TODO maybe change to None
+        if bql_statement_ast.order_by != '':
+            order_by = bql_statement_ast.order_by.order_by_set.asList()
+        modelids = None
+        if bql_statement_ast.using_models_index_clause != '':
+            modelids = bql_statement_ast.using_models_index_clause.asList()
+        newtablename = None ##TODO implement into 
+        functions = bql_statement_ast.functions #TODO
+        confidence = 0
+        if bql_statement_ast.confidence != '':
+            confidence = float(bql_statement_ast.confidence)##TODO throw exception for not floats
+            if confidence > 1: 
+                raise utils.BayesDBParseError("Confidence cannot be greater than 0.")
+        numsamples = None
+        if bql_statement_ast.samples != '': ## throw exception for not ints
+            numsamples = int(bql_statement_ast.samples)
+        return 'infer', \
+            dict(tablename=tablename, functions=functions, 
+                 newtablename=newtablename, confidence=confidence, 
+                 whereclause=whereclause, limit=limit,
+                 numsamples=numsamples, order_by=order_by, 
+                 plot=plot, modelids=modelids, summarize=summarize), \
+            dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
 
     def parse_select(self,bql_statement_ast):
         ## TODO assert for extra pieces
@@ -167,13 +204,42 @@ class Parser(object):
         if bql_statement_ast.using_models_index_clause != '':
             modelids = bql_statement_ast.using_models_index_clause.asList()
         #TODO deprecate columnstring
+        #TODO add as for select newtablename
         return 'select', dict(tablename=tablename, whereclause=whereclause, 
                               functions=functions, limit=limit, order_by=order_by, plot=plot, 
                               modelids=modelids, summarize=summarize), \
             dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
     def parse_simulate(self,bql_statement_ast):
-        print "simulate"
+        ##TODO collapse with infer/select
+        ##TODO assert incorrect statements
+        tablename = bql_statement_ast.btable
+        functions = bql_statement_ast.functions
+        summarize = (bql_statement_ast.summarize == 'summarize') #TODO should be mutually exclusive?
+        plot = (bql_statement_ast.plot == 'plot')
+        scatter = (bql_statement_ast.scatter == 'scatter') ##TODO add to grammar
+        pairwise = (bql_statement_ast.pairwise == 'pairwise')
+        filename = None
+        newtablename = None ##TODO implement into 
+        if bql_statement_ast.filename != '':
+            filename = bql_statement_ast.filename
+        order_by = False ##TODO maybe change to None
+        if bql_statement_ast.order_by != '':
+            order_by = bql_statement_ast.order_by.order_by_set.asList()
+        modelids = None
+        if bql_statement_ast.using_models_index_clause != '':
+            modelids = bql_statement_ast.using_models_index_clause.asList()
+        givens = None
+        if bql_statement_ast.given_clause != '':
+            givens = bql_statement_ast.given_clause
+        numpredictions = int(bql_statement_ast.times)##TODO except
+        
+        return 'simulate', \
+            dict(tablename=tablename, functions=functions, 
+                 newtablename=newtablename, givens=givens, 
+                 numpredictions=numpredictions, order_by=order_by, 
+                 plot=plot, modelids=modelids, summarize=summarize), \
+            dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
     def parse_estimate_columns(self,bql_statement_ast):
         print "estimate_columns"
@@ -183,6 +249,8 @@ class Parser(object):
 
     def parse_estimate_pairwise(self,bql_statement_ast):
         print "estimate_pairwise"
+
+    ##TODO general parse_query to be meat of parse select, infer, simulate etc
 
 #####################################################################################
 ## ------------------------------ Function parsing ------------------------------- ##
@@ -295,7 +363,7 @@ class Parser(object):
             ## Confidence in the where clause not yet handled by client/engine. 
             confidence = None
             if single_condition.confidence != '':
-                confidence = int(single_condition.confidence)
+                confidence = float(single_condition.confidence)
                 
             raw_value = single_condition.value
             function = None
@@ -423,7 +491,6 @@ class Parser(object):
                 queries += [(functions._column, column_index , False) for column_index in index_list]
                 query_colnames += [name for name in name_list]
                 
-
         return queries, query_colnames
 
 #####################################################################################

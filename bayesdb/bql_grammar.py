@@ -45,6 +45,8 @@ schema_keyword = CaselessKeyword("schema")
 set_keyword = CaselessKeyword("set")
 categorical_keyword = CaselessKeyword("categorical")
 numerical_keyword = CaselessKeyword("numerical")
+continuous_keyword = CaselessKeyword("continuous")
+multinomial_keyword = CaselessKeyword("multinomial")
 ignore_keyword = CaselessKeyword("ignore")
 key_keyword = CaselessKeyword("key")
 initialize_keyword = CaselessKeyword("initialize").setResultsName("statement_id")
@@ -225,7 +227,7 @@ value = (QuotedString('"', escChar='\\') |
 filename = (QuotedString('"', escChar='\\') | 
             QuotedString("'", escChar='\\') | 
             Word(alphanums + "!\"/#$%&'()*+,-.:<=>?@[\]^_`{|}~")).setResultsName("filename")
-data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword
+data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword
 
 ###################################################################################
 # ------------------------------------ Functions -------------------------------- #
