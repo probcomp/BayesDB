@@ -850,10 +850,10 @@ class Parser(object):
             for orderable in utils.column_string_splitter(order_by_clause):
                 ## Check for DESC/ASC
                 desc = re.search(r'\s+(desc|asc)($|\s|,|(?=limit))', orderable, re.IGNORECASE)
-                if desc is not None and desc.group().strip().lower() == 'desc':
-                    desc = True
-                else:
+                if desc is not None and desc.group().strip().lower() == 'asc':
                     desc = False
+                else:
+                    desc = True
                 orderable = re.sub(r'\s+(desc|asc)($|\s|,|(?=limit))', '', orderable, flags=re.IGNORECASE)
                 orderables.append((orderable.strip(), desc))
                 
