@@ -152,6 +152,7 @@ def row_id_from_col_value(value, column, M_c, T):
                 raise BayesDBUniqueValueError("Invalid Query: column '%s' has more than one row with value '%s'." %(column, str(value)))
     return target_row_id
 
+##TODO move to engine
 def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, engine):
     q = [row_id, col_id]
     out = engine.call_backend('impute_and_confidence', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=[q], n=numsamples))
@@ -281,7 +282,7 @@ def summarize_table(data, columns, M_c):
 
     return data, columns
 
-#TODO replace
+#TODO deprecate
 def column_string_splitter(columnstring, M_c=None, column_lists=None):
     """
     If '*' is a possible input, M_c must not be None.

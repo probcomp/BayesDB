@@ -524,22 +524,18 @@ class Engine(object):
     numrows = len(M_r['idx_to_name'])
     name_to_idx = M_c['name_to_idx']
 
-    # parse givens
+
     ## TODO throw exception for <,> without dissallowing them in the values. 
     given_col_idxs_to_vals = dict()
-    if givens == None or givens=="" or '=' not in givens: ##TODO refactor with pyparsing
-      Y = None
-    else:
-      varlist = [[c.strip() for c in b.split('=')] for b in re.split(r'and|,', givens, flags=re.IGNORECASE)]
+    Y = None
+    if givens is not None:
       Y = []
-      for colname, colval in varlist:
-        if type(colval) == str or type(colval) == unicode:
-          try:
-            colval = ast.literal_eval(colval)
-          except ValueError: 
-            raise utils.BayesDBParseError("Could not parse value %s. Try '%s' instead." % (colval, colval))
-        given_col_idxs_to_vals[name_to_idx[colname]] = colval
-        Y.append((numrows+1, name_to_idx[colname], colval))
+      for given_condition in givens.given_conditions:
+        column_value = given_condition.value
+        column_name = given_condition.column
+        column_value = utils.string_to_column_type(column_value, column_name, M_c)
+        given_col_idxs_to_vals[name_to_idx[column_name]] = column_value
+        Y.append((numrows+1, name_to_idx[column_name], column_value))
 
       # map values to codes
       Y = [(r, c, data_utils.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
