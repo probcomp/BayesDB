@@ -889,7 +889,7 @@ def test_select():
     assert method == 'select'
     assert args == d
 
-    order_by = [('b', False)]
+    order_by = [('b', True)]
     method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7 order by b limit 10')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
