@@ -522,6 +522,7 @@ class Engine(object):
     name_to_idx = M_c['name_to_idx']
 
     # parse givens
+    ## TODO throw exception for <,> without dissallowing them in the values. 
     given_col_idxs_to_vals = dict()
     if givens=="" or '=' not in givens:
       Y = None
@@ -530,7 +531,10 @@ class Engine(object):
       Y = []
       for colname, colval in varlist:
         if type(colval) == str or type(colval) == unicode:
-          colval = ast.literal_eval(colval)
+          try:
+            colval = ast.literal_eval(colval)
+          except ValueError: 
+            raise utils.BayesDBParseError("Could not parse value %s. Try '%s' instead." % (colval, colval))
         given_col_idxs_to_vals[name_to_idx[colname]] = colval
         Y.append((numrows+1, name_to_idx[colname], colval))
 

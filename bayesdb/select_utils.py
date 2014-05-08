@@ -37,7 +37,6 @@ import bayesdb.bql_grammar as bql_grammar
 
 def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
   whereclause = "WHERE " + whereclause # Temporary while partially switched to pyparsing
-#  print whereclause
   if whereclause == "WHERE ":
     return ""
   ## Create conds: the list of conditions in the whereclause.
@@ -113,7 +112,6 @@ def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
         continue
       raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
     raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
-  print conds
   return conds
 
 def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend, tablename):
