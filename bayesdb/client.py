@@ -305,7 +305,9 @@ class Client(object):
         elif 'columns' in query_obj:
             """ Pretty-print column list."""
             pt = prettytable.PrettyTable()
-            pt.field_names = query_obj['columns']
+            pt.field_names = ['column']
+            for column in query_obj['columns']:
+                pt.add_row([column])
             result += str(pt)
         elif 'row_lists' in query_obj:
             """ Pretty-print multiple row lists, which are just names and row sizes. """

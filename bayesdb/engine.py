@@ -223,7 +223,7 @@ class Engine(object):
     metadata = self.persistence_layer.get_metadata(tablename)
     colnames = utils.get_all_column_names_in_original_order(metadata['M_c'])
     cctypes = metadata['cctypes']
-    return dict(columns=colnames, data=[cctypes])
+    return dict(columns=['column','datatype'], data=zip(colnames, cctypes))
 
   def save_models(self, tablename):    
     """Opposite of load models! Returns the models, including the contents, which
