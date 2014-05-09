@@ -365,9 +365,8 @@ def test_show_schema():
   assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
 
   schema = engine.show_schema(test_tablename)
-  assert schema['columns'][0] == 'name'
-  assert schema['columns'][-4] == 'qual_score'
-  assert sorted(schema['data'][0]) == sorted(cctypes)  
+  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes)
+  assert schema['data'][0][0] == 'name'
   
   mappings = dict(qual_score='multinomial')
   engine.update_schema(test_tablename, mappings)
@@ -375,9 +374,8 @@ def test_show_schema():
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
   
   schema = engine.show_schema(test_tablename)
-  assert schema['columns'][0] == 'name'
-  assert schema['columns'][-4] == 'qual_score'
-  assert sorted(schema['data'][0]) == sorted(cctypes)
+  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes)
+  assert schema['data'][0][0] == 'name'
 
 def test_show_models():
   test_tablename, _ = create_dha()
