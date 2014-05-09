@@ -144,7 +144,6 @@ class Client(object):
         try:
             parser_out  = self.parser.parse_single_statement(bql_statement_string)
         except Exception as e:
-#            print 'error'
             raise utils.BayesDBParseError(str(e))
         if parser_out is None:
             print "Could not parse command. Try typing 'help' for a list of all commands."

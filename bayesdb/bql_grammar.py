@@ -175,6 +175,7 @@ show_row_lists_for_keyword = Combine(show_keyword + single_white + row_keyword +
 show_row_lists_for_keyword.setParseAction(replaceWith("show_row_lists")) #TODO test parser.parse_show_row_lists
 estimate_pairwise_keyword = Combine(estimate_keyword + single_white + 
                                     pairwise_keyword).setResultsName("statement_id")
+estimate_pairwise_keyword.setParseAction(replaceWith("estimate_pairwise"))
 estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
                                         single_white + row_keyword).setResultsName("statement_id")
 row_similarity_keyword = Combine(row_keyword + single_white + similarity_keyword)
@@ -185,6 +186,7 @@ mutual_information_keyword = Combine(mutual_keyword + single_white + information
 estimate_columns_from_keyword = Combine(estimate_keyword + single_white + column_keyword + 
                                         single_white + from_keyword).setResultsName("statement_id")
 estimate_columns_keyword = Combine(estimate_keyword + single_white + column_keyword).setResultsName("statement_id")
+estimate_columns_from_keyword.setParseAction(replaceWith("estimate_columns"))
 column_lists_keyword = Combine(column_keyword + single_white + list_keyword)
 similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword).setResultsName("statement_id")
 with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
@@ -454,13 +456,13 @@ query_id = (select_keyword |
             estimate_pairwise_keyword |
             estimate_keyword).setResultsName('statement_id')
 
-function_in_query = (predictive_probability_of_function | 
-                     probability_of_function | 
-                     typicality_function | 
+function_in_query = (predictive_probability_of_function |
+                     probability_of_function |
+                     typicality_function |
                      similarity_to_function |
-                     dependence_probability_function | 
-                     mutual_information_function | 
-                     correlation_function | 
+                     dependence_probability_function |
+                     mutual_information_function |
+                     correlation_function |
                      row_similarity_keyword |
                      similarity_keyword |
                      column_keyword | ##TODO what

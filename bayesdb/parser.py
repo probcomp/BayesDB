@@ -241,8 +241,32 @@ class Parser(object):
                  plot=plot, modelids=modelids, summarize=summarize), \
             dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
-    def parse_estimate_columns(self,bql_statement_ast):
-        print "estimate_columns"
+    def parse_estimate(self,bql_statement_ast):
+        functions = None ##TODO wat
+        tablename = bql_statement_ast.btable
+        whereclause = None
+        if bql_statement_ast.where_conditions != '':
+            whereclause = bql_statement_ast.where_conditions
+        limit = float('inf')
+        if bql_statement_ast.limit != '':
+            limit = int(bql_statement_ast.limit)
+        order_by = False ##TODO maybe change to None
+        if bql_statement_ast.order_by != '':
+            order_by = bql_statement_ast.order_by.order_by_set.asList()
+        modelids = None
+        if bql_statement_ast.using_models_index_clause != '':
+            modelids = bql_statement_ast.using_models_index_clause.asList()
+        name = None
+        if bql_statement_ast.as_column_list != '':
+            ## TODO name is a bad name
+            name = bql_statement_ast.as_column_list
+            
+        return 'estimate_columns', \
+            dict(tablename=tablename, functions=functions, 
+                 whereclause=whereclause, limit=limit, 
+                 order_by=order_by, name=name, modelids=modelids), \
+            None
+        
 
     def parse_estimate_pairwise_row(self,bql_statement_ast):
         print "estimate_pairwise_row"
@@ -368,6 +392,7 @@ class Parser(object):
             raw_value = single_condition.value
             function = None
             args = None
+            ## SELECT and INFER versions
             if single_condition.function.function_id == 'typicality':
                 value = utils.value_string_to_num(raw_value)
                 function = functions._row_typicality
@@ -381,7 +406,7 @@ class Parser(object):
                 value = utils.value_string_to_num(raw_value)
                 function = functions._predictive_probability
                 args = self.get_args_pred_prob(single_condition.function, M_c)
-            #todo elif column
+            
             elif single_condition.function.function_id == 'key in':
                 value = raw_value
                 ##TODO 
@@ -408,6 +433,52 @@ class Parser(object):
                 raise utils.BayesDBParseError("Invalid where clause: no operator found")
             conditions.append(((function, args), op, value))
         return conditions
+    
+    def parse_column_whereclause(self, whereclause, M_c, T):
+        """
+        Creates conditions: the list of conditions in the whereclause
+        List of (c_idx, op, val)
+        """
+        conditions = []
+        if whereclause == None:
+            return conditions
+        operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq,
+                        '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
+        
+        for single_condition in whereclause:
+            ## Confidence in the where clause not yet handled by client/engine. 
+            
+            raw_value = single_condition.value
+            value = utils.value_string_to_num(raw_value)
+            function = None
+            args = None
+            ## SELECT and INFER versions
+            if single_condition.function.function_id == 'typicality':
+                function = functions._col_typicality
+                assert self.get_args_typicality(single_condition.function, M_c) == True
+                args = True
+            elif single_condition.function.function_id == 'dependence probability':
+                function = functions._dependence_probability
+                _, args = self.get_args_of_with(single_condition.function, M_c)
+            elif single_condition.function.function_id == 'mutual information':
+                function = functions._mutual_information
+                _, args = self.get_args_of_with(single_condition.function, M_c)
+            elif single_condition.function.function_id == 'correlation':
+                function = functions._correlation
+                _, args = self.get_args_of_with(single_condition.function, M_c)
+            else:
+                if single_condition.function.function_id != '':
+                    raise utils.BayesDBParseError("Invalid where clause: %s not allowed." % 
+                                                  single_condition.function.function_id)
+                else: 
+                    raise utils.BayesDBParseError("Invalid where clause. Unrecognized function")
+            if single_condition.operation != '':
+                op = operator_map[single_condition.operation]
+            else: 
+                raise utils.BayesDBParseError("Invalid where clause: no operator found")
+            conditions.append(((function, args), op, value))
+        return conditions
+
 
     def parse_order_by_clause(self, order_by_clause_ast):
         print "order_by"

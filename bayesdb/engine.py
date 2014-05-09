@@ -540,7 +540,6 @@ class Engine(object):
       # map values to codes
       Y = [(r, c, data_utils.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
     
-    
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
     queries, query_colnames = self.parser.parse_functions(functions, M_c, T, column_lists)
@@ -617,7 +616,7 @@ class Engine(object):
       column_names = list(M_c['name_to_idx'].keys())
     return dict(columns=column_names)
 
-  def estimate_columns(self, tablename, columnstring, whereclause, limit, order_by, name=None, modelids=None):
+  def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None):
     """
     Return all the column names from the specified table as a list.
     First, columns are filtered based on whether they match the whereclause.
@@ -636,17 +635,12 @@ class Engine(object):
     
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    
-    if columnstring and len(columnstring) > 0:
-      # User has entered the columns to be in the column list.
-      column_indices = [M_c['name_to_idx'][colname.lower()] for colname in utils.column_string_splitter(columnstring, M_c, [])]
-    else:
-      # Start with all columns.
-      column_indices = list(M_c['name_to_idx'].values())
+    ##TODO deprecate functions in args
+    column_indices = list(M_c['name_to_idx'].values())
     
     ## filter based on where clause
-    where_conditions = estimate_columns_utils.get_conditions_from_column_whereclause(whereclause, M_c, T)
-    if len(where_conditions) > 0 and len(X_L_list) == 0:
+    where_conditions = self.parser.parse_column_whereclause(whereclause, M_c, T)
+    if where_conditions is not None and len(X_L_list) == 0:
       raise utils.BayesDBNoModelsError(tablename)      
     column_indices = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self)
     
