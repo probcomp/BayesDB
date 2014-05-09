@@ -369,15 +369,15 @@ functions_of_two_columns_subclause = ((Suppress(with_keyword) +
 ##TODO make all of these functions one thing
 # DEPENDENCE PROBABILITY (WITH <column> | OF <column1> WITH <column2>)
 dependence_probability_function = Group(dependence_probability_keyword.setResultsName('function_id') + 
-                                        functions_of_two_columns_subclause).setResultsName("function")
+                                        Optional(functions_of_two_columns_subclause).setResultsName("function"))
 
 # MUTUAL INFORMATION [OF <column1> WITH <column2>]
 mutual_information_function = Group(mutual_information_keyword.setResultsName('function_id') + 
-                                    functions_of_two_columns_subclause).setResultsName("function")
+                                    Optional(functions_of_two_columns_subclause).setResultsName("function"))
 
 # CORRELATION [OF <column1> WITH <column2>]
 correlation_function = Group(correlation_keyword.setResultsName('function_id') + 
-                             functions_of_two_columns_subclause).setResultsName("function")
+                             Optional(functions_of_two_columns_subclause).setResultsName("function"))
 
 two_column_function = (dependence_probability_function | mutual_information_function | correlation_function)
 
@@ -432,7 +432,7 @@ save_connected_components_clause = Group(save_connected_components_keyword
                                          ((as_keyword + 
                                            identifier.setResultsName('as_label')) | 
                                           (into_keyword + 
-                                           identifier.setResultsName('into_label')))).setResultsName('connected_components_clause')
+                                           identifier.setResultsName('into_label')))).setResultsName('connected_components_clause') ##TODO deprecate into
 
 row_list_clause = Group(int_number + 
                            ZeroOrMore(Suppress(comma_literal) + 
@@ -464,7 +464,7 @@ function_in_query = (predictive_probability_of_function |
                      mutual_information_function |
                      correlation_function |
                      row_similarity_keyword |
-                     similarity_keyword |
+                     #similarity_keyword |
                      column_keyword | ##TODO what
                      dependence_probability_keyword |
                      Group((identifier|all_column_literal).setResultsName("column_id"))).setResultsName("function")
