@@ -338,9 +338,11 @@ class Client(object):
                 print pt
         elif 'models' in query_obj:
             """ Pretty-print model info. """
-            m = query_obj['models']
-            output_list = ['Model %d: %d iterations' % (id, iterations) for id,iterations in m]
-            result += ', '.join(output_list)
+            pt = prettytable.PrettyTable()
+            pt.field_names = ('model_id', 'iterations')
+            for (id, iterations) in query_obj['models']:
+                pt.add_row((id, iterations))
+            result += str(pt)
 
         if len(result) >= 1 and result[-1] == '\n':
             result = result[:-1]
