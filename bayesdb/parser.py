@@ -401,6 +401,29 @@ class Parser(object):
             pkl_path = match.group('pklpath')
             return 'load_models', dict(tablename=tablename), dict(pkl_path=pkl_path)
 
+            
+    def help_show_model(self):
+        return "SHOW MODEL <model_id> FROM <btable>"
+
+    def parse_show_model(self, words, orig):
+        match = re.search(r"""
+            show\s+model\s+
+            (?P<modelid>\d+)
+            \s+from\s+
+            (?P<btable>[^\s]+)
+            (\s*save\s+to\s+(?P<filename>))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'show' and words[1] == 'model':
+                return 'help', self.help_show_model()
+        else:
+            if match.group('filename'):
+                filename = match.group('filename')
+            else:
+                filename = None            
+            return 'show_model', dict(tablename=match.group('btable'),
+                                      modelid=int(match.group('modelid')),
+                                      filename=filename), None
 
             
     def help_select(self):
