@@ -61,17 +61,17 @@ def test_create_btable():
   assert 'data' in create_btable_result
   assert 'message' in create_btable_result
   assert len(create_btable_result['data'][0]) == 64 ## 64 is number of columns in DHA dataset
-  list_btables_result = engine.list_btables()['list']
-  assert test_tablename in list_btables_result
+  list_btables_result = engine.list_btables()['data']
+  assert [test_tablename] in list_btables_result
   engine.drop_btable(test_tablename)
 
 def test_drop_btable():
   test_tablename, _ = create_dha()
-  list_btables_result = engine.list_btables()['list']
-  assert test_tablename in list_btables_result
+  list_btables_result = engine.list_btables()['data']
+  assert [test_tablename] in list_btables_result
   engine.drop_btable(test_tablename)
-  list_btables_result = engine.list_btables()['list']
-  assert test_tablename not in list_btables_result
+  list_btables_result = engine.list_btables()['data']
+  assert [test_tablename] not in list_btables_result
 
 def test_select():
   test_tablename, _ = create_dha()
@@ -329,29 +329,29 @@ def test_estimate_pairwise_correlation():
   cor_mat = engine.estimate_pairwise(test_tablename, 'correlation')
 
 def test_list_btables():
-  list_btables_result = engine.list_btables()['list']
-  assert (type(list_btables_result) == set) or (type(list_btables_result) == list)
+  list_btables_result = engine.list_btables()['data']
+  assert type(list_btables_result) == list
   initial_btable_count = len(list_btables_result)
   
   test_tablename1, create_btable_result = create_dha()
   test_tablename2, create_btable_result = create_dha()
 
-  list_btables_result = engine.list_btables()['list']
-  assert test_tablename1 in list_btables_result
-  assert test_tablename2 in list_btables_result
+  list_btables_result = engine.list_btables()['data']
+  assert [test_tablename1] in list_btables_result
+  assert [test_tablename2] in list_btables_result
   assert len(list_btables_result) == 2 + initial_btable_count
   
   engine.drop_btable(test_tablename1)
   test_tablename3, create_btable_result = create_dha()
-  list_btables_result = engine.list_btables()['list']  
-  assert test_tablename1 not in list_btables_result
-  assert test_tablename3 in list_btables_result
-  assert test_tablename2 in list_btables_result
+  list_btables_result = engine.list_btables()['data']  
+  assert [test_tablename1] not in list_btables_result
+  assert [test_tablename3] in list_btables_result
+  assert [test_tablename2] in list_btables_result
 
   engine.drop_btable(test_tablename2)
   engine.drop_btable(test_tablename3)
 
-  list_btables_result = engine.list_btables()['list']  
+  list_btables_result = engine.list_btables()['data']  
   assert len(list_btables_result) == 0 + initial_btable_count
 
 def test_execute_file():

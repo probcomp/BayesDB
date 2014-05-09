@@ -87,7 +87,7 @@ class Engine(object):
 
   def list_btables(self):
     """Return names of all btables."""
-    return dict(list=self.persistence_layer.list_btables())
+    return dict(columns=['btable'], data=[[name] for name in self.persistence_layer.list_btables()])
 
   def label_columns(self, tablename, mappings):
     """
