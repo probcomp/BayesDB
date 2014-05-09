@@ -374,7 +374,7 @@ class Parser(object):
 ## ----------------------------- Sub query parsing  ------------------------------ ##
 #####################################################################################
 
-    def parse_where_clause(self, where_clause_ast, M_c, T, column_lists): ##Deprecate select_utils.get_conditions_from_whereclause
+    def parse_where_clause(self, where_clause_ast, M_c, T, column_lists): 
         """
         Creates conditions: the list of conditions in the whereclause
         List of (c_idx, op, val)
@@ -434,7 +434,7 @@ class Parser(object):
             conditions.append(((function, args), op, value))
         return conditions
     
-    def parse_column_whereclause(self, whereclause, M_c, T):
+    def parse_column_whereclause(self, whereclause, M_c, T): ##TODO throw exception on parseable, invalid
         """
         Creates conditions: the list of conditions in the whereclause
         List of (c_idx, op, val)
@@ -476,9 +476,10 @@ class Parser(object):
                 op = operator_map[single_condition.operation]
             else: 
                 raise utils.BayesDBParseError("Invalid where clause: no operator found")
+            if _ != None:
+                raise utils.BayesDBParseError("Invalid where clause, do not specify an 'of' column in estimate columns")
             conditions.append(((function, args), op, value))
         return conditions
-
 
     def parse_order_by_clause(self, order_by_clause_ast):
         print "order_by"
