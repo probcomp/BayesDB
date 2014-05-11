@@ -269,8 +269,33 @@ class Parser(object):
         
 
     def parse_estimate_pairwise_row(self,bql_statement_ast):
-        print bql_statement_ast
-        print "estimate_pairwise_row"
+        assert len(bql_statement_ast.functions) == 1
+        function = bql_statement_ast.functions[0]
+        assert function.function_id in ["similarity"]
+        
+        tablename = bql_statement_ast.btable
+        function_name = function.function_id
+        filename = None
+        if bql_statement_ast.filename != '':
+            filename = bql_statement_ast.filename
+        row_list = None
+        if bql_statement_ast.columns != '':
+            row_list = bql_statement_ast.rows ##TODO parse to columns list
+        components_name = None
+        threshold = None
+        if bql_statement_ast.save_connected_components != '':
+            components_name = bql_statement_ast.save_connected_components.as_label
+            threshold = float(bql_statement_ast.save_connected_components.threshold)
+
+        modelids = None
+        if bql_statement_ast.using_models_index_clause != '':
+            modelids = bql_statement_ast.using_models_index_clause.asList()
+
+        return 'estimate_pairwise_row', \
+            dict(tablename=tablename, function_name=function_name,
+                 row_list=row_list, components_name=components_name, 
+                 threshold=threshold, modelids=modelids), \
+            dict(filename=filename)
 
     def parse_estimate_pairwise(self,bql_statement_ast):
         assert len(bql_statement_ast.functions) == 1

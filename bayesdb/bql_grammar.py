@@ -178,6 +178,7 @@ estimate_pairwise_keyword = Combine(estimate_keyword + single_white +
 estimate_pairwise_keyword.setParseAction(replaceWith("estimate_pairwise"))
 estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
                                         single_white + row_keyword).setResultsName("statement_id")
+estimate_pairwise_row_keyword.setParseAction(replaceWith('estimate_pairwise_row'))
 row_similarity_keyword = Combine(row_keyword + single_white + similarity_keyword)
 with_confidence_keyword = Combine(with_keyword + single_white + confidence_keyword)
 order_by_keyword = Combine(order_keyword + single_white + by_keyword)
@@ -349,10 +350,11 @@ with_confidence_clause = with_confidence_keyword + float_number.setResultsName("
 # -------------------------------- Functions ------------------------------ #
 
 # SIMILARITY TO <row> [WITH RESPECT TO <column>] ## TODO with respect to clause AND or paren
-similarity_to_function = (Group(similarity_to_keyword.setResultsName('function_id') + 
+similarity_to_function = (Group(similarity_keyword.setResultsName('function_id') + 
+								Optional(to_keyword + 
                                 row_clause + 
                                 Optional(with_respect_to_keyword + column_list_clause)
-                                .setResultsName('with_respect_to'))
+                                .setResultsName('with_respect_to')))
                           .setResultsName("function")) # todo more names less indexes
 
 # TYPICALITY [OF <column>]
@@ -453,6 +455,7 @@ using_models_clause = (using_models_keyword + index_clause.setResultsName("using
 query_id = (select_keyword | 
             infer_keyword | 
             simulate_keyword | 
+            estimate_pairwise_row_keyword |
             estimate_pairwise_keyword |
             estimate_keyword).setResultsName('statement_id')
 
@@ -463,9 +466,10 @@ function_in_query = (predictive_probability_of_function |
                      dependence_probability_function |
                      mutual_information_function |
                      correlation_function |
-                     row_similarity_keyword |
+                     #row_similarity_keyword |
                      #similarity_keyword |
-                     column_keyword | ##TODO what
+                     column_keyword |
+                     #similarity_keyword |
                      dependence_probability_keyword |
                      Group((identifier|all_column_literal).setResultsName("column_id"))).setResultsName("function")
 
