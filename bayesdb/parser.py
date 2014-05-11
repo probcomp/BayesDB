@@ -451,7 +451,7 @@ class Parser(object):
                 function = functions._row_typicality
                 assert self.get_args_typicality(single_condition.function, M_c) == True
                 args = True
-            elif single_condition.function.function_id == 'similarity to':
+            elif single_condition.function.function_id == 'similarity':
                 value = utils.value_string_to_num(raw_value)
                 function = functions._similarity
                 args = self.get_args_similarity(single_condition.function, M_c, T, column_lists)
@@ -574,12 +574,12 @@ class Parser(object):
                 queries.append((functions._probability, 
                                 self.get_args_prob(function_group, M_c), 
                                 True))
-            elif function_group.function_id == 'similarity to':
+            elif function_group.function_id == 'similarity':
                 assert M_c is not None
                 queries.append((functions._similarity, 
                                 self.get_args_similarity(function_group, M_c, T, column_lists), 
                                 False))
-                query_colnames.append('similarity to') ##TODO of/with respect
+                query_colnames.append('similarity') ##TODO of/with respect
             elif function_group.function_id == 'dependence probability':
                 queries.append((functions._dependence_probability, 
                                 self.get_args_of_with(function_group, M_c), 
@@ -615,7 +615,6 @@ class Parser(object):
                     raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % column_name)
                 queries += [(functions._column, column_index , False) for column_index in index_list]
                 query_colnames += [name for name in name_list]
-                
         return queries, query_colnames
 
 #####################################################################################

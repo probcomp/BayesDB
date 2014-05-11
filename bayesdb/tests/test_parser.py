@@ -113,7 +113,7 @@ def test_composite_keywords_pyparsing():
     show_diagnostics_for = show_diagnostics_for_keyword.parseString("show diaGnostics for",parseAll=True)
     assert show_diagnostics_for[0] == 'show_diagnostics'
     estimate_pairwise = estimate_pairwise_keyword.parseString("estimate Pairwise",parseAll=True)
-    assert estimate_pairwise[0] == 'estimate pairwise'
+    assert estimate_pairwise[0] == 'estimate_pairwise'
     with_confidence = with_confidence_keyword.parseString('with  confIdence',parseAll=True)
     assert with_confidence[0] == 'with confidence'
     dependence_probability = dependence_probability_keyword.parseString('dependence probability',parseAll=True)
@@ -121,11 +121,9 @@ def test_composite_keywords_pyparsing():
     mutual_information = mutual_information_keyword.parseString('mutual inFormation',parseAll=True)
     assert mutual_information[0] == 'mutual information'
     estimate_columns_from = estimate_columns_from_keyword.parseString("estimate columns froM",parseAll=True)
-    assert estimate_columns_from[0] == 'estimate column from'
+    assert estimate_columns_from[0] == 'estimate_columns'
     column_lists = column_lists_keyword.parseString('column Lists',parseAll=True)
     assert column_lists[0] == 'column list'
-    similarity_to = similarity_to_keyword.parseString("similarity to",parseAll=True)
-    assert similarity_to[0] == 'similarity to'
     with_respect_to = with_respect_to_keyword.parseString("with Respect to",parseAll=True)
     assert with_respect_to[0] == 'with respect to'
     probability_of = probability_of_keyword.parseString('probability of',parseAll=True)
@@ -136,7 +134,7 @@ def test_composite_keywords_pyparsing():
         'save cOnnected components with threshold',parseAll=True)
     assert save_connected_components_with_threshold[0] == 'save connected components with threshold'
     estimate_pairwise_row = estimate_pairwise_row_keyword.parseString("estimate Pairwise row",parseAll=True)
-    assert estimate_pairwise_row[0] == 'estimate pairwise row'
+    assert estimate_pairwise_row[0] == 'estimate_pairwise_row'
 
 def test_valid_values_names_pyparsing():
     valid_values=[
@@ -344,7 +342,7 @@ def test_row_functions_pyparsing():
                                                       parseAll=True)
     similarity_8 = similarity_to_function.parseString("SIMILARITY TO col_2 = a WITH RESPECT TO col_1", 
                                                       parseAll=True)
-    assert similarity_1.function.function_id == 'similarity to'
+    assert similarity_1.function.function_id == 'similarity'
     assert similarity_1.function.row_id == '1'
     assert similarity_2.function.column == 'col_2'
     assert similarity_2.function.column_value == '1'
@@ -448,9 +446,9 @@ def test_order_by_clause_pyparsing():
     assert order_by_8.order_by.order_by_set[2].function_id == 'predictive probability'
     assert order_by_8.order_by.order_by_set[2].column == 'column_1'
     assert order_by_8.order_by.order_by_set[3].column == 'column_2'
-    assert order_by_8.order_by.order_by_set[4].function_id == 'similarity to'
+    assert order_by_8.order_by.order_by_set[4].function_id == 'similarity'
     assert order_by_8.order_by.order_by_set[4].row_id == '2'
-    assert order_by_8.order_by.order_by_set[5].function_id == 'similarity to'
+    assert order_by_8.order_by.order_by_set[5].function_id == 'similarity'
     assert order_by_8.order_by.order_by_set[5].column == 'column_1'
     assert order_by_8.order_by.order_by_set[5].column_value == '1'
     assert order_by_8.order_by.order_by_set[5].with_respect_to[1][0] == 'column_4' #todo names instead of indexes
@@ -496,27 +494,27 @@ def test_whereclause_pyparsing():
     assert parsed_8.where_conditions[0].value == '.1'
     whereclause_9 = "WHERE SIMILARITY TO 2 > .1"
     parsed_9 = where_clause.parseString(whereclause_9,parseAll=True)
-    assert parsed_9.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_9.where_conditions[0].function.function_id == 'similarity'
     assert parsed_9.where_conditions[0].function.row_id == '2'
     assert parsed_9.where_conditions[0].operation == '>'
     assert parsed_9.where_conditions[0].value == '.1'
     whereclause_10 = "WHERE SIMILARITY TO 2 WITH RESPECT TO column_1 > .4"
     parsed_10 = where_clause.parseString(whereclause_10,parseAll=True)
-    assert parsed_10.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_10.where_conditions[0].function.function_id == 'similarity'
     assert parsed_10.where_conditions[0].function.row_id == '2'
     assert parsed_10.where_conditions[0].function.with_respect_to.column_list[0] == 'column_1'
     assert parsed_10.where_conditions[0].operation == '>'
     assert parsed_10.where_conditions[0].value == '.4'
     whereclause_11 = "WHERE SIMILARITY TO column_1 = 1 = .5"
     parsed_11 = where_clause.parseString(whereclause_11,parseAll=True)
-    assert parsed_11.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_11.where_conditions[0].function.function_id == 'similarity'
     assert parsed_11.where_conditions[0].function.column == 'column_1'
     assert parsed_11.where_conditions[0].function.column_value == '1'
     assert parsed_11.where_conditions[0].operation == '='
     assert parsed_11.where_conditions[0].value == '.5'
     whereclause_12 = "WHERE SIMILARITY TO column_1 = 'a' WITH RESPECT TO column_2 > .5"
     parsed_12 = where_clause.parseString(whereclause_12,parseAll=True)
-    assert parsed_12.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_12.where_conditions[0].function.function_id == 'similarity'
     assert parsed_12.where_conditions[0].function.column == 'column_1'
     assert parsed_12.where_conditions[0].function.column_value == 'a'
     assert parsed_12.where_conditions[0].operation == '>'
@@ -524,7 +522,7 @@ def test_whereclause_pyparsing():
     assert parsed_12.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
     whereclause_13 = "WHERE SIMILARITY TO column_1 = 1.2 WITH RESPECT TO column_2 > .5"
     parsed_13 = where_clause.parseString(whereclause_13,parseAll=True)
-    assert parsed_13.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_13.where_conditions[0].function.function_id == 'similarity'
     assert parsed_13.where_conditions[0].function.column == 'column_1'
     assert parsed_13.where_conditions[0].function.column_value == '1.2'
     assert parsed_13.where_conditions[0].operation == '>'
@@ -532,7 +530,7 @@ def test_whereclause_pyparsing():
     assert parsed_13.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
     whereclause_14 = "WHERE SIMILARITY TO column_1 = a WITH RESPECT TO column_2 > .5"
     parsed_14 = where_clause.parseString(whereclause_14,parseAll=True)
-    assert parsed_14.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_14.where_conditions[0].function.function_id == 'similarity'
     assert parsed_14.where_conditions[0].function.column == 'column_1'
     assert parsed_14.where_conditions[0].function.column_value == 'a'
     assert parsed_14.where_conditions[0].operation == '>'
@@ -572,7 +570,7 @@ def test_whereclause_pyparsing():
     parsed_24 = where_clause.parseString(whereclause_24,parseAll=True)
     assert parsed_24.where_conditions[0].function.function_id == 'typicality'
     assert parsed_24.where_conditions[1].function.function_id == 'predictive probability'
-    assert parsed_24.where_conditions[2].function.function_id == 'similarity to'
+    assert parsed_24.where_conditions[2].function.function_id == 'similarity'
     whereclause_25 = "WHERE TYPICALITY > .8 WITH CONFIDENCE .4 AND PREDICTIVE PROBABILITY OF column_1 > .1 WITH CONFIDENCE .6 AND SIMILARITY TO 2 > .1 WITH CONFIDENCE .5"
     parsed_25 = where_clause.parseString(whereclause_25,parseAll=True)
     assert parsed_25.where_conditions[0].confidence == '.4'
@@ -648,8 +646,8 @@ def test_select_functions_pyparsing():
     assert select_ast_2.functions[0].function_id == 'typicality'
     assert select_ast_3.functions[0].function_id == 'predictive probability'
     assert select_ast_4.functions[0].function_id == 'probability'
-    assert select_ast_5.functions[0].function_id == 'similarity to'
-    assert select_ast_5.functions[0].function_id == 'similarity to'
+    assert select_ast_5.functions[0].function_id == 'similarity'
+    assert select_ast_5.functions[0].function_id == 'similarity'
     assert select_ast_6.functions[0].function_id == 'dependence probability'
     assert select_ast_7.functions[0].function_id == 'mutual information'
     assert select_ast_8.functions[0].function_id == 'correlation'
@@ -713,8 +711,8 @@ def test_infer_pyparsing():
     assert infer_ast_2.functions[0].function_id == 'typicality'
     assert infer_ast_3.functions[0].function_id == 'predictive probability'
     assert infer_ast_4.functions[0].function_id == 'probability'
-    assert infer_ast_5.functions[0].function_id == 'similarity to'
-    assert infer_ast_5.functions[0].function_id == 'similarity to'
+    assert infer_ast_5.functions[0].function_id == 'similarity'
+    assert infer_ast_5.functions[0].function_id == 'similarity'
     assert infer_ast_6.functions[0].function_id == 'dependence probability'
     assert infer_ast_7.functions[0].function_id == 'mutual information'
     assert infer_ast_8.functions[0].function_id == 'correlation'
@@ -771,13 +769,13 @@ def test_estimate_columns_from_pyparsing():
 def test_estimate_pairwise_pyparsing():
     query_1 = "ESTIMATE PAIRWISE CORRELATION WITH col_1 FROM table_1"
     est_pairwise_ast_1 = query.parseString(query_1,parseAll=True)
-    assert est_pairwise_ast_1.statement_id == 'estimate pairwise'
+    assert est_pairwise_ast_1.statement_id == 'estimate_pairwise'
     assert est_pairwise_ast_1.functions[0].function_id == 'correlation'
     assert est_pairwise_ast_1.functions[0].with_column == 'col_1'
     assert est_pairwise_ast_1.btable == 'table_1'
     query_2 = "ESTIMATE PAIRWISE DEPENDENCE PROBABILITY WITH col_1 FROM table_1 FOR col_1,col_2 SAVE TO file.csv SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 AS col_list_1"
     est_pairwise_ast_2 = query.parseString(query_2,parseAll=True)
-    assert est_pairwise_ast_2.statement_id == 'estimate pairwise'
+    assert est_pairwise_ast_2.statement_id == 'estimate_pairwise'
     assert est_pairwise_ast_2.functions[0].function_id == 'dependence probability'
     assert est_pairwise_ast_2.functions[0].with_column == 'col_1'
     assert est_pairwise_ast_2.btable == 'table_1'
@@ -792,13 +790,13 @@ def test_estimate_pairwise_pyparsing():
 def test_estimate_pairwise_row_pyparsing():
     query_1 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 INTO table_2"
     est_pairwise_ast_1 = query.parseString(query_1,parseAll=True)
-    assert est_pairwise_ast_1.statement_id == 'estimate pairwise'
-    assert est_pairwise_ast_1.functions[0] == 'row similarity'
+    assert est_pairwise_ast_1.statement_id == 'estimate_pairwise_row'
+    assert est_pairwise_ast_1.functions[0].function_id == 'similarity'
     assert est_pairwise_ast_1.btable == 'table_1'
     query_2 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 FOR 1,2 SAVE TO file.csv SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 AS table_2"
     est_pairwise_ast_2 = query.parseString(query_2,parseAll=True)
-    assert est_pairwise_ast_2.statement_id == 'estimate pairwise'
-    assert est_pairwise_ast_2.functions[0] == 'row similarity'
+    assert est_pairwise_ast_2.statement_id == 'estimate_pairwise_row'
+    assert est_pairwise_ast_2.functions[0].function_id == 'similarity'
     assert est_pairwise_ast_2.btable == 'table_1'
     assert est_pairwise_ast_2.rows.asList() == ['1','2']
     assert est_pairwise_ast_2.filename == 'file.csv'
@@ -926,12 +924,12 @@ def test_parse_functions():
     assert queries[2] == (functions._mutual_information, (0,1), True)
     assert queries[3] == (functions._correlation, (0,1), True)
     assert queries[4] == (functions._dependence_probability, (0,1), True)
-    assert queries[5] == (functions._similarity, (0,None), False)
+    assert queries[5] == (functions._similarity, (0,None), False) ##TODO
     assert queries[6] == (functions._similarity, (0,None), False)
     assert queries[7] == (functions._probability, (0,'1'), True)
     assert queries[8] == (functions._probability, (1,1), True)
     assert queries[9] == (functions._col_typicality, 0, True)
-    assert queries[10] == (functions._row_typicality, None, False)
+    assert queries[10] == (functions._row_typicality, True, False)
     assert queries[11] == (functions._column, 0, False)
     assert queries[12] == (functions._column, 0, False)
     assert queries[13] == (functions._column, 1, False)

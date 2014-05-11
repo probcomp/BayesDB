@@ -351,10 +351,10 @@ with_confidence_clause = with_confidence_keyword + float_number.setResultsName("
 
 # SIMILARITY TO <row> [WITH RESPECT TO <column>] ## TODO with respect to clause AND or paren
 similarity_to_function = (Group(similarity_keyword.setResultsName('function_id') + 
-								Optional(to_keyword + 
-                                row_clause + 
-                                Optional(with_respect_to_keyword + column_list_clause)
-                                .setResultsName('with_respect_to')))
+                                Optional(to_keyword + 
+                                         row_clause + 
+                                         Optional(with_respect_to_keyword + column_list_clause)
+                                         .setResultsName('with_respect_to')))
                           .setResultsName("function")) # todo more names less indexes
 
 # TYPICALITY [OF <column>]
@@ -370,16 +370,16 @@ functions_of_two_columns_subclause = ((Suppress(with_keyword) +
 
 ##TODO make all of these functions one thing
 # DEPENDENCE PROBABILITY (WITH <column> | OF <column1> WITH <column2>)
-dependence_probability_function = Group(dependence_probability_keyword.setResultsName('function_id') + 
-                                        Optional(functions_of_two_columns_subclause).setResultsName("function"))
+dependence_probability_function = (Group(dependence_probability_keyword.setResultsName('function_id') + 
+                                        Optional(functions_of_two_columns_subclause)).setResultsName("function"))
 
 # MUTUAL INFORMATION [OF <column1> WITH <column2>]
-mutual_information_function = Group(mutual_information_keyword.setResultsName('function_id') + 
-                                    Optional(functions_of_two_columns_subclause).setResultsName("function"))
+mutual_information_function = (Group(mutual_information_keyword.setResultsName('function_id') + 
+                                    Optional(functions_of_two_columns_subclause)).setResultsName("function"))
 
 # CORRELATION [OF <column1> WITH <column2>]
-correlation_function = Group(correlation_keyword.setResultsName('function_id') + 
-                             Optional(functions_of_two_columns_subclause).setResultsName("function"))
+correlation_function = (Group(correlation_keyword.setResultsName('function_id') + 
+                             Optional(functions_of_two_columns_subclause)).setResultsName("function"))
 
 two_column_function = (dependence_probability_function | mutual_information_function | correlation_function)
 
