@@ -354,9 +354,6 @@ class Parser(object):
                  threshold=threshold, modelids=modelids), \
             dict(filename=filename)
 
-
-    ##TODO general parse_query to be meat of parse select, infer, simulate etc
-
 #####################################################################################
 ## ------------------------------ Function parsing ------------------------------- ##
 #####################################################################################

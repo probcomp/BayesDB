@@ -1137,4 +1137,55 @@ def test_infer(): ##TODO
     assert args['summarize'] == d['summarize']
 
 def test_simulate(): ##TODO 
-    pass
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('simulate * from t times 10'))
+    assert method == 'simulate'
+    assert args['tablename'] == 't'
+    assert args['functions'][0].column_id == '*'
+    assert args['summarize'] == False
+    assert args['plot'] == False
+    assert args['order_by'] == False
+    assert args['modelids'] == None
+    assert args['newtablename'] == None
+    assert args['givens'] == None
+    assert args['numpredictions'] == 10
+
+    assert client_dict['pairwise'] == False
+    assert client_dict['filename'] == None
+    assert client_dict['scatter'] == False
+    ##TODO more clauses
+
+def test_estimate():
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('estimate columns from t'))
+    assert method == 'estimate_columns'
+    assert args['tablename'] == 't'
+    assert args['functions'][0] == 'column'
+    assert args['whereclause'] == None
+    assert args['limit'] == float('inf')
+    assert args['order_by'] == False
+    assert args['name'] == None
+    assert args['modelids'] == None
+    assert client_dict == None
+
+def test_estimate_pairwise():
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('estimate pairwise correlation from t'))
+    assert method == 'estimate_pairwise'
+    assert args['tablename'] == 't'
+    assert args['function_name'] == 'correlation'
+    assert args['column_list'] == None
+    assert args['components_name'] == None
+    assert args['threshold'] == None
+    assert args['modelids'] == None
+    assert client_dict['filename'] == None
+
+
+def test_estimate_pairwise_row():
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('estimate pairwise row similarity from t'))
+    assert method == 'estimate_pairwise_row'
+    assert args['tablename'] == 't'
+    assert args['function_name'] == 'similarity'
+    assert args['row_list'] == None
+    assert args['components_name'] == None
+    assert args['threshold'] == None
+    assert args['modelids'] == None
+    assert client_dict['filename'] == None
+
