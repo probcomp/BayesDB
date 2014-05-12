@@ -924,7 +924,7 @@ def test_parse_functions():
     assert queries[2] == (functions._mutual_information, (0,1), True)
     assert queries[3] == (functions._correlation, (0,1), True)
     assert queries[4] == (functions._dependence_probability, (0,1), True)
-    assert queries[5] == (functions._similarity, (0,None), False) ##TODO
+    assert queries[5] == (functions._similarity, (0,None), False)
     assert queries[6] == (functions._similarity, (0,None), False)
     assert queries[7] == (functions._probability, (0,'1'), True)
     assert queries[8] == (functions._probability, (1,1), True)

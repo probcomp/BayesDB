@@ -139,6 +139,93 @@ class Parser(object):
 
     def parse_load_models(self,bql_statement_ast):
         return 'load_models', dict(tablename=bql_statement_ast.btable), dict(pkl_path=bql_statement_ast.filename)
+    
+    def parse_query(self, bql_statement_ast):
+        '''
+        master parser for queries (select, infer, simulate, estimate pairwise, etc)
+        returns a general args dict which the specific versions of those functions 
+        will then trim and check for illegal aruguments through assertions. 
+        '''
+        statement_id = bql_statement_ast.statement_id 
+        
+        ##TODO function_name into functions
+#        print bql_statement_ast
+        confidence = 0
+        if bql_statement_ast.confidence != '':
+            confidence = float(bql_statement_ast.confidence)##TODO throw exception for not floats
+            if confidence > 1: 
+                raise utils.BayesDBParseError("Confidence cannot be greater than 0.")
+        filename = None
+        if bql_statement_ast.filename != '':
+            filename = bql_statement_ast.filename
+        functions = bql_statement_ast.functions
+        givens = None
+        if bql_statement_ast.given_clause != '':
+            givens = bql_statement_ast.given_clause
+        limit = float('inf')
+        if bql_statement_ast.limit != '':
+            limit = int(bql_statement_ast.limit)
+        modelids = None
+        if bql_statement_ast.using_models_index_clause != '':
+            modelids = bql_statement_ast.using_models_index_clause.asList()
+        name = None
+        if bql_statement_ast.as_column_list != '':
+            ## TODO name is a bad name
+            name = bql_statement_ast.as_column_list
+        newtablename=None ##TODO implement into
+        numpredictions = None
+        if bql_statement_ast.times != '':
+            numpredictions = int(bql_statement_ast.times)##TODO except
+        numsamples = None
+        if bql_statement_ast.samples != '':
+            numsamples = int(bql_statement_ast.samples)
+        order_by = False ##TODO maybe change to None
+        if bql_statement_ast.order_by != '':
+            order_by = bql_statement_ast.order_by.order_by_set.asList()
+        plot=(bql_statement_ast.plot == 'plot')
+        pairwise = (bql_statement_ast.pairwise == 'pairwise')
+        column_list = None
+        if bql_statement_ast.columns != '':
+            column_list = bql_statement_ast.columns ##TODO parse to list of columns
+        row_list = None
+        if bql_statement_ast.rows != '':
+            row_list = bql_statement_ast.rows ##TODO parse to list of rows
+        scatter = (bql_statement_ast.scatter == 'scatter') ##TODO add to grammar
+        summarize=(bql_statement_ast.summarize == 'summarize')
+        tablename = bql_statement_ast.btable
+        components_name = None
+        threshold = None
+        if bql_statement_ast.save_connected_components != '':
+            components_name = bql_statement_ast.save_connected_components.as_label
+            threshold = float(bql_statement_ast.save_connected_components.threshold)
+        whereclause = None
+        if bql_statement_ast.where_conditions != '':
+            whereclause = bql_statement_ast.where_conditions
+
+        return statement_id, \
+            dict(components_name=components_name,
+                 confidence = confidence,
+                 functions=functions,
+                 givens=givens,
+                 limit=limit,
+                 modelids=modelids,
+                 name=name,
+                 newtablename=newtablename,
+                 numpredictions=numpredictions,
+                 numsamples=numsamples,
+                 order_by=order_by,
+                 plot=plot,
+                 column_list=column_list,
+                 row_list=row_list,
+                 summarize=summarize,
+                 tablename=tablename,
+                 threshold=threshold,
+                 whereclause=whereclause), \
+            dict(plot=plot, 
+                 scatter=scatter, 
+                 pairwise=pairwise, 
+                 filename=filename)
+
 
     ##TODO merge with parse_select
     def parse_infer(self,bql_statement_ast):
@@ -181,33 +268,24 @@ class Parser(object):
             dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
 
     def parse_select(self,bql_statement_ast):
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         ## TODO assert for extra pieces
-        tablename = bql_statement_ast.btable
-        functions = bql_statement_ast.functions
-        summarize = (bql_statement_ast.summarize == 'summarize') #TODO should be mutually exclusive?
-        plot = (bql_statement_ast.plot == 'plot')
-        scatter = (bql_statement_ast.scatter == 'scatter') ##TODO add to grammar
-        pairwise = (bql_statement_ast.pairwise == 'pairwise')
-        whereclause = None
-        if bql_statement_ast.where_conditions != '':
-            whereclause = bql_statement_ast.where_conditions
-        limit = float('inf')
-        if bql_statement_ast.limit != '':
-            limit = int(bql_statement_ast.limit)
-        filename = None
-        if bql_statement_ast.filename != '':
-            filename = bql_statement_ast.filename
-        order_by = False ##TODO maybe change to None
-        if bql_statement_ast.order_by != '':
-            order_by = bql_statement_ast.order_by.order_by_set.asList()
-        modelids = None
-        if bql_statement_ast.using_models_index_clause != '':
-            modelids = bql_statement_ast.using_models_index_clause.asList()
-        #TODO deprecate columnstring
-        #TODO add as for select newtablename
-        return 'select', dict(tablename=tablename, whereclause=whereclause, 
-                              functions=functions, limit=limit, order_by=order_by, plot=plot, 
-                              modelids=modelids, summarize=summarize), \
+        tablename = args_dict['tablename']
+        functions = args_dict['functions']
+        summarize = args_dict['summarize']
+        plot = args_dict['plot']
+        whereclause = args_dict['whereclause']
+        limit = args_dict['limit']
+        order_by = args_dict['order_by']
+        modelids = args_dict['modelids']
+
+        pairwise = client_dict['pairwise']
+        filename = client_dict['filename']
+        scatter = client_dict['scatter']
+        return 'select', \
+            dict(tablename=tablename, whereclause=whereclause, 
+                 functions=functions, limit=limit, order_by=order_by, plot=plot, 
+                 modelids=modelids, summarize=summarize), \
             dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
     def parse_simulate(self,bql_statement_ast):
@@ -279,7 +357,7 @@ class Parser(object):
         if bql_statement_ast.filename != '':
             filename = bql_statement_ast.filename
         row_list = None
-        if bql_statement_ast.columns != '':
+        if bql_statement_ast.rows != '':
             row_list = bql_statement_ast.rows ##TODO parse to columns list
         components_name = None
         threshold = None
