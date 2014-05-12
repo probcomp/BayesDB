@@ -935,80 +935,206 @@ def test_parse_functions():
     assert queries[13] == (functions._column, 1, False)
     
 def test_select():
+    ##TODO test client_dict
     tablename = 't'
-    columnstring = '*'
-    whereclause = ''
+    functions = function_in_query.parseString('*',parseAll=True)
+    whereclause = None
     limit = float('inf')
     order_by = False
     plot = False
 
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select * from t'))
-    d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
-    assert args == d
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'] == d['whereclause']
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
 
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('summarize select * from t'))
-    d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
+
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=True)
     assert method == 'select'
-    assert args == d
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'] == d['whereclause']
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
     
-    columnstring = 'a, b, a_b'
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select a, b, a_b from t'))
-    d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
+    d = dict(tablename=tablename, functions=None, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
-    assert args == d
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == 'a'
+    assert args['functions'][1].column_id == 'b'
+    assert args['functions'][2].column_id == 'a_b'
+    assert args['whereclause'] == d['whereclause']
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
 
-    whereclause = 'a=6 and b = 7'
-    columnstring = '*'
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select * from t where a=6 and b = 7'))
-    d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
-    assert args == d
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == '*'
+    assert args['whereclause'][0].function.column == 'a'
+    assert args['whereclause'][0].value == '6'
+    assert args['whereclause'][1].function.column == 'b'
+    assert args['whereclause'][1].value == '7'
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
 
     limit = 10
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select * from t where a=6 and b = 7 limit 10'))
-    d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
-    assert args == d
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'][0].function.column == 'a'
+    assert args['whereclause'][0].value == '6'
+    assert args['whereclause'][1].function.column == 'b'
+    assert args['whereclause'][1].value == '7'
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
 
     order_by = [('b', False)]
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select * from t where a=6 and b = 7 order by b limit 10'))
-    d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
-    assert args == d
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'][0].function.column == 'a'
+    assert args['whereclause'][0].value == '6'
+    assert args['whereclause'][1].function.column == 'b'
+    assert args['whereclause'][1].value == '7'
+    assert args['limit'] == d['limit']
+    #assert args['order_by'] == d['order_by'] ##TODO
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
 
-def test_simulate(): ##TODO
+def test_infer(): ##TODO
+    ##TODO test client_dict
     tablename = 't'
-    newtablename = ''
-    columnstring = ''
-    whereclause = ''
-    order_by = ''
-    numpredictions = ''
-    d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             newtablename=newtablename, order_by=order_by, numpredictions=numpredictions)
+    functions = function_in_query.parseString('*',parseAll=True)
+    whereclause = None
+    limit = float('inf')
+    order_by = False
+    plot = False
+
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer * from t'))
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
+    assert method == 'infer'
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'] == d['whereclause']
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
+
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('summarize infer * from t'))
+
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=True)
+    assert method == 'infer'
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'] == d['whereclause']
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
     
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer a, b, a_b from t'))
+    d = dict(tablename=tablename, functions=None, whereclause=whereclause,
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
+    assert method == 'infer'
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == 'a'
+    assert args['functions'][1].column_id == 'b'
+    assert args['functions'][2].column_id == 'a_b'
+    assert args['whereclause'] == d['whereclause']
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
 
-def test_infer(): ##TODO 
-    tablename = 't'
-    newtablename = ''
-    columnstring = ''
-    confidence = ''
-    whereclause = ''
-    limit = ''
-    numsamples = ''
-    order_by = ''
-    d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             newtablename=newtablename, order_by=order_by, numsamples=numsamples, confidence=confidence)
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer * from t where a=6 and b = 7'))
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
+    assert method == 'infer'
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == '*'
+    assert args['whereclause'][0].function.column == 'a'
+    assert args['whereclause'][0].value == '6'
+    assert args['whereclause'][1].function.column == 'b'
+    assert args['whereclause'][1].value == '7'
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
 
+    limit = 10
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer * from t where a=6 and b = 7 limit 10'))
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
+    assert method == 'infer'
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'][0].function.column == 'a'
+    assert args['whereclause'][0].value == '6'
+    assert args['whereclause'][1].function.column == 'b'
+    assert args['whereclause'][1].value == '7'
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
 
-#SELECT <columns> FROM <btable> [WHERE <whereclause>] [LIMIT <limit>] [ORDER BY <columns>]
+    order_by = [('b', False)]
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer * from t where a=6 and b = 7 order by b limit 10'))
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
+    assert method == 'infer'
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'][0].function.column == 'a'
+    assert args['whereclause'][0].value == '6'
+    assert args['whereclause'][1].function.column == 'b'
+    assert args['whereclause'][1].value == '7'
+    assert args['limit'] == d['limit']
+    #assert args['order_by'] == d['order_by'] ##TODO
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
 
-#INFER <columns> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [LIMIT <limit>] [WITH <numsamples> SAMPLES] [ORDER BY <columns]
-
-#SIMULATE <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [ORDER BY <columns>]
+def test_simulate(): ##TODO 
+    pass

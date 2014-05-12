@@ -300,57 +300,33 @@ class Parser(object):
 
     def parse_estimate(self,bql_statement_ast):
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        assert args_dict['functions'][0] == 'column'
+        functions = args_dict['functions']
+        tablename = args_dict['tablename']
+        whereclause = args_dict['whereclause']
+        limit = args_dict['limit']
+        order_by = args_dict['order_by']
+        modelids = args_dict['modelids']
+        name = args_dict['name']
 
-        functions = None ##TODO wat
-        tablename = bql_statement_ast.btable
-        whereclause = None
-        if bql_statement_ast.where_conditions != '':
-            whereclause = bql_statement_ast.where_conditions
-        limit = float('inf')
-        if bql_statement_ast.limit != '':
-            limit = int(bql_statement_ast.limit)
-        order_by = False ##TODO maybe change to None
-        if bql_statement_ast.order_by != '':
-            order_by = bql_statement_ast.order_by.order_by_set.asList()
-        modelids = None
-        if bql_statement_ast.using_models_index_clause != '':
-            modelids = bql_statement_ast.using_models_index_clause.asList()
-        name = None
-        if bql_statement_ast.as_column_list != '':
-            ## TODO name is a bad name
-            name = bql_statement_ast.as_column_list
-            
         return 'estimate_columns', \
             dict(tablename=tablename, functions=functions, 
                  whereclause=whereclause, limit=limit, 
                  order_by=order_by, name=name, modelids=modelids), \
             None
-        
 
     def parse_estimate_pairwise_row(self,bql_statement_ast):
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
-
-        assert len(bql_statement_ast.functions) == 1
-        function = bql_statement_ast.functions[0]
-        assert function.function_id in ["similarity"]
-        
-        tablename = bql_statement_ast.btable
-        function_name = function.function_id
-        filename = None
-        if bql_statement_ast.filename != '':
-            filename = bql_statement_ast.filename
-        row_list = None
-        if bql_statement_ast.rows != '':
-            row_list = bql_statement_ast.rows ##TODO parse to columns list
-        components_name = None
-        threshold = None
-        if bql_statement_ast.save_connected_components != '':
-            components_name = bql_statement_ast.save_connected_components.as_label
-            threshold = float(bql_statement_ast.save_connected_components.threshold)
-
-        modelids = None
-        if bql_statement_ast.using_models_index_clause != '':
-            modelids = bql_statement_ast.using_models_index_clause.asList()
+        functions = args_dict['functions']
+        assert len(functions) == 1
+        assert functions[0].function_id in ["similarity"]
+        function_name = functions[0].function_id
+        tablename = args_dict['tablename']
+        row_list = args_dict['row_list']
+        components_name = args_dict['components_name']
+        threshold = args_dict['threshold']
+        modelids = args_dict['modelids']
+        filename = client_dict['filename']
 
         return 'estimate_pairwise_row', \
             dict(tablename=tablename, function_name=function_name,
@@ -359,27 +335,18 @@ class Parser(object):
             dict(filename=filename)
 
     def parse_estimate_pairwise(self,bql_statement_ast):
-        assert len(bql_statement_ast.functions) == 1
-        function = bql_statement_ast.functions[0]
-        assert function.function_id in ['correlation', 'mutual information', 'dependence probability']
-        ##TODO  Throw useful exceptions here
-        tablename = bql_statement_ast.btable
-        function_name = function.function_id
-        filename = None
-        if bql_statement_ast.filename != '':
-            filename = bql_statement_ast.filename
-        column_list = None
-        if bql_statement_ast.columns != '':
-            column_list = bql_statement_ast.columns ##TODO parse to columns list
-        components_name = None
-        threshold = None
-        if bql_statement_ast.save_connected_components != '':
-            components_name = bql_statement_ast.save_connected_components.as_label
-            threshold = float(bql_statement_ast.save_connected_components.threshold)
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        functions = args_dict['functions']
+        assert len(functions) == 1
+        assert functions[0].function_id in ['correlation', 'mutual information', 'dependence probability']
+        function_name = functions[0].function_id
 
-        modelids = None
-        if bql_statement_ast.using_models_index_clause != '':
-            modelids = bql_statement_ast.using_models_index_clause.asList()
+        tablename = args_dict['tablename']
+        column_list = args_dict['column_list']
+        components_name = args_dict['components_name']
+        threshold = args_dict['threshold']
+        modelids = args_dict['modelids']
+        filename = client_dict['filename']
 
         return 'estimate_pairwise', \
             dict(tablename=tablename, function_name=function_name,
