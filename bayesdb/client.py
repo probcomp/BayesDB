@@ -143,10 +143,10 @@ class Client(object):
 
         parser_out = None
         if debug:
-            parser_out = self.parser.parse_statement(bql_statement_string)
+            parser_out = self.parser.parse_single_statement(bql_statement_string)
         else:
             try:
-                parser_out = self.parser.parse_statement(bql_statement_string)
+                parser_out = self.parser.parse_single_statement(bql_statement_string)
             except Exception as e:            
                 raise utils.BayesDBParseError(str(e))
         if parser_out is None:

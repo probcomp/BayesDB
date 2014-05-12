@@ -1019,9 +1019,8 @@ def test_select():
     assert args['summarize'] == d['summarize']
 
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select * from t where a=6 and b = 7 order by b limit 10'))
+    order_by = [('b', True)],
     d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
-    order_by = [('b', True)]
-
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args['tablename'] == d['tablename']
