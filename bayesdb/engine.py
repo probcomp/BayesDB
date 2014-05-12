@@ -89,7 +89,7 @@ class Engine(object):
 
   def list_btables(self):
     """Return names of all btables."""
-    return dict(list=self.persistence_layer.list_btables())
+    return dict(columns=['btable'], data=[[name] for name in self.persistence_layer.list_btables()])
 
   def label_columns(self, tablename, mappings):
     """
@@ -225,7 +225,7 @@ class Engine(object):
     metadata = self.persistence_layer.get_metadata(tablename)
     colnames = utils.get_all_column_names_in_original_order(metadata['M_c'])
     cctypes = metadata['cctypes']
-    return dict(columns=colnames, data=[cctypes])
+    return dict(columns=['column','datatype'], data=zip(colnames, cctypes))
 
   def save_models(self, tablename):    
     """Opposite of load models! Returns the models, including the contents, which
@@ -509,8 +509,10 @@ class Engine(object):
       ret['columns'] = columns
     return ret
 
+
   def simulate(self, tablename, functions, newtablename, givens, numpredictions, order_by, plot=False, modelids=None, summarize=False):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
+    # TODO: whereclause not implemented.
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     if not self.persistence_layer.has_models(tablename):
@@ -616,7 +618,14 @@ class Engine(object):
       column_names = list(M_c['name_to_idx'].keys())
     return dict(columns=column_names)
 
+  def show_model(self, tablename, modelid, filename):
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    import crosscat.utils.plot_utils
+    crosscat.utils.plot_utils.plot_views(numpy.array(T), X_D_list[modelid], X_L_list[modelid], M_c, filename)
+
   def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None):
+
     """
     Return all the column names from the specified table as a list.
     First, columns are filtered based on whether they match the whereclause.

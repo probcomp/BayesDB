@@ -30,9 +30,9 @@ LOAD MODELS chicago_small_models.pkl.gz FOR chicago_demo;
 
 ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM chicago_demo SAVE CONNECTED COMPONENTS WITH THRESHOLD 0.8 AS cc_pt8;
 ESTIMATE PAIRWISE CORRELATION FROM chicago_demo;
-SELECT HIST PAIRWISE cc_pt8_2 FROM chicago_demo;
+PLOT SELECT cc_pt8_2 FROM chicago_demo;
 
 
 -- NOTE: this uses wildcards and will not yet work!
 --ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM chicago_demo FOR COLUMNS cc_* SAVE TO figures/epd_cc_pt8.png;
---SELECT HIST PAIRWISE cc_* FROM chicago_demo SAVE TO figures/histpairwise_cc_pt8.png
+--PLOT SELECT cc_* FROM chicago_demo SAVE TO figures/histpairwise_cc_pt8.png

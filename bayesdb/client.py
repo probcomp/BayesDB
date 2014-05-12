@@ -141,10 +141,14 @@ class Client(object):
         if timing:
             start_time = time.time()
 
-        try:
-            parser_out  = self.parser.parse_single_statement(bql_statement_string)
-        except Exception as e:
-            raise utils.BayesDBParseError(str(e))
+        parser_out = None
+        if debug:
+            parser_out = self.parser.parse_statement(bql_statement_string)
+        else:
+            try:
+                parser_out = self.parser.parse_statement(bql_statement_string)
+            except Exception as e:            
+                raise utils.BayesDBParseError(str(e))
         if parser_out is None:
             print "Could not parse command. Try typing 'help' for a list of all commands."
             return
@@ -231,7 +235,7 @@ class Client(object):
         if ('plot' in client_dict and client_dict['plot']):
             if (plots or client_dict['filename']):
                 # Plot generalized histograms or scatterplots
-                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], client_dict['pairwise'])
+                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], True) # pairwise always true
                 return self.pretty_print(result)
             else:
                 if 'message' not in result:
@@ -302,7 +306,9 @@ class Client(object):
         elif 'columns' in query_obj:
             """ Pretty-print column list."""
             pt = prettytable.PrettyTable()
-            pt.field_names = query_obj['columns']
+            pt.field_names = ['column']
+            for column in query_obj['columns']:
+                pt.add_row([column])
             result += str(pt)
         elif 'row_lists' in query_obj:
             """ Pretty-print multiple row lists, which are just names and row sizes. """
@@ -335,9 +341,11 @@ class Client(object):
                 print pt
         elif 'models' in query_obj:
             """ Pretty-print model info. """
-            m = query_obj['models']
-            output_list = ['Model %d: %d iterations' % (id, iterations) for id,iterations in m]
-            result += ', '.join(output_list)
+            pt = prettytable.PrettyTable()
+            pt.field_names = ('model_id', 'iterations')
+            for (id, iterations) in query_obj['models']:
+                pt.add_row((id, iterations))
+            result += str(pt)
 
         if len(result) >= 1 and result[-1] == '\n':
             result = result[:-1]
