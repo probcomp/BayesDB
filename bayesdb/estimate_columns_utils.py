@@ -54,40 +54,9 @@ def _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine
 def order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, engine):
   if not order_by:
     return column_indices
-  # Step 1: get appropriate functions.
-  function_list = list()
-  for orderable in order_by:
-    assert type(orderable) == tuple and type(orderable[0]) == str and type(orderable[1]) == bool
-    raw_orderable_string = orderable[0]
-    desc = orderable[1]
-
-    ## function_list is a list of
-    ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, engine), args, desc)
-
-    t = functions.parse_cfun_column_typicality(raw_orderable_string, M_c)
-    if t:
-      function_list.append((functions._col_typicality, None, desc))
-      continue
-
-    d = functions.parse_cfun_dependence_probability(raw_orderable_string, M_c)
-    if d:
-      function_list.append((functions._dependence_probability, d, desc))
-      continue
-
-    m = functions.parse_cfun_mutual_information(raw_orderable_string, M_c)
-    if m is not None:
-      function_list.append((functions._mutual_information, m, desc))
-      continue
-
-    c= functions.parse_cfun_correlation(raw_orderable_string, M_c)
-    if c is not None:
-      function_list.append((functions._correlation, c, desc))
-      continue
-
-    raise utils.BayesDBParseError("Invalid query argument: could not parse '%s'" % raw_orderable_string)
 
   ## Step 2: call order by.
-  sorted_column_indices = _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, engine)
+  sorted_column_indices = _column_order_by(column_indices, order_by, M_c, X_L_list, X_D_list, T, engine)
   return sorted_column_indices
 
 def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, engine):

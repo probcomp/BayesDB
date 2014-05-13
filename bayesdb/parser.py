@@ -581,6 +581,30 @@ class Parser(object):
             function_list.append((function, args, desc))
         return function_list
 
+    def parse_column_order_by_clause(self, order_by_clause_ast, M_c, ):
+        function_list = []
+        for orderable in order_by_clause_ast:
+            desc = True
+            if orderable.asc_desc == 'asc':
+                desc = False
+            if orderable.function.function_id == 'typicality': ##TODO assert for c_idx 
+                function = functions._col_typicality
+                args = None 
+            elif orderable.function.function_id == 'dependence probability':
+                function = functions._dependence_probability
+                _, args = self.get_args_of_with(orderable.function, M_c)
+            elif orderable.function.function_id == 'correlation':
+                function = functions._correlation
+                _, args = self.get_args_of_with(orderable.function, M_c)
+            elif orderable.function.function_id == 'mutual information':
+                function = functions._mutual_information
+                _, args = self.get_args_of_with(orderable.function, M_c)
+            else:
+                raise utils.BayesDBParseError("Invalid order by clause. Can only order by typicality, correlation, mutual information, or dependence probability.")
+            function_list.append((function, args, desc))
+        
+        return function_list
+
     def parse_functions(self, function_groups, M_c=None, T=None, column_lists=None):
         '''
         Generates two lists of functions, arguments, aggregate tuples. 
@@ -659,6 +683,8 @@ class Parser(object):
                     raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % column_name)
                 queries += [(functions._column, column_index , False) for column_index in index_list]
                 query_colnames += [name for name in name_list]
+            else: 
+                raise utils.BayesDBParseError("Invalid query: could not parse function")
         return queries, query_colnames
 
 #####################################################################################

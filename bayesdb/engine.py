@@ -657,6 +657,8 @@ class Engine(object):
     ## order
     if order_by and len(X_L_list) == 0:
       raise utils.BayesDBNoModelsError(tablename)      
+    if order_by != False:
+      order_by = self.parser.parse_column_order_by_clause(order_by, M_c)
     column_indices = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self)
     
     # limit
