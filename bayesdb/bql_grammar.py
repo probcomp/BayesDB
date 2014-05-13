@@ -463,10 +463,7 @@ function_in_query = (predictive_probability_of_function |
                      dependence_probability_function |
                      mutual_information_function |
                      correlation_function |
-                     #row_similarity_keyword |
-                     #similarity_keyword |
                      column_keyword |
-                     #similarity_keyword |
                      dependence_probability_keyword |
                      Group((identifier|all_column_literal).setResultsName("column_id"))).setResultsName("function")
 

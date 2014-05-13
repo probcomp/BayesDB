@@ -185,7 +185,8 @@ class Parser(object):
         pairwise = (bql_statement_ast.pairwise == 'pairwise')
         column_list = None
         if bql_statement_ast.columns != '':
-            column_list = bql_statement_ast.columns ##TODO parse to list of columns
+            column_list = bql_statement_ast.columns[0] ##TODO implement allowing comma separated columns here
+            assert len(bql_statement_ast.columns) < 2
         row_list = None
         if bql_statement_ast.rows != '':
             row_list = bql_statement_ast.rows ##TODO parse to list of rows
