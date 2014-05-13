@@ -34,6 +34,7 @@ import functions
 import data_utils as du
 from pyparsing import *
 import bayesdb.bql_grammar as bql_grammar
+#import bayesdb.parser as p
 
 def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend, tablename):
   """Helper function that applies WHERE conditions to row, returning True if row satisfies where clause."""
@@ -104,42 +105,11 @@ def filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, engine,
     return filtered_rows
 
 def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine, column_lists):
+  ##TODO deprecate one of these functions
   """Input: rows are list of (row_id, row_values) tuples."""
   if not order_by:
       return rows
-  ## Step 1: get appropriate functions. Examples are 'column' and 'similarity'.
-  function_list = list()
-  for orderable in order_by:
-    assert type(orderable) == tuple and type(orderable[0]) == str and type(orderable[1]) == bool
-    raw_orderable_string = orderable[0]
-    desc = orderable[1]
-
-    ## function_list is a list of
-    ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, engine), args, desc)
-    
-    s = functions.parse_similarity(raw_orderable_string, M_c, T, column_lists)
-    if s:
-      function_list.append((functions._similarity, s, desc))
-      continue
-
-    c = functions.parse_row_typicality(raw_orderable_string)
-    if c:
-      function_list.append((functions._row_typicality, c, desc))
-      continue
-
-    p = functions.parse_predictive_probability(raw_orderable_string, M_c)
-    if p is not None:
-      function_list.append((functions._predictive_probability, p, desc))
-      continue
-
-    if raw_orderable_string.lower() in M_c['name_to_idx']:
-      function_list.append((functions._column, M_c['name_to_idx'][raw_orderable_string.lower()], desc))
-      continue
-
-    raise utils.BayesDBParseError("Invalid query argument: could not parse '%s'" % raw_orderable_string)
-
-  ## Step 2: call order by.
-  rows = _order_by(rows, function_list, M_c, X_L_list, X_D_list, T, engine)
+  rows = _order_by(rows, order_by, M_c, X_L_list, X_D_list, T, engine)
   return rows
 
 def _order_by(filtered_values, function_list, M_c, X_L_list, X_D_list, T, engine):

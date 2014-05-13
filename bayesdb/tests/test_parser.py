@@ -415,43 +415,55 @@ def test_order_by_clause_pyparsing():
                                              ,parseAll=True)
     order_by_2 = order_by_clause.parseString("ORDER BY column_1,column_2 , column_3"
                                              ,parseAll=True)
-    assert order_by_1.order_by.order_by_set[0].column=='column_1'
-    assert order_by_2.order_by.order_by_set[1].column=='column_2'
+    assert order_by_1.order_by[0].function.column == 'column_1'
+    assert order_by_2.order_by[1].function.column =='column_2'
     order_by_3 = order_by_clause.parseString("ORDER BY TYPICALITY",
                                              parseAll=True)
-    assert order_by_3.order_by.order_by_set[0].function_id == 'typicality'
+    assert order_by_3.order_by[0].function.function_id == 'typicality'
     order_by_4 = order_by_clause.parseString("ORDER BY TYPICALITY, column_1",
                                              parseAll=True)
-    assert order_by_4.order_by.order_by_set[0].function_id == 'typicality'
-    assert order_by_4.order_by.order_by_set[1].column == 'column_1'    
+    assert order_by_4.order_by[0].function.function_id == 'typicality'
+    assert order_by_4.order_by[1].function.column == 'column_1'
     order_by_5 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY",
                                              parseAll=True)
-    assert order_by_5.order_by.order_by_set[0].column == 'column_1'
-    assert order_by_5.order_by.order_by_set[1].function_id == 'typicality'
+    assert order_by_5.order_by[0].function.column == 'column_1'
+    assert order_by_5.order_by[1].function.function_id == 'typicality'
     order_by_6 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1",
                                              parseAll=True)
-    assert order_by_6.order_by.order_by_set[0].function_id == 'predictive probability'
-    assert order_by_6.order_by.order_by_set[0].column == 'column_1'
+    assert order_by_6.order_by[0].function.function_id == 'predictive probability'
+    assert order_by_6.order_by[0].function.column == 'column_1'
     
     order_by_7 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1, column_1",
                                              parseAll=True)
-    assert order_by_7.order_by.order_by_set[1].column == 'column_1'
-    assert order_by_7.order_by.order_by_set[0].function_id == 'predictive probability'
-    assert order_by_7.order_by.order_by_set[0].column == 'column_1'
+    assert order_by_7.order_by[1].function.column == 'column_1'
+    assert order_by_7.order_by[0].function.function_id == 'predictive probability'
+    assert order_by_7.order_by[0].function.column == 'column_1'
 
     order_by_8 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY, PREDICTIVE PROBABILITY OF column_1, column_2, SIMILARITY TO 2, SIMILARITY TO column_1 = 1 WITH RESPECT TO column_4",
                                              parseAll=True)
-    assert order_by_8.order_by.order_by_set[0].column == 'column_1'
-    assert order_by_8.order_by.order_by_set[1].function_id == 'typicality'
-    assert order_by_8.order_by.order_by_set[2].function_id == 'predictive probability'
-    assert order_by_8.order_by.order_by_set[2].column == 'column_1'
-    assert order_by_8.order_by.order_by_set[3].column == 'column_2'
-    assert order_by_8.order_by.order_by_set[4].function_id == 'similarity'
-    assert order_by_8.order_by.order_by_set[4].row_id == '2'
-    assert order_by_8.order_by.order_by_set[5].function_id == 'similarity'
-    assert order_by_8.order_by.order_by_set[5].column == 'column_1'
-    assert order_by_8.order_by.order_by_set[5].column_value == '1'
-    assert order_by_8.order_by.order_by_set[5].with_respect_to[1][0] == 'column_4' #todo names instead of indexes
+    assert order_by_8.order_by[0].function.column == 'column_1'
+    assert order_by_8.order_by[1].function.function_id == 'typicality'
+    assert order_by_8.order_by[2].function.function_id == 'predictive probability'
+    assert order_by_8.order_by[2].function.column == 'column_1'
+    assert order_by_8.order_by[3].function.column == 'column_2'
+    assert order_by_8.order_by[4].function.function_id == 'similarity'
+    assert order_by_8.order_by[4].function.row_id == '2'
+    assert order_by_8.order_by[5].function.function_id == 'similarity'
+    assert order_by_8.order_by[5].function.column == 'column_1'
+    assert order_by_8.order_by[5].function.column_value == '1'
+    assert order_by_8.order_by[5].function.with_respect_to[1][0] == 'column_4' #todo names instead of indexes
+
+    order_by_9 = order_by_clause.parseString("ORDER BY column_1 asc"
+                                             ,parseAll=True)
+    order_by_10 = order_by_clause.parseString("ORDER BY column_1 asc,column_2 desc , column_3"
+                                             ,parseAll=True)
+    assert order_by_9.order_by[0].function.column =='column_1'
+    assert order_by_10.order_by[1].function.column =='column_2'
+    assert order_by_9.order_by[0].asc_desc =='asc'
+    assert order_by_10.order_by[1].asc_desc =='desc'
+    order_by_11 = order_by_clause.parseString("ORDER BY TYPICALITY asc",
+                                             parseAll=True)
+    assert order_by_11.order_by[0].asc_desc =='asc'
 
 def test_whereclause_pyparsing():
     # WHERE <column> <operation> <value>
@@ -608,7 +620,7 @@ def test_basic_select_pyparsing():
     select_4 = "SELECT col_1 FROM table_1 ORDER BY TYPICALITY LIMIT 10 SAVE TO ~/test.txt"
     select_4_parse = query.parseString(select_4,parseAll=True)
     assert select_4_parse.functions[0].column_id == 'col_1'
-    assert select_4_parse.order_by.order_by_set[0].function_id == 'typicality'
+    assert select_4_parse.order_by[0].function.function_id == 'typicality'
     assert select_4_parse.limit == '10'
     assert select_4_parse.filename == '~/test.txt'
     
@@ -675,7 +687,7 @@ def test_infer_pyparsing():
     infer_4 = "infer col_1 FROM table_1 ORDER BY TYPICALITY LIMIT 10 SAVE TO ~/test.txt"
     infer_4_parse = query.parseString(infer_4,parseAll=True)
     assert infer_4_parse.functions[0].column_id == 'col_1'
-    assert infer_4_parse.order_by.order_by_set[0].function_id == 'typicality'
+    assert infer_4_parse.order_by[0].function.function_id == 'typicality'
     assert infer_4_parse.limit == '10'
     assert infer_4_parse.filename == '~/test.txt'
     query_1 = "INFER TYPICALITY FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
@@ -758,7 +770,7 @@ def test_estimate_columns_from_pyparsing():
     assert est_col_ast_1.where_keyword == 'where'
     assert est_col_ast_1.where_conditions[0].function.column == 'col_1'
     assert est_col_ast_1.where_conditions[0].value == '4'
-    assert est_col_ast_1.order_by.order_by_set[0].function_id == 'typicality'
+    assert est_col_ast_1.order_by[0].function.function_id == 'typicality'
     assert est_col_ast_1.limit == '10'
     assert est_col_ast_1.as_column_list == 'col_list_1'
     query_2 = "ESTIMATE COLUMNS FROM table_1"

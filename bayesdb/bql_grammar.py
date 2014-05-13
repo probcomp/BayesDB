@@ -406,16 +406,13 @@ whereclause_potential_function = (similarity_to_function |
 
 # -------------------------------- other clauses --------------------------- #
 
-# ORDER BY <column|non-aggregate-function>[<column|function>...] [asc|desc] ##TODO Test sort by
-order_by_clause = Group(order_by_keyword + 
-                        Group((whereclause_potential_function + 
-                               Optional(asc_keyword | desc_keyword)
-                               .setResultsName('sort_by')) + 
-                              ZeroOrMore(Suppress(comma_literal) + 
-                                         (whereclause_potential_function + 
-                                          Optional(asc_keyword | desc_keyword)
-                                          .setResultsName('sort_by'))))
-                        .setResultsName("order_by_set")).setResultsName('order_by') ##TODO order_by_set vs order_by
+# ORDER BY <column|non-aggregate-function>[<column|function>...] [asc|desc]
+single_order_by = Group(whereclause_potential_function.setResultsName('function') + 
+                        Optional(asc_keyword | desc_keyword).setResultsName('asc_desc'))
+
+order_by_clause = Group(Suppress(order_by_keyword) + 
+                        single_order_by + 
+                        ZeroOrMore(Suppress(comma_literal) + single_order_by)).setResultsName('order_by')
 
 # WHERE <whereclause>
 single_where_condition = Group(((whereclause_potential_function.setResultsName('function') + 

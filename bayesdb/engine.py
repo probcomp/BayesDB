@@ -495,6 +495,8 @@ class Engine(object):
     ## If only being selected: then want to compute after ordering...
 
     # Simply rearranges the order of the rows in filtered_rows according to the order_by query.
+    if order_by != False:
+      order_by = self.parser.parse_order_by_clause(order_by, M_c, T, column_lists)
     filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self, column_lists)
 
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
@@ -525,7 +527,6 @@ class Engine(object):
 
     numrows = len(M_r['idx_to_name'])
     name_to_idx = M_c['name_to_idx']
-
 
     ## TODO throw exception for <,> without dissallowing them in the values. 
     given_col_idxs_to_vals = dict()
