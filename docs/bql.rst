@@ -308,3 +308,84 @@ Here are some examples::
   ESTIMATE COLUMNS FROM table WHERE TYPICALITY > 0.6 AND CORRELATION WITH name > 0.5 ORDER BY DEPENDENCE PROBABILITY WITH name;
 
 
+Summary Statistics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To view summary statistics of query results, SUMMARIZE can be prepended to SELECT, INFER, and SIMULATE statements::
+
+  SUMMARIZE <SELECT|INFER|SIMULATE> <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>]
+
+The first column of the output from SUMMARIZE will be statistic labels:
+``count``, ``unique``, ``mean``, ``std``, ``min``, ``25%``, ``50%``, ``75%``, and ``max`` correspond to the output from ``pandas.Series.describe``, which is dependent on whether the column is discrete or continuous.
+
+``mode1``, ``mode2``, ``mode3``, ``mode4``, ``mode5`` are the 5 most common values in the column, *excluding missing values*.
+
+``prob_mode1``, ``prob_mode2``, ``prob_mode3``, ``prob_mode4``, ``prob_mode5`` are the empirical probabilities of the corresponding *i*-th most common value (number of occurrences / number of observations *including missing values*)
+
+Modal values and their empirical probabilities are returned for every column, whether discrete or continuous.
+
+
+Saving and Reviewing Metadata
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Metadata (data describing the data) can remind the user about what's contained in a btable, or what a particular column of data means. For each btable, metadata is stored as pairs consisting of a key and a value, and is saved at two different levels: metadata related to entire btables and metadata related to columns of data (typically referred to as column labels).
+
+For example, a user might set the key ``original_file_name = data_download_2014_04_17.csv`` in order to recall which version of the file is saved in the btable, or might set a column label ``yr = Year of observation``.
+
+Metadata for btables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are no restrictions on metadata keys, but some examples at the btable level might be ``original_file_name``, ``origin_url``, ``date_retrieved``,
+``misc_note``, etc.
+
+To add metadata to a btable directly::
+
+  UPDATE METADATA FOR <btable> SET <metadata-key1 = value1>[, <metadata-key2 = value2>...]
+
+Metadata keys and values should not be quoted unless the quotes are intended to be part of the key or label, and should also not include commas.
+
+Adding a lot of metadata to a btable might become tedious, especially if the process ever needs to be repeated, so it's also possible to add metadata to a btable from a file::
+
+  UPDATE METADATA FOR <btable> FROM <filename.csv>
+
+The file in <filename.csv> should be a text CSV file with two columns, with the first value on each line being a column name and the second value its intended label. The first line of the file will be assumed a header and therefore ignored. As an example, the first three lines of the file might be::
+
+  key,value
+  original_file_name,data_download_2014_04_17.csv
+  sample_note,data in btable is a 20% random sample of the full original file
+
+Metadata for columns of btables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Labeling columns is a common metadata operations, and has its own statement to assign labels directly::
+
+  LABEL COLUMNS FOR <btable> SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...]
+
+Column labels should not be quoted unless the quotes are part of the label, and should not include commas. Similarly to btable-level metadata, column labels can be added to a btable from a file::
+
+  LABEL COLUMNS FOR <btable> FROM <filename.csv>
+
+As with loading btable-level metadata from a file, the file in <filename.csv> should be a text CSV file with two columns, with the first value on each line being a column name and the second value its intended label. The first line of the file will be assumed a header and therefore ignored. As an example, the first three lines of the file might be::
+
+  column,label
+  age,Observed student's age as of 1 Jan 2014
+  grade,Student's enrolled grade at the beginning of the 2013-14 school year
+
+Reviewing btable metadata and column labels
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To see all metadata stored for a given btable as metadata key and value pairs::
+
+  SHOW METADATA FOR <btable>
+
+To see only the metadata values associated with specific keys::
+
+  SHOW METADATA FOR <btable> [<metadata-key1> [, <metadata-key2>...]]
+
+Similarly to the SHOW METADATA statements, column labels can be reviewed either all at once, by not specifying any column names::
+
+  SHOW LABELS FOR <btable>
+
+Or, if a set of column names is given, the output shows column name and label pairs for those columns::
+
+  SHOW LABELS FOR <btable> [<column-name-1> [, <column-name-2>...]]
