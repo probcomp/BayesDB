@@ -36,7 +36,6 @@ class Parser(object):
 
     def pyparse_input(self, input_string):
         """Uses the grammar defined in bql_grammar to create a pyparsing object out of an input string"""
-        print input_string
         try:
             bql_blob_ast = bql.bql_input.parseString(input_string)
         except pp.ParseException as x:
@@ -681,7 +680,6 @@ class Parser(object):
                     name_list = [column_name]
                 else:
                     raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % column_name)
-                print index_list
                 queries += [(functions._column, column_index , False) for column_index in index_list]
                 query_colnames += [name for name in name_list]
             else: 

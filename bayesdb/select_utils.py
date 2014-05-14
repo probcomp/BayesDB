@@ -34,7 +34,6 @@ import functions
 import data_utils as du
 from pyparsing import *
 import bayesdb.bql_grammar as bql_grammar
-#import bayesdb.parser as p
 
 def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend, tablename):
   """Helper function that applies WHERE conditions to row, returning True if row satisfies where clause."""
