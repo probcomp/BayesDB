@@ -36,6 +36,7 @@ class Parser(object):
 
     def pyparse_input(self, input_string):
         """Uses the grammar defined in bql_grammar to create a pyparsing object out of an input string"""
+        print input_string
         try:
             bql_blob_ast = bql.bql_input.parseString(input_string)
         except pp.ParseException as x:
@@ -226,8 +227,6 @@ class Parser(object):
                  pairwise=pairwise, 
                  filename=filename)
 
-
-    ##TODO merge with parse_select
     def parse_infer(self,bql_statement_ast):
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         ## TODO assert for dissallowed information
@@ -675,13 +674,14 @@ class Parser(object):
                     index_list = [M_c['name_to_idx'][column_name] for column_name in all_columns]
                     name_list = [name for name in all_columns]
                 elif (column_lists is not None) and (column_name in column_lists.keys()):
-                    index_list = [column_lists[column_name]]
-                    name_list = [column_name]
+                    index_list = [M_c['name_to_idx'][name] for name in column_lists[column_name]]
+                    name_list = [name for name in column_lists[column_name]]
                 elif column_name in M_c['name_to_idx']:
                     index_list = [M_c['name_to_idx'][column_name]]
                     name_list = [column_name]
                 else:
                     raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % column_name)
+                print index_list
                 queries += [(functions._column, column_index , False) for column_index in index_list]
                 query_colnames += [name for name in name_list]
             else: 
