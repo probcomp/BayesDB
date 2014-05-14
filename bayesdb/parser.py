@@ -528,11 +528,12 @@ class Parser(object):
             value = utils.value_string_to_num(raw_value)
             function = None
             args = None
+            _ = None
             ## SELECT and INFER versions
             if single_condition.function.function_id == 'typicality':
                 function = functions._col_typicality
                 assert self.get_args_typicality(single_condition.function, M_c) == True
-                args = True
+                args = None
             elif single_condition.function.function_id == 'dependence probability':
                 function = functions._dependence_probability
                 _, args = self.get_args_of_with(single_condition.function, M_c)

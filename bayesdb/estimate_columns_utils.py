@@ -45,7 +45,6 @@ def _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine
       f_args = (f_args, c_idx)
     else:
       f_args = c_idx
-      
     where_value = func(f_args, None, None, M_c, X_L_list, X_D_list, T, engine)
     return op(where_value, val)
   return True
