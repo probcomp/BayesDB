@@ -414,7 +414,7 @@ class Parser(object):
                     target_columns = None
                     break
                 elif column_lists is not None and column_name in column_lists.keys():
-                    target_column_names.append(column_lists[column_name])
+                    target_column_names += column_lists[column_name]
                 elif column_name in M_c['name_to_idx']:
                     target_column_names.append(column_name)
                 else:
@@ -642,6 +642,7 @@ class Parser(object):
                 queries.append((functions._probability, 
                                 self.get_args_prob(function_group, M_c), 
                                 True))
+                query_colnames.append('probability')
             elif function_group.function_id == 'similarity':
                 assert M_c is not None
                 queries.append((functions._similarity, 
