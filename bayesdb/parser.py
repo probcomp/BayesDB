@@ -37,7 +37,7 @@ class Parser(object):
     def pyparse_input(self, input_string):
         """Uses the grammar defined in bql_grammar to create a pyparsing object out of an input string"""
         try:
-            bql_blob_ast = bql.bql_input.parseString(input_string)
+            bql_blob_ast = bql.bql_input.parseString(input_string, parseAll=True)
         except pp.ParseException as x:
             raise utils.BayesDBParseError("Invalid query: Could not parse '%s'" %input_string) #TODO get character number
         return bql_blob_ast
