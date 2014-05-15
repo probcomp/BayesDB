@@ -41,6 +41,8 @@ create_keyword = CaselessKeyword("create")
 execute_keyword = CaselessKeyword("execute")
 file_keyword = CaselessKeyword("file")
 update_keyword = CaselessKeyword("update")
+metadata_keyword = CaselessKeyword('metadata')
+label_keyword = CaselessKeyword('label')
 schema_keyword = CaselessKeyword("schema")
 set_keyword = CaselessKeyword("set")
 categorical_keyword = CaselessKeyword("categorical")
@@ -139,6 +141,19 @@ create_btable_keyword.setParseAction(replaceWith('create_btable'))
 update_schema_for_keyword = Combine(update_keyword + single_white + 
                                     schema_keyword + single_white + for_keyword).setResultsName("statement_id")
 update_schema_for_keyword.setParseAction(replaceWith("update_schema"))
+update_metadata_for_keyword = Combine(update_keyword + single_white + 
+                                    metadata_keyword + single_white + for_keyword).setResultsName("statement_id")
+update_metadata_for_keyword.setParseAction(replaceWith("update_metadata"))
+label_columns_for_keyword = Combine(label_keyword + single_white + 
+                                    column_keyword + single_white + for_keyword).setResultsName("statement_id")
+label_columns_for_keyword.setParseAction(replaceWith("label_columns"))
+show_metadata_for_keyword = Combine(show_keyword + single_white + 
+                                    metadata_keyword + single_white + for_keyword).setResultsName("statement_id")
+show_metadata_for_keyword.setParseAction(replaceWith("show_metadata"))
+show_label_for_keyword = Combine(show_keyword + single_white + 
+                                 label_keyword + single_white + for_keyword).setResultsName("statement_id")
+show_label_for_keyword.setParseAction(replaceWith("show_label"))
+
 models_for_keyword = Combine(model_keyword + single_white + for_keyword)
 model_index_keyword = Combine(model_keyword + single_white + index_keyword)
 load_model_keyword = Combine(load_keyword + single_white + model_keyword).setResultsName("statement_id")
@@ -230,6 +245,7 @@ value = (QuotedString('"', escChar='\\') |
 filename = (QuotedString('"', escChar='\\') | 
             QuotedString("'", escChar='\\') | 
             Word(alphanums + "!\"/#$%&'()*+,-.:<=>?@[\]^_`{|}~")).setResultsName("filename")
+label = Word(printables, excludeChars=',;')
 data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword
 
 ###################################################################################
@@ -249,6 +265,30 @@ update_schema_for_function = (update_schema_for_keyword +
                               btable + 
                               Suppress(set_keyword) + 
                               type_clause)
+
+label_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + OneOrMore(label)) + 
+                                Suppress(comma_literal)) + 
+                                Group(identifier + Suppress(equal_literal) + OneOrMore(label))).setResultsName("label_clause")
+# UPDATE METADATA FOR <btable> (SET <metadata-key1 = value1>[, <metadata-key2 = value2>...] | FROM <filename.csv>)
+update_metadata_for_function = (update_metadata_for_keyword + btable + 
+                                (set_keyword + label_clause | from_keyword + filename))
+
+# LABEL COLUMNS FOR <btable> (SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...] | FROM <filename.csv>)
+label_columns_for_function = (label_columns_for_keyword + btable + 
+                              (set_keyword + label_clause | from_keyword + filename))
+
+# SHOW METADATA FOR <btable> [<metadata-key1> [, <metadata-key2>...]]
+show_metadata_function = (show_metadata_for_keyword + 
+                          btable + 
+                          Optional(Group(identifier + 
+                                         ZeroOrMore(Suppress(comma_literal) + identifier))))
+
+# SHOW LABEL FOR <btable> [<column-name-1> [, <column-name-2>...]]
+show_label_function = (show_label_for_keyword + 
+                       btable + 
+                       Optional(Group(identifier + 
+                                      ZeroOrMore(Suppress(comma_literal) + identifier))))
+
 # EXECUTE FILE <filename.bql>
 execute_file_function = execute_file_keyword + filename
 
@@ -316,18 +356,22 @@ help_function = help_keyword
 quit_function = quit_keyword
 
 management_query = (create_btable_function | 
-                      update_schema_for_function | 
-                      execute_file_function | 
-                      initialize_function | 
-                      analyze_function | 
-                      list_btables_function | 
-                      show_for_btable_statement | 
-                      load_model_function | 
-                      save_model_from_function | 
-                      drop_btable_function | 
-                      drop_model_function | 
-                      help_function | 
-                      quit_function)
+                    update_schema_for_function | 
+                    execute_file_function | 
+                    initialize_function | 
+                    analyze_function | 
+                    list_btables_function | 
+                    show_for_btable_statement | 
+                    load_model_function | 
+                    save_model_from_function | 
+                    drop_btable_function | 
+                    drop_model_function | 
+                    help_function | 
+                    update_metadata_for_function | 
+                    label_columns_for_function | 
+                    show_label_function |
+                    show_metadata_function |
+                    quit_function)
 
 # ------------------------------ Helper Clauses --------------------------- #
 

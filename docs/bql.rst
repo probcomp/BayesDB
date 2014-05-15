@@ -384,8 +384,8 @@ To see only the metadata values associated with specific keys::
 
 Similarly to the SHOW METADATA statements, column labels can be reviewed either all at once, by not specifying any column names::
 
-  SHOW LABELS FOR <btable>
+  SHOW LABEL FOR <btable>
 
 Or, if a set of column names is given, the output shows column name and label pairs for those columns::
 
-  SHOW LABELS FOR <btable> [<column-name-1> [, <column-name-2>...]]
+  SHOW LABEL FOR <btable> [<column-name-1> [, <column-name-2>...]]

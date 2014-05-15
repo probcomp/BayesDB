@@ -139,6 +139,46 @@ class Parser(object):
 
     def parse_load_models(self,bql_statement_ast):
         return 'load_models', dict(tablename=bql_statement_ast.btable), dict(pkl_path=bql_statement_ast.filename)
+
+    def parse_label_columns(self, bql_statement_ast): ##TODO only smoke test right now
+        tablename = bql_statement_ast.btable
+        source = None
+        mappings = None
+        if bql_statement_ast.label_clause != '':
+            source = 'inline'
+            mappings = {}
+            for label_set in bql_statement_ast.label_clause:
+                mappings[label_set[0]] = label_set[1]
+        csv_path = None
+        if bql_statement_ast.filename != '':
+            csv_path = bql_statement_ast.filename
+            source = 'file'
+        return 'label_columns', \
+            dict(tablename=tablename, mappings=mappings), \
+            dict(source=source, csv_path=csv_path)
+
+    def parse_show_metadata(self, bql_statement_ast):
+        print bql_statement_ast
+
+    def parse_show_label(self, bql_statement_ast):
+        print bql_statement_ast
+
+    def parse_update_metadata(self, bql_statement_ast):
+        tablename = bql_statement_ast.btable
+        source = None
+        mappings = None
+        if bql_statement_ast.label_clause != '':
+            source = 'inline'
+            mappings = {}
+            for label_set in bql_statement_ast.label_clause:
+                mappings[label_set[0]] = label_set[1]
+        csv_path = None
+        if bql_statement_ast.filename != '':
+            csv_path = bql_statement_ast.filename
+            source = 'file'
+        return 'update_metadata', \
+            dict(tablename=tablename, mappings=mappings), \
+            dict(source=source, csv_path=csv_path)
     
     def parse_query(self, bql_statement_ast):
         '''
