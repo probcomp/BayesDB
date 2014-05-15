@@ -845,8 +845,8 @@ class Parser(object):
         """
         """
         match = re.search(r"""
-            (model(s)?\s+
-              (((?P<start>\d+)\s*-\s*(?P<end>\d+)) | (?P<id>\d+)) )?
+            using\s+model(s)?\s+
+              (((?P<start>\d+)\s*-\s*(?P<end>\d+)) | (?P<id>\d+))
         """, orig, flags = re.VERBOSE | re.IGNORECASE)
         if match:
             modelids = None
