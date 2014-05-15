@@ -283,16 +283,27 @@ def test_model_config():
 
 def test_using_models():
   """ smoke test """
-  test_tablename = create_dha()
+  test_tablename = create_dha(path='data/dha_missing.csv')  
   global client, test_filenames
-  client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
+  client('initialize 3 models for %s' % (test_tablename), debug=True, pretty=False)
 
-  client('select name from %s using models 1' % test_tablename, debug=True, pretty=False)
+  client('select name from %s using model 1' % test_tablename, debug=True, pretty=False)
+  with pytest.raises(utils.BayesDBError):
+    client('infer name from %s with confidence 0.1 using models 3' % test_tablename, debug=True, pretty=False)
+  with pytest.raises(utils.BayesDBError):    
+    client("simulate qual_score from %s given name='Albany NY' times 5 using models 3" % test_tablename, debug=True, pretty=False)    
+  with pytest.raises(utils.BayesDBError):    
+    client('infer name from %s with confidence 0.1 using models 0-3' % test_tablename, debug=True, pretty=False)
+
   client('infer name from %s with confidence 0.1 limit 10 using models 2' % test_tablename, debug=True, pretty=False)
   client("simulate qual_score from %s given name='Albany NY' times 5 using models 1-2" % test_tablename, debug=True, pretty=False)
   client('estimate columns from %s limit 5 using models 1-2' % test_tablename, debug=True, pretty=False)
   client('estimate pairwise dependence probability from %s using models 1' % (test_tablename), debug=True, pretty=False)
-  client('estimate pairwise row similarity from %s save connected components with threshold 0.1 as rcc using models 1-2' % test_tablename, debug=True, pretty=False)  
+  client('estimate pairwise row similarity from %s save connected components with threshold 0.1 as rcc using models 1-2' % test_tablename, debug=True, pretty=False)
+
+  client('drop model 0 from %s' % test_tablename, debug=True, pretty=False, yes=True)
+  with pytest.raises(utils.BayesDBError):
+    client('infer name from %s with confidence 0.1 limit 10 using models 0-2' % test_tablename, debug=True, pretty=False)    
   
 def test_select():
   """ smoke test """
