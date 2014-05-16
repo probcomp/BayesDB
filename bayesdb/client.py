@@ -140,10 +140,14 @@ class Client(object):
         if timing:
             start_time = time.time()
 
-        try:
-            parser_out  = self.parser.parse_statement(bql_statement_string)
-        except Exception as e:
-            raise utils.BayesDBParseError(str(e))
+        parser_out = None
+        if debug:
+            parser_out = self.parser.parse_statement(bql_statement_string)
+        else:
+            try:
+                parser_out = self.parser.parse_statement(bql_statement_string)
+            except Exception as e:            
+                raise utils.BayesDBParseError(str(e))
         if parser_out is None:
             print "Could not parse command. Try typing 'help' for a list of all commands."
             return
@@ -190,7 +194,10 @@ class Client(object):
                 header, rows = data_utils.read_pandas_df(pandas_df)
             args_dict['header'] = header
             args_dict['raw_T_full'] = rows
-
+        elif method_name in ['label_columns', 'update_metadata']:
+            if client_dict['source'] == 'file':
+                header, rows = data_utils.read_csv(client_dict['csv_path'])
+                args_dict['mappings'] = {key: value for key, value in rows}
 
         ## Call engine.
         result = self.call_bayesdb_engine(method_name, args_dict, debug)
@@ -227,7 +234,7 @@ class Client(object):
         if ('plot' in client_dict and client_dict['plot']):
             if (plots or client_dict['filename']):
                 # Plot generalized histograms or scatterplots
-                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], client_dict['pairwise'])
+                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], True) # pairwise always true
                 return self.pretty_print(result)
             else:
                 if 'message' not in result:
@@ -298,7 +305,9 @@ class Client(object):
         elif 'columns' in query_obj:
             """ Pretty-print column list."""
             pt = prettytable.PrettyTable()
-            pt.field_names = query_obj['columns']
+            pt.field_names = ['column']
+            for column in query_obj['columns']:
+                pt.add_row([column])
             result += str(pt)
         elif 'row_lists' in query_obj:
             """ Pretty-print multiple row lists, which are just names and row sizes. """
@@ -330,10 +339,12 @@ class Client(object):
                 pt.field_names = clist
                 print pt
         elif 'models' in query_obj:
-            """ Prety-print model info. """
-            m = query_obj['models']
-            output_list = ['Model %d: %d iterations' % (id, iterations) for id,iterations in m]
-            result += ', '.join(output_list)
+            """ Pretty-print model info. """
+            pt = prettytable.PrettyTable()
+            pt.field_names = ('model_id', 'iterations')
+            for (id, iterations) in query_obj['models']:
+                pt.add_row((id, iterations))
+            result += str(pt)
 
         if len(result) >= 1 and result[-1] == '\n':
             result = result[:-1]

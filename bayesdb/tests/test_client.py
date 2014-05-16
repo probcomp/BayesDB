@@ -84,25 +84,25 @@ def test_drop_btable():
 def test_btable_list():
   global client, test_filenames
 
-  out = client('list btables', pretty=False, debug=True)[0]['list']
+  out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   init_btable_count = len(out)
   
   test_tablename1 = create_dha()
 
-  out = client('list btables', pretty=False, debug=True)[0]['list']
+  out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 in out
   
   test_tablename2 = create_dha()
 
-  out = client('list btables', pretty=False, debug=True)[0]['list']
+  out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   assert len(out) == 2 + init_btable_count
   assert test_tablename1 in out
   assert test_tablename2 in out
 
   client('drop btable %s' % test_tablename1, yes=True, debug=True, pretty=False)
   
-  out = client('list btables', pretty=False, debug=True)[0]['list']
+  out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 not in out
   assert test_tablename2 in out
@@ -111,7 +111,7 @@ def test_btable_list():
   del client
   client = Client()
   
-  out = client('list btables', pretty=False, debug=True)[0]['list']
+  out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 not in out
   assert test_tablename2 in out
@@ -147,7 +147,7 @@ def test_column_lists():
   client('show columns %s from %s' % (cname1, test_tablename), debug=True, pretty=False)
   with pytest.raises(utils.BayesDBColumnListDoesNotExistError):  
     client('show columns %s from %s' % (cname2, test_tablename), debug=True, pretty=False)  
-  client('estimate columns from %s where typicality > 0.1 as %s' % (test_tablename, cname1), debug=True, pretty=False)
+  client('estimate columns from %s order by typicality limit 5 as %s' % (test_tablename, cname1), debug=True, pretty=False)
   client('estimate columns from %s limit 5 as %s' % (test_tablename, cname2), debug=True, pretty=False)  
   client('show column lists for %s' % test_tablename, debug=True, pretty=False)
   client('show columns %s from %s' % (cname1, test_tablename), debug=True, pretty=False)
@@ -257,7 +257,8 @@ def test_model_config():
   client('analyze %s for 2 iterations' % (test_tablename), debug=True, pretty=False)
   dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, debug=True, pretty=False)[0]['matrix']
   ## assert that all dependencies are _0_ (not 1, because there should only be 1 view and 1 cluster!)
-  assert numpy.all(dep_mat == 0)
+  ## except the diagonal, where we've hardcoded every column to be dependent with itself
+  assert numpy.all(dep_mat == numpy.identity(dep_mat.shape[0]))
 
   # test crp
   client('drop models for %s' % test_tablename, yes=True, debug=True, pretty=False)
@@ -280,6 +281,30 @@ def test_model_config():
   with pytest.raises(utils.BayesDBError):
     client.engine.initialize_models(test_tablename, 2, 'crp mixture')
 
+def test_using_models():
+  """ smoke test """
+  test_tablename = create_dha(path='data/dha_missing.csv')  
+  global client, test_filenames
+  client('initialize 3 models for %s' % (test_tablename), debug=True, pretty=False)
+
+  client('select name from %s using model 1' % test_tablename, debug=True, pretty=False)
+  with pytest.raises(utils.BayesDBError):
+    client('infer name from %s with confidence 0.1 using models 3' % test_tablename, debug=True, pretty=False)
+  with pytest.raises(utils.BayesDBError):    
+    client("simulate qual_score from %s given name='Albany NY' times 5 using models 3" % test_tablename, debug=True, pretty=False)    
+  with pytest.raises(utils.BayesDBError):    
+    client('infer name from %s with confidence 0.1 using models 0-3' % test_tablename, debug=True, pretty=False)
+
+  client('infer name from %s with confidence 0.1 limit 10 using models 2' % test_tablename, debug=True, pretty=False)
+  client("simulate qual_score from %s given name='Albany NY' times 5 using models 1-2" % test_tablename, debug=True, pretty=False)
+  client('estimate columns from %s limit 5 using models 1-2' % test_tablename, debug=True, pretty=False)
+  client('estimate pairwise dependence probability from %s using models 1' % (test_tablename), debug=True, pretty=False)
+  client('estimate pairwise row similarity from %s save connected components with threshold 0.1 as rcc using models 1-2' % test_tablename, debug=True, pretty=False)
+
+  client('drop model 0 from %s' % test_tablename, debug=True, pretty=False, yes=True)
+  with pytest.raises(utils.BayesDBError):
+    client('infer name from %s with confidence 0.1 limit 10 using models 0-2' % test_tablename, debug=True, pretty=False)    
+  
 def test_select():
   """ smoke test """
   test_tablename = create_dha()
@@ -367,6 +392,9 @@ def test_pandas():
   out = client("select name, qual_score from %s limit 10" % (test_tablename), debug=True, pretty=False)
   assert type(out[0]) == pandas.DataFrame
 
+  # Test that it still works when no rows are returned
+  client("select name, qual_score from %s where qual_score < 0" % (test_tablename), debug=True, pretty=False)
+
   # Get the returned data frame from the first list element of the previous result.
   test_df = out[0]
 
@@ -374,3 +402,68 @@ def test_pandas():
   client("drop btable %s" % (test_tablename), yes=True)
   client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df)
 
+def test_summarize():
+  test_tablename = create_dha()
+  global client
+
+  # Test that the output is a pandas DataFrame when pretty=False
+  out = client('summarize select name, qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
+  assert type(out) == pandas.DataFrame
+
+  # Test that stats from summary_describe and summary_freqs made it into the output DataFrame
+  # Note that all of these stats won't be present in EVERY summarize output, but all should be in the output
+  # from the previous test.
+  expected_indices = ['type', 'count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
+    'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
+    'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5']
+  assert all([x in list(out[' ']) for x in expected_indices])
+
+  # Test that it works on columns of predictive functions.
+  client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
+  client('summarize select correlation of name with qual_score from %s' % (test_tablename), debug=True, pretty=False)
+
+  # Test with fewer than 5 unique values (output should have fewer rows)
+  client('summarize select name, qual_score from %s limit 3' % (test_tablename), debug=True, pretty=False)
+
+  # Test with no rows
+  client('summarize select name, qual_score from %s where qual_score < 0' % (test_tablename), debug=True, pretty=False)
+
+  # Test with only a discrete column
+  client('summarize select name from %s' % (test_tablename), debug=True, pretty=False)
+
+  # Test with only a continuous column
+  client('summarize select qual_score from %s' % (test_tablename), debug=True, pretty=False)
+
+  # Test shorthand: summary for all columns in btable - not working yet
+  # client('summarize %s' % (test_tablename), debug=True, pretty=False)
+
+def test_select_where_col_equal_val():
+  test_tablename = create_dha()
+  global client, test_filenames
+  client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
+  basic_similarity = client('select * from %s where similarity to 1 > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['row_id']
+  col_val_similarity = client('select * from %s where similarity to name = "Akron OH" > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['row_id']
+  assert len(basic_similarity) == len(col_val_similarity)
+
+def test_labeling():
+  test_tablename = create_dha()
+  global client, test_filenames
+
+  client('label columns for %s set name = Name of the hospital, qual_score = Overall quality score' % (test_tablename), debug=True, pretty=False)
+  client('show labels for %s name, qual_score' % (test_tablename), debug=True, pretty=False)
+  client('show labels for %s' % (test_tablename), debug=True, pretty=False)
+
+  # Test getting columns from CSV
+  client('label columns for %s from data/dha_labels.csv' % (test_tablename), debug=True, pretty=False)
+
+def test_user_metadata():
+  test_tablename = create_dha()
+  global client, test_filenames
+
+  client('update metadata for %s set data_source = Dartmouth Atlas of Health, url = http://www.dartmouthatlas.org/tools/downloads.aspx' % (test_tablename), debug=True, pretty=False)
+  client('update metadata for %s from data/dha_user_metadata.csv' % (test_tablename), debug=True, pretty=False)
+
+  client('show metadata for %s data_source, url' % (test_tablename), debug=True, pretty=False)
+
+  # Test that show metadata also works when no keys are specified
+  client('show metadata for %s' % (test_tablename), debug=True, pretty=False)

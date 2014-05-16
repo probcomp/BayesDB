@@ -264,6 +264,7 @@ class Parser(object):
             \s*for\s+
             ((?P<iterations>\d+)\s+iteration(s)?)?
             ((?P<seconds>\d+)\s+second(s)?)?
+            (\s*with\s+(?P<kernel>[^\s]+)\s+kernel)?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None or (match.group('iterations') is None and match.group('seconds') is None):
             if words[0] == 'analyze':
@@ -287,18 +288,25 @@ class Parser(object):
             seconds = match.group('seconds')
             if seconds is not None:
                 seconds = int(seconds)
+
+            kernel = match.group('kernel')
+            if kernel is not None and kernel.strip().lower()=='mh':
+                ct_kernel = 1
+            else:
+                ct_kernel = 0
                 
             return 'analyze', dict(tablename=tablename, model_indices=model_indices,
-                                   iterations=iterations, seconds=seconds), None
+                                   iterations=iterations, seconds=seconds, ct_kernel=ct_kernel), None
 
             
     def help_infer(self):
-        return "INFER [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <file>]: like select, but imputes (fills in) missing values."
+        return "[SUMMARIZE | PLOT] INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [SAVE TO <file>]: like select, but imputes (fills in) missing values."
         
     def parse_infer(self, words, orig):
         match = re.search(r"""
+            ((?P<summarize>summarize)?)?\s*
+            ((?P<plot>(plot|scatter)))?\s*
             infer\s+
-            ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
             (where\s+(?P<whereclause>.*(?=with)))?
@@ -311,6 +319,7 @@ class Parser(object):
             if words[0] == 'infer':
                 return 'help', self.help_infer()
         else:
+            summarize = match.group('summarize') is not None
             columnstring = match.group('columnstring').strip()
             tablename = match.group('btable')
             whereclause = match.group('whereclause')
@@ -331,15 +340,13 @@ class Parser(object):
                 numsamples = int(numsamples)
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-
+            modelids = self.extract_using_models(orig)
 
             plot = match.group('plot') is not None
             if plot:
                 scatter = 'scatter' in match.group('plot')
-                pairwise = match.group('pairwise') is not None
             else:
                 scatter = False
-                pairwise = False
                 
             if match.group('filename'):
                 filename = match.group('filename')
@@ -348,8 +355,8 @@ class Parser(object):
             return 'infer', \
                    dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
                         confidence=confidence, whereclause=whereclause, limit=limit,
-                        numsamples=numsamples, order_by=order_by, plot=plot), \
-                   dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
+                        numsamples=numsamples, order_by=order_by, plot=plot, modelids=modelids, summarize=summarize), \
+                   dict(plot=plot, scatter=scatter, filename=filename)
 
             
             
@@ -394,15 +401,39 @@ class Parser(object):
             pkl_path = match.group('pklpath')
             return 'load_models', dict(tablename=tablename), dict(pkl_path=pkl_path)
 
+            
+    def help_show_model(self):
+        return "SHOW MODEL <model_id> FROM <btable>"
+
+    def parse_show_model(self, words, orig):
+        match = re.search(r"""
+            show\s+model\s+
+            (?P<modelid>\d+)
+            \s+from\s+
+            (?P<btable>[^\s]+)
+            (\s*save\s+to\s+(?P<filename>))?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'show' and words[1] == 'model':
+                return 'help', self.help_show_model()
+        else:
+            if match.group('filename'):
+                filename = match.group('filename')
+            else:
+                filename = None            
+            return 'show_model', dict(tablename=match.group('btable'),
+                                      modelid=int(match.group('modelid')),
+                                      filename=filename), None
 
             
     def help_select(self):
-        return 'SELECT [HIST|SCATTER [PAIRWISE]] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <filename>]'
+        return '[SUMMARIZE | PLOT] SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [SAVE TO <filename>]'
         
     def parse_select(self, words, orig):
         match = re.search(r"""
+            ((?P<summarize>summarize)?)?\s*
+            ((?P<plot>(plot|scatter)))?\s*        
             select\s+
-            ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*      
             (?P<columnstring>.*?((?=from)))
             \s*from\s+(?P<btable>[^\s]+)\s*
             (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
@@ -413,6 +444,7 @@ class Parser(object):
             if words[0] == 'select':
                 return 'help', self.help_select()
         else:
+            summarize = match.group('summarize') is not None
             columnstring = match.group('columnstring').strip()
             tablename = match.group('btable')
             whereclause = match.group('whereclause')
@@ -422,14 +454,13 @@ class Parser(object):
                 whereclause = whereclause.strip()
             limit = self.extract_limit(orig)
             orig, order_by = self.extract_order_by(orig)
+            modelids = self.extract_using_models(orig)
 
             plot = match.group('plot') is not None
             if plot:
                 scatter = 'scatter' in match.group('plot')
-                pairwise = match.group('pairwise') is not None
             else:
                 scatter = False
-                pairwise = False
 
             if match.group('filename'):
                 filename = match.group('filename')
@@ -437,20 +468,22 @@ class Parser(object):
                 filename = None
 
             return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                  limit=limit, order_by=order_by, plot=plot), \
-              dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
+                                  limit=limit, order_by=order_by, plot=plot, modelids=modelids, summarize=summarize), \
+              dict(scatter=scatter, filename=filename, plot=plot)
 
 
     def help_simulate(self):
-        return "SIMULATE [HIST|SCATTER [PAIRWISE]] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <filename>]: simulate new datapoints based on the underlying model."
+        return "[SUMMARIZE | PLOT] SIMULATE <columns> FROM <btable> [GIVEN <givens>] [WHERE <whereclause>] TIMES <times> [USING MODEL[S] <id>-<id>] [SAVE TO <filename>]: simulate new datapoints based on the underlying model."
 
     def parse_simulate(self, words, orig):
         match = re.search(r"""
+            ((?P<summarize>summarize)?)?\s*
+            ((?P<plot>(plot|scatter)))?\s*        
             simulate\s+
-            ((?P<plot>(hist|scatter))(?P<pairwise>\s+pairwise)?)?\s*
             (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
             from\s+(?P<btable>[^\s]+)\s+
-            ((given|where)\s+(?P<givens>.*(?=times)))?
+            (given\s+(?P<givens>.*((?=times)|(?=where))))?
+            (where\s+(?P<whereclause>.*?((?=limit)|(?=times)|$)))?
             times\s+(?P<times>\d+)
             (\s*save\s+to\s+(?P<filename>[^\s]+))?
         """, orig, re.VERBOSE | re.IGNORECASE)
@@ -458,6 +491,7 @@ class Parser(object):
             if words[0] == 'simulate':
                 return 'help', self.help_simulate()
         else:
+            summarize = match.group('summarize') is not None
             columnstring = match.group('columnstring').strip()
             tablename = match.group('btable')
             givens = match.group('givens')
@@ -465,17 +499,22 @@ class Parser(object):
                 givens = ''
             else:
                 givens = givens.strip()
+            whereclause = match.group('whereclause')
+            if whereclause is None:
+                whereclause = ''
+            else:
+                whereclause = whereclause.strip()
+                
             numpredictions = int(match.group('times'))
             newtablename = '' # For INTO
             orig, order_by = self.extract_order_by(orig)
-
+            modelids = self.extract_using_models(orig)
+            
             plot = match.group('plot') is not None
             if plot:
                 scatter = 'scatter' in match.group('plot')
-                pairwise = match.group('pairwise') is not None
             else:
                 scatter = False
-                pairwise = False
             
             if match.group('filename'):
                 filename = match.group('filename')
@@ -483,8 +522,9 @@ class Parser(object):
                 filename = None            
             return 'simulate', \
                     dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
-                         givens=givens, numpredictions=numpredictions, order_by=order_by, plot=plot), \
-                    dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
+                         givens=givens, whereclause=whereclause, numpredictions=numpredictions,
+                         order_by=order_by, plot=plot, modelids=modelids, summarize=summarize), \
+                    dict(filename=filename, plot=plot, scatter=scatter)
 
     def help_show_row_lists(self):
         return "SHOW ROW LISTS FOR <btable>"
@@ -495,7 +535,7 @@ class Parser(object):
           (?P<btable>[^\s]+)\s*$
         """, orig, flags=re.VERBOSE|re.IGNORECASE)
         if not match:
-            if words[0] == 'show':
+            if words[0] == 'show' and words[1] == 'row':
                 return 'help', self.help_show_row_lists()
         else:
             tablename = match.group('btable')
@@ -510,7 +550,7 @@ class Parser(object):
           (?P<btable>[^\s]+)\s*$
         """, orig, flags=re.VERBOSE|re.IGNORECASE)
         if not match:
-            if words[0] == 'show':
+            if words[0] == 'show' and words[1] == 'column':
                 return 'help', self.help_show_column_lists()
         else:
             tablename = match.group('btable')
@@ -527,7 +567,7 @@ class Parser(object):
           (?P<btable>[^\s]+)\s*$
         """, orig, flags= re.VERBOSE | re.IGNORECASE)
         if not match:
-            if words[0] == 'show':
+            if words[0] == 'show' and words[1] == 'columns':
                 return 'help', self.help_show_columns()
         else:
             tablename = match.group('btable')
@@ -536,7 +576,7 @@ class Parser(object):
 
             
     def help_estimate_columns(self):
-        return "(ESTIMATE COLUMNS | CREATE COLUMN LIST) [<column_names>] FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>] [AS <column_list>]"
+        return "(ESTIMATE COLUMNS | CREATE COLUMN LIST) [<column_names>] FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [AS <column_list>]"
 
     def parse_estimate_columns(self, words, orig):
         match = re.search(r"""
@@ -566,6 +606,7 @@ class Parser(object):
                 
             limit = self.extract_limit(orig)                
             orig, order_by = self.extract_order_by(orig)
+            modelids = self.extract_using_models(orig)            
             
             name_match = re.search(r"""
               as\s+
@@ -578,10 +619,10 @@ class Parser(object):
                 name = None
 
             return 'estimate_columns', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                            limit=limit, order_by=order_by, name=name), None
+                                            limit=limit, order_by=order_by, name=name, modelids=modelids), None
 
     def help_estimate_pairwise_row(self):
-        return "ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]: estimate a pairwise function of columns."
+        return "ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [USING MODEL[S] <id>-<id>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]: estimate a pairwise function of columns."
 
     def parse_estimate_pairwise_row(self, words, orig):
         match = re.search(r"""
@@ -609,14 +650,15 @@ class Parser(object):
             else:
                 components_name = None
                 threshold = None
+            modelids = self.extract_using_models(orig)                            
             return 'estimate_pairwise_row', \
               dict(tablename=tablename, function_name=function_name,
-                   row_list=row_list, components_name=components_name, threshold=threshold), \
+                   row_list=row_list, components_name=components_name, threshold=threshold, modelids=modelids), \
               dict(filename=filename)
 
         
     def help_estimate_pairwise(self):
-        return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <columnlist>]: estimate a pairwise function of columns."
+        return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [USING MODEL[S] <id>-<id>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <columnlist>]: estimate a pairwise function of columns."
         
     def parse_estimate_pairwise(self, words, orig):
         match = re.search(r"""
@@ -644,13 +686,106 @@ class Parser(object):
             else:
                 components_name = None
                 threshold = None
+            modelids = self.extract_using_models(orig)                            
             return 'estimate_pairwise', \
               dict(tablename=tablename, function_name=function_name,
-                   column_list=column_list, components_name=components_name, threshold=threshold), \
+                   column_list=column_list, components_name=components_name, threshold=threshold, modelids=modelids), \
               dict(filename=filename)
 
+    def help_label_columns(self):
+        return "LABEL COLUMNS FOR <btable> [SET <column1>=value1[,...] | FROM <filename.csv>]: "
 
-            
+    def parse_label_columns(self, words, orig):
+        match = re.search(r"""
+            label\s+columns\s+for\s+
+            (?P<btable>[^\s]+)\s+
+            (set|from)\s+
+            (?P<mappings>[^;]*);?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'label':
+                return 'help', self.help_label_columns()
+        else:
+            tablename = match.group('btable').strip()
+            mapping_string = match.group('mappings').strip()
+
+            csv_path, mappings = None, None
+            if words[4] == 'from':
+                source = 'file'
+                csv_path = mapping_string
+            elif words[4] == 'set':
+                source = 'inline'
+                mappings = dict()
+                for mapping in mapping_string.split(','):
+                    vals = mapping.split('=')
+                    column, label = vals[0].strip(), vals[1].strip()
+                    mappings[column.strip()] = label
+            return 'label_columns', dict(tablename=tablename, mappings=mappings), dict(source=source, csv_path=csv_path)
+
+    def help_show_labels(self):
+        return "SHOW LABELS FOR <btable> [<column1>[, <column2>..]]: "
+
+    def parse_show_labels(self, words, orig):
+        match = re.search(r"""
+            show\s+labels\s+for\s+
+            (?P<btable>[^\s]+)
+            \s*(?P<columns>[^;]*);?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'show' and words[1] == 'labels':
+                return 'help', self.help_show_columns()
+        else:
+            tablename = match.group('btable').strip()
+            columnstring = match.group('columns').strip()
+            return 'show_labels', dict(tablename=tablename, columnstring=columnstring), None
+
+    def help_update_metadata(self):
+        return "UPDATE METADATA FOR <btable> [SET <metadata-key1>=value1[,...] | FROM <filename.csv>]: "
+
+    def parse_update_metadata(self, words, orig):
+        match = re.search(r"""
+            update\s+metadata\s+for\s+
+            (?P<btable>[^\s]+)\s+
+            (set|from)\s+
+            (?P<mappings>[^;]*);?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'update' and words[1] == 'metadata':
+                return 'help', self.help_update_metadata()
+        else:
+            tablename = match.group('btable').strip()
+            mapping_string = match.group('mappings').strip()
+
+            csv_path, mappings = None, None
+            if words[4] == 'from':
+                source = 'file'
+                csv_path = mapping_string
+            elif words[4] == 'set':
+                source = 'inline'
+                mappings = dict()
+                for mapping in mapping_string.split(','):
+                    vals = mapping.split('=')
+                    column, label = vals[0].strip(), vals[1].strip()
+                    mappings[column.strip()] = label
+            return 'update_metadata', dict(tablename=tablename, mappings=mappings), dict(source=source, csv_path=csv_path)
+
+    def help_show_metadata(self):
+        return "SHOW METADATA FOR <btable> [<metadata-key1> [, <metadata-key2>...]]"
+
+    def parse_show_metadata(self, words, orig):
+        match = re.search(r"""
+            show\s+metadata\s+for\s+
+            (?P<btable>[^\s]+)
+            \s*(?P<keystring>[^;]*);?
+        """, orig, re.VERBOSE | re.IGNORECASE)
+        if match is None:
+            if words[0] == 'show' and words[1] == 'metadata':
+                return 'help', self.help_show_metadata()
+        else:
+            tablename = match.group('btable').strip()
+            keystring = match.group('keystring').strip()
+            return 'show_metadata', dict(tablename=tablename, keystring=keystring), None
+
     def help_update_schema(self):
         return "UPDATE SCHEMA FOR <btable> SET [<column_name>=(numerical|categorical|key|ignore)[,...]]: must be done before creating models or analyzing."
         
@@ -661,7 +796,7 @@ class Parser(object):
             set\s+(?P<mappings>[^;]*);?
         """, orig, re.VERBOSE | re.IGNORECASE)
         if match is None:
-            if words[0] == 'update':
+            if words[0] == 'update' and words[1] == 'schema':
                 return 'help', self.help_update_schema()
         else:
             tablename = match.group('btable').strip()
@@ -702,6 +837,24 @@ class Parser(object):
         else:
             return float('inf')
 
+    def extract_using_models(self, orig):
+        """
+        """
+        match = re.search(r"""
+            using\s+model(s)?\s+
+              (((?P<start>\d+)\s*-\s*(?P<end>\d+)) | (?P<id>\d+))
+        """, orig, flags = re.VERBOSE | re.IGNORECASE)
+        if match:
+            modelids = None
+            start = match.group('start')
+            end = match.group('end')
+            if start is not None and end is not None:
+                modelids = range(int(start), int(end)+1)
+            id = match.group('id')
+            if id is not None:
+                modelids = [int(id)]
+            return modelids
+
 
     def extract_order_by(self, orig):
         pattern = r"""
@@ -716,10 +869,10 @@ class Parser(object):
             for orderable in utils.column_string_splitter(order_by_clause):
                 ## Check for DESC/ASC
                 desc = re.search(r'\s+(desc|asc)($|\s|,|(?=limit))', orderable, re.IGNORECASE)
-                if desc is not None and desc.group().strip().lower() == 'desc':
-                    desc = True
-                else:
+                if desc is not None and desc.group().strip().lower() == 'asc':
                     desc = False
+                else:
+                    desc = True
                 orderable = re.sub(r'\s+(desc|asc)($|\s|,|(?=limit))', '', orderable, flags=re.IGNORECASE)
                 orderables.append((orderable.strip(), desc))
                 

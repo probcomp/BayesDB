@@ -1,4 +1,4 @@
-#
+7#
 #   Copyright (c) 2010-2014, MIT Probabilistic Computing Project
 #
 #   Lead Developers: Jay Baxter and Dan Lovell
@@ -173,41 +173,48 @@ def test_valid_values_names_pyparsing():
     assert filename.parseString("'/filename with space.csv'",parseAll=True)[0] == "/filename with space.csv"
 
 def test_simple_functions():
-    assert list_btables_function.parseString("LIST BTABLES",parseAll=True).function_id == 'list btable'
-    assert list_btables_function.parseString("LIST BTABLE",parseAll=True).function_id == 'list btable'
-    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).function_id == 'show schema for'
-    assert show_schema_for_function.parseString("SHOW SCHEMA FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_models_for_function.parseString("SHOW MODELS FOR table_1",parseAll=True).function_id == 'show model for'
-    assert show_models_for_function.parseString("SHOW MODEL FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).function_id == 'show diagnostics for'
-    assert show_diagnostics_for_function.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).btable == 'table_1'
-    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).function_id == 'load model'
-    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1",parseAll=True).function_id == 'load model'
+    assert list_btables_function.parseString("LIST BTABLES",parseAll=True).statement_id == 'list btable'
+    assert list_btables_function.parseString("LIST BTABLE",parseAll=True).statement_id == 'list btable'
+    assert show_for_btable_statement.parseString("SHOW SCHEMA FOR table_1",parseAll=True).statement_id == 'show schema for'
+    assert show_for_btable_statement.parseString("SHOW SCHEMA FOR table_1",parseAll=True).btable == 'table_1'
+    assert show_for_btable_statement.parseString("SHOW MODELS FOR table_1",parseAll=True).statement_id == 'show model for'
+    assert show_for_btable_statement.parseString("SHOW MODEL FOR table_1",parseAll=True).btable == 'table_1'
+    assert show_for_btable_statement.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).statement_id == 'show diagnostics for'
+    assert show_for_btable_statement.parseString("SHOW DIAGNOSTICS FOR table_1",parseAll=True).btable == 'table_1'
+
+    assert show_for_btable_statement.parseString("SHOW COLUMN LISTS FOR table_1",parseAll=True).btable == 'table_1'
+    assert show_for_btable_statement.parseString("SHOW COLUMNS LIST FOR table_1",parseAll=True).statement_id == 'show column list for'
+    assert show_for_btable_statement.parseString("SHOW COLUMNS FOR table_1",parseAll=True).btable == 'table_1'
+    assert show_for_btable_statement.parseString("SHOW column FOR table_1",parseAll=True).statement_id == 'show column for'
+    assert show_for_btable_statement.parseString("SHOW ROW LISTS FOR table_1",parseAll=True).statement_id == 'show row list for'
+    assert show_for_btable_statement.parseString("SHOW ROW list FOR table_1",parseAll=True).btable == 'table_1'
+    assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load model'
+    assert load_model_function.parseString("LOAD MODEL ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load model'
     assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).filename == '~/filename.csv'
     assert load_model_function.parseString("LOAD MODELS '~/filena me.csv' INTO table_1",parseAll=True).filename == '~/filena me.csv'
     assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).btable == 'table_1'
     assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).btable == 'table_1'
-    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).function_id == 'save model'
+    assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).statement_id == 'save model'
     assert save_model_from_function.parseString("SAVE MODEL FROM table_1 to filename.pkl.gz",parseAll=True).filename == 'filename.pkl.gz'
-    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).function_id == 'drop btable'
-    assert drop_btable_function.parseString("DROP BTABLES table_1",parseAll=True).function_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).statement_id == 'drop btable'
+    assert drop_btable_function.parseString("DROP BTABLES table_1",parseAll=True).statement_id == 'drop btable'
     assert drop_btable_function.parseString("DROP BTABLE table_1",parseAll=True).btable == 'table_1'
     drop_model_1 = drop_model_function.parseString("DROP MODEL 1 FROM table_1",parseAll=True)
     drop_model_2 = drop_model_function.parseString("DROP MODELS 1-5 FROM table_1",parseAll=True)
     drop_model_3 = drop_model_function.parseString("DROP MODELS 1,2,6-9 FROM table_1",parseAll=True)
     drop_model_4 = drop_model_function.parseString("DROP MODELS 1-5,1-5 FROM table_1",parseAll=True)
-    assert drop_model_1.function_id == 'drop model'
+    assert drop_model_1.statement_id == 'drop model'
     assert drop_model_1.btable == 'table_1'
     assert drop_model_1.index_list.asList() == [1]
     assert drop_model_2.index_list.asList() == [1,2,3,4,5]
     assert drop_model_3.index_list.asList() == [1,2,6,7,8,9]
     assert drop_model_4.index_list.asList() == [1,2,3,4,5]
-    assert help_function.parseString("HELp",parseAll=True).function_id == 'help'
+    assert help_function.parseString("HELp",parseAll=True).statement_id == 'help'
 
 def test_update_schema_pyparsing():
     update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
-    assert update_schema_1.function_id == 'update schema for'
-    assert update_schema_1.btable == 'test_btablE'
+    assert update_schema_1.statement_id == 'update schema for'
+    assert update_schema_1.btable == 'test_btable'
     assert update_schema_1.type_clause[0][0] == 'col_1'
     assert update_schema_1.type_clause[0][1] == 'categorical'
     assert update_schema_1.type_clause[1][0] == 'col.2'
@@ -221,7 +228,7 @@ def test_update_schema_pyparsing():
 def test_create_btable_pyparsing():
     create_btable_1 = create_btable_function.parseString("CREATE BTABLE test.btable FROM '~/filenam e.csv'", parseAll=True)
     create_btable_2 = create_btable_function.parseString("CREATE BTABLE test_btable FROM ~/filename.csv", parseAll=True)
-    assert create_btable_1.function_id == 'create btable'
+    assert create_btable_1.statement_id == 'create btable'
     assert create_btable_1.btable == 'test.btable'
     assert create_btable_1.filename == '~/filenam e.csv'
     assert create_btable_2.btable == 'test_btable'
@@ -235,11 +242,11 @@ def test_execute_file_pyparsing():
 
 def test_initialize_pyparsing():
     initialize_1 = initialize_function.parseString("INITIALIZE 3 MODELS FOR test_table",parseAll=True)
-    assert initialize_1.function_id == 'initialize'
+    assert initialize_1.statement_id == 'initialize'
     assert initialize_1.num_models == '3'
     assert initialize_1.btable == 'test_table'
     initialize_2 = initialize_function.parseString("INITIALIZE 3 MODEL FOR test_table",parseAll=True)
-    assert initialize_2.function_id == 'initialize'
+    assert initialize_2.statement_id == 'initialize'
     assert initialize_2.num_models == '3'
     assert initialize_2.btable == 'test_table'
 
@@ -256,7 +263,7 @@ def test_analyze_pyparsing():
     analyze_10 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5-7, 9, 10 FOR 1 ITERATION",parseAll=True)
     analyze_11 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 1, 2, 2 FOR 10 SECONDS",parseAll=True)
     analyze_12 = analyze_function.parseString("ANALYZE table_1 MODELS 1-5, 1-5, 5 FOR 1 ITERATION",parseAll=True)
-    assert analyze_1.function_id == 'analyze'
+    assert analyze_1.statement_id == 'analyze'
     assert analyze_1.btable == 'table_1'
     assert analyze_1.index_lust == ''
     assert analyze_1.index_clause == ''
@@ -277,7 +284,505 @@ def test_analyze_pyparsing():
     assert analyze_11.index_list.asList() == [1,2]
     assert analyze_12.index_list.asList() == [1,2,3,4,5]
 
+def test_subclauses_pyparsing():
+    assert save_to_clause.parseString("save to filename.csv").filename == 'filename.csv'
 
+def test_row_clause_pyparsing():
+    row_1 = row_clause.parseString('1', parseAll=True)
+    row_2 = row_clause.parseString("column = 1", parseAll=True)
+    row_3 = row_clause.parseString("column = 'value'", parseAll=True)
+    row_4 = row_clause.parseString("column = value", parseAll=True)
+    assert row_1.row_id == '1'
+    assert row_1.column == ''
+    assert row_2.row_id == ''
+    assert row_2.column == 'column'
+    assert row_2.column_value == '1'
+    assert row_3.column_value == 'value'
+    assert row_4.column_value == 'value'
+    
+def test_row_functions_pyparsing():
+    similarity_1 = similarity_to_function.parseString("SIMILARITY TO 1", 
+                                                      parseAll=True)
+    similarity_2 = similarity_to_function.parseString("SIMILARITY TO col_2 = 1", 
+                                                      parseAll=True)
+    similarity_3 = similarity_to_function.parseString("SIMILARITY TO col_2 = 'a'", 
+                                                      parseAll=True)
+    similarity_4 = similarity_to_function.parseString("SIMILARITY TO col_2 = a", 
+                                                      parseAll=True)
+    similarity_5 = similarity_to_function.parseString("SIMILARITY TO 1 WITH RESPECT TO col_1", 
+                                                      parseAll=True)
+    similarity_6 = similarity_to_function.parseString("SIMILARITY TO col_2 = 1 WITH RESPECT TO col_1,col_2", 
+                                                      parseAll=True)
+    similarity_7 = similarity_to_function.parseString("SIMILARITY TO col_2 = 'a' WITH RESPECT TO col_1 , col_3", 
+                                                      parseAll=True)
+    similarity_8 = similarity_to_function.parseString("SIMILARITY TO col_2 = a WITH RESPECT TO col_1", 
+                                                      parseAll=True)
+    assert similarity_1.function.function_id == 'similarity to'
+    assert similarity_1.function.row_id == '1'
+    assert similarity_2.function.column == 'col_2'
+    assert similarity_2.function.column_value == '1'
+    assert similarity_3.function.column == 'col_2'
+    assert similarity_3.function.column_value == 'a'
+    assert similarity_4.function.column == 'col_2'
+    assert similarity_4.function.column_value == 'a'
+    assert similarity_4.function.with_respect_to == ''
+    assert not similarity_5.function.with_respect_to == ''
+    assert similarity_5.function.column_list.asList() == ['col_1']
+    assert similarity_6.function.column_list.asList() == ['col_1', 'col_2']
+    assert similarity_7.function.column_list.asList() == ['col_1', 'col_3']
+    assert similarity_8.function.column_list.asList() == ['col_1']
+    assert typicality_function.parseString('Typicality',parseAll=True).function.function_id == 'typicality'
+
+def test_column_functions_pyparsing():
+    dependence_1 = dependence_probability_function.parseString('DEPENDENCE PROBABILITY WITH column_1',
+                                                                    parseAll=True)
+    dependence_2 = dependence_probability_function.parseString('DEPENDENCE PROBABILITY OF column_2 WITH column_1',
+                                                                    parseAll=True)
+    assert dependence_1.function.function_id == 'dependence probability'
+    assert dependence_2.function.function_id == 'dependence probability'
+    assert dependence_1.function.with_column == 'column_1'
+    assert dependence_2.function.with_column == 'column_1'
+    assert dependence_2.function.of_column == 'column_2'
+    mutual_1 = mutual_information_function.parseString('MUTUAL INFORMATION WITH column_1',
+                                                                    parseAll=True)
+    mutual_2 = mutual_information_function.parseString('MUTUAL INFORMATION OF column_2 WITH column_1',
+                                                                    parseAll=True)
+    assert mutual_1.function.function_id == 'mutual information'
+    assert mutual_2.function.function_id == 'mutual information'
+    assert mutual_1.function.with_column == 'column_1'
+    assert mutual_2.function.with_column == 'column_1'
+    assert mutual_2.function.of_column == 'column_2'
+    correlation_1 = correlation_function.parseString('CORRELATION WITH column_1',
+                                                                    parseAll=True)
+    correlation_2 = correlation_function.parseString('CORRELATION OF column_2 WITH column_1',
+                                                                    parseAll=True)
+    assert correlation_1.function.function_id == 'correlation'
+    assert correlation_2.function.function_id == 'correlation'
+    assert correlation_1.function.with_column == 'column_1'
+    assert correlation_2.function.with_column == 'column_1'
+    assert correlation_2.function.of_column == 'column_2'
+    
+
+def test_probability_of_function_pyparsing():
+    probability_of_1 = probability_of_function.parseString("PROBABILITY OF col_1 = 1",parseAll=True)
+    probability_of_2 = probability_of_function.parseString("PROBABILITY OF col_1 = 'value'",parseAll=True)
+    probability_of_3 = probability_of_function.parseString("PROBABILITY OF col_1 = value",parseAll=True)
+    assert probability_of_1.function.function_id == 'probability of'
+    assert probability_of_1.function.column == 'col_1'
+    assert probability_of_1.function.value == '1'
+    assert probability_of_2.function.value == 'value'
+    assert probability_of_3.function.value == 'value'
+
+def test_predictive_probability_of_pyparsing():
+    assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
+                                                          parseAll=True).function.function_id == 'predictive probability of'
+    assert predictive_probability_of_function.parseString("PREDICTIVE PROBABILITY OF column_1",
+                                                          parseAll=True).function.column == 'column_1'
+
+def test_typicality_of_pyparsing():
+    assert typicality_of_function.parseString("TYPICALITY OF column_1",
+                                                          parseAll=True).function.function_id == 'typicality of'
+    assert typicality_of_function.parseString("TYPICALITY OF column_1",
+                                                          parseAll=True).function.column == 'column_1'
+
+def test_order_by_clause_pyparsing():
+    order_by_1 = order_by_clause.parseString("ORDER BY column_1"
+                                             ,parseAll=True)
+    order_by_2 = order_by_clause.parseString("ORDER BY column_1,column_2 , column_3"
+                                             ,parseAll=True)
+    assert order_by_1.order_by.order_by_set[0].column=='column_1'
+    assert order_by_2.order_by.order_by_set[1].column=='column_2'
+    order_by_3 = order_by_clause.parseString("ORDER BY TYPICALITY",
+                                             parseAll=True)
+    assert order_by_3.order_by.order_by_set[0].function_id == 'typicality'
+    order_by_4 = order_by_clause.parseString("ORDER BY TYPICALITY, column_1",
+                                             parseAll=True)
+    assert order_by_4.order_by.order_by_set[0].function_id == 'typicality'
+    assert order_by_4.order_by.order_by_set[1].column == 'column_1'    
+    order_by_5 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY",
+                                             parseAll=True)
+    assert order_by_5.order_by.order_by_set[0].column == 'column_1'
+    assert order_by_5.order_by.order_by_set[1].function_id == 'typicality'
+    order_by_6 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1",
+                                             parseAll=True)
+    assert order_by_6.order_by.order_by_set[0].function_id == 'predictive probability of'
+    assert order_by_6.order_by.order_by_set[0].column == 'column_1'
+    
+    order_by_7 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1, column_1",
+                                             parseAll=True)
+    assert order_by_7.order_by.order_by_set[1].column == 'column_1'
+    assert order_by_7.order_by.order_by_set[0].function_id == 'predictive probability of'
+    assert order_by_7.order_by.order_by_set[0].column == 'column_1'
+
+    order_by_8 = order_by_clause.parseString("ORDER BY column_1, TYPICALITY, PREDICTIVE PROBABILITY OF column_1, column_2, SIMILARITY TO 2, SIMILARITY TO column_1 = 1 WITH RESPECT TO column_4",
+                                             parseAll=True)
+    assert order_by_8.order_by.order_by_set[0].column == 'column_1'
+    assert order_by_8.order_by.order_by_set[1].function_id == 'typicality'
+    assert order_by_8.order_by.order_by_set[2].function_id == 'predictive probability of'
+    assert order_by_8.order_by.order_by_set[2].column == 'column_1'
+    assert order_by_8.order_by.order_by_set[3].column == 'column_2'
+    assert order_by_8.order_by.order_by_set[4].function_id == 'similarity to'
+    assert order_by_8.order_by.order_by_set[4].row_id == '2'
+    assert order_by_8.order_by.order_by_set[5].function_id == 'similarity to'
+    assert order_by_8.order_by.order_by_set[5].column == 'column_1'
+    assert order_by_8.order_by.order_by_set[5].column_value == '1'
+    assert order_by_8.order_by.order_by_set[5].with_respect_to[1][0] == 'column_4' #todo names instead of indexes
+
+def test_whereclause_pyparsing():
+    # WHERE <column> <operation> <value>
+    whereclause_1 = "WHERE column_1 = 1"
+    parsed_1 = where_clause.parseString(whereclause_1,parseAll=True)
+    assert parsed_1.where_keyword == 'where'
+    assert parsed_1.where_conditions[0].function.column == 'column_1'
+    assert parsed_1.where_conditions[0].operation == '='
+    assert parsed_1.where_conditions[0].value == '1'
+    whereclause_2 = "WHERE column_1 <= 1"
+    parsed_2 = where_clause.parseString(whereclause_2,parseAll=True)
+    assert parsed_2.where_conditions[0].function.column == 'column_1'
+    assert parsed_2.where_conditions[0].operation == '<='
+    assert parsed_2.where_conditions[0].value == '1'
+    whereclause_3 = "WHERE column_1 > 1.0"
+    parsed_3 = where_clause.parseString(whereclause_3,parseAll=True)
+    assert parsed_3.where_conditions[0].operation == '>'
+    assert parsed_3.where_conditions[0].value == '1.0'
+    whereclause_4 = "WHERE column_1 = a"
+    parsed_4 = where_clause.parseString(whereclause_4,parseAll=True)
+    assert parsed_4.where_conditions[0].operation == '='
+    assert parsed_4.where_conditions[0].value == 'a'
+    whereclause_5 = "WHERE column_1 = 'a'"
+    parsed_5 = where_clause.parseString(whereclause_5,parseAll=True)
+    assert parsed_5.where_conditions[0].value == 'a'
+    whereclause_6 = "WHERE column_1 = 'two words'"
+    parsed_6 = where_clause.parseString(whereclause_6,parseAll=True)
+    assert parsed_6.where_conditions[0].value == 'two words'
+    # Functions
+    whereclause_7 = "WHERE TYPICALITY > .8"
+    parsed_7 = where_clause.parseString(whereclause_7,parseAll=True)
+    assert parsed_7.where_conditions[0].function.function_id == 'typicality'
+    assert parsed_7.where_conditions[0].operation == '>'
+    assert parsed_7.where_conditions[0].value == '.8'
+    whereclause_8 = "WHERE PREDICTIVE PROBABILITY OF column_1 > .1"
+    parsed_8 = where_clause.parseString(whereclause_8,parseAll=True)
+    assert parsed_8.where_conditions[0].function.function_id == 'predictive probability of'
+    assert parsed_8.where_conditions[0].function.column == 'column_1'
+    assert parsed_8.where_conditions[0].operation == '>'
+    assert parsed_8.where_conditions[0].value == '.1'
+    whereclause_9 = "WHERE SIMILARITY TO 2 > .1"
+    parsed_9 = where_clause.parseString(whereclause_9,parseAll=True)
+    assert parsed_9.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_9.where_conditions[0].function.row_id == '2'
+    assert parsed_9.where_conditions[0].operation == '>'
+    assert parsed_9.where_conditions[0].value == '.1'
+    whereclause_10 = "WHERE SIMILARITY TO 2 WITH RESPECT TO column_1 > .4"
+    parsed_10 = where_clause.parseString(whereclause_10,parseAll=True)
+    assert parsed_10.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_10.where_conditions[0].function.row_id == '2'
+    assert parsed_10.where_conditions[0].function.with_respect_to.column_list[0] == 'column_1'
+    assert parsed_10.where_conditions[0].operation == '>'
+    assert parsed_10.where_conditions[0].value == '.4'
+    whereclause_11 = "WHERE SIMILARITY TO column_1 = 1 = .5"
+    parsed_11 = where_clause.parseString(whereclause_11,parseAll=True)
+    assert parsed_11.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_11.where_conditions[0].function.column == 'column_1'
+    assert parsed_11.where_conditions[0].function.column_value == '1'
+    assert parsed_11.where_conditions[0].operation == '='
+    assert parsed_11.where_conditions[0].value == '.5'
+    whereclause_12 = "WHERE SIMILARITY TO column_1 = 'a' WITH RESPECT TO column_2 > .5"
+    parsed_12 = where_clause.parseString(whereclause_12,parseAll=True)
+    assert parsed_12.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_12.where_conditions[0].function.column == 'column_1'
+    assert parsed_12.where_conditions[0].function.column_value == 'a'
+    assert parsed_12.where_conditions[0].operation == '>'
+    assert parsed_12.where_conditions[0].value == '.5'    
+    assert parsed_12.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
+    whereclause_13 = "WHERE SIMILARITY TO column_1 = 1.2 WITH RESPECT TO column_2 > .5"
+    parsed_13 = where_clause.parseString(whereclause_13,parseAll=True)
+    assert parsed_13.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_13.where_conditions[0].function.column == 'column_1'
+    assert parsed_13.where_conditions[0].function.column_value == '1.2'
+    assert parsed_13.where_conditions[0].operation == '>'
+    assert parsed_13.where_conditions[0].value == '.5'    
+    assert parsed_13.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
+    whereclause_14 = "WHERE SIMILARITY TO column_1 = a WITH RESPECT TO column_2 > .5"
+    parsed_14 = where_clause.parseString(whereclause_14,parseAll=True)
+    assert parsed_14.where_conditions[0].function.function_id == 'similarity to'
+    assert parsed_14.where_conditions[0].function.column == 'column_1'
+    assert parsed_14.where_conditions[0].function.column_value == 'a'
+    assert parsed_14.where_conditions[0].operation == '>'
+    assert parsed_14.where_conditions[0].value == '.5'    
+    assert parsed_14.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
+    # With Confidence
+    whereclause_15 = "WHERE TYPICALITY > .8 WITH CONFIDENCE .5"
+    parsed_15 = where_clause.parseString(whereclause_15,parseAll=True)
+    assert parsed_15.where_conditions[0].confidence == '.5'
+    whereclause_16 = "WHERE PREDICTIVE PROBABILITY OF column_1 > .1 WITH CONFIDENCE .5"
+    parsed_16 = where_clause.parseString(whereclause_16,parseAll=True)
+    assert parsed_16.where_conditions[0].confidence == '.5'
+    whereclause_17 = "WHERE SIMILARITY TO 2 > .1 WITH CONFIDENCE .5"
+    parsed_17 = where_clause.parseString(whereclause_17,parseAll=True)
+    assert parsed_17.where_conditions[0].confidence == '.5'
+    whereclause_18 = "WHERE SIMILARITY TO 2 WITH RESPECT TO column_1 > .4 WITH CONFIDENCE .5"
+    parsed_18 = where_clause.parseString(whereclause_18,parseAll=True)
+    assert parsed_18.where_conditions[0].confidence == '.5'
+    whereclause_19 = "WHERE SIMILARITY TO column_1 = 1 = .5 WITH CONFIDENCE .5"
+    parsed_19 = where_clause.parseString(whereclause_19,parseAll=True)
+    assert parsed_19.where_conditions[0].confidence == '.5'
+    whereclause_20 = "WHERE SIMILARITY TO column_1 = 'a' WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    parsed_20 = where_clause.parseString(whereclause_20,parseAll=True)
+    assert parsed_20.where_conditions[0].confidence == '.5'
+    whereclause_21 = "WHERE SIMILARITY TO column_1 = 1.2 WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    parsed_21 = where_clause.parseString(whereclause_21,parseAll=True)
+    assert parsed_21.where_conditions[0].confidence == '.5'
+    whereclause_22 = "WHERE SIMILARITY TO column_1 = a WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    parsed_22 = where_clause.parseString(whereclause_22,parseAll=True)
+    assert parsed_22.where_conditions[0].confidence == '.5'
+    # AND
+    whereclause_23 = "WHERE column_1 = 'a' AND column_2 >= 3"
+    parsed_23 = where_clause.parseString(whereclause_23,parseAll=True)
+    assert parsed_23.where_conditions[0].function.column == 'column_1'
+    assert parsed_23.where_conditions[1].function.column == 'column_2'
+    whereclause_24 = "WHERE TYPICALITY > .8 AND PREDICTIVE PROBABILITY OF column_1 > .1 AND SIMILARITY TO 2 > .1"
+    parsed_24 = where_clause.parseString(whereclause_24,parseAll=True)
+    assert parsed_24.where_conditions[0].function.function_id == 'typicality'
+    assert parsed_24.where_conditions[1].function.function_id == 'predictive probability of'
+    assert parsed_24.where_conditions[2].function.function_id == 'similarity to'
+    whereclause_25 = "WHERE TYPICALITY > .8 WITH CONFIDENCE .4 AND PREDICTIVE PROBABILITY OF column_1 > .1 WITH CONFIDENCE .6 AND SIMILARITY TO 2 > .1 WITH CONFIDENCE .5"
+    parsed_25 = where_clause.parseString(whereclause_25,parseAll=True)
+    assert parsed_25.where_conditions[0].confidence == '.4'
+    assert parsed_25.where_conditions[1].confidence == '.6'
+    assert parsed_25.where_conditions[2].confidence == '.5'
+    whereclause_26 = "WHERE KEY IN row_list_1 AND column_1 = 'a' AND TYPICALITY > .4"
+    parsed_26 = where_clause.parseString(whereclause_26,parseAll=True)
+    assert parsed_26.where_conditions[0].function.function_id == 'key in'
+    assert parsed_26.where_conditions[0].function.row_list == 'row_list_1'
+    assert parsed_26.where_conditions[1].function.column == 'column_1'
+    assert parsed_26.where_conditions[2].function.function_id == 'typicality'
+
+def test_key_in_rowlist():
+    assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).function.function_id == "key in"
+    assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).function.row_list == "row_list_1"
+
+def test_basic_select_pyparsing():
+    select_1 = "SELECT * FROM table_1"
+    select_1_parse = query.parseString(select_1,parseAll=True)
+    assert select_1_parse.query_id == 'select'
+    assert select_1_parse.btable == 'table_1'
+    assert select_1_parse.functions[0].columns[0] == '*'
+    select_2 = "SELECT column_1,column_3 FROM table_1"
+    select_2_parse = query.parseString(select_2,parseAll=True)
+    assert select_2_parse.functions[0].columns.asList() == ['column_1','column_3']
+    select_3 = "SELECT HIST column_1 FROM table_1 WHERE column_2 = 3"
+    select_3_parse = query.parseString(select_3,parseAll=True)
+    assert select_3_parse.hist == 'hist'
+    assert select_3_parse.functions[0].columns.asList() == ['column_1']
+    assert select_3_parse.where_keyword == 'where'
+    assert select_3_parse.where_conditions[0].value == '3'
+    assert select_3_parse.where_conditions[0].function.column == 'column_2'
+    assert select_3_parse.where_conditions[0].operation == '='
+    select_4 = "SELECT col_1 FROM table_1 ORDER BY TYPICALITY LIMIT 10 SAVE TO ~/test.txt"
+    select_4_parse = query.parseString(select_4,parseAll=True)
+    assert select_4_parse.functions[0].columns.asList() == ['col_1']
+    assert select_4_parse.order_by.order_by_set[0].function_id == 'typicality'
+    assert select_4_parse.limit == '10'
+    assert select_4_parse.filename == '~/test.txt'
+    
+def test_select_functions_pyparsing():
+    query_1 = "SELECT TYPICALITY FROM table_1"
+    query_2 = "SELECT TYPICALITY OF column_1 FROM table_1"
+    query_3 = "SELECT PREDICTIVE PROBABILITY OF column_1 FROM table_1"
+    query_4 = "SELECT PROBABILITY OF column_1 = 4 FROM table_1"
+    query_5 = "SELECT SIMILARITY TO 0 FROM table_1"
+    query_5 = "SELECT SIMILARITY TO column_1 = 4 FROM table_1"
+    query_6 = "SELECT DEPENDENCE PROBABILITY WITH column_1 FROM table_1"
+    query_7 = "SELECT MUTUAL INFORMATION OF column_1 WITH column_2 FROM table_1"
+    query_8 = "SELECT CORRELATION OF column_1 WITH column_2 FROM table_1"
+    query_9 = "SELECT TYPICALITY, PREDICTIVE PROBABILITY OF column_1 FROM table_1"
+    select_ast_1 = query.parseString(query_1,parseAll=True)
+    select_ast_2 = query.parseString(query_2,parseAll=True)
+    select_ast_3 = query.parseString(query_3,parseAll=True)
+    select_ast_4 = query.parseString(query_4,parseAll=True)
+    select_ast_5 = query.parseString(query_5,parseAll=True)
+    select_ast_6 = query.parseString(query_6,parseAll=True)
+    select_ast_7 = query.parseString(query_7,parseAll=True)
+    select_ast_8 = query.parseString(query_8,parseAll=True)
+    select_ast_9 = query.parseString(query_9,parseAll=True)
+    assert select_ast_1.query_id == 'select'
+    assert select_ast_2.query_id == 'select'
+    assert select_ast_3.query_id == 'select'
+    assert select_ast_4.query_id == 'select'
+    assert select_ast_5.query_id == 'select'
+    assert select_ast_5.query_id == 'select'
+    assert select_ast_6.query_id == 'select'
+    assert select_ast_7.query_id == 'select'
+    assert select_ast_8.query_id == 'select'
+    assert select_ast_9.query_id == 'select'    
+    assert select_ast_1.functions[0].function_id == 'typicality'
+    assert select_ast_2.functions[0].function_id == 'typicality of'
+    assert select_ast_3.functions[0].function_id == 'predictive probability of'
+    assert select_ast_4.functions[0].function_id == 'probability of'
+    assert select_ast_5.functions[0].function_id == 'similarity to'
+    assert select_ast_5.functions[0].function_id == 'similarity to'
+    assert select_ast_6.functions[0].function_id == 'dependence probability'
+    assert select_ast_7.functions[0].function_id == 'mutual information'
+    assert select_ast_8.functions[0].function_id == 'correlation'
+    assert select_ast_9.functions[0].function_id == 'typicality'
+    assert select_ast_9.functions[1].function_id == 'predictive probability of'
+
+def test_infer_pyparsing():
+    infer_1 = "INFER * FROM table_1"
+    infer_1_parse = query.parseString(infer_1,parseAll=True)
+    assert infer_1_parse.query_id == 'infer'
+    assert infer_1_parse.btable == 'table_1'
+    assert infer_1_parse.functions[0].columns[0] == '*'
+    infer_2 = "infer column_1,column_3 FROM table_1"
+    infer_2_parse = query.parseString(infer_2,parseAll=True)
+    assert infer_2_parse.functions[0].columns.asList() == ['column_1','column_3']
+    infer_3 = "infer HIST column_1 FROM table_1 WHERE column_2 = 3"
+    infer_3_parse = query.parseString(infer_3,parseAll=True)
+    assert infer_3_parse.hist == 'hist'
+    assert infer_3_parse.functions[0].columns.asList() == ['column_1']
+    assert infer_3_parse.where_keyword == 'where'
+    assert infer_3_parse.where_conditions[0].value == '3'
+    assert infer_3_parse.where_conditions[0].function.column == 'column_2'
+    assert infer_3_parse.where_conditions[0].operation == '='
+    infer_4 = "infer col_1 FROM table_1 ORDER BY TYPICALITY LIMIT 10 SAVE TO ~/test.txt"
+    infer_4_parse = query.parseString(infer_4,parseAll=True)
+    assert infer_4_parse.functions[0].columns.asList() == ['col_1']
+    assert infer_4_parse.order_by.order_by_set[0].function_id == 'typicality'
+    assert infer_4_parse.limit == '10'
+    assert infer_4_parse.filename == '~/test.txt'
+    query_1 = "INFER TYPICALITY FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_2 = "INFER TYPICALITY OF column_1 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_3 = "INFER PREDICTIVE PROBABILITY OF column_1 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_4 = "INFER PROBABILITY OF column_1 = 4 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_5 = "INFER SIMILARITY TO 0 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_5 = "INFER SIMILARITY TO column_1 = 4 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_6 = "INFER DEPENDENCE PROBABILITY WITH column_1 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_7 = "INFER MUTUAL INFORMATION OF column_1 WITH column_2 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_8 = "INFER CORRELATION OF column_1 WITH column_2 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    query_9 = "INFER TYPICALITY, PREDICTIVE PROBABILITY OF column_1 FROM table_1 WITH CONFIDENCE .4 WITH 4 SAMPLES"
+    infer_ast_1 = query.parseString(query_1,parseAll=True)
+    infer_ast_2 = query.parseString(query_2,parseAll=True)
+    infer_ast_3 = query.parseString(query_3,parseAll=True)
+    infer_ast_4 = query.parseString(query_4,parseAll=True)
+    infer_ast_5 = query.parseString(query_5,parseAll=True)
+    infer_ast_6 = query.parseString(query_6,parseAll=True)
+    infer_ast_7 = query.parseString(query_7,parseAll=True)
+    infer_ast_8 = query.parseString(query_8,parseAll=True)
+    infer_ast_9 = query.parseString(query_9,parseAll=True)
+    assert infer_ast_1.query_id == 'infer'
+    assert infer_ast_2.query_id == 'infer'
+    assert infer_ast_3.query_id == 'infer'
+    assert infer_ast_4.query_id == 'infer'
+    assert infer_ast_5.query_id == 'infer'
+    assert infer_ast_5.query_id == 'infer'
+    assert infer_ast_6.query_id == 'infer'
+    assert infer_ast_7.query_id == 'infer'
+    assert infer_ast_8.query_id == 'infer'
+    assert infer_ast_9.query_id == 'infer'    
+    assert infer_ast_1.functions[0].function_id == 'typicality'
+    assert infer_ast_2.functions[0].function_id == 'typicality of'
+    assert infer_ast_3.functions[0].function_id == 'predictive probability of'
+    assert infer_ast_4.functions[0].function_id == 'probability of'
+    assert infer_ast_5.functions[0].function_id == 'similarity to'
+    assert infer_ast_5.functions[0].function_id == 'similarity to'
+    assert infer_ast_6.functions[0].function_id == 'dependence probability'
+    assert infer_ast_7.functions[0].function_id == 'mutual information'
+    assert infer_ast_8.functions[0].function_id == 'correlation'
+    assert infer_ast_9.functions[0].function_id == 'typicality'
+    assert infer_ast_9.functions[1].function_id == 'predictive probability of'
+    assert infer_ast_1.samples == '4'
+    assert infer_ast_1.confidence == '.4'
+    assert infer_ast_2.samples == '4'
+    assert infer_ast_2.confidence == '.4'
+    assert infer_ast_3.samples == '4'
+    assert infer_ast_3.confidence == '.4'
+    assert infer_ast_4.samples == '4'
+    assert infer_ast_4.confidence == '.4'
+    assert infer_ast_5.samples == '4'
+    assert infer_ast_5.confidence == '.4'
+    assert infer_ast_6.samples == '4'
+    assert infer_ast_6.confidence == '.4'
+    assert infer_ast_7.samples == '4'
+    assert infer_ast_7.confidence == '.4'
+    assert infer_ast_8.samples == '4'
+    assert infer_ast_8.confidence == '.4'
+    assert infer_ast_9.samples == '4'
+    assert infer_ast_9.confidence == '.4'
+
+def test_simulate_pyparsing():
+    query_1 = "SIMULATE * FROM table_1 WHERE column_1 = 4 TIMES 4 SAVE TO ~/test.csv"
+    simulate_ast = query.parseString(query_1,parseAll=True)
+    assert simulate_ast.query_id == 'simulate'
+    assert simulate_ast.functions[0].columns[0] == '*'
+    assert simulate_ast.where_keyword == 'where'
+    assert simulate_ast.times == '4'
+    assert simulate_ast.filename == '~/test.csv'
+    query_2 = "SIMULATE col1,col2 FROM table_1 WHERE column_1 = 4 TIMES 4 SAVE TO ~/test.csv"
+    simulate_ast = query.parseString(query_2,parseAll=True)
+    assert simulate_ast.functions[0].columns.asList() == ['col1','col2']
+
+def test_estimate_columns_from_pyparsing():
+    query_1 = "ESTIMATE COLUMNS FROM table_1 WHERE col_1 = 4 ORDER BY TYPICALITY LIMIT 10 AS col_list_1"
+    est_col_ast_1 = query.parseString(query_1,parseAll=True)
+    assert est_col_ast_1.query_id == 'estimate'
+    assert est_col_ast_1.btable == 'table_1'
+    assert est_col_ast_1.where_keyword == 'where'
+    assert est_col_ast_1.where_conditions[0].function.column == 'col_1'
+    assert est_col_ast_1.where_conditions[0].value == '4'
+    assert est_col_ast_1.order_by.order_by_set[0].function_id == 'typicality'
+    assert est_col_ast_1.limit == '10'
+    assert est_col_ast_1.as_column_list == 'col_list_1'
+    query_2 = "ESTIMATE COLUMNS FROM table_1"
+    est_col_ast_2 = query.parseString(query_2,parseAll=True)
+    assert est_col_ast_2.query_id == 'estimate'
+    assert est_col_ast_2.btable == 'table_1'
+
+def test_estimate_pairwise_pyparsing():
+    query_1 = "ESTIMATE PAIRWISE CORRELATION WITH col_1 FROM table_1"
+    est_pairwise_ast_1 = query.parseString(query_1,parseAll=True)
+    assert est_pairwise_ast_1.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_1.functions[0].function_id == 'correlation'
+    assert est_pairwise_ast_1.functions[0].with_column == 'col_1'
+    assert est_pairwise_ast_1.btable == 'table_1'
+    query_2 = "ESTIMATE PAIRWISE DEPENDENCE PROBABILITY WITH col_1 FROM table_1 FOR col_1,col_2 SAVE TO file.csv SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 AS col_list_1"
+    est_pairwise_ast_2 = query.parseString(query_2,parseAll=True)
+    assert est_pairwise_ast_2.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_2.functions[0].function_id == 'dependence probability'
+    assert est_pairwise_ast_2.functions[0].with_column == 'col_1'
+    assert est_pairwise_ast_2.btable == 'table_1'
+    assert est_pairwise_ast_2.columns.asList() == ['col_1','col_2']
+    assert est_pairwise_ast_2.filename == 'file.csv'
+    assert est_pairwise_ast_2.connected_components_clause.threshold == '.4'
+    assert est_pairwise_ast_2.connected_components_clause.as_label == 'col_list_1'
+    query_3 = "ESTIMATE PAIRWISE MUTUAL INFORMATION WITH col_1 FROM table_1"
+    est_pairwise_ast_3 = query.parseString(query_3,parseAll=True)
+    assert est_pairwise_ast_3.functions[0].function_id == 'mutual information'
+
+def test_estimate_pairwise_row_pyparsing():
+    query_1 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 INTO table_2"
+    est_pairwise_ast_1 = query.parseString(query_1,parseAll=True)
+    assert est_pairwise_ast_1.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_1.functions[0] == 'row similarity'
+    assert est_pairwise_ast_1.btable == 'table_1'
+    query_2 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 FOR 1,2 SAVE TO file.csv SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 AS table_2"
+    est_pairwise_ast_2 = query.parseString(query_2,parseAll=True)
+    assert est_pairwise_ast_2.query_id == 'estimate pairwise'
+    assert est_pairwise_ast_2.functions[0] == 'row similarity'
+    assert est_pairwise_ast_2.btable == 'table_1'
+    assert est_pairwise_ast_2.rows.asList() == ['1','2']
+    assert est_pairwise_ast_2.filename == 'file.csv'
+    assert est_pairwise_ast_2.connected_components_clause.threshold == '.4'
+    assert est_pairwise_ast_2.connected_components_clause.as_label == 'table_2'
+
+def test_nested_queries_basic_pyparsing():
+    query_1 = "SELECT * FROM ( SELECT col_1,col_2 FROM table_2)"
+    ast = query.parseString(query_1,parseAll=True)
+    assert ast.query_id == 'select'
+    assert ast.sub_query == " SELECT col_1,col_2 FROM table_2"
+    ast_2 = query.parseString(ast.sub_query,parseAll=True)
+    assert ast_2.query_id == 'select'
+    assert ast_2.functions[0].columns.asList() == ['col_1','col_2']
 
 def test_list_btables():
     method, args, client_dict = parser.parse_statement('list btables')
@@ -312,19 +817,23 @@ def test_drop_models():
 def test_analyze():
     method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 3 iterations')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None, ct_kernel=0)
 
     method, args, client_dict = parser.parse_statement('analyze t for 6 iterations')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None)
+    assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None, ct_kernel=0)
 
     method, args, client_dict = parser.parse_statement('analyze t for 7 seconds')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7)
+    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7, ct_kernel=0)
     
     method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 7 seconds')
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=0)
+
+    method, args, client_dict = parser.parse_statement('analyze t models 2-6 for 7 seconds with mh kernel')
+    assert method == 'analyze'
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=1)    
 
 def test_load_models():
     method, args, client_dict = parser.parse_statement('load models fn for t')
@@ -348,14 +857,20 @@ def test_select():
 
     method, args, client_dict = parser.parse_statement('select * from t')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot)
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args == d
 
+    method, args, client_dict = parser.parse_statement('summarize select * from t')
+    d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=True)
+    assert method == 'select'
+    assert args == d
+    
     columnstring = 'a, b, a_b'
     method, args, client_dict = parser.parse_statement('select a, b, a_b from t')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot)
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args == d
 
@@ -363,21 +878,21 @@ def test_select():
     columnstring = '*'
     method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot)
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args == d
 
     limit = 10
     method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7 limit 10')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot)
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args == d
 
-    order_by = [('b', False)]
+    order_by = [('b', True)]
     method, args, client_dict = parser.parse_statement('select * from t where a=6 and b = 7 order by b limit 10')
     d = dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot)
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
     assert method == 'select'
     assert args == d
 
