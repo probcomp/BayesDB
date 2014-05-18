@@ -27,6 +27,8 @@ import os
 import bql_grammar as bql
 import pyparsing as pp
 import ast
+import functions
+import operator
 
 class Parser(object):
     def __init__(self):
@@ -35,13 +37,16 @@ class Parser(object):
     def pyparse_input(self, input_string):
         """Uses the grammar defined in bql_grammar to create a pyparsing object out of an input string"""
         try:
-            bql_blob_ast = bql.bql_input.parseString(input_string)
+            bql_blob_ast = bql.bql_input.parseString(input_string, parseAll=True)
         except pp.ParseException as x:
             raise utils.BayesDBParseError("Invalid query: Could not parse '%s'" %input_string) #TODO get character number
         return bql_blob_ast
         
     def split_statements(self,bql_blob_ast):
-        pass
+        """
+        returns a list of bql statements, not necessarily useful. 
+        """
+        return [bql_statement_ast for bql_statement_ast in bql_blob_ast]
 
     def parse_single_statement(self,bql_statement_ast):
         ## TODO Check for nest
@@ -135,60 +140,510 @@ class Parser(object):
     def parse_load_models(self,bql_statement_ast):
         return 'load_models', dict(tablename=bql_statement_ast.btable), dict(pkl_path=bql_statement_ast.filename)
 
-    def parse_infer(self,bql_statement_ast):
-        print "infer"
-
-    def parse_select(self,bql_statement_ast):
-        ## TODO assert for extra pieces
+    def parse_label_columns(self, bql_statement_ast): ##TODO only smoke test right now
         tablename = bql_statement_ast.btable
-        functions = bql_statement_ast.functions
-        summarize = (bql_statement_ast.summarize == 'summarize') #TODO should be mutually exclusive?
-        plot = (bql_statement_ast.plot == 'plot')
-        scatter = (bql_statement_ast.scatter == 'scatter') ##TODO add to grammar
-        pairwise = (bql_statement_ast.pairwise == 'pairwise')
-        whereclause = None
-        if bql_statement_ast.where_conditions != '':
-            whereclause = bql_statement_ast.where_conditions
-        limit = float('inf')
-        if bql_statement_ast.limit != '':
-            limit = int(bql_statement_ast.limit)
+        source = None
+        mappings = None
+        if bql_statement_ast.label_clause != '':
+            source = 'inline'
+            mappings = {}
+            for label_set in bql_statement_ast.label_clause:
+                mappings[label_set[0]] = label_set[1]
+        csv_path = None
+        if bql_statement_ast.filename != '':
+            csv_path = bql_statement_ast.filename
+            source = 'file'
+        return 'label_columns', \
+            dict(tablename=tablename, mappings=mappings), \
+            dict(source=source, csv_path=csv_path)
+
+    def parse_show_metadata(self, bql_statement_ast):
+        print bql_statement_ast
+
+    def parse_show_label(self, bql_statement_ast):
+        print bql_statement_ast
+
+    def parse_update_metadata(self, bql_statement_ast):
+        tablename = bql_statement_ast.btable
+        source = None
+        mappings = None
+        if bql_statement_ast.label_clause != '':
+            source = 'inline'
+            mappings = {}
+            for label_set in bql_statement_ast.label_clause:
+                mappings[label_set[0]] = label_set[1]
+        csv_path = None
+        if bql_statement_ast.filename != '':
+            csv_path = bql_statement_ast.filename
+            source = 'file'
+        return 'update_metadata', \
+            dict(tablename=tablename, mappings=mappings), \
+            dict(source=source, csv_path=csv_path)
+    
+    def parse_query(self, bql_statement_ast):
+        '''
+        master parser for queries (select, infer, simulate, estimate pairwise, etc)
+        returns a general args dict which the specific versions of those functions 
+        will then trim and check for illegal aruguments through assertions. 
+        '''
+        statement_id = bql_statement_ast.statement_id 
+        
+        ##TODO function_name into functions
+        confidence = 0
+        if bql_statement_ast.confidence != '':
+            confidence = float(bql_statement_ast.confidence)##TODO throw exception for not floats
+            if confidence > 1: 
+                raise utils.BayesDBParseError("Confidence cannot be greater than 0.")
         filename = None
         if bql_statement_ast.filename != '':
             filename = bql_statement_ast.filename
-        order_by = False ##TODO maybe change to None
-        if bql_statement_ast.order_by != '':
-            order_by = bql_statement_ast.order_by.order_by_set.asList()
+        functions = bql_statement_ast.functions
+        givens = None
+        if bql_statement_ast.given_clause != '':
+            givens = bql_statement_ast.given_clause
+        limit = float('inf')
+        if bql_statement_ast.limit != '':
+            limit = int(bql_statement_ast.limit)
         modelids = None
         if bql_statement_ast.using_models_index_clause != '':
             modelids = bql_statement_ast.using_models_index_clause.asList()
-        #TODO deprecate columnstring
-        return 'select', dict(tablename=tablename, whereclause=whereclause, 
-                              functions=functions, limit=limit, order_by=order_by, plot=plot, 
-                              modelids=modelids, summarize=summarize), \
+        name = None
+        if bql_statement_ast.as_column_list != '':
+            ## TODO name is a bad name
+            name = bql_statement_ast.as_column_list
+        newtablename=None ##TODO implement into
+        numpredictions = None
+        if bql_statement_ast.times != '':
+            numpredictions = int(bql_statement_ast.times)##TODO except
+        numsamples = None
+        if bql_statement_ast.samples != '':
+            numsamples = int(bql_statement_ast.samples)
+        order_by = False
+        if bql_statement_ast.order_by != '':
+            order_by = bql_statement_ast.order_by
+        plot=(bql_statement_ast.plot == 'plot')
+        pairwise = (bql_statement_ast.pairwise == 'pairwise')
+        column_list = None
+        if bql_statement_ast.columns != '':
+            column_list = bql_statement_ast.columns[0] ##TODO implement allowing comma separated columns here
+            assert len(bql_statement_ast.columns) < 2
+        row_list = None
+        if bql_statement_ast.rows != '':
+            row_list = bql_statement_ast.rows ##TODO parse to list of rows
+        scatter = (bql_statement_ast.scatter == 'scatter') ##TODO add to grammar
+        summarize=(bql_statement_ast.summarize == 'summarize')
+        tablename = bql_statement_ast.btable
+        components_name = None
+        threshold = None
+        if bql_statement_ast.save_connected_components != '':
+            components_name = bql_statement_ast.save_connected_components.as_label
+            threshold = float(bql_statement_ast.save_connected_components.threshold)
+        whereclause = None
+        if bql_statement_ast.where_conditions != '':
+            whereclause = bql_statement_ast.where_conditions
+
+        return statement_id, \
+            dict(components_name=components_name,
+                 confidence = confidence,
+                 functions=functions,
+                 givens=givens,
+                 limit=limit,
+                 modelids=modelids,
+                 name=name,
+                 newtablename=newtablename,
+                 numpredictions=numpredictions,
+                 numsamples=numsamples,
+                 order_by=order_by,
+                 plot=plot,
+                 column_list=column_list,
+                 row_list=row_list,
+                 summarize=summarize,
+                 tablename=tablename,
+                 threshold=threshold,
+                 whereclause=whereclause), \
+            dict(plot=plot, 
+                 scatter=scatter, 
+                 pairwise=pairwise, 
+                 filename=filename)
+
+    def parse_infer(self,bql_statement_ast):
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        ## TODO assert for dissallowed information
+        tablename = args_dict['tablename']
+        functions = args_dict['functions']
+        summarize = args_dict['summarize']
+        plot = args_dict['plot']
+        whereclause = args_dict['whereclause']
+        limit = args_dict['limit']
+        order_by = args_dict['order_by']
+        modelids = args_dict['modelids']
+        newtablename = args_dict['newtablename']
+        confidence = args_dict['confidence']
+        numsamples = args_dict['numsamples']
+
+        pairwise = client_dict['pairwise']
+        filename = client_dict['filename']
+        scatter = client_dict['scatter']
+        
+        return 'infer', \
+            dict(tablename=tablename, functions=functions, 
+                 newtablename=newtablename, confidence=confidence, 
+                 whereclause=whereclause, limit=limit,
+                 numsamples=numsamples, order_by=order_by, 
+                 plot=plot, modelids=modelids, summarize=summarize), \
+            dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
+
+    def parse_select(self,bql_statement_ast):
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        ## TODO assert for dissallowed information
+        tablename = args_dict['tablename']
+        functions = args_dict['functions']
+        summarize = args_dict['summarize']
+        plot = args_dict['plot']
+        whereclause = args_dict['whereclause']
+        limit = args_dict['limit']
+        order_by = args_dict['order_by']
+        modelids = args_dict['modelids']
+
+        pairwise = client_dict['pairwise']
+        filename = client_dict['filename']
+        scatter = client_dict['scatter']
+        return 'select', \
+            dict(tablename=tablename, whereclause=whereclause, 
+                 functions=functions, limit=limit, order_by=order_by, plot=plot, 
+                 modelids=modelids, summarize=summarize), \
             dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
     def parse_simulate(self,bql_statement_ast):
-        print "simulate"
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        tablename = args_dict['tablename']
+        functions = args_dict['functions']
+        summarize = args_dict['summarize']
+        plot = args_dict['plot'] 
+        order_by = args_dict['order_by']
+        modelids = args_dict['modelids']
+        newtablename = args_dict['newtablename']
+        givens = args_dict['givens']
+        numpredictions = args_dict['numpredictions']
+       
+        pairwise = client_dict['pairwise']
+        filename = client_dict['filename']
+        scatter = client_dict['scatter']
+        return 'simulate', \
+            dict(tablename=tablename, functions=functions, 
+                 newtablename=newtablename, givens=givens, 
+                 numpredictions=numpredictions, order_by=order_by, 
+                 plot=plot, modelids=modelids, summarize=summarize), \
+            dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
-    def parse_estimate_columns(self,bql_statement_ast):
-        print "estimate_columns"
+    def parse_estimate(self,bql_statement_ast):
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        assert args_dict['functions'][0] == 'column'
+        functions = args_dict['functions']
+        tablename = args_dict['tablename']
+        whereclause = args_dict['whereclause']
+        limit = args_dict['limit']
+        order_by = args_dict['order_by']
+        modelids = args_dict['modelids']
+        name = args_dict['name']
+
+        return 'estimate_columns', \
+            dict(tablename=tablename, functions=functions, 
+                 whereclause=whereclause, limit=limit, 
+                 order_by=order_by, name=name, modelids=modelids), \
+            None
 
     def parse_estimate_pairwise_row(self,bql_statement_ast):
-        print "estimate_pairwise_row"
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        functions = args_dict['functions']
+        assert len(functions) == 1
+        assert functions[0].function_id in ["similarity"]
+        function_name = functions[0].function_id
+        tablename = args_dict['tablename']
+        row_list = args_dict['row_list']
+        components_name = args_dict['components_name']
+        threshold = args_dict['threshold']
+        modelids = args_dict['modelids']
+        filename = client_dict['filename']
+
+        return 'estimate_pairwise_row', \
+            dict(tablename=tablename, function_name=function_name,
+                 row_list=row_list, components_name=components_name, 
+                 threshold=threshold, modelids=modelids), \
+            dict(filename=filename)
 
     def parse_estimate_pairwise(self,bql_statement_ast):
-        print "estimate_pairwise"
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        functions = args_dict['functions']
+        assert len(functions) == 1
+        assert functions[0].function_id in ['correlation', 'mutual information', 'dependence probability']
+        function_name = functions[0].function_id
 
+        tablename = args_dict['tablename']
+        column_list = args_dict['column_list']
+        components_name = args_dict['components_name']
+        threshold = args_dict['threshold']
+        modelids = args_dict['modelids']
+        filename = client_dict['filename']
+
+        return 'estimate_pairwise', \
+            dict(tablename=tablename, function_name=function_name,
+                 column_list=column_list, components_name=components_name, 
+                 threshold=threshold, modelids=modelids), \
+            dict(filename=filename)
+
+#####################################################################################
+## ------------------------------ Function parsing ------------------------------- ##
+#####################################################################################
+    def get_args_pred_prob(self, function_group, M_c):
+        """
+        returns the column index from a predictive probability function
+        raises exceptions for unfound columns
+        """
+        if function_group.column != '' and function_group.column in M_c['name_to_idx']:
+            column = function_group.column
+            c_idx = M_c['name_to_idx'][column]
+            return c_idx
+        elif function_group.column != '':
+            raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % function_group.column)
+        else:
+            raise utils.BayesDBParseError("Invalid query: missing column argument")
+
+    def get_args_prob(self,function_group, M_c):
+        """
+        Returns column_index, value from a probability function
+        raises exception for unfound columns
+        """
+        if function_group.column != '' and function_group.column in M_c['name_to_idx']:
+            column = function_group.column
+            c_idx = M_c['name_to_idx'][column]
+        elif function_group.column != '':
+            raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % function_group.column)
+        else:
+            raise utils.BayesDBParseError("Invalid query: missing column argument")
+        value = utils.string_to_column_type(function_group.value, column, M_c)
+        return c_idx, value
+    
+    def get_args_similarity(self,function_group, M_c, T, column_lists):
+        """
+        returns the target_row_id and a list of with_respect_to columns based on 
+        similarity function
+        Raises exception for unfound columns
+        """
+        ##TODO some cleaining with row_clause
+        target_row_id = None
+        target_columns = None
+        if function_group != '':
+            ## Case for given row_id
+            if function_group.row_id != '':
+                target_row_id = int(function_group.row_id)
+            ## Case for format column = value
+            elif function_group.column != '':
+                assert T is not None
+                target_col_name = function_group.column
+                target_col_value = function_group.column_value
+                target_row_id = utils.row_id_from_col_value(target_col_value, target_col_name, M_c, T)
+        ## With respect to clause
+        with_respect_to_clause = function_group.with_respect_to
+        if with_respect_to_clause !='':
+
+            column_set = with_respect_to_clause.column_list
+            target_column_names = []
+            for column_name in column_set:
+                if column_name == '*':
+                    target_columns = None
+                    break
+                elif column_lists is not None and column_name in column_lists.keys():
+                    target_column_names += column_lists[column_name]
+                elif column_name in M_c['name_to_idx']:
+                    target_column_names.append(column_name)
+                else:
+                    raise utils.BayesDBParseError("Invalid query: column '%s' not found" % column_name)
+            target_columns = [M_c['name_to_idx'][column_name] for column_name in target_column_names]
+        return target_row_id, target_columns
+
+    def get_args_typicality(self,function_group, M_c):
+        """
+        returns column_index if present, if not, returns True. ##TODO this needs a ton of testing
+        if invalid column, raises exception
+        """
+        if function_group.column == '':
+            return True
+        else:
+            return utils.get_index_from_colname(M_c, function_group.column)
+
+    def get_args_of_with(self,function_group, M_c):
+        """
+        designed to handle dependence probability, mutual information, and correlation function_groups
+        all have an optional of clause
+        returns of_column_index, with_column_index
+        invalid column raises exception
+        """
+        with_column = function_group.with_column
+        with_column_index = utils.get_index_from_colname(M_c, with_column)
+        of_column_index = None
+        if function_group.of_column != '':
+            of_column_index = utils.get_index_from_colname(M_c, function_group.of_column)
+        return of_column_index, with_column_index 
 
 #####################################################################################
 ## ----------------------------- Sub query parsing  ------------------------------ ##
 #####################################################################################
 
-    def parse_where_clause(self, where_clause_ast): ##Deprecate select_utils.get_conditions_from_whereclause
-        print "where_clause"
+    def parse_where_clause(self, where_clause_ast, M_c, T, column_lists): 
+        """
+        Creates conditions: the list of conditions in the whereclause
+        List of (c_idx, op, val)
+        """
+        conditions = []
+        operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq,
+                        '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
 
-    def parse_order_by_clause(self, order_by_clause_ast):
-        print "order_by"
+        for single_condition in where_clause_ast:
+            ## Confidence in the where clause not yet handled by client/engine. 
+            confidence = None
+            if single_condition.confidence != '':
+                confidence = float(single_condition.confidence)
+                
+            raw_value = single_condition.value
+            function = None
+            args = None
+            ## SELECT and INFER versions
+            if single_condition.function.function_id == 'typicality':
+                value = utils.value_string_to_num(raw_value)
+                function = functions._row_typicality
+                assert self.get_args_typicality(single_condition.function, M_c) == True
+                args = True
+            elif single_condition.function.function_id == 'similarity':
+                value = utils.value_string_to_num(raw_value)
+                function = functions._similarity
+                args = self.get_args_similarity(single_condition.function, M_c, T, column_lists)
+            elif single_condition.function.function_id == 'predictive probability':
+                value = utils.value_string_to_num(raw_value)
+                function = functions._predictive_probability
+                args = self.get_args_pred_prob(single_condition.function, M_c)
+            
+            elif single_condition.function.function_id == 'key in':
+                value = raw_value
+                ##TODO 
+            elif single_condition.function.column != '':
+                ## whereclause of the form "where col = val" 
+                column_name = single_condition.function.column
+                assert column_name != '*'
+                if column_name in M_c['name_to_idx']:
+                    args = M_c['name_to_idx'][column_name]
+                    value = utils.string_to_column_type(raw_value, column_name, M_c)
+                    function = functions._column
+                else:
+                    raise utils.BayesDBParseError("Invalid where clause: column %s was not found in the table" % 
+                                                  column_name)
+            else:
+                if single_condition.function.function_id != '':
+                    raise utils.BayesDBParseError("Invalid where clause: %s not allowed." % 
+                                                  single_condition.function.function_id)
+                else: 
+                    raise utils.BayesDBParseError("Invalid where clause. Unrecognized function")
+            if single_condition.operation != '':
+                op = operator_map[single_condition.operation]
+            else: 
+                raise utils.BayesDBParseError("Invalid where clause: no operator found")
+            conditions.append(((function, args), op, value))
+        return conditions
+    
+    def parse_column_whereclause(self, whereclause, M_c, T): ##TODO throw exception on parseable, invalid
+        """
+        Creates conditions: the list of conditions in the whereclause
+        List of (c_idx, op, val)
+        """
+        conditions = []
+        if whereclause == None:
+            return conditions
+        operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq,
+                        '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
+        
+        for single_condition in whereclause:
+            ## Confidence in the where clause not yet handled by client/engine. 
+            
+            raw_value = single_condition.value
+            value = utils.value_string_to_num(raw_value)
+            function = None
+            args = None
+            _ = None
+            ## SELECT and INFER versions
+            if single_condition.function.function_id == 'typicality':
+                function = functions._col_typicality
+                assert self.get_args_typicality(single_condition.function, M_c) == True
+                args = None
+            elif single_condition.function.function_id == 'dependence probability':
+                function = functions._dependence_probability
+                _, args = self.get_args_of_with(single_condition.function, M_c)
+            elif single_condition.function.function_id == 'mutual information':
+                function = functions._mutual_information
+                _, args = self.get_args_of_with(single_condition.function, M_c)
+            elif single_condition.function.function_id == 'correlation':
+                function = functions._correlation
+                _, args = self.get_args_of_with(single_condition.function, M_c)
+            else:
+                if single_condition.function.function_id != '':
+                    raise utils.BayesDBParseError("Invalid where clause: %s not allowed." % 
+                                                  single_condition.function.function_id)
+                else: 
+                    raise utils.BayesDBParseError("Invalid where clause. Unrecognized function")
+            if single_condition.operation != '':
+                op = operator_map[single_condition.operation]
+            else: 
+                raise utils.BayesDBParseError("Invalid where clause: no operator found")
+            if _ != None:
+                raise utils.BayesDBParseError("Invalid where clause, do not specify an 'of' column in estimate columns")
+            conditions.append(((function, args), op, value))
+        return conditions
+
+    def parse_order_by_clause(self, order_by_clause_ast, M_c, T, column_lists):
+        function_list = []
+        for orderable in order_by_clause_ast:
+            desc = True
+            if orderable.asc_desc == 'asc':
+                desc = False
+            if orderable.function.function_id == 'similarity':
+                function = functions._similarity 
+                args = self.get_args_similarity(orderable.function, M_c, T, column_lists) ##TODO bug
+            elif orderable.function.function_id == 'typicality':
+                function = functions._row_typicality
+                args = self.get_args_typicality(orderable.function, M_c)
+            elif orderable.function.function_id == 'predictive probability':
+                function = functions._predictive_probability
+                args = self.get_args_pred_prob(orderable.function, M_c)
+            elif orderable.function.column != '': 
+                function = functions._column
+                args = M_c['name_to_idx'][orderable.function.column]
+            else:
+                raise utils.BayesDBParseError("Invalid order by clause.")
+            function_list.append((function, args, desc))
+        return function_list
+
+    def parse_column_order_by_clause(self, order_by_clause_ast, M_c, ):
+        function_list = []
+        for orderable in order_by_clause_ast:
+            desc = True
+            if orderable.asc_desc == 'asc':
+                desc = False
+            if orderable.function.function_id == 'typicality': ##TODO assert for c_idx 
+                function = functions._col_typicality
+                args = None 
+            elif orderable.function.function_id == 'dependence probability':
+                function = functions._dependence_probability
+                _, args = self.get_args_of_with(orderable.function, M_c)
+            elif orderable.function.function_id == 'correlation':
+                function = functions._correlation
+                _, args = self.get_args_of_with(orderable.function, M_c)
+            elif orderable.function.function_id == 'mutual information':
+                function = functions._mutual_information
+                _, args = self.get_args_of_with(orderable.function, M_c)
+            else:
+                raise utils.BayesDBParseError("Invalid order by clause. Can only order by typicality, correlation, mutual information, or dependence probability.")
+            function_list.append((function, args, desc))
+        
+        return function_list
 
     def parse_functions(self, function_groups, M_c=None, T=None, column_lists=None):
         '''
@@ -204,27 +659,51 @@ class Parser(object):
         For similarity: query_args is a (target_row_id, target_column) tuple.
         '''
         ## Always return row_id as the first column.
-        query_colnames = ['row_id'] + query_colnames
+        query_colnames = ['row_id'] ##TODO update for more information
         queries = [(functions._row_id, None, False)]
 
         for function_group in function_groups: ##TODO throw exception, make safe
             if function_group.function_id == 'predictive probability':
-                queries.append(functions.parse_predictive_probability(function_group, M_c))
+                queries.append((functions._predictive_probability, 
+                                self.get_args_pred_prob(function_group, M_c), 
+                                False))
+                query_colnames.append('predictive probability of %s' % function_group.column)
             elif function_group.function_id == 'typicality':
-                queries.append(functions.parse_typicality(function_group, M_c))
+                if function_group.column != '':
+                    queries.append((functions._col_typicality, 
+                                    self.get_args_typicality(function_group, M_c), 
+                                    True))
+                else:
+                    queries.append((functions._row_typicality,
+                                    self.get_args_typicality(function_group, M_c), 
+                                    False))
+                query_colnames.append('typicality') ##TODO of
             elif function_group.function_id == 'probability':
-                queries.append(functions.parse_probability(function_group, M_c))
-            elif function_group.function_id == 'similarity to':
-                assert M_c is not None and T is not None
-                queries.append(functions.parse_similarity(function_group, M_c, T, column_lists))
+                queries.append((functions._probability, 
+                                self.get_args_prob(function_group, M_c), 
+                                True))
+                query_colnames.append('probability')
+            elif function_group.function_id == 'similarity':
+                assert M_c is not None
+                queries.append((functions._similarity, 
+                                self.get_args_similarity(function_group, M_c, T, column_lists), 
+                                False))
+                query_colnames.append('similarity') ##TODO of/with respect
             elif function_group.function_id == 'dependence probability':
-                pass
+                queries.append((functions._dependence_probability, 
+                                self.get_args_of_with(function_group, M_c), 
+                                True))
+                query_colnames.append('dependence probability') ##TODO of/with respect
             elif function_group.function_id == 'mutual information':
-                pass
+                queries.append((functions._mutual_information, 
+                                self.get_args_of_with(function_group, M_c), 
+                                True))
+                query_colnames.append('mutual information') ##TODO of/with respect
             elif function_group.function_id == 'correlation':
-                pass
-            elif function_group.function_id == 'row similarity':
-                pass
+                queries.append((functions._correlation, 
+                                self.get_args_of_with(function_group, M_c), 
+                                True))
+                query_colnames.append('correlation') ##TODO of/with respect
             ## single column, column_list, or *
             ## TODO maybe split to function
             ## TODO handle nesting
@@ -234,20 +713,24 @@ class Parser(object):
                     assert M_c is not None
                     all_columns = utils.get_all_column_names_in_original_order(M_c)
                     index_list = [M_c['name_to_idx'][column_name] for column_name in all_columns]
+                    name_list = [name for name in all_columns]
                 elif (column_lists is not None) and (column_name in column_lists.keys()):
-                    index_list = column_lists[column_name]
+                    index_list = [M_c['name_to_idx'][name] for name in column_lists[column_name]]
+                    name_list = [name for name in column_lists[column_name]]
                 elif column_name in M_c['name_to_idx']:
                     index_list = [M_c['name_to_idx'][column_name]]
+                    name_list = [column_name]
                 else:
                     raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % column_name)
                 queries += [(functions._column, column_index , False) for column_index in index_list]
-
+                query_colnames += [name for name in name_list]
+            else: 
+                raise utils.BayesDBParseError("Invalid query: could not parse function")
         return queries, query_colnames
 
 #####################################################################################
 ## --------------------------- Other Helper functions ---------------------------- ##
 #####################################################################################
-
 
     def set_root_dir(self, root_dir):
         """Set the root_directory, used as the base for all relative paths."""

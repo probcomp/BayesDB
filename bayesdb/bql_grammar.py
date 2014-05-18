@@ -41,10 +41,14 @@ create_keyword = CaselessKeyword("create")
 execute_keyword = CaselessKeyword("execute")
 file_keyword = CaselessKeyword("file")
 update_keyword = CaselessKeyword("update")
+metadata_keyword = CaselessKeyword('metadata')
+label_keyword = CaselessKeyword('label')
 schema_keyword = CaselessKeyword("schema")
 set_keyword = CaselessKeyword("set")
 categorical_keyword = CaselessKeyword("categorical")
 numerical_keyword = CaselessKeyword("numerical")
+continuous_keyword = CaselessKeyword("continuous")
+multinomial_keyword = CaselessKeyword("multinomial")
 ignore_keyword = CaselessKeyword("ignore")
 key_keyword = CaselessKeyword("key")
 initialize_keyword = CaselessKeyword("initialize").setResultsName("statement_id")
@@ -137,6 +141,19 @@ create_btable_keyword.setParseAction(replaceWith('create_btable'))
 update_schema_for_keyword = Combine(update_keyword + single_white + 
                                     schema_keyword + single_white + for_keyword).setResultsName("statement_id")
 update_schema_for_keyword.setParseAction(replaceWith("update_schema"))
+update_metadata_for_keyword = Combine(update_keyword + single_white + 
+                                    metadata_keyword + single_white + for_keyword).setResultsName("statement_id")
+update_metadata_for_keyword.setParseAction(replaceWith("update_metadata"))
+label_columns_for_keyword = Combine(label_keyword + single_white + 
+                                    column_keyword + single_white + for_keyword).setResultsName("statement_id")
+label_columns_for_keyword.setParseAction(replaceWith("label_columns"))
+show_metadata_for_keyword = Combine(show_keyword + single_white + 
+                                    metadata_keyword + single_white + for_keyword).setResultsName("statement_id")
+show_metadata_for_keyword.setParseAction(replaceWith("show_metadata"))
+show_label_for_keyword = Combine(show_keyword + single_white + 
+                                 label_keyword + single_white + for_keyword).setResultsName("statement_id")
+show_label_for_keyword.setParseAction(replaceWith("show_label"))
+
 models_for_keyword = Combine(model_keyword + single_white + for_keyword)
 model_index_keyword = Combine(model_keyword + single_white + index_keyword)
 load_model_keyword = Combine(load_keyword + single_white + model_keyword).setResultsName("statement_id")
@@ -171,11 +188,12 @@ show_row_lists_for_keyword = Combine(show_keyword + single_white + row_keyword +
                                  single_white + list_keyword + 
                                  single_white + for_keyword).setResultsName("statement_id")
 show_row_lists_for_keyword.setParseAction(replaceWith("show_row_lists")) #TODO test parser.parse_show_row_lists
-
 estimate_pairwise_keyword = Combine(estimate_keyword + single_white + 
                                     pairwise_keyword).setResultsName("statement_id")
+estimate_pairwise_keyword.setParseAction(replaceWith("estimate_pairwise"))
 estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
                                         single_white + row_keyword).setResultsName("statement_id")
+estimate_pairwise_row_keyword.setParseAction(replaceWith('estimate_pairwise_row'))
 row_similarity_keyword = Combine(row_keyword + single_white + similarity_keyword)
 with_confidence_keyword = Combine(with_keyword + single_white + confidence_keyword)
 order_by_keyword = Combine(order_keyword + single_white + by_keyword)
@@ -184,12 +202,16 @@ mutual_information_keyword = Combine(mutual_keyword + single_white + information
 estimate_columns_from_keyword = Combine(estimate_keyword + single_white + column_keyword + 
                                         single_white + from_keyword).setResultsName("statement_id")
 estimate_columns_keyword = Combine(estimate_keyword + single_white + column_keyword).setResultsName("statement_id")
+estimate_columns_from_keyword.setParseAction(replaceWith("estimate_columns"))
 column_lists_keyword = Combine(column_keyword + single_white + list_keyword)
 similarity_to_keyword = Combine(similarity_keyword + single_white + to_keyword).setResultsName("statement_id")
 with_respect_to_keyword = Combine(with_keyword + single_white + respect_keyword + single_white + to_keyword)
 probability_of_keyword = Combine(probability_keyword + single_white + of_keyword)
+probability_of_keyword.setParseAction(replaceWith("probability"))
 typicality_of_keyword = Combine(typicality_keyword + single_white + of_keyword)
 predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_keyword + single_white + of_keyword)
+predictive_probability_of_keyword.setParseAction(replaceWith("predictive probability")) ##TODO
+
 save_connected_components_with_threshold_keyword = Combine(save_keyword + single_white + 
                                                            connected_keyword + single_white + 
                                                            components_keyword + single_white + 
@@ -211,19 +233,20 @@ semicolon_literal = Literal(";")
 comma_literal = Literal(",")
 hyphen_literal = Literal("-")
 all_column_literal = Literal('*')
-identifier = (Word(alphas, alphanums + "_.").setParseAction(downcaseTokens)) | sub_query
+identifier = (Word(alphas + '/', alphanums + "_./").setParseAction(downcaseTokens)) | sub_query
 btable = identifier.setResultsName("btable") | sub_query
 comment = (Literal('--') + restOfLine).suppress()
 # single and double quotes inside value must be escaped. 
 value = (QuotedString('"', escChar='\\') | 
          QuotedString("'", escChar='\\') | 
-         Word(printables)| ## TODO printables includes ;
+         Word(printables)| ## TODO printables includes ;,
          float_number | 
          sub_query)
 filename = (QuotedString('"', escChar='\\') | 
             QuotedString("'", escChar='\\') | 
-            Word(alphanums + "!\"/#$%&'()*+,-.:;<=>?@[\]^_`{|}~")).setResultsName("filename")
-data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword
+            Word(alphanums + "!\"/#$%&'()*+,-.:<=>?@[\]^_`{|}~")).setResultsName("filename")
+label = Word(printables, excludeChars=',;')
+data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword
 
 ###################################################################################
 # ------------------------------------ Functions -------------------------------- #
@@ -242,6 +265,30 @@ update_schema_for_function = (update_schema_for_keyword +
                               btable + 
                               Suppress(set_keyword) + 
                               type_clause)
+
+label_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + OneOrMore(label)) + 
+                                Suppress(comma_literal)) + 
+                                Group(identifier + Suppress(equal_literal) + OneOrMore(label))).setResultsName("label_clause")
+# UPDATE METADATA FOR <btable> (SET <metadata-key1 = value1>[, <metadata-key2 = value2>...] | FROM <filename.csv>)
+update_metadata_for_function = (update_metadata_for_keyword + btable + 
+                                (set_keyword + label_clause | from_keyword + filename))
+
+# LABEL COLUMNS FOR <btable> (SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...] | FROM <filename.csv>)
+label_columns_for_function = (label_columns_for_keyword + btable + 
+                              (set_keyword + label_clause | from_keyword + filename))
+
+# SHOW METADATA FOR <btable> [<metadata-key1> [, <metadata-key2>...]]
+show_metadata_function = (show_metadata_for_keyword + 
+                          btable + 
+                          Optional(Group(identifier + 
+                                         ZeroOrMore(Suppress(comma_literal) + identifier))))
+
+# SHOW LABEL FOR <btable> [<column-name-1> [, <column-name-2>...]]
+show_label_function = (show_label_for_keyword + 
+                       btable + 
+                       Optional(Group(identifier + 
+                                      ZeroOrMore(Suppress(comma_literal) + identifier))))
+
 # EXECUTE FILE <filename.bql>
 execute_file_function = execute_file_keyword + filename
 
@@ -309,18 +356,22 @@ help_function = help_keyword
 quit_function = quit_keyword
 
 management_query = (create_btable_function | 
-                      update_schema_for_function | 
-                      execute_file_function | 
-                      initialize_function | 
-                      analyze_function | 
-                      list_btables_function | 
-                      show_for_btable_statement | 
-                      load_model_function | 
-                      save_model_from_function | 
-                      drop_btable_function | 
-                      drop_model_function | 
-                      help_function | 
-                      quit_function)
+                    update_schema_for_function | 
+                    execute_file_function | 
+                    initialize_function | 
+                    analyze_function | 
+                    list_btables_function | 
+                    show_for_btable_statement | 
+                    load_model_function | 
+                    save_model_from_function | 
+                    drop_btable_function | 
+                    drop_model_function | 
+                    help_function | 
+                    update_metadata_for_function | 
+                    label_columns_for_function | 
+                    show_label_function |
+                    show_metadata_function |
+                    quit_function)
 
 # ------------------------------ Helper Clauses --------------------------- #
 
@@ -342,11 +393,12 @@ with_confidence_clause = with_confidence_keyword + float_number.setResultsName("
 
 # -------------------------------- Functions ------------------------------ #
 
-# SIMILARITY TO <row> [WITH RESPECT TO <column>]
-similarity_to_function = (Group(similarity_to_keyword.setResultsName('function_id') + 
-                                row_clause + 
-                                Optional(with_respect_to_keyword + column_list_clause)
-                                .setResultsName('with_respect_to'))
+# SIMILARITY TO <row> [WITH RESPECT TO <column>] ## TODO with respect to clause AND or paren
+similarity_to_function = (Group(similarity_keyword.setResultsName('function_id') + 
+                                Optional(to_keyword + 
+                                         row_clause + 
+                                         Optional(with_respect_to_keyword + column_list_clause)
+                                         .setResultsName('with_respect_to')))
                           .setResultsName("function")) # todo more names less indexes
 
 # TYPICALITY [OF <column>]
@@ -360,17 +412,18 @@ functions_of_two_columns_subclause = ((Suppress(with_keyword) +
                                        Suppress(with_keyword) + 
                                        identifier.setResultsName("with_column")))
 
+##TODO make all of these functions one thing
 # DEPENDENCE PROBABILITY (WITH <column> | OF <column1> WITH <column2>)
-dependence_probability_function = Group(dependence_probability_keyword.setResultsName('function_id') + 
-                                        functions_of_two_columns_subclause).setResultsName("function")
+dependence_probability_function = (Group(dependence_probability_keyword.setResultsName('function_id') + 
+                                        Optional(functions_of_two_columns_subclause)).setResultsName("function"))
 
 # MUTUAL INFORMATION [OF <column1> WITH <column2>]
-mutual_information_function = Group(mutual_information_keyword.setResultsName('function_id') + 
-                                    functions_of_two_columns_subclause).setResultsName("function")
+mutual_information_function = (Group(mutual_information_keyword.setResultsName('function_id') + 
+                                    Optional(functions_of_two_columns_subclause)).setResultsName("function"))
 
 # CORRELATION [OF <column1> WITH <column2>]
-correlation_function = Group(correlation_keyword.setResultsName('function_id') + 
-                             functions_of_two_columns_subclause).setResultsName("function")
+correlation_function = (Group(correlation_keyword.setResultsName('function_id') + 
+                             Optional(functions_of_two_columns_subclause)).setResultsName("function"))
 
 two_column_function = (dependence_probability_function | mutual_information_function | correlation_function)
 
@@ -397,16 +450,13 @@ whereclause_potential_function = (similarity_to_function |
 
 # -------------------------------- other clauses --------------------------- #
 
-# ORDER BY <column|non-aggregate-function>[<column|function>...] [asc|desc] ##TODO Test sort by
-order_by_clause = Group(order_by_keyword + 
-                        Group((whereclause_potential_function + 
-                               Optional(asc_keyword | desc_keyword)
-                               .setResultsName('sort_by')) + 
-                              ZeroOrMore(Suppress(comma_literal) + 
-                                         (whereclause_potential_function + 
-                                          Optional(asc_keyword | desc_keyword)
-                                          .setResultsName('sort_by'))))
-                        .setResultsName("order_by_set")).setResultsName('order_by') ##TODO order_by_set vs order_by
+# ORDER BY <column|non-aggregate-function>[<column|function>...] [asc|desc]
+single_order_by = Group(whereclause_potential_function.setResultsName('function') + 
+                        Optional(asc_keyword | desc_keyword).setResultsName('asc_desc'))
+
+order_by_clause = Group(Suppress(order_by_keyword) + 
+                        single_order_by + 
+                        ZeroOrMore(Suppress(comma_literal) + single_order_by)).setResultsName('order_by')
 
 # WHERE <whereclause>
 single_where_condition = Group(((whereclause_potential_function.setResultsName('function') + 
@@ -425,7 +475,7 @@ save_connected_components_clause = Group(save_connected_components_keyword
                                          ((as_keyword + 
                                            identifier.setResultsName('as_label')) | 
                                           (into_keyword + 
-                                           identifier.setResultsName('into_label')))).setResultsName('connected_components_clause')
+                                           identifier.setResultsName('into_label')))).setResultsName('connected_components_clause') ##TODO deprecate into
 
 row_list_clause = Group(int_number + 
                            ZeroOrMore(Suppress(comma_literal) + 
@@ -446,19 +496,18 @@ using_models_clause = (using_models_keyword + index_clause.setResultsName("using
 query_id = (select_keyword | 
             infer_keyword | 
             simulate_keyword | 
+            estimate_pairwise_row_keyword |
             estimate_pairwise_keyword |
             estimate_keyword).setResultsName('statement_id')
 
-function_in_query = (predictive_probability_of_function | 
-                     probability_of_function | 
-                     typicality_function | 
+function_in_query = (predictive_probability_of_function |
+                     probability_of_function |
+                     typicality_function |
                      similarity_to_function |
-                     dependence_probability_function | 
-                     mutual_information_function | 
-                     correlation_function | 
-                     row_similarity_keyword |
-                     similarity_keyword |
-                     column_keyword | ##TODO what
+                     dependence_probability_function |
+                     mutual_information_function |
+                     correlation_function |
+                     column_keyword |
                      dependence_probability_keyword |
                      Group((identifier|all_column_literal).setResultsName("column_id"))).setResultsName("function")
 

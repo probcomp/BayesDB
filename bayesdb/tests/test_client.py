@@ -85,25 +85,25 @@ def test_drop_btable():
 def test_btable_list():
   global client, test_filenames
 
-  out = client('list btables', pretty=False, debug=True)[0]['list']
+  out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   init_btable_count = len(out)
   
   test_tablename1 = create_dha()
 
-  out = client('list btables', pretty=False, debug=True)[0]['list']
+  out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 in out
   
   test_tablename2 = create_dha()
 
-  out = client('list btables', pretty=False, debug=True)[0]['list']
+  out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   assert len(out) == 2 + init_btable_count
   assert test_tablename1 in out
   assert test_tablename2 in out
 
   client('drop btable %s' % test_tablename1, yes=True, debug=True, pretty=False)
   
-  out = client('list btables', pretty=False, debug=True)[0]['list']
+  out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 not in out
   assert test_tablename2 in out
@@ -112,7 +112,7 @@ def test_btable_list():
   del client
   client = Client()
   
-  out = client('list btables', pretty=False, debug=True)[0]['list']
+  out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 not in out
   assert test_tablename2 in out
@@ -290,16 +290,27 @@ def test_model_config():
 
 def test_using_models():
   """ smoke test """
-  test_tablename = create_dha()
+  test_tablename = create_dha(path='data/dha_missing.csv')  
   global client, test_filenames
-  client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
+  client('initialize 3 models for %s' % (test_tablename), debug=True, pretty=False)
 
-  client('select name from %s using models 1' % test_tablename, debug=True, pretty=False)
+  client('select name from %s using model 1' % test_tablename, debug=True, pretty=False)
+  with pytest.raises(utils.BayesDBError):
+    client('infer name from %s with confidence 0.1 using models 3' % test_tablename, debug=True, pretty=False)
+  with pytest.raises(utils.BayesDBError):    
+    client("simulate qual_score from %s given name='Albany NY' times 5 using models 3" % test_tablename, debug=True, pretty=False)    
+  with pytest.raises(utils.BayesDBError):    
+    client('infer name from %s with confidence 0.1 using models 0-3' % test_tablename, debug=True, pretty=False)
+
   client('infer name from %s with confidence 0.1 limit 10 using models 2' % test_tablename, debug=True, pretty=False)
   client("simulate qual_score from %s given name='Albany NY' times 5 using models 1-2" % test_tablename, debug=True, pretty=False)
   client('estimate columns from %s limit 5 using models 1-2' % test_tablename, debug=True, pretty=False)
   client('estimate pairwise dependence probability from %s using models 1' % (test_tablename), debug=True, pretty=False)
-  client('estimate pairwise row similarity from %s save connected components with threshold 0.1 as rcc using models 1-2' % test_tablename, debug=True, pretty=False)  
+  client('estimate pairwise row similarity from %s save connected components with threshold 0.1 as rcc using models 1-2' % test_tablename, debug=True, pretty=False)
+
+  client('drop model 0 from %s' % test_tablename, debug=True, pretty=False, yes=True)
+  with pytest.raises(utils.BayesDBError):
+    client('infer name from %s with confidence 0.1 limit 10 using models 0-2' % test_tablename, debug=True, pretty=False)    
   
 def test_select():
   """ smoke test """
@@ -446,8 +457,8 @@ def test_labeling():
   global client, test_filenames
 
   client('label columns for %s set name = Name of the hospital, qual_score = Overall quality score' % (test_tablename), debug=True, pretty=False)
-  client('show labels for %s name, qual_score' % (test_tablename), debug=True, pretty=False)
-  client('show labels for %s' % (test_tablename), debug=True, pretty=False)
+  client('show label for %s name, qual_score' % (test_tablename), debug=True, pretty=False)
+  client('show label for %s' % (test_tablename), debug=True, pretty=False)
 
   # Test getting columns from CSV
   client('label columns for %s from data/dha_labels.csv' % (test_tablename), debug=True, pretty=False)
