@@ -33,7 +33,7 @@ import functions
 import utils
 import parser
 
-def parse_pairwise_function(function_name, column=True, M_c=None, column_lists={}):
+def parse_pairwise_function(function_name, column=True, M_c=None, column_lists={}): ##TODO move to parser
     if column:
         if function_name == 'mutual information':
             return functions._mutual_information
@@ -56,7 +56,7 @@ def parse_pairwise_function(function_name, column=True, M_c=None, column_lists={
         else:
             raise utils.BayesDBParseError('Invalid row function: %s' % function_name)
 
-def get_columns(column_names, M_c):
+def get_columns(column_names, M_c): ##TODO move to parser or utils
     # If using a subset of the columns, get the appropriate names, and figure out their indices.
     if column_names is not None:
         column_indices = [M_c['name_to_idx'][name] for name in column_names]

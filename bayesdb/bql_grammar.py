@@ -440,7 +440,7 @@ predictive_probability_of_function = Group(predictive_probability_of_keyword.set
                                            identifier.setResultsName("column")).setResultsName("function")
 
 # KEY IN <row_list>
-key_in_rowlist_clause = Group(key_in_keyword.setResultsName("function_id") + identifier.setResultsName("row_list")).setResultsName('function')
+key_in_rowlist_clause = Group(key_keyword.setResultsName("function_id")).setResultsName('function') + in_keyword.setResultsName('operation') + identifier.setResultsName("value")
 
 whereclause_potential_function = (similarity_to_function | 
                                   typicality_function | 
