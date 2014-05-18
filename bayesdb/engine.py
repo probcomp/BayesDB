@@ -431,7 +431,7 @@ class Engine(object):
       numsamples=50 ##TODO maybe put this in a config file
       
     return self.select(tablename, functions, whereclause, limit, order_by,
-                       impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, summarize=summarize)
+                       impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, modelids=modelids, summarize=summarize)
     
   def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False):
     """

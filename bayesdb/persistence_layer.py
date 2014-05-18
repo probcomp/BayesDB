@@ -344,6 +344,8 @@ class PersistenceLayer():
         """Return X_L_list, X_D_list, and M_c"""
         metadata = self.get_metadata(tablename)
         models = self.get_models(tablename, modelid)
+        if None in models.values():
+            raise utils.BayesDBError('Invalid model id. Use "SHOW MODELS FOR <btable>" to see valid model ids.')
         M_c = metadata['M_c']
         X_L_list = [model['X_L'] for model in models.values()]
         X_D_list = [model['X_D'] for model in models.values()]
