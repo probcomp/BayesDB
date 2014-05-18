@@ -396,9 +396,9 @@ with_confidence_clause = with_confidence_keyword + float_number.setResultsName("
 # SIMILARITY TO <row> [WITH RESPECT TO <column>] ## TODO with respect to clause AND or paren
 similarity_to_function = (Group(similarity_keyword.setResultsName('function_id') + 
                                 Optional(to_keyword + 
-                                         row_clause + 
-                                         Optional(with_respect_to_keyword + column_list_clause)
-                                         .setResultsName('with_respect_to')))
+                                         row_clause) + 
+                                Optional(with_respect_to_keyword + column_list_clause)
+                                .setResultsName('with_respect_to'))
                           .setResultsName("function")) # todo more names less indexes
 
 # TYPICALITY [OF <column>]

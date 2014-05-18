@@ -31,6 +31,7 @@ import data_utils as du
 import select_utils
 import functions
 import utils
+import parser
 
 def parse_pairwise_function(function_name, column=True, M_c=None, column_lists={}):
     if column:
@@ -45,7 +46,9 @@ def parse_pairwise_function(function_name, column=True, M_c=None, column_lists={
     else:
         # TODO: need to refactor to support similarity with respect to column, because then we need to parse
         # and return the column id here.
-        target_columns = functions.parse_similarity_pairwise(function_name, M_c, None, column_lists)
+        ##TODO temporary hack - move to parser maybe combine with parse_functions
+        p = parser.Parser()
+        _, target_columns = p.get_args_similarity(function_name, M_c, None, column_lists)
         if target_columns is None:
             return (functions._similarity, None)
         elif type(target_columns) == list:

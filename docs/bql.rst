@@ -128,7 +128,7 @@ In addition, you may also add "SAVE CONNECTED COMPONENTS WITH THRESHOLD <thresho
 
 You may also compute pairwise functions of rows with ESTIMATE PAIRWISE ROW::
 
-  ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
+  ESTIMATE PAIRWISE ROW SIMILARITY [WITH RESPECT TO <columns|column_lists>]FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
 
 In the above query specifications, you may be wondering what some of the notation, such as <columns|functions> and <whereclause>, means. <columns|functions> just means a list of comma-separated column names or function specifications::
 
