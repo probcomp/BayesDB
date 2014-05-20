@@ -158,10 +158,22 @@ class Parser(object):
             dict(source=source, csv_path=csv_path)
 
     def parse_show_metadata(self, bql_statement_ast):
-        print bql_statement_ast
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+        keyset = None
+        if bql_statement_ast.keyset != '':
+            keyset = bql_statement_ast.keyset
+        return 'show_metadata', dict(tablename=tablename, keyset=keyset), None
 
     def parse_show_label(self, bql_statement_ast):
-        print bql_statement_ast
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+        columnset = None
+        if bql_statement_ast.columnset != '':
+            columnset = bql_statement_ast.columnset
+        return 'show_labels', dict(tablename=tablename, columnset=columnset), None
 
     def parse_update_metadata(self, bql_statement_ast):
         tablename = bql_statement_ast.btable

@@ -281,13 +281,13 @@ label_columns_for_function = (label_columns_for_keyword + btable +
 show_metadata_function = (show_metadata_for_keyword + 
                           btable + 
                           Optional(Group(identifier + 
-                                         ZeroOrMore(Suppress(comma_literal) + identifier))))
+                                         ZeroOrMore(Suppress(comma_literal) + identifier)).setResultsName('keyset')))
 
 # SHOW LABEL FOR <btable> [<column-name-1> [, <column-name-2>...]]
 show_label_function = (show_label_for_keyword + 
                        btable + 
                        Optional(Group(identifier + 
-                                      ZeroOrMore(Suppress(comma_literal) + identifier))))
+                                      ZeroOrMore(Suppress(comma_literal) + identifier)).setResultsName('columnset')))
 
 # EXECUTE FILE <filename.bql>
 execute_file_function = execute_file_keyword + filename
@@ -382,7 +382,7 @@ row_clause = (int_number.setResultsName("row_id") |
                value.setResultsName("column_value")))
 
 column_list_clause = Group((identifier | all_column_literal) + 
-                           ZeroOrMore(Suppress(comma_literal) + 
+                           ZeroOrMore(Suppress(comma_literal|and_keyword) + 
                                       (identifier | all_column_literal))).setResultsName("column_list")
 
 # SAVE TO <file>

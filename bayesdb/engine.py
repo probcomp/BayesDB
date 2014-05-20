@@ -119,7 +119,7 @@ class Engine(object):
     ret['message'] = "Updated column labels for %s." % (tablename)
     return ret
 
-  def show_labels(self, tablename, columnstring):
+  def show_labels(self, tablename, columnset):
     """
     Show column labels for the columns in columnstring
     """
@@ -129,14 +129,13 @@ class Engine(object):
     labels = self.persistence_layer.get_column_labels(tablename)
 
     # Get colnames from columnstring
-    if columnstring.strip() == '':
+    if columnset == None:
       colnames = labels.keys()
     else:
       column_lists = self.persistence_layer.get_column_lists(tablename)
       M_c = self.persistence_layer.get_metadata(tablename)['M_c']
-      colnames = utils.column_string_splitter(columnstring, M_c, column_lists)
+      colnames = utils.process_column_list(columnset.asList(), M_c, column_lists, dedupe=True)
       colnames = [c.lower() for c in colnames]
-      utils.check_for_duplicate_columns(colnames)
 
     ret = {'data': [[c, l] for c, l in labels.items() if c in colnames], 'columns': ['column', 'label']}
     ret['message'] = "Showing labels for %s." % (tablename)
@@ -159,7 +158,7 @@ class Engine(object):
     ret['message'] = "Updated user metadata for %s." % (tablename)
     return ret
 
-  def show_metadata(self, tablename, keystring):
+  def show_metadata(self, tablename, keyset):
     """
     Get user metadata from persistence layer and show the values for the keys specified
     by the user. If no keystring is given, show all metadata key-value pairs.
@@ -168,10 +167,10 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
 
     metadata = self.persistence_layer.get_user_metadata(tablename)
-    if keystring.strip() == '':
+    if keyset == None:
       metadata_keys = metadata.keys()
     else:
-      metadata_keys = [key.strip() for key in keystring.split(',')]
+      metadata_keys = keyset.asList()
 
     ret = {'data': [[k, metadata[k]] for k in metadata_keys if k in metadata], 'columns': ['key', 'value']}
     ret['message'] = "Showing user metadata for %s." % (tablename)

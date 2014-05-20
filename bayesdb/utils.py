@@ -282,42 +282,16 @@ def summarize_table(data, columns, M_c):
 
     return data, columns
 
-#TODO deprecate
-def column_string_splitter(columnstring, M_c=None, column_lists=None):
-    """
-    If '*' is a possible input, M_c must not be None.
-    If column_lists is not None, all column names are attempted to be expanded as a column list.
-    """
-    paren_level = 0
+def process_column_list(mixed_list, M_c, column_lists, dedupe=False):
     output = []
-    current_column = []
-
-    def end_column(current_column, output):
-      if '*' in current_column:
-        assert M_c is not None
-        output += get_all_column_names_in_original_order(M_c)
-      else:
-        current_column_name = ''.join(current_column)
-        if column_lists and current_column_name in column_lists.keys():
-            ## First, check if current_column is a column_list
-            output += column_lists[current_column_name]
+    for identifier in mixed_list:
+        if identifier == '*':
+            output += get_all_column_names_in_original_order(M_c)
+        elif column_lists != None and identifier in column_lists.keys():
+            output += column_lists[identifier]
         else:
-            ## If not, then it is a normal column name: append it.            
-            output.append(current_column_name.strip())
-      return output
-    
-    for i,c in enumerate(columnstring):
-      if c == '(':
-        paren_level += 1
-      elif c == ')':
-        paren_level -= 1
-
-      if (c == ',' and paren_level == 0):
-        output = end_column(current_column, output)
-        current_column = []
-      else:
-        current_column.append(c)
-    output = end_column(current_column, output)
+            output.append(identifier)
+    if dedupe == True:
+        check_for_duplicate_columns(output)
     return output
-
     
