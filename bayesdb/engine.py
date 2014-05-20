@@ -673,7 +673,7 @@ class Engine(object):
     
     return {'columns': column_names}
 
-  def estimate_pairwise_row(self, tablename, function_name, row_list, components_name=None, threshold=None, modelids=None):
+  def estimate_pairwise_row(self, tablename, function, row_list, components_name=None, threshold=None, modelids=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
@@ -692,9 +692,9 @@ class Engine(object):
     column_lists = self.persistence_layer.get_column_lists(tablename)
     
     # Do the heavy lifting: generate the matrix itself
-    matrix, row_indices_reordered, components = pairwise.generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, component_threshold=threshold, column_lists=column_lists)
-    
-    title = 'Pairwise row %s for %s' % (function_name, tablename)      
+
+    matrix, row_indices_reordered, components = pairwise.generate_pairwise_row_matrix(function, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, component_threshold=threshold, column_lists=column_lists)
+    title = 'Pairwise row %s for %s' % (function.function_id, tablename)      
     ret = dict(
       matrix=matrix,
       column_names=row_indices_reordered, # this is called column_names so that the plotting code displays them

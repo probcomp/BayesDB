@@ -235,9 +235,9 @@ class Parser(object):
         tablename = bql_statement_ast.btable
         components_name = None
         threshold = None
-        if bql_statement_ast.save_connected_components != '':
-            components_name = bql_statement_ast.save_connected_components.as_label
-            threshold = float(bql_statement_ast.save_connected_components.threshold)
+        if bql_statement_ast.connected_components_clause != '':
+            components_name = bql_statement_ast.connected_components_clause.as_label
+            threshold = float(bql_statement_ast.connected_components_clause.threshold)
         whereclause = None
         if bql_statement_ast.where_conditions != '':
             whereclause = bql_statement_ast.where_conditions
@@ -355,19 +355,16 @@ class Parser(object):
 
     def parse_estimate_pairwise_row(self,bql_statement_ast):
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
-        functions = args_dict['functions']
-        assert len(functions) == 1
-        assert functions[0].function_id in ["similarity"]
-        function_name = functions[0].function_id
+        functions = args_dict['functions'][0]
+        assert len(args_dict['functions']) == 1
         tablename = args_dict['tablename']
         row_list = args_dict['row_list']
         components_name = args_dict['components_name']
         threshold = args_dict['threshold']
         modelids = args_dict['modelids']
         filename = client_dict['filename']
-
         return 'estimate_pairwise_row', \
-            dict(tablename=tablename, function_name=function_name,
+            dict(tablename=tablename, function=functions,
                  row_list=row_list, components_name=components_name, 
                  threshold=threshold, modelids=modelids), \
             dict(filename=filename)
@@ -375,7 +372,7 @@ class Parser(object):
     def parse_estimate_pairwise(self,bql_statement_ast):
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         functions = args_dict['functions']
-        assert len(functions) == 1
+        assert len(functions) == 1 ##TODO functions not function_name
         assert functions[0].function_id in ['correlation', 'mutual information', 'dependence probability']
         function_name = functions[0].function_id
 
@@ -523,8 +520,9 @@ class Parser(object):
                 function = functions._predictive_probability
                 args = self.get_args_pred_prob(single_condition.function, M_c)
             
-            elif single_condition.function.function_id == 'key in':
+            elif single_condition.function.function_id == 'key':
                 value = raw_value
+                function = functions._row_id
                 ##TODO 
             elif single_condition.function.column != '':
                 ## whereclause of the form "where col = val" 

@@ -590,14 +590,14 @@ def test_whereclause_pyparsing():
     assert parsed_25.where_conditions[2].confidence == '.5'
     whereclause_26 = "WHERE KEY IN row_list_1 AND column_1 = 'a' AND TYPICALITY > .4"
     parsed_26 = where_clause.parseString(whereclause_26,parseAll=True)
-    assert parsed_26.where_conditions[0].function.function_id == 'key in'
-    assert parsed_26.where_conditions[0].function.row_list == 'row_list_1'
+    assert parsed_26.where_conditions[0].function.function_id == 'key'
+    assert parsed_26.where_conditions[0].value == 'row_list_1'
     assert parsed_26.where_conditions[1].function.column == 'column_1'
     assert parsed_26.where_conditions[2].function.function_id == 'typicality'
 
 def test_key_in_rowlist():
-    assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).function.function_id == "key in"
-    assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).function.row_list == "row_list_1"
+    assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).function.function_id == "key"
+    assert key_in_rowlist_clause.parseString("key in row_list_1",parseAll=True).value == "row_list_1"
 
 def test_basic_select_pyparsing():
     select_1 = "SELECT * FROM table_1"
@@ -1194,7 +1194,7 @@ def test_estimate_pairwise_row():
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('estimate pairwise row similarity from t'))
     assert method == 'estimate_pairwise_row'
     assert args['tablename'] == 't'
-    assert args['function_name'] == 'similarity'
+    assert args['function'].function_id == 'similarity'
     assert args['row_list'] == None
     assert args['components_name'] == None
     assert args['threshold'] == None

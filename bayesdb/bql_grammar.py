@@ -396,9 +396,9 @@ with_confidence_clause = with_confidence_keyword + float_number.setResultsName("
 # SIMILARITY TO <row> [WITH RESPECT TO <column>] ## TODO with respect to clause AND or paren
 similarity_to_function = (Group(similarity_keyword.setResultsName('function_id') + 
                                 Optional(to_keyword + 
-                                         row_clause + 
-                                         Optional(with_respect_to_keyword + column_list_clause)
-                                         .setResultsName('with_respect_to')))
+                                         row_clause) + 
+                                Optional(with_respect_to_keyword + column_list_clause)
+                                .setResultsName('with_respect_to'))
                           .setResultsName("function")) # todo more names less indexes
 
 # TYPICALITY [OF <column>]
@@ -440,7 +440,7 @@ predictive_probability_of_function = Group(predictive_probability_of_keyword.set
                                            identifier.setResultsName("column")).setResultsName("function")
 
 # KEY IN <row_list>
-key_in_rowlist_clause = Group(key_in_keyword.setResultsName("function_id") + identifier.setResultsName("row_list")).setResultsName('function')
+key_in_rowlist_clause = Group(key_keyword.setResultsName("function_id")).setResultsName('function') + in_keyword.setResultsName('operation') + identifier.setResultsName("value")
 
 whereclause_potential_function = (similarity_to_function | 
                                   typicality_function | 
