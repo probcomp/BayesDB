@@ -21,7 +21,7 @@
 -- Create a fresh btable for the demo, and load in pre-existing samples
 DROP BTABLE chicago_demo;
 CREATE BTABLE chicago_demo FROM data.csv;
-LOAD MODELS chicago_small_models.pkl.gz FOR chicago_demo;
+LOAD MODELS chicago_small_models.pkl.gz INTO chicago_demo;
 
 
 --estimate pairwise dependence probability from chicago_demo save connected components with threshold .8 as cc_pt8;
