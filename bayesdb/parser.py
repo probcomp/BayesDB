@@ -226,7 +226,7 @@ class Parser(object):
         newtablename=None ##TODO implement into
         numpredictions = None
         if bql_statement_ast.times != '':
-            numpredictions = int(bql_statement_ast.times)##TODO except
+            numpredictions = int(bql_statement_ast.times)
         numsamples = None
         if bql_statement_ast.samples != '':
             numsamples = int(bql_statement_ast.samples)
@@ -280,7 +280,6 @@ class Parser(object):
 
     def parse_infer(self,bql_statement_ast):
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
-        ## TODO assert for dissallowed information
         tablename = args_dict['tablename']
         functions = args_dict['functions']
         summarize = args_dict['summarize']
@@ -296,6 +295,14 @@ class Parser(object):
         pairwise = client_dict['pairwise']
         filename = client_dict['filename']
         scatter = client_dict['scatter']
+
+        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in INFER"
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in INFER"
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS clause not allowed in INFER"
+        assert args_dict['name'] == None, "BayesDBParsingError: SAVE AS <column_list> clause not allowed in INFER"
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES clause not allowed in INFER"
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in INFER"
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in INFER"
         
         return 'infer', \
             dict(tablename=tablename, functions=functions, 
@@ -307,7 +314,6 @@ class Parser(object):
 
     def parse_select(self,bql_statement_ast):
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
-        ## TODO assert for dissallowed information
         tablename = args_dict['tablename']
         functions = args_dict['functions']
         summarize = args_dict['summarize']
@@ -320,6 +326,17 @@ class Parser(object):
         pairwise = client_dict['pairwise']
         filename = client_dict['filename']
         scatter = client_dict['scatter']
+
+        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SELECT"
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SELECT"
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS clause not allowed in SELECT"
+        assert args_dict['name'] == None, "BayesDBParsingError: SAVE AS <column_list> clause not allowed in SELECT"
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES clause not allowed in SELECT"
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in SELECT"
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SELECT"
+        assert args_dict['confidence'] == 0, "BayesDBParsingError: CONFIDENCE not allowed in SELECT"
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in SELECT"
+
         return 'select', \
             dict(tablename=tablename, whereclause=whereclause, 
                  functions=functions, limit=limit, order_by=order_by, plot=plot, 
@@ -341,6 +358,16 @@ class Parser(object):
         pairwise = client_dict['pairwise']
         filename = client_dict['filename']
         scatter = client_dict['scatter']
+
+        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SELECT"
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SELECT"
+        assert args_dict['name'] == None, "BayesDBParsingError: SAVE AS <column_list> clause not allowed in SELECT"
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in SELECT"
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SELECT"
+        assert args_dict['confidence'] == 0, "BayesDBParsingError: CONFIDENCE not allowed in SELECT"
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in SELECT"
+        assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in SELECT. Use GIVEN instead."
+
         return 'simulate', \
             dict(tablename=tablename, functions=functions, 
                  newtablename=newtablename, givens=givens, 
@@ -359,6 +386,23 @@ class Parser(object):
         modelids = args_dict['modelids']
         name = args_dict['name']
 
+        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS not allowed in estimate columns."
+        assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in estimate columns."
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in estimate columns."
+        assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in estimate columns."
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in estimate columns."
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in estimate columns."
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR COLUMNS not allowed in estimate columns."
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR ROWS not allowed in estimate columns."
+        assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in estimate columns."
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS not allowed in estimate columns."
+        assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in estimate columns."
+
+        assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in estimate columns."
+        assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in estimate columns."
+        assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in estimate columns."
+        assert client_dict['filename'] == None, "BayesDBParsingError: AS FILE not allowed in estimate columns."
+
         return 'estimate_columns', \
             dict(tablename=tablename, functions=functions, 
                  whereclause=whereclause, limit=limit, 
@@ -375,6 +419,21 @@ class Parser(object):
         threshold = args_dict['threshold']
         modelids = args_dict['modelids']
         filename = client_dict['filename']
+
+        assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR COLUMNS not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in SELECT. Use GIVEN instead."
+
+        assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
+        assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in ESTIMATE PAIRWISE."
+        assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in ESTIMATE PAIRWISE."
+
         return 'estimate_pairwise_row', \
             dict(tablename=tablename, function=functions,
                  row_list=row_list, components_name=components_name, 
@@ -394,6 +453,20 @@ class Parser(object):
         threshold = args_dict['threshold']
         modelids = args_dict['modelids']
         filename = client_dict['filename']
+
+        assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR ROWS not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in ESTIMATE PAIRWISE"
+
+        assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
+        assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in ESTIMATE PAIRWISE."
+        assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in ESTIMATE PAIRWISE."
 
         return 'estimate_pairwise', \
             dict(tablename=tablename, function_name=function_name,
