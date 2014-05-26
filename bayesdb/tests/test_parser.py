@@ -22,6 +22,7 @@ import time
 import inspect
 import pickle
 import os
+import pytest
 from pyparsing import *
 
 from bayesdb.bql_grammar import *
@@ -1201,3 +1202,48 @@ def test_estimate_pairwise_row():
     assert args['modelids'] == None
     assert client_dict['filename'] == None
 
+def test_disallowed_queries():
+    """
+    All of these queries should pass the grammar and fail at parser.parse_query
+    """
+    strings = ["select * from test times 10",
+               "select * from test save connected components with threshold .5 as test.csv",
+               "select * from test given a=5",
+               "select * from test for test_clist",
+               "select * from test with confidence .4",
+               "select * from test with 4 samples",
+               "infer * from test times 10",
+               "infer * from test save connected components with threshold .5 as test.csv",
+               "infer * from test given a=5",
+               "infer * from test for test_clist",
+               "simulate * from test where a < 4",
+               "simulate * from test save connected components with threshold .5 as test.csv",
+               "simulate * from test for test_clist",
+               "simulate * from test with confidence .4",
+               "simulate * from test with 4 samples",
+               "estimate columns from test with confidence .4",
+               "estimate columns from test given a=4",
+               "estimate columns from test times 10",
+               "summarize estimate columns from test",
+               "plot estimate columns from test", 
+               "estimate columns from test save connected components with threshold .5 as test.csv",
+               "estimate pairwise correlation from test where a = b",
+               "estimate pairwise correlation from test times 10",
+               "estimate pairwise correlation from test given a = 5",
+               "estimate pairwise correlation from test with confidence .2",
+               "estimate pairwise row similarity from test where a = b",
+               "estimate pairwise row similarity from test times 10",
+               "estimate pairwise row similarity from test given a = 5",
+               "estimate pairwise row similarity from test with confidence .2",
+               "estimate pairwise row similarity from test where a = b",
+               ]
+
+    for query_string in strings:
+        bql_statement.parseString(query_string,parseAll=True)
+
+    for query_string in strings:
+        ast = bql_statement.parseString(query_string,parseAll=True)
+        with pytest.raises(AssertionError):
+            parser.parse_single_statement(ast)
+        
+    
