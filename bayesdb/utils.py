@@ -156,6 +156,15 @@ def summarize_freqs(x, n=5):
 
     return pandas.Series(data = x_values, index = x_index)
 
+def histogram_freqs(x):
+    x_values, x_freqs, x_probs = get_column_freqs(x)
+
+    x_values = pandas.Series(x_values)
+    x_probs = pandas.Series(x_probs)
+    x_freqs = pandas.Series(x_freqs)
+
+    x_hist = pandas.concat([x_values, x_freqs, x_probs], axis=1)
+    return x_hist
 
 # Function to calculate the most frequent values for each column
 def get_column_freqs(x):
@@ -163,6 +172,7 @@ def get_column_freqs(x):
     x_freqs  = x.value_counts()
     x_probs  = list(x_freqs / len(x))
     x_values = list(x_freqs.index)
+    x_freqs  = list(x_freqs)
 
     return x_values, x_freqs, x_probs
 
@@ -176,13 +186,13 @@ def frequency_table(data, columns, M_c):
         df = pandas.DataFrame(data=data, columns=columns)
         df.drop(['row_id'], axis=1, inplace=True)
 
-        cctypes = [[get_cctype_from_M_c(M_c, col) for col in df.columns]]
+        column = df.columns[0]
+        cctype = get_cctype_from_M_c(M_c, column)
 
-        summary_data = df.apply(get_column_freqs)
+        summary_data = histogram_freqs(df[column])
 
         data = summary_data.to_records(index=False)
-        columns = list(summary_data.columns)
-
+        columns = [column, 'frequency', 'probability']
 
     return data, columns
 
