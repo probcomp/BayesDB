@@ -303,6 +303,9 @@ class Parser(object):
         assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES clause not allowed in INFER"
         assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in INFER"
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in INFER"
+        for function in functions:
+            assert function.function_id == '', "BayesDBParsingError: %s not valid in INFER" % function.function_id
+                
         
         return 'infer', \
             dict(tablename=tablename, functions=functions, 
@@ -367,6 +370,8 @@ class Parser(object):
         assert args_dict['confidence'] == 0, "BayesDBParsingError: CONFIDENCE not allowed in SIMULATE."
         assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in SIMULATE."
         assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in SIMULATE. Use GIVEN instead."
+        for function in functions:
+            assert function.function_id == '', "BayesDBParsingError: %s not valid in SIMULATE" % function.function_id
 
         return 'simulate', \
             dict(tablename=tablename, functions=functions, 
@@ -377,7 +382,7 @@ class Parser(object):
 
     def parse_estimate(self,bql_statement_ast):
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
-        assert args_dict['functions'][0] == 'column'
+        assert args_dict['functions'][0] == 'column', "BayesDBParseError: must be ESTIMATE COLUMNS."
         functions = args_dict['functions']
         tablename = args_dict['tablename']
         whereclause = args_dict['whereclause']
@@ -412,7 +417,7 @@ class Parser(object):
     def parse_estimate_pairwise_row(self,bql_statement_ast):
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         functions = args_dict['functions'][0]
-        assert len(args_dict['functions']) == 1
+        assert len(args_dict['functions']) == 1, "BayesDBParsingError: Only one function allowed in estimate pairwise."
         tablename = args_dict['tablename']
         row_list = args_dict['row_list']
         components_name = args_dict['components_name']
@@ -443,7 +448,7 @@ class Parser(object):
     def parse_estimate_pairwise(self,bql_statement_ast):
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         functions = args_dict['functions']
-        assert len(functions) == 1 ##TODO functions not function_name
+        assert len(args_dict['functions']) == 1, "BayesDBParsingError: Only one function allowed in estimate pairwise."
         assert functions[0].function_id in ['correlation', 'mutual information', 'dependence probability']
         function_name = functions[0].function_id
 
