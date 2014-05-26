@@ -427,10 +427,11 @@ class Parser(object):
 
             
     def help_select(self):
-        return '[SUMMARIZE | PLOT] SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [SAVE TO <filename>]'
+        return '[FREQ | SUMMARIZE | PLOT] SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [SAVE TO <filename>]'
         
     def parse_select(self, words, orig):
         match = re.search(r"""
+            ((?P<freq>freq)?)?\s*
             ((?P<summarize>summarize)?)?\s*
             ((?P<plot>(plot|scatter)))?\s*        
             select\s+
@@ -444,6 +445,7 @@ class Parser(object):
             if words[0] == 'select':
                 return 'help', self.help_select()
         else:
+            freq = match.group('freq') is not None
             summarize = match.group('summarize') is not None
             columnstring = match.group('columnstring').strip()
             tablename = match.group('btable')
@@ -468,7 +470,7 @@ class Parser(object):
                 filename = None
 
             return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                  limit=limit, order_by=order_by, plot=plot, modelids=modelids, summarize=summarize), \
+                                  limit=limit, order_by=order_by, plot=plot, modelids=modelids, summarize=summarize, freq=freq), \
               dict(scatter=scatter, filename=filename, plot=plot)
 
 
