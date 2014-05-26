@@ -132,14 +132,46 @@ def get_cctype_from_M_c(M_c, column):
         cctype = 'continuous'
     return cctype
 
+# Function to calculate the most frequent values for each column
+def get_column_freqs(x, n=None):
+    """
+    Function to return most frequent n values of each column of the DataFrame being summarized.
+    Input: a DataFrame column, by default as Series type
+
+    Return: most frequent n values in x. Fill with numpy.nan if fewer than n unique values exist.
+    """
+    x_freqs  = x.value_counts()
+    x_probs  = list(x_freqs / len(x))
+    x_values = list(x_freqs.index)
+
+    if n is not None and len(x_values) > n:
+        x_probs = x_probs[:n]
+        x_values = x_values[:n]
+
+    # Create index labels ('mode1/2/3/... and prob_mode1/2/3...')
+    x_range = range(1, len(x_values) + 1)
+    x_index = ['mode' + str(i) for i in x_range]
+    x_index += ['prob_mode' + str(i) for i in x_range]
+
+    # Combine values and probabilities into a single list
+    x_values.extend(x_probs)
+
+    return pandas.Series(data = x_values, index = x_index)
+
 def frequency_table(data, columns, M_c):
     """
-    Returns a frequncy table
+    Returns a frequency table
     """
 
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
+
+        summary_data = df.apply(get_column_freqs, n=10)
+
+        data = summary_data.to_records(index=False)
+        columns = list(summary_data.columns)
+
 
     return data, columns
 
@@ -185,33 +217,7 @@ def summarize_table(data, columns, M_c):
         if 'top' in summary_describe.index and 'freq' in summary_describe.index:
             summary_describe = summary_describe.drop(['top', 'freq'])
 
-        # Function to calculate the most frequent values for each column
-        def get_column_freqs(x, n=5):
-            """
-            Function to return most frequent n values of each column of the DataFrame being summarized.
-            Input: a DataFrame column, by default as Series type
-
-            Return: most frequent n values in x. Fill with numpy.nan if fewer than n unique values exist.
-            """
-            x_freqs  = x.value_counts()
-            x_probs  = list(x_freqs / len(x))
-            x_values = list(x_freqs.index)
-
-            if len(x_values) > n:
-                x_probs = x_probs[:n]
-                x_values = x_values[:n]
-
-            # Create index labels ('mode1/2/3/... and prob_mode1/2/3...')
-            x_range = range(1, len(x_values) + 1)
-            x_index = ['mode' + str(i) for i in x_range]
-            x_index += ['prob_mode' + str(i) for i in x_range]
-
-            # Combine values and probabilities into a single list
-            x_values.extend(x_probs)
-
-            return pandas.Series(data = x_values, index = x_index)
-
-        summary_freqs = df.apply(get_column_freqs)
+        summary_freqs = df.apply(get_column_freqs, n=5)
 
         # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
         summary_data = pandas.concat([cctypes, summary_describe, summary_freqs], axis=0)

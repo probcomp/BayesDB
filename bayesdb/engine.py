@@ -431,7 +431,7 @@ class Engine(object):
     return self.select(tablename, columnstring, whereclause, limit, order_by,
                        impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, modelids=modelids, summarize=summarize)
     
-  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False):
+  def select(self, tablename, columnstring, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False, freq=False):
     """
     BQL's version of the SQL SELECT query.
     
@@ -504,8 +504,8 @@ class Engine(object):
       data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c)
       ret['data'] = data
       ret['columns'] = columns
-    elif hist:
-      data, columns = utils.frequency_table(ret['data'], ret['columns'])
+    elif freq:
+      data, columns = utils.frequency_table(ret['data'], ret['columns'], M_c)
       ret['data'] = data
       ret['columns'] = columns
     return ret
