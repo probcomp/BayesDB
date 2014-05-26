@@ -794,24 +794,34 @@ class Parser(object):
             ## TODO maybe split to function
             elif function_group.column_id != '':
                 column_name = function_group.column_id
-                if column_name == '*':
-                    assert M_c is not None
-                    all_columns = utils.get_all_column_names_in_original_order(M_c)
-                    index_list = [M_c['name_to_idx'][column_name] for column_name in all_columns]
-                    name_list = [name for name in all_columns]
-                elif (column_lists is not None) and (column_name in column_lists.keys()):
-                    index_list = [M_c['name_to_idx'][name] for name in column_lists[column_name]]
-                    name_list = [name for name in column_lists[column_name]]
-                elif column_name in M_c['name_to_idx']:
-                    index_list = [M_c['name_to_idx'][column_name]]
-                    name_list = [column_name]
-                else:
-                    raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % column_name)
+                assert M_c is not None
+                index_list, name_list = self.parse_column_set(column_name, M_c, column_lists)
                 queries += [(functions._column, column_index , False) for column_index in index_list]
                 query_colnames += [name for name in name_list]
             else: 
                 raise utils.BayesDBParseError("Invalid query: could not parse function")
         return queries, query_colnames
+
+    def parse_column_set(self, column_name, M_c, column_lists = None):
+        """
+        given a string representation of a column name or column_list,
+        returns a list of the column indexes, list of column names. 
+        """
+        index_list = []
+        name_list = []
+        if column_name == '*':
+            all_columns = utils.get_all_column_names_in_original_order(M_c)
+            index_list += [M_c['name_to_idx'][column_name] for column_name in all_columns]
+            name_list += [name for name in all_columns]
+        elif (column_lists is not None) and (column_name in column_lists.keys()):
+            index_list += [M_c['name_to_idx'][name] for name in column_lists[column_name]]
+            name_list += [name for name in column_lists[column_name]]
+        elif column_name in M_c['name_to_idx']:
+            index_list += [M_c['name_to_idx'][column_name]]
+            name_list += [column_name]
+        else:
+            raise utils.BayesDBParseError("Invalid query: %s not found." % column_name)
+        return index_list, name_list
 
 #####################################################################################
 ## --------------------------- Other Helper functions ---------------------------- ##
