@@ -33,132 +33,84 @@ import utils
 import functions
 import data_utils as du
 from pyparsing import *
+import bayesdb.bql_grammar as bql_grammar
 
 def get_conditions_from_whereclause(whereclause, M_c, T, column_lists):
-  whereclause = whereclause.lower()
-
-  ## ------------------------- whereclause grammar ----------------------------
-  # TODO outside function
-  operation = oneOf("<= >= < > = in")
-  equal_literal = Literal("=")
-  column_identifier = Word(alphanums , alphanums + "_")
-  float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+')
-  value = QuotedString('"') | QuotedString("'") | float_number | Word(alphanums + "_")
-  and_literal = CaselessLiteral("and")
-  comma_literal = CaselessLiteral(",")
-  column_list = Group(column_identifier + (ZeroOrMore(Suppress(comma_literal) + column_identifier)))
-
-  row_identifier = Word(nums) | Group( column_identifier.setResultsName("column") + 
-                                     equal_literal.setResultsName("op") + 
-                                     value.setResultsName("value"))
-
-  similarity_literal = Regex(r'similarity\sto')
-  probability_of_literal = Regex(r'probability\sof')
-  predictive_probability_of_literal = Regex(r'predictive\sprobability\sof')
-  typicality_literal = CaselessLiteral("typicality")
-  key_literal = CaselessLiteral("key")
-
-  with_respect_to_literal = Regex(r'with\srespect\sto')
-  with_confidence_literal = Regex(r'with\sconfidence')
-
-  with_confidence_clause = Group(with_confidence_literal.setResultsName("literal") + 
-                                 float_number.setResultsName("confidence"))
-  predictive_probability_of_function = Group(predictive_probability_of_literal.setResultsName("fun_name") +
-                                             column_identifier.setResultsName("column"))
-  with_respect_to_clause = Group(with_respect_to_literal.setResultsName("literal") + column_list).setResultsName("respect_to")
-
-  similarity_function = Group(similarity_literal.setResultsName("fun_name") + 
-                            row_identifier.setResultsName("row_id") + 
-                            Optional(with_respect_to_clause))
-
-  typicality_function = Group(typicality_literal.setResultsName("fun_name"))
-
-  key_function = Group(key_literal.setResultsName("fun_name"))
-
-  function_literal = similarity_function | predictive_probability_of_function | typicality_function | key_function
-
-  single_where_clause = Group((function_literal | column_identifier) + operation + value + 
-                              Optional(with_confidence_clause).setResultsName("with_confidence"))
-
-  where_clause = single_where_clause + ZeroOrMore(and_literal + single_where_clause).leaveWhitespace()
-  ## --------------------------------------------------------------------------------
-  
-  if len(whereclause) == 0:
+  whereclause = "WHERE " + whereclause # Temporary while partially switched to pyparsing
+  if whereclause == "WHERE ":
     return ""
   ## Create conds: the list of conditions in the whereclause.
   ## List of (c_idx, op, val) tuples.
   conds = list() 
   operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
-  top_level_parse = where_clause.parseString(whereclause)
-  for inner_element in top_level_parse:
-    # skips dividing literals
-    if inner_element == 'and':
-      continue
-    if inner_element.with_confidence != '':
-      confidence = inner_element.with_confidence[0].confidence
+  try:
+    top_level_parse = bql_grammar.where_clause.parseString(whereclause,parseAll=True)
+  except ParseException as x:
+    
+    raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
+  for inner_element in top_level_parse.where_conditions:
+    if inner_element.confidence != '':
+      confidence = inner_element.confidence
     else:
       confidence = None
-    op = operator_map[inner_element[1]]
-    raw_val = inner_element[2]
+    ## simple where column = value statement
+    if inner_element.operation != '':
+      op = operator_map[inner_element.operation]
+    raw_val = inner_element.value
     if utils.is_int(raw_val):
       val = int(raw_val)
     elif utils.is_float(raw_val):
       val = float(raw_val)
     else:
-      ## val could have matching single or double quotes, which we can safely eliminate
-      ## with the following safe (string literal only) implementation of eval
       val = raw_val
-    ## simple where column = value statement
-    if type(inner_element[0]) is str:
-      colname = inner_element[0]
-      if M_c['name_to_idx'].has_key(colname.lower()):
-        conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
+    if inner_element.function.function_id == 'predictive probability of':
+      if M_c['name_to_idx'].has_key(inner_element.function.column):
+        column_index = M_c['name_to_idx'][inner_element.function.column]
+        conds.append(((functions._predictive_probability,column_index), op, val))
         continue
-      raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
-    else:
-      functon_parse = inner_element[0]
-    if inner_element[0].fun_name=="similarity to":
-      row_id = inner_element[0].row_id
-      ## case where row_id is simple
-      if type(row_id) == str:
-        target_row_id = int(row_id)
-      ## case where row_id is of the form "column_name = value"
-      else:
-        column_name = row_id.column
-        try:#TODO probable bugs where with int values
-          column_value = int(row_id.value)
+    elif inner_element.function.function_id == 'typicality':
+      conds.append(((functions._row_typicality, True), op, val))
+      continue
+    elif inner_element.function.function_id == 'similarity to':
+      if inner_element.function.row_id == '':
+        column_name = inner_element.function.column
+        try:
+          column_value = int(inner_element.function.column_value)
         except ValueError:
           try:
-            column_value = float(row_id.value)
+            column_value = float(inner_element.function.column_value)
           except ValueError:
-            column_value = row_id.value 
-        ## look up row_id where column_name has column_value
-        column_index = M_c['name_to_idx'][column_name.lower()]
+            column_value = inner_element.function.column_value 
+        column_index =  M_c['name_to_idx'][column_name]
         for row_id, T_row in enumerate(T):
-          row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
-          if row_values[column_index] == where_val:
+          row_values = convert_row_from_codes_to_values(T_row, M_c)
+          if row_values[column_index] == column_value:
             target_row_id = row_id
             break
-      respect_to_clause = inner_element[0].respect_to
+      else: 
+        target_row_id = int(inner_element.function.row_id)
+      respect_to_clause = inner_element.function.with_respect_to
       target_column_ids = None
       if respect_to_clause != '':
-        target_columns = respect_to_clause[1]
+        target_columns = respect_to_clause.column_list
         target_colnames = [colname.strip() for colname in utils.column_string_splitter(','.join(target_columns), M_c, column_lists)]
         utils.check_for_duplicate_columns(target_colnames)
         target_column_ids = [M_c['name_to_idx'][colname] for colname in target_colnames]
       conds.append(((functions._similarity, (target_row_id, target_column_ids)), op, val))
       continue
-    elif inner_element[0].fun_name == "typicality":
-      conds.append(((functions._row_typicality, True), op, val)) 
-      continue
-    if inner_element[0].fun_name == "predictive probability of":
-      if M_c['name_to_idx'].has_key(inner_element[0].column.lower()):
-        column_index = M_c['name_to_idx'][inner_element[0].column.lower()]
-        conds.append(((functions._predictive_probability,column_index), op, val))
-        continue
-    if inner_element[0].fun_name == "key":
+    elif inner_element.function.function_id == "key in":
+      val = inner_element.function.row_list
+      op = operator_map['in']
       conds.append(((functions._row_id, None), op, val))
       continue
+    elif inner_element.function.column != '':
+      colname = inner_element.function.column
+      if M_c['name_to_idx'].has_key(colname.lower()):
+        if utils.get_cctype_from_M_c(M_c, colname.lower()) != 'continuous':
+          val = str(val)## TODO hack, fix with util
+        conds.append(((functions._column, M_c['name_to_idx'][colname.lower()]), op, val))
+        continue
+      raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)
     raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % whereclause)
   return conds
 
@@ -242,7 +194,7 @@ def get_queries_from_columnstring(columnstring, M_c, T, column_lists):
         queries.append((functions._column, M_c['name_to_idx'][colname], False))
         continue
 
-      raise utils.BayesDBParseError("Invalid where clause argument: could not parse '%s'" % colname)        
+      raise utils.BayesDBParseError("Invalid query argument: could not parse '%s'" % colname)        
 
     ## Always return row_id as the first column.
     query_colnames = ['row_id'] + query_colnames

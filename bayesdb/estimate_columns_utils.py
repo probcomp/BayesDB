@@ -105,7 +105,7 @@ def get_conditions_from_column_whereclause(whereclause, M_c, T):
         conds.append(((functions._correlation, c), op, val))
         continue
 
-      raise BayesDBParseError("Invalid query argument: could not parse '%s'" % raw_string)
+      raise utils.BayesDBParseError("Invalid query argument: could not parse '%s'" % raw_string)
   return conds
     
 
@@ -142,7 +142,7 @@ def order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, engine):
       function_list.append((functions._correlation, c, desc))
       continue
 
-    raise BayesDBParseError("Invalid query argument: could not parse '%s'" % raw_orderable_string)
+    raise utils.BayesDBParseError("Invalid query argument: could not parse '%s'" % raw_orderable_string)
 
   ## Step 2: call order by.
   sorted_column_indices = _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, engine)

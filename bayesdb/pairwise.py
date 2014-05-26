@@ -93,11 +93,12 @@ def compute_raw_row_pairwise_matrix(function, arg, X_L_list, X_D_list, M_c, T, e
 
 def reorder_indices_by_cluster(matrix):
     # Hierarchically cluster columns.
-    import hcluster
-    Y = hcluster.pdist(matrix)
-    Z = hcluster.linkage(Y)
+    from scipy.spatial.distance import pdist
+    from scipy.cluster.hierarchy import linkage, dendrogram
+    Y = pdist(matrix)
+    Z = linkage(Y)
     pylab.figure()
-    hcluster.dendrogram(Z)
+    dendrogram(Z)
     intify = lambda x: int(x.get_text())
     reorder_indices = map(intify, pylab.gca().get_xticklabels())
     pylab.clf() ## use instead of close to avoid error spam

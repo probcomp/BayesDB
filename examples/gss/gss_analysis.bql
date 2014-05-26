@@ -46,14 +46,14 @@ SELECT typical10col FROM gss_demo LIMIT 20;
 INFER typical10col from gss_demo WITH CONFIDENCE .9 LIMIT 20;
 -- Note that the values were not filled in. Why? To simultaneously estimate many variables takes considerably more information than one or two variables, and we don't have enough at the moment. If we focus on just pairs, we will have better luc
 -- Focus on religion for differences
-SIMULATE typical10col FROM gss_demo WHERE sprel=1 times 50;
-SIMULATE typical10col FROM gss_demo WHERE sprel=2 times 50;
-SIMULATE typical10col FROM gss_demo WHERE sprel=3 times 50;
+SIMULATE typical10col FROM gss_demo GIVEN sprel=1 times 50;
+SIMULATE typical10col FROM gss_demo GIVEN sprel=2 times 50;
+SIMULATE typical10col FROM gss_demo GIVEN sprel=3 times 50;
 -- Not huge differences. Minor things like where science info comes from (Protestants go to internet or govt, Catholics are a bit more variable, Jewish folks are more likely to look to books)
 -- Note prooportions of races: http://religions.pewforum.org/ reports that 81% of protestants are white, 65% of catholics, and 95%
 -- Proportions are closely matched to simulation results, providing a nice cross-validation of the model.
 
 -- Try race: 1) white, 2) black, 4) asian, 16) hispanic
-SIMULATE typical10col FROM gss_demo WHERE racecen1=1 times 50;
-SIMULATE typical10col FROM gss_demo WHERE racecen1=2 times 50;
-SIMULATE typical10col FROM gss_demo WHERE racecen1=16 times 50;
+SIMULATE typical10col FROM gss_demo GIVEN racecen1=1 times 50;
+SIMULATE typical10col FROM gss_demo GIVEN racecen1=2 times 50;
+SIMULATE typical10col FROM gss_demo GIVEN racecen1=16 times 50;
