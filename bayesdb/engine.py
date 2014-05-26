@@ -464,7 +464,6 @@ class Engine(object):
 
     # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
     if whereclause == None: 
-      whereclase = ''
       where_conditions = None
     else:
       where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, column_lists)
