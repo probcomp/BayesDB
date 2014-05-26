@@ -132,17 +132,15 @@ def get_cctype_from_M_c(M_c, column):
         cctype = 'continuous'
     return cctype
 
-# Function to calculate the most frequent values for each column
-def get_column_freqs(x, n=None):
+def summarize_freqs(x, n=5):
     """
     Function to return most frequent n values of each column of the DataFrame being summarized.
     Input: a DataFrame column, by default as Series type
+    Input: n, the number of most common values to return (n=5 would be top 5 common values)
 
-    Return: most frequent n values in x. Fill with numpy.nan if fewer than n unique values exist.
+    Return: most frequent n values in x.
     """
-    x_freqs  = x.value_counts()
-    x_probs  = list(x_freqs / len(x))
-    x_values = list(x_freqs.index)
+    x_values, x_freqs, x_probs = get_column_freqs(x)
 
     if n is not None and len(x_values) > n:
         x_probs = x_probs[:n]
@@ -158,6 +156,16 @@ def get_column_freqs(x, n=None):
 
     return pandas.Series(data = x_values, index = x_index)
 
+
+# Function to calculate the most frequent values for each column
+def get_column_freqs(x):
+
+    x_freqs  = x.value_counts()
+    x_probs  = list(x_freqs / len(x))
+    x_values = list(x_freqs.index)
+
+    return x_values, x_freqs, x_probs
+
 def frequency_table(data, columns, M_c):
     """
     Returns a frequency table
@@ -166,8 +174,11 @@ def frequency_table(data, columns, M_c):
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
+        df.drop(['row_id'], axis=1, inplace=True)
 
-        summary_data = df.apply(get_column_freqs, n=10)
+        cctypes = [[get_cctype_from_M_c(M_c, col) for col in df.columns]]
+
+        summary_data = df.apply(get_column_freqs)
 
         data = summary_data.to_records(index=False)
         columns = list(summary_data.columns)
@@ -217,7 +228,7 @@ def summarize_table(data, columns, M_c):
         if 'top' in summary_describe.index and 'freq' in summary_describe.index:
             summary_describe = summary_describe.drop(['top', 'freq'])
 
-        summary_freqs = df.apply(get_column_freqs, n=5)
+        summary_freqs = df.apply(summarize_freqs, n=5)
 
         # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
         summary_data = pandas.concat([cctypes, summary_describe, summary_freqs], axis=0)
