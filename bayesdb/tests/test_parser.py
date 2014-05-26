@@ -1247,5 +1247,3 @@ def test_disallowed_queries():
         ast = bql_statement.parseString(query_string,parseAll=True)
         with pytest.raises(AssertionError):
             parser.parse_single_statement(ast)
-        
-    

@@ -18,15 +18,11 @@
 #   limitations under the License.
 #
 
-import engine as be
-import re
-import pickle
-import gzip
 import utils
 import os
 import bql_grammar as bql
 import pyparsing as pp
-import ast
+#import ast
 import functions
 import operator
 
@@ -713,8 +709,8 @@ class Parser(object):
             desc = True
             if orderable.asc_desc == 'asc':
                 desc = False
-            if orderable.function.function_id == 'typicality': ##TODO assert for c_idx
-                assert orderable.function.column == '', "BayesDBParseError: Column order by typicality cannot include of %s" % orderable.function.column
+            if orderable.function.function_id == 'typicality':
+                assert orderable.function.column == '', "BayesDBParseError: Column order by typicality cannot include 'of %s'" % orderable.function.column
                 function = functions._col_typicality
                 args = None 
             elif orderable.function.function_id == 'dependence probability':
@@ -746,10 +742,10 @@ class Parser(object):
         For similarity: query_args is a (target_row_id, target_column) tuple.
         '''
         ## Always return row_id as the first column.
-        query_colnames = ['row_id'] ##TODO update for more information
+        query_colnames = ['row_id'] 
         queries = [(functions._row_id, None, False)]
 
-        for function_group in function_groups: ##TODO throw exception, make safe
+        for function_group in function_groups: 
             if function_group.function_id == 'predictive probability':
                 queries.append((functions._predictive_probability, 
                                 self.get_args_pred_prob(function_group, M_c), 
