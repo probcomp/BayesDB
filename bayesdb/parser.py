@@ -791,7 +791,6 @@ class Parser(object):
                                 True))
                 query_colnames.append(' '.join(function_group))
             ## single column, column_list, or *
-            ## TODO maybe split to function
             elif function_group.column_id != '':
                 column_name = function_group.column_id
                 assert M_c is not None
