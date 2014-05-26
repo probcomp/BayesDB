@@ -755,7 +755,7 @@ class Parser(object):
                 queries.append((functions._predictive_probability, 
                                 self.get_args_pred_prob(function_group, M_c), 
                                 False))
-                query_colnames.append('predictive probability of %s' % function_group.column)
+                query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'typicality':
                 if function_group.column != '':
                     queries.append((functions._col_typicality, 
@@ -765,36 +765,38 @@ class Parser(object):
                     queries.append((functions._row_typicality,
                                     self.get_args_typicality(function_group, M_c), 
                                     False))
-                query_colnames.append('typicality') ##TODO of
+                query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'probability':
                 queries.append((functions._probability, 
                                 self.get_args_prob(function_group, M_c), 
                                 True))
-                query_colnames.append('probability')
+                query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'similarity':
                 assert M_c is not None
                 queries.append((functions._similarity, 
-                                self.get_args_similarity(function_group, M_c, T, column_lists), 
+                                self.get_args_similarity(function_group, M_c, T, column_lists),
                                 False))
-                query_colnames.append('similarity') ##TODO of/with respect
+                pre_name_list = function_group.asList()
+                if function_group.with_respect_to != '':
+                    pre_name_list[-1] = ', '.join(pre_name_list[-1])
+                query_colnames.append(' '.join(pre_name_list))
             elif function_group.function_id == 'dependence probability':
                 queries.append((functions._dependence_probability, 
                                 self.get_args_of_with(function_group, M_c), 
                                 True))
-                query_colnames.append('dependence probability') ##TODO of/with respect
+                query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'mutual information':
                 queries.append((functions._mutual_information, 
                                 self.get_args_of_with(function_group, M_c), 
                                 True))
-                query_colnames.append('mutual information') ##TODO of/with respect
+                query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'correlation':
                 queries.append((functions._correlation, 
                                 self.get_args_of_with(function_group, M_c), 
                                 True))
-                query_colnames.append('correlation') ##TODO of/with respect
+                query_colnames.append(' '.join(function_group))
             ## single column, column_list, or *
             ## TODO maybe split to function
-            ## TODO handle nesting
             elif function_group.column_id != '':
                 column_name = function_group.column_id
                 if column_name == '*':

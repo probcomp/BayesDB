@@ -183,11 +183,11 @@ show_column_lists_for_keyword.setParseAction(replaceWith("show_column_lists"))
 show_columns_for_keyword = Combine(show_keyword + single_white + column_keyword + 
                                    single_white + for_keyword).setResultsName("statement_id")
 show_columns_for_keyword.setParseAction(replaceWith("show_columns"))
-show_columns_keyword = Combine(show_keyword + single_white + column_keyword)## TODO deprecate
+show_columns_keyword = Combine(show_keyword + single_white + column_keyword)
 show_row_lists_for_keyword = Combine(show_keyword + single_white + row_keyword + 
                                  single_white + list_keyword + 
                                  single_white + for_keyword).setResultsName("statement_id")
-show_row_lists_for_keyword.setParseAction(replaceWith("show_row_lists")) #TODO test parser.parse_show_row_lists
+show_row_lists_for_keyword.setParseAction(replaceWith("show_row_lists"))
 estimate_pairwise_keyword = Combine(estimate_keyword + single_white + 
                                     pairwise_keyword).setResultsName("statement_id")
 estimate_pairwise_keyword.setParseAction(replaceWith("estimate_pairwise"))
@@ -210,7 +210,7 @@ probability_of_keyword = Combine(probability_keyword + single_white + of_keyword
 probability_of_keyword.setParseAction(replaceWith("probability"))
 typicality_of_keyword = Combine(typicality_keyword + single_white + of_keyword)
 predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_keyword + single_white + of_keyword)
-predictive_probability_of_keyword.setParseAction(replaceWith("predictive probability")) ##TODO
+predictive_probability_of_keyword.setParseAction(replaceWith("predictive probability"))
 
 save_connected_components_with_threshold_keyword = Combine(save_keyword + single_white + 
                                                            connected_keyword + single_white + 
@@ -225,7 +225,7 @@ using_models_keyword = Combine(using_keyword + single_white + model_keyword)
 
 ## Values/Literals
 sub_query = QuotedString("(",endQuoteChar=")").setResultsName('sub_query')
-float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+') | sub_query#TODO setParseAction to float/int
+float_number = Regex(r'[-+]?[0-9]*\.?[0-9]+') | sub_query
 int_number = Word(nums) | sub_query
 operation_literal = oneOf("<= >= = < >")
 equal_literal = Literal("=")
@@ -239,7 +239,7 @@ comment = (Literal('--') + restOfLine).suppress()
 # single and double quotes inside value must be escaped. 
 value = (QuotedString('"', escChar='\\') | 
          QuotedString("'", escChar='\\') | 
-         Word(printables)| ## TODO printables includes ;,
+         Word(printables,excludeChars=',;')|
          float_number | 
          sub_query)
 filename = (QuotedString('"', escChar='\\') | 
@@ -299,7 +299,7 @@ initialize_function = (initialize_keyword +
                        btable + 
                        Optional(with_keyword + 
                                 config_keyword + 
-                                (naive_bayes_keyword|crp_mixture_keyword).setResultsName('config')))#TODO test config
+                                (naive_bayes_keyword|crp_mixture_keyword).setResultsName('config')))
 
 # ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
 def list_from_index_clause(toks):
@@ -310,7 +310,9 @@ def list_from_index_clause(toks):
             index_list.append(int(token))
         elif len(token) == 2:
             index_list += range(int(token[0]), int(token[1])+1)
-        #TODO else throw exception
+        else:
+            pass
+            ##TODO throw exception
         index_list.sort()
     return [list(set(index_list))]
 
@@ -349,7 +351,7 @@ save_model_from_function = save_model_keyword + Suppress(from_keyword) + btable 
 # DROP BTABLE <btable>
 drop_btable_function = drop_btable_keyword + btable
 
-# DROP MODEL[S] [<model_index>-<model_index>] FROM <btable> #TODO combine drop_model_keyword
+# DROP MODEL[S] [<model_index>-<model_index>] FROM <btable> 
 drop_model_function = drop_model_keyword + Optional(index_clause) + Suppress(from_keyword) + btable
 
 help_function = help_keyword
@@ -378,7 +380,7 @@ management_query = (create_btable_function |
 # Rows can be identified either by an integer or <column> = <value> where value is unique for the given column
 row_clause = (int_number.setResultsName("row_id") | 
               (identifier.setResultsName("column") + 
-               Suppress(equal_literal) + 
+               equal_literal + 
                value.setResultsName("column_value")))
 
 column_list_clause = Group((identifier | all_column_literal) + 
@@ -393,23 +395,23 @@ with_confidence_clause = with_confidence_keyword + float_number.setResultsName("
 
 # -------------------------------- Functions ------------------------------ #
 
-# SIMILARITY TO <row> [WITH RESPECT TO <column>] ## TODO with respect to clause AND or paren
+# SIMILARITY TO <row> [WITH RESPECT TO <column>] 
 similarity_to_function = (Group(similarity_keyword.setResultsName('function_id') + 
-                                Optional(to_keyword + 
+                                Optional(to_keyword.setResultsName('to') + 
                                          row_clause) + 
                                 Optional(with_respect_to_keyword + column_list_clause)
                                 .setResultsName('with_respect_to'))
-                          .setResultsName("function")) # todo more names less indexes
+                          .setResultsName("function")) 
 
 # TYPICALITY [OF <column>]
 typicality_function = Group(typicality_keyword.setResultsName('function_id') + Optional(of_keyword + identifier.setResultsName("column"))).setResultsName("function")
 
 # Functions of two columns for use in dependence probability, mutual information, correlation
-functions_of_two_columns_subclause = ((Suppress(with_keyword) + 
+functions_of_two_columns_subclause = ((with_keyword + 
                                        identifier.setResultsName("with_column")) | 
-                                      (Suppress(of_keyword) + 
+                                      (of_keyword + 
                                        identifier.setResultsName("of_column") + 
-                                       Suppress(with_keyword) + 
+                                       with_keyword + 
                                        identifier.setResultsName("with_column")))
 
 ##TODO make all of these functions one thing
@@ -428,14 +430,12 @@ correlation_function = (Group(correlation_keyword.setResultsName('function_id') 
 two_column_function = (dependence_probability_function | mutual_information_function | correlation_function)
 
 # PROBABILITY OF <column>=<value>
-## TODO move of
 probability_of_function = Group((probability_of_keyword.setResultsName("function_id") + 
                                  identifier.setResultsName("column") + 
-                                 Suppress(equal_literal) + 
+                                 equal_literal.setResultsName('op') + 
                                  value.setResultsName("value"))).setResultsName('function')
 
 # PREDICTIVE PROBABILITY OF <column>
-## TODO move of
 predictive_probability_of_function = Group(predictive_probability_of_keyword.setResultsName("function_id") + 
                                            identifier.setResultsName("column")).setResultsName("function")
 
@@ -475,7 +475,7 @@ save_connected_components_clause = Group(save_connected_components_keyword
                                          ((as_keyword + 
                                            identifier.setResultsName('as_label')) | 
                                           (into_keyword + 
-                                           identifier.setResultsName('into_label')))).setResultsName('connected_components_clause') ##TODO deprecate into
+                                           identifier.setResultsName('into_label')))).setResultsName('connected_components_clause')
 
 row_list_clause = Group(int_number + 
                            ZeroOrMore(Suppress(comma_literal) + 
@@ -489,7 +489,7 @@ given_clause = (Group(given_keyword +
                       .setResultsName("given_conditions"))
                 .setResultsName("given_clause"))
 
-using_models_clause = (using_models_keyword + index_clause.setResultsName("using_models_index_clause")) #TODO test
+using_models_clause = (using_models_keyword + index_clause.setResultsName("using_models_index_clause"))
 
 # ----------------------------- Master Query Syntax ---------------------------------------- #
 
@@ -515,7 +515,6 @@ functions_clause = Group(function_in_query +
                          ZeroOrMore(Suppress(comma_literal) + 
                                     function_in_query)).setResultsName('functions')
 
-#TODO needs more separated subqueries 
 query = (Optional(summarize_keyword | plot_keyword) +
          query_id + 
          functions_clause + 
@@ -536,5 +535,5 @@ query = (Optional(summarize_keyword | plot_keyword) +
               Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list"))))
 
 bql_statement = (query | management_query) + Optional(semicolon_literal)
-bql_input = OneOrMore(Group(bql_statement)) ## TODO split lines
+bql_input = OneOrMore(Group(bql_statement)) 
 bql_input.ignore(comment)
