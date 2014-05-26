@@ -200,10 +200,9 @@ class Parser(object):
         '''
         statement_id = bql_statement_ast.statement_id 
         
-        ##TODO function_name into functions
         confidence = 0
         if bql_statement_ast.confidence != '':
-            confidence = float(bql_statement_ast.confidence)##TODO throw exception for not floats
+            confidence = float(bql_statement_ast.confidence)
             if confidence > 1: 
                 raise utils.BayesDBParseError("Confidence cannot be greater than 0.")
         filename = None
@@ -613,7 +612,6 @@ class Parser(object):
             elif single_condition.function.function_id == 'key':
                 value = raw_value
                 function = functions._row_id
-                ##TODO 
             elif single_condition.function.column != '':
                 ## whereclause of the form "where col = val" 
                 column_name = single_condition.function.column
@@ -694,7 +692,7 @@ class Parser(object):
                 desc = False
             if orderable.function.function_id == 'similarity':
                 function = functions._similarity 
-                args = self.get_args_similarity(orderable.function, M_c, T, column_lists) ##TODO bug
+                args = self.get_args_similarity(orderable.function, M_c, T, column_lists)
             elif orderable.function.function_id == 'typicality':
                 function = functions._row_typicality
                 args = self.get_args_typicality(orderable.function, M_c)
@@ -715,7 +713,8 @@ class Parser(object):
             desc = True
             if orderable.asc_desc == 'asc':
                 desc = False
-            if orderable.function.function_id == 'typicality': ##TODO assert for c_idx 
+            if orderable.function.function_id == 'typicality': ##TODO assert for c_idx
+                assert orderable.function.column == '', "BayesDBParseError: Column order by typicality cannot include of %s" % orderable.function.column
                 function = functions._col_typicality
                 args = None 
             elif orderable.function.function_id == 'dependence probability':
