@@ -132,6 +132,17 @@ def get_cctype_from_M_c(M_c, column):
         cctype = 'continuous'
     return cctype
 
+def frequency_table(data, columns, M_c):
+    """
+    Returns a frequncy table
+    """
+
+    if len(data) > 0:
+        # Construct a pandas.DataFrame out of data and columns
+        df = pandas.DataFrame(data=data, columns=columns)
+
+    return data, columns
+
 def summarize_table(data, columns, M_c):
     """
     Returns a summary of the data.
