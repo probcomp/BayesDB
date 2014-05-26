@@ -504,6 +504,10 @@ class Engine(object):
       data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c)
       ret['data'] = data
       ret['columns'] = columns
+    elif hist:
+      data, columns = utils.frequency_table(ret['data'], ret['columns'])
+      ret['data'] = data
+      ret['columns'] = columns
     return ret
 
   def simulate(self, tablename, columnstring, newtablename, givens, whereclause, numpredictions, order_by, plot=False, modelids=None, summarize=False):
