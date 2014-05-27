@@ -192,15 +192,24 @@ class Engine(object):
     ret['message'] = 'Updated schema.'
     return ret
     
-  def create_btable_from_existing(self, data, colnames, M_c, new_tablename):
+  def create_btable_from_existing(self, tablename, colnames, data, M_c):
     """
     Used in INTO statements to create a new btable as a portion of an existing one.
     """
-    lines = []
-    for line in data:
-      lines.append(','.join(line))
-    csv = ','.join(colnames) + '\n' + '\n'.join(lines)
-        
+    ## First, test if table with this name already exists, and fail if it does
+    if self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
+
+    #T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+
+    # variables without "_full" don't include ignored columns.
+    #raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
+    #T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+
+    #self.persistence_layer.create_btable(tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full)
+
+    #return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
+
   def create_btable(self, tablename, header, raw_T_full, cctypes_full=None):
     """Uplooad a csv table to the predictive db.
     cctypes must be a dictionary mapping column names
@@ -441,7 +450,7 @@ class Engine(object):
     return self.select(tablename, functions, whereclause, limit, order_by,
                        impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq)
     
-  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, new_tablename=None):
+  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """
     BQL's version of the SQL SELECT query.
     
@@ -509,8 +518,9 @@ class Engine(object):
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
 
     # Execute INTO statement
-    if new_tablename is not None:
-      create_btable_from_existing(data, query_colnames, M_c, new_tablename)
+    print "newtablename: %s" % (newtablename)
+    if newtablename is not None:
+      self.create_btable_from_existing(data, query_colnames, M_c, newtablename)
     
     ret = dict(data=data, columns=query_colnames)
     if plot:
