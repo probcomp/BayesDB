@@ -28,6 +28,7 @@ import pylab
 import matplotlib.cm
 import time
 import pandas
+import math
 
 import data_utils as du
 import select_utils
@@ -272,7 +273,10 @@ def histogram_table(data, columns, M_c):
         column = df.columns[0]
         cctype = get_cctype_from_M_c(M_c, column)
 
-        hist_data = numpy.histogram(df[column])
+        # Use Sturges formula to calculate the number of bins to use.
+        n_bins = math.ceil(math.log(df.shape[0], 2) + 1)
+
+        hist_data = numpy.histogram(df[column], bins = n_bins)
         bin_mins = hist_data[1][:-1]
         bin_maxs = hist_data[1][1:]
         bin_freqs = hist_data[0]
