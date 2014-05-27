@@ -35,7 +35,7 @@ class Parser(object):
         try:
             bql_blob_ast = bql.bql_input.parseString(input_string, parseAll=True)
         except pp.ParseException as x:
-            raise utils.BayesDBParseError("Invalid query. Could not parse (Line {e.lineno}, column {e.col}):\n\t'{e.line}'".format(e=x))
+            raise utils.BayesDBParseError("Invalid query. Could not parse (Line {e.lineno}, column {e.col}):\n\t'{e.line}'\n\t".format(e=x) + ' ' * x.col + '^')
         return bql_blob_ast
         
     def split_statements(self,bql_blob_ast):
