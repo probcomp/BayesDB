@@ -18,80 +18,827 @@
 #   limitations under the License.
 #
 
-import engine as be
-import re
-import pickle
-import gzip
 import utils
 import os
+import bql_grammar as bql
+import pyparsing as pp
+#import ast
+import functions
+import operator
 
 class Parser(object):
     def __init__(self):
-        self.method_names = [method_name[6:] for method_name in dir(Parser) if method_name[:6] == 'parse_']
-        self.method_names.remove('statement')
-        self.method_name_to_args = be.get_method_name_to_args()
         self.reset_root_dir()
+
+    def pyparse_input(self, input_string):
+        """Uses the grammar defined in bql_grammar to create a pyparsing object out of an input string"""
+        try:
+            bql_blob_ast = bql.bql_input.parseString(input_string, parseAll=True)
+        except pp.ParseException as x:
+            raise utils.BayesDBParseError("Invalid query. Could not parse (Line {e.lineno}, column {e.col}):\n\t'{e.line}'\n\t".format(e=x) + ' ' * x.col + '^')
+        return bql_blob_ast
+        
+    def split_statements(self,bql_blob_ast):
+        """
+        returns a list of bql statements, not necessarily useful. 
+        """
+        return [bql_statement_ast for bql_statement_ast in bql_blob_ast]
+
+    def parse_single_statement(self,bql_statement_ast):
+        ## TODO Check for nest
+        parse_method = getattr(self,'parse_' + bql_statement_ast.statement_id)
+        return parse_method(bql_statement_ast)
+
+#####################################################################################
+## -------------------------- Individual Parse Methods --------------------------- ##
+#####################################################################################
+
+    def parse_list_btables(self,bql_statement_ast):
+        if bql_statement_ast.statement_id == "list_btables":
+            return 'list_btables', dict(), None
+        else:
+            raise utils.BayesDBParseError("Parsing statement as LIST BTABLES failed")
+
+    def parse_execute_file(self,bql_statement_ast):
+        return 'execute_file', dict(filename=self.get_absolute_path(bql_statement_ast.filename)), None
+
+    def parse_show_schema(self,bql_statement_ast):
+        return 'show_schema', dict(tablename=bql_statement_ast.btable), None
+
+    def parse_show_models(self,bql_statement_ast):
+        return 'show_models', dict(tablename=bql_statement_ast.btable), None
+
+    def parse_show_diagnostics(self,bql_statement_ast):
+        return 'show_diagnostics', dict(tablename=bql_statement_ast.btable), None
+
+    def parse_drop_models(self,bql_statement_ast):
+        model_indices = None
+        if bql_statement_ast.index_clause != '':
+            model_indices = bql_statement_ast.index_clause.asList()
+        return 'drop_models', dict(tablename=bql_statement_ast.btable, model_indices=model_indices), None
+
+    def parse_initialize_models(self,bql_statement_ast):
+        n_models = int(bql_statement_ast.num_models)
+        tablename = bql_statement_ast.btable
+        arguments_dict = dict(tablename=tablename, n_models=n_models, model_config=None)
+        if bql_statement_ast.config != '':
+            arguments_dict['model_config'] = bql_statement_ast.config
+        return 'initialize_models', arguments_dict, None
+
+    def parse_create_btable(self,bql_statement_ast):
+        tablename = bql_statement_ast.btable
+        filename = self.get_absolute_path(bql_statement_ast.filename)
+        return 'create_btable', dict(tablename=tablename, cctypes_full=None), dict(csv_path=filename)
+        #TODO types?
+
+    def parse_update_schema(self,bql_statement_ast):
+        tablename = bql_statement_ast.btable
+        mappings = dict()
+        type_clause = bql_statement_ast.type_clause
+        for update in type_clause:
+            mappings[update[0]]=update[1]
+        return 'update_schema', dict(tablename=tablename, mappings=mappings), None
+
+    def parse_drop_btable(self,bql_statement_ast):
+        return 'drop_btable', dict(tablename=bql_statement_ast.btable), None
+
+    def parse_analyze(self,bql_statement_ast):
+        model_indices = None
+        iterations = None
+        seconds = None
+        kernel = 0
+        tablename = bql_statement_ast.btable
+        if bql_statement_ast.index_clause != '':
+            model_indices = bql_statement_ast.index_clause.asList()
+        if bql_statement_ast.num_seconds !='':
+            seconds = int(bql_statement_ast.num_seconds)
+        if bql_statement_ast.num_iterations !='':
+            iterations = int(bql_statement_ast.num_iterations)
+        if bql_statement_ast.with_kernel_clause != '':
+            kernel = bql_statement_ast.with_kernel_clause.kernel_id
+            if kernel == 'mh': ## TODO should return None or something for invalid kernels
+                kernel=1
+        return 'analyze', dict(tablename=tablename, model_indices=model_indices,
+                                   iterations=iterations, seconds=seconds, ct_kernel=kernel), None
+        
+    def parse_show_row_lists(self,bql_statement_ast):
+        return 'show_row_lists', dict(tablename=bql_statement_ast.btable), None
+
+    def parse_show_column_lists(self,bql_statement_ast):
+        return 'show_column_lists', dict(tablename=bql_statement_ast.btable), None
+
+    def parse_show_columns(self,bql_statement_ast):
+        return 'show_columns', dict(tablename=bql_statement_ast.btable), None
+
+    def parse_save_models(self,bql_statement_ast):
+        return 'save_models', dict(tablename=bql_statement_ast.btable), dict(pkl_path=bql_statement_ast.filename)
+
+    def parse_load_models(self,bql_statement_ast):
+        return 'load_models', dict(tablename=bql_statement_ast.btable), dict(pkl_path=bql_statement_ast.filename)
+
+    def parse_label_columns(self, bql_statement_ast): ##TODO only smoke test right now
+        tablename = bql_statement_ast.btable
+        source = None
+        mappings = None
+        if bql_statement_ast.label_clause != '':
+            source = 'inline'
+            mappings = {}
+            for label_set in bql_statement_ast.label_clause:
+                mappings[label_set[0]] = label_set[1]
+        csv_path = None
+        if bql_statement_ast.filename != '':
+            csv_path = bql_statement_ast.filename
+            source = 'file'
+        return 'label_columns', \
+            dict(tablename=tablename, mappings=mappings), \
+            dict(source=source, csv_path=csv_path)
+
+    def parse_show_metadata(self, bql_statement_ast):
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+        keyset = None
+        if bql_statement_ast.keyset != '':
+            keyset = bql_statement_ast.keyset
+        return 'show_metadata', dict(tablename=tablename, keyset=keyset), None
+
+    def parse_show_label(self, bql_statement_ast):
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+        columnset = None
+        if bql_statement_ast.columnset != '':
+            columnset = bql_statement_ast.columnset
+        return 'show_labels', dict(tablename=tablename, columnset=columnset), None
+
+    def parse_update_metadata(self, bql_statement_ast):
+        tablename = bql_statement_ast.btable
+        source = None
+        mappings = None
+        if bql_statement_ast.label_clause != '':
+            source = 'inline'
+            mappings = {}
+            for label_set in bql_statement_ast.label_clause:
+                mappings[label_set[0]] = label_set[1]
+        csv_path = None
+        if bql_statement_ast.filename != '':
+            csv_path = bql_statement_ast.filename
+            source = 'file'
+        return 'update_metadata', \
+            dict(tablename=tablename, mappings=mappings), \
+            dict(source=source, csv_path=csv_path)
     
-    def split_lines(self, bql_string):
-        """
-        Accepts a large chunk of BQL (such as a file containing many BQL statements)
-        as a string, and returns individual BQL statements as a list of strings.
+    def parse_query(self, bql_statement_ast):
+        '''
+        master parser for queries (select, infer, simulate, estimate pairwise, etc)
+        returns a general args dict which the specific versions of those functions 
+        will then trim and check for illegal aruguments through assertions. 
+        '''
+        statement_id = bql_statement_ast.statement_id 
+        
+        confidence = 0
+        if bql_statement_ast.confidence != '':
+            confidence = float(bql_statement_ast.confidence)
+            if confidence > 1: 
+                raise utils.BayesDBParseError("Confidence cannot be greater than 0.")
+        filename = None
+        if bql_statement_ast.filename != '':
+            filename = bql_statement_ast.filename
+        functions = bql_statement_ast.functions
+        givens = None
+        if bql_statement_ast.given_clause != '':
+            givens = bql_statement_ast.given_clause
+        limit = float('inf')
+        if bql_statement_ast.limit != '':
+            limit = int(bql_statement_ast.limit)
+        modelids = None
+        if bql_statement_ast.using_models_index_clause != '':
+            modelids = bql_statement_ast.using_models_index_clause.asList()
+        name = None
+        if bql_statement_ast.as_column_list != '':
+            ## TODO name is a bad name
+            name = bql_statement_ast.as_column_list
+        newtablename=None ##TODO implement into
+        numpredictions = None
+        if bql_statement_ast.times != '':
+            numpredictions = int(bql_statement_ast.times)
+        numsamples = None
+        if bql_statement_ast.samples != '':
+            numsamples = int(bql_statement_ast.samples)
+        order_by = False
+        if bql_statement_ast.order_by != '':
+            order_by = bql_statement_ast.order_by
+        plot=(bql_statement_ast.plot == 'plot')
+        column_list = None
+        if bql_statement_ast.columns != '':
+            column_list = bql_statement_ast.columns[0] ##TODO implement allowing comma separated columns here
+            assert len(bql_statement_ast.columns) < 2
+        row_list = None
+        if bql_statement_ast.rows != '':
+            row_list = bql_statement_ast.rows ##TODO parse to list of rows
+        summarize=(bql_statement_ast.summarize == 'summarize')
+        hist = (bql_statement_ast.hist == 'hist')
+        freq = (bql_statement_ast.freq == 'freq')
+        tablename = bql_statement_ast.btable
+        components_name = None
+        threshold = None
+        if bql_statement_ast.connected_components_clause != '':
+            components_name = bql_statement_ast.connected_components_clause.as_label
+            threshold = float(bql_statement_ast.connected_components_clause.threshold)
+        whereclause = None
+        if bql_statement_ast.where_conditions != '':
+            whereclause = bql_statement_ast.where_conditions
 
-        Uses semicolons to split statements.
+        return statement_id, \
+            dict(components_name=components_name,
+                 confidence = confidence,
+                 functions=functions,
+                 givens=givens,
+                 limit=limit,
+                 modelids=modelids,
+                 name=name,
+                 newtablename=newtablename,
+                 numpredictions=numpredictions,
+                 numsamples=numsamples,
+                 order_by=order_by,
+                 plot=plot,
+                 column_list=column_list,
+                 row_list=row_list,
+                 summarize=summarize,
+                 hist=hist,
+                 freq=freq,
+                 tablename=tablename,
+                 threshold=threshold,
+                 whereclause=whereclause), \
+            dict(plot=plot, 
+                 scatter=False, ##TODO remove scatter from args
+                 pairwise=False, ##TODO remove pairwise from args
+                 filename=filename)
+
+    def parse_infer(self,bql_statement_ast):
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        tablename = args_dict['tablename']
+        functions = args_dict['functions']
+        summarize = args_dict['summarize']
+        hist = args_dict['hist']
+        freq = args_dict['freq']
+        plot = args_dict['plot']
+        whereclause = args_dict['whereclause']
+        limit = args_dict['limit']
+        order_by = args_dict['order_by']
+        modelids = args_dict['modelids']
+        newtablename = args_dict['newtablename']
+        confidence = args_dict['confidence']
+        numsamples = args_dict['numsamples']
+
+        pairwise = client_dict['pairwise']
+        filename = client_dict['filename']
+        scatter = client_dict['scatter']
+
+        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in INFER"
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in INFER"
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS clause not allowed in INFER"
+        assert args_dict['name'] == None, "BayesDBParsingError: SAVE AS <column_list> clause not allowed in INFER"
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES clause not allowed in INFER"
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in INFER"
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in INFER"
+        for function in functions:
+            assert function.function_id == '', "BayesDBParsingError: %s not valid in INFER" % function.function_id
+                
+        
+        return 'infer', \
+            dict(tablename=tablename, functions=functions, 
+                 newtablename=newtablename, confidence=confidence, 
+                 whereclause=whereclause, limit=limit,
+                 numsamples=numsamples, order_by=order_by, 
+                 plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq), \
+            dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
+
+    def parse_select(self,bql_statement_ast):
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        tablename = args_dict['tablename']
+        functions = args_dict['functions']
+        summarize = args_dict['summarize']
+        hist = args_dict['hist']
+        freq = args_dict['freq']
+        plot = args_dict['plot']
+        whereclause = args_dict['whereclause']
+        limit = args_dict['limit']
+        order_by = args_dict['order_by']
+        modelids = args_dict['modelids']
+
+        pairwise = client_dict['pairwise']
+        filename = client_dict['filename']
+        scatter = client_dict['scatter']
+
+        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SELECT"
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SELECT"
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS clause not allowed in SELECT"
+        assert args_dict['name'] == None, "BayesDBParsingError: SAVE AS <column_list> clause not allowed in SELECT"
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES clause not allowed in SELECT"
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in SELECT"
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SELECT"
+        assert args_dict['confidence'] == 0, "BayesDBParsingError: CONFIDENCE not allowed in SELECT"
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in SELECT"
+
+        return 'select', \
+            dict(tablename=tablename, whereclause=whereclause, 
+                 functions=functions, limit=limit, order_by=order_by, plot=plot, 
+                 modelids=modelids, summarize=summarize, hist=hist, freq=freq), \
+            dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
+
+    def parse_simulate(self,bql_statement_ast):
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        tablename = args_dict['tablename']
+        functions = args_dict['functions']
+        summarize = args_dict['summarize']
+        hist = args_dict['hist']
+        freq = args_dict['freq']
+        plot = args_dict['plot'] 
+        order_by = args_dict['order_by']
+        modelids = args_dict['modelids']
+        newtablename = args_dict['newtablename']
+        givens = args_dict['givens']
+        numpredictions = args_dict['numpredictions']
+       
+        pairwise = client_dict['pairwise']
+        filename = client_dict['filename']
+        scatter = client_dict['scatter']
+
+        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SIMULATE."
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SIMULATE."
+        assert args_dict['name'] == None, "BayesDBParsingError: SAVE AS <column_list> clause not allowed in SIMULATE."
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in SIMULATE."
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SIMULATE."
+        assert args_dict['confidence'] == 0, "BayesDBParsingError: CONFIDENCE not allowed in SIMULATE."
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in SIMULATE."
+        assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in SIMULATE. Use GIVEN instead."
+        for function in functions:
+            assert function.function_id == '', "BayesDBParsingError: %s not valid in SIMULATE" % function.function_id
+
+        return 'simulate', \
+            dict(tablename=tablename, functions=functions, 
+                 newtablename=newtablename, givens=givens, 
+                 numpredictions=numpredictions, order_by=order_by, 
+                 plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq), \
+            dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
+
+    def parse_estimate(self,bql_statement_ast):
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        assert args_dict['functions'][0] == 'column', "BayesDBParseError: must be ESTIMATE COLUMNS."
+        functions = args_dict['functions']
+        tablename = args_dict['tablename']
+        whereclause = args_dict['whereclause']
+        limit = args_dict['limit']
+        order_by = args_dict['order_by']
+        modelids = args_dict['modelids']
+        name = args_dict['name']
+
+        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS not allowed in estimate columns."
+        assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in estimate columns."
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in estimate columns."
+        assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in estimate columns."
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in estimate columns."
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in estimate columns."
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR COLUMNS not allowed in estimate columns."
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR ROWS not allowed in estimate columns."
+        assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in estimate columns."
+        assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in estimated columns."
+        assert args_dict['freq'] == False, "BayesDBParsingError: FREQ not allowed in estimated columns."
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS not allowed in estimate columns."
+        assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in estimate columns."
+
+        assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in estimate columns."
+        assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in estimate columns."
+        assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in estimate columns."
+        assert client_dict['filename'] == None, "BayesDBParsingError: AS FILE not allowed in estimate columns."
+
+        return 'estimate_columns', \
+            dict(tablename=tablename, functions=functions, 
+                 whereclause=whereclause, limit=limit, 
+                 order_by=order_by, name=name, modelids=modelids), \
+            None
+
+    def parse_estimate_pairwise_row(self,bql_statement_ast):
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        functions = args_dict['functions'][0]
+        assert len(args_dict['functions']) == 1, "BayesDBParsingError: Only one function allowed in estimate pairwise."
+        tablename = args_dict['tablename']
+        row_list = args_dict['row_list']
+        components_name = args_dict['components_name']
+        threshold = args_dict['threshold']
+        modelids = args_dict['modelids']
+        filename = client_dict['filename']
+
+        assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR COLUMNS not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['freq'] == False, "BayesDBParsingError: FREQ not allowed in estimated columns."
+        assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['whereclause'] == None, "BayesDBParsingError: WHERE not allowed in ESTIMATE PAIRWISE."
+
+        assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
+        assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in ESTIMATE PAIRWISE."
+        assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in ESTIMATE PAIRWISE."
+
+        return 'estimate_pairwise_row', \
+            dict(tablename=tablename, function=functions,
+                 row_list=row_list, components_name=components_name, 
+                 threshold=threshold, modelids=modelids), \
+            dict(filename=filename)
+
+    def parse_estimate_pairwise(self,bql_statement_ast):
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        functions = args_dict['functions']
+        assert len(args_dict['functions']) == 1, "BayesDBParsingError: Only one function allowed in estimate pairwise."
+        assert functions[0].function_id in ['correlation', 'mutual information', 'dependence probability']
+        function_name = functions[0].function_id
+
+        tablename = args_dict['tablename']
+        column_list = args_dict['column_list']
+        components_name = args_dict['components_name']
+        threshold = args_dict['threshold']
+        modelids = args_dict['modelids']
+        filename = client_dict['filename']
+
+        assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR ROWS not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['freq'] == False, "BayesDBParsingError: FREQ not allowed in estimated columns."
+        assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in ESTIMATE PAIRWISE"
+
+        assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
+        assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in ESTIMATE PAIRWISE."
+        assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in ESTIMATE PAIRWISE."
+
+        return 'estimate_pairwise', \
+            dict(tablename=tablename, function_name=function_name,
+                 column_list=column_list, components_name=components_name, 
+                 threshold=threshold, modelids=modelids), \
+            dict(filename=filename)
+
+#####################################################################################
+## ------------------------------ Function parsing ------------------------------- ##
+#####################################################################################
+    def get_args_pred_prob(self, function_group, M_c):
         """
-        ret_statements = []
-        if len(bql_string) == 0:
-            return
-        bql_string = re.sub(r'--.*?\n', '', bql_string)
-        lines = bql_string.split(';')
-        for line in lines:
-            if '--' in line:
-                line = line[:line.index('--')]
-            line = line.strip()
-            if line is not None and len(line) > 0:
-                ret_statements.append(line)
-        return ret_statements
+        returns the column index from a predictive probability function
+        raises exceptions for unfound columns
+        """
+        if function_group.column != '' and function_group.column in M_c['name_to_idx']:
+            column = function_group.column
+            c_idx = M_c['name_to_idx'][column]
+            return c_idx
+        elif function_group.column != '':
+            raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % function_group.column)
+        else:
+            raise utils.BayesDBParseError("Invalid query: missing column argument")
+
+    def get_args_prob(self,function_group, M_c):
+        """
+        Returns column_index, value from a probability function
+        raises exception for unfound columns
+        """
+        if function_group.column != '' and function_group.column in M_c['name_to_idx']:
+            column = function_group.column
+            c_idx = M_c['name_to_idx'][column]
+        elif function_group.column != '':
+            raise utils.BayesDBParseError("Invalid query: could not parse '%s'" % function_group.column)
+        else:
+            raise utils.BayesDBParseError("Invalid query: missing column argument")
+        value = utils.string_to_column_type(function_group.value, column, M_c)
+        return c_idx, value
     
-    def parse_statement(self, bql_statement_string):
+    def get_args_similarity(self,function_group, M_c, T, column_lists):
         """
-        Accepts an individual BQL statement as a string, and parses it.
-
-        If the input can be parsed into a valid BQL statement, then the tuple
-        (method_name, arguments_dict) is returned, which corresponds to the
-        Engine method name and arguments that should be called to execute this statement.
-
-        If the input is not a valid BQL statement, False or None is returned.
-        
-        False indicates that the user was close to a valid command, but has slightly
-        incorrect syntax for the arguments. In this case, a helpful message will be printed.
-        
-        None indicates that no good match for the command was found.
+        returns the target_row_id and a list of with_respect_to columns based on 
+        similarity function
+        Raises exception for unfound columns
         """
-        if len(bql_statement_string) == 0:
-            return
-        if bql_statement_string[-1] == ';':
-            bql_statement_string = bql_statement_string[:-1]
-        
-        words = bql_statement_string.lower().split()
-        if len(words) >= 1 and words[0] == 'help':
-            print "Welcome to BQL help. Here is a list of BQL commands and their syntax:\n"
-            for method_name in sorted(self.method_names):
-                help_method = getattr(self, 'help_' +  method_name)
-                print help_method()
-            return False
+        ##TODO some cleaining with row_clause
+        target_row_id = None
+        target_columns = None
+        if function_group != '':
+            ## Case for given row_id
+            if function_group.row_id != '':
+                target_row_id = int(function_group.row_id)
+            ## Case for format column = value
+            elif function_group.column != '':
+                assert T is not None
+                target_col_name = function_group.column
+                target_col_value = function_group.column_value
+                target_row_id = utils.row_id_from_col_value(target_col_value, target_col_name, M_c, T)
+        ## With respect to clause
+        with_respect_to_clause = function_group.with_respect_to
+        if with_respect_to_clause !='':
 
-        help_strings_to_print = list()
-        for method_name in self.method_names:
-            parse_method = getattr(self, 'parse_' + method_name)
-            result = parse_method(words, bql_statement_string)
-            if result is not None:
-                if result[0] == 'help':
-                    help_strings_to_print.append(result[1])
+            column_set = with_respect_to_clause.column_list
+            target_column_names = []
+            for column_name in column_set:
+                if column_name == '*':
+                    target_columns = None
+                    break
+                elif column_lists is not None and column_name in column_lists.keys():
+                    target_column_names += column_lists[column_name]
+                elif column_name in M_c['name_to_idx']:
+                    target_column_names.append(column_name)
                 else:
-                    return result
+                    raise utils.BayesDBParseError("Invalid query: column '%s' not found" % column_name)
+            target_columns = [M_c['name_to_idx'][column_name] for column_name in target_column_names]
+        return target_row_id, target_columns
 
-        for help_string in help_strings_to_print:
-            print help_string
+    def get_args_typicality(self,function_group, M_c):
+        """
+        returns column_index if present, if not, returns True. ##TODO this needs a ton of testing
+        if invalid column, raises exception
+        """
+        if function_group.column == '':
+            return True
+        else:
+            return utils.get_index_from_colname(M_c, function_group.column)
+
+    def get_args_of_with(self,function_group, M_c):
+        """
+        designed to handle dependence probability, mutual information, and correlation function_groups
+        all have an optional of clause
+        returns of_column_index, with_column_index
+        invalid column raises exception
+        """
+        with_column = function_group.with_column
+        with_column_index = utils.get_index_from_colname(M_c, with_column)
+        of_column_index = None
+        if function_group.of_column != '':
+            of_column_index = utils.get_index_from_colname(M_c, function_group.of_column)
+        return of_column_index, with_column_index 
+
+#####################################################################################
+## ----------------------------- Sub query parsing  ------------------------------ ##
+#####################################################################################
+
+    def parse_where_clause(self, where_clause_ast, M_c, T, column_lists): 
+        """
+        Creates conditions: the list of conditions in the whereclause
+        List of (c_idx, op, val)
+        """
+        conditions = []
+        operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq,
+                        '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
+
+        for single_condition in where_clause_ast:
+            ## Confidence in the where clause not yet handled by client/engine. 
+            confidence = None
+            if single_condition.confidence != '':
+                confidence = float(single_condition.confidence)
+                
+            raw_value = single_condition.value
+            function = None
+            args = None
+            ## SELECT and INFER versions
+            if single_condition.function.function_id == 'typicality':
+                value = utils.value_string_to_num(raw_value)
+                function = functions._row_typicality
+                assert self.get_args_typicality(single_condition.function, M_c) == True
+                args = True
+            elif single_condition.function.function_id == 'similarity':
+                value = utils.value_string_to_num(raw_value)
+                function = functions._similarity
+                args = self.get_args_similarity(single_condition.function, M_c, T, column_lists)
+            elif single_condition.function.function_id == 'predictive probability':
+                value = utils.value_string_to_num(raw_value)
+                function = functions._predictive_probability
+                args = self.get_args_pred_prob(single_condition.function, M_c)
+            
+            elif single_condition.function.function_id == 'key':
+                value = raw_value
+                function = functions._row_id
+            elif single_condition.function.column != '':
+                ## whereclause of the form "where col = val" 
+                column_name = single_condition.function.column
+                assert column_name != '*'
+                if column_name in M_c['name_to_idx']:
+                    args = M_c['name_to_idx'][column_name]
+                    value = utils.string_to_column_type(raw_value, column_name, M_c)
+                    function = functions._column
+                else:
+                    raise utils.BayesDBParseError("Invalid where clause: column %s was not found in the table" % 
+                                                  column_name)
+            else:
+                if single_condition.function.function_id != '':
+                    raise utils.BayesDBParseError("Invalid where clause: %s not allowed." % 
+                                                  single_condition.function.function_id)
+                else: 
+                    raise utils.BayesDBParseError("Invalid where clause. Unrecognized function")
+            if single_condition.operation != '':
+                op = operator_map[single_condition.operation]
+            else: 
+                raise utils.BayesDBParseError("Invalid where clause: no operator found")
+            conditions.append(((function, args), op, value))
+        return conditions
+    
+    def parse_column_whereclause(self, whereclause, M_c, T): ##TODO throw exception on parseable, invalid
+        """
+        Creates conditions: the list of conditions in the whereclause
+        List of (c_idx, op, val)
+        """
+        conditions = []
+        if whereclause == None:
+            return conditions
+        operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq,
+                        '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
+        
+        for single_condition in whereclause:
+            ## Confidence in the where clause not yet handled by client/engine. 
+            
+            raw_value = single_condition.value
+            value = utils.value_string_to_num(raw_value)
+            function = None
+            args = None
+            _ = None
+            ## SELECT and INFER versions
+            if single_condition.function.function_id == 'typicality':
+                function = functions._col_typicality
+                assert self.get_args_typicality(single_condition.function, M_c) == True
+                args = None
+            elif single_condition.function.function_id == 'dependence probability':
+                function = functions._dependence_probability
+                _, args = self.get_args_of_with(single_condition.function, M_c)
+            elif single_condition.function.function_id == 'mutual information':
+                function = functions._mutual_information
+                _, args = self.get_args_of_with(single_condition.function, M_c)
+            elif single_condition.function.function_id == 'correlation':
+                function = functions._correlation
+                _, args = self.get_args_of_with(single_condition.function, M_c)
+            else:
+                if single_condition.function.function_id != '':
+                    raise utils.BayesDBParseError("Invalid where clause: %s not allowed." % 
+                                                  single_condition.function.function_id)
+                else: 
+                    raise utils.BayesDBParseError("Invalid where clause. Unrecognized function")
+            if single_condition.operation != '':
+                op = operator_map[single_condition.operation]
+            else: 
+                raise utils.BayesDBParseError("Invalid where clause: no operator found")
+            if _ != None:
+                raise utils.BayesDBParseError("Invalid where clause, do not specify an 'of' column in estimate columns")
+            conditions.append(((function, args), op, value))
+        return conditions
+
+    def parse_order_by_clause(self, order_by_clause_ast, M_c, T, column_lists):
+        function_list = []
+        for orderable in order_by_clause_ast:
+            desc = True
+            if orderable.asc_desc == 'asc':
+                desc = False
+            if orderable.function.function_id == 'similarity':
+                function = functions._similarity 
+                args = self.get_args_similarity(orderable.function, M_c, T, column_lists)
+            elif orderable.function.function_id == 'typicality':
+                function = functions._row_typicality
+                args = self.get_args_typicality(orderable.function, M_c)
+            elif orderable.function.function_id == 'predictive probability':
+                function = functions._predictive_probability
+                args = self.get_args_pred_prob(orderable.function, M_c)
+            elif orderable.function.column != '': 
+                function = functions._column
+                args = M_c['name_to_idx'][orderable.function.column]
+            else:
+                raise utils.BayesDBParseError("Invalid order by clause.")
+            function_list.append((function, args, desc))
+        return function_list
+
+    def parse_column_order_by_clause(self, order_by_clause_ast, M_c, ):
+        function_list = []
+        for orderable in order_by_clause_ast:
+            desc = True
+            if orderable.asc_desc == 'asc':
+                desc = False
+            if orderable.function.function_id == 'typicality':
+                assert orderable.function.column == '', "BayesDBParseError: Column order by typicality cannot include 'of %s'" % orderable.function.column
+                function = functions._col_typicality
+                args = None 
+            elif orderable.function.function_id == 'dependence probability':
+                function = functions._dependence_probability
+                _, args = self.get_args_of_with(orderable.function, M_c)
+            elif orderable.function.function_id == 'correlation':
+                function = functions._correlation
+                _, args = self.get_args_of_with(orderable.function, M_c)
+            elif orderable.function.function_id == 'mutual information':
+                function = functions._mutual_information
+                _, args = self.get_args_of_with(orderable.function, M_c)
+            else:
+                raise utils.BayesDBParseError("Invalid order by clause. Can only order by typicality, correlation, mutual information, or dependence probability.")
+            function_list.append((function, args, desc))
+        
+        return function_list
+
+    def parse_functions(self, function_groups, M_c=None, T=None, column_lists=None):
+        '''
+        Generates two lists of functions, arguments, aggregate tuples. 
+        Returns queries, query_colnames
+        
+        queries is a list of (query_function, query_args, aggregate) tuples,
+        where query_function is: row_id, column, probability, similarity.
+    
+        For row_id: query_args is ignored (so it is None).
+        For column: query_args is a c_idx.
+        For probability: query_args is a (c_idx, value) tuple.
+        For similarity: query_args is a (target_row_id, target_column) tuple.
+        '''
+        ## Always return row_id as the first column.
+        query_colnames = ['row_id'] 
+        queries = [(functions._row_id, None, False)]
+
+        for function_group in function_groups: 
+            if function_group.function_id == 'predictive probability':
+                queries.append((functions._predictive_probability, 
+                                self.get_args_pred_prob(function_group, M_c), 
+                                False))
+                query_colnames.append(' '.join(function_group))
+            elif function_group.function_id == 'typicality':
+                if function_group.column != '':
+                    queries.append((functions._col_typicality, 
+                                    self.get_args_typicality(function_group, M_c), 
+                                    True))
+                else:
+                    queries.append((functions._row_typicality,
+                                    self.get_args_typicality(function_group, M_c), 
+                                    False))
+                query_colnames.append(' '.join(function_group))
+            elif function_group.function_id == 'probability':
+                queries.append((functions._probability, 
+                                self.get_args_prob(function_group, M_c), 
+                                True))
+                query_colnames.append(' '.join(function_group))
+            elif function_group.function_id == 'similarity':
+                assert M_c is not None
+                queries.append((functions._similarity, 
+                                self.get_args_similarity(function_group, M_c, T, column_lists),
+                                False))
+                pre_name_list = function_group.asList()
+                if function_group.with_respect_to != '':
+                    pre_name_list[-1] = ', '.join(pre_name_list[-1])
+                query_colnames.append(' '.join(pre_name_list))
+            elif function_group.function_id == 'dependence probability':
+                queries.append((functions._dependence_probability, 
+                                self.get_args_of_with(function_group, M_c), 
+                                True))
+                query_colnames.append(' '.join(function_group))
+            elif function_group.function_id == 'mutual information':
+                queries.append((functions._mutual_information, 
+                                self.get_args_of_with(function_group, M_c), 
+                                True))
+                query_colnames.append(' '.join(function_group))
+            elif function_group.function_id == 'correlation':
+                queries.append((functions._correlation, 
+                                self.get_args_of_with(function_group, M_c), 
+                                True))
+                query_colnames.append(' '.join(function_group))
+            ## single column, column_list, or *
+            elif function_group.column_id != '':
+                column_name = function_group.column_id
+                assert M_c is not None
+                index_list, name_list = self.parse_column_set(column_name, M_c, column_lists)
+                queries += [(functions._column, column_index , False) for column_index in index_list]
+                query_colnames += [name for name in name_list]
+            else: 
+                raise utils.BayesDBParseError("Invalid query: could not parse function")
+        return queries, query_colnames
+
+    def parse_column_set(self, column_name, M_c, column_lists = None):
+        """
+        given a string representation of a column name or column_list,
+        returns a list of the column indexes, list of column names. 
+        """
+        index_list = []
+        name_list = []
+        if column_name == '*':
+            all_columns = utils.get_all_column_names_in_original_order(M_c)
+            index_list += [M_c['name_to_idx'][column_name] for column_name in all_columns]
+            name_list += [name for name in all_columns]
+        elif (column_lists is not None) and (column_name in column_lists.keys()):
+            index_list += [M_c['name_to_idx'][name] for name in column_lists[column_name]]
+            name_list += [name for name in column_lists[column_name]]
+        elif column_name in M_c['name_to_idx']:
+            index_list += [M_c['name_to_idx'][column_name]]
+            name_list += [column_name]
+        else:
+            raise utils.BayesDBParseError("Invalid query: %s not found." % column_name)
+        return index_list, name_list
+
+#####################################################################################
+## --------------------------- Other Helper functions ---------------------------- ##
+#####################################################################################
 
     def set_root_dir(self, root_dir):
         """Set the root_directory, used as the base for all relative paths."""
@@ -112,793 +859,3 @@ class Parser(object):
             return relative_path
         else:
             return os.path.join(self.root_directory, relative_path)
-
-##################################################################################
-# Methods to parse individual commands (and the associated help method with each)
-##################################################################################
-
-    def help_list_btables(self):
-        return "LIST BTABLES: view the list of all btable names."
-
-    def parse_list_btables(self, words, orig):
-        if len(words) >= 2:
-            if words[0] == 'list' and words[1] == 'btables':
-                return 'list_btables', dict(), None
-
-
-    def help_execute_file(self):
-        return "EXECUTE FILE <filename>: execute a BQL script from file."
-
-    def parse_execute_file(self, words, orig):
-        if len(words) >= 1 and words[0] == 'execute':
-            if len(words) >= 3 and words[1] == 'file':
-                filename = words[2]
-                return 'execute_file', dict(filename=self.get_absolute_path(filename)), None
-            else:
-                return 'help', self.help_execute_file()
-
-                
-    def help_show_schema(self):
-        return "SHOW SCHEMA FOR <btable>: show the datatype schema for the btable."
-
-    def parse_show_schema(self, words, orig):
-        if len(words) >= 4 and words[0] == 'show' and words[1] == 'schema':
-            if words[2] == 'for':
-                return 'show_schema', dict(tablename=words[3]), None
-            else:
-                return 'help', self.help_show_schema()
-
-                
-    def help_show_models(self):
-        return "SHOW MODELS FOR <btable>: show the models and iterations stored for btable."
-
-    def parse_show_models(self, words, orig):
-        if len(words) >= 4 and words[0] == 'show' and words[1] == 'models':
-            if words[2] == 'for':
-                return 'show_models', dict(tablename=words[3]), None
-            else:
-                return 'help', self.help_show_models()
-
-                
-    def help_show_diagnostics(self):
-        return "SHOW DIAGNOSTICS FOR <btable>: show diagnostics for this btable's models."
-
-    def parse_show_diagnostics(self, words, orig):
-        if len(words) >= 4 and words[0] == 'show' and words[1] == 'diagnostics':
-            if words[2] == 'for':
-                return 'show_diagnostics', dict(tablename=words[3]), None
-            else:
-                return 'help', self.help_show_diagnostics()
-
-
-    def help_drop_models(self):
-        return "DROP MODEL[S] [<id>-<id>] FROM <btable>: drop the models specified by the given ids."
-
-    def parse_drop_models(self, words, orig):
-        match = re.search(r"""
-            drop\s+model(s)?\s+
-            ( ((?P<start>\d+)\s*-\s*(?P<end>\d+)) | (?P<id>\d+) )?
-            \s*(from|for)\s+
-            (?P<btable>[^\s]+)
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'drop':
-                return 'help', self.help_drop_models()
-        else:
-            tablename = match.group('btable')
-            
-            model_indices = None            
-            start = match.group('start')
-            end = match.group('end')
-            if start is not None and end is not None:
-                model_indices = range(int(start), int(end)+1)
-            id = match.group('id')
-            if id is not None:
-                model_indices = [int(id)]
-            
-            return 'drop_models', dict(tablename=tablename, model_indices=model_indices), None
-                
-                
-    def help_initialize_models(self):
-        return "INITIALIZE <num_models> MODELS FOR <btable> [WITH CONFIG <model_config>]: the step to perform before analyze."
-
-    def parse_initialize_models(self, words, orig):
-        match = re.search(r"""
-            initialize\s+
-            (?P<num_models>[^\s]+)
-            \s+model(s)?\s+for\s+
-            (?P<btable>[^\s]+)
-            (\s+with\s+config\s+(?P<model_config>.*))?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'initialize' or (words[0] == 'create' and len(words) >= 2 and words[1] != 'models'):
-                return 'help', self.help_initialize_models()
-        else:
-            n_models = int(match.group('num_models'))
-            tablename = match.group('btable')
-            model_config = match.group('model_config')
-
-            if model_config is not None:
-                model_config = model_config.strip()
-            return 'initialize_models', dict(tablename=tablename, n_models=n_models,
-                                             model_config=model_config), None
-                    
-    def help_create_btable(self):
-        return "CREATE BTABLE <tablename> FROM <filename>: create a table from a csv file"
-
-    def parse_create_btable(self, words, orig):
-        crosscat_column_types = None
-        if len(words) >= 2:
-            if (words[0] == 'upload' or words[0] == 'create') and (words[1] == 'ptable' or words[1] == 'btable'):
-                if len(words) >= 5:
-                    tablename = words[2]
-                    if words[3] == 'from':
-                        csv_path = self.get_absolute_path(orig.split()[4])
-                        return 'create_btable', \
-                            dict(tablename=tablename, cctypes_full=crosscat_column_types), \
-                            dict(csv_path=csv_path)
-                    else:
-                        return 'help', self.help_create_btable()
-                else:
-                    return 'help', self.help_create_btable()
-
-                    
-    def help_drop_btable(self):
-        return "DROP BTABLE <tablename>: drop table."
-
-    def parse_drop_btable(self, words, orig):
-        if len(words) >= 3:
-            if words[0] == 'drop' and (words[1] == 'tablename' or words[1] == 'ptable' or words[1] == 'btable'):
-                return 'drop_btable', dict(tablename=words[2]), None
-
-
-    def help_analyze(self):
-        return "ANALYZE <btable> [MODEL[S] <id>-<id>] [FOR <iterations> ITERATIONS | FOR <seconds> SECONDS]: perform inference."
-
-    def parse_analyze(self, words, orig):
-        match = re.search(r"""
-            analyze\s+
-            (?P<btable>[^\s]+)\s+
-            (model(s)?\s+
-              (((?P<start>\d+)\s*-\s*(?P<end>\d+)) | (?P<id>\d+)) )?
-            \s*for\s+
-            ((?P<iterations>\d+)\s+iteration(s)?)?
-            ((?P<seconds>\d+)\s+second(s)?)?
-            (\s*with\s+(?P<kernel>[^\s]+)\s+kernel)?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None or (match.group('iterations') is None and match.group('seconds') is None):
-            if words[0] == 'analyze':
-                return 'help', self.help_analyze()
-        else:
-            model_indices = None
-            tablename = match.group('btable')
-
-            start = match.group('start')
-            end = match.group('end')
-            if start is not None and end is not None:
-                model_indices = range(int(start), int(end)+1)
-            id = match.group('id')
-            if id is not None:
-                model_indices = [int(id)]
-            
-            iterations = match.group('iterations')
-            if iterations is not None:
-                iterations = int(iterations)
-            
-            seconds = match.group('seconds')
-            if seconds is not None:
-                seconds = int(seconds)
-
-            kernel = match.group('kernel')
-            if kernel is not None and kernel.strip().lower()=='mh':
-                ct_kernel = 1
-            else:
-                ct_kernel = 0
-                
-            return 'analyze', dict(tablename=tablename, model_indices=model_indices,
-                                   iterations=iterations, seconds=seconds, ct_kernel=ct_kernel), None
-
-            
-    def help_infer(self):
-        return "[SUMMARIZE | PLOT] INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [SAVE TO <file>]: like select, but imputes (fills in) missing values."
-        
-    def parse_infer(self, words, orig):
-        match = re.search(r"""
-            ((?P<summarize>summarize)?)?\s*
-            ((?P<plot>(plot|scatter)))?\s*
-            infer\s+
-            (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
-            from\s+(?P<btable>[^\s]+)\s+
-            (where\s+(?P<whereclause>.*(?=with)))?
-            \s*with\s+confidence\s+(?P<confidence>[^\s]+)
-            (\s+limit\s+(?P<limit>\d+))?
-            (\s+with\s+(?P<numsamples>[^\s]+)\s+samples)?
-            (\s*save\s+to\s+(?P<filename>[^\s]+))?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'infer':
-                return 'help', self.help_infer()
-        else:
-            summarize = match.group('summarize') is not None
-            columnstring = match.group('columnstring').strip()
-            tablename = match.group('btable')
-            whereclause = match.group('whereclause')
-            if whereclause is None:
-                whereclause = ''
-            else:
-                whereclause = whereclause.strip()
-            confidence = float(match.group('confidence'))
-            limit = match.group('limit')
-            if limit is None:
-                limit = float("inf")
-            else:
-                limit = int(limit)
-            numsamples = match.group('numsamples')
-            if numsamples is None:
-                numsamples = None
-            else:
-                numsamples = int(numsamples)
-            newtablename = '' # For INTO
-            orig, order_by = self.extract_order_by(orig)
-            modelids = self.extract_using_models(orig)
-
-            plot = match.group('plot') is not None
-            if plot:
-                scatter = 'scatter' in match.group('plot')
-            else:
-                scatter = False
-                
-            if match.group('filename'):
-                filename = match.group('filename')
-            else:
-                filename = None
-            return 'infer', \
-                   dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
-                        confidence=confidence, whereclause=whereclause, limit=limit,
-                        numsamples=numsamples, order_by=order_by, plot=plot, modelids=modelids, summarize=summarize), \
-                   dict(plot=plot, scatter=scatter, filename=filename)
-
-            
-            
-    def help_save_models(self):
-        return "SAVE MODELS FROM <btable> TO <pklpath>: save your models to a pickle file."
-
-    def parse_save_models(self, words, orig):
-        match = re.search(r"""
-            save\s+
-            (models\s+)?
-            ((from\s+)|(for\s+))
-            (?P<btable>[^\s]+)
-            \s+to\s+
-            (?P<pklpath>[^\s]+)
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'save':
-                return 'help', self.help_save_models()
-        else:
-            tablename = match.group('btable')
-            pkl_path = match.group('pklpath')
-            return 'save_models', dict(tablename=tablename), dict(pkl_path=pkl_path)
-
-
-            
-    def help_load_models(self):
-        return "LOAD MODELS <pklpath> INTO <btable>: load models from a pickle file."
-        
-    def parse_load_models(self, words, orig):
-        match = re.search(r"""
-            load\s+
-            models\s+
-            (?P<pklpath>[^\s]+)\s+
-            ((into\s+)|(for\s+))
-            (?P<btable>[^\s]+)\s*$
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'load':
-                return 'help', self.help_load_models()
-        else:
-            tablename = match.group('btable')
-            pkl_path = match.group('pklpath')
-            return 'load_models', dict(tablename=tablename), dict(pkl_path=pkl_path)
-
-            
-    def help_show_model(self):
-        return "SHOW MODEL <model_id> FROM <btable>"
-
-    def parse_show_model(self, words, orig):
-        match = re.search(r"""
-            show\s+model\s+
-            (?P<modelid>\d+)
-            \s+from\s+
-            (?P<btable>[^\s]+)
-            (\s*save\s+to\s+(?P<filename>))?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'show' and words[1] == 'model':
-                return 'help', self.help_show_model()
-        else:
-            if match.group('filename'):
-                filename = match.group('filename')
-            else:
-                filename = None            
-            return 'show_model', dict(tablename=match.group('btable'),
-                                      modelid=int(match.group('modelid')),
-                                      filename=filename), None
-
-            
-    def help_select(self):
-        return '[SUMMARIZE | PLOT] SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [INTO <new_btable>] [SAVE TO <filename>]'
-        
-    def parse_select(self, words, orig):
-        match = re.search(r"""
-            ((?P<summarize>summarize)?)?\s*
-            ((?P<plot>(plot|scatter)))?\s*        
-            select\s+
-            (?P<columnstring>.*?((?=from)))
-            \s*from\s+(?P<btable>[^\s]+)\s*
-            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|$)))?
-            (\s*limit\s+(?P<limit>\d+))?
-            (\s*into\s+(?P<newbtable>[^\s]+))?        
-            (\s*save\s+to\s+(?P<filename>[^\s]+))?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'select':
-                return 'help', self.help_select()
-        else:
-            summarize = match.group('summarize') is not None
-            columnstring = match.group('columnstring').strip()
-            tablename = match.group('btable')
-            whereclause = match.group('whereclause')
-            if whereclause is None:
-                whereclause = ''
-            else:
-                whereclause = whereclause.strip()
-            limit = self.extract_limit(orig)
-            orig, order_by = self.extract_order_by(orig)
-            modelids = self.extract_using_models(orig)
-
-            plot = match.group('plot') is not None
-            if plot:
-                scatter = 'scatter' in match.group('plot')
-            else:
-                scatter = False
-
-            if match.group('newbtable'):
-                new_tablename = match.group('newbtable')
-            else:
-                new_tablename = None
-
-            if match.group('filename'):
-                filename = match.group('filename')
-            else:
-                filename = None
-
-            return 'select', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                  limit=limit, order_by=order_by, plot=plot, modelids=modelids, summarize=summarize, new_tablename=new_tablename), \
-              dict(scatter=scatter, filename=filename, plot=plot)
-
-
-    def help_simulate(self):
-        return "[SUMMARIZE | PLOT] SIMULATE <columns> FROM <btable> [GIVEN <givens>] [WHERE <whereclause>] TIMES <times> [USING MODEL[S] <id>-<id>] [SAVE TO <filename>]: simulate new datapoints based on the underlying model."
-
-    def parse_simulate(self, words, orig):
-        match = re.search(r"""
-            ((?P<summarize>summarize)?)?\s*
-            ((?P<plot>(plot|scatter)))?\s*        
-            simulate\s+
-            (?P<columnstring>[^\s,]+(?:,\s*[^\s,]+)*)\s+
-            from\s+(?P<btable>[^\s]+)\s+
-            (given\s+(?P<givens>.*((?=times)|(?=where))))?
-            (where\s+(?P<whereclause>.*?((?=limit)|(?=times)|$)))?
-            times\s+(?P<times>\d+)
-            (\s*save\s+to\s+(?P<filename>[^\s]+))?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'simulate':
-                return 'help', self.help_simulate()
-        else:
-            summarize = match.group('summarize') is not None
-            columnstring = match.group('columnstring').strip()
-            tablename = match.group('btable')
-            givens = match.group('givens')
-            if givens is None:
-                givens = ''
-            else:
-                givens = givens.strip()
-            whereclause = match.group('whereclause')
-            if whereclause is None:
-                whereclause = ''
-            else:
-                whereclause = whereclause.strip()
-                
-            numpredictions = int(match.group('times'))
-            newtablename = '' # For INTO
-            orig, order_by = self.extract_order_by(orig)
-            modelids = self.extract_using_models(orig)
-            
-            plot = match.group('plot') is not None
-            if plot:
-                scatter = 'scatter' in match.group('plot')
-            else:
-                scatter = False
-            
-            if match.group('filename'):
-                filename = match.group('filename')
-            else:
-                filename = None            
-            return 'simulate', \
-                    dict(tablename=tablename, columnstring=columnstring, newtablename=newtablename,
-                         givens=givens, whereclause=whereclause, numpredictions=numpredictions,
-                         order_by=order_by, plot=plot, modelids=modelids, summarize=summarize), \
-                    dict(filename=filename, plot=plot, scatter=scatter)
-
-    def help_show_row_lists(self):
-        return "SHOW ROW LISTS FOR <btable>"
-
-    def parse_show_row_lists(self, words, orig):
-        match = re.search(r"""
-          SHOW\s+ROW\s+LISTS\s+FOR\s+
-          (?P<btable>[^\s]+)\s*$
-        """, orig, flags=re.VERBOSE|re.IGNORECASE)
-        if not match:
-            if words[0] == 'show' and words[1] == 'row':
-                return 'help', self.help_show_row_lists()
-        else:
-            tablename = match.group('btable')
-            return 'show_row_lists', dict(tablename=tablename), None
-
-    def help_show_column_lists(self):
-        return "SHOW COLUMN LISTS FOR <btable>"
-
-    def parse_show_column_lists(self, words, orig):
-        match = re.search(r"""
-          SHOW\s+COLUMN\s+LISTS\s+FOR\s+
-          (?P<btable>[^\s]+)\s*$
-        """, orig, flags=re.VERBOSE|re.IGNORECASE)
-        if not match:
-            if words[0] == 'show' and words[1] == 'column':
-                return 'help', self.help_show_column_lists()
-        else:
-            tablename = match.group('btable')
-            return 'show_column_lists', dict(tablename=tablename), None
-
-    def help_show_columns(self):
-        return "SHOW COLUMNS <column_list> FROM <btable>"
-
-    def parse_show_columns(self, words, orig):
-        match = re.search(r"""
-          SHOW\s+COLUMNS\s+
-          ((?P<columnlist>[^\s]+)\s+)?
-          FROM\s+
-          (?P<btable>[^\s]+)\s*$
-        """, orig, flags= re.VERBOSE | re.IGNORECASE)
-        if not match:
-            if words[0] == 'show' and words[1] == 'columns':
-                return 'help', self.help_show_columns()
-        else:
-            tablename = match.group('btable')
-            column_list = match.group('columnlist')
-            return 'show_columns', dict(tablename=tablename, column_list=column_list), None
-
-            
-    def help_estimate_columns(self):
-        return "(ESTIMATE COLUMNS | CREATE COLUMN LIST) [<column_names>] FROM <btable> [WHERE <whereclause>] [ORDER BY <orderable>] [LIMIT <limit>] [USING MODEL[S] <id>-<id>] [AS <column_list>]"
-
-    def parse_estimate_columns(self, words, orig):
-        match = re.search(r"""
-            ((estimate\s+columns\s+)|(create\s+column\s+list\s+))
-            (?P<columnstring>.*?((?=from)))
-            \s*from\s+
-            (?P<btable>[^\s]+)\s*
-            (where\s+(?P<whereclause>.*?((?=limit)|(?=order)|(?=as)|$)))?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if (words[0] == 'estimate' and words[2] == 'columns') or (words[0] == 'create' and words[1] == 'column'):
-                return 'help', self.help_estimate_columns()
-        else:
-            tablename = match.group('btable').strip()
-            
-            columnstring = match.group('columnstring')
-            if columnstring is None:
-                columnstring = ''
-            else:
-                columnstring = columnstring.strip()
-                
-            whereclause = match.group('whereclause')
-            if whereclause is None:
-                whereclause = ''
-            else:
-                whereclause = whereclause.strip()
-                
-            limit = self.extract_limit(orig)                
-            orig, order_by = self.extract_order_by(orig)
-            modelids = self.extract_using_models(orig)            
-            
-            name_match = re.search(r"""
-              as\s+
-              (?P<name>[^\s]+)
-              \s*$
-            """, orig, flags=re.VERBOSE|re.IGNORECASE)
-            if name_match:
-                name = name_match.group('name')
-            else:
-                name = None
-
-            return 'estimate_columns', dict(tablename=tablename, columnstring=columnstring, whereclause=whereclause,
-                                            limit=limit, order_by=order_by, name=name, modelids=modelids), None
-
-    def help_estimate_pairwise_row(self):
-        return "ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [USING MODEL[S] <id>-<id>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]: estimate a pairwise function of columns."
-
-    def parse_estimate_pairwise_row(self, words, orig):
-        match = re.search(r"""
-            estimate\s+pairwise\s+row\s+
-            (?P<functionname>.*?((?=\sfrom)))
-            \s*from\s+
-            (?P<btable>[^\s]+)
-            (\s+for\s+rows\s+(?P<rows>[^\s]+))?
-            (\s+save\s+to\s+(?P<filename>[^\s]+))?
-            (\s+save\s+connected\s+components\s+with\s+threshold\s+(?P<threshold>[^\s]+)\s+(as|into)\s+(?P<components_name>[^\s]+))?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'estimate' and words[1] == 'pairwise':
-                return 'help', self.help_estimate_pairwise()
-        else:
-            tablename = match.group('btable').strip()
-            function_name = match.group('functionname')
-            if function_name.strip().lower().split()[0] not in ["similarity"]:
-                return 'help', self.help_estimate_pairwise()
-            filename = match.group('filename') # Could be None
-            row_list = match.group('rows') # Could be None
-            if match.group('components_name') and match.group('threshold'):
-                components_name = match.group('components_name')
-                threshold = float(match.group('threshold'))
-            else:
-                components_name = None
-                threshold = None
-            modelids = self.extract_using_models(orig)                            
-            return 'estimate_pairwise_row', \
-              dict(tablename=tablename, function_name=function_name,
-                   row_list=row_list, components_name=components_name, threshold=threshold, modelids=modelids), \
-              dict(filename=filename)
-
-        
-    def help_estimate_pairwise(self):
-        return "ESTIMATE PAIRWISE [DEPENDENCE PROBABILITY | CORRELATION | MUTUAL INFORMATION] FROM <btable> [FOR <columns>] [USING MODEL[S] <id>-<id>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <columnlist>]: estimate a pairwise function of columns."
-        
-    def parse_estimate_pairwise(self, words, orig):
-        match = re.search(r"""
-            estimate\s+pairwise\s+
-            (?P<functionname>.*?((?=\sfrom)))
-            \s*from\s+
-            (?P<btable>[^\s]+)
-            (\s+for\s+columns\s+(?P<columns>[^\s]+))?
-            (\s+save\s+to\s+(?P<filename>[^\s]+))?
-            (\s+save\s+connected\s+components\s+with\s+threshold\s+(?P<threshold>[^\s]+)\s+as\s+(?P<components_name>[^\s]+))?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'estimate' and words[1] == 'pairwise':
-                return 'help', self.help_estimate_pairwise()
-        else:
-            tablename = match.group('btable').strip()
-            function_name = match.group('functionname').strip().lower()
-            if function_name not in ["mutual information", "correlation", "dependence probability"]:
-                return 'help', self.help_estimate_pairwise()
-            filename = match.group('filename') # Could be None
-            column_list = match.group('columns') # Could be None
-            if match.group('components_name') and match.group('threshold'):
-                components_name = match.group('components_name')
-                threshold = float(match.group('threshold'))
-            else:
-                components_name = None
-                threshold = None
-            modelids = self.extract_using_models(orig)                            
-            return 'estimate_pairwise', \
-              dict(tablename=tablename, function_name=function_name,
-                   column_list=column_list, components_name=components_name, threshold=threshold, modelids=modelids), \
-              dict(filename=filename)
-
-    def help_label_columns(self):
-        return "LABEL COLUMNS FOR <btable> [SET <column1>=value1[,...] | FROM <filename.csv>]: "
-
-    def parse_label_columns(self, words, orig):
-        match = re.search(r"""
-            label\s+columns\s+for\s+
-            (?P<btable>[^\s]+)\s+
-            (set|from)\s+
-            (?P<mappings>[^;]*);?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'label':
-                return 'help', self.help_label_columns()
-        else:
-            tablename = match.group('btable').strip()
-            mapping_string = match.group('mappings').strip()
-
-            csv_path, mappings = None, None
-            if words[4] == 'from':
-                source = 'file'
-                csv_path = mapping_string
-            elif words[4] == 'set':
-                source = 'inline'
-                mappings = dict()
-                for mapping in mapping_string.split(','):
-                    vals = mapping.split('=')
-                    column, label = vals[0].strip(), vals[1].strip()
-                    mappings[column.strip()] = label
-            return 'label_columns', dict(tablename=tablename, mappings=mappings), dict(source=source, csv_path=csv_path)
-
-    def help_show_labels(self):
-        return "SHOW LABELS FOR <btable> [<column1>[, <column2>..]]: "
-
-    def parse_show_labels(self, words, orig):
-        match = re.search(r"""
-            show\s+labels\s+for\s+
-            (?P<btable>[^\s]+)
-            \s*(?P<columns>[^;]*);?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'show' and words[1] == 'labels':
-                return 'help', self.help_show_columns()
-        else:
-            tablename = match.group('btable').strip()
-            columnstring = match.group('columns').strip()
-            return 'show_labels', dict(tablename=tablename, columnstring=columnstring), None
-
-    def help_update_metadata(self):
-        return "UPDATE METADATA FOR <btable> [SET <metadata-key1>=value1[,...] | FROM <filename.csv>]: "
-
-    def parse_update_metadata(self, words, orig):
-        match = re.search(r"""
-            update\s+metadata\s+for\s+
-            (?P<btable>[^\s]+)\s+
-            (set|from)\s+
-            (?P<mappings>[^;]*);?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'update' and words[1] == 'metadata':
-                return 'help', self.help_update_metadata()
-        else:
-            tablename = match.group('btable').strip()
-            mapping_string = match.group('mappings').strip()
-
-            csv_path, mappings = None, None
-            if words[4] == 'from':
-                source = 'file'
-                csv_path = mapping_string
-            elif words[4] == 'set':
-                source = 'inline'
-                mappings = dict()
-                for mapping in mapping_string.split(','):
-                    vals = mapping.split('=')
-                    column, label = vals[0].strip(), vals[1].strip()
-                    mappings[column.strip()] = label
-            return 'update_metadata', dict(tablename=tablename, mappings=mappings), dict(source=source, csv_path=csv_path)
-
-    def help_show_metadata(self):
-        return "SHOW METADATA FOR <btable> [<metadata-key1> [, <metadata-key2>...]]"
-
-    def parse_show_metadata(self, words, orig):
-        match = re.search(r"""
-            show\s+metadata\s+for\s+
-            (?P<btable>[^\s]+)
-            \s*(?P<keystring>[^;]*);?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'show' and words[1] == 'metadata':
-                return 'help', self.help_show_metadata()
-        else:
-            tablename = match.group('btable').strip()
-            keystring = match.group('keystring').strip()
-            return 'show_metadata', dict(tablename=tablename, keystring=keystring), None
-
-    def help_update_schema(self):
-        return "UPDATE SCHEMA FOR <btable> SET [<column_name>=(numerical|categorical|key|ignore)[,...]]: must be done before creating models or analyzing."
-        
-    def parse_update_schema(self, words, orig):
-        match = re.search(r"""
-            update\s+schema\s+for\s+
-            (?P<btable>[^\s]+)\s+
-            set\s+(?P<mappings>[^;]*);?
-        """, orig, re.VERBOSE | re.IGNORECASE)
-        if match is None:
-            if words[0] == 'update' and words[1] == 'schema':
-                return 'help', self.help_update_schema()
-        else:
-            tablename = match.group('btable').strip()
-            mapping_string = match.group('mappings').strip()
-            mappings = dict()
-            for mapping in mapping_string.split(','):
-                vals = mapping.split('=')
-                if 'continuous' in vals[1] or 'numerical' in vals[1]:
-                    datatype = 'continuous'
-                elif 'multinomial' in vals[1] or 'categorical' in vals[1]:
-                    m = re.search(r'\((?P<num>[^\)]+)\)', vals[1])
-                    if m:
-                        datatype = int(m.group('num'))
-                    else:
-                        datatype = 'multinomial'
-                elif 'key' in vals[1]:
-                    datatype = 'key'
-                elif 'ignore' in vals[1]:
-                    datatype = 'ignore'
-                else:
-                    return 'help', self.help_update_datatypes()
-                mappings[vals[0].strip()] = datatype
-            return 'update_schema', dict(tablename=tablename, mappings=mappings), None
-
-############################################################
-# Parsing helper functions: "extract" functions
-############################################################
-
-    def extract_columns(self, orig):
-        """TODO"""
-        pattern = r"""
-            \(\s*
-            (estimate\s+)?
-            columns\s+where\s+
-            (?P<columnstring>\d+
-            \)
-        """
-        match = re.search(pattern, orig.lower(), re.VERBOSE | re.IGNORECASE)
-        if match:
-            limit = int(match.group('limit').strip())
-            return limit
-        else:
-            return float('inf')
-
-    def extract_using_models(self, orig):
-        """
-        """
-        match = re.search(r"""
-            using\s+model(s)?\s+
-              (((?P<start>\d+)\s*-\s*(?P<end>\d+)) | (?P<id>\d+))
-        """, orig, flags = re.VERBOSE | re.IGNORECASE)
-        if match:
-            modelids = None
-            start = match.group('start')
-            end = match.group('end')
-            if start is not None and end is not None:
-                modelids = range(int(start), int(end)+1)
-            id = match.group('id')
-            if id is not None:
-                modelids = [int(id)]
-            return modelids
-
-
-    def extract_order_by(self, orig):
-        pattern = r"""
-            (order\s+by\s+(?P<orderbyclause>.*?((?=limit)|$)))
-        """ 
-        match = re.search(pattern, orig, re.VERBOSE | re.IGNORECASE)
-        if match:
-            order_by_clause = match.group('orderbyclause')
-            ret = list()
-            orderables = list()
-            
-            for orderable in utils.column_string_splitter(order_by_clause):
-                ## Check for DESC/ASC
-                desc = re.search(r'\s+(desc|asc)($|\s|,|(?=limit))', orderable, re.IGNORECASE)
-                if desc is not None and desc.group().strip().lower() == 'asc':
-                    desc = False
-                else:
-                    desc = True
-                orderable = re.sub(r'\s+(desc|asc)($|\s|,|(?=limit))', '', orderable, flags=re.IGNORECASE)
-                orderables.append((orderable.strip(), desc))
-                
-            orig = re.sub(pattern, '', orig, flags=re.VERBOSE | re.IGNORECASE)
-            return (orig, orderables)
-        else:
-            return (orig, False)
-
-            
-    def extract_limit(self, orig):
-        pattern = r'limit\s+(?P<limit>\d+)'
-        match = re.search(pattern, orig.lower())
-        if match:
-            limit = int(match.group('limit').strip())
-            return limit
-        else:
-            return float('inf')
-
-
