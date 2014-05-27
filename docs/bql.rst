@@ -389,3 +389,4 @@ Similarly to the SHOW METADATA statements, column labels can be reviewed either 
 Or, if a set of column names is given, the output shows column name and label pairs for those columns::
 
   SHOW LABEL FOR <btable> [<column-name-1> [, <column-name-2>...]]
+
