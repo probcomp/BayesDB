@@ -47,6 +47,17 @@ class BayesDBParseError(BayesDBError):
     def __str__(self):
         return self.msg
 
+class BayesDBUniqueValueError(BayesDBError):
+    def __init__(self, msg=None):
+        if msg:
+            self.msg = msg
+        else:
+            self.msg = "BayesDB unique value error. More than one row has this value."
+    
+    def __str__(self):
+        return self.msg
+
+
 class BayesDBNoModelsError(BayesDBError):
     def __init__(self, tablename):
         self.tablename = tablename
@@ -85,7 +96,6 @@ class BayesDBRowListDoesNotExistError(BayesDBError):
     def __str__(self):
         return "Row list %s does not exist in btable %s." % (self.row_list, self.tablename)
         
-        
 def is_int(s):
     try:
         int(s)
@@ -100,6 +110,49 @@ def is_float(s):
     except ValueError:
         return False
 
+def value_string_to_num(value_string):
+    if is_int(value_string) == True:
+        value = int(value_string)
+    elif is_float(value_string) == True:
+        value = float(value_string)
+    else: 
+        raise BayesDBParseError("Number expected for value: %s" % value_string)
+    return value
+
+def string_to_column_type(value_string, column, M_c):
+    """
+    column is the string of the column name
+    Checks the type of the column in question based on M_c
+    If continuous, converts the value from string to int or float
+    """
+    value = value_string
+    if get_cctype_from_M_c(M_c, column) == 'continuous':
+        if is_int(value_string) == True:
+            value = int(value)
+        elif is_float(value_string) == True:
+            value = float(value)
+    return value
+
+def row_id_from_col_value(value, column, M_c, T):
+    """
+    Returns the row_id of a column where column == value
+    If duplicate rows are found, raises exception
+    If no rows are found, returns None
+    """
+    target_row_id = None
+    col_idx = M_c['name_to_idx'][column]
+    if type(value) == str:
+        value = string_to_column_type(value, column, M_c)
+    for row_id, T_row in enumerate(T):
+        row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
+        if row_values[col_idx] == value:
+            if target_row_id == None:
+                target_row_id = row_id
+            else: 
+                raise BayesDBUniqueValueError("Invalid Query: column '%s' has more than one row with value '%s'." %(column, str(value)))
+    return target_row_id
+
+##TODO move to engine
 def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, engine):
     q = [row_id, col_id]
     out = engine.call_backend('impute_and_confidence', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=[q], n=numsamples))
@@ -196,6 +249,12 @@ def frequency_table(data, columns, M_c):
 
     return data, columns
 
+def get_index_from_colname(M_c, column):
+    if column in M_c['name_to_idx'].keys():
+        return M_c['name_to_idx'][column]
+    else:
+        utils.BayesDBParseError("Invalid query: column '%s' not found" % column)
+
 def summarize_table(data, columns, M_c):
     """
     Returns a summary of the data.
@@ -261,41 +320,16 @@ def summarize_table(data, columns, M_c):
 
     return data, columns
 
-def column_string_splitter(columnstring, M_c=None, column_lists=None):
-    """
-    If '*' is a possible input, M_c must not be None.
-    If column_lists is not None, all column names are attempted to be expanded as a column list.
-    """
-    paren_level = 0
+def process_column_list(mixed_list, M_c, column_lists, dedupe=False):
     output = []
-    current_column = []
-
-    def end_column(current_column, output):
-      if '*' in current_column:
-        assert M_c is not None
-        output += get_all_column_names_in_original_order(M_c)
-      else:
-        current_column_name = ''.join(current_column)
-        if column_lists and current_column_name in column_lists.keys():
-            ## First, check if current_column is a column_list
-            output += column_lists[current_column_name]
+    for identifier in mixed_list:
+        if identifier == '*':
+            output += get_all_column_names_in_original_order(M_c)
+        elif column_lists != None and identifier in column_lists.keys():
+            output += column_lists[identifier]
         else:
-            ## If not, then it is a normal column name: append it.            
-            output.append(current_column_name.strip())
-      return output
-    
-    for i,c in enumerate(columnstring):
-      if c == '(':
-        paren_level += 1
-      elif c == ')':
-        paren_level -= 1
-
-      if (c == ',' and paren_level == 0):
-        output = end_column(current_column, output)
-        current_column = []
-      else:
-        current_column.append(c)
-    output = end_column(current_column, output)
+            output.append(identifier)
+    if dedupe == True:
+        check_for_duplicate_columns(output)
     return output
-
     

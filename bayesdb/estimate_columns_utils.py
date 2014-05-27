@@ -37,115 +37,25 @@ def filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_
   return [c_idx for c_idx in column_indices if _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine)]
 
 def _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine):
-    for ((func, f_args), op, val) in where_conditions:
-        # mutual_info, correlation, and dep_prob all take args=(i,j)
-        # col_typicality takes just args=i
-        # incoming f_args will be None for col_typicality, j for the three others
-        if f_args is not None:
-            f_args = (f_args, c_idx)
-        else:
-            f_args = c_idx
-      
-        where_value = func(f_args, None, None, M_c, X_L_list, X_D_list, T, engine)
-        return op(where_value, val)
-    return True
+  for ((func, f_args), op, val) in where_conditions:
+    # mutual_info, correlation, and dep_prob all take args=(i,j)
+    # col_typicality takes just args=i
+    # incoming f_args will be None for col_typicality, j for the three others
+    if f_args is not None:
+      f_args = (f_args, c_idx)
+    else:
+      f_args = c_idx
+    where_value = func(f_args, None, None, M_c, X_L_list, X_D_list, T, engine)
+    return op(where_value, val)
+  return True
 
-def get_conditions_from_column_whereclause(whereclause, M_c, T):
-  ## Create conds: the list of conditions in the whereclause.
-  ## List of (c_idx, op, val) tuples.
-  conds = list() 
-  if len(whereclause) > 0:
-    conditions = re.split(r'and', whereclause, flags=re.IGNORECASE)
-    ## Order matters: need <= and >= before < and > and =.
-    operator_list = ['<=', '>=', '=', '>', '<']
-    operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq, '>': operator.gt, '>=': operator.ge}
-
-    # TODO: parse this properly with pyparsing
-    # note that there can be more than one operator!
-    # if 1 total: we want that one. if 2 total: we want 2nd (assuming probably query on left). if 3 total: we want 2nd.
-    
-    for condition in conditions:
-      for operator_str in operator_list:
-        if operator_str in condition:
-          op_str = operator_str
-          op = operator_map[op_str]
-          break
-      vals = condition.split(op_str)
-      raw_string = vals[0].strip()
-
-      ## Determine what type the value is
-      raw_val = vals[1].strip()
-      if utils.is_int(raw_val):
-        val = int(raw_val)
-      elif utils.is_float(raw_val):
-        val = float(raw_val)
-      else:
-        ## val could have matching single or double quotes, which we can safely eliminate
-        ## with the following safe (string literal only) implementation of eval
-        val = ast.literal_eval(raw_val).lower()
-
-
-      t = functions.parse_cfun_column_typicality(raw_string, M_c)
-      if t is not None:
-        conds.append(((functions._col_typicality, None), op, val))
-        continue
-
-      d = functions.parse_cfun_dependence_probability(raw_string, M_c)
-      if d is not None:
-        conds.append(((functions._dependence_probability, d), op, val))
-        continue
-
-      m = functions.parse_cfun_mutual_information(raw_string, M_c)
-      if m is not None:
-        conds.append(((functions._mutual_information, m), op, val))
-        continue
-
-      c= functions.parse_cfun_correlation(raw_string, M_c)
-      if c is not None:
-        conds.append(((functions._correlation, c), op, val))
-        continue
-
-      raise utils.BayesDBParseError("Invalid query argument: could not parse '%s'" % raw_string)
-  return conds
-    
 
 def order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, engine):
   if not order_by:
     return column_indices
-  # Step 1: get appropriate functions.
-  function_list = list()
-  for orderable in order_by:
-    assert type(orderable) == tuple and type(orderable[0]) == str and type(orderable[1]) == bool
-    raw_orderable_string = orderable[0]
-    desc = orderable[1]
-
-    ## function_list is a list of
-    ##   (f(args, row_id, data_values, M_c, X_L_list, X_D_list, engine), args, desc)
-
-    t = functions.parse_cfun_column_typicality(raw_orderable_string, M_c)
-    if t:
-      function_list.append((functions._col_typicality, None, desc))
-      continue
-
-    d = functions.parse_cfun_dependence_probability(raw_orderable_string, M_c)
-    if d:
-      function_list.append((functions._dependence_probability, d, desc))
-      continue
-
-    m = functions.parse_cfun_mutual_information(raw_orderable_string, M_c)
-    if m is not None:
-      function_list.append((functions._mutual_information, m, desc))
-      continue
-
-    c= functions.parse_cfun_correlation(raw_orderable_string, M_c)
-    if c is not None:
-      function_list.append((functions._correlation, c, desc))
-      continue
-
-    raise utils.BayesDBParseError("Invalid query argument: could not parse '%s'" % raw_orderable_string)
 
   ## Step 2: call order by.
-  sorted_column_indices = _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, engine)
+  sorted_column_indices = _column_order_by(column_indices, order_by, M_c, X_L_list, X_D_list, T, engine)
   return sorted_column_indices
 
 def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, engine):
