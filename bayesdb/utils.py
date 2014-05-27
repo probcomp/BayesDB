@@ -211,7 +211,6 @@ def summarize_freqs(x, n=5):
 
 def histogram_freqs(x):
     x_values, x_freqs, x_probs = get_column_freqs(x)
-
     x_values = pandas.Series(x_values)
     x_probs = pandas.Series(x_probs)
     x_freqs = pandas.Series(x_freqs)
@@ -229,7 +228,7 @@ def get_column_freqs(x):
 
     return x_values, x_freqs, x_probs
 
-def frequency_table(data, columns, M_c):
+def histogram_table(data, columns, M_c):
     """
     Returns a frequency table
     """

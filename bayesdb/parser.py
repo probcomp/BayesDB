@@ -239,6 +239,7 @@ class Parser(object):
             row_list = bql_statement_ast.rows ##TODO parse to list of rows
         scatter = (bql_statement_ast.scatter == 'scatter') ##TODO add to grammar
         summarize=(bql_statement_ast.summarize == 'summarize')
+        hist = (bql_statement_ast.hist == 'hist')
         tablename = bql_statement_ast.btable
         components_name = None
         threshold = None
@@ -265,6 +266,7 @@ class Parser(object):
                  column_list=column_list,
                  row_list=row_list,
                  summarize=summarize,
+                 hist=hist,
                  tablename=tablename,
                  threshold=threshold,
                  whereclause=whereclause), \
@@ -278,6 +280,7 @@ class Parser(object):
         tablename = args_dict['tablename']
         functions = args_dict['functions']
         summarize = args_dict['summarize']
+        hist = args_dict['hist']
         plot = args_dict['plot']
         whereclause = args_dict['whereclause']
         limit = args_dict['limit']
@@ -315,6 +318,7 @@ class Parser(object):
         tablename = args_dict['tablename']
         functions = args_dict['functions']
         summarize = args_dict['summarize']
+        hist = args_dict['hist']
         plot = args_dict['plot']
         whereclause = args_dict['whereclause']
         limit = args_dict['limit']
@@ -338,7 +342,7 @@ class Parser(object):
         return 'select', \
             dict(tablename=tablename, whereclause=whereclause, 
                  functions=functions, limit=limit, order_by=order_by, plot=plot, 
-                 modelids=modelids, summarize=summarize), \
+                 modelids=modelids, summarize=summarize, hist=hist), \
             dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
     def parse_simulate(self,bql_statement_ast):
@@ -346,6 +350,7 @@ class Parser(object):
         tablename = args_dict['tablename']
         functions = args_dict['functions']
         summarize = args_dict['summarize']
+        hist = args_dict['hist']
         plot = args_dict['plot'] 
         order_by = args_dict['order_by']
         modelids = args_dict['modelids']
@@ -372,7 +377,7 @@ class Parser(object):
             dict(tablename=tablename, functions=functions, 
                  newtablename=newtablename, givens=givens, 
                  numpredictions=numpredictions, order_by=order_by, 
-                 plot=plot, modelids=modelids, summarize=summarize), \
+                 plot=plot, modelids=modelids, summarize=summarize, hist=hist), \
             dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
     def parse_estimate(self,bql_statement_ast):
@@ -395,6 +400,7 @@ class Parser(object):
         assert args_dict['column_list'] == None, "BayesDBParsingError: FOR COLUMNS not allowed in estimate columns."
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR ROWS not allowed in estimate columns."
         assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in estimate columns."
+        assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in estimated columns."
         assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS not allowed in estimate columns."
         assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in estimate columns."
 
@@ -427,6 +433,7 @@ class Parser(object):
         assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in ESTIMATE PAIRWISE."
         assert args_dict['column_list'] == None, "BayesDBParsingError: FOR COLUMNS not allowed in ESTIMATE PAIRWISE."
         assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in ESTIMATE PAIRWISE."
         assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
         assert args_dict['whereclause'] == None, "BayesDBParsingError: WHERE not allowed in ESTIMATE PAIRWISE."
 
@@ -461,6 +468,7 @@ class Parser(object):
         assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in ESTIMATE PAIRWISE."
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR ROWS not allowed in ESTIMATE PAIRWISE."
         assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in ESTIMATE PAIRWISE."
         assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
         assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in ESTIMATE PAIRWISE"
 
