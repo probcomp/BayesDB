@@ -310,7 +310,7 @@ class Parser(object):
                  newtablename=newtablename, confidence=confidence, 
                  whereclause=whereclause, limit=limit,
                  numsamples=numsamples, order_by=order_by, 
-                 plot=plot, modelids=modelids, summarize=summarize), \
+                 plot=plot, modelids=modelids, summarize=summarize, hist=hist), \
             dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
 
     def parse_select(self,bql_statement_ast):

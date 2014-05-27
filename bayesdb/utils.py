@@ -236,7 +236,8 @@ def histogram_table(data, columns, M_c):
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
-        df.drop(['row_id'], axis=1, inplace=True)
+        if 'row_id' in df.columns:
+            df.drop(['row_id'], axis=1, inplace=True)
 
         column = df.columns[0]
         cctype = get_cctype_from_M_c(M_c, column)
