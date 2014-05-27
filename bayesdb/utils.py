@@ -249,6 +249,27 @@ def freq_table(data, columns, M_c):
 
     return data, columns
 
+def histogram_table(data, columns, M_c):
+    """
+    Returns a frequency table
+    """
+    print "in histogram"
+    if len(data) > 0:
+        # Construct a pandas.DataFrame out of data and columns
+        df = pandas.DataFrame(data=data, columns=columns)
+        if 'row_id' in df.columns:
+            df.drop(['row_id'], axis=1, inplace=True)
+
+        column = df.columns[0]
+        cctype = get_cctype_from_M_c(M_c, column)
+
+        summary_data = numpy.histogram(df[column])
+        print summary_data
+        data = summary_data.to_records(index=False)
+        columns = [column, 'frequency', 'probability']
+
+    return data, columns
+
 def get_index_from_colname(M_c, column):
     if column in M_c['name_to_idx'].keys():
         return M_c['name_to_idx'][column]

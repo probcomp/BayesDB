@@ -500,7 +500,6 @@ class Engine(object):
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
 
     ret = dict(data=data, columns=query_colnames)
-    print hist
     if plot:
       ret['M_c'] = M_c
     elif summarize | hist | freq:
@@ -509,7 +508,7 @@ class Engine(object):
       elif hist:
         data, columns = utils.histogram_table(ret['data'], ret['columns'], M_c)
       elif freq:
-        data, column = utils.freq_table(ret['data'], ret['columns'], M_c)
+        data, columns = utils.freq_table(ret['data'], ret['columns'], M_c)
       ret['data'] = data
       ret['columns'] = columns
     return ret
@@ -587,7 +586,7 @@ class Engine(object):
       elif hist:
         data, columns = utils.histogram_table(ret['data'], ret['columns'], M_c)
       elif freq:
-        data, column = utils.freq_table(ret['data'], ret['columns'], M_c)
+        data, columns = utils.freq_table(ret['data'], ret['columns'], M_c)
       ret['data'] = data
       ret['columns'] = columns
     return ret
