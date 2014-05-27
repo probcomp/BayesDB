@@ -229,7 +229,6 @@ class Parser(object):
         if bql_statement_ast.order_by != '':
             order_by = bql_statement_ast.order_by
         plot=(bql_statement_ast.plot == 'plot')
-        pairwise = (bql_statement_ast.pairwise == 'pairwise')
         column_list = None
         if bql_statement_ast.columns != '':
             column_list = bql_statement_ast.columns[0] ##TODO implement allowing comma separated columns here
@@ -237,7 +236,6 @@ class Parser(object):
         row_list = None
         if bql_statement_ast.rows != '':
             row_list = bql_statement_ast.rows ##TODO parse to list of rows
-        scatter = (bql_statement_ast.scatter == 'scatter') ##TODO add to grammar
         summarize=(bql_statement_ast.summarize == 'summarize')
         tablename = bql_statement_ast.btable
         components_name = None
@@ -269,8 +267,8 @@ class Parser(object):
                  threshold=threshold,
                  whereclause=whereclause), \
             dict(plot=plot, 
-                 scatter=scatter, 
-                 pairwise=pairwise, 
+                 scatter=False, ##TODO remove scatter from args
+                 pairwise=False, ##TODO remove pairwise from args
                  filename=filename)
 
     def parse_infer(self,bql_statement_ast):
