@@ -185,6 +185,15 @@ def get_cctype_from_M_c(M_c, column):
         cctype = 'continuous'
     return cctype
 
+# The 'inplace' argument to df.drop() was added to pandas in a version (which one??) that many people may
+# not have. So, check to see if 'inplace' exists, otherwise don't pass it -- this just copies the dataframe.
+def df_drop(df, column_list, **kwargs):
+    if 'inplace' in inspect.getargspec(df.drop).args:
+        df.drop(column_list, inplace=True, **kwargs)
+    else:
+        df = df.drop(column_list, **kwargs)
+
+
 def summarize_freqs(x, n=5):
     """
     Function to return most frequent n values of each column of the DataFrame being summarized.
@@ -232,12 +241,12 @@ def freq_table(data, columns, M_c):
     """
     Returns a frequency table
     """
-
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
+        # Remove row_id column since summary stats of row_id are meaningless
         if 'row_id' in df.columns:
-            df.drop(['row_id'], axis=1, inplace=True)
+            df_drop(df, ['row_id'], axis=1)
 
         column = df.columns[0]
         cctype = get_cctype_from_M_c(M_c, column)
@@ -256,8 +265,9 @@ def histogram_table(data, columns, M_c):
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
+        # Remove row_id column since summary stats of row_id are meaningless
         if 'row_id' in df.columns:
-            df.drop(['row_id'], axis=1, inplace=True)
+            df_drop(df, ['row_id'], axis=1)
 
         column = df.columns[0]
         cctype = get_cctype_from_M_c(M_c, column)
@@ -300,14 +310,6 @@ def summarize_table(data, columns, M_c):
     Return: columns should be the same, except with another column prepended called like "summaries" or something.
     Return: data should be summaries now.
     """
-    # The 'inplace' argument to df.drop() was added to pandas in a version (which one??) that many people may
-    # not have. So, check to see if 'inplace' exists, otherwise don't pass it -- this just copies the dataframe.
-    def df_drop(df, column_list, **kwargs):
-        if 'inplace' in inspect.getargspec(df.drop).args:
-            df.drop(column_list, inplace=True, **kwargs)
-        else:
-            df = df.drop(column_list, **kwargs)
-
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
