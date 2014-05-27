@@ -22,7 +22,6 @@ import utils
 import os
 import bql_grammar as bql
 import pyparsing as pp
-#import ast
 import functions
 import operator
 
