@@ -84,6 +84,7 @@ predictive_keyword = CaselessKeyword("predictive")
 group_keyword = CaselessKeyword("group")
 diagnostics_keyword = CaselessKeyword("diagnostics")
 summarize_keyword = CaselessKeyword("summarize").setResultsName("summarize")
+hist_keyword = CaselessKeyword("hist").setResultsName("hist")
 plot_keyword = CaselessKeyword("plot").setResultsName("plot")
 connected_keyword = CaselessKeyword("connected")
 components_keyword = CaselessKeyword("components")
@@ -515,7 +516,7 @@ functions_clause = Group(function_in_query +
                          ZeroOrMore(Suppress(comma_literal) + 
                                     function_in_query)).setResultsName('functions')
 
-query = (Optional(summarize_keyword | plot_keyword) +
+query = (Optional(hist_keyword | summarize_keyword | plot_keyword) +
          query_id + 
          functions_clause + 
          Suppress(from_keyword) + 
