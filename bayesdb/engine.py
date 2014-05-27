@@ -589,7 +589,7 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
       
     column_lists = self.persistence_layer.get_column_lists(tablename)
-    return dict(columns=list(column_lists.keys()))
+    return dict(columns=['column list'], data=[[k] for k in column_lists.keys()])
 
   def show_row_lists(self, tablename):
     """
