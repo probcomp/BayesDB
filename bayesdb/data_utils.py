@@ -251,7 +251,6 @@ def construct_pandas_df(query_obj):
         data = None
     else:
         data = query_obj['data']
-
     pandas_df = pandas.DataFrame(data = data, columns = query_obj['columns'])
     return pandas_df
 

@@ -29,7 +29,11 @@ import random
 import bayesdb.data_utils as data_utils
 from bayesdb.client import Client
 from bayesdb.engine import Engine
+from bayesdb.parser import Parser
+import bayesdb.bql_grammar as bql
+
 engine = Engine()
+parser = Parser()
 
 test_tablenames = None
 
@@ -78,11 +82,12 @@ def test_select():
 
   # Test a simple query: select two columns, no limit, no order, no where.
   # Check to make sure types of all inputs are correct, etc.
-  columnstring = 'name, qual_score'
-  whereclause = ''
+
+  functions = bql.bql_statement.parseString('select name, qual_score from test',parseAll=True).functions
+  whereclause = None
   limit = float('inf')
   order_by = False
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
   assert 'columns' in select_result
   assert 'data' in select_result
   assert select_result['columns'] == ['row_id', 'name', 'qual_score']
@@ -96,66 +101,70 @@ def test_select():
 
   ## Test limit: do the same query as before, but limit to 10
   limit = 10
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
   assert len(select_result['data']) == limit
 
   ## Test order by single column: desc
   ground_truth_ordered_results = sorted(original_select_result, key=lambda t: t[2], reverse=True)[:10]
   order_by = [('qual_score', True)]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  order_by = bql.bql_statement.parseString('select name, qual_score, similarity to 5 from test order by qual_score desc',parseAll=True).order_by
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
   assert select_result['data'] == ground_truth_ordered_results
 
   ## Test order by single column: asc
   ground_truth_ordered_results = sorted(original_select_result, key=lambda t: t[2])[:10]
   order_by = [('qual_score', False)]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  order_by = bql.bql_statement.parseString('select name, qual_score, similarity to 5 from test order by qual_score asc',parseAll=True).order_by
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
   assert select_result['data'] == ground_truth_ordered_results
 
   engine.initialize_models(test_tablename, 2)  
   
   # SIMILARITY TO <row> [WITH RESPECT TO <col>]
   # smoke tests
-  columnstring = 'name, qual_score, similarity to 5'
-  order_by = [('similarity to 5', True)]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  functions = bql.bql_statement.parseString('select name, qual_score, similarity to 5 from test order by similarity to 5',parseAll=True).functions
+  order_by = bql.bql_statement.parseString('select name, qual_score, similarity to 5 from test order by similarity to 5',parseAll=True).order_by
 
-  columnstring = 'name, qual_score, similarity to 5'
-  order_by = [('similarity to 5 with respect to qual_score', True)]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
 
-  columnstring = 'name, qual_score'
-  order_by = [('similarity to 5 with respect to qual_score', True, )]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  functions = bql.bql_statement.parseString('select name, qual_score, similarity to 5 from test order by similarity to 5',parseAll=True).functions
+  order_by = bql.bql_statement.parseString('select name, qual_score, similarity to 5 from test order by similarity to 5 with respect to qual_score',parseAll=True).order_by
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
+
+  functions = bql.bql_statement.parseString('select name, qual_score from test',parseAll=True).functions
+  order_by = bql.bql_statement.parseString('select * from test order by similarity to 5 with respect to qual_score',parseAll=True).order_by
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
   
-  columnstring = 'name, qual_score, similarity to 5 with respect to name'
-  order_by = [('similarity to 5', False)]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  functions = bql.bql_statement.parseString('select name, qual_score, similarity to 5 with respect to name from test',parseAll=True).functions
+  order_by = bql.bql_statement.parseString('select * from test order by similarity to 5',parseAll=True).order_by
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
 
-  columnstring = "name, qual_score, similarity to (name='Albany NY') with respect to qual_score"
-  order_by = [('similarity to 5', False)]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  functions = bql.bql_statement.parseString("select name, qual_score, similarity to name='Albany NY' with respect to qual_score from test",parseAll=True).functions
+  order_by = bql.bql_statement.parseString('select * from test order by similarity to 5',parseAll=True).order_by
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
 
-  columnstring = '*'
-  whereclause = 'qual_score > 6'
-  order_by = [('similarity to 5 with respect to name', True)]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  functions = bql.bql_statement.parseString('select * from test',parseAll=True).functions
+  order_by = bql.bql_statement.parseString('select * from test order by similarity to 5 with respect to name',parseAll=True).order_by
+  whereclause = bql.bql_statement.parseString('select * from test where qual_score > 6',parseAll=True).where_conditions
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
 
-  columnstring = '*'
   # Albany NY's row id is 3
-  whereclause = "name='Albany NY'"
-  order_by = [('similarity to 5 with respect to name', True)]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  whereclause = bql.bql_statement.parseString('select * from test where name="Albany NY"',parseAll=True).where_conditions
+  functions = bql.bql_statement.parseString('select * from test',parseAll=True).functions
+  order_by = bql.bql_statement.parseString('select * from test order by similarity to 5 with respect to name',parseAll=True).order_by
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
 
   
   # TYPICALITY (of row)
   # smoke tests
-  columnstring = 'name, qual_score, typicality'
   order_by = False
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  whereclause = None
+  functions = bql.bql_statement.parseString('select name, qual_score, typicality from test',parseAll=True).functions
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
 
-  columnstring = 'name, qual_score, typicality'
-  order_by = [('typicality', True)]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  functions = bql.bql_statement.parseString('select name, qual_score, typicality from test',parseAll=True).functions
+  order_by = bql.bql_statement.parseString('select * from test order by typicality',parseAll=True).order_by
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
 
   # TODO: test all other single-column functions
   # PROBABILITY <col>=<val>
@@ -164,9 +173,9 @@ def test_select():
   # TODO: test all single-column aggregate functions
   
   # TYPICALITY OF <col>
-  columnstring = 'typicality of name'
-  order_by = [('typicality', True)]
-  select_result = engine.select(test_tablename, columnstring, whereclause, limit, order_by, None)
+  functions = bql.bql_statement.parseString('select typicality of name from test',parseAll=True).functions
+  order_by = bql.bql_statement.parseString('select * from test order by typicality',parseAll=True).order_by
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
   
   # DEPENDENCE PROBABILITY OF <col> WITH <col> #DEPENDENCE PROBABILITY TO <col>
   # MUTUAL INFORMATION OF <col> WITH <col> #MUTUAL INFORMATION WITH <col>
@@ -250,13 +259,13 @@ def test_infer():
   engine = Engine(seed=0)
   engine.initialize_models(test_tablename, 20)
 
-  columnstring = 'name, qual_score'
-  whereclause = ''
+  functions = bql.bql_statement.parseString('infer name, qual_score from test',parseAll=True).functions
+  whereclause = None
   limit = float('inf')
   order_by = False
   numsamples = 30
   confidence = 0
-  infer_result = engine.infer(test_tablename, columnstring, '', confidence, whereclause, limit, numsamples, order_by)
+  infer_result = engine.infer(test_tablename, functions, None, confidence, whereclause, limit, numsamples, order_by)
   assert 'columns' in infer_result
   assert 'data' in infer_result
   assert infer_result['columns'] == ['row_id', 'name', 'qual_score']
@@ -280,7 +289,7 @@ def test_infer():
 
   ## Now, try infer with higher confidence, and make sure that name isn't inferred anymore.
   confidence = 0.9
-  infer_result = engine.infer(test_tablename, columnstring, '', confidence, whereclause, limit, numsamples, order_by)
+  infer_result = engine.infer(test_tablename, functions, None, confidence, whereclause, limit, numsamples, order_by)
 
   for row in range(5):
     ## TODO: what do missing values look like? these should be missing
@@ -295,11 +304,12 @@ def test_simulate():
   engine.initialize_models(test_tablename, 2)
   
   columnstring = 'name, qual_score'
-  whereclause = ''
-  givens = ''
+  functions = bql.bql_statement.parseString('simulate name, qual_score from test',parseAll=True).functions
+  whereclause = None
+  givens = None
   order_by = False
   numpredictions = 10
-  simulate_result = engine.simulate(test_tablename, columnstring, '', givens, whereclause, numpredictions, order_by)
+  simulate_result = engine.simulate(test_tablename, functions, None, givens, numpredictions, order_by)
   assert 'columns' in simulate_result
   assert 'data' in simulate_result
   assert simulate_result['columns'] == ['name', 'qual_score']
@@ -411,12 +421,12 @@ def test_estimate_columns():
   all_columns = metadata['M_c']['name_to_idx'].keys()
   engine.initialize_models(test_tablename, 2)
   
-  whereclause = ''
+  whereclause = None
   limit = float('inf')
-  order_by = None
+  order_by = False
   name = None
-  columnstring = ''
-  columns = engine.estimate_columns(test_tablename, columnstring, whereclause, limit, order_by, name)['columns']
+  functions = None
+  columns = engine.estimate_columns(test_tablename, functions, whereclause, limit, order_by, name)['columns']
   assert columns == all_columns
   
 if __name__ == '__main__':
