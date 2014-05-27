@@ -474,3 +474,14 @@ def test_user_metadata():
 
   # Test that show metadata also works when no keys are specified
   client('show metadata for %s' % (test_tablename), debug=True, pretty=False)
+
+def test_freq_hist():
+  test_tablename = create_dha()
+  global client, test_filenames
+
+  # Test that freq and hist work and return a DataFrame
+  out = client('freq select qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
+  assert type(out) == pandas.DataFrame
+
+  out = client('hist select qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
+  assert type(out) == pandas.DataFrame
