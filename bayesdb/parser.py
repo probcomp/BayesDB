@@ -35,7 +35,7 @@ class Parser(object):
         try:
             bql_blob_ast = bql.bql_input.parseString(input_string, parseAll=True)
         except pp.ParseException as x:
-            raise utils.BayesDBParseError("Invalid query. Could not parse (Line {e.lineno}, column {e.col}):\n\t'{e.line}'".format(e=x))
+            raise utils.BayesDBParseError("Invalid query. Could not parse (Line {e.lineno}, column {e.col}):\n\t'{e.line}'\n\t".format(e=x) + ' ' * x.col + '^')
         return bql_blob_ast
         
     def split_statements(self,bql_blob_ast):
@@ -229,7 +229,6 @@ class Parser(object):
         if bql_statement_ast.order_by != '':
             order_by = bql_statement_ast.order_by
         plot=(bql_statement_ast.plot == 'plot')
-        pairwise = (bql_statement_ast.pairwise == 'pairwise')
         column_list = None
         if bql_statement_ast.columns != '':
             column_list = bql_statement_ast.columns[0] ##TODO implement allowing comma separated columns here
@@ -237,7 +236,6 @@ class Parser(object):
         row_list = None
         if bql_statement_ast.rows != '':
             row_list = bql_statement_ast.rows ##TODO parse to list of rows
-        scatter = (bql_statement_ast.scatter == 'scatter') ##TODO add to grammar
         summarize=(bql_statement_ast.summarize == 'summarize')
         hist = (bql_statement_ast.hist == 'hist')
         freq = (bql_statement_ast.freq == 'freq')
@@ -273,8 +271,8 @@ class Parser(object):
                  threshold=threshold,
                  whereclause=whereclause), \
             dict(plot=plot, 
-                 scatter=scatter, 
-                 pairwise=pairwise, 
+                 scatter=False, ##TODO remove scatter from args
+                 pairwise=False, ##TODO remove pairwise from args
                  filename=filename)
 
     def parse_infer(self,bql_statement_ast):
