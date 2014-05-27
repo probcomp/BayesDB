@@ -1048,6 +1048,25 @@ def test_select():
     assert args['modelids'] == d['modelids']
     assert args['summarize'] == d['summarize']
 
+    methods, args, client_dict = parser.parse_single_statement(bql_statement.parseString('freq select a from t'))
+    d = dict(tablename=tablename, plot=plot, modelids=None, summarize=False, hist=False, freq=True)
+    assert method == 'select'
+    assert args['tablename'] == d['tablename']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
+    assert args['freq'] == d['freq']
+    assert args['hist'] == d['hist']
+
+    methods, args, client_dict = parser.parse_single_statement(bql_statement.parseString('hist select a from t'))
+    d = dict(tablename=tablename, plot=plot, modelids=None, summarize=False, hist=True, freq=False)
+    assert method == 'select'
+    assert args['tablename'] == d['tablename']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['freq'] == d['freq']
+    assert args['hist'] == d['hist']
+
 def test_infer(): ##TODO
     ##TODO test client_dict
     tablename = 't'
