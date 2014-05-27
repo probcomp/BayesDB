@@ -253,7 +253,6 @@ def histogram_table(data, columns, M_c):
     """
     Returns a frequency table
     """
-    print "in histogram"
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
@@ -263,10 +262,24 @@ def histogram_table(data, columns, M_c):
         column = df.columns[0]
         cctype = get_cctype_from_M_c(M_c, column)
 
-        summary_data = numpy.histogram(df[column])
-        print summary_data
+        hist_data = numpy.histogram(df[column])
+        bin_mins = hist_data[1][:-1]
+        bin_maxs = hist_data[1][1:]
+        bin_freqs = hist_data[0]
+        bin_probs = bin_freqs / float(sum(bin_freqs))
+
+        summary_data = pandas.DataFrame({
+            'bin_minimum': bin_mins,
+            'bin_maximum': bin_maxs,
+            'frequency'  : bin_freqs,
+            'probability': bin_probs
+        })
+
+        # Have to reorder columns, otherwise pandas defaults to alphabetical order
+        columns = ['bin_minimum', 'bin_maximum', 'frequency', 'probability']
+        summary_data = summary_data[columns]
+
         data = summary_data.to_records(index=False)
-        columns = [column, 'frequency', 'probability']
 
     return data, columns
 
