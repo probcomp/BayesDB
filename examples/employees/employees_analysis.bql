@@ -20,6 +20,6 @@
 
 DROP BTABLE employees_demo;
 CREATE BTABLE employees_demo FROM employees.csv;
-LOAD MODELS employees_models.pkl.gz FOR employees_demo;
+LOAD MODELS employees_models.pkl.gz INTO employees_demo;
 
 SIMULATE salary FROM employees_demo GIVEN division='sales' TIMES 100;

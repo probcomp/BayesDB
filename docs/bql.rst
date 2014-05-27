@@ -37,9 +37,11 @@ It is necessary to run INITIALIZE MODELS and ANALYZE in order for BayesDB to eva
 
 ::
 
-	INITIALIZE <num_models> MODELS FOR <btable>
+	INITIALIZE <num_models> MODELS FOR <btable> [WITH CONFIG <config>]
 
 Initializes <num_models> models. 
+
+Available models include "naive bayes" and "crp mixture"
 
 ::
 
@@ -104,15 +106,15 @@ BayesDB has five fundamental query statements: SELECT, INFER, SIMULATE, ESTIMATE
 
 SELECT is just like SQL's SELECT, except in addition to selecting, filtering (with where), and ordering raw column values, you may also use predictive functions in any of those clauses::
 
-   SELECT [HIST] <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <file>]
+   SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>]
 
-INFER is just like SELECT, except that it also tries to fill in missing values. The user must specify the desired confidence level to use (a number between 0 and 1, where 0 means "fill in every missing value with whatever your best guess is", and 1 means "only fill in a missing value if you're sure what it is"). Optionally, the user may specify the number of samples to use when filling in missing values: the default value is good in general, but if you know what you're doing and want higher accuracy, you can increase the numer of samples used::
+INFER is just like SELECT, except that it also tries to fill in missing values. The user may specify the desired confidence level to use (a number between 0 and 1, where 0 means "fill in every missing value with whatever your best guess is", and 1 means "only fill in a missing value if you're sure what it is"). If confidence is not specified, 0 is chosen as default. Optionally, the user may specify the number of samples to use when filling in missing values: the default value is good in general, but if you know what you're doing and want higher accuracy, you can increase the numer of samples used::
 
-   INFER [HIST] <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [SAVE TO <file>]
+   INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>]
 
 SIMULATE generates new rows from the underlying probability model a specified number of times::
 
-   SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] TIMES <times> [SAVE TO <file>]
+   SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
 
 ESTIMATE COLUMNS is like a SELECT statement, but lets you select columns instead of rows::
 
@@ -126,7 +128,7 @@ In addition, you may also add "SAVE CONNECTED COMPONENTS WITH THRESHOLD <thresho
 
 You may also compute pairwise functions of rows with ESTIMATE PAIRWISE ROW::
 
-  ESTIMATE PAIRWISE ROW SIMILARITY FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
+  ESTIMATE PAIRWISE ROW SIMILARITY [WITH RESPECT TO <columns|column_lists>]FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
 
 In the above query specifications, you may be wondering what some of the notation, such as <columns|functions> and <whereclause>, means. <columns|functions> just means a list of comma-separated column names or function specifications::
 
@@ -136,6 +138,19 @@ In the above query specifications, you may be wondering what some of the notatio
 <whereclause> specifies an AND-separated list of <column|function> <operator> <value>, where operator must be one of (=, <, <=, >, >=)::
 
   SELECT * FROM table WHERE name = 'Bob' AND age <= 18 AND TYPICALITY > 0.5 ....
+
+Query Modifiers
+~~~~~~~~~~~~~~~
+
+SUMMARIZE or PLOT may be prepended to any query that returns table-formatted output (almost every query) in order to return a summary of the data table instead of the raw data itself. This is extremely useful as a tool to quickly understand a huge result set: it quickly becomes impossible to see trends in data by eye without the assistance of SUMMARIZE or PLOT.
+
+SUMMARIZE displays summary statistics of each of the output columns: for numerical data, it displays information like the mean, standard deviation, min, and max, and for categorical data it displays the most common values and their probabilities::
+
+  SUMMARIZE SELECT * FROM table...
+
+PLOT displays plots of the marginal distributions of every single output column, as well as the joint distributions of every pair of output columns. PLOT displays a heat map for pairs of numerical columns, the exact joint distribution for pairs of categorical columns, and a series of box plots for mixed numerical/categorical data. Many tools, like R and pandas, have functionality similar to PLOT when all the data is the same type, but PLOT is specially designed and implemented from the ground up to behave well with mixed datatypes::
+
+  PLOT SELECT * FROM table...
 
 
 Column Lists
@@ -152,9 +167,9 @@ You can print out the names of the stored column lists in your btable with::
 
    SHOW COLUMN LISTS FOR <btable>
 
-And you can view the columns in a given column list with::
+And you can view the columns in a given column list or table with::
 
-   SHOW COLUMNS <column_list> FROM <btable>
+   SHOW COLUMNS FOR <column_list|btable>
 
 Row Lists
 ~~~~~~~~~
@@ -216,21 +231,21 @@ Functions of two columns may be used in the following queries::
   ESTIMATE PAIRWISE (omit the 'OF' clause)
   SELECT (include the 'OF' clause; they only return one row)  
 
-Here are the four functions::  
+Here are the three functions::  
       
-  DEPENDENCE PROBABILITY [OF <column1> WITH <column2>]
+  DEPENDENCE PROBABILITY [OF <column1>] WITH <column2>
 
 The dependence probability between two columns is a measure of how likely it is that the two columns are dependent (opposite of indepdendent). Note that this does not measure the strength of the relationship between the two columns; it merely measures the probability that there is any relationship at all.
   
 ::
    
-  MUTUAL INFORMATION [OF <column1> WITH <column2>]
+  MUTUAL INFORMATION [OF <column1>] WITH <column2>
 
 Mutual information between two columns measures how much information a value in one column gives you about the value in the other column. If mutual information is 0, then knowing the first column tells you nothing about the other column (they are independent). Mutual information is always nonnegative, and is measured in bits.
 
 ::
 
-  CORRELATION [OF <column1> WITH <column2>]
+  CORRELATION [OF <column1>] WITH <column2>
 
 This is the standard Pearson correlation coefficient between the two columns. All rows with missing values in either or both of the two columns will be removed before calculating the correlation coefficient.
 
@@ -292,4 +307,86 @@ Here are some examples::
 
   ESTIMATE COLUMNS FROM table WHERE TYPICALITY > 0.6 AND CORRELATION WITH name > 0.5 ORDER BY DEPENDENCE PROBABILITY WITH name;
 
+
+Summary Statistics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To view summary statistics of query results, SUMMARIZE can be prepended to SELECT, INFER, and SIMULATE statements::
+
+  SUMMARIZE <SELECT|INFER|SIMULATE> <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>]
+
+The first column of the output from SUMMARIZE will be statistic labels:
+``count``, ``unique``, ``mean``, ``std``, ``min``, ``25%``, ``50%``, ``75%``, and ``max`` correspond to the output from ``pandas.Series.describe``, which is dependent on whether the column is discrete or continuous.
+
+``mode1``, ``mode2``, ``mode3``, ``mode4``, ``mode5`` are the 5 most common values in the column, *excluding missing values*.
+
+``prob_mode1``, ``prob_mode2``, ``prob_mode3``, ``prob_mode4``, ``prob_mode5`` are the empirical probabilities of the corresponding *i*-th most common value (number of occurrences / number of observations *including missing values*)
+
+Modal values and their empirical probabilities are returned for every column, whether discrete or continuous.
+
+
+Saving and Reviewing Metadata
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Metadata (data describing the data) can remind the user about what's contained in a btable, or what a particular column of data means. For each btable, metadata is stored as pairs consisting of a key and a value, and is saved at two different levels: metadata related to entire btables and metadata related to columns of data (typically referred to as column labels).
+
+For example, a user might set the key ``original_file_name = data_download_2014_04_17.csv`` in order to recall which version of the file is saved in the btable, or might set a column label ``yr = Year of observation``.
+
+Metadata for btables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are no restrictions on metadata keys, but some examples at the btable level might be ``original_file_name``, ``origin_url``, ``date_retrieved``,
+``misc_note``, etc.
+
+To add metadata to a btable directly::
+
+  UPDATE METADATA FOR <btable> SET <metadata-key1 = value1>[, <metadata-key2 = value2>...]
+
+Metadata keys and values should not be quoted unless the quotes are intended to be part of the key or label, and should also not include commas.
+
+Adding a lot of metadata to a btable might become tedious, especially if the process ever needs to be repeated, so it's also possible to add metadata to a btable from a file::
+
+  UPDATE METADATA FOR <btable> FROM <filename.csv>
+
+The file in <filename.csv> should be a text CSV file with two columns, with the first value on each line being a column name and the second value its intended label. The first line of the file will be assumed a header and therefore ignored. As an example, the first three lines of the file might be::
+
+  key,value
+  original_file_name,data_download_2014_04_17.csv
+  sample_note,data in btable is a 20% random sample of the full original file
+
+Metadata for columns of btables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Labeling columns is a common metadata operations, and has its own statement to assign labels directly::
+
+  LABEL COLUMNS FOR <btable> SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...]
+
+Column labels should not be quoted unless the quotes are part of the label, and should not include commas. Similarly to btable-level metadata, column labels can be added to a btable from a file::
+
+  LABEL COLUMNS FOR <btable> FROM <filename.csv>
+
+As with loading btable-level metadata from a file, the file in <filename.csv> should be a text CSV file with two columns, with the first value on each line being a column name and the second value its intended label. The first line of the file will be assumed a header and therefore ignored. As an example, the first three lines of the file might be::
+
+  column,label
+  age,Observed student's age as of 1 Jan 2014
+  grade,Student's enrolled grade at the beginning of the 2013-14 school year
+
+Reviewing btable metadata and column labels
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To see all metadata stored for a given btable as metadata key and value pairs::
+
+  SHOW METADATA FOR <btable>
+
+To see only the metadata values associated with specific keys::
+
+  SHOW METADATA FOR <btable> [<metadata-key1> [, <metadata-key2>...]]
+
+Similarly to the SHOW METADATA statements, column labels can be reviewed either all at once, by not specifying any column names::
+
+  SHOW LABEL FOR <btable>
+
+Or, if a set of column names is given, the output shows column name and label pairs for those columns::
+
+  SHOW LABEL FOR <btable> [<column-name-1> [, <column-name-2>...]]
 

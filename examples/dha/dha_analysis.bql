@@ -21,9 +21,9 @@
 -- Create a fresh btable for the demo, and load in pre-existing samples
 DROP BTABLE dha_demo;
 CREATE BTABLE dha_demo FROM dha.csv;
-LOAD MODELS dha_models.pkl.gz FOR dha_demo;
+LOAD MODELS dha_models.pkl.gz INTO dha_demo;
 
-SELECT qual_score FROM dha_demo ORDER BY qual_score LIMIT 5;
+SELECT qual_score FROM dha_demo ORDER BY qual_score DESC LIMIT 5;
 SELECT qual_score FROM dha_demo ORDER BY qual_score ASC LIMIT 5;
 
 SHOW SCHEMA FOR dha_demo;
@@ -31,17 +31,18 @@ SHOW SCHEMA FOR dha_demo;
 -- EXECUTE FILE dha_datatypes.bql
 SHOW MODELS FOR dha_demo;
 
-ESTIMATE COLUMNS FROM dha_demo WHERE DEPENDENCE PROBABILITY TO 'name' > 0.05 ORDER BY TYPICALITY LIMIT 10;
+ESTIMATE COLUMNS FROM dha_demo WHERE DEPENDENCE PROBABILITY WITH name > 0.05 ORDER BY TYPICALITY DESC LIMIT 10;
+ESTIMATE COLUMNS FROM dha_demo WHERE DEPENDENCE PROBABILITY WITH name > 0.05 ORDER BY TYPICALITY LIMIT 10;
 
 -- Examine column dependencies
 SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo LIMIT 10;
 ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha_demo;
 
 -- Examine hospitals similar to Albany
-SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY SIMILARITY TO (name='Albany NY') LIMIT 10;
-SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY SIMILARITY TO (name='Albany NY') WITH RESPECT TO qual_score LIMIT 10;
-SELECT name, qual_score, ami_score,  pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY SIMILARITY TO (name='Albany NY') WITH RESPECT TO pymt_p_visit_ratio LIMIT 10;
+SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY SIMILARITY TO name='Albany NY' DESC LIMIT 10;
+SELECT name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY SIMILARITY TO name='Albany NY' WITH RESPECT TO qual_score DESC LIMIT 10;
+SELECT name, qual_score, ami_score,  pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo ORDER BY SIMILARITY TO name='Albany NY' WITH RESPECT TO pymt_p_visit_ratio DESC LIMIT 10;
 
 -- Simulate
-SIMULATE name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo WHERE ami_score=95.0  TIMES 10;
-SIMULATE name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo WHERE ttl_mdcr_spnd=50000 TIMES 10;
+SIMULATE name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo GIVEN ami_score=95.0  TIMES 10;
+SIMULATE name, qual_score, ami_score, pymt_p_visit_ratio, ttl_mdcr_spnd, hosp_reimb_ratio, hosp_reimb_p_dcd, md_copay_p_dcd, ttl_copay_p_dcd FROM dha_demo GIVEN ttl_mdcr_spnd=50000 TIMES 10;

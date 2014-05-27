@@ -247,7 +247,11 @@ def construct_pandas_df(query_obj):
 
     Currently this is only called if the user specifies pandas_output = True
     """
-    pandas_df = pandas.DataFrame(data = query_obj['data'], columns = query_obj['columns'])
+    if len(query_obj['data']) == 0:
+        data = None
+    else:
+        data = query_obj['data']
+    pandas_df = pandas.DataFrame(data = data, columns = query_obj['columns'])
     return pandas_df
 
 def read_pandas_df(pandas_df):

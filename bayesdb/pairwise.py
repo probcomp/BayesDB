@@ -31,8 +31,9 @@ import data_utils as du
 import select_utils
 import functions
 import utils
+import parser
 
-def parse_pairwise_function(function_name, column=True, M_c=None, column_lists={}):
+def parse_pairwise_function(function_name, column=True, M_c=None, column_lists={}): ##TODO move to parser
     if column:
         if function_name == 'mutual information':
             return functions._mutual_information
@@ -45,7 +46,9 @@ def parse_pairwise_function(function_name, column=True, M_c=None, column_lists={
     else:
         # TODO: need to refactor to support similarity with respect to column, because then we need to parse
         # and return the column id here.
-        target_columns = functions.parse_similarity_pairwise(function_name, M_c, None, column_lists)
+        ##TODO temporary hack - move to parser maybe combine with parse_functions
+        p = parser.Parser()
+        _, target_columns = p.get_args_similarity(function_name, M_c, None, column_lists)
         if target_columns is None:
             return (functions._similarity, None)
         elif type(target_columns) == list:
@@ -53,7 +56,7 @@ def parse_pairwise_function(function_name, column=True, M_c=None, column_lists={
         else:
             raise utils.BayesDBParseError('Invalid row function: %s' % function_name)
 
-def get_columns(column_names, M_c):
+def get_columns(column_names, M_c): ##TODO move to parser or utils
     # If using a subset of the columns, get the appropriate names, and figure out their indices.
     if column_names is not None:
         column_indices = [M_c['name_to_idx'][name] for name in column_names]
@@ -93,11 +96,12 @@ def compute_raw_row_pairwise_matrix(function, arg, X_L_list, X_D_list, M_c, T, e
 
 def reorder_indices_by_cluster(matrix):
     # Hierarchically cluster columns.
-    import hcluster
-    Y = hcluster.pdist(matrix)
-    Z = hcluster.linkage(Y)
+    from scipy.spatial.distance import pdist
+    from scipy.cluster.hierarchy import linkage, dendrogram
+    Y = pdist(matrix)
+    Z = linkage(Y)
     pylab.figure()
-    hcluster.dendrogram(Z)
+    dendrogram(Z)
     intify = lambda x: int(x.get_text())
     reorder_indices = map(intify, pylab.gca().get_xticklabels())
     pylab.clf() ## use instead of close to avoid error spam
