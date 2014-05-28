@@ -192,11 +192,6 @@ def test_simulate():
   assert len(client("simulate name from %s given name='Albany NY' AND ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
   assert len(client("simulate name from %s given ami_score = 80 times 5" % test_tablename, debug=True, pretty=False)[0]) == 5
 
-  # Test that simulate can produce a new btable with INTO
-  client('drop btable test_btable_simulate', yes=True)
-  client('simulate name, qual_score from %s times 5 into test_btable_simulate' % test_tablename, debug=True, pretty=False)
-  assert len(client('select * from test_btable_simulate', debug=True, pretty=False)[0]) == 5
-
 def test_estimate_columns():
   """ smoke test """
   test_tablename = create_dha()
@@ -388,16 +383,25 @@ def test_select():
   client("select typicality of qual_score, typicality of name from %s" % (test_tablename), debug=True, pretty=False)
   client("select typicality of qual_score from %s" % (test_tablename), debug=True, pretty=False)
 
-  # Test that select can produce a new btable with INTO
-  client('drop btable test_btable_select', yes=True)
-  client('select name, qual_score from %s limit 5 into test_btable_select' % test_tablename, debug=True, pretty=False)
-  assert len(client('select * from test_btable_select', debug=True, pretty=False)[0]) == 5
-
   # correlation with missing values
   test_tablename = create_dha(path='data/dha_missing.csv')
   client("select name, qual_score, correlation of name with qual_score from %s" % (test_tablename), debug=True, pretty=False)
 
+def test_into():
+  test_tablename = create_dha()
+  global client
 
+  # Test that select can produce a new btable with INTO, and that it can be analyzed and manipulated like other btables
+  client('drop btable test_btable_select', yes=True)
+  client('select name, qual_score from %s limit 5 into test_btable_select' % test_tablename, debug=True, pretty=False)
+  assert len(client('select * from test_btable_select', debug=True, pretty=False)[0]) == 5
+
+  client('summarize select * from test_btable_select')
+  client('label columns for test_btable_select set qual_score = quality')
+
+  client('initialize 2 models for test_btable_select')
+  client('analyze test_btable_select for 2 iterations')
+  client('simulate * from test_btable_select times 5')
 
 def test_pandas():
   test_tablename = create_dha()
