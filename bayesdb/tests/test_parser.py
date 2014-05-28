@@ -950,6 +950,7 @@ def test_parse_functions():
 def test_select():
     ##TODO test client_dict
     tablename = 't'
+    newtablename = 'newtable'
     functions = function_in_query.parseString('*',parseAll=True)
     whereclause = None
     limit = float('inf')
@@ -1048,6 +1049,24 @@ def test_select():
     assert args['modelids'] == d['modelids']
     assert args['summarize'] == d['summarize']
 
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select * from t where a=6 and b = 7 order by b limit 10 into newtable'))
+    order_by = [('b', True)],
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False, newtablename=newtablename)
+    assert method == 'select'
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'][0].function.column == 'a'
+    assert args['whereclause'][0].value == '6'
+    assert args['whereclause'][1].function.column == 'b'
+    assert args['whereclause'][1].value == '7'
+    assert args['limit'] == d['limit']
+    #assert args['order_by'] == d['order_by'] ##TODO
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
+    assert args['newtablename'] == d['newtablename']
+
     methods, args, client_dict = parser.parse_single_statement(bql_statement.parseString('freq select a from t'))
     d = dict(tablename=tablename, plot=plot, modelids=None, summarize=False, hist=False, freq=True)
     assert method == 'select'
@@ -1070,6 +1089,7 @@ def test_select():
 def test_infer(): ##TODO
     ##TODO test client_dict
     tablename = 't'
+    newtablename = 'newtable'
     functions = function_in_query.parseString('*',parseAll=True)
     whereclause = None
     limit = float('inf')
@@ -1151,6 +1171,23 @@ def test_infer(): ##TODO
     assert args['modelids'] == d['modelids']
     assert args['summarize'] == d['summarize']
 
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer * from t where a=6 and b = 7 limit 10 into newtable'))
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False, newtablename=newtablename)
+    assert method == 'infer'
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'][0].function.column == 'a'
+    assert args['whereclause'][0].value == '6'
+    assert args['whereclause'][1].function.column == 'b'
+    assert args['whereclause'][1].value == '7'
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
+    assert args['newtablename'] == d['newtablename']
+
     order_by = [('b', False)]
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer * from t where a=6 and b = 7 order by b limit 10'))
     d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
@@ -1178,6 +1215,22 @@ def test_simulate(): ##TODO
     assert args['order_by'] == False
     assert args['modelids'] == None
     assert args['newtablename'] == None
+    assert args['givens'] == None
+    assert args['numpredictions'] == 10
+
+    assert client_dict['pairwise'] == False
+    assert client_dict['filename'] == None
+    assert client_dict['scatter'] == False
+
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('simulate * from t times 10 into newtable'))
+    assert method == 'simulate'
+    assert args['tablename'] == 't'
+    assert args['functions'][0].column_id == '*'
+    assert args['summarize'] == False
+    assert args['plot'] == False
+    assert args['order_by'] == False
+    assert args['modelids'] == None
+    assert args['newtablename'] == 'newtable'
     assert args['givens'] == None
     assert args['numpredictions'] == 10
 

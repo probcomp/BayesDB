@@ -265,7 +265,7 @@ def test_infer():
   order_by = False
   numsamples = 30
   confidence = 0
-  infer_result = engine.infer(test_tablename, functions, None, confidence, whereclause, limit, numsamples, order_by)
+  infer_result = engine.infer(test_tablename, functions, confidence, whereclause, limit, numsamples, order_by)
   assert 'columns' in infer_result
   assert 'data' in infer_result
   assert infer_result['columns'] == ['row_id', 'name', 'qual_score']
@@ -289,7 +289,7 @@ def test_infer():
 
   ## Now, try infer with higher confidence, and make sure that name isn't inferred anymore.
   confidence = 0.9
-  infer_result = engine.infer(test_tablename, functions, None, confidence, whereclause, limit, numsamples, order_by)
+  infer_result = engine.infer(test_tablename, functions, confidence, whereclause, limit, numsamples, order_by)
 
   for row in range(5):
     ## TODO: what do missing values look like? these should be missing
@@ -309,7 +309,7 @@ def test_simulate():
   givens = None
   order_by = False
   numpredictions = 10
-  simulate_result = engine.simulate(test_tablename, functions, None, givens, numpredictions, order_by)
+  simulate_result = engine.simulate(test_tablename, functions, givens, numpredictions, order_by)
   assert 'columns' in simulate_result
   assert 'data' in simulate_result
   assert simulate_result['columns'] == ['name', 'qual_score']

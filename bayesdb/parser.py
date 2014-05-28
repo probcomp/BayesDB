@@ -22,7 +22,6 @@ import utils
 import os
 import bql_grammar as bql
 import pyparsing as pp
-#import ast
 import functions
 import operator
 
@@ -218,7 +217,9 @@ class Parser(object):
         if bql_statement_ast.as_column_list != '':
             ## TODO name is a bad name
             name = bql_statement_ast.as_column_list
-        newtablename=None ##TODO implement into
+        newtablename = None
+        if bql_statement_ast.newtablename != '':
+            newtablename = bql_statement_ast.newtablename
         numpredictions = None
         if bql_statement_ast.times != '':
             numpredictions = int(bql_statement_ast.times)
@@ -326,6 +327,7 @@ class Parser(object):
         limit = args_dict['limit']
         order_by = args_dict['order_by']
         modelids = args_dict['modelids']
+        newtablename = args_dict['newtablename']
 
         pairwise = client_dict['pairwise']
         filename = client_dict['filename']
@@ -344,7 +346,7 @@ class Parser(object):
         return 'select', \
             dict(tablename=tablename, whereclause=whereclause, 
                  functions=functions, limit=limit, order_by=order_by, plot=plot, 
-                 modelids=modelids, summarize=summarize, hist=hist, freq=freq), \
+                 modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename), \
             dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
     def parse_simulate(self,bql_statement_ast):

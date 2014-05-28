@@ -30,6 +30,7 @@ import math
 import ast
 import sys
 import random
+import pandas
 
 import pylab
 import numpy
@@ -192,6 +193,31 @@ class Engine(object):
     ret['message'] = 'Updated schema.'
     return ret
     
+  def create_btable_from_existing(self, tablename, colnames_full, data, M_c):
+    """
+    Used in INTO statements to create a new btable as a portion of an existing one.
+    """
+    ## First, test if table with this name already exists, and fail if it does
+    if self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
+
+    # Remove row_id from table
+    if 'row_id' in colnames_full:
+      df = pandas.DataFrame(data=data, columns=colnames_full)
+      utils.df_drop(df, ['row_id'], axis=1)
+      data = df.to_records(index=False)
+      colnames_full = df.columns
+
+    cctypes_full = [utils.get_cctype_from_M_c(M_c, col) for col in colnames_full]
+    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, data, cctypes=cctypes_full)
+
+    # variables without "_full" don't include ignored columns.
+    raw_T, cctypes, colnames = data_utils.remove_ignore_cols(data, cctypes_full, colnames_full)
+    T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+    self.persistence_layer.create_btable(tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, data)
+
+    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
+
   def create_btable(self, tablename, header, raw_T_full, cctypes_full=None):
     """Uplooad a csv table to the predictive db.
     cctypes must be a dictionary mapping column names
@@ -414,7 +440,7 @@ class Engine(object):
     ret['message'] = 'Analyze complete.'
     return ret
 
-  def infer(self, tablename, functions, newtablename, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False, hist=False, freq=False):
+  def infer(self, tablename, functions, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """
     Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
@@ -430,9 +456,9 @@ class Engine(object):
       numsamples=50 ##TODO maybe put this in a config file
       
     return self.select(tablename, functions, whereclause, limit, order_by,
-                       impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq)
+                       impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename)
     
-  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False):
+  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """
     BQL's version of the SQL SELECT query.
     
@@ -499,6 +525,10 @@ class Engine(object):
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
 
+    # Execute INTO statement
+    if newtablename is not None:
+      self.create_btable_from_existing(newtablename, query_colnames, data, M_c)
+
     ret = dict(data=data, columns=query_colnames)
     if plot:
       ret['M_c'] = M_c
@@ -514,7 +544,7 @@ class Engine(object):
     return ret
 
 
-  def simulate(self, tablename, functions, newtablename, givens, numpredictions, order_by, plot=False, modelids=None, summarize=False, hist=False, freq=False):
+  def simulate(self, tablename, functions, givens, numpredictions, order_by, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
     # TODO: whereclause not implemented.
     if not self.persistence_layer.check_if_table_exists(tablename):
@@ -576,7 +606,11 @@ class Engine(object):
           row.append(data_utils.convert_code_to_value(M_c, idx, out_row[i]))
           i += 1
       data.append(row)
-      
+
+    # Execute INTO statement
+    if newtablename is not None:
+      self.create_btable_from_existing(newtablename, colnames, data, M_c)
+          
     ret = {'columns': colnames, 'data': data}
     if plot:
       ret['M_c'] = M_c

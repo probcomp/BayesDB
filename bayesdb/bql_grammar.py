@@ -550,7 +550,8 @@ query = (Optional(freq_keyword | hist_keyword | summarize_keyword | plot_keyword
               Optional(save_clusters_clause) + 
               Optional(Suppress(times_keyword) + int_number.setResultsName("times")) + 
               Optional(using_models_clause) +
-              Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list"))))
+              Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list")) +
+              Optional(Suppress(into_keyword) + identifier.setResultsName("newtablename"))))
 
 bql_statement = (query | management_query) + Optional(semicolon_literal)
 bql_input = OneOrMore(Group(bql_statement)) 
