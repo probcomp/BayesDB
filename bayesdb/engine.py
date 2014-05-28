@@ -192,7 +192,7 @@ class Engine(object):
     ret['message'] = 'Updated schema.'
     return ret
     
-  def create_btable_from_existing(self, tablename, colnames, data, M_c):
+  def create_btable_from_existing(self, tablename, colnames_full, data, M_c):
     """
     Used in INTO statements to create a new btable as a portion of an existing one.
     """
@@ -200,15 +200,16 @@ class Engine(object):
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
 
-    #T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+    cctypes_full = [utils.get_cctype_from_M_c(M_c, col) for col in colnames_full]
+    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, data, cctypes=cctypes_full)
 
     # variables without "_full" don't include ignored columns.
-    #raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
-    #T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+    raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
+    T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+    print "here"
+    self.persistence_layer.create_btable(tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full)
 
-    #self.persistence_layer.create_btable(tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full)
-
-    #return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
+    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
 
   def create_btable(self, tablename, header, raw_T_full, cctypes_full=None):
     """Uplooad a csv table to the predictive db.
@@ -518,9 +519,8 @@ class Engine(object):
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
 
     # Execute INTO statement
-    print "newtablename: %s" % (newtablename)
     if newtablename is not None:
-      self.create_btable_from_existing(data, query_colnames, M_c, newtablename)
+      self.create_btable_from_existing(newtablename, query_colnames, data, M_c)
     
     ret = dict(data=data, columns=query_colnames)
     if plot:

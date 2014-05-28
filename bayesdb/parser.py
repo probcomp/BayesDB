@@ -330,8 +330,6 @@ class Parser(object):
         modelids = args_dict['modelids']
         newtablename = args_dict['newtablename']
 
-        print newtablename
-
         pairwise = client_dict['pairwise']
         filename = client_dict['filename']
         scatter = client_dict['scatter']
