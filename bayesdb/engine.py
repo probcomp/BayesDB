@@ -681,7 +681,7 @@ class Engine(object):
     
     return {'columns': column_names}
 
-  def estimate_pairwise_row(self, tablename, function, row_list, components_name=None, threshold=None, modelids=None):
+  def estimate_pairwise_row(self, tablename, function, row_list, clusters_name=None, threshold=None, modelids=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
@@ -701,7 +701,7 @@ class Engine(object):
     
     # Do the heavy lifting: generate the matrix itself
 
-    matrix, row_indices_reordered, components = pairwise.generate_pairwise_row_matrix(function, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, component_threshold=threshold, column_lists=column_lists)
+    matrix, row_indices_reordered, clusters = pairwise.generate_pairwise_row_matrix(function, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, cluster_threshold=threshold, column_lists=column_lists)
     title = 'Pairwise row %s for %s' % (function.function_id, tablename)      
     ret = dict(
       matrix=matrix,
@@ -711,20 +711,20 @@ class Engine(object):
       )
 
     # Create new btables from connected components (like into), if desired. Overwrites old ones with same name.
-    if components is not None:
-      component_name_tuples = []
-      for i, component in enumerate(components):
-        name = "%s_%d" % (components_name, i)
-        num_rows = len(component)
-        self.persistence_layer.add_row_list(tablename, name, component)
-        component_name_tuples.append((name, num_rows))
-      ret['components'] = components
-      ret['row_lists'] = component_name_tuples
+    if clusters is not None:
+      cluster_name_tuples = []
+      for i, cluster in enumerate(clusters):
+        name = "%s_%d" % (clusters_name, i)
+        num_rows = len(cluster)
+        self.persistence_layer.add_row_list(tablename, name, cluster)
+        cluster_name_tuples.append((name, num_rows))
+      ret['clusters'] = clusters
+      ret['row_lists'] = cluster_name_tuples
 
     return ret
     
   
-  def estimate_pairwise(self, tablename, function_name, column_list=None, components_name=None, threshold=None, modelids=None):
+  def estimate_pairwise(self, tablename, function_name, column_list=None, clusters_name=None, threshold=None, modelids=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
@@ -742,9 +742,9 @@ class Engine(object):
       column_names = None
 
     # Do the heavy lifting: generate the matrix itself
-    matrix, column_names_reordered, components = pairwise.generate_pairwise_column_matrix(   \
+    matrix, column_names_reordered, clusters = pairwise.generate_pairwise_column_matrix(   \
         function_name, X_L_list, X_D_list, M_c, T, tablename,
-        engine=self, column_names=column_names, component_threshold=threshold)
+        engine=self, column_names=column_names, cluster_threshold=threshold)
     
     title = 'Pairwise column %s for %s' % (function_name, tablename)      
     ret = dict(
@@ -754,16 +754,16 @@ class Engine(object):
       message = "Created " + title
       )
 
-    # Add the column lists for connected components, if desired. Overwrites old ones with same name.
-    if components is not None:
-      component_name_tuples = []
-      for i, component in enumerate(components):
-        name = "%s_%d" % (components_name, i)
-        column_names = [M_c['idx_to_name'][str(idx)] for idx in component]
+    # Add the column lists for connected clusters, if desired. Overwrites old ones with same name.
+    if clusters is not None:
+      cluster_name_tuples = []
+      for i, cluster in enumerate(clusters):
+        name = "%s_%d" % (clusters_name, i)
+        column_names = [M_c['idx_to_name'][str(idx)] for idx in cluster]
         self.persistence_layer.add_column_list(tablename, name, column_names)
-        component_name_tuples.append((name, column_names))
-      ret['components'] = components
-      ret['column_lists'] = component_name_tuples
+        cluster_name_tuples.append((name, column_names))
+      ret['clusters'] = clusters
+      ret['column_lists'] = cluster_name_tuples
 
     return ret
 

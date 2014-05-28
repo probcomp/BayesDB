@@ -108,40 +108,40 @@ def reorder_indices_by_cluster(matrix):
     matrix_reordered = matrix[:, reorder_indices][reorder_indices, :]    
     return matrix_reordered, reorder_indices
 
-def get_connected_components(matrix, component_threshold):
-    # If component_threshold isn't none, then we want to return all the connected components
+def get_connected_clusters(matrix, cluster_threshold):
+    # If cluster_threshold isn't none, then we want to return all the connected clusters
     # of columns: columns are connected if their edge weight is above the threshold.
     # Just do a search, starting at each column id.
 
     from collections import defaultdict
-    components = [] # list of lists (conceptually a set of sets, but faster here)
+    clusters = [] # list of lists (conceptually a set of sets, but faster here)
 
     # Construct graph, in the form of a neighbor dictionary
     neighbors_dict = defaultdict(list)
     for i in range(matrix.shape[0]):
         for j in range(i+1, matrix.shape[0]):
-            if matrix[i][j] > component_threshold:
+            if matrix[i][j] > cluster_threshold:
                 neighbors_dict[i].append(j)
                 neighbors_dict[j].append(i)
 
     # Outer while loop: make sure every column has been visited
     unvisited = set(range(matrix.shape[0]))
     while(len(unvisited) > 0):
-        component = []
+        cluster = []
         stack = [unvisited.pop()]
         while(len(stack) > 0):
             cur = stack.pop()
-            component.append(cur)                
+            cluster.append(cur)
             neighbors = neighbors_dict[cur]
             for n in neighbors:
                 if n in unvisited:
                     stack.append(n)
                     unvisited.remove(n)                        
-        if len(component) > 1:
-            components.append(component)
-    return components
+        if len(cluster) > 1:
+            clusters.append(cluster)
+    return clusters
 
-def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', limit=None, engine=None, column_names=None, component_threshold=None):
+def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', limit=None, engine=None, column_names=None, cluster_threshold=None):
     """
     Compute a matrix. In using a function that requires engine (currently only
     mutual information), engine must not be None.
@@ -156,26 +156,26 @@ def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, t
     # Actually compute each function between each pair of columns
     matrix = compute_raw_column_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, engine, column_indices)
 
-    if component_threshold is not None:
-        # Components is a list of lists, where the inner list contains the ids (into the matrix)
-        # of the columns in each component.
-        components = get_connected_components(matrix, component_threshold)
+    if cluster_threshold is not None:
+        # clusters is a list of lists, where the inner list contains the ids (into the matrix)
+        # of the columns in each cluster.
+        clusters = get_connected_clusters(matrix, cluster_threshold)
         
-        # Now, convert the components from their matrix indices to their btable indices
+        # Now, convert the clusters from their matrix indices to their btable indices
         new_comps = []
-        for comp in components:
+        for comp in clusters:
             new_comps.append([column_indices[c] for c in comp])
-        components = new_comps
+        clusters = new_comps
     else:
-        components = None
+        clusters = None
 
     # reorder the matrix
     matrix, reorder_indices = reorder_indices_by_cluster(matrix)
     column_names_reordered = column_names[reorder_indices]
             
-    return matrix, column_names_reordered, components
+    return matrix, column_names_reordered, clusters
 
-def generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', engine=None, row_indices=None, component_threshold=None, column_lists={}):
+def generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', engine=None, row_indices=None, cluster_threshold=None, column_lists={}):
     """
     Compute a matrix. In using a function that requires engine (currently only
     mutual information), engine must not be None.
@@ -193,22 +193,22 @@ def generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tabl
     # Actually compute each function between each pair of columns
     matrix = compute_raw_row_pairwise_matrix(function, arg, X_L_list, X_D_list, M_c, T, engine, row_indices)
 
-    if component_threshold is not None:
-        # Components is a list of lists, where the inner list contains the ids (into the matrix)
-        # of the columns in each component.
-        components = get_connected_components(matrix, component_threshold)
+    if cluster_threshold is not None:
+        # clusters is a list of lists, where the inner list contains the ids (into the matrix)
+        # of the columns in each cluster.
+        clusters = get_connected_clusters(matrix, cluster_threshold)
         
-        # Now, convert the components from their matrix indices to their btable indices
+        # Now, convert the clusters from their matrix indices to their btable indices
         new_comps = []
-        for comp in components:
+        for comp in clusters:
             new_comps.append([row_indices[c] for c in comp])
-        components = new_comps
+        clusters = new_comps
     else:
-        components = None
+        clusters = None
 
     # reorder the matrix
     matrix, reorder_indices = reorder_indices_by_cluster(matrix)
     row_indices_reordered = row_indices[reorder_indices]
             
-    return matrix, row_indices_reordered, components
+    return matrix, row_indices_reordered, clusters
     
