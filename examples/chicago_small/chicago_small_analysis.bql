@@ -24,11 +24,11 @@ CREATE BTABLE chicago_demo FROM data.csv;
 LOAD MODELS chicago_small_models.pkl.gz INTO chicago_demo;
 
 
---estimate pairwise dependence probability from chicago_demo save connected components with threshold .8 as cc_pt8;
+--estimate pairwise dependence probability from chicago_demo save clusters with threshold .8 as cc_pt8;
 --show column lists for chicago_demo;
 
 
-ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM chicago_demo SAVE CONNECTED COMPONENTS WITH THRESHOLD 0.8 AS cc_pt8;
+ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM chicago_demo SAVE CLUSTERS WITH THRESHOLD 0.8 AS cc_pt8;
 ESTIMATE PAIRWISE CORRELATION FROM chicago_demo;
 PLOT SELECT cc_pt8_2 FROM chicago_demo;
 
