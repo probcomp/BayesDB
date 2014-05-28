@@ -411,7 +411,7 @@ def remove_ignore_cols(T, cctypes, colnames):
     return T, cctypes, colnames
 
 nan_set = set(['', 'null', 'n/a'])
-_convert_nan = lambda el: el if el.strip().lower() not in nan_set else 'NAN'
+_convert_nan = lambda el: el if str(el).strip().lower() not in nan_set else 'NAN'
 _convert_nans = lambda in_list: map(_convert_nan, in_list)
 convert_nans = lambda in_T: map(_convert_nans, in_T)
 
