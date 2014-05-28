@@ -249,10 +249,6 @@ class Parser(object):
         if bql_statement_ast.where_conditions != '':
             whereclause = bql_statement_ast.where_conditions
 
-        print "here"
-        print clusters_name
-        print threshold
-
         return statement_id, \
             dict(clusters_name=clusters_name,
                  confidence = confidence,
@@ -299,8 +295,8 @@ class Parser(object):
         filename = client_dict['filename']
         scatter = client_dict['scatter']
 
-        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in INFER"
-        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in INFER"
+        assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in INFER"
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in INFER"
         assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS clause not allowed in INFER"
         assert args_dict['name'] == None, "BayesDBParsingError: SAVE AS <column_list> clause not allowed in INFER"
         assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES clause not allowed in INFER"
@@ -335,8 +331,8 @@ class Parser(object):
         filename = client_dict['filename']
         scatter = client_dict['scatter']
 
-        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SELECT"
-        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SELECT"
+        assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in SELECT"
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in SELECT"
         assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS clause not allowed in SELECT"
         assert args_dict['name'] == None, "BayesDBParsingError: SAVE AS <column_list> clause not allowed in SELECT"
         assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES clause not allowed in SELECT"
@@ -369,8 +365,8 @@ class Parser(object):
         filename = client_dict['filename']
         scatter = client_dict['scatter']
 
-        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SIMULATE."
-        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS clause not allowed in SIMULATE."
+        assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in SIMULATE."
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in SIMULATE."
         assert args_dict['name'] == None, "BayesDBParsingError: SAVE AS <column_list> clause not allowed in SIMULATE."
         assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in SIMULATE."
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SIMULATE."
@@ -398,7 +394,7 @@ class Parser(object):
         modelids = args_dict['modelids']
         name = args_dict['name']
 
-        assert args_dict['components_name'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS not allowed in estimate columns."
+        assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS not allowed in estimate columns."
         assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in estimate columns."
         assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in estimate columns."
         assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in estimate columns."
@@ -409,7 +405,7 @@ class Parser(object):
         assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in estimate columns."
         assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in estimated columns."
         assert args_dict['freq'] == False, "BayesDBParsingError: FREQ not allowed in estimated columns."
-        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CONNECTED COMPONENTS not allowed in estimate columns."
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CLUSTERS not allowed in estimate columns."
         assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in estimate columns."
 
         assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in estimate columns."
@@ -429,7 +425,7 @@ class Parser(object):
         assert len(args_dict['functions']) == 1, "BayesDBParsingError: Only one function allowed in estimate pairwise."
         tablename = args_dict['tablename']
         row_list = args_dict['row_list']
-        components_name = args_dict['components_name']
+        clusters_name = args_dict['clusters_name']
         threshold = args_dict['threshold']
         modelids = args_dict['modelids']
         filename = client_dict['filename']
@@ -442,7 +438,7 @@ class Parser(object):
         assert args_dict['column_list'] == None, "BayesDBParsingError: FOR COLUMNS not allowed in ESTIMATE PAIRWISE."
         assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in ESTIMATE PAIRWISE."
         assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in ESTIMATE PAIRWISE."
-        assert args_dict['freq'] == False, "BayesDBParsingError: FREQ not allowed in estimated columns."
+        assert args_dict['freq'] == False, "BayesDBParsingError: FREQ not allowed in ESTIMATE PAIRWISE."
         assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
         assert args_dict['whereclause'] == None, "BayesDBParsingError: WHERE not allowed in ESTIMATE PAIRWISE."
 
@@ -452,7 +448,7 @@ class Parser(object):
 
         return 'estimate_pairwise_row', \
             dict(tablename=tablename, function=functions,
-                 row_list=row_list, components_name=components_name, 
+                 row_list=row_list, clusters_name=clusters_name,
                  threshold=threshold, modelids=modelids), \
             dict(filename=filename)
 
@@ -465,7 +461,7 @@ class Parser(object):
 
         tablename = args_dict['tablename']
         column_list = args_dict['column_list']
-        components_name = args_dict['components_name']
+        clusters_name = args_dict['clusters_name']
         threshold = args_dict['threshold']
         modelids = args_dict['modelids']
         filename = client_dict['filename']
@@ -478,7 +474,7 @@ class Parser(object):
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR ROWS not allowed in ESTIMATE PAIRWISE."
         assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in ESTIMATE PAIRWISE."
         assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in ESTIMATE PAIRWISE."
-        assert args_dict['freq'] == False, "BayesDBParsingError: FREQ not allowed in estimated columns."
+        assert args_dict['freq'] == False, "BayesDBParsingError: FREQ not allowed in ESTIMATE PAIRWISE."
         assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
         assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in ESTIMATE PAIRWISE"
 
@@ -488,7 +484,7 @@ class Parser(object):
 
         return 'estimate_pairwise', \
             dict(tablename=tablename, function_name=function_name,
-                 column_list=column_list, components_name=components_name, 
+                 column_list=column_list, clusters_name=clusters_name,
                  threshold=threshold, modelids=modelids), \
             dict(filename=filename)
 
