@@ -222,7 +222,7 @@ def test_row_clusters():
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
   row_lists = client('show row lists for %s' % test_tablename, debug=True, pretty=False)[0]['row_lists']
   assert len(row_lists) == 0
-  client('estimate pairwise row similarity from %s save connected components with threshold 0.1 as rcc' % test_tablename, debug=True, pretty=False)
+  client('estimate pairwise row similarity from %s save clusters with threshold 0.1 as rcc' % test_tablename, debug=True, pretty=False)
   row_lists = client('show row lists for %s' % test_tablename, debug=True, pretty=False)[0]['row_lists']
   assert len(row_lists) > 0
   client('select * from %s where key in rcc_0' % test_tablename, debug=True, pretty=False)
@@ -306,7 +306,7 @@ def test_using_models():
   client("simulate qual_score from %s given name='Albany NY' times 5 using models 1-2" % test_tablename, debug=True, pretty=False)
   client('estimate columns from %s limit 5 using models 1-2' % test_tablename, debug=True, pretty=False)
   client('estimate pairwise dependence probability from %s using models 1' % (test_tablename), debug=True, pretty=False)
-  client('estimate pairwise row similarity from %s save connected components with threshold 0.1 as rcc using models 1-2' % test_tablename, debug=True, pretty=False)
+  client('estimate pairwise row similarity from %s save clusters with threshold 0.1 as rcc using models 1-2' % test_tablename, debug=True, pretty=False)
 
   client('drop model 0 from %s' % test_tablename, debug=True, pretty=False, yes=True)
   with pytest.raises(utils.BayesDBError):
