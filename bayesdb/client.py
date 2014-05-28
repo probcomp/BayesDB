@@ -96,8 +96,16 @@ class Client(object):
             print "Invalid input type: expected file or string."
 
         return_list = []
-            
-        lines = self.parser.split_statements(self.parser.pyparse_input(bql_string))
+
+        # Parse input, but catch parsing errors and abort
+        try:
+            lines = self.parser.split_statements(self.parser.pyparse_input(bql_string))
+        except utils.BayesDBError as e:
+            if debug:
+                raise e
+            else:
+                print str(e)
+                return
         
         # Iterate through lines with while loop so we can append within loop.
         while len(lines) > 0:
