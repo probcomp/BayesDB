@@ -440,7 +440,7 @@ class Engine(object):
     ret['message'] = 'Analyze complete.'
     return ret
 
-  def infer(self, tablename, functions, newtablename, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False, hist=False, freq=False):
+  def infer(self, tablename, functions, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """
     Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
@@ -456,7 +456,7 @@ class Engine(object):
       numsamples=50 ##TODO maybe put this in a config file
       
     return self.select(tablename, functions, whereclause, limit, order_by,
-                       impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq)
+                       impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename)
     
   def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """
@@ -528,7 +528,7 @@ class Engine(object):
     # Execute INTO statement
     if newtablename is not None:
       self.create_btable_from_existing(newtablename, query_colnames, data, M_c)
-    
+
     ret = dict(data=data, columns=query_colnames)
     if plot:
       ret['M_c'] = M_c
@@ -544,7 +544,7 @@ class Engine(object):
     return ret
 
 
-  def simulate(self, tablename, functions, newtablename, givens, numpredictions, order_by, plot=False, modelids=None, summarize=False, hist=False, freq=False):
+  def simulate(self, tablename, functions, givens, numpredictions, order_by, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
     # TODO: whereclause not implemented.
     if not self.persistence_layer.check_if_table_exists(tablename):
@@ -606,7 +606,11 @@ class Engine(object):
           row.append(data_utils.convert_code_to_value(M_c, idx, out_row[i]))
           i += 1
       data.append(row)
-      
+
+    # Execute INTO statement
+    if newtablename is not None:
+      self.create_btable_from_existing(newtablename, colnames, data, M_c)
+          
     ret = {'columns': colnames, 'data': data}
     if plot:
       ret['M_c'] = M_c
