@@ -30,6 +30,7 @@ import math
 import ast
 import sys
 import random
+import pandas
 
 import pylab
 import numpy
@@ -199,6 +200,13 @@ class Engine(object):
     ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
+
+    # Remove row_id from table
+    if 'row_id' in colnames_full:
+      df = pandas.DataFrame(data=data, columns=colnames_full)
+      utils.df_drop(df, ['row_id'], axis=1)
+      data = df.to_records(index=False)
+      colnames_full = df.columns
 
     cctypes_full = [utils.get_cctype_from_M_c(M_c, col) for col in colnames_full]
     T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, data, cctypes=cctypes_full)
