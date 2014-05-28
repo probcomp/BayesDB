@@ -240,17 +240,21 @@ class Parser(object):
         hist = (bql_statement_ast.hist == 'hist')
         freq = (bql_statement_ast.freq == 'freq')
         tablename = bql_statement_ast.btable
-        components_name = None
+        clusters_name = None
         threshold = None
-        if bql_statement_ast.connected_components_clause != '':
-            components_name = bql_statement_ast.connected_components_clause.as_label
-            threshold = float(bql_statement_ast.connected_components_clause.threshold)
+        if bql_statement_ast.clusters_clause != '':
+            clusters_name = bql_statement_ast.clusters_clause.as_label
+            threshold = float(bql_statement_ast.clusters_clause.threshold)
         whereclause = None
         if bql_statement_ast.where_conditions != '':
             whereclause = bql_statement_ast.where_conditions
 
+        print "here"
+        print clusters_name
+        print threshold
+
         return statement_id, \
-            dict(components_name=components_name,
+            dict(clusters_name=clusters_name,
                  confidence = confidence,
                  functions=functions,
                  givens=givens,
