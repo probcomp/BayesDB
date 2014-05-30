@@ -86,4 +86,4 @@ def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, 
     scored_column_indices.append((tuple(scores), c_idx))
   scored_column_indices.sort(key=lambda tup: tup[0], reverse=False)
 
-  return [tup[1] for tup in scored_column_indices]
+  return [[tup[1], tup[0]] for tup in scored_column_indices]

@@ -700,20 +700,21 @@ class Engine(object):
       raise utils.BayesDBNoModelsError(tablename)      
     if order_by != False:
       order_by = self.parser.parse_column_order_by_clause(order_by, M_c)
-    column_indices = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self)
+    column_idx_vals = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self)
     
     # limit
     if limit != float('inf'):
-      column_indices = column_indices[:limit]
+      column_idx_vals = column_idx_vals[:limit]
 
     # convert indices to names
-    column_names = [M_c['idx_to_name'][str(idx)] for idx in column_indices]
+    column_names = [M_c['idx_to_name'][str(column_idx_val[0])] for column_idx_val in column_idx_vals]
+    column_values = [column_idx_val[1] for column_idx_val in column_idx_vals]
 
     # save column list, if given a name to save as
     if name:
       self.persistence_layer.add_column_list(tablename, name, column_names)
-    
-    return {'columns': column_names}
+
+    return {'columns': column_names, 'data': column_values}
 
   def estimate_pairwise_row(self, tablename, function, row_list, clusters_name=None, threshold=None, modelids=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
