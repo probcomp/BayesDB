@@ -255,7 +255,9 @@ value = (QuotedString('"', escChar='\\') |
 filename = (QuotedString('"', escChar='\\') | 
             QuotedString("'", escChar='\\') | 
             Word(alphanums + "!\"/#$%&'()*+,-.:<=>?@[\]^_`{|}~")).setResultsName("filename")
-label = Word(printables, excludeChars=',;')
+label = (QuotedString('"', escChar='\\') | 
+         QuotedString("'", escChar='\\') | 
+         Word(printables, excludeChars=',;'))
 data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword
 
 ###################################################################################
