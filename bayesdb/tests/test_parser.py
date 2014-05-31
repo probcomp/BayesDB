@@ -1318,3 +1318,12 @@ def test_disallowed_queries():
         ast = bql_statement.parseString(query_string,parseAll=True)
         with pytest.raises(AssertionError):
             parser.parse_single_statement(ast)
+
+def test_label_and_metadata():
+    # LABEL COLUMNS FOR <btable> SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...]
+    query_str1 = 'label columns for test set col_1 = label1, col_2 = "label 2"'
+    ast = bql_statement.parseString(query_str1, parseAll=True)
+    assert ast.label_clause[0][0] == 'col_1'
+    assert ast.label_clause[0][1] == 'label1'
+    assert ast.label_clause[1][0] == 'col_2'
+    assert ast.label_clause[1][1] == 'label 2'

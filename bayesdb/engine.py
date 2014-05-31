@@ -700,20 +700,43 @@ class Engine(object):
       raise utils.BayesDBNoModelsError(tablename)      
     if order_by != False:
       order_by = self.parser.parse_column_order_by_clause(order_by, M_c)
-    column_indices = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self, numsamples)
+      order_func_descriptions = [estimate_columns_utils.function_description(order_item, M_c) for order_item in order_by]
+    else:
+      order_func_descriptions = []
+
+    # Get tuples of column estimation function values and column indices
+    column_idx_tups = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self, numsamples)
     
     # limit
     if limit != float('inf'):
-      column_indices = column_indices[:limit]
+      column_idx_tups = column_idx_tups[:limit]
 
-    # convert indices to names
-    column_names = [M_c['idx_to_name'][str(idx)] for idx in column_indices]
+    # convert indices to names and create data list of column names and associated function values
+    column_names = []
+    column_data = []
+
+    for column_idx_tup in column_idx_tups:
+      if type(column_idx_tup) == int:
+        column_idx_tup = ((), column_idx_tup)
+      column_name_temp = M_c['idx_to_name'][str(column_idx_tup[1])]
+      column_names.append(column_name_temp)
+
+      column_data_temp = [column_name_temp]
+      column_data_temp.extend(column_idx_tup[0])
+
+      column_data.append(column_data_temp)
 
     # save column list, if given a name to save as
     if name:
       self.persistence_layer.add_column_list(tablename, name, column_names)
-    
-    return {'columns': column_names}
+
+    # Create column names ('column' followed by a string describing each function)
+    ret = {'columns': ['column']}
+    if column_data != []:
+      ret['columns'].extend(order_func_descriptions)
+      ret['data'] = column_data
+
+    return ret
 
   def estimate_pairwise_row(self, tablename, function, row_list, clusters_name=None, threshold=None, modelids=None, numsamples=None):
     if not self.persistence_layer.check_if_table_exists(tablename):

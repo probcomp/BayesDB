@@ -86,4 +86,23 @@ def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, 
     scored_column_indices.append((tuple(scores), c_idx))
   scored_column_indices.sort(key=lambda tup: tup[0], reverse=False)
 
-  return [tup[1] for tup in scored_column_indices]
+  return [tup for tup in scored_column_indices]
+
+def function_description(order_item, M_c):
+  function_names = {'_col_typicality': 'typicality',
+    '_dependence_probability': 'dependence probability',
+    '_correlation': 'correlation',
+    '_mutual_information': 'mutual information'
+    }
+
+  function_name = function_names[order_item[0].__name__]
+  order = 'desc' if order_item[2] else 'desc'
+
+  if function_name == 'typicality':
+    description = '%s typicality' % order
+  else:
+    function_arg = M_c['idx_to_name'][str(order_item[1])]
+    description = '%s %s with %s' % (order, function_name, function_arg)
+
+  return description
+
