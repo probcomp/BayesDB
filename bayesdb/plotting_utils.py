@@ -37,14 +37,17 @@ def turn_off_labels(subplot):
     subplot.axes.get_yaxis().set_visible(False)
          
 
-def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, pairwise=False):
+def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False):
     '''
     colnames: list of column names
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
     colnames = ['name', 'age'], data = [('bob',37), ('joe', 39),...]
     scatter: False if histogram, True if scatterplot
     '''
-    if pairwise:
+    numcols = len(colnames)
+    if colnames[0] == 'row_id':
+        numcols -= 1
+    if numcols > 1:
         gsp = gs.GridSpec(1, 1)
         plots = create_pairwise_plot(colnames, data, M_c, gsp)
     else:

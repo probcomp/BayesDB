@@ -30,7 +30,7 @@ ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM gss_demo SAVE TO gss_z.png;
 
 -- Focus on most typical variables
 ESTIMATE COLUMNS FROM gss_demo ORDER BY TYPICALITY DESC LIMIT 10 AS typical10col;
-ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM gss_demo FOR COLUMNS typical10col save to gss_z_10typ.png;
+ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM gss_demo FOR typical10col save to gss_z_10typ.png;
 
 -- Inspect to see how many of the clusters are represented
 -- seeksci (where do you seek info re: science) is in the middle of the matrix in a small cluster of two with sprel (spouse religious affliation). can see that it is associated with most variables.

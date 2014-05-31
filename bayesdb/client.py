@@ -96,8 +96,17 @@ class Client(object):
             print "Invalid input type: expected file or string."
 
         return_list = []
-            
-        lines = self.parser.split_lines(bql_string)
+
+        # Parse input, but catch parsing errors and abort
+        try:
+            lines = self.parser.split_statements(self.parser.pyparse_input(bql_string))
+        except utils.BayesDBError as e:
+            if debug:
+                raise e
+            else:
+                print str(e)
+                return
+        
         # Iterate through lines with while loop so we can append within loop.
         while len(lines) > 0:
             line = lines.pop(0)
@@ -142,10 +151,10 @@ class Client(object):
 
         parser_out = None
         if debug:
-            parser_out = self.parser.parse_statement(bql_statement_string)
+            parser_out = self.parser.parse_single_statement(bql_statement_string)
         else:
             try:
-                parser_out = self.parser.parse_statement(bql_statement_string)
+                parser_out = self.parser.parse_single_statement(bql_statement_string)
             except Exception as e:            
                 raise utils.BayesDBParseError(str(e))
         if parser_out is None:
@@ -234,7 +243,7 @@ class Client(object):
         if ('plot' in client_dict and client_dict['plot']):
             if (plots or client_dict['filename']):
                 # Plot generalized histograms or scatterplots
-                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], True) # pairwise always true
+                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'])
                 return self.pretty_print(result)
             else:
                 if 'message' not in result:
