@@ -818,7 +818,6 @@ class Parser(object):
         return queries, query_colnames
 
     def parse_column_set(self, column_name, M_c, column_lists = None):
->>>>>>> dev
         """
         given a string representation of a column name or column_list,
         returns a list of the column indexes, list of column names. 

@@ -455,7 +455,6 @@ class PersistenceLayer():
         # Variables without "_full" don't include ignored columns.
         raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
         T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
-          
 
         # Now, put cctypes, T, M_c, and M_r back into the DB
         self.update_metadata(tablename, M_r, M_c, T, cctypes)
