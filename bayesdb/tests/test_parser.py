@@ -1283,7 +1283,6 @@ def test_disallowed_queries():
                "select * from test given a=5",
                "select * from test for test_clist",
                "select * from test with confidence .4",
-               "select * from test with 4 samples",
                "infer * from test times 10",
                "infer typicality from test",
                "simulate typicality from test",

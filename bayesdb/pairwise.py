@@ -67,7 +67,7 @@ def get_columns(column_names, M_c): ##TODO move to parser or utils
     column_names = numpy.array(column_names)
     return column_names, column_indices
 
-def compute_raw_column_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, engine, column_indices=None):
+def compute_raw_column_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, engine, column_indices=None, numsamples=None):
     # Compute unordered matrix: evaluate the function for every pair of columns
     # Shortcut: assume all functions are symmetric between columns, only compute half.
     num_cols = len(column_indices)
@@ -75,12 +75,12 @@ def compute_raw_column_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, eng
     for i, orig_i in enumerate(column_indices):
         for j in range(i, num_cols):
             orig_j = column_indices[j]
-            func_val = function((orig_i, orig_j), None, None, M_c, X_L_list, X_D_list, T, engine)
+            func_val = function((orig_i, orig_j), None, None, M_c, X_L_list, X_D_list, T, engine, numsamples)
             matrix[i][j] = func_val
             matrix[j][i] = func_val
     return matrix
 
-def compute_raw_row_pairwise_matrix(function, arg, X_L_list, X_D_list, M_c, T, engine, row_indices=None):
+def compute_raw_row_pairwise_matrix(function, arg, X_L_list, X_D_list, M_c, T, engine, row_indices=None, numsamples=None):
     # TODO: currently assume that the only function possible is similarity
     if row_indices is None:
         row_indices = range(len(T))
@@ -89,7 +89,7 @@ def compute_raw_row_pairwise_matrix(function, arg, X_L_list, X_D_list, M_c, T, e
     for i, orig_i in enumerate(row_indices):
         for j in range(i, num_rows):
             orig_j = row_indices[j]
-            func_val = function((orig_i, arg), orig_j, None, M_c, X_L_list, X_D_list, T, engine)
+            func_val = function((orig_i, arg), orig_j, None, M_c, X_L_list, X_D_list, T, engine, numsamples)
             matrix[i][j] = func_val
             matrix[j][i] = func_val
     return matrix
@@ -141,7 +141,7 @@ def get_connected_clusters(matrix, cluster_threshold):
             clusters.append(cluster)
     return clusters
 
-def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', limit=None, engine=None, column_names=None, cluster_threshold=None):
+def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', limit=None, engine=None, column_names=None, cluster_threshold=None, numsamples=None):
     """
     Compute a matrix. In using a function that requires engine (currently only
     mutual information), engine must not be None.
@@ -154,7 +154,7 @@ def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, t
     column_names, column_indices = get_columns(column_names, M_c)
 
     # Actually compute each function between each pair of columns
-    matrix = compute_raw_column_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, engine, column_indices)
+    matrix = compute_raw_column_pairwise_matrix(function, X_L_list, X_D_list, M_c, T, engine, column_indices, numsamples)
 
     if cluster_threshold is not None:
         # clusters is a list of lists, where the inner list contains the ids (into the matrix)
@@ -175,7 +175,7 @@ def generate_pairwise_column_matrix(function_name, X_L_list, X_D_list, M_c, T, t
             
     return matrix, column_names_reordered, clusters
 
-def generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', engine=None, row_indices=None, cluster_threshold=None, column_lists={}):
+def generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tablename='', engine=None, row_indices=None, cluster_threshold=None, column_lists={}, numsamples=None):
     """
     Compute a matrix. In using a function that requires engine (currently only
     mutual information), engine must not be None.
@@ -191,7 +191,7 @@ def generate_pairwise_row_matrix(function_name, X_L_list, X_D_list, M_c, T, tabl
         row_indices = numpy.array(row_indices)
 
     # Actually compute each function between each pair of columns
-    matrix = compute_raw_row_pairwise_matrix(function, arg, X_L_list, X_D_list, M_c, T, engine, row_indices)
+    matrix = compute_raw_row_pairwise_matrix(function, arg, X_L_list, X_D_list, M_c, T, engine, row_indices, numsamples)
 
     if cluster_threshold is not None:
         # clusters is a list of lists, where the inner list contains the ids (into the matrix)

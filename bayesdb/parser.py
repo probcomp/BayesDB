@@ -328,6 +328,7 @@ class Parser(object):
         order_by = args_dict['order_by']
         modelids = args_dict['modelids']
         newtablename = args_dict['newtablename']
+        numsamples = args_dict['numsamples']        
 
         pairwise = client_dict['pairwise']
         filename = client_dict['filename']
@@ -341,11 +342,10 @@ class Parser(object):
         assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in SELECT"
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SELECT"
         assert args_dict['confidence'] == 0, "BayesDBParsingError: CONFIDENCE not allowed in SELECT"
-        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in SELECT"
 
         return 'select', \
             dict(tablename=tablename, whereclause=whereclause, 
-                 functions=functions, limit=limit, order_by=order_by, plot=plot, 
+                 functions=functions, limit=limit, order_by=order_by, plot=plot, numsamples=numsamples,
                  modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename), \
             dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
@@ -368,12 +368,12 @@ class Parser(object):
         scatter = client_dict['scatter']
 
         assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in SIMULATE."
+        assert args_dict['numsamples'] == None, 'BayesDBParsingError: WITH <numsamples> SAMPLES clause not allowed in SIMULATE.'
         assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in SIMULATE."
         assert args_dict['name'] == None, "BayesDBParsingError: SAVE AS <column_list> clause not allowed in SIMULATE."
         assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in SIMULATE."
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SIMULATE."
         assert args_dict['confidence'] == 0, "BayesDBParsingError: CONFIDENCE not allowed in SIMULATE."
-        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in SIMULATE."
         assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in SIMULATE. Use GIVEN instead."
         for function in functions:
             assert function.function_id == '', "BayesDBParsingError: %s not valid in SIMULATE" % function.function_id
@@ -381,7 +381,7 @@ class Parser(object):
         return 'simulate', \
             dict(tablename=tablename, functions=functions, 
                  newtablename=newtablename, givens=givens, 
-                 numpredictions=numpredictions, order_by=order_by, 
+                 numpredictions=numpredictions, order_by=order_by,
                  plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq), \
             dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
@@ -395,13 +395,13 @@ class Parser(object):
         order_by = args_dict['order_by']
         modelids = args_dict['modelids']
         name = args_dict['name']
+        numsamples = args_dict['numsamples']        
 
         assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS not allowed in estimate columns."
         assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in estimate columns."
         assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in estimate columns."
         assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in estimate columns."
         assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in estimate columns."
-        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in estimate columns."
         assert args_dict['column_list'] == None, "BayesDBParsingError: FOR COLUMNS not allowed in estimate columns."
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR ROWS not allowed in estimate columns."
         assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in estimate columns."
@@ -417,7 +417,7 @@ class Parser(object):
 
         return 'estimate_columns', \
             dict(tablename=tablename, functions=functions, 
-                 whereclause=whereclause, limit=limit, 
+                 whereclause=whereclause, limit=limit, numsamples=numsamples,
                  order_by=order_by, name=name, modelids=modelids), \
             None
 
@@ -466,13 +466,15 @@ class Parser(object):
         clusters_name = args_dict['clusters_name']
         threshold = args_dict['threshold']
         modelids = args_dict['modelids']
+        numsamples = args_dict['numsamples']
+        
         filename = client_dict['filename']
 
+        
         assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in ESTIMATE PAIRWISE."
         assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in ESTIMATE PAIRWISE."
         assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in ESTIMATE PAIRWISE."
         assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in ESTIMATE PAIRWISE."
-        assert args_dict['numsamples'] == None, "BayesDBParsingError: WITH SAMPLES not allowed in ESTIMATE PAIRWISE."
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR ROWS not allowed in ESTIMATE PAIRWISE."
         assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in ESTIMATE PAIRWISE."
         assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in ESTIMATE PAIRWISE."
@@ -485,7 +487,7 @@ class Parser(object):
         assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in ESTIMATE PAIRWISE."
 
         return 'estimate_pairwise', \
-            dict(tablename=tablename, function_name=function_name,
+            dict(tablename=tablename, function_name=function_name, numsamples=numsamples,
                  column_list=column_list, clusters_name=clusters_name,
                  threshold=threshold, modelids=modelids), \
             dict(filename=filename)

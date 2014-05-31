@@ -325,13 +325,10 @@ def test_estimate_pairwise_dependence_probability():
   engine.initialize_models(test_tablename, 2)
   dep_mat = engine.estimate_pairwise(test_tablename, 'dependence probability')
 
-@pytest.mark.slow
 def test_estimate_pairwise_mutual_information():
-  ## TODO: speedup! Takes 27 seconds, and this is with 1 sample to estimate mutual information.
-  # It definitely takes many more samples to get a good estimate - at least 100.
   test_tablename, _ = create_dha()
   engine.initialize_models(test_tablename, 2)
-  mi_mat = engine.estimate_pairwise(test_tablename, 'mutual information')
+  mi_mat = engine.estimate_pairwise(test_tablename, 'mutual information', numsamples=2)
 
 def test_estimate_pairwise_correlation():
   test_tablename, _ = create_dha()

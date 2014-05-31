@@ -456,9 +456,9 @@ class Engine(object):
       numsamples=50 ##TODO maybe put this in a config file
       
     return self.select(tablename, functions, whereclause, limit, order_by,
-                       impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename)
+                       impute_confidence=confidence, numsamples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename)
     
-  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
+  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, numsamples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """
     BQL's version of the SQL SELECT query.
     
@@ -511,7 +511,7 @@ class Engine(object):
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
     filtered_rows = select_utils.filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, self,
-                                                        query_colnames, impute_confidence, num_impute_samples, tablename)
+                                                        query_colnames, impute_confidence, numsamples, tablename)
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
     ## (and maybe temporarily augmented with all functions that will be ordered only)
@@ -520,10 +520,10 @@ class Engine(object):
     # Simply rearranges the order of the rows in filtered_rows according to the order_by query.
     if order_by != False:
       order_by = self.parser.parse_order_by_clause(order_by, M_c, T, column_lists)
-    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self, column_lists)
+    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self, column_lists, numsamples)
 
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
-    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
+    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self, numsamples)
 
     # Execute INTO statement
     if newtablename is not None:
@@ -666,7 +666,7 @@ class Engine(object):
     import crosscat.utils.plot_utils
     crosscat.utils.plot_utils.plot_views(numpy.array(T), X_D_list[modelid], X_L_list[modelid], M_c, filename)
 
-  def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None):
+  def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None, numsamples=None):
 
     """
     Return all the column names from the specified table as a list.
@@ -693,14 +693,14 @@ class Engine(object):
     where_conditions = self.parser.parse_column_whereclause(whereclause, M_c, T)
     if where_conditions is not None and len(X_L_list) == 0:
       raise utils.BayesDBNoModelsError(tablename)      
-    column_indices = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self)
+    column_indices = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self, numsamples)
     
     ## order
     if order_by and len(X_L_list) == 0:
       raise utils.BayesDBNoModelsError(tablename)      
     if order_by != False:
       order_by = self.parser.parse_column_order_by_clause(order_by, M_c)
-    column_indices = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self)
+    column_indices = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self, numsamples)
     
     # limit
     if limit != float('inf'):
@@ -715,7 +715,7 @@ class Engine(object):
     
     return {'columns': column_names}
 
-  def estimate_pairwise_row(self, tablename, function, row_list, clusters_name=None, threshold=None, modelids=None):
+  def estimate_pairwise_row(self, tablename, function, row_list, clusters_name=None, threshold=None, modelids=None, numsamples=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
@@ -735,7 +735,7 @@ class Engine(object):
     
     # Do the heavy lifting: generate the matrix itself
 
-    matrix, row_indices_reordered, clusters = pairwise.generate_pairwise_row_matrix(function, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, cluster_threshold=threshold, column_lists=column_lists)
+    matrix, row_indices_reordered, clusters = pairwise.generate_pairwise_row_matrix(function, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, cluster_threshold=threshold, column_lists=column_lists, numsamples=numsamples)
     title = 'Pairwise row %s for %s' % (function.function_id, tablename)      
     ret = dict(
       matrix=matrix,
@@ -758,7 +758,7 @@ class Engine(object):
     return ret
     
   
-  def estimate_pairwise(self, tablename, function_name, column_list=None, clusters_name=None, threshold=None, modelids=None):
+  def estimate_pairwise(self, tablename, function_name, column_list=None, clusters_name=None, threshold=None, modelids=None, numsamples=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
@@ -777,8 +777,8 @@ class Engine(object):
 
     # Do the heavy lifting: generate the matrix itself
     matrix, column_names_reordered, clusters = pairwise.generate_pairwise_column_matrix(   \
-        function_name, X_L_list, X_D_list, M_c, T, tablename,
-        engine=self, column_names=column_names, cluster_threshold=threshold)
+        function_name, X_L_list, X_D_list, M_c, T, tablename, engine=self, column_names=column_names,
+        cluster_threshold=threshold, numsamples=numsamples)
     
     title = 'Pairwise column %s for %s' % (function_name, tablename)      
     ret = dict(
