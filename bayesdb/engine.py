@@ -700,9 +700,9 @@ class Engine(object):
       raise utils.BayesDBNoModelsError(tablename)      
     if order_by != False:
       order_by = self.parser.parse_column_order_by_clause(order_by, M_c)
-      function_descriptions = [estimate_columns_utils.function_description(order_item, M_c) for order_item in order_by]
+      order_func_descriptions = [estimate_columns_utils.function_description(order_item, M_c) for order_item in order_by]
     else:
-      function_descriptions = []
+      order_func_descriptions = []
 
     # Get tuples of column estimation function values and column indices
     column_idx_tups = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self)
@@ -733,7 +733,7 @@ class Engine(object):
     # Create column names ('column' followed by a string describing each function)
     ret = {'columns': ['column']}
     if column_data != []:
-      ret['columns'].extend(function_descriptions)
+      ret['columns'].extend(order_func_descriptions)
       ret['data'] = column_data
 
     return ret
