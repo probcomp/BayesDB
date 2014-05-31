@@ -28,6 +28,7 @@ import pylab
 import matplotlib.cm
 import time
 import pandas
+import math
 
 import data_utils as du
 import select_utils
@@ -46,6 +47,17 @@ class BayesDBParseError(BayesDBError):
     
     def __str__(self):
         return self.msg
+
+class BayesDBUniqueValueError(BayesDBError):
+    def __init__(self, msg=None):
+        if msg:
+            self.msg = msg
+        else:
+            self.msg = "BayesDB unique value error. More than one row has this value."
+    
+    def __str__(self):
+        return self.msg
+
 
 class BayesDBNoModelsError(BayesDBError):
     def __init__(self, tablename):
@@ -85,7 +97,6 @@ class BayesDBRowListDoesNotExistError(BayesDBError):
     def __str__(self):
         return "Row list %s does not exist in btable %s." % (self.row_list, self.tablename)
         
-        
 def is_int(s):
     try:
         int(s)
@@ -100,6 +111,49 @@ def is_float(s):
     except ValueError:
         return False
 
+def value_string_to_num(value_string):
+    if is_int(value_string) == True:
+        value = int(value_string)
+    elif is_float(value_string) == True:
+        value = float(value_string)
+    else: 
+        raise BayesDBParseError("Number expected for value: %s" % value_string)
+    return value
+
+def string_to_column_type(value_string, column, M_c):
+    """
+    column is the string of the column name
+    Checks the type of the column in question based on M_c
+    If continuous, converts the value from string to int or float
+    """
+    value = value_string
+    if get_cctype_from_M_c(M_c, column) == 'continuous':
+        if is_int(value_string) == True:
+            value = int(value)
+        elif is_float(value_string) == True:
+            value = float(value)
+    return value
+
+def row_id_from_col_value(value, column, M_c, T):
+    """
+    Returns the row_id of a column where column == value
+    If duplicate rows are found, raises exception
+    If no rows are found, returns None
+    """
+    target_row_id = None
+    col_idx = M_c['name_to_idx'][column]
+    if type(value) == str:
+        value = string_to_column_type(value, column, M_c)
+    for row_id, T_row in enumerate(T):
+        row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
+        if row_values[col_idx] == value:
+            if target_row_id == None:
+                target_row_id = row_id
+            else: 
+                raise BayesDBUniqueValueError("Invalid Query: column '%s' has more than one row with value '%s'." %(column, str(value)))
+    return target_row_id
+
+##TODO move to engine
 def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, engine):
     q = [row_id, col_id]
     out = engine.call_backend('impute_and_confidence', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=[q], n=numsamples))
@@ -132,6 +186,123 @@ def get_cctype_from_M_c(M_c, column):
         cctype = 'continuous'
     return cctype
 
+# The 'inplace' argument to df.drop() was added to pandas in a version (which one??) that many people may
+# not have. So, check to see if 'inplace' exists, otherwise don't pass it -- this just copies the dataframe.
+def df_drop(df, column_list, **kwargs):
+    if 'inplace' in inspect.getargspec(df.drop).args:
+        df.drop(column_list, inplace=True, **kwargs)
+    else:
+        df = df.drop(column_list, **kwargs)
+
+
+def summarize_freqs(x, n=5):
+    """
+    Function to return most frequent n values of each column of the DataFrame being summarized.
+    Input: a DataFrame column, by default as Series type
+    Input: n, the number of most common values to return (n=5 would be top 5 common values)
+
+    Return: most frequent n values in x.
+    """
+    x_values, x_freqs, x_probs = get_column_freqs(x)
+
+    if n is not None and len(x_values) > n:
+        x_probs = x_probs[:n]
+        x_values = x_values[:n]
+
+    # Create index labels ('mode1/2/3/... and prob_mode1/2/3...')
+    x_range = range(1, len(x_values) + 1)
+    x_index = ['mode' + str(i) for i in x_range]
+    x_index += ['prob_mode' + str(i) for i in x_range]
+
+    # Combine values and probabilities into a single list
+    x_values.extend(x_probs)
+
+    return pandas.Series(data = x_values, index = x_index)
+
+def freqs(x):
+    x_values, x_freqs, x_probs = get_column_freqs(x)
+    x_values = pandas.Series(x_values)
+    x_probs = pandas.Series(x_probs)
+    x_freqs = pandas.Series(x_freqs)
+
+    x_hist = pandas.concat([x_values, x_freqs, x_probs], axis=1)
+    return x_hist
+
+# Function to calculate the most frequent values for each column
+def get_column_freqs(x):
+
+    x_freqs  = x.value_counts()
+    x_probs  = list(x_freqs / len(x))
+    x_values = list(x_freqs.index)
+    x_freqs  = list(x_freqs)
+
+    return x_values, x_freqs, x_probs
+
+def freq_table(data, columns, M_c):
+    """
+    Returns a frequency table
+    """
+    if len(data) > 0:
+        # Construct a pandas.DataFrame out of data and columns
+        df = pandas.DataFrame(data=data, columns=columns)
+        # Remove row_id column since summary stats of row_id are meaningless
+        if 'row_id' in df.columns:
+            df_drop(df, ['row_id'], axis=1)
+
+        column = df.columns[0]
+        cctype = get_cctype_from_M_c(M_c, column)
+
+        summary_data = freqs(df[column])
+
+        data = summary_data.to_records(index=False)
+        columns = [column, 'frequency', 'probability']
+
+    return data, columns
+
+def histogram_table(data, columns, M_c):
+    """
+    Returns a frequency table
+    """
+    if len(data) > 0:
+        # Construct a pandas.DataFrame out of data and columns
+        df = pandas.DataFrame(data=data, columns=columns)
+        # Remove row_id column since summary stats of row_id are meaningless
+        if 'row_id' in df.columns:
+            df_drop(df, ['row_id'], axis=1)
+
+        column = df.columns[0]
+        cctype = get_cctype_from_M_c(M_c, column)
+
+        # Use Sturges formula to calculate the number of bins to use.
+        n_bins = math.ceil(math.log(df.shape[0], 2) + 1)
+
+        hist_data = numpy.histogram(df[column], bins = n_bins)
+        bin_mins = hist_data[1][:-1]
+        bin_maxs = hist_data[1][1:]
+        bin_freqs = hist_data[0]
+        bin_probs = bin_freqs / float(sum(bin_freqs))
+
+        summary_data = pandas.DataFrame({
+            'bin_minimum': bin_mins,
+            'bin_maximum': bin_maxs,
+            'frequency'  : bin_freqs,
+            'probability': bin_probs
+        })
+
+        # Have to reorder columns, otherwise pandas defaults to alphabetical order
+        columns = ['bin_minimum', 'bin_maximum', 'frequency', 'probability']
+        summary_data = summary_data[columns]
+
+        data = summary_data.to_records(index=False)
+
+    return data, columns
+
+def get_index_from_colname(M_c, column):
+    if column in M_c['name_to_idx'].keys():
+        return M_c['name_to_idx'][column]
+    else:
+        utils.BayesDBParseError("Invalid query: column '%s' not found" % column)
+
 def summarize_table(data, columns, M_c):
     """
     Returns a summary of the data.
@@ -143,14 +314,6 @@ def summarize_table(data, columns, M_c):
     Return: columns should be the same, except with another column prepended called like "summaries" or something.
     Return: data should be summaries now.
     """
-    # The 'inplace' argument to df.drop() was added to pandas in a version (which one??) that many people may
-    # not have. So, check to see if 'inplace' exists, otherwise don't pass it -- this just copies the dataframe.
-    def df_drop(df, column_list, **kwargs):
-        if 'inplace' in inspect.getargspec(df.drop).args:
-            df.drop(column_list, inplace=True, **kwargs)
-        else:
-            df = df.drop(column_list, **kwargs)
-
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
@@ -174,33 +337,7 @@ def summarize_table(data, columns, M_c):
         if 'top' in summary_describe.index and 'freq' in summary_describe.index:
             summary_describe = summary_describe.drop(['top', 'freq'])
 
-        # Function to calculate the most frequent values for each column
-        def get_column_freqs(x, n=5):
-            """
-            Function to return most frequent n values of each column of the DataFrame being summarized.
-            Input: a DataFrame column, by default as Series type
-
-            Return: most frequent n values in x. Fill with numpy.nan if fewer than n unique values exist.
-            """
-            x_freqs  = x.value_counts()
-            x_probs  = list(x_freqs / len(x))
-            x_values = list(x_freqs.index)
-
-            if len(x_values) > n:
-                x_probs = x_probs[:n]
-                x_values = x_values[:n]
-
-            # Create index labels ('mode1/2/3/... and prob_mode1/2/3...')
-            x_range = range(1, len(x_values) + 1)
-            x_index = ['mode' + str(i) for i in x_range]
-            x_index += ['prob_mode' + str(i) for i in x_range]
-
-            # Combine values and probabilities into a single list
-            x_values.extend(x_probs)
-
-            return pandas.Series(data = x_values, index = x_index)
-
-        summary_freqs = df.apply(get_column_freqs)
+        summary_freqs = df.apply(summarize_freqs, n=5)
 
         # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
         summary_data = pandas.concat([cctypes, summary_describe, summary_freqs], axis=0)
@@ -223,41 +360,16 @@ def summarize_table(data, columns, M_c):
 
     return data, columns
 
-def column_string_splitter(columnstring, M_c=None, column_lists=None):
-    """
-    If '*' is a possible input, M_c must not be None.
-    If column_lists is not None, all column names are attempted to be expanded as a column list.
-    """
-    paren_level = 0
+def process_column_list(mixed_list, M_c, column_lists, dedupe=False):
     output = []
-    current_column = []
-
-    def end_column(current_column, output):
-      if '*' in current_column:
-        assert M_c is not None
-        output += get_all_column_names_in_original_order(M_c)
-      else:
-        current_column_name = ''.join(current_column)
-        if column_lists and current_column_name in column_lists.keys():
-            ## First, check if current_column is a column_list
-            output += column_lists[current_column_name]
+    for identifier in mixed_list:
+        if identifier == '*':
+            output += get_all_column_names_in_original_order(M_c)
+        elif column_lists != None and identifier in column_lists.keys():
+            output += column_lists[identifier]
         else:
-            ## If not, then it is a normal column name: append it.            
-            output.append(current_column_name.strip())
-      return output
-    
-    for i,c in enumerate(columnstring):
-      if c == '(':
-        paren_level += 1
-      elif c == ')':
-        paren_level -= 1
-
-      if (c == ',' and paren_level == 0):
-        output = end_column(current_column, output)
-        current_column = []
-      else:
-        current_column.append(c)
-    output = end_column(current_column, output)
+            output.append(identifier)
+    if dedupe == True:
+        check_for_duplicate_columns(output)
     return output
-
     
