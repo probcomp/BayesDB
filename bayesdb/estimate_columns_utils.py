@@ -98,7 +98,7 @@ def function_description(order_item, M_c):
   function_name = function_names[order_item[0].__name__]
   order = 'desc' if order_item[2] else 'desc'
 
-  if function_name == '_col_typicality':
+  if function_name == 'typicality':
     description = '%s typicality' % order
   else:
     function_arg = M_c['idx_to_name'][str(order_item[1])]

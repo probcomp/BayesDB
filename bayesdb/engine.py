@@ -714,7 +714,10 @@ class Engine(object):
     # convert indices to names and create data list of column names and associated function values
     column_names = []
     column_data = []
+
     for column_idx_tup in column_idx_tups:
+      if type(column_idx_tup) == int:
+        column_idx_tup = ((), column_idx_tup)
       column_name_temp = M_c['idx_to_name'][str(column_idx_tup[1])]
       column_names.append(column_name_temp)
 
@@ -728,10 +731,12 @@ class Engine(object):
       self.persistence_layer.add_column_list(tablename, name, column_names)
 
     # Create column names ('column' followed by a string describing each function)
-    columns = ['column']
-    columns.extend(function_descriptions)
+    ret = {'columns': ['column']}
+    if column_data != []:
+      ret['columns'].extend(function_descriptions)
+      ret['data'] = column_data
 
-    return {'columns': columns, 'data': column_data}
+    return ret
 
   def estimate_pairwise_row(self, tablename, function, row_list, clusters_name=None, threshold=None, modelids=None):
     if not self.persistence_layer.check_if_table_exists(tablename):

@@ -427,7 +427,7 @@ def test_estimate_columns():
   name = None
   functions = None
   columns = engine.estimate_columns(test_tablename, functions, whereclause, limit, order_by, name)['columns']
-  assert columns == all_columns
+  assert columns == ['column']
   
 if __name__ == '__main__':
     run_test()
