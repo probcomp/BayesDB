@@ -100,9 +100,11 @@ def function_description(order_item, M_c):
 
   if function_name == 'typicality':
     description = '%s typicality' % order
-  else:
+  elif order_item[1] is not None:
     function_arg = M_c['idx_to_name'][str(order_item[1])]
     description = '%s %s with %s' % (order, function_name, function_arg)
+  else:
+    raise utils.BayesDBError()
 
   return description
 

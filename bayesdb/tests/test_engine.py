@@ -197,7 +197,13 @@ def test_update_schema():
   engine.update_schema(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
-  
+
+  mappings = dict(qual_score = 'ignore')
+  engine.update_schema(test_tablename, mappings)
+  m_c, m_r, t = engine.persistence_layer.get_metadata_and_table(test_tablename)
+  cctypes = engine.persistence_layer.get_cctypes(test_tablename)
+  assert 'qual_score' not in m_c['name_to_idx'].keys()
+
   ## Now test that it doesn't allow name to be continuous
   mappings = dict(name='continuous')
   with pytest.raises(ValueError):
