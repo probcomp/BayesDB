@@ -301,7 +301,7 @@ def get_index_from_colname(M_c, column):
     if column in M_c['name_to_idx'].keys():
         return M_c['name_to_idx'][column]
     else:
-        utils.BayesDBParseError("Invalid query: column '%s' not found" % column)
+        BayesDBParseError("Invalid query: column '%s' not found" % column)
 
 def summarize_table(data, columns, M_c):
     """
