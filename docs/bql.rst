@@ -325,6 +325,23 @@ The first column of the output from SUMMARIZE will be statistic labels:
 Modal values and their empirical probabilities are returned for every column, whether discrete or continuous.
 
 
+Frequency and Histogram Tables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Prepending a SELECT, INFER, or SIMULATE statement with the keyword FREQ or HIST wil return a frequency or histogram table, respectively. If multiple
+columns are included in the statement, the frequency or histogram table is only returned for the first column.
+
+A frequency table returns the number and percentage of occurrences of each distinct value in the column::
+
+  FREQ <SELECT|INFER|SIMULATE> <columns|functions> FROM <btable> [WHERE <whereclause>] [LIMIT <limit>]
+
+A histogram calculates a number of equal-width bins based on the total number of values selected, using Sturges' rule (k = ceiling(log2(n) + 1)),
+and returns a table showing each bin interval, and the number and percentage of values within each bin.
+
+  HIST <SELECT|INFER|SIMULATE> <columns|functions> FROM <btable> [WHERE <whereclause>] [LIMIT <limit>]
+
+While ``FREQ`` works for all data types, ``HIST`` will not work for multinomial columns, since there isn't an intuitive way to calculate numeric intervals for multinomial values. If a multinomial column contains values that could be interpreted as numeric values, use ``UPDATE SCHEMA`` to set the column's data type to continuous, and then use ``HIST``.
+
 Saving and Reviewing Metadata
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
