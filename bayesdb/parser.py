@@ -863,3 +863,10 @@ class Parser(object):
             return relative_path
         else:
             return os.path.join(self.root_directory, relative_path)
+
+    def is_valid_bql_statement(self, bql_string):
+        """
+        attempts to parse bql_string. Returns True if parsing is successful. 
+        """
+        ##TODO
+        pass

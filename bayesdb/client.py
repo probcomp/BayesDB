@@ -358,6 +358,12 @@ class Client(object):
         if len(result) >= 1 and result[-1] == '\n':
             result = result[:-1]
         return result
-
-
-
+    
+    def resolve_sub_queries(self, bql_statement_ast):
+        """
+        iterates through bql_statement_ast. Evaluates that statement and re-directs 
+        bql_ast to the output. 
+        returns modified bql_statement_ast
+        """
+        ##TODO
+        pass
