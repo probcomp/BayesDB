@@ -378,9 +378,11 @@ class Engine(object):
     models = self.persistence_layer.get_models(tablename)    
     data = list()
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
+      if 'model_config' not in model:
+        raise utils.BayesDBError("The models in %s were created with an old version of BayesDB which does not support model diagnostics." % tablename)
       data.append((modelid, model['iterations'], str(model['model_config'])))
     if len(models) == 0:
-      return dict(message="No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
+      raise utils.BayesDBError("No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
     else:
       return dict(columns=['model_id', 'iterations', 'model_config'], data=data)
     
