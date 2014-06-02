@@ -58,6 +58,12 @@ class Parser(object):
         else:
             raise utils.BayesDBParseError("Parsing statement as LIST BTABLES failed")
 
+    def parse_help(self, bql_statement_ast):
+        method= None
+        if bql_statement_ast.method_name != '':
+            method = bql_statement_ast.method_name
+        return 'help', dict(method=method), None
+
     def parse_execute_file(self,bql_statement_ast):
         return 'execute_file', dict(filename=self.get_absolute_path(bql_statement_ast.filename)), None
 

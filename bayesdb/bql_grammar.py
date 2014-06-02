@@ -104,6 +104,7 @@ naive_keyword = CaselessKeyword("naive")
 bayes_keyword = CaselessKeyword("bayes")
 config_keyword = CaselessKeyword("config")
 using_keyword = CaselessKeyword("using")
+all_keyword = CaselessKeyword("all")
 ## Single and plural keywords
 single_model_keyword = CaselessKeyword("model")
 multiple_models_keyword = CaselessKeyword("models")
@@ -366,7 +367,8 @@ drop_btable_function = drop_btable_keyword + btable
 # DROP MODEL[S] [<model_index>-<model_index>] FROM <btable> 
 drop_model_function = drop_model_keyword + Optional(index_clause) + Suppress(from_keyword) + btable
 
-help_function = help_keyword
+# Help [function name]
+help_function = help_keyword + Optional(Word(alphas).setParseAction(downcaseTokens)).setResultsName("method_name")
 quit_function = quit_keyword
 
 management_query = (create_btable_function | 

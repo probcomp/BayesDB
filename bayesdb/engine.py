@@ -82,6 +82,56 @@ class Engine(object):
       method = getattr(self.backend, method_name)
       out = method(**args_dict)
     return out
+  
+  def help(self, method=None):
+    help_methods = dict()
+    help_methods['select']="""
+    SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>]
+    """
+    help_methods['infer'] = """
+    INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>]
+    """
+    help_methods['simulate'] = """
+    SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
+    """
+    help_methods['estimate'] = """
+    ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>] 
+    
+    ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>] 
+    
+    ESTIMATE PAIRWISE ROW SIMILARITY [WITH RESPECT TO <columns|column_lists>]FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
+    """
+
+    ## Important to make sure that http://probcomp.csail.mit.edu/bayesdb/docs/bql.html is up to date
+    help_all = """
+    Welcome to BQL help. 
+    
+    For the BQL documentation, please visit:
+    http://probcomp.csail.mit.edu/bayesdb/docs/bql.html
+    
+    Here is a list of BQL commands and their syntax:
+    """
+    help_basic = """
+    Welcome to BQL help. 
+  
+    If you know the query you wish to use, type 'HELP <query_name>'
+
+    For all queries, type 'HELP ALL'
+    
+    For the complete BQL documentation, please visit: 
+    http://probcomp.csail.mit.edu/bayesdb/docs/bql.html
+    """
+    
+    if method == None:
+      help_string = help_basic
+    elif method == 'all':
+      help_string = help_all + ''.join(help_methods.values())
+    elif method in help_methods:
+      help_string = help_all + help_methods[method]
+    else:
+      help_string = help_basic + '\n\tThe method you typed was not recognize. Try "HELP" or "HELP ALL"'
+    print help_string
+    return help_string
 
   def drop_btable(self, tablename):
     """Delete table by tablename."""
