@@ -102,6 +102,66 @@ class Engine(object):
     ESTIMATE PAIRWISE ROW SIMILARITY [WITH RESPECT TO <columns|column_lists>]FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
     """
 
+    help_methods['execute'] = """
+    EXECUTE FILE <filename.bql>
+    """
+    
+    help_methods['update'] = """
+    UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
+    """
+
+    help_methods['initialize'] = """
+    INITIALIZE <num_models> MODELS FOR <btable> [WITH CONFIG <config>]
+    """
+
+    help_methods['analyze'] = """
+    ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
+    """
+
+    help_methods['list'] = """
+    LIST BTABLES
+    """
+
+    help_methods['show'] = """
+    SHOW SCHEMA FOR <btable>
+
+    SHOW MODELS FOR <btable>
+
+    SHOW DIAGNOSTICS FOR <btable>
+
+    SHOW COLUMN LISTS FOR <btable>
+
+    SHOW COLUMNS FOR <column_list|btable>
+
+    SHOW ROW LISTS FOR <table>
+
+    SHOW METADATA FOR <btable> [<metadata-key1> [, <metadata-key2>...]]
+
+    SHOW LABEL FOR <btable> [<column-name-1> [, <column-name-2>...]]
+    """
+
+    help_methods['load'] = """
+    LOAD MODELS <filename.pkl.gz> INTO <btable>
+    """
+
+    help_methods['save'] = """
+    SAVE MODELS FROM <btable> TO <filename.pkl.gz>
+    """
+
+    help_methods['drop'] = """
+    DROP BTABLE <btable>
+
+    DROP MODEL[S] [<model_index>-<model_index>] FROM <btable>
+    """
+
+    help_methods['summarize'] = """
+    SUMMARIZE <SELECT|INFER|SIMULATE>
+    """
+
+    help_methods['plot'] = """
+    PLOT <SELECT|INFER|SIMULATE>
+    """
+
     ## Important to make sure that http://probcomp.csail.mit.edu/bayesdb/docs/bql.html is up to date
     help_all = """
     Welcome to BQL help. 
@@ -129,7 +189,11 @@ class Engine(object):
     elif method in help_methods:
       help_string = help_all + help_methods[method]
     else:
-      help_string = help_basic + '\n\tThe method you typed was not recognize. Try "HELP" or "HELP ALL"'
+      help_string = help_basic + '''
+    The method you typed was not recognize. Try "HELP", "HELP ALL",
+    or one of the following: 
+    \tHELP ''' + '\n\tHELP '.join(help_methods.keys()).upper()
+
     print help_string
     return help_string
 
