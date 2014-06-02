@@ -363,7 +363,7 @@ class Engine(object):
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
       modelid_iteration_info.append((modelid, model['iterations']))
     if len(models) == 0:
-      return dict(message="No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
+      raise utils.BayesDBError("No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
     else:
       return dict(models=modelid_iteration_info)
 
@@ -409,7 +409,7 @@ class Engine(object):
     
     max_model_id = self.persistence_layer.get_max_model_id(tablename)
     if max_model_id == -1:
-      return dict(message="You must INITIALIZE MODELS before using ANALYZE.")
+      raise utils.BayesDBError("You must INITIALIZE MODELS before using ANALYZE.")
     models = self.persistence_layer.get_models(tablename)
 
     if model_indices is None or (str(model_indices).upper() == 'ALL'):
