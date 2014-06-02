@@ -380,7 +380,7 @@ Labeling columns is a common metadata operations, and has its own statement to a
 
   LABEL COLUMNS FOR <btable> SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...]
 
-Column labels should not be quoted unless the quotes are part of the label, and should not include commas. Similarly to btable-level metadata, column labels can be added to a btable from a file::
+Column labels should be quoted if they're longer than one word, and should not include commas. Similarly to btable-level metadata, column labels can be added to a btable from a file::
 
   LABEL COLUMNS FOR <btable> FROM <filename.csv>
 
