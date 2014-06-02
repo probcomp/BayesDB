@@ -106,15 +106,17 @@ BayesDB has five fundamental query statements: SELECT, INFER, SIMULATE, ESTIMATE
 
 SELECT is just like SQL's SELECT, except in addition to selecting, filtering (with where), and ordering raw column values, you may also use predictive functions in any of those clauses::
 
-   SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>]
+   SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [INTO <newbtablename>]
 
 INFER is just like SELECT, except that it also tries to fill in missing values. The user may specify the desired confidence level to use (a number between 0 and 1, where 0 means "fill in every missing value with whatever your best guess is", and 1 means "only fill in a missing value if you're sure what it is"). If confidence is not specified, 0 is chosen as default. Optionally, the user may specify the number of samples to use when filling in missing values: the default value is good in general, but if you know what you're doing and want higher accuracy, you can increase the numer of samples used::
 
-   INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>]
+   INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [INTO <newbtablename>]
 
 SIMULATE generates new rows from the underlying probability model a specified number of times::
 
-   SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
+   SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [INTO <newbtablename>]
+
+The optional INTO clause at the end of SELECT, INFER, or SIMULATE queries allows you to create a new btable from the query results. The new btable's schema will be created based on the schema of the original table in the query.
 
 ESTIMATE COLUMNS is like a SELECT statement, but lets you select columns instead of rows::
 
