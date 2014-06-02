@@ -89,6 +89,7 @@ hist_keyword = CaselessKeyword("hist").setResultsName("hist")
 plot_keyword = CaselessKeyword("plot").setResultsName("plot")
 connected_keyword = CaselessKeyword("connected")
 components_keyword = CaselessKeyword("components")
+clusters_keyword = CaselessKeyword("clusters")
 threshold_keyword = CaselessKeyword("threshold")
 row_keyword = CaselessKeyword("row")
 key_keyword = CaselessKeyword("key")
@@ -220,6 +221,13 @@ save_connected_components_with_threshold_keyword = Combine(save_keyword + single
                                                            with_keyword + single_white + 
                                                            threshold_keyword)
 save_connected_components_keyword = save_connected_components_with_threshold_keyword
+
+save_clusters_with_threshold_keyword = Combine(save_keyword + single_white +
+                                                clusters_keyword + single_white +
+                                                with_keyword + single_white +
+                                                threshold_keyword)
+save_clusters_keyword = save_clusters_with_threshold_keyword
+
 key_in_keyword = Combine(key_keyword + single_white + in_keyword)
 naive_bayes_keyword = Combine(naive_keyword + single_white + bayes_keyword)
 crp_mixture_keyword = Combine(crp_keyword + single_white + mixture_keyword)
@@ -247,7 +255,9 @@ value = (QuotedString('"', escChar='\\') |
 filename = (QuotedString('"', escChar='\\') | 
             QuotedString("'", escChar='\\') | 
             Word(alphanums + "!\"/#$%&'()*+,-.:<=>?@[\]^_`{|}~")).setResultsName("filename")
-label = Word(printables, excludeChars=',;')
+label = (QuotedString('"', escChar='\\') | 
+         QuotedString("'", escChar='\\') | 
+         Word(printables, excludeChars=',;'))
 data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword
 
 ###################################################################################
@@ -479,6 +489,14 @@ save_connected_components_clause = Group(save_connected_components_keyword
                                           (into_keyword + 
                                            identifier.setResultsName('into_label')))).setResultsName('connected_components_clause')
 
+save_clusters_clause = Group(save_clusters_keyword
+                            .setResultsName('save_clusters') +
+                            float_number.setResultsName('threshold') +
+                            ((as_keyword +
+                              identifier.setResultsName('as_label')) |
+                             (into_keyword +
+                              identifier.setResultsName('into_label')))).setResultsName('clusters_clause')
+
 row_list_clause = Group(int_number + 
                            ZeroOrMore(Suppress(comma_literal) + 
                                       int_number)).setResultsName("row_list")
@@ -531,10 +549,11 @@ query = (Optional(freq_keyword | hist_keyword | summarize_keyword | plot_keyword
               Optional(for_keyword + column_list_clause.setResultsName('columns')) +
               Optional(for_keyword + row_list_clause.setResultsName('rows')) + 
               Optional(Suppress(save_to_keyword) + filename) + 
-              Optional(save_connected_components_clause) + 
+              Optional(save_clusters_clause) + 
               Optional(Suppress(times_keyword) + int_number.setResultsName("times")) + 
               Optional(using_models_clause) +
-              Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list"))))
+              Optional(Suppress(as_keyword) + identifier.setResultsName("as_column_list")) +
+              Optional(Suppress(into_keyword) + identifier.setResultsName("newtablename"))))
 
 bql_statement = (query | management_query) + Optional(semicolon_literal)
 bql_input = OneOrMore(Group(bql_statement)) 

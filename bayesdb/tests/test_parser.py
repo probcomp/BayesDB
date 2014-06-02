@@ -131,9 +131,9 @@ def test_composite_keywords_pyparsing():
     assert probability_of[0] == 'probability'
     predictive_probability_of = predictive_probability_of_keyword.parseString('predictive Probability  of',parseAll=True)
     assert predictive_probability_of[0] == 'predictive probability'
-    save_connected_components_with_threshold = save_connected_components_with_threshold_keyword.parseString(
-        'save cOnnected components with threshold',parseAll=True)
-    assert save_connected_components_with_threshold[0] == 'save connected components with threshold'
+    save_clusters_with_threshold = save_clusters_with_threshold_keyword.parseString(
+        'save clusters with threshold',parseAll=True)
+    assert save_clusters_with_threshold[0] == 'save clusters with threshold'
     estimate_pairwise_row = estimate_pairwise_row_keyword.parseString("estimate Pairwise row",parseAll=True)
     assert estimate_pairwise_row[0] == 'estimate_pairwise_row'
 
@@ -786,7 +786,7 @@ def test_estimate_pairwise_pyparsing():
     assert est_pairwise_ast_1.functions[0].function_id == 'correlation'
     assert est_pairwise_ast_1.functions[0].with_column == 'col_1'
     assert est_pairwise_ast_1.btable == 'table_1'
-    query_2 = "ESTIMATE PAIRWISE DEPENDENCE PROBABILITY WITH col_1 FROM table_1 FOR col_1,col_2 SAVE TO file.csv SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 AS col_list_1"
+    query_2 = "ESTIMATE PAIRWISE DEPENDENCE PROBABILITY WITH col_1 FROM table_1 FOR col_1,col_2 SAVE TO file.csv SAVE CLUSTERS WITH THRESHOLD .4 AS col_list_1"
     est_pairwise_ast_2 = query.parseString(query_2,parseAll=True)
     assert est_pairwise_ast_2.statement_id == 'estimate_pairwise'
     assert est_pairwise_ast_2.functions[0].function_id == 'dependence probability'
@@ -794,27 +794,27 @@ def test_estimate_pairwise_pyparsing():
     assert est_pairwise_ast_2.btable == 'table_1'
     assert est_pairwise_ast_2.columns.asList() == ['col_1','col_2']
     assert est_pairwise_ast_2.filename == 'file.csv'
-    assert est_pairwise_ast_2.connected_components_clause.threshold == '.4'
-    assert est_pairwise_ast_2.connected_components_clause.as_label == 'col_list_1'
+    assert est_pairwise_ast_2.clusters_clause.threshold == '.4'
+    assert est_pairwise_ast_2.clusters_clause.as_label == 'col_list_1'
     query_3 = "ESTIMATE PAIRWISE MUTUAL INFORMATION WITH col_1 FROM table_1"
     est_pairwise_ast_3 = query.parseString(query_3,parseAll=True)
     assert est_pairwise_ast_3.functions[0].function_id == 'mutual information'
 
 def test_estimate_pairwise_row_pyparsing():
-    query_1 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 INTO table_2"
+    query_1 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 SAVE CLUSTERS WITH THRESHOLD .4 INTO table_2"
     est_pairwise_ast_1 = query.parseString(query_1,parseAll=True)
     assert est_pairwise_ast_1.statement_id == 'estimate_pairwise_row'
     assert est_pairwise_ast_1.functions[0].function_id == 'similarity'
     assert est_pairwise_ast_1.btable == 'table_1'
-    query_2 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 FOR 1,2 SAVE TO file.csv SAVE CONNECTED COMPONENTS WITH THRESHOLD .4 AS table_2"
+    query_2 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 FOR 1,2 SAVE TO file.csv SAVE CLUSTERS WITH THRESHOLD .4 AS table_2"
     est_pairwise_ast_2 = query.parseString(query_2,parseAll=True)
     assert est_pairwise_ast_2.statement_id == 'estimate_pairwise_row'
     assert est_pairwise_ast_2.functions[0].function_id == 'similarity'
     assert est_pairwise_ast_2.btable == 'table_1'
     assert est_pairwise_ast_2.rows.asList() == ['1','2']
     assert est_pairwise_ast_2.filename == 'file.csv'
-    assert est_pairwise_ast_2.connected_components_clause.threshold == '.4'
-    assert est_pairwise_ast_2.connected_components_clause.as_label == 'table_2'
+    assert est_pairwise_ast_2.clusters_clause.threshold == '.4'
+    assert est_pairwise_ast_2.clusters_clause.as_label == 'table_2'
 
 def test_nested_queries_basic_pyparsing():
     query_1 = "SELECT * FROM ( SELECT col_1,col_2 FROM table_2)"
@@ -950,6 +950,7 @@ def test_parse_functions():
 def test_select():
     ##TODO test client_dict
     tablename = 't'
+    newtablename = 'newtable'
     functions = function_in_query.parseString('*',parseAll=True)
     whereclause = None
     limit = float('inf')
@@ -1048,6 +1049,24 @@ def test_select():
     assert args['modelids'] == d['modelids']
     assert args['summarize'] == d['summarize']
 
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select * from t where a=6 and b = 7 order by b limit 10 into newtable'))
+    order_by = [('b', True)],
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False, newtablename=newtablename)
+    assert method == 'select'
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'][0].function.column == 'a'
+    assert args['whereclause'][0].value == '6'
+    assert args['whereclause'][1].function.column == 'b'
+    assert args['whereclause'][1].value == '7'
+    assert args['limit'] == d['limit']
+    #assert args['order_by'] == d['order_by'] ##TODO
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
+    assert args['newtablename'] == d['newtablename']
+
     methods, args, client_dict = parser.parse_single_statement(bql_statement.parseString('freq select a from t'))
     d = dict(tablename=tablename, plot=plot, modelids=None, summarize=False, hist=False, freq=True)
     assert method == 'select'
@@ -1070,6 +1089,7 @@ def test_select():
 def test_infer(): ##TODO
     ##TODO test client_dict
     tablename = 't'
+    newtablename = 'newtable'
     functions = function_in_query.parseString('*',parseAll=True)
     whereclause = None
     limit = float('inf')
@@ -1151,6 +1171,23 @@ def test_infer(): ##TODO
     assert args['modelids'] == d['modelids']
     assert args['summarize'] == d['summarize']
 
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer * from t where a=6 and b = 7 limit 10 into newtable'))
+    d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False, newtablename=newtablename)
+    assert method == 'infer'
+    assert args['tablename'] == d['tablename']
+    assert args['functions'][0].column_id == d['functions'][0].column_id
+    assert args['whereclause'][0].function.column == 'a'
+    assert args['whereclause'][0].value == '6'
+    assert args['whereclause'][1].function.column == 'b'
+    assert args['whereclause'][1].value == '7'
+    assert args['limit'] == d['limit']
+    assert args['order_by'] == d['order_by']
+    assert args['plot'] == d['plot']
+    assert args['modelids'] == d['modelids']
+    assert args['summarize'] == d['summarize']
+    assert args['newtablename'] == d['newtablename']
+
     order_by = [('b', False)]
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer * from t where a=6 and b = 7 order by b limit 10'))
     d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
@@ -1184,6 +1221,22 @@ def test_simulate(): ##TODO
     assert client_dict['pairwise'] == False
     assert client_dict['filename'] == None
     assert client_dict['scatter'] == False
+
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('simulate * from t times 10 into newtable'))
+    assert method == 'simulate'
+    assert args['tablename'] == 't'
+    assert args['functions'][0].column_id == '*'
+    assert args['summarize'] == False
+    assert args['plot'] == False
+    assert args['order_by'] == False
+    assert args['modelids'] == None
+    assert args['newtablename'] == 'newtable'
+    assert args['givens'] == None
+    assert args['numpredictions'] == 10
+
+    assert client_dict['pairwise'] == False
+    assert client_dict['filename'] == None
+    assert client_dict['scatter'] == False
     ##TODO more clauses
 
 def test_estimate():
@@ -1204,7 +1257,7 @@ def test_estimate_pairwise():
     assert args['tablename'] == 't'
     assert args['function_name'] == 'correlation'
     assert args['column_list'] == None
-    assert args['components_name'] == None
+    assert args['clusters_name'] == None
     assert args['threshold'] == None
     assert args['modelids'] == None
     assert client_dict['filename'] == None
@@ -1216,7 +1269,7 @@ def test_estimate_pairwise_row():
     assert args['tablename'] == 't'
     assert args['function'].function_id == 'similarity'
     assert args['row_list'] == None
-    assert args['components_name'] == None
+    assert args['clusters_name'] == None
     assert args['threshold'] == None
     assert args['modelids'] == None
     assert client_dict['filename'] == None
@@ -1226,19 +1279,18 @@ def test_disallowed_queries():
     All of these queries should pass the grammar and fail at parser.parse_query
     """
     strings = ["select * from test times 10",
-               "select * from test save connected components with threshold .5 as test.csv",
+               "select * from test save clusters with threshold .5 as test.csv",
                "select * from test given a=5",
                "select * from test for test_clist",
                "select * from test with confidence .4",
-               "select * from test with 4 samples",
                "infer * from test times 10",
                "infer typicality from test",
                "simulate typicality from test",
-               "infer * from test save connected components with threshold .5 as test.csv",
+               "infer * from test save clusters with threshold .5 as test.csv",
                "infer * from test given a=5",
                "infer * from test for test_clist",
                "simulate * from test where a < 4",
-               "simulate * from test save connected components with threshold .5 as test.csv",
+               "simulate * from test save clusters with threshold .5 as test.csv",
                "simulate * from test for test_clist",
                "simulate * from test with confidence .4",
                "simulate * from test with 4 samples",
@@ -1247,7 +1299,7 @@ def test_disallowed_queries():
                "estimate columns from test times 10",
                "summarize estimate columns from test",
                "plot estimate columns from test", 
-               "estimate columns from test save connected components with threshold .5 as test.csv",
+               "estimate columns from test save clusters with threshold .5 as test.csv",
                "estimate pairwise correlation from test where a = b",
                "estimate pairwise correlation from test times 10",
                "estimate pairwise correlation from test given a = 5",
@@ -1266,3 +1318,12 @@ def test_disallowed_queries():
         ast = bql_statement.parseString(query_string,parseAll=True)
         with pytest.raises(AssertionError):
             parser.parse_single_statement(ast)
+
+def test_label_and_metadata():
+    # LABEL COLUMNS FOR <btable> SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...]
+    query_str1 = 'label columns for test set col_1 = label1, col_2 = "label 2"'
+    ast = bql_statement.parseString(query_str1, parseAll=True)
+    assert ast.label_clause[0][0] == 'col_1'
+    assert ast.label_clause[0][1] == 'label1'
+    assert ast.label_clause[1][0] == 'col_2'
+    assert ast.label_clause[1][1] == 'label 2'

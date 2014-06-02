@@ -32,6 +32,7 @@ import sys
 import random
 import threading
 import Queue
+import pandas
 
 import pylab
 import numpy
@@ -194,6 +195,31 @@ class Engine(object):
     ret['message'] = 'Updated schema.'
     return ret
     
+  def create_btable_from_existing(self, tablename, colnames_full, data, M_c):
+    """
+    Used in INTO statements to create a new btable as a portion of an existing one.
+    """
+    ## First, test if table with this name already exists, and fail if it does
+    if self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
+
+    # Remove row_id from table
+    if 'row_id' in colnames_full:
+      df = pandas.DataFrame(data=data, columns=colnames_full)
+      utils.df_drop(df, ['row_id'], axis=1)
+      data = df.to_records(index=False)
+      colnames_full = df.columns
+
+    cctypes_full = [utils.get_cctype_from_M_c(M_c, col) for col in colnames_full]
+    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, data, cctypes=cctypes_full)
+
+    # variables without "_full" don't include ignored columns.
+    raw_T, cctypes, colnames = data_utils.remove_ignore_cols(data, cctypes_full, colnames_full)
+    T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+    self.persistence_layer.create_btable(tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, data)
+
+    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
+
   def create_btable(self, tablename, header, raw_T_full, cctypes_full=None):
     """Uplooad a csv table to the predictive db.
     cctypes must be a dictionary mapping column names
@@ -457,7 +483,7 @@ class Engine(object):
     ret['message'] = 'Analyze complete.'
     return ret
 
-  def infer(self, tablename, functions, newtablename, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False, hist=False, freq=False):
+  def infer(self, tablename, functions, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """
     Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
@@ -473,9 +499,9 @@ class Engine(object):
       numsamples=50 ##TODO maybe put this in a config file
       
     return self.select(tablename, functions, whereclause, limit, order_by,
-                       impute_confidence=confidence, num_impute_samples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq)
+                       impute_confidence=confidence, numsamples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename)
     
-  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, num_impute_samples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False):
+  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, numsamples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """
     BQL's version of the SQL SELECT query.
     
@@ -528,7 +554,7 @@ class Engine(object):
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
     filtered_rows = select_utils.filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, self,
-                                                        query_colnames, impute_confidence, num_impute_samples, tablename)
+                                                        query_colnames, impute_confidence, numsamples, tablename)
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
     ## (and maybe temporarily augmented with all functions that will be ordered only)
@@ -537,10 +563,14 @@ class Engine(object):
     # Simply rearranges the order of the rows in filtered_rows according to the order_by query.
     if order_by != False:
       order_by = self.parser.parse_order_by_clause(order_by, M_c, T, column_lists)
-    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self, column_lists)
+    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self, column_lists, numsamples)
 
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
-    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self)
+    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self, numsamples)
+
+    # Execute INTO statement
+    if newtablename is not None:
+      self.create_btable_from_existing(newtablename, query_colnames, data, M_c)
 
     ret = dict(data=data, columns=query_colnames)
     if plot:
@@ -557,7 +587,7 @@ class Engine(object):
     return ret
 
 
-  def simulate(self, tablename, functions, newtablename, givens, numpredictions, order_by, plot=False, modelids=None, summarize=False, hist=False, freq=False):
+  def simulate(self, tablename, functions, givens, numpredictions, order_by, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """Simple predictive samples. Returns one row per prediction, with all the given and predicted variables."""
     # TODO: whereclause not implemented.
     if not self.persistence_layer.check_if_table_exists(tablename):
@@ -619,7 +649,11 @@ class Engine(object):
           row.append(data_utils.convert_code_to_value(M_c, idx, out_row[i]))
           i += 1
       data.append(row)
-      
+
+    # Execute INTO statement
+    if newtablename is not None:
+      self.create_btable_from_existing(newtablename, colnames, data, M_c)
+          
     ret = {'columns': colnames, 'data': data}
     if plot:
       ret['M_c'] = M_c
@@ -675,7 +709,7 @@ class Engine(object):
     import crosscat.utils.plot_utils
     crosscat.utils.plot_utils.plot_views(numpy.array(T), X_D_list[modelid], X_L_list[modelid], M_c, filename)
 
-  def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None):
+  def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None, numsamples=None):
 
     """
     Return all the column names from the specified table as a list.
@@ -702,29 +736,52 @@ class Engine(object):
     where_conditions = self.parser.parse_column_whereclause(whereclause, M_c, T)
     if where_conditions is not None and len(X_L_list) == 0:
       raise utils.BayesDBNoModelsError(tablename)      
-    column_indices = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self)
+    column_indices = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self, numsamples)
     
     ## order
     if order_by and len(X_L_list) == 0:
       raise utils.BayesDBNoModelsError(tablename)      
     if order_by != False:
       order_by = self.parser.parse_column_order_by_clause(order_by, M_c)
-    column_indices = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self)
+      order_func_descriptions = [estimate_columns_utils.function_description(order_item, M_c) for order_item in order_by]
+    else:
+      order_func_descriptions = []
+
+    # Get tuples of column estimation function values and column indices
+    column_idx_tups = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self, numsamples)
     
     # limit
     if limit != float('inf'):
-      column_indices = column_indices[:limit]
+      column_idx_tups = column_idx_tups[:limit]
 
-    # convert indices to names
-    column_names = [M_c['idx_to_name'][str(idx)] for idx in column_indices]
+    # convert indices to names and create data list of column names and associated function values
+    column_names = []
+    column_data = []
+
+    for column_idx_tup in column_idx_tups:
+      if type(column_idx_tup) == int:
+        column_idx_tup = ((), column_idx_tup)
+      column_name_temp = M_c['idx_to_name'][str(column_idx_tup[1])]
+      column_names.append(column_name_temp)
+
+      column_data_temp = [column_name_temp]
+      column_data_temp.extend(column_idx_tup[0])
+
+      column_data.append(column_data_temp)
 
     # save column list, if given a name to save as
     if name:
       self.persistence_layer.add_column_list(tablename, name, column_names)
-    
-    return {'columns': column_names}
 
-  def estimate_pairwise_row(self, tablename, function, row_list, components_name=None, threshold=None, modelids=None):
+    # Create column names ('column' followed by a string describing each function)
+    ret = {'columns': ['column']}
+    if column_data != []:
+      ret['columns'].extend(order_func_descriptions)
+      ret['data'] = column_data
+
+    return ret
+
+  def estimate_pairwise_row(self, tablename, function, row_list, clusters_name=None, threshold=None, modelids=None, numsamples=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
@@ -744,7 +801,7 @@ class Engine(object):
     
     # Do the heavy lifting: generate the matrix itself
 
-    matrix, row_indices_reordered, components = pairwise.generate_pairwise_row_matrix(function, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, component_threshold=threshold, column_lists=column_lists)
+    matrix, row_indices_reordered, clusters = pairwise.generate_pairwise_row_matrix(function, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, cluster_threshold=threshold, column_lists=column_lists, numsamples=numsamples)
     title = 'Pairwise row %s for %s' % (function.function_id, tablename)      
     ret = dict(
       matrix=matrix,
@@ -754,20 +811,20 @@ class Engine(object):
       )
 
     # Create new btables from connected components (like into), if desired. Overwrites old ones with same name.
-    if components is not None:
-      component_name_tuples = []
-      for i, component in enumerate(components):
-        name = "%s_%d" % (components_name, i)
-        num_rows = len(component)
-        self.persistence_layer.add_row_list(tablename, name, component)
-        component_name_tuples.append((name, num_rows))
-      ret['components'] = components
-      ret['row_lists'] = component_name_tuples
+    if clusters is not None:
+      cluster_name_tuples = []
+      for i, cluster in enumerate(clusters):
+        name = "%s_%d" % (clusters_name, i)
+        num_rows = len(cluster)
+        self.persistence_layer.add_row_list(tablename, name, cluster)
+        cluster_name_tuples.append((name, num_rows))
+      ret['clusters'] = clusters
+      ret['row_lists'] = cluster_name_tuples
 
     return ret
     
   
-  def estimate_pairwise(self, tablename, function_name, column_list=None, components_name=None, threshold=None, modelids=None):
+  def estimate_pairwise(self, tablename, function_name, column_list=None, clusters_name=None, threshold=None, modelids=None, numsamples=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
@@ -785,9 +842,9 @@ class Engine(object):
       column_names = None
 
     # Do the heavy lifting: generate the matrix itself
-    matrix, column_names_reordered, components = pairwise.generate_pairwise_column_matrix(   \
-        function_name, X_L_list, X_D_list, M_c, T, tablename,
-        engine=self, column_names=column_names, component_threshold=threshold)
+    matrix, column_names_reordered, clusters = pairwise.generate_pairwise_column_matrix(   \
+        function_name, X_L_list, X_D_list, M_c, T, tablename, engine=self, column_names=column_names,
+        cluster_threshold=threshold, numsamples=numsamples)
     
     title = 'Pairwise column %s for %s' % (function_name, tablename)      
     ret = dict(
@@ -797,16 +854,16 @@ class Engine(object):
       message = "Created " + title
       )
 
-    # Add the column lists for connected components, if desired. Overwrites old ones with same name.
-    if components is not None:
-      component_name_tuples = []
-      for i, component in enumerate(components):
-        name = "%s_%d" % (components_name, i)
-        column_names = [M_c['idx_to_name'][str(idx)] for idx in component]
+    # Add the column lists for connected clusters, if desired. Overwrites old ones with same name.
+    if clusters is not None:
+      cluster_name_tuples = []
+      for i, cluster in enumerate(clusters):
+        name = "%s_%d" % (clusters_name, i)
+        column_names = [M_c['idx_to_name'][str(idx)] for idx in cluster]
         self.persistence_layer.add_column_list(tablename, name, column_names)
-        component_name_tuples.append((name, column_names))
-      ret['components'] = components
-      ret['column_lists'] = component_name_tuples
+        cluster_name_tuples.append((name, column_names))
+      ret['clusters'] = clusters
+      ret['column_lists'] = cluster_name_tuples
 
     return ret
 

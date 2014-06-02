@@ -265,7 +265,7 @@ def test_infer():
   order_by = False
   numsamples = 30
   confidence = 0
-  infer_result = engine.infer(test_tablename, functions, None, confidence, whereclause, limit, numsamples, order_by)
+  infer_result = engine.infer(test_tablename, functions, confidence, whereclause, limit, numsamples, order_by)
   assert 'columns' in infer_result
   assert 'data' in infer_result
   assert infer_result['columns'] == ['row_id', 'name', 'qual_score']
@@ -289,7 +289,7 @@ def test_infer():
 
   ## Now, try infer with higher confidence, and make sure that name isn't inferred anymore.
   confidence = 0.9
-  infer_result = engine.infer(test_tablename, functions, None, confidence, whereclause, limit, numsamples, order_by)
+  infer_result = engine.infer(test_tablename, functions, confidence, whereclause, limit, numsamples, order_by)
 
   for row in range(5):
     ## TODO: what do missing values look like? these should be missing
@@ -309,7 +309,7 @@ def test_simulate():
   givens = None
   order_by = False
   numpredictions = 10
-  simulate_result = engine.simulate(test_tablename, functions, None, givens, numpredictions, order_by)
+  simulate_result = engine.simulate(test_tablename, functions, givens, numpredictions, order_by)
   assert 'columns' in simulate_result
   assert 'data' in simulate_result
   assert simulate_result['columns'] == ['name', 'qual_score']
@@ -325,13 +325,10 @@ def test_estimate_pairwise_dependence_probability():
   engine.initialize_models(test_tablename, 2)
   dep_mat = engine.estimate_pairwise(test_tablename, 'dependence probability')
 
-@pytest.mark.slow
 def test_estimate_pairwise_mutual_information():
-  ## TODO: speedup! Takes 27 seconds, and this is with 1 sample to estimate mutual information.
-  # It definitely takes many more samples to get a good estimate - at least 100.
   test_tablename, _ = create_dha()
   engine.initialize_models(test_tablename, 2)
-  mi_mat = engine.estimate_pairwise(test_tablename, 'mutual information')
+  mi_mat = engine.estimate_pairwise(test_tablename, 'mutual information', numsamples=2)
 
 def test_estimate_pairwise_correlation():
   test_tablename, _ = create_dha()
@@ -427,7 +424,7 @@ def test_estimate_columns():
   name = None
   functions = None
   columns = engine.estimate_columns(test_tablename, functions, whereclause, limit, order_by, name)['columns']
-  assert columns == all_columns
-  
+  assert columns == ['column']
+
 if __name__ == '__main__':
     run_test()

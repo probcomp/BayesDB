@@ -33,10 +33,10 @@ import functions
 import data_utils as du
 
 
-def filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, engine):
-  return [c_idx for c_idx in column_indices if _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine)]
+def filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, engine, numsamples):
+  return [c_idx for c_idx in column_indices if _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine, numsamples)]
 
-def _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine):
+def _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine, numsamples):
   for ((func, f_args), op, val) in where_conditions:
     # mutual_info, correlation, and dep_prob all take args=(i,j)
     # col_typicality takes just args=i
@@ -45,20 +45,20 @@ def _is_column_valid(c_idx, where_conditions, M_c, X_L_list, X_D_list, T, engine
       f_args = (f_args, c_idx)
     else:
       f_args = c_idx
-    where_value = func(f_args, None, None, M_c, X_L_list, X_D_list, T, engine)
+    where_value = func(f_args, None, None, M_c, X_L_list, X_D_list, T, engine, numsamples)
     return op(where_value, val)
   return True
 
 
-def order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, engine):
+def order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, engine, numsamples):
   if not order_by:
     return column_indices
 
   ## Step 2: call order by.
-  sorted_column_indices = _column_order_by(column_indices, order_by, M_c, X_L_list, X_D_list, T, engine)
+  sorted_column_indices = _column_order_by(column_indices, order_by, M_c, X_L_list, X_D_list, T, engine, numsamples)
   return sorted_column_indices
 
-def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, engine):
+def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, engine, numsamples):
   """
   Return the original column indices, but sorted by the individual functions.
   """
@@ -79,11 +79,30 @@ def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, 
       else:
         f_args = c_idx
         
-      score = f(f_args, None, None, M_c, X_L_list, X_D_list, T, engine)
+      score = f(f_args, None, None, M_c, X_L_list, X_D_list, T, engine, numsamples)
       if desc:
         score *= -1
       scores.append(score)
     scored_column_indices.append((tuple(scores), c_idx))
   scored_column_indices.sort(key=lambda tup: tup[0], reverse=False)
 
-  return [tup[1] for tup in scored_column_indices]
+  return [tup for tup in scored_column_indices]
+
+def function_description(order_item, M_c):
+  function_names = {'_col_typicality': 'typicality',
+    '_dependence_probability': 'dependence probability',
+    '_correlation': 'correlation',
+    '_mutual_information': 'mutual information'
+    }
+
+  function_name = function_names[order_item[0].__name__]
+  order = 'desc' if order_item[2] else 'desc'
+
+  if function_name == 'typicality':
+    description = '%s typicality' % order
+  else:
+    function_arg = M_c['idx_to_name'][str(order_item[1])]
+    description = '%s %s with %s' % (order, function_name, function_arg)
+
+  return description
+
