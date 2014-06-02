@@ -325,7 +325,7 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
         num_cols = len(column_names)
         column_indices = [M_c['name_to_idx'][name] for name in column_names]
     else:
-        utils.BayesDBParseError("Invalid query: column '%s' not found" % column)
+        BayesDBParseError("Invalid query: column '%s' not found" % column)
 
 def summarize_table(data, columns, M_c):
     """
