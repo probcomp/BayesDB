@@ -507,3 +507,33 @@ def test_freq_hist():
 
   out = client('hist select qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
+
+def test_update_schema():
+  test_tablename = create_dha()
+  global client, test_filenames
+
+  # Test setting one column to each type
+  out = client('update schema for %s set qual_score = ignore, name = key, ami_score = multinomial' % (test_tablename), debug=True, pretty=False)[0]
+  assert (out['datatype'][out['column'] == 'qual_score'] == 'ignore').all()
+  assert (out['datatype'][out['column'] == 'name'] == 'key').all()
+  assert (out['datatype'][out['column'] == 'ami_score'] == 'multinomial').all()
+
+  # Selecting qual_score should fail now that qual_score is set to be ignored
+  with pytest.raises(utils.BayesDBError):
+    client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
+
+  # Set qual_score back to continuous, and select should work again
+  client('update schema for %s set qual_score = continuous, name = multinomial, ami_score = continuous' % (test_tablename), debug=True, pretty=False)
+  client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
+
+  # Set back to ignore, run models, and then estimation shouldn't work for qual_score
+  client('update schema for %s set qual_score = ignore' % (test_tablename), debug=True, pretty=False)
+
+  client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
+
+  client('analyze %s for 2 iterations' % (test_tablename), debug=True, pretty=False)
+
+  with pytest.raises(utils.BayesDBError):
+    client('estimate columns from %s order by correlation with qual_score limit 5' % (test_tablename), debug=True, pretty=False)
+    print 5
+    client('estimate columns from %s order by dependence probability with qual_score limit 5' % (test_tablename), debug=True, pretty=False)
