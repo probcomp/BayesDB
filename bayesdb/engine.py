@@ -294,7 +294,7 @@ class Engine(object):
     self.persistence_layer.drop_models(tablename, model_indices)
     return self.show_models(tablename)
     
-  def initialize_models(self, tablename, n_models, model_config=None):
+  def initialize_models(self, tablename, n_models=16, model_config=None):
     """
     Initialize n_models models.
 
@@ -473,7 +473,7 @@ class Engine(object):
     # TODO: ignores iterations
 
     # TODO: kill final model if over time? not important bc just running in background.
-    
+
     def _do_analyze_for_model(modelid):
       # TODO: this thread should make a background thread for model writes!
       analyze_args = dict(M_c=M_c, T=T, do_diagnostics=True, kernel_list=kernel_list, \

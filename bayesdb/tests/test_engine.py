@@ -245,7 +245,7 @@ def test_analyze():
     assert sorted(model_ids) == range(num_models)
     for i in range(num_models):
       model = engine.persistence_layer.get_models(test_tablename, i)
-      assert model['iterations'] == it      
+      assert model['iterations'] == it
 
 def test_nan_handling():
   test_tablename1, _ = create_dha(path='data/dha_missing.csv') 

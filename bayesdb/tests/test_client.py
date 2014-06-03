@@ -285,7 +285,8 @@ def test_model_config():
   assert numpy.all(dep_mat == 1)
 
   # test crosscat
-  client('drop models from %s' % test_tablename, yes=True, debug=True, pretty=False)
+  with pytest.raises(utils.BayesDBNoModelsError):
+    client('drop models from %s' % test_tablename, yes=True, debug=True, pretty=False)
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
   #client('analyze %s for 2 iterations wait' % (test_tablename), debug=True, pretty=False)
   client.engine.analyze(test_tablename, model_indices='all', iterations=2, background=False)  
@@ -539,5 +540,4 @@ def test_update_schema():
 
   with pytest.raises(utils.BayesDBError):
     client('estimate columns from %s order by correlation with qual_score limit 5' % (test_tablename), debug=True, pretty=False)
-    print 5
     client('estimate columns from %s order by dependence probability with qual_score limit 5' % (test_tablename), debug=True, pretty=False)

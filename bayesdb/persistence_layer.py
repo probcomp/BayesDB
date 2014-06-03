@@ -57,7 +57,7 @@ class ModelLocks():
     def acquire(self, tablename, modelid):
         self.add_tablename_if_not_exist(tablename)
         self.add_lock_if_not_exist(tablename, modelid)
-        
+
         self.table_locks[tablename].acquire()
         self.tablename_dict[tablename][modelid].acquire()
         self.table_locks[tablename].release()
@@ -202,6 +202,7 @@ class PersistenceLayer():
                     # Only return one of the models
                     full_fname = os.path.join(models_dir, 'model_%d.pkl' % modelid)
                     if not os.path.exists(full_fname):
+                        self.model_locks.release(tablename, modelid)
                         return None
                     f = open(full_fname, 'r')
                     m = pickle.load(f)
@@ -397,6 +398,7 @@ class PersistenceLayer():
                     if 'model_' in fname:
                         os.remove(os.path.join(models_dir, fname))
                 self.model_locks.drop_all(tablename)
+                self.model_locks.release_table(tablename)                
             else:
                 for modelid in model_ids:
                     self.model_locks.acquire(tablename, modelid)
@@ -404,6 +406,7 @@ class PersistenceLayer():
                     if os.path.exists(fname):
                         os.remove(fname)
                     self.model_locks.drop(tablename, modelid)
+                    self.model_locsk.release(tablename, modelid)
         else:
             # If models in old style, convert to new style, save, and retry.
             models = self.get_models(tablename)
@@ -586,6 +589,8 @@ class PersistenceLayer():
 
     def update_models(self, tablename, modelids, X_L_list, X_D_list, diagnostics_dict):
         """
+        TODO: UNUSED WITH NEW ANALYZE, DELETE
+        
         Overwrite all models by id, and append diagnostic info.
         
         param diagnostics_dict: -> dict[f_z[0, D], num_views, logscore, f_z[0, 1], column_crp_alpha]
@@ -594,6 +599,7 @@ class PersistenceLayer():
         Ignores f_z[0, D] and f_z[0, 1], since these will need to be recalculated after all
         inference is done in order to properly incorporate all models.
         """
+        self.acquire_table(tablename)
         models = self.get_models(tablename)
         new_iterations = len(diagnostics_dict['logscore'])
 
@@ -616,6 +622,7 @@ class PersistenceLayer():
 
         # Save to disk
         self.write_models(tablename, models)
+        self.release_table(tablename)
 
     def update_model(self, tablename, X_L, X_D, diagnostics_dict, modelid):
         """
@@ -632,6 +639,7 @@ class PersistenceLayer():
         each diagnostic entry is a list, over iterations.
 
         """
+        self.model_locks.acquire(tablename, modelid)
         model = self.get_models(tablename, modelid)
 
         model['X_L'] = X_L
@@ -647,6 +655,7 @@ class PersistenceLayer():
                 model[diag_key] = diag_list
         
         self.write_model(tablename, model, modelid)
+        self.model_locks.release(tablename, modelid)
 
     def get_model_ids(self, tablename):
         """ Receive a list of all model ids for the table. """
