@@ -63,7 +63,8 @@ class ModelLocks():
         self.table_locks[tablename].release()
 
     def release(self, tablename, modelid):
-        self.tablename_dict[tablename][modelid].release()
+        if modelid in self.tablename_dict[tablename]:
+            self.tablename_dict[tablename][modelid].release()
 
     def acquire_table(self, tablename):
         self.add_tablename_if_not_exist(tablename)
@@ -406,7 +407,7 @@ class PersistenceLayer():
                     if os.path.exists(fname):
                         os.remove(fname)
                     self.model_locks.drop(tablename, modelid)
-                    self.model_locsk.release(tablename, modelid)
+                    self.model_locks.release(tablename, modelid)
         else:
             # If models in old style, convert to new style, save, and retry.
             models = self.get_models(tablename)
