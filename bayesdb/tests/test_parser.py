@@ -943,9 +943,9 @@ def test_parse_functions():
     assert queries[8] == (functions._probability, (1,1), True)
     assert queries[9] == (functions._col_typicality, 0, True)
     assert queries[10] == (functions._row_typicality, True, False)
-    assert queries[11] == (functions._column, 0, False)
-    assert queries[12] == (functions._column, 0, False)
-    assert queries[13] == (functions._column, 1, False)
+    assert queries[11] == (functions._column, (0, None), False)
+    assert queries[12] == (functions._column, (0, None), False)
+    assert queries[13] == (functions._column, (1, None), False)
     
 def test_select():
     ##TODO test client_dict

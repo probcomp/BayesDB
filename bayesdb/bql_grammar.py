@@ -533,7 +533,7 @@ function_in_query = (predictive_probability_of_function |
                      column_keyword |
                      dependence_probability_keyword |
                      Group((identifier|all_column_literal).setResultsName("column_id") + 
-                           Optional(conf_keyword + int_number.setResultsName('conf')))).setResultsName("function")
+                           Optional(conf_keyword + float_number.setResultsName('conf')))).setResultsName("function")
 
 functions_clause = Group(function_in_query + 
                          ZeroOrMore(Suppress(comma_literal) + 

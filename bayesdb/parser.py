@@ -637,7 +637,7 @@ class Parser(object):
                 column_name = single_condition.function.column
                 assert column_name != '*'
                 if column_name in M_c['name_to_idx']:
-                    args = M_c['name_to_idx'][column_name]
+                    args = (M_c['name_to_idx'][column_name], confidence)
                     value = utils.string_to_column_type(raw_value, column_name, M_c)
                     function = functions._column
                 else:
@@ -721,7 +721,7 @@ class Parser(object):
                 args = self.get_args_pred_prob(orderable.function, M_c)
             elif orderable.function.column != '': 
                 function = functions._column
-                args = M_c['name_to_idx'][orderable.function.column]
+                args = (M_c['name_to_idx'][orderable.function.column], None)
             else:
                 raise utils.BayesDBParseError("Invalid order by clause.")
             function_list.append((function, args, desc))
@@ -817,10 +817,17 @@ class Parser(object):
             ## single column, column_list, or *
             elif function_group.column_id != '':
                 column_name = function_group.column_id
+                confidence = None
+                if function_group.conf != '':
+                    confidence = float(function_group.conf)
                 assert M_c is not None
                 index_list, name_list = self.parse_column_set(column_name, M_c, column_lists)
-                queries += [(functions._column, column_index , False) for column_index in index_list]
-                query_colnames += [name for name in name_list]
+                queries += [(functions._column, (column_index, confidence), False) for column_index in index_list]
+                if confidence is not None:
+                    query_colnames += [name + ' with confidence %s' % confidence for name in name_list]
+                else:
+                    query_colnames += [name for name in name_list]
+                
             else: 
                 raise utils.BayesDBParseError("Invalid query: could not parse function")
         return queries, query_colnames

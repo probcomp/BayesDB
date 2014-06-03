@@ -66,7 +66,7 @@ def convert_row_from_codes_to_values(row, M_c):
       ret.append(code)
   return tuple(ret)
 
-def filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, engine, query_colnames,
+def filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, engine, queries,
                            impute_confidence, numsamples, tablename):
     """
     impute_confidence: if None, don't impute. otherwise, this is the imput confidence
@@ -76,9 +76,7 @@ def filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, engine,
     filtered_rows = list()
     if impute_confidence is not None:
       t_array = numpy.array(T, dtype=float)
-      infer_colnames = query_colnames[1:] # remove row_id from front of query_columns, so that infer doesn't infer row_id
-      query_col_indices = [M_c['name_to_idx'][colname] for colname in infer_colnames]
-
+      query_col_indicies = [query[1][0] for query in queries[1:]]
     for row_id, T_row in enumerate(T):
       row_values = convert_row_from_codes_to_values(T_row, M_c) ## Convert row from codes to values
 
@@ -86,7 +84,7 @@ def filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, engine,
         if impute_confidence is not None:
           ## Determine which values are 'nan', which need to be imputed.
           ## Only impute columns in 'query_colnames'
-          for col_id in query_col_indices:
+          for col_id in query_col_indicies:
             if numpy.isnan(t_array[row_id, col_id]):
               # Found missing value! Try to fill it in.
               # row_id, col_id is Q. Y is givens: All non-nan values in this row
@@ -101,6 +99,7 @@ def filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, engine,
                 row_values[col_id] = value
                 row_values = tuple(row_values)
         filtered_rows.append((row_id, row_values))
+
     return filtered_rows
 
 def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine, column_lists, numsamples):

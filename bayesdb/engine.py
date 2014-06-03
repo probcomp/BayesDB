@@ -625,7 +625,7 @@ class Engine(object):
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
     filtered_rows = select_utils.filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, self,
-                                                        query_colnames, impute_confidence, numsamples, tablename)
+                                                        queries, impute_confidence, numsamples, tablename)
     ## TODO: In order to avoid double-calling functions when we both select them and order by them,
     ## we should augment filtered_rows here with all functions that are going to be selected
     ## (and maybe temporarily augmented with all functions that will be ordered only)
@@ -696,7 +696,8 @@ class Engine(object):
     ##TODO check for no functions
     
     ##TODO col_indices, colnames are a hack from old parsing
-    col_indices = [query[1] for query in queries[1:]]
+    
+    col_indices = [query[1][0] for query in queries[1:]]
     colnames = query_colnames[1:]
     query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]

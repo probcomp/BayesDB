@@ -54,7 +54,8 @@ import data_utils as du
 
 
 def _column(column_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine, numsamples):
-    col_idx = column_args
+    col_idx = column_args[0]
+    confidence = column_args[1] ##TODO Jay, implement this
     return data_values[col_idx]
 
 def _row_id(args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine, numsamples):
