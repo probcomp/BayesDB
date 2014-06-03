@@ -18,6 +18,7 @@
 #   limitations under the License.
 #
 
+import itertools
 import time
 import inspect
 import os
@@ -435,7 +436,7 @@ class Engine(object):
       if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
         raise utils.BayesDBError("%s is already being analzyed. Try using 'SHOW ANALYZE FOR %s' to get more information, or 'CANCEL ANALYZE FOR %s' to cancel the ANALYZE.")
       t = threading.Thread(target=self.analyze_helper, args=(tablename, modelids, kernel_list, iterations,
-                                                               seconds, M_c, T, models, background))
+                                                             seconds, M_c, T, models, background))
       self.analyze_threads[tablename] = t
       t.start()
       # TODO: how to remove when done?
@@ -476,33 +477,9 @@ class Engine(object):
     # TODO: kill final model if over time? not important bc just running in background.
 
     print '\nSTART ANALYZE\n'
-    def _do_analyze_for_model(modelid):
-      print 'process start'
-      # TODO: this process should make a background thread for model writes!
-      analyze_args = dict(M_c=M_c, T=T, do_diagnostics=True, kernel_list=kernel_list, \
-                          X_L=models[modelid]['X_L'], X_D=models[modelid]['X_D'], n_steps=1)
-      start_time = time.time()
-      last_write_time = start_time
-
-      for i in range(iterations):
-        print 'call backend %d' % modelid
-        X_L, X_D, diagnostics_dict = self.call_backend('analyze', analyze_args)
-        print 'recv backend %d' % modelid
-        analyze_args['X_L'] = X_L
-        analyze_args['X_D'] = X_D
-        
-        cur_time = time.time()
-        elapsed = cur_time - start_time
-        time_since_write = cur_time - last_write_time
-
-        print 'UPDATE MODEL %d' % modelid
-        self.persistence_layer.update_model(tablename, X_L, X_D, diagnostics_dict, modelid)
-        print 'DONE UPDATING MODEL %d' % modelid
-        
-        if elapsed >= seconds and seconds is not None:
-          return
-          
-    
+    X_L_list = [models[i]['X_L'] for i in modelids]
+    X_D_list = [models[i]['X_D'] for i in modelids]    
+    """
     threads = []
     # Create a thread for each modelid. Each thread will execute one iteration of analyze.
     for modelid in modelids:
@@ -514,6 +491,24 @@ class Engine(object):
     # before returning, make sure all threads have finished
     for p in threads:
       p.join()
+    """
+
+    pool = multiprocessing.Pool()
+    from itertools import cycle
+    arg_tuples = zip(
+      modelids,
+      cycle([tablename]),
+      cycle([kernel_list]),
+      cycle([iterations]),
+      cycle([seconds]),
+      cycle([M_c]),
+      cycle([T]),
+      X_L_list,
+      X_D_list,
+      cycle([background]),
+      cycle([self]),
+    )
+    pool.map(_do_analyze_for_model_arg_tuple, arg_tuples)
 
     print '\nEND ANALYZE\n'
     if background:
@@ -919,3 +914,43 @@ def get_method_name_to_args():
         arg_str_list = inspect.getargspec(method).args[1:]
         method_name_to_args[method_name] = arg_str_list
     return method_name_to_args
+
+
+
+
+
+    
+def call_backend(engine, func, args):
+  engine.call_backend(func, args)
+
+def update_model(engine, tablename, X_L, X_D, diagnostics_dict, modelid):
+  engine.persistence_layer.update_model(tablename, X_L, X_D, diagnostics_dict, modelid)  
+
+def _do_analyze_for_model_arg_tuple(arg_tuple):
+  return _do_analyze_for_model(*arg_tuple)
+    
+def _do_analyze_for_model(modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L, X_D, background, engine):
+  print 'process start'
+  # TODO: this process should make a background thread for model writes!
+  analyze_args = dict(M_c=M_c, T=T, do_diagnostics=True, kernel_list=kernel_list, \
+                      X_L=X_L, X_D=X_D, n_steps=1)
+  start_time = time.time()
+  last_write_time = start_time
+
+  for i in range(iterations):
+    print 'call backend %d' % modelid
+    #X_L, X_D, diagnostics_dict = call_backend(engine, 'analyze', analyze_args)
+    print 'recv backend %d' % modelid
+    analyze_args['X_L'] = X_L
+    analyze_args['X_D'] = X_D
+
+    cur_time = time.time()
+    elapsed = cur_time - start_time
+    time_since_write = cur_time - last_write_time
+
+    print 'UPDATE MODEL %d' % modelid
+    #update_model(engine, tablename, X_L, X_D, diagnostics_dict, modelid)
+    print 'DONE UPDATING MODEL %d' % modelid
+
+    if elapsed >= seconds and seconds is not None:
+      return
