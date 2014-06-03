@@ -311,7 +311,6 @@ class Parser(object):
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in INFER"
         for function in functions:
             assert function.function_id == '', "BayesDBParsingError: %s not valid in INFER" % function.function_id
-                
         
         return 'infer', \
             dict(tablename=tablename, functions=functions, 
@@ -349,6 +348,8 @@ class Parser(object):
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SELECT"
         assert args_dict['confidence'] == 0, "BayesDBParsingError: CONFIDENCE not allowed in SELECT"
 
+        for function in functions:
+            assert function.conf == '', "BayesDBParsingError: CONF (WITH CONFIDENCE) not valid in SELECT" 
         return 'select', \
             dict(tablename=tablename, whereclause=whereclause, 
                  functions=functions, limit=limit, order_by=order_by, plot=plot, numsamples=numsamples,
@@ -383,6 +384,7 @@ class Parser(object):
         assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in SIMULATE. Use GIVEN instead."
         for function in functions:
             assert function.function_id == '', "BayesDBParsingError: %s not valid in SIMULATE" % function.function_id
+            assert function.conf == '', "BayesDBParsingError: CONF (WITH CONFIDENCE) not valid in SIMULATE" 
 
         return 'simulate', \
             dict(tablename=tablename, functions=functions, 
