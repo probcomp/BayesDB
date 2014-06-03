@@ -31,6 +31,7 @@ import ast
 import sys
 import random
 import threading
+import multiprocessing
 import Queue
 import pandas
 
@@ -474,15 +475,19 @@ class Engine(object):
 
     # TODO: kill final model if over time? not important bc just running in background.
 
+    print '\nSTART ANALYZE\n'
     def _do_analyze_for_model(modelid):
-      # TODO: this thread should make a background thread for model writes!
+      print 'process start'
+      # TODO: this process should make a background thread for model writes!
       analyze_args = dict(M_c=M_c, T=T, do_diagnostics=True, kernel_list=kernel_list, \
                           X_L=models[modelid]['X_L'], X_D=models[modelid]['X_D'], n_steps=1)
       start_time = time.time()
       last_write_time = start_time
 
       for i in range(iterations):
+        print 'call backend %d' % modelid
         X_L, X_D, diagnostics_dict = self.call_backend('analyze', analyze_args)
+        print 'recv backend %d' % modelid
         analyze_args['X_L'] = X_L
         analyze_args['X_D'] = X_D
         
@@ -490,7 +495,9 @@ class Engine(object):
         elapsed = cur_time - start_time
         time_since_write = cur_time - last_write_time
 
+        print 'UPDATE MODEL %d' % modelid
         self.persistence_layer.update_model(tablename, X_L, X_D, diagnostics_dict, modelid)
+        print 'DONE UPDATING MODEL %d' % modelid
         
         if elapsed >= seconds and seconds is not None:
           return
@@ -499,15 +506,16 @@ class Engine(object):
     threads = []
     # Create a thread for each modelid. Each thread will execute one iteration of analyze.
     for modelid in modelids:
-      t = threading.Thread(target=_do_analyze_for_model, args=(modelid,))
-      t.daemon = True
-      t.start()
-      threads.append(t)
+      p = multiprocessing.Process(target=_do_analyze_for_model, args=(modelid,))
+      p.daemon = True
+      p.start()
+      threads.append(p)
 
     # before returning, make sure all threads have finished
-    for t in threads:
-      t.join()
+    for p in threads:
+      p.join()
 
+    print '\nEND ANALYZE\n'
     if background:
       print "\nAnalyze for table %s complete. Use 'SHOW MODELS FOR %s' to view models." % (tablename, tablename)
 

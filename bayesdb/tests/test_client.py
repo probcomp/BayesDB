@@ -267,7 +267,7 @@ def test_model_config():
   # test naive bayes
   client('initialize 2 models for %s with config naive bayes' % (test_tablename), debug=True, pretty=False)
   #client('analyze %s for 2 iterations wait' % (test_tablename), debug=True, pretty=False)
-  client.engine.analyze(test_tablename, model_indices='all', iterations=2, background=False)
+  client.engine.analyze(test_tablename, model_indices=[0], iterations=2, background=False)
   dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, debug=True, pretty=False)[0]['matrix']
   ## assert that all dependencies are _0_ (not 1, because there should only be 1 view and 1 cluster!)
   ## except the diagonal, where we've hardcoded every column to be dependent with itself
