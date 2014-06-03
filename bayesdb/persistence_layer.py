@@ -25,6 +25,7 @@ import json
 import pickle
 import shutil
 import contextlib
+import threading
 
 from threading import RLock
 
@@ -75,7 +76,10 @@ class ModelLocks():
     def release_table(self, tablename):
         self.table_locks[tablename].release()
         for modelid, lock in self.tablename_dict[tablename].items():
-            lock.release()
+            # Only release locks this thread owns. There could be a case where
+            # a new model was created while he had the table lock.
+            if threading.current_thread().ident == lock._RLock__owner:
+                lock.release()
 
     def drop(self, tablename, modelid):
         del self.tablename_dict[tablename][modelid]
