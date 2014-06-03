@@ -403,9 +403,6 @@ class Engine(object):
     if not self.persistence_layer.has_models(tablename):
       raise utils.BayesDBNoModelsError(tablename)
     
-    if iterations is None:
-      iterations = 300
-
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
     max_model_id = self.persistence_layer.get_max_model_id(tablename)
@@ -442,14 +439,16 @@ class Engine(object):
       return dict(message="Analyzing %s: models will be updated in the background." % tablename)
 
   def show_analyze(self, tablename):
-    if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():    
-      return dict(message="Table %s is currently being analyzed." % tablename)
+    if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
+      info = self.analyze_threads[tablename].get_info()
+      return dict(message=info)
     else:
       return dict(message="Table %s is not currently being analyzed." % tablename)
 
   def cancel_analyze(self, tablename):
     if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
       self.analyze_threads[tablename].stop()
+      return dict(message="Analyze for table %s is being canceled. Please wait a few moments for it to exit safely." % tablename)
     else:
       raise utils.BayesDBError("Table %s is not being analyzed." % tablename)              
 
@@ -874,13 +873,26 @@ class AnalyzeMaster(StoppableThread):
   def __init__(self, args):
     self.target = self.analyze_master    
     super(AnalyzeMaster, self).__init__(target=self.target, args=args)
+
+  def get_info(self):
+    elapsed_seconds = time.time() - self.start_time    
+    if self.requested_iterations is None:
+      # User specified time constraint
+      remaining_seconds = self.total_seconds - elapsed_seconds
+      if remaining_seconds > 0:
+        return "Iterations completed: %d\nElapsed minutes: %0.2f\nRemaining minutes: %0.2f" % (self.iters_done, elapsed_seconds/60.0, remaining_seconds/60.0)
+      else:
+        return "Iterations completed: %d\nTime complete: waiting for final iteration to finish." % self.iters_done
+    else:
+      # User specified iterations constraint
+      return "Iterations completed: %d\nRemaining iterations: %d\nElapsed minutes: %02.f\nEstimated remaining minutes:%0.2f" % (self.iters_done, self.requested_iterations - self.iters_done, elapsed_seconds/60.0, self.time_remaining_estimate/60.0)
+    return timing_str
   
   def analyze_master(self, tablename, modelids, kernel_list, iterations, seconds, M_c, T, models, background, engine):
     """
     Helper function for analyze. This is the thread that runs in the background as the previous analyze
     command returns before analyze is complete.
     """
-
 
     """ New stuff: scrutinize carefully 
     analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True,
@@ -892,6 +904,18 @@ class AnalyzeMaster(StoppableThread):
     if seconds is not None:
       analyze_args['max_time'] = seconds
     """
+    self.iters_done = 0
+    self.time_remaining_estimate = -1
+    # Even if limited by seconds, still limit to 1000 iterations.
+    if iterations is None:
+      self.requested_iterations = None
+      iterations = 1000
+    else:
+      self.requested_iterations = iterations
+
+    # Tracking info
+    self.start_time = time.time()
+    self.total_seconds = seconds
 
     ## CrossCat analyze works by trying to do the specified number of iterations (which MUST be at least 1,
     ##   and it never does more than that number), and doesn't start a new iteration if the specified time
@@ -920,16 +944,24 @@ class AnalyzeMaster(StoppableThread):
       threads.append(p)
 
     # before returning, make sure all threads have finished
-    done = False
-    while not done:
-      done = True
+    workers_done = False
+    while not workers_done:
+      time.sleep(.25)
+      workers_done = True
       for p in threads:
         if not p.isAlive():
           p.join()
         else:
-          done = False
+          workers_done = False
 
-      # if we are stopped, then stop all workers
+      # Get progress info
+      info = zip(*[p.get_progress() for p in threads])
+      iter_list = info[0]
+      self.iters_done = min(iter_list)
+      time_estimates = info[1]
+      self.time_remaining_estimate = max(time_estimates)
+
+      # If we are stopped, then stop all workers
       if self.stopped():
         for p in threads:
           if p.isAlive():
@@ -940,18 +972,25 @@ class AnalyzeMaster(StoppableThread):
 
 class AnalyzeWorker(StoppableThread):
   def __init__(self, args):
-    self.target = self._do_analyze_for_model    
+    self.target = self.do_analyze_for_model    
     super(AnalyzeWorker, self).__init__(target=self.target, args=args)
+    self.iterations_done = 0
+    self.time_per_model = 0
+
+  def get_progress(self):
+    time_left = (self.iterations - self.iterations_done)*self.time_per_model
+    return self.iterations_done, time_left
     
-  def _do_analyze_for_model(self, modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L, X_D, background, engine):
+  def do_analyze_for_model(self, modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L, X_D, background, engine):
       # TODO: this process should make a background thread for model writes!
       analyze_args = dict(M_c=M_c, T=T, do_diagnostics=True, kernel_list=kernel_list, \
                           X_L=X_L, X_D=X_D, n_steps=1)
       start_time = time.time()
       last_write_time = start_time
-
-      # determine number of iterations to batch based on time: goal is for each batch to take ~10 seconds.
-
+      models_per_call = 1
+      
+      self.iterations = iterations
+      self.iterations_done = 0
       for i in range(iterations):
         X_L, X_D, diagnostics_dict = engine.call_backend('analyze', analyze_args)
         analyze_args['X_L'] = X_L
@@ -962,6 +1001,17 @@ class AnalyzeWorker(StoppableThread):
         time_since_write = cur_time - last_write_time
 
         engine.persistence_layer.update_model(tablename, X_L, X_D, diagnostics_dict, modelid)
+        self.iterations_done += 1
 
         if self.stopped() or (elapsed >= seconds and seconds is not None):
           return
+
+        # Update number of models per call, with a target time per call of 5 seconds.
+        self.time_per_model = float(elapsed)/self.iterations_done
+        if self.time_per_model > 5:
+          models_per_call = 1
+        else:
+          models_per_call = int(5.0/self.time_per_model)
+        if iterations - self.iterations_done < models_per_call:
+          models_per_call = iterations - self.iterations_done
+        analyze_args['n_steps'] = models_per_call
