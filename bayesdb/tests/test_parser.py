@@ -275,6 +275,10 @@ def test_initialize_pyparsing():
     assert initialize_2.statement_id == 'initialize_models'
     assert initialize_2.num_models == '3'
     assert initialize_2.btable == 'test_table'
+    initialize_3 = initialize_function.parseString("INITIALIZE MODELS FOR test_table",parseAll=True)
+    assert initialize_3.statement_id == 'initialize_models'
+    assert initialize_3.num_models == ''
+    assert initialize_3.btable == 'test_table'
 
 def test_analyze_pyparsing():
     analyze_1 = analyze_function.parseString("ANALYZE table_1 FOR 10 ITERATIONS",parseAll=True)

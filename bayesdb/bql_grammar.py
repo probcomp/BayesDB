@@ -307,7 +307,7 @@ execute_file_function = execute_file_keyword + filename
 
 # INITIALIZE <num_models> MODELS FOR <btable> 
 initialize_function = (initialize_keyword + 
-                       int_number.setResultsName("num_models") + 
+                       Optional(int_number.setResultsName("num_models")) + 
                        Suppress(models_for_keyword) + 
                        btable + 
                        Optional(with_keyword + 

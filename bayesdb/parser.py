@@ -83,7 +83,9 @@ class Parser(object):
         return 'drop_models', dict(tablename=bql_statement_ast.btable, model_indices=model_indices), None
 
     def parse_initialize_models(self,bql_statement_ast):
-        n_models = int(bql_statement_ast.num_models)
+        n_models = 16 ##TODO magic number - move to config file
+        if bql_statement_ast.num_models != '':
+            n_models = int(bql_statement_ast.num_models)
         tablename = bql_statement_ast.btable
         arguments_dict = dict(tablename=tablename, n_models=n_models, model_config=None)
         if bql_statement_ast.config != '':
