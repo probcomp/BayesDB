@@ -258,8 +258,6 @@ class Client(object):
             result_pandas_df = data_utils.construct_pandas_df(result)
             return result_pandas_df
         else:
-            if type(result) == dict and 'message' in result.keys():
-                print result['message']
             return result
 
     def callback(self, method_name, args_dict, client_dict, result):

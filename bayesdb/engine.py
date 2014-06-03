@@ -52,13 +52,14 @@ import plotting_utils
 import parser as p
 
 class Engine(object):
-  def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing', seed=None, **kwargs):
+  def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='local', seed=None, **kwargs):
     """ One optional argument that you may find yourself using frequently is seed.
     It defaults to random seed, but for testing/reproduceability purposes you may
     want a deterministic one. """
     
     self.persistence_layer = PersistenceLayer()
     self.parser = p.Parser()
+    self.analyze_threads = dict() # Maps tablenames to whether they are doing an ANALYZE.
 
     if crosscat_host is None or crosscat_host == 'localhost':
       self.online = False
@@ -363,7 +364,7 @@ class Engine(object):
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
       modelid_iteration_info.append((modelid, model['iterations']))
     if len(models) == 0:
-      raise utils.BayesDBError("No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
+      raise utils.BayesDBNoModelsError(tablename)
     else:
       return dict(models=modelid_iteration_info)
 
@@ -387,7 +388,7 @@ class Engine(object):
       return dict(columns=['model_id', 'iterations', 'model_config'], data=data)
     
 
-  def analyze(self, tablename, model_indices=None, iterations=None, seconds=None, ct_kernel=0):
+  def analyze(self, tablename, model_indices=None, iterations=None, seconds=None, ct_kernel=0, background=False):
     """
     Run analyze for the selected table. model_indices may be 'all' or None to indicate all models.
 
@@ -403,7 +404,7 @@ class Engine(object):
       raise utils.BayesDBNoModelsError(tablename)
     
     if iterations is None:
-      iterations = 1000
+      iterations = 300
 
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
@@ -418,14 +419,34 @@ class Engine(object):
       assert type(model_indices) == list
       modelids = model_indices
 
-    X_L_list = [models[i]['X_L'] for i in modelids]
-    X_D_list = [models[i]['X_D'] for i in modelids]
-
     first_model = models[modelids[0]]
     if 'model_config' in first_model and 'kernel_list' in first_model['model_config']:
       kernel_list = first_model['model_config']['kernel_list']
     else:
       kernel_list = () # default kernel list
+
+
+    if not background:
+      self.analyze_helper(tablename, modelids, kernel_list, iterations, seconds, M_c, T, models, background)
+      return dict(message="Analyze complete.")
+    else:
+      # Start analyze thread.
+      if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
+        raise utils.BayesDBError("%s is already being analzyed. Try using 'SHOW ANALYZE FOR %s' to get more information, or 'CANCEL ANALYZE FOR %s' to cancel the ANALYZE.")
+      t = threading.Thread(target=self.analyze_helper, args=(tablename, modelids, kernel_list, iterations,
+                                                               seconds, M_c, T, models, background))
+      self.analyze_threads[tablename] = t
+      t.start()
+      # TODO: how to remove when done?
+      return dict(message="Analyzing %s: models will be updated in the background." % tablename)
+
+
+  def analyze_helper(self, tablename, modelids, kernel_list, iterations, seconds, M_c, T, models, background):
+    """
+    Helper function for analyze. This is the thread that runs in the background as the previous analyze
+    command returns before analyze is complete.
+    """
+
 
     """ New stuff: scrutinize carefully 
     analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True,
@@ -449,15 +470,21 @@ class Engine(object):
 
     ## We will call CrossCat in 1 iteration batches for now, and in a future commit, we'll support
     ## batches of larger size for smaller tables.
+    # TODO: ignores iterations
 
+    # TODO: kill final model if over time? not important bc just running in background.
+    
     def _do_analyze_for_model(modelid):
       # TODO: this thread should make a background thread for model writes!
       analyze_args = dict(M_c=M_c, T=T, do_diagnostics=True, kernel_list=kernel_list, \
                           X_L=models[modelid]['X_L'], X_D=models[modelid]['X_D'], n_steps=1)
       start_time = time.time()
       last_write_time = start_time
+
       for i in range(iterations):
         X_L, X_D, diagnostics_dict = self.call_backend('analyze', analyze_args)
+        analyze_args['X_L'] = X_L
+        analyze_args['X_D'] = X_D
         
         cur_time = time.time()
         elapsed = cur_time - start_time
@@ -465,7 +492,7 @@ class Engine(object):
 
         self.persistence_layer.update_model(tablename, X_L, X_D, diagnostics_dict, modelid)
         
-        if elapsed >= max_time:
+        if elapsed >= seconds and seconds is not None:
           return
           
     
@@ -480,10 +507,9 @@ class Engine(object):
     # before returning, make sure all threads have finished
     for t in threads:
       t.join()
-    
-    ret = self.show_models(tablename)
-    ret['message'] = 'Analyze complete.'
-    return ret
+
+    if background:
+      print "\nAnalyze for table %s complete. Use 'SHOW MODELS FOR %s' to view models." % (tablename, tablename)
 
   def infer(self, tablename, functions, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """

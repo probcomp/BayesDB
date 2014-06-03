@@ -26,14 +26,65 @@ import pickle
 import shutil
 import contextlib
 
+from threading import RLock
+
 import data_utils
 import utils
 
 import bayesdb.settings as S
 
+class ModelLocks():
+    """
+    Creates table level locks, and individual model-level locks.
+
+    Need to have table-level lock in order to get model-level lock.
+    (Then, if you don't need it, release the table-level lock right afterwards)
+    """
+    
+    def __init__(self):
+        self.tablename_dict = dict()
+        self.table_locks = dict()
+
+    def add_tablename_if_not_exist(self, tablename):
+        if tablename not in self.tablename_dict:
+            self.tablename_dict[tablename] = dict()
+            self.table_locks[tablename] = RLock()
+
+    def add_lock_if_not_exist(self, tablename, modelid):
+        if modelid not in self.tablename_dict[tablename]:
+            self.tablename_dict[tablename][modelid] = RLock()
+
+    def acquire(self, tablename, modelid):
+        self.add_tablename_if_not_exist(tablename)
+        self.add_lock_if_not_exist(tablename, modelid)
+        
+        self.table_locks[tablename].acquire()
+        self.tablename_dict[tablename][modelid].acquire()
+        self.table_locks[tablename].release()
+
+    def release(self, tablename, modelid):
+        self.tablename_dict[tablename][modelid].release()
+
+    def acquire_table(self, tablename):
+        self.add_tablename_if_not_exist(tablename)
+        self.table_locks[tablename].acquire()
+        for modelid, lock in self.tablename_dict[tablename].items():
+            lock.acquire()
+
+    def release_table(self, tablename):
+        self.table_locks[tablename].release()
+        for modelid, lock in self.tablename_dict[tablename].items():
+            lock.release()
+
+    def drop(self, tablename, modelid):
+        del self.tablename_dict[tablename][modelid]
+
+    def drop_all(self, tablename):
+        self.tablename_dict[tablename] = dict()
+        
 
 class PersistenceLayer():
-    """
+    """    
     Stores btables in the following format in the "data" directory:
     bayesdb/data/
     ..btable_index.pkl
@@ -54,6 +105,8 @@ class PersistenceLayer():
     row_lists.pkl: dict. keys: row list names, values: list of row keys (need to update all these if table key is changed!).
     models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views, model_config]. Idx starting at 1.
     data.csv: the raw csv file that the data was loaded from.
+
+    Should be a Singleton class, but Python doesn't enforce that. Could be refactored as just a module.
     """
     
     def __init__(self):
@@ -65,6 +118,7 @@ class PersistenceLayer():
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
         self.load_btable_index() # sets self.btable_index
+        self.model_locks = ModelLocks()
 
     def load_btable_index(self):
         """
@@ -144,6 +198,7 @@ class PersistenceLayer():
         if os.path.exists(models_dir):
             if modelid is not None:
                 def get_single_model(modelid):
+                    self.model_locks.acquire(tablename, modelid)
                     # Only return one of the models
                     full_fname = os.path.join(models_dir, 'model_%d.pkl' % modelid)
                     if not os.path.exists(full_fname):
@@ -151,6 +206,7 @@ class PersistenceLayer():
                     f = open(full_fname, 'r')
                     m = pickle.load(f)
                     f.close()
+                    self.model_locks.release(tablename, modelid)
                     return m
                 if type(modelid) == list:
                     models = {}
@@ -166,7 +222,8 @@ class PersistenceLayer():
             else:
                 # Return all the models
                 models = {}
-                fnames = os.listdir(models_dir)
+                self.model_locks.acquire_table(tablename)
+                fnames = os.listdir(models_dir)                
                 for fname in fnames:
                     model_id = fname[6:] # remove preceding 'model_'
                     model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
@@ -175,19 +232,25 @@ class PersistenceLayer():
                     m = pickle.load(f)
                     f.close()
                     models[model_id] = m
+                self.model_locks.release_table(tablename)
                 return models
         else:
             # Backwards compatibility with old model style.
+            self.model_locks.acquire_table(tablename)            
             try:
                 f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r')
                 models = pickle.load(f)
                 f.close()
                 if modelid is not None:
-                    return models[modelid]
+                    ret = models[modelid]
                 else:
-                    return models
+                    ret = models
+                self.model_locks.release_table(tablename)
+                return ret
             except IOError:
+                self.model_locks.release_table(tablename)
                 return {}
+            
 
     def get_column_labels(self, tablename):
         try:
@@ -272,9 +335,11 @@ class PersistenceLayer():
         if not os.path.exists(models_dir):
             os.makedirs(models_dir)
 
+        self.model_locks.acquire(tablename, modelid)
         model_f = open(os.path.join(models_dir, 'model_%d.pkl' % modelid), 'w')
         pickle.dump(model, model_f, pickle.HIGHEST_PROTOCOL)
         model_f.close()
+        self.model_locks.release(tablename, modelid)
 
     def write_models(self, tablename, models):
         # Make models dir
@@ -284,9 +349,11 @@ class PersistenceLayer():
 
         # Write each model individually
         for i, v in models.items():
+            self.model_locks.acquire(tablename, modelid)            
             model_f = open(os.path.join(models_dir, 'model_%d.pkl' % i), 'w')
             pickle.dump(v, model_f, pickle.HIGHEST_PROTOCOL)
             model_f.close()
+            self.model_locks.release(tablename, modelid)            
 
     def write_column_labels(self, tablename, column_labels):
         column_labels_f = open(os.path.join(self.data_dir, tablename, 'column_labels.pkl'), 'w')
@@ -324,15 +391,19 @@ class PersistenceLayer():
         models_dir = os.path.join(self.data_dir, tablename, 'models')
         if os.path.exists(models_dir):
             if model_ids is None or model_ids == 'all':
+                self.model_locks.acquire_table(tablename)
                 fnames = os.listdir(models_dir)
                 for fname in fnames:
                     if 'model_' in fname:
                         os.remove(os.path.join(models_dir, fname))
+                self.model_locks.drop_all(tablename)
             else:
                 for modelid in model_ids:
+                    self.model_locks.acquire(tablename, modelid)
                     fname = os.path.join(models_dir, 'model_%d.pkl' % modelid)
                     if os.path.exists(fname):
                         os.remove(fname)
+                    self.model_locks.drop(tablename, modelid)
         else:
             # If models in old style, convert to new style, save, and retry.
             models = self.get_models(tablename)
