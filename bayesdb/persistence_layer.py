@@ -36,32 +36,33 @@ import bayesdb.settings as S
 
 class ModelLocks():
     """
-    Creates table level locks, and individual model-level locks.
-
-    Need to have table-level lock in order to get model-level lock.
-    (Then, if you don't need it, release the table-level lock right afterwards)
+    Creates individual model-level locks.
+    Any user method always needs to acquire locks in ascending order to avoid deadlock!!!!
     """
     
-    def __init__(self):
+    def __init__(self, persistence_layer):
         self.tablename_dict = dict()
-        self.table_locks = dict()
+        self.persistence_layer = persistence_layer
+        
+        for tablename in self.persistence_layer.btable_index:
+            self.tablename_dict[tablename] = dict()            
+            modelids = self.persistence_layer.get_model_ids(tablename)
+            for modelid in modelids:
+                self.tablename_dict[tablename][modelid] = RLock()
 
     def add_tablename_if_not_exist(self, tablename):
         if tablename not in self.tablename_dict:
             self.tablename_dict[tablename] = dict()
-            self.table_locks[tablename] = RLock()
 
-    def add_lock_if_not_exist(self, tablename, modelid):
+    def add_model_if_not_exist(self, tablename, modelid):
         if modelid not in self.tablename_dict[tablename]:
             self.tablename_dict[tablename][modelid] = RLock()
 
     def acquire(self, tablename, modelid):
         self.add_tablename_if_not_exist(tablename)
-        self.add_lock_if_not_exist(tablename, modelid)
+        self.add_model_if_not_exist(tablename, modelid)
 
-        self.table_locks[tablename].acquire()
         self.tablename_dict[tablename][modelid].acquire()
-        self.table_locks[tablename].release()
 
     def release(self, tablename, modelid):
         if modelid in self.tablename_dict[tablename]:
@@ -69,12 +70,10 @@ class ModelLocks():
 
     def acquire_table(self, tablename):
         self.add_tablename_if_not_exist(tablename)
-        self.table_locks[tablename].acquire()
-        for modelid, lock in self.tablename_dict[tablename].items():
-            lock.acquire()
+        for modelid in sorted(self.tablename_dict[tablename].keys()):
+            self.tablename_dict[tablename][modelid].acquire()
 
     def release_table(self, tablename):
-        self.table_locks[tablename].release()
         for modelid, lock in self.tablename_dict[tablename].items():
             # Only release locks this thread owns. There could be a case where
             # a new model was created while he had the table lock.
@@ -123,7 +122,7 @@ class PersistenceLayer():
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
         self.load_btable_index() # sets self.btable_index
-        self.model_locks = ModelLocks()
+        self.model_locks = ModelLocks(self)
 
     def load_btable_index(self):
         """
@@ -444,7 +443,14 @@ class PersistenceLayer():
     def get_max_model_id(self, tablename, models=None):
         """Get the highest model id, and -1 if there are no models.
         Model indexing starts at 0 when models exist."""
-        
+        model_ids = self.get_model_ids(tablename, models)
+        if len(model_ids) == 0:
+            return -1
+        else:
+            return max(model_ids)
+
+    def get_model_ids(self, tablename, models=None):
+        """Get the list of modelids for a table."""
         if models is not None:
             model_ids = models.keys()
         else:
@@ -458,10 +464,7 @@ class PersistenceLayer():
                     model_id = fname[6:] # remove preceding 'model_'
                     model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
                     model_ids.append(model_id)
-        if len(model_ids) == 0:
-            return -1
-        else:
-            return max(model_ids)
+        return model_ids
 
     def get_cctypes(self, tablename):
         """Access the table's current cctypes."""
@@ -644,6 +647,7 @@ class PersistenceLayer():
         each diagnostic entry is a list, over iterations.
 
         """
+        assert type(modelid) == int
         self.model_locks.acquire(tablename, modelid)
         model = self.get_models(tablename, modelid)
 
@@ -662,8 +666,4 @@ class PersistenceLayer():
         self.write_model(tablename, model, modelid)
         self.model_locks.release(tablename, modelid)
 
-    def get_model_ids(self, tablename):
-        """ Receive a list of all model ids for the table. """
-        models = self.get_models(tablename)
-        return models.keys()
             

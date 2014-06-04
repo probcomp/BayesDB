@@ -87,8 +87,14 @@ class Engine(object):
       out = method(**args_dict)
     return out
 
+  def is_analyzing(self, tablename):
+    return (tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive())
+
   def drop_btable(self, tablename):
     """Delete table by tablename."""
+    if self.is_analyzing(tablename):
+      self.cancel_analyze(tablename)
+      raise utils.BayesDBError('Error: cannot drop btable with ANALYZE in progress. Attempting to cancel ANALYZE; please retry drop btable once ANALYZE is successfully completed.')
     self.persistence_layer.drop_btable(tablename)
     return dict()
 
@@ -282,13 +288,15 @@ class Engine(object):
       old_models = models
       models = dict()
       for id, (X_L, X_D) in enumerate(zip(old_models['X_L_list'], old_models['X_D_list'])):
-        models[id] = dict(X_L=X_L, X_D=X_D, iterations=500)
+        models[id] = dict(X_L=X_L, X_D=X_D, iterations=0)
       
     result = self.persistence_layer.add_models(tablename, models.values())
     return self.show_models(tablename)
 
   def drop_models(self, tablename, model_indices=None):
     """Drop the specified models. If model_ids is None or all, drop all models."""
+    if self.is_analyzing(tablename):
+      raise utils.BayesDBError('Error: cannot drop models with ANALYZE in progress. Please retry once ANALYZE is successfully completed or canceled.')
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     
@@ -306,6 +314,8 @@ class Engine(object):
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
+    if self.is_analyzing(tablename):
+      raise utils.BayesDBError('Error: cannot initialize models with ANALYZE in progress. Please retry once ANALYZE is successfully completed or canceled.')      
 
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
@@ -359,7 +369,7 @@ class Engine(object):
     """Return the current models and their iteration counts."""
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-    
+
     models = self.persistence_layer.get_models(tablename)
     modelid_iteration_info = list()
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
