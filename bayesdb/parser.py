@@ -109,8 +109,8 @@ class Parser(object):
         tablename = bql_statement_ast.btable
         if bql_statement_ast.index_clause != '':
             model_indices = bql_statement_ast.index_clause.asList()
-        if bql_statement_ast.num_seconds !='':
-            seconds = int(bql_statement_ast.num_seconds)
+        if bql_statement_ast.num_minutes !='':
+            seconds = int(bql_statement_ast.num_minutes) * 60
         if bql_statement_ast.num_iterations !='':
             iterations = int(bql_statement_ast.num_iterations)
         if bql_statement_ast.with_kernel_clause != '':

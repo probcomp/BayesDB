@@ -52,6 +52,7 @@ multinomial_keyword = CaselessKeyword("multinomial")
 ignore_keyword = CaselessKeyword("ignore")
 key_keyword = CaselessKeyword("key")
 wait_keyword = CaselessKeyword("wait")
+cancel_keyword = CaselessKeyword("cancel")
 initialize_keyword = CaselessKeyword("initialize").setResultsName("statement_id")
 initialize_keyword.setParseAction(replaceWith("initialize_models"))
 analyze_keyword = CaselessKeyword("analyze").setResultsName("statement_id")
@@ -118,8 +119,8 @@ single_list_keyword = CaselessKeyword("list")
 multiple_lists_keyword = CaselessKeyword("lists")
 single_btable_keyword = CaselessKeyword("btable")
 multiple_btable_keyword = CaselessKeyword("btables")
-single_second_keyword = CaselessKeyword("second")
-multiple_seconds_keyword = CaselessKeyword("seconds")
+single_minute_keyword = CaselessKeyword("minute")
+multiple_minutes_keyword = CaselessKeyword("minutes")
 ## Plural agnostic syntax, setParseAction makes it all display the singular
 model_keyword = single_model_keyword | multiple_models_keyword
 model_keyword.setParseAction(replaceWith("model"))
@@ -133,8 +134,8 @@ list_keyword = single_list_keyword | multiple_lists_keyword
 list_keyword.setParseAction(replaceWith("list"))
 btable_keyword = single_btable_keyword | multiple_btable_keyword
 btable_keyword.setParseAction(replaceWith("btable"))
-second_keyword = single_second_keyword | multiple_seconds_keyword
-second_keyword.setParseAction(replaceWith("second"))
+minute_keyword = single_minute_keyword | multiple_minutes_keyword
+minute_keyword.setParseAction(replaceWith("minute"))
 
 ## Composite keywords: Inseparable elements that can have whitespace
 ## Using single_white and Combine to make them one string
@@ -157,7 +158,10 @@ show_metadata_for_keyword.setParseAction(replaceWith("show_metadata"))
 show_label_for_keyword = Combine(show_keyword + single_white + 
                                  label_keyword + single_white + for_keyword).setResultsName("statement_id")
 show_label_for_keyword.setParseAction(replaceWith("show_label"))
-
+show_analyze_for_keyword = Combine(show_keyword + single_white + analyze_keyword + single_white + for_keyword).setResultsName('statement_id')
+show_analyze_for_keyword.setParseAction(replaceWith("show_analyze"))
+cancel_analyze_for_keyword = Combine(show_keyword + single_white + analyze_keyword + single_white + for_keyword).setResultsName('statement_id')
+cancel_analyze_for_keyword.setParseAction(replaceWith('cancel_analyze'))
 models_for_keyword = Combine(model_keyword + single_white + for_keyword)
 model_index_keyword = Combine(model_keyword + single_white + index_keyword)
 load_model_keyword = Combine(load_keyword + single_white + model_keyword).setResultsName("statement_id")
@@ -314,7 +318,7 @@ initialize_function = (initialize_keyword +
                                 config_keyword + 
                                 (naive_bayes_keyword|crp_mixture_keyword).setResultsName('config')))
 
-# ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
+# ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <minutes> MINUTES)
 def list_from_index_clause(toks):
     ## takes index tokens separated by '-' for range and ',' for individual and returns a list of unique indexes
     index_list = []
@@ -342,7 +346,7 @@ analyze_function = (analyze_keyword + btable +
                     Optional( model_keyword + index_clause) + 
                     Suppress(for_keyword) + 
                     ((int_number.setResultsName('num_iterations') + iteration_keyword) | 
-                     (int_number.setResultsName('num_seconds') + second_keyword)) + Optional(with_kernel_clause))
+                     (int_number.setResultsName('num_minutes') + minute_keyword)) + Optional(with_kernel_clause))
                     
 # LIST BTABLES
 list_btables_function = list_btables_keyword
@@ -351,7 +355,8 @@ show_for_btable_statement = ((show_schema_for_keyword |
                               show_models_for_keyword | 
                               show_diagnostics_for_keyword | 
                               show_column_lists_for_keyword |  
-                              show_columns_for_keyword | 
+                              show_columns_for_keyword |
+                              show_analyze_for_keyword |
                               show_row_lists_for_keyword) + 
                              btable)
 

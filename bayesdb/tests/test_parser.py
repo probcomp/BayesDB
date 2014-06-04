@@ -83,10 +83,10 @@ def test_keyword_plurality_ambiguity_pyparsing():
     btables = btable_keyword.parseString('btables',parseAll=True)
     assert btable[0] == 'btable'
     assert btables[0] == 'btable'
-    second = second_keyword.parseString('second',parseAll=True)
-    seconds = second_keyword.parseString('seconds',parseAll=True)
-    assert second[0] == 'second'
-    assert seconds[0] == 'second'
+    minute = minute_keyword.parseString('minute',parseAll=True)
+    minutes = minute_keyword.parseString('minutes',parseAll=True)
+    assert minute[0] == 'minute'
+    assert minute[0] == 'minute'
 
 def test_composite_keywords_pyparsing():
     execute_file = execute_file_keyword.parseString('eXecute file',parseAll=True)
@@ -279,28 +279,28 @@ def test_initialize_pyparsing():
 def test_analyze_pyparsing():
     analyze_1 = analyze_function.parseString("ANALYZE table_1 FOR 10 ITERATIONS",parseAll=True)
     analyze_2 = analyze_function.parseString("ANALYZE table_1 FOR 1 ITERATION",parseAll=True)
-    analyze_3 = analyze_function.parseString("ANALYZE table_1 FOR 10 SECONDS",parseAll=True)
-    analyze_4 = analyze_function.parseString("ANALYZE table_1 FOR 1 SECOND",parseAll=True)
-    analyze_5 = analyze_function.parseString("ANALYZE table_1 MODEL 1 FOR 10 SECONDS",parseAll=True)
+    analyze_3 = analyze_function.parseString("ANALYZE table_1 FOR 10 MINUTES",parseAll=True)
+    analyze_4 = analyze_function.parseString("ANALYZE table_1 FOR 1 MINUTE",parseAll=True)
+    analyze_5 = analyze_function.parseString("ANALYZE table_1 MODEL 1 FOR 10 MINUTES",parseAll=True)
     analyze_6 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3 FOR 1 ITERATION",parseAll=True)
-    analyze_7 = analyze_function.parseString("ANALYZE table_1 MODELS 1,2,3 FOR 10 SECONDS",parseAll=True)
+    analyze_7 = analyze_function.parseString("ANALYZE table_1 MODELS 1,2,3 FOR 10 MINUTES",parseAll=True)
     analyze_8 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 3-5 FOR 1 ITERATION",parseAll=True)
-    analyze_9 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5 FOR 10 SECONDS",parseAll=True)
+    analyze_9 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5 FOR 10 MINUTES",parseAll=True)
     analyze_10 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5-7, 9, 10 FOR 1 ITERATION",parseAll=True)
-    analyze_11 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 1, 2, 2 FOR 10 SECONDS",parseAll=True)
+    analyze_11 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 1, 2, 2 FOR 10 MINUTES",parseAll=True)
     analyze_12 = analyze_function.parseString("ANALYZE table_1 MODELS 1-5, 1-5, 5 FOR 1 ITERATION",parseAll=True)
     assert analyze_1.statement_id == 'analyze'
     assert analyze_1.btable == 'table_1'
     assert analyze_1.index_lust == ''
     assert analyze_1.index_clause == ''
     assert analyze_1.num_iterations == '10'
-    assert analyze_1.num_seconds == ''
+    assert analyze_1.num_minutes == ''
     assert analyze_2.num_iterations == '1'
-    assert analyze_2.num_seconds == ''
+    assert analyze_2.num_minutes == ''
     assert analyze_3.num_iterations == ''
-    assert analyze_3.num_seconds == '10'
+    assert analyze_3.num_minutes == '10'
     assert analyze_4.num_iterations == ''
-    assert analyze_4.num_seconds == '1'
+    assert analyze_4.num_minutes == '1'
     assert analyze_5.index_clause.asList() == [1]
     assert analyze_6.index_clause.asList() == [1,2,3]
     assert analyze_7.index_clause.asList() == [1,2,3]
@@ -902,17 +902,18 @@ def test_analyze():
     assert method == 'analyze'
     assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None, ct_kernel=0)
 
-    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t for 7 seconds'))
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t for 7 minutes'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7, ct_kernel=0)
     
-    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 seconds'))
+    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7*60, ct_kernel=0)
+    
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 minutes'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=0)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7*60, ct_kernel=0)
 
-    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 seconds with mh kernel'))
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 minutes with mh kernel'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=1)    
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7*60, ct_kernel=1)    
 
 def test_load_models():
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('load models fn into t'))

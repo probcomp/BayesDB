@@ -45,7 +45,7 @@ Available models include "naive bayes" and "crp mixture"
 
 ::
 
-	ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
+	ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <minutes> MINUTES)
 
 Analyze the specified models for the specified number of iterations (by default, analyze all models).
 
