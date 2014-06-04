@@ -106,15 +106,17 @@ BayesDB has five fundamental query statements: SELECT, INFER, SIMULATE, ESTIMATE
 
 SELECT is just like SQL's SELECT, except in addition to selecting, filtering (with where), and ordering raw column values, you may also use predictive functions in any of those clauses::
 
-   SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>]
+   SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [INTO <newbtablename>]
 
 INFER is just like SELECT, except that it also tries to fill in missing values. The user may specify the desired confidence level to use (a number between 0 and 1, where 0 means "fill in every missing value with whatever your best guess is", and 1 means "only fill in a missing value if you're sure what it is"). If confidence is not specified, 0 is chosen as default. Optionally, the user may specify the number of samples to use when filling in missing values: the default value is good in general, but if you know what you're doing and want higher accuracy, you can increase the numer of samples used::
 
-   INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>]
+   INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [INTO <newbtablename>]
 
 SIMULATE generates new rows from the underlying probability model a specified number of times::
 
-   SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
+   SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [INTO <newbtablename>]
+
+The optional INTO clause at the end of SELECT, INFER, or SIMULATE queries allows you to create a new btable from the query results. The new btable's schema will be created based on the schema of the original table in the query.
 
 ESTIMATE COLUMNS is like a SELECT statement, but lets you select columns instead of rows::
 
@@ -325,6 +327,23 @@ The first column of the output from SUMMARIZE will be statistic labels:
 Modal values and their empirical probabilities are returned for every column, whether discrete or continuous.
 
 
+Frequency and Histogram Tables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Prepending a SELECT, INFER, or SIMULATE statement with the keyword FREQ or HIST wil return a frequency or histogram table, respectively. If multiple
+columns are included in the statement, the frequency or histogram table is only returned for the first column.
+
+A frequency table returns the number and percentage of occurrences of each distinct value in the column::
+
+  FREQ <SELECT|INFER|SIMULATE> <columns|functions> FROM <btable> [WHERE <whereclause>] [LIMIT <limit>]
+
+A histogram calculates a number of equal-width bins based on the total number of values selected, using Sturges' rule (k = ceiling(log2(n) + 1)),
+and returns a table showing each bin interval, and the number and percentage of values within each bin.
+
+  HIST <SELECT|INFER|SIMULATE> <columns|functions> FROM <btable> [WHERE <whereclause>] [LIMIT <limit>]
+
+While ``FREQ`` works for all data types, ``HIST`` will not work for multinomial columns, since there isn't an intuitive way to calculate numeric intervals for multinomial values. If a multinomial column contains values that could be interpreted as numeric values, use ``UPDATE SCHEMA`` to set the column's data type to continuous, and then use ``HIST``.
+
 Saving and Reviewing Metadata
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -361,7 +380,7 @@ Labeling columns is a common metadata operations, and has its own statement to a
 
   LABEL COLUMNS FOR <btable> SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...]
 
-Column labels should not be quoted unless the quotes are part of the label, and should not include commas. Similarly to btable-level metadata, column labels can be added to a btable from a file::
+Column labels should be quoted if they're longer than one word, and should not include commas. Similarly to btable-level metadata, column labels can be added to a btable from a file::
 
   LABEL COLUMNS FOR <btable> FROM <filename.csv>
 
