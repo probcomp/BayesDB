@@ -598,7 +598,7 @@ class Parser(object):
         else:
             return utils.get_index_from_colname(M_c, function_group.column)
 
-    def get_args_of_with(self,function_group, M_c):
+    def get_args_pairwise_column(self,function_group, M_c):
         """
         designed to handle dependence probability, mutual information, and correlation function_groups
         all have an optional of clause
@@ -702,13 +702,13 @@ class Parser(object):
                 args = None
             elif single_condition.function.function_id == 'dependence probability':
                 function = functions._dependence_probability
-                _, args = self.get_args_of_with(single_condition.function, M_c)
+                _, args = self.get_args_pairwise_column(single_condition.function, M_c)
             elif single_condition.function.function_id == 'mutual information':
                 function = functions._mutual_information
-                _, args = self.get_args_of_with(single_condition.function, M_c)
+                _, args = self.get_args_pairwise_column(single_condition.function, M_c)
             elif single_condition.function.function_id == 'correlation':
                 function = functions._correlation
-                _, args = self.get_args_of_with(single_condition.function, M_c)
+                _, args = self.get_args_pairwise_column(single_condition.function, M_c)
             else:
                 if single_condition.function.function_id != '':
                     raise utils.BayesDBParseError("Invalid where clause: %s not allowed." % 
@@ -759,13 +759,13 @@ class Parser(object):
                 args = None 
             elif orderable.function.function_id == 'dependence probability':
                 function = functions._dependence_probability
-                _, args = self.get_args_of_with(orderable.function, M_c)
+                _, args = self.get_args_pairwise_column(orderable.function, M_c)
             elif orderable.function.function_id == 'correlation':
                 function = functions._correlation
-                _, args = self.get_args_of_with(orderable.function, M_c)
+                _, args = self.get_args_pairwise_column(orderable.function, M_c)
             elif orderable.function.function_id == 'mutual information':
                 function = functions._mutual_information
-                _, args = self.get_args_of_with(orderable.function, M_c)
+                _, args = self.get_args_pairwise_column(orderable.function, M_c)
             else:
                 raise utils.BayesDBParseError("Invalid order by clause. Can only order by typicality, correlation, mutual information, or dependence probability.")
             function_list.append((function, args, desc))
@@ -821,17 +821,17 @@ class Parser(object):
                 query_colnames.append(' '.join(pre_name_list))
             elif function_group.function_id == 'dependence probability':
                 queries.append((functions._dependence_probability, 
-                                self.get_args_of_with(function_group, M_c), 
+                                self.get_args_pairwise_column(function_group, M_c), 
                                 True))
                 query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'mutual information':
                 queries.append((functions._mutual_information, 
-                                self.get_args_of_with(function_group, M_c), 
+                                self.get_args_pairwise_column(function_group, M_c), 
                                 True))
                 query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'correlation':
                 queries.append((functions._correlation, 
-                                self.get_args_of_with(function_group, M_c), 
+                                self.get_args_pairwise_column(function_group, M_c), 
                                 True))
                 query_colnames.append(' '.join(function_group))
             ## single column, column_list, or *
