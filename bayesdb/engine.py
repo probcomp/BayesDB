@@ -89,6 +89,10 @@ class Engine(object):
   
   def help(self, method=None):
     help_methods = dict()
+    help_methods['create'] = """
+    CREATE BTABLE <btable> FROM <filename.csv>
+    """
+
     help_methods['select']="""
     SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>]
     """
