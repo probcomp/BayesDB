@@ -105,6 +105,7 @@ naive_keyword = CaselessKeyword("naive")
 bayes_keyword = CaselessKeyword("bayes")
 config_keyword = CaselessKeyword("config")
 using_keyword = CaselessKeyword("using")
+all_keyword = CaselessKeyword("all")
 ## Single and plural keywords
 single_model_keyword = CaselessKeyword("model")
 multiple_models_keyword = CaselessKeyword("models")
@@ -307,7 +308,7 @@ execute_file_function = execute_file_keyword + filename
 
 # INITIALIZE <num_models> MODELS FOR <btable> 
 initialize_function = (initialize_keyword + 
-                       int_number.setResultsName("num_models") + 
+                       Optional(int_number.setResultsName("num_models")) + 
                        Suppress(models_for_keyword) + 
                        btable + 
                        Optional(with_keyword + 
@@ -367,7 +368,8 @@ drop_btable_function = drop_btable_keyword + btable
 # DROP MODEL[S] [<model_index>-<model_index>] FROM <btable> 
 drop_model_function = drop_model_keyword + Optional(index_clause) + Suppress(from_keyword) + btable
 
-help_function = help_keyword
+# Help [function name]
+help_function = help_keyword + Optional(Word(alphas).setParseAction(downcaseTokens)).setResultsName("method_name")
 quit_function = quit_keyword
 
 management_query = (create_btable_function | 
@@ -498,9 +500,9 @@ save_clusters_clause = Group(save_clusters_keyword
                              (into_keyword +
                               identifier.setResultsName('into_label')))).setResultsName('clusters_clause')
 
-row_list_clause = Group(int_number + 
-                           ZeroOrMore(Suppress(comma_literal) + 
-                                      int_number)).setResultsName("row_list")
+list_clause = Group(int_number|identifier + 
+                    ZeroOrMore(Suppress(comma_literal) + 
+                               (int_number|identifier)))
 
 single_given_condition = Group(identifier.setResultsName('column') + equal_literal + value.setResultsName('value'))
 given_clause = (Group(given_keyword + 
@@ -547,8 +549,7 @@ query = (Optional(freq_keyword | hist_keyword | summarize_keyword | plot_keyword
               Optional(Suppress(with_keyword) + int_number.setResultsName('samples') + Suppress(sample_keyword)) + 
               Optional(Suppress(limit_keyword) + int_number.setResultsName("limit")) + 
               Optional(given_clause) + 
-              Optional(for_keyword + column_list_clause.setResultsName('columns')) +
-              Optional(for_keyword + row_list_clause.setResultsName('rows')) + 
+              Optional(for_keyword + list_clause.setResultsName('for_list')) +
               Optional(Suppress(save_to_keyword) + filename) + 
               Optional(save_clusters_clause) + 
               Optional(Suppress(times_keyword) + int_number.setResultsName("times")) + 
