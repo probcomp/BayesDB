@@ -83,10 +83,10 @@ def test_keyword_plurality_ambiguity_pyparsing():
     btables = btable_keyword.parseString('btables',parseAll=True)
     assert btable[0] == 'btable'
     assert btables[0] == 'btable'
-    second = second_keyword.parseString('second',parseAll=True)
-    seconds = second_keyword.parseString('seconds',parseAll=True)
-    assert second[0] == 'second'
-    assert seconds[0] == 'second'
+    minute = minute_keyword.parseString('minute',parseAll=True)
+    minutes = minute_keyword.parseString('minutes',parseAll=True)
+    assert minute[0] == 'minute'
+    assert minute[0] == 'minute'
 
 def test_composite_keywords_pyparsing():
     execute_file = execute_file_keyword.parseString('eXecute file',parseAll=True)
@@ -275,32 +275,36 @@ def test_initialize_pyparsing():
     assert initialize_2.statement_id == 'initialize_models'
     assert initialize_2.num_models == '3'
     assert initialize_2.btable == 'test_table'
+    initialize_3 = initialize_function.parseString("INITIALIZE MODELS FOR test_table",parseAll=True)
+    assert initialize_3.statement_id == 'initialize_models'
+    assert initialize_3.num_models == ''
+    assert initialize_3.btable == 'test_table'
 
 def test_analyze_pyparsing():
     analyze_1 = analyze_function.parseString("ANALYZE table_1 FOR 10 ITERATIONS",parseAll=True)
     analyze_2 = analyze_function.parseString("ANALYZE table_1 FOR 1 ITERATION",parseAll=True)
-    analyze_3 = analyze_function.parseString("ANALYZE table_1 FOR 10 SECONDS",parseAll=True)
-    analyze_4 = analyze_function.parseString("ANALYZE table_1 FOR 1 SECOND",parseAll=True)
-    analyze_5 = analyze_function.parseString("ANALYZE table_1 MODEL 1 FOR 10 SECONDS",parseAll=True)
+    analyze_3 = analyze_function.parseString("ANALYZE table_1 FOR 10 MINUTES",parseAll=True)
+    analyze_4 = analyze_function.parseString("ANALYZE table_1 FOR 1 MINUTE",parseAll=True)
+    analyze_5 = analyze_function.parseString("ANALYZE table_1 MODEL 1 FOR 10 MINUTES",parseAll=True)
     analyze_6 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3 FOR 1 ITERATION",parseAll=True)
-    analyze_7 = analyze_function.parseString("ANALYZE table_1 MODELS 1,2,3 FOR 10 SECONDS",parseAll=True)
+    analyze_7 = analyze_function.parseString("ANALYZE table_1 MODELS 1,2,3 FOR 10 MINUTES",parseAll=True)
     analyze_8 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 3-5 FOR 1 ITERATION",parseAll=True)
-    analyze_9 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5 FOR 10 SECONDS",parseAll=True)
+    analyze_9 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5 FOR 10 MINUTES",parseAll=True)
     analyze_10 = analyze_function.parseString("ANALYZE table_1 MODELS 1-3, 5-7, 9, 10 FOR 1 ITERATION",parseAll=True)
-    analyze_11 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 1, 2, 2 FOR 10 SECONDS",parseAll=True)
+    analyze_11 = analyze_function.parseString("ANALYZE table_1 MODELS 1, 1, 2, 2 FOR 10 MINUTES",parseAll=True)
     analyze_12 = analyze_function.parseString("ANALYZE table_1 MODELS 1-5, 1-5, 5 FOR 1 ITERATION",parseAll=True)
     assert analyze_1.statement_id == 'analyze'
     assert analyze_1.btable == 'table_1'
     assert analyze_1.index_lust == ''
     assert analyze_1.index_clause == ''
     assert analyze_1.num_iterations == '10'
-    assert analyze_1.num_seconds == ''
+    assert analyze_1.num_minutes == ''
     assert analyze_2.num_iterations == '1'
-    assert analyze_2.num_seconds == ''
+    assert analyze_2.num_minutes == ''
     assert analyze_3.num_iterations == ''
-    assert analyze_3.num_seconds == '10'
+    assert analyze_3.num_minutes == '10'
     assert analyze_4.num_iterations == ''
-    assert analyze_4.num_seconds == '1'
+    assert analyze_4.num_minutes == '1'
     assert analyze_5.index_clause.asList() == [1]
     assert analyze_6.index_clause.asList() == [1,2,3]
     assert analyze_7.index_clause.asList() == [1,2,3]
@@ -786,13 +790,13 @@ def test_estimate_pairwise_pyparsing():
     assert est_pairwise_ast_1.functions[0].function_id == 'correlation'
     assert est_pairwise_ast_1.functions[0].with_column == 'col_1'
     assert est_pairwise_ast_1.btable == 'table_1'
-    query_2 = "ESTIMATE PAIRWISE DEPENDENCE PROBABILITY WITH col_1 FROM table_1 FOR col_1,col_2 SAVE TO file.csv SAVE CLUSTERS WITH THRESHOLD .4 AS col_list_1"
+    query_2 = "ESTIMATE PAIRWISE DEPENDENCE PROBABILITY WITH col_1 FROM table_1 FOR col_1 SAVE TO file.csv SAVE CLUSTERS WITH THRESHOLD .4 AS col_list_1"
     est_pairwise_ast_2 = query.parseString(query_2,parseAll=True)
     assert est_pairwise_ast_2.statement_id == 'estimate_pairwise'
     assert est_pairwise_ast_2.functions[0].function_id == 'dependence probability'
     assert est_pairwise_ast_2.functions[0].with_column == 'col_1'
     assert est_pairwise_ast_2.btable == 'table_1'
-    assert est_pairwise_ast_2.columns.asList() == ['col_1','col_2']
+    assert est_pairwise_ast_2.for_list.asList() == ['col_1']
     assert est_pairwise_ast_2.filename == 'file.csv'
     assert est_pairwise_ast_2.clusters_clause.threshold == '.4'
     assert est_pairwise_ast_2.clusters_clause.as_label == 'col_list_1'
@@ -806,12 +810,12 @@ def test_estimate_pairwise_row_pyparsing():
     assert est_pairwise_ast_1.statement_id == 'estimate_pairwise_row'
     assert est_pairwise_ast_1.functions[0].function_id == 'similarity'
     assert est_pairwise_ast_1.btable == 'table_1'
-    query_2 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 FOR 1,2 SAVE TO file.csv SAVE CLUSTERS WITH THRESHOLD .4 AS table_2"
+    query_2 = "ESTIMATE PAIRWISE ROW SIMILARITY FROM table_1 FOR a SAVE TO file.csv SAVE CLUSTERS WITH THRESHOLD .4 AS table_2"
     est_pairwise_ast_2 = query.parseString(query_2,parseAll=True)
     assert est_pairwise_ast_2.statement_id == 'estimate_pairwise_row'
     assert est_pairwise_ast_2.functions[0].function_id == 'similarity'
     assert est_pairwise_ast_2.btable == 'table_1'
-    assert est_pairwise_ast_2.rows.asList() == ['1','2']
+    assert est_pairwise_ast_2.for_list.asList() == ['a']
     assert est_pairwise_ast_2.filename == 'file.csv'
     assert est_pairwise_ast_2.clusters_clause.threshold == '.4'
     assert est_pairwise_ast_2.clusters_clause.as_label == 'table_2'
@@ -896,23 +900,24 @@ def test_drop_models():
 def test_analyze():
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 3 iterations'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None, ct_kernel=0)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None, ct_kernel=0, background=True)
 
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t for 6 iterations'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None, ct_kernel=0)
+    assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None, ct_kernel=0, background=True)
 
-    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t for 7 seconds'))
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t for 7 minutes'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7, ct_kernel=0)
     
-    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 seconds'))
+    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7*60, ct_kernel=0, background=True)
+    
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 minutes'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=0)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7*60, ct_kernel=0, background=True)
 
-    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 seconds with mh kernel'))
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 minutes with mh kernel'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7, ct_kernel=1)    
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7*60, ct_kernel=1, background=True)    
 
 def test_load_models():
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('load models fn into t'))
@@ -1281,17 +1286,14 @@ def test_disallowed_queries():
     strings = ["select * from test times 10",
                "select * from test save clusters with threshold .5 as test.csv",
                "select * from test given a=5",
-               "select * from test for test_clist",
                "select * from test with confidence .4",
                "infer * from test times 10",
                "infer typicality from test",
                "simulate typicality from test",
                "infer * from test save clusters with threshold .5 as test.csv",
                "infer * from test given a=5",
-               "infer * from test for test_clist",
                "simulate * from test where a < 4",
                "simulate * from test save clusters with threshold .5 as test.csv",
-               "simulate * from test for test_clist",
                "simulate * from test with confidence .4",
                "simulate * from test with 4 samples",
                "estimate columns from test with confidence .4",

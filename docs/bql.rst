@@ -45,9 +45,9 @@ Available models include "naive bayes" and "crp mixture"
 
 ::
 
-	ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
+	ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <minutes> MINUTES) [WAIT]
 
-Analyze the specified models for the specified number of iterations (by default, analyze all models).
+Analyze the specified models for the specified number of iterations (by default, analyze all models). If WAIT is included, the user is unable to make any other queries until ANALYZE has finished, otherwise it runs in the background. The state of a background ANALYZE may be checked with the query "SHOW ANALYZE FOR <btable>" and ANALYZE can be canceled with "CANCEL ANALYZE FOR <btable>"
 
 Examining the state of your btables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,7 +114,7 @@ INFER is just like SELECT, except that it also tries to fill in missing values. 
 
 SIMULATE generates new rows from the underlying probability model a specified number of times::
 
-   SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [INTO <newbtablename>]
+   SIMULATE [HIST] <columns> FROM <btable> [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
 
 The optional INTO clause at the end of SELECT, INFER, or SIMULATE queries allows you to create a new btable from the query results. The new btable's schema will be created based on the schema of the original table in the query.
 
@@ -137,9 +137,25 @@ In the above query specifications, you may be wondering what some of the notatio
   SELECT name, age, date FROM...
   SELECT name, TYPICALITY, age, date FROM...
 
-<whereclause> specifies an AND-separated list of <column|function> <operator> <value>, where operator must be one of (=, <, <=, >, >=)::
+Where Clause
+~~~~~~~~~~~~~~~
+
+For SELECT, INFER, and ESTIMATE COLUMNS, you may include a where clause to filter results much like SQL. Where clauses have the following format::
+	
+	WHERE <column|function> <operator> <value> [AND <column|function> <operator> <value>...]
+
+SELECT and INFER where clauses may include columns and non-aggregate functions such as PREDICTIVE PROBABILITY and TYPICALITY. ESTIMATE COLUMNS where clause may include aggregate functions of columns such as MUTUAL INFORMATION or PROBABILITY. The operator can be one of (=, <, >, <=, >=, in)::
 
   SELECT * FROM table WHERE name = 'Bob' AND age <= 18 AND TYPICALITY > 0.5 ....
+
+Order By
+~~~~~~~~~~~~~~~
+
+The order by clause changes the order of results by one or more conditions::
+
+	ORDER BY <column|function> [ASC|DESC] [, <column|function> [ASC|DESC]]
+
+Columns or rows returned are ordered by each condition in the order the conditions were specified. If not specified by ASC or DESC, the order is assumed to be descending. 
 
 Query Modifiers
 ~~~~~~~~~~~~~~~

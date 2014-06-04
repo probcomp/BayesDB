@@ -86,6 +86,120 @@ class Engine(object):
       method = getattr(self.backend, method_name)
       out = method(**args_dict)
     return out
+  
+  def help(self, method=None):
+    help_methods = dict()
+    help_methods['select']="""
+    SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>]
+    """
+    help_methods['infer'] = """
+    INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>]
+    """
+    help_methods['simulate'] = """
+    SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
+    """
+    help_methods['estimate'] = """
+    ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>] 
+    
+    ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>] 
+    
+    ESTIMATE PAIRWISE ROW SIMILARITY [WITH RESPECT TO <columns|column_lists>]FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
+    """
+
+    help_methods['execute'] = """
+    EXECUTE FILE <filename.bql>
+    """
+    
+    help_methods['update'] = """
+    UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
+    """
+
+    help_methods['initialize'] = """
+    INITIALIZE <num_models> MODELS FOR <btable> [WITH CONFIG <config>]
+    """
+
+    help_methods['analyze'] = """
+    ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <seconds> SECONDS)
+    """
+
+    help_methods['list'] = """
+    LIST BTABLES
+    """
+
+    help_methods['show'] = """
+    SHOW SCHEMA FOR <btable>
+
+    SHOW MODELS FOR <btable>
+
+    SHOW DIAGNOSTICS FOR <btable>
+
+    SHOW COLUMN LISTS FOR <btable>
+
+    SHOW COLUMNS FOR <column_list|btable>
+
+    SHOW ROW LISTS FOR <table>
+
+    SHOW METADATA FOR <btable> [<metadata-key1> [, <metadata-key2>...]]
+
+    SHOW LABEL FOR <btable> [<column-name-1> [, <column-name-2>...]]
+    """
+
+    help_methods['load'] = """
+    LOAD MODELS <filename.pkl.gz> INTO <btable>
+    """
+
+    help_methods['save'] = """
+    SAVE MODELS FROM <btable> TO <filename.pkl.gz>
+    """
+
+    help_methods['drop'] = """
+    DROP BTABLE <btable>
+
+    DROP MODEL[S] [<model_index>-<model_index>] FROM <btable>
+    """
+
+    help_methods['summarize'] = """
+    SUMMARIZE <SELECT|INFER|SIMULATE>
+    """
+
+    help_methods['plot'] = """
+    PLOT <SELECT|INFER|SIMULATE>
+    """
+
+    ## Important to make sure that http://probcomp.csail.mit.edu/bayesdb/docs/bql.html is up to date
+    help_all = """
+    Welcome to BQL help. 
+    
+    For the BQL documentation, please visit:
+    http://probcomp.csail.mit.edu/bayesdb/docs/bql.html
+    
+    Here is a list of BQL commands and their syntax:
+    """
+    help_basic = """
+    Welcome to BQL help. 
+  
+    If you know the query you wish to use, type 'HELP <query_name>'
+
+    For all queries, type 'HELP ALL'
+    
+    For the complete BQL documentation, please visit: 
+    http://probcomp.csail.mit.edu/bayesdb/docs/bql.html
+    """
+    
+    if method == None:
+      help_string = help_basic
+    elif method == 'all':
+      help_string = help_all + ''.join(help_methods.values())
+    elif method in help_methods:
+      help_string = help_all + help_methods[method]
+    else:
+      help_string = help_basic + '''
+    The method you typed was not recognize. Try "HELP", "HELP ALL",
+    or one of the following: 
+    \tHELP ''' + '\n\tHELP '.join(help_methods.keys()).upper()
+
+    print help_string
+    return help_string
 
   def is_analyzing(self, tablename):
     return (tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive())

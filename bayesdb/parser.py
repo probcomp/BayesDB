@@ -58,6 +58,12 @@ class Parser(object):
         else:
             raise utils.BayesDBParseError("Parsing statement as LIST BTABLES failed")
 
+    def parse_help(self, bql_statement_ast):
+        method= None
+        if bql_statement_ast.method_name != '':
+            method = bql_statement_ast.method_name
+        return 'help', dict(method=method), None
+
     def parse_execute_file(self,bql_statement_ast):
         return 'execute_file', dict(filename=self.get_absolute_path(bql_statement_ast.filename)), None
 
@@ -77,7 +83,9 @@ class Parser(object):
         return 'drop_models', dict(tablename=bql_statement_ast.btable, model_indices=model_indices), None
 
     def parse_initialize_models(self,bql_statement_ast):
-        n_models = int(bql_statement_ast.num_models)
+        n_models = 16 ##TODO magic number - move to config file
+        if bql_statement_ast.num_models != '':
+            n_models = int(bql_statement_ast.num_models)
         tablename = bql_statement_ast.btable
         arguments_dict = dict(tablename=tablename, n_models=n_models, model_config=None)
         if bql_statement_ast.config != '':
@@ -106,19 +114,29 @@ class Parser(object):
         iterations = None
         seconds = None
         kernel = 0
+        wait = True
         tablename = bql_statement_ast.btable
         if bql_statement_ast.index_clause != '':
             model_indices = bql_statement_ast.index_clause.asList()
-        if bql_statement_ast.num_seconds !='':
-            seconds = int(bql_statement_ast.num_seconds)
+        if bql_statement_ast.num_minutes !='':
+            seconds = int(bql_statement_ast.num_minutes) * 60
         if bql_statement_ast.num_iterations !='':
             iterations = int(bql_statement_ast.num_iterations)
         if bql_statement_ast.with_kernel_clause != '':
             kernel = bql_statement_ast.with_kernel_clause.kernel_id
             if kernel == 'mh': ## TODO should return None or something for invalid kernels
                 kernel=1
+        if bql_statement_ast.wait != '':
+            wait = False
         return 'analyze', dict(tablename=tablename, model_indices=model_indices,
-                                   iterations=iterations, seconds=seconds, ct_kernel=kernel), None
+                               iterations=iterations, seconds=seconds, 
+                               ct_kernel=kernel, background=wait), None
+
+    def parse_cancel_analyze(self, bql_statement_ast): ##TODO no tests written
+        return 'cancel_analyze', dict(tablename=bql_statement_ast.btable), None
+    
+    def parse_show_analyze(self, bql_statement_ast): ##TODO no tests written
+        return 'show_analyze', dict(tablename=bql_statement_ast.btable), None
         
     def parse_show_row_lists(self,bql_statement_ast):
         return 'show_row_lists', dict(tablename=bql_statement_ast.btable), None
@@ -231,12 +249,21 @@ class Parser(object):
             order_by = bql_statement_ast.order_by
         plot=(bql_statement_ast.plot == 'plot')
         column_list = None
-        if bql_statement_ast.columns != '':
-            column_list = bql_statement_ast.columns[0] ##TODO implement allowing comma separated columns here
-            assert len(bql_statement_ast.columns) < 2
         row_list = None
-        if bql_statement_ast.rows != '':
-            row_list = bql_statement_ast.rows ##TODO parse to list of rows
+        if bql_statement_ast.for_list != '':
+            if statement_id == 'estimate_pairwise':
+                ##TODO can only handle single column or row lists in this clause. 
+                column_list = bql_statement_ast.for_list.asList()
+                assert len(column_list) == 1, "BayesDBParseError: You may only specify one column list. Remove %s" % column_list[1]
+                column_list = column_list[0]
+            elif statement_id == 'estimate_pairwise_row':
+                row_list = bql_statement_ast.for_list.asList()
+                assert len(row_list) == 1, "BayesDBParseError: You may only specify one row list. Remove %s" % row_list[1]
+                row_list = row_list[0]
+                
+            else:
+                raise utils.BayesDBParseError("Invalid query: FOR <list> only acceptable in estimate pairwise.")
+            
         summarize=(bql_statement_ast.summarize == 'summarize')
         hist = (bql_statement_ast.hist == 'hist')
         freq = (bql_statement_ast.freq == 'freq')
@@ -249,7 +276,6 @@ class Parser(object):
         whereclause = None
         if bql_statement_ast.where_conditions != '':
             whereclause = bql_statement_ast.where_conditions
-
         return statement_id, \
             dict(clusters_name=clusters_name,
                  confidence = confidence,
@@ -572,7 +598,7 @@ class Parser(object):
         else:
             return utils.get_index_from_colname(M_c, function_group.column)
 
-    def get_args_of_with(self,function_group, M_c):
+    def get_args_pairwise_column(self,function_group, M_c):
         """
         designed to handle dependence probability, mutual information, and correlation function_groups
         all have an optional of clause
@@ -676,13 +702,13 @@ class Parser(object):
                 args = None
             elif single_condition.function.function_id == 'dependence probability':
                 function = functions._dependence_probability
-                _, args = self.get_args_of_with(single_condition.function, M_c)
+                _, args = self.get_args_pairwise_column(single_condition.function, M_c)
             elif single_condition.function.function_id == 'mutual information':
                 function = functions._mutual_information
-                _, args = self.get_args_of_with(single_condition.function, M_c)
+                _, args = self.get_args_pairwise_column(single_condition.function, M_c)
             elif single_condition.function.function_id == 'correlation':
                 function = functions._correlation
-                _, args = self.get_args_of_with(single_condition.function, M_c)
+                _, args = self.get_args_pairwise_column(single_condition.function, M_c)
             else:
                 if single_condition.function.function_id != '':
                     raise utils.BayesDBParseError("Invalid where clause: %s not allowed." % 
@@ -733,13 +759,13 @@ class Parser(object):
                 args = None 
             elif orderable.function.function_id == 'dependence probability':
                 function = functions._dependence_probability
-                _, args = self.get_args_of_with(orderable.function, M_c)
+                _, args = self.get_args_pairwise_column(orderable.function, M_c)
             elif orderable.function.function_id == 'correlation':
                 function = functions._correlation
-                _, args = self.get_args_of_with(orderable.function, M_c)
+                _, args = self.get_args_pairwise_column(orderable.function, M_c)
             elif orderable.function.function_id == 'mutual information':
                 function = functions._mutual_information
-                _, args = self.get_args_of_with(orderable.function, M_c)
+                _, args = self.get_args_pairwise_column(orderable.function, M_c)
             else:
                 raise utils.BayesDBParseError("Invalid order by clause. Can only order by typicality, correlation, mutual information, or dependence probability.")
             function_list.append((function, args, desc))
@@ -795,17 +821,17 @@ class Parser(object):
                 query_colnames.append(' '.join(pre_name_list))
             elif function_group.function_id == 'dependence probability':
                 queries.append((functions._dependence_probability, 
-                                self.get_args_of_with(function_group, M_c), 
+                                self.get_args_pairwise_column(function_group, M_c), 
                                 True))
                 query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'mutual information':
                 queries.append((functions._mutual_information, 
-                                self.get_args_of_with(function_group, M_c), 
+                                self.get_args_pairwise_column(function_group, M_c), 
                                 True))
                 query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'correlation':
                 queries.append((functions._correlation, 
-                                self.get_args_of_with(function_group, M_c), 
+                                self.get_args_pairwise_column(function_group, M_c), 
                                 True))
                 query_colnames.append(' '.join(function_group))
             ## single column, column_list, or *

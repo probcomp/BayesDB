@@ -37,7 +37,7 @@ import bayesdb.bql_grammar as bql_grammar
 
 def is_row_valid(idx, row, where_conditions, M_c, X_L_list, X_D_list, T, backend, tablename, numsamples):
   """Helper function that applies WHERE conditions to row, returning True if row satisfies where clause."""
-  ## TODO make better, this takes no where conditions to mean that all rows are valid
+  ## TODO potentially move the first return true to outside this function. Only call if where_conditions (performance)
   if where_conditions == None:
     return True
   for ((func, f_args), op, val) in where_conditions:
