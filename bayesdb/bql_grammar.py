@@ -499,9 +499,9 @@ save_clusters_clause = Group(save_clusters_keyword
                              (into_keyword +
                               identifier.setResultsName('into_label')))).setResultsName('clusters_clause')
 
-row_list_clause = Group(int_number + 
-                           ZeroOrMore(Suppress(comma_literal) + 
-                                      int_number)).setResultsName("row_list")
+list_clause = Group(int_number|identifier + 
+                    ZeroOrMore(Suppress(comma_literal) + 
+                               (int_number|identifier)))
 
 single_given_condition = Group(identifier.setResultsName('column') + equal_literal + value.setResultsName('value'))
 given_clause = (Group(given_keyword + 
@@ -548,8 +548,7 @@ query = (Optional(freq_keyword | hist_keyword | summarize_keyword | plot_keyword
               Optional(Suppress(with_keyword) + int_number.setResultsName('samples') + Suppress(sample_keyword)) + 
               Optional(Suppress(limit_keyword) + int_number.setResultsName("limit")) + 
               Optional(given_clause) + 
-              Optional(for_keyword + column_list_clause.setResultsName('columns')) +
-              Optional(for_keyword + row_list_clause.setResultsName('rows')) + 
+              Optional(for_keyword + list_clause.setResultsName('for_list')) +
               Optional(Suppress(save_to_keyword) + filename) + 
               Optional(save_clusters_clause) + 
               Optional(Suppress(times_keyword) + int_number.setResultsName("times")) + 

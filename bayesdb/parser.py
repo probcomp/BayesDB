@@ -239,12 +239,21 @@ class Parser(object):
             order_by = bql_statement_ast.order_by
         plot=(bql_statement_ast.plot == 'plot')
         column_list = None
-        if bql_statement_ast.columns != '':
-            column_list = bql_statement_ast.columns[0] ##TODO implement allowing comma separated columns here
-            assert len(bql_statement_ast.columns) < 2
         row_list = None
-        if bql_statement_ast.rows != '':
-            row_list = bql_statement_ast.rows ##TODO parse to list of rows
+        if bql_statement_ast.for_list != '':
+            if statement_id == 'estimate_pairwise':
+                ##TODO can only handle single column or row lists in this clause. 
+                column_list = bql_statement_ast.for_list.asList()
+                assert len(column_list) == 1, "BayesDBParseError: You may only specify one column list. Remove %s" % column_list[1]
+                column_list = column_list[0]
+            elif statement_id == 'estimate_pairwise_row':
+                row_list = bql_statement_ast.for_list.asList()
+                assert len(row_list) == 1, "BayesDBParseError: You may only specify one row list. Remove %s" % row_list[1]
+                row_list = row_list[0]
+                
+            else:
+                raise utils.BayesDBParseError("Invalid query: FOR <list> only acceptable in estimate pairwise.")
+            
         summarize=(bql_statement_ast.summarize == 'summarize')
         hist = (bql_statement_ast.hist == 'hist')
         freq = (bql_statement_ast.freq == 'freq')
@@ -257,7 +266,6 @@ class Parser(object):
         whereclause = None
         if bql_statement_ast.where_conditions != '':
             whereclause = bql_statement_ast.where_conditions
-
         return statement_id, \
             dict(clusters_name=clusters_name,
                  confidence = confidence,
