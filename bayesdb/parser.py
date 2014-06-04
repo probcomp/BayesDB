@@ -30,19 +30,18 @@ class Parser(object):
         self.reset_root_dir()
 
     def pyparse_input(self, input_string):
-        """Uses the grammar defined in bql_grammar to create a pyparsing object out of an input string"""
+        """
+        Uses the grammar defined in bql_grammar to create a pyparsing object out of an input string
+        :param str input_string: the input block of bql statement(s)
+        :return: the pyparsing object for the parsed statement. 
+        :raises BayesDBParseError: if the string is not a valid bql statement. 
+        """
         try:
             bql_blob_ast = bql.bql_input.parseString(input_string, parseAll=True)
         except pp.ParseException as x:
             raise utils.BayesDBParseError("Invalid query. Could not parse (Line {e.lineno}, column {e.col}):\n\t'{e.line}'\n\t".format(e=x) + ' ' * x.col + '^')
         return bql_blob_ast
         
-    def split_statements(self,bql_blob_ast):
-        """
-        returns a list of bql statements, not necessarily useful. 
-        """
-        return [bql_statement_ast for bql_statement_ast in bql_blob_ast]
-
     def parse_single_statement(self,bql_statement_ast):
         ## TODO Check for nest
         parse_method = getattr(self,'parse_' + bql_statement_ast.statement_id)
@@ -885,6 +884,7 @@ class Parser(object):
         this method is used to convert the path to an absolute path
         by assuming that the correct base directory is self.root_directory.
         """
+        relative_path = os.path.expanduser(relative_path)
         if os.path.isabs(relative_path):
             return relative_path
         else:
