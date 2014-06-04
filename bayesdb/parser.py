@@ -106,6 +106,7 @@ class Parser(object):
         iterations = None
         seconds = None
         kernel = 0
+        wait = True
         tablename = bql_statement_ast.btable
         if bql_statement_ast.index_clause != '':
             model_indices = bql_statement_ast.index_clause.asList()
@@ -117,8 +118,17 @@ class Parser(object):
             kernel = bql_statement_ast.with_kernel_clause.kernel_id
             if kernel == 'mh': ## TODO should return None or something for invalid kernels
                 kernel=1
+        if bql_statement_ast.wait != '':
+            wait = False
         return 'analyze', dict(tablename=tablename, model_indices=model_indices,
-                                   iterations=iterations, seconds=seconds, ct_kernel=kernel), None
+                               iterations=iterations, seconds=seconds, 
+                               ct_kernel=kernel, background=wait), None
+
+    def parse_cancel_analyze(self, bql_statement_ast): ##TODO no tests written
+        return 'cancel_analyze', dict(tablename=bql_statement_ast.btable), None
+    
+    def parse_show_analyze(self, bql_statement_ast): ##TODO no tests written
+        return 'show_analyze', dict(tablename=bql_statement_ast.btable), None
         
     def parse_show_row_lists(self,bql_statement_ast):
         return 'show_row_lists', dict(tablename=bql_statement_ast.btable), None

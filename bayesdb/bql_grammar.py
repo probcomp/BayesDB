@@ -160,7 +160,7 @@ show_label_for_keyword = Combine(show_keyword + single_white +
 show_label_for_keyword.setParseAction(replaceWith("show_label"))
 show_analyze_for_keyword = Combine(show_keyword + single_white + analyze_keyword + single_white + for_keyword).setResultsName('statement_id')
 show_analyze_for_keyword.setParseAction(replaceWith("show_analyze"))
-cancel_analyze_for_keyword = Combine(show_keyword + single_white + analyze_keyword + single_white + for_keyword).setResultsName('statement_id')
+cancel_analyze_for_keyword = Combine(cancel_keyword + single_white + analyze_keyword + single_white + for_keyword).setResultsName('statement_id')
 cancel_analyze_for_keyword.setParseAction(replaceWith('cancel_analyze'))
 models_for_keyword = Combine(model_keyword + single_white + for_keyword)
 model_index_keyword = Combine(model_keyword + single_white + index_keyword)
@@ -346,7 +346,8 @@ analyze_function = (analyze_keyword + btable +
                     Optional( model_keyword + index_clause) + 
                     Suppress(for_keyword) + 
                     ((int_number.setResultsName('num_iterations') + iteration_keyword) | 
-                     (int_number.setResultsName('num_minutes') + minute_keyword)) + Optional(with_kernel_clause))
+                     (int_number.setResultsName('num_minutes') + minute_keyword)) + Optional(with_kernel_clause) +
+                    Optional(wait_keyword).setResultsName('wait'))
                     
 # LIST BTABLES
 list_btables_function = list_btables_keyword
@@ -359,6 +360,7 @@ show_for_btable_statement = ((show_schema_for_keyword |
                               show_analyze_for_keyword |
                               show_row_lists_for_keyword) + 
                              btable)
+cancel_analyze_for_function = cancel_analyze_for_keyword + btable
 
 # LOAD MODELS <filename.pkl.gz> INTO <btable>
 load_model_function = load_model_keyword + filename + Suppress(into_keyword) + btable
@@ -391,6 +393,7 @@ management_query = (create_btable_function |
                     label_columns_for_function | 
                     show_label_function |
                     show_metadata_function |
+                    cancel_analyze_for_function |
                     quit_function)
 
 # ------------------------------ Helper Clauses --------------------------- #

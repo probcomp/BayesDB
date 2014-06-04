@@ -45,9 +45,9 @@ Available models include "naive bayes" and "crp mixture"
 
 ::
 
-	ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <minutes> MINUTES)
+	ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <minutes> MINUTES) [WAIT]
 
-Analyze the specified models for the specified number of iterations (by default, analyze all models).
+Analyze the specified models for the specified number of iterations (by default, analyze all models). If WAIT is included, the user is unable to make any other queries until ANALYZE has finished, otherwise it runs in the background. The state of a background ANALYZE may be checked with the query "SHOW ANALYZE FOR <btable>" and ANALYZE can be canceled with "CANCEL ANALYZE FOR <btable>"
 
 Examining the state of your btables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

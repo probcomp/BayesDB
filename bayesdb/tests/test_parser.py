@@ -896,24 +896,24 @@ def test_drop_models():
 def test_analyze():
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 3 iterations'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None, ct_kernel=0)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=3, seconds=None, ct_kernel=0, background=True)
 
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t for 6 iterations'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None, ct_kernel=0)
+    assert args == dict(tablename='t', model_indices=None, iterations=6, seconds=None, ct_kernel=0, background=True)
 
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t for 7 minutes'))
     assert method == 'analyze'
     
-    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7*60, ct_kernel=0)
+    assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7*60, ct_kernel=0, background=True)
     
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 minutes'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7*60, ct_kernel=0)
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7*60, ct_kernel=0, background=True)
 
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 minutes with mh kernel'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7*60, ct_kernel=1)    
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7*60, ct_kernel=1, background=True)    
 
 def test_load_models():
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('load models fn into t'))
