@@ -25,15 +25,70 @@ import json
 import pickle
 import shutil
 import contextlib
+import threading
+
+from threading import RLock
 
 import data_utils
 import utils
 
 import bayesdb.settings as S
 
+class ModelLocks():
+    """
+    Creates individual model-level locks.
+    Any user method always needs to acquire locks in ascending order to avoid deadlock!!!!
+    """
+    
+    def __init__(self, persistence_layer):
+        self.tablename_dict = dict()
+        self.persistence_layer = persistence_layer
+        
+        for tablename in self.persistence_layer.btable_index:
+            self.tablename_dict[tablename] = dict()            
+            modelids = self.persistence_layer.get_model_ids(tablename)
+            for modelid in modelids:
+                self.tablename_dict[tablename][modelid] = RLock()
+
+    def add_tablename_if_not_exist(self, tablename):
+        if tablename not in self.tablename_dict:
+            self.tablename_dict[tablename] = dict()
+
+    def add_model_if_not_exist(self, tablename, modelid):
+        if modelid not in self.tablename_dict[tablename]:
+            self.tablename_dict[tablename][modelid] = RLock()
+
+    def acquire(self, tablename, modelid):
+        self.add_tablename_if_not_exist(tablename)
+        self.add_model_if_not_exist(tablename, modelid)
+
+        self.tablename_dict[tablename][modelid].acquire()
+
+    def release(self, tablename, modelid):
+        if modelid in self.tablename_dict[tablename]:
+            self.tablename_dict[tablename][modelid].release()
+
+    def acquire_table(self, tablename):
+        self.add_tablename_if_not_exist(tablename)
+        for modelid in sorted(self.tablename_dict[tablename].keys()):
+            self.tablename_dict[tablename][modelid].acquire()
+
+    def release_table(self, tablename):
+        for modelid, lock in self.tablename_dict[tablename].items():
+            # Only release locks this thread owns. There could be a case where
+            # a new model was created while he had the table lock.
+            if threading.current_thread().ident == lock._RLock__owner:
+                lock.release()
+
+    def drop(self, tablename, modelid):
+        del self.tablename_dict[tablename][modelid]
+
+    def drop_all(self, tablename):
+        self.tablename_dict[tablename] = dict()
+        
 
 class PersistenceLayer():
-    """
+    """    
     Stores btables in the following format in the "data" directory:
     bayesdb/data/
     ..btable_index.pkl
@@ -54,6 +109,8 @@ class PersistenceLayer():
     row_lists.pkl: dict. keys: row list names, values: list of row keys (need to update all these if table key is changed!).
     models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views, model_config]. Idx starting at 1.
     data.csv: the raw csv file that the data was loaded from.
+
+    Should be a Singleton class, but Python doesn't enforce that. Could be refactored as just a module.
     """
     
     def __init__(self):
@@ -65,6 +122,7 @@ class PersistenceLayer():
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
         self.load_btable_index() # sets self.btable_index
+        self.model_locks = ModelLocks(self)
 
     def load_btable_index(self):
         """
@@ -144,13 +202,16 @@ class PersistenceLayer():
         if os.path.exists(models_dir):
             if modelid is not None:
                 def get_single_model(modelid):
+                    self.model_locks.acquire(tablename, modelid)
                     # Only return one of the models
                     full_fname = os.path.join(models_dir, 'model_%d.pkl' % modelid)
                     if not os.path.exists(full_fname):
+                        self.model_locks.release(tablename, modelid)
                         return None
                     f = open(full_fname, 'r')
                     m = pickle.load(f)
                     f.close()
+                    self.model_locks.release(tablename, modelid)
                     return m
                 if type(modelid) == list:
                     models = {}
@@ -166,7 +227,8 @@ class PersistenceLayer():
             else:
                 # Return all the models
                 models = {}
-                fnames = os.listdir(models_dir)
+                self.model_locks.acquire_table(tablename)
+                fnames = os.listdir(models_dir)                
                 for fname in fnames:
                     model_id = fname[6:] # remove preceding 'model_'
                     model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
@@ -175,19 +237,25 @@ class PersistenceLayer():
                     m = pickle.load(f)
                     f.close()
                     models[model_id] = m
+                self.model_locks.release_table(tablename)
                 return models
         else:
             # Backwards compatibility with old model style.
+            self.model_locks.acquire_table(tablename)            
             try:
                 f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r')
                 models = pickle.load(f)
                 f.close()
                 if modelid is not None:
-                    return models[modelid]
+                    ret = models[modelid]
                 else:
-                    return models
+                    ret = models
+                self.model_locks.release_table(tablename)
+                return ret
             except IOError:
+                self.model_locks.release_table(tablename)
                 return {}
+            
 
     def get_column_labels(self, tablename):
         try:
@@ -272,9 +340,11 @@ class PersistenceLayer():
         if not os.path.exists(models_dir):
             os.makedirs(models_dir)
 
+        self.model_locks.acquire(tablename, modelid)
         model_f = open(os.path.join(models_dir, 'model_%d.pkl' % modelid), 'w')
         pickle.dump(model, model_f, pickle.HIGHEST_PROTOCOL)
         model_f.close()
+        self.model_locks.release(tablename, modelid)
 
     def write_models(self, tablename, models):
         # Make models dir
@@ -284,9 +354,11 @@ class PersistenceLayer():
 
         # Write each model individually
         for i, v in models.items():
+            self.model_locks.acquire(tablename, modelid)            
             model_f = open(os.path.join(models_dir, 'model_%d.pkl' % i), 'w')
             pickle.dump(v, model_f, pickle.HIGHEST_PROTOCOL)
             model_f.close()
+            self.model_locks.release(tablename, modelid)            
 
     def write_column_labels(self, tablename, column_labels):
         column_labels_f = open(os.path.join(self.data_dir, tablename, 'column_labels.pkl'), 'w')
@@ -324,15 +396,21 @@ class PersistenceLayer():
         models_dir = os.path.join(self.data_dir, tablename, 'models')
         if os.path.exists(models_dir):
             if model_ids is None or model_ids == 'all':
+                self.model_locks.acquire_table(tablename)
                 fnames = os.listdir(models_dir)
                 for fname in fnames:
                     if 'model_' in fname:
                         os.remove(os.path.join(models_dir, fname))
+                self.model_locks.drop_all(tablename)
+                self.model_locks.release_table(tablename)                
             else:
                 for modelid in model_ids:
+                    self.model_locks.acquire(tablename, modelid)
                     fname = os.path.join(models_dir, 'model_%d.pkl' % modelid)
                     if os.path.exists(fname):
                         os.remove(fname)
+                    self.model_locks.drop(tablename, modelid)
+                    self.model_locks.release(tablename, modelid)
         else:
             # If models in old style, convert to new style, save, and retry.
             models = self.get_models(tablename)
@@ -365,7 +443,14 @@ class PersistenceLayer():
     def get_max_model_id(self, tablename, models=None):
         """Get the highest model id, and -1 if there are no models.
         Model indexing starts at 0 when models exist."""
-        
+        model_ids = self.get_model_ids(tablename, models)
+        if len(model_ids) == 0:
+            return -1
+        else:
+            return max(model_ids)
+
+    def get_model_ids(self, tablename, models=None):
+        """Get the list of modelids for a table."""
         if models is not None:
             model_ids = models.keys()
         else:
@@ -379,10 +464,7 @@ class PersistenceLayer():
                     model_id = fname[6:] # remove preceding 'model_'
                     model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
                     model_ids.append(model_id)
-        if len(model_ids) == 0:
-            return -1
-        else:
-            return max(model_ids)
+        return model_ids
 
     def get_cctypes(self, tablename):
         """Access the table's current cctypes."""
@@ -515,6 +597,8 @@ class PersistenceLayer():
 
     def update_models(self, tablename, modelids, X_L_list, X_D_list, diagnostics_dict):
         """
+        TODO: UNUSED WITH NEW ANALYZE, DELETE
+        
         Overwrite all models by id, and append diagnostic info.
         
         param diagnostics_dict: -> dict[f_z[0, D], num_views, logscore, f_z[0, 1], column_crp_alpha]
@@ -523,6 +607,7 @@ class PersistenceLayer():
         Ignores f_z[0, D] and f_z[0, 1], since these will need to be recalculated after all
         inference is done in order to properly incorporate all models.
         """
+        self.acquire_table(tablename)
         models = self.get_models(tablename)
         new_iterations = len(diagnostics_dict['logscore'])
 
@@ -545,8 +630,9 @@ class PersistenceLayer():
 
         # Save to disk
         self.write_models(tablename, models)
+        self.release_table(tablename)
 
-    def update_model(self, tablename, X_L, X_D, modelid, diagnostics_dict):
+    def update_model(self, tablename, X_L, X_D, diagnostics_dict, modelid):
         """
         Overwrite a certain model by id.
         Assumes that diagnostics_dict was from an analyze run with only one model.
@@ -561,6 +647,8 @@ class PersistenceLayer():
         each diagnostic entry is a list, over iterations.
 
         """
+        assert type(modelid) == int
+        self.model_locks.acquire(tablename, modelid)
         model = self.get_models(tablename, modelid)
 
         model['X_L'] = X_L
@@ -569,16 +657,13 @@ class PersistenceLayer():
 
         # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore, num_views.
         for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
-            diag_list = [l[idx] for l in diagnostics_dict[diag_key]]
-            if diag_key in model_dict and type(model_dict[diag_key]) == list:
-                model_dict[diag_key] += diag_list
+            diag_list = [l[0] for l in diagnostics_dict[diag_key]]
+            if diag_key in model and type(model[diag_key]) == list:
+                model[diag_key] += diag_list
             else:
-                model_dict[diag_key] = diag_list
+                model[diag_key] = diag_list
         
         self.write_model(tablename, model, modelid)
+        self.model_locks.release(tablename, modelid)
 
-    def get_model_ids(self, tablename):
-        """ Receive a list of all model ids for the table. """
-        models = self.get_models(tablename)
-        return models.keys()
             

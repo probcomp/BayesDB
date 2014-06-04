@@ -30,6 +30,9 @@ import math
 import ast
 import sys
 import random
+import threading
+import multiprocessing
+import Queue
 import pandas
 
 import pylab
@@ -50,13 +53,14 @@ import plotting_utils
 import parser as p
 
 class Engine(object):
-  def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing', seed=None, **kwargs):
+  def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='local', seed=None, **kwargs):
     """ One optional argument that you may find yourself using frequently is seed.
     It defaults to random seed, but for testing/reproduceability purposes you may
     want a deterministic one. """
     
     self.persistence_layer = PersistenceLayer()
     self.parser = p.Parser()
+    self.analyze_threads = dict() # Maps tablenames to whether they are doing an ANALYZE.
 
     if crosscat_host is None or crosscat_host == 'localhost':
       self.online = False
@@ -197,8 +201,14 @@ class Engine(object):
     print help_string
     return help_string
 
+  def is_analyzing(self, tablename):
+    return (tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive())
+
   def drop_btable(self, tablename):
     """Delete table by tablename."""
+    if self.is_analyzing(tablename):
+      self.cancel_analyze(tablename)
+      raise utils.BayesDBError('Error: cannot drop btable with ANALYZE in progress. Attempting to cancel ANALYZE; please retry drop btable once ANALYZE is successfully completed.')
     self.persistence_layer.drop_btable(tablename)
     return dict()
 
@@ -392,20 +402,22 @@ class Engine(object):
       old_models = models
       models = dict()
       for id, (X_L, X_D) in enumerate(zip(old_models['X_L_list'], old_models['X_D_list'])):
-        models[id] = dict(X_L=X_L, X_D=X_D, iterations=500)
+        models[id] = dict(X_L=X_L, X_D=X_D, iterations=0)
       
     result = self.persistence_layer.add_models(tablename, models.values())
     return self.show_models(tablename)
 
   def drop_models(self, tablename, model_indices=None):
     """Drop the specified models. If model_ids is None or all, drop all models."""
+    if self.is_analyzing(tablename):
+      raise utils.BayesDBError('Error: cannot drop models with ANALYZE in progress. Please retry once ANALYZE is successfully completed or canceled.')
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     
     self.persistence_layer.drop_models(tablename, model_indices)
     return self.show_models(tablename)
     
-  def initialize_models(self, tablename, n_models, model_config=None):
+  def initialize_models(self, tablename, n_models=16, model_config=None):
     """
     Initialize n_models models.
 
@@ -416,6 +428,8 @@ class Engine(object):
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
+    if self.is_analyzing(tablename):
+      raise utils.BayesDBError('Error: cannot initialize models with ANALYZE in progress. Please retry once ANALYZE is successfully completed or canceled.')      
 
     # Get t, m_c, and m_r, and tableid
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
@@ -469,13 +483,13 @@ class Engine(object):
     """Return the current models and their iteration counts."""
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-    
+
     models = self.persistence_layer.get_models(tablename)
     modelid_iteration_info = list()
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
       modelid_iteration_info.append((modelid, model['iterations']))
     if len(models) == 0:
-      return dict(message="No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
+      raise utils.BayesDBNoModelsError(tablename)
     else:
       return dict(models=modelid_iteration_info)
 
@@ -490,18 +504,19 @@ class Engine(object):
     models = self.persistence_layer.get_models(tablename)    
     data = list()
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
+      if 'model_config' not in model:
+        raise utils.BayesDBError("The models in %s were created with an old version of BayesDB which does not support model diagnostics." % tablename)
       data.append((modelid, model['iterations'], str(model['model_config'])))
     if len(models) == 0:
-      return dict(message="No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
+      raise utils.BayesDBError("No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
     else:
       return dict(columns=['model_id', 'iterations', 'model_config'], data=data)
-    
 
-  def analyze(self, tablename, model_indices=None, iterations=None, seconds=None, ct_kernel=0):
+  def analyze(self, tablename, model_indices=None, iterations=None, seconds=None, ct_kernel=0, background=True):
     """
     Run analyze for the selected table. model_indices may be 'all' or None to indicate all models.
 
-    Runs for a maximum of iterations 
+    Runs for a maximum of iterations, or a maximum number of seconds.
     
     Previously: this command ran in the same thread as this engine.
     Now: runs each model in its own thread, and does 10 seconds of inference at a time,
@@ -512,14 +527,11 @@ class Engine(object):
     if not self.persistence_layer.has_models(tablename):
       raise utils.BayesDBNoModelsError(tablename)
     
-    if iterations is None:
-      iterations = 1000
-    
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     
     max_model_id = self.persistence_layer.get_max_model_id(tablename)
     if max_model_id == -1:
-      return dict(message="You must INITIALIZE MODELS before using ANALYZE.")
+      raise utils.BayesDBError("You must INITIALIZE MODELS before using ANALYZE.")
     models = self.persistence_layer.get_models(tablename)
 
     if model_indices is None or (str(model_indices).upper() == 'ALL'):
@@ -528,31 +540,42 @@ class Engine(object):
       assert type(model_indices) == list
       modelids = model_indices
 
-    X_L_list = [models[i]['X_L'] for i in modelids]
-    X_D_list = [models[i]['X_D'] for i in modelids]
-
     first_model = models[modelids[0]]
     if 'model_config' in first_model and 'kernel_list' in first_model['model_config']:
       kernel_list = first_model['model_config']['kernel_list']
     else:
       kernel_list = () # default kernel list
 
-    analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True,
-                        kernel_list=kernel_list)
-    if ct_kernel != 0:
-      analyze_args['CT_KERNEL'] = ct_kernel
-    
-    analyze_args['n_steps'] = iterations
-    if seconds is not None:
-      analyze_args['max_time'] = seconds
 
-    X_L_list_prime, X_D_list_prime, diagnostics_dict = self.call_backend('analyze', analyze_args)
-    iterations = len(diagnostics_dict['logscore'])
-    self.persistence_layer.update_models(tablename, modelids, X_L_list_prime, X_D_list_prime, diagnostics_dict)
-    
-    ret = self.show_models(tablename)
-    ret['message'] = 'Analyze complete.'
-    return ret
+    if not background:
+      am = AnalyzeMaster(None)
+      am.analyze_master(tablename, modelids, kernel_list, iterations, seconds, M_c, T, models, background, self)
+      return dict(message="Analyze complete.")
+    else:
+      # Start analyze thread.
+      if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
+        raise utils.BayesDBError("%s is already being analzyed. Try using 'SHOW ANALYZE FOR %s' to get more information, or 'CANCEL ANALYZE FOR %s' to cancel the ANALYZE.")
+      t = AnalyzeMaster(args=(tablename, modelids, kernel_list, iterations,
+                              seconds, M_c, T, models, background, self))
+      self.analyze_threads[tablename] = t
+      t.start()
+      # TODO: how to remove when done?
+      return dict(message="Analyzing %s: models will be updated in the background." % tablename)
+
+  def show_analyze(self, tablename):
+    if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
+      info = self.analyze_threads[tablename].get_info()
+      return dict(message=info)
+    else:
+      return dict(message="Table %s is not currently being analyzed." % tablename)
+
+  def cancel_analyze(self, tablename):
+    if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
+      self.analyze_threads[tablename].stop()
+      return dict(message="Analyze for table %s is being canceled. Please wait a few moments for it to exit safely." % tablename)
+    else:
+      raise utils.BayesDBError("Table %s is not being analyzed." % tablename)              
+
 
   def infer(self, tablename, functions, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """
@@ -955,3 +978,165 @@ def get_method_name_to_args():
         arg_str_list = inspect.getargspec(method).args[1:]
         method_name_to_args[method_name] = arg_str_list
     return method_name_to_args
+
+
+class StoppableThread(threading.Thread):
+    """Thread class with a stop() method. The thread itself has to check
+    regularly for the stopped() condition."""
+
+    def __init__(self, target, args):
+        super(StoppableThread, self).__init__(target=target, args=args)
+        self._stop = threading.Event()
+
+    def stop(self):
+        self._stop.set()
+
+    def stopped(self):
+        return self._stop.isSet()    
+
+class AnalyzeMaster(StoppableThread):
+  def __init__(self, args):
+    self.target = self.analyze_master    
+    super(AnalyzeMaster, self).__init__(target=self.target, args=args)
+
+  def get_info(self):
+    elapsed_seconds = time.time() - self.start_time    
+    if self.requested_iterations is None:
+      # User specified time constraint
+      remaining_seconds = self.total_seconds - elapsed_seconds
+      if remaining_seconds > 0:
+        return "Iterations completed: %d\nElapsed minutes: %0.2f\nRemaining minutes: %0.2f" % (self.iters_done, elapsed_seconds/60.0, remaining_seconds/60.0)
+      else:
+        return "Iterations completed: %d\nTime complete: waiting for final iteration to finish." % self.iters_done
+    else:
+      # User specified iterations constraint
+      return "Iterations completed: %d\nRemaining iterations: %d\nElapsed minutes: %02.f\nEstimated remaining minutes:%0.2f" % (self.iters_done, self.requested_iterations - self.iters_done, elapsed_seconds/60.0, self.time_remaining_estimate/60.0)
+    return timing_str
+  
+  def analyze_master(self, tablename, modelids, kernel_list, iterations, seconds, M_c, T, models, background, engine):
+    """
+    Helper function for analyze. This is the thread that runs in the background as the previous analyze
+    command returns before analyze is complete.
+    """
+
+    """ New stuff: scrutinize carefully 
+    analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True,
+                        kernel_list=kernel_list)
+    if ct_kernel != 0:
+      analyze_args['CT_KERNEL'] = ct_kernel
+    
+    analyze_args['n_steps'] = iterations
+    if seconds is not None:
+      analyze_args['max_time'] = seconds
+    """
+    self.iters_done = 0
+    self.time_remaining_estimate = -1
+    # Even if limited by seconds, still limit to 1000 iterations.
+    if iterations is None:
+      self.requested_iterations = None
+      iterations = 1000
+    else:
+      self.requested_iterations = iterations
+
+    # Tracking info
+    self.start_time = time.time()
+    self.total_seconds = seconds
+
+    ## CrossCat analyze works by trying to do the specified number of iterations (which MUST be at least 1,
+    ##   and it never does more than that number), and doesn't start a new iteration if the specified time
+    ##   has passed (although stopped after X seconds appeared to be buggy).
+
+    ## If we have only a number of iterations: we'll do that many iterations
+    ## If we have only a number of seconds: we'll keep starting new transitions up until that many seconds
+    ##   has elapsed.
+    ## If we have both: we'll do the min of the two.
+
+    ## We will call CrossCat in 1 iteration batches for now, and in a future commit, we'll support
+    ## batches of larger size for smaller tables.
+    # TODO: ignores iterations
+
+    # TODO: kill final model if over time? not important bc just running in background.
+
+    X_L_list = [model['X_L'] for model in models.values()]
+    X_D_list = [model['X_D'] for model in models.values()]
+
+    threads = []
+    # Create a thread for each modelid. Each thread will execute one iteration of analyze.
+    for modelid in modelids:
+      p = AnalyzeWorker(args=(modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L_list[modelid], X_D_list[modelid], background, engine))
+      p.daemon = True
+      p.start()
+      threads.append(p)
+
+    # before returning, make sure all threads have finished
+    workers_done = False
+    while not workers_done:
+      time.sleep(.25)
+      workers_done = True
+      for p in threads:
+        if not p.isAlive():
+          p.join()
+        else:
+          workers_done = False
+
+      # Get progress info
+      info = zip(*[p.get_progress() for p in threads])
+      iter_list = info[0]
+      self.iters_done = min(iter_list)
+      time_estimates = info[1]
+      self.time_remaining_estimate = max(time_estimates)
+
+      # If we are stopped, then stop all workers
+      if self.stopped():
+        for p in threads:
+          if p.isAlive():
+            p.stop()
+
+    if background:
+      print "\nAnalyze for table %s complete. Use 'SHOW MODELS FOR %s' to view models." % (tablename, tablename)
+
+class AnalyzeWorker(StoppableThread):
+  def __init__(self, args):
+    self.target = self.do_analyze_for_model    
+    super(AnalyzeWorker, self).__init__(target=self.target, args=args)
+    self.iterations_done = 0
+    self.time_per_model = 0
+
+  def get_progress(self):
+    time_left = (self.iterations - self.iterations_done)*self.time_per_model
+    return self.iterations_done, time_left
+    
+  def do_analyze_for_model(self, modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L, X_D, background, engine):
+      # TODO: this process should make a background thread for model writes!
+      analyze_args = dict(M_c=M_c, T=T, do_diagnostics=True, kernel_list=kernel_list, \
+                          X_L=X_L, X_D=X_D, n_steps=1)
+      start_time = time.time()
+      last_write_time = start_time
+      models_per_call = 1
+      
+      self.iterations = iterations
+      self.iterations_done = 0
+      for i in range(iterations):
+        X_L, X_D, diagnostics_dict = engine.call_backend('analyze', analyze_args)
+        analyze_args['X_L'] = X_L
+        analyze_args['X_D'] = X_D
+
+        cur_time = time.time()
+        elapsed = cur_time - start_time
+        time_since_write = cur_time - last_write_time
+
+        engine.persistence_layer.update_model(tablename, X_L, X_D, diagnostics_dict, modelid)
+        self.iterations_done += 1
+
+        if self.stopped() or (elapsed >= seconds and seconds is not None):
+          return
+
+        # Update number of models per call, with a target time per call of 5 seconds.
+        self.time_per_model = float(elapsed)/self.iterations_done
+        if self.time_per_model > 5:
+          models_per_call = 1
+        else:
+          models_per_call = int(5.0/self.time_per_model)
+        if iterations - self.iterations_done < models_per_call:
+          models_per_call = iterations - self.iterations_done
+        analyze_args['n_steps'] = models_per_call

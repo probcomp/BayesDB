@@ -300,6 +300,30 @@ def histogram_table(data, columns, M_c):
 def get_index_from_colname(M_c, column):
     if column in M_c['name_to_idx'].keys():
         return M_c['name_to_idx'][column]
+
+def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tablename='', confidence=None, limit=None, engine=None, column_names=None, component_threshold=None):
+    """ Compute a matrix. If using a function that requires engine (currently only
+    mutual information), engine must not be None. """
+
+    # Get appropriate function
+    assert len(X_L_list) == len(X_D_list)
+    if col_function_name == 'mutual information':
+      if len(X_L_list) == 0:
+        return {'message': 'You must initialize models before computing mutual information.'}    
+      col_function = functions._mutual_information
+    elif col_function_name == 'dependence probability':
+      if len(X_L_list) == 0:
+        return {'message': 'You must initialize models before computing dependence probability.'}
+      col_function = functions._dependence_probability
+    elif col_function_name == 'correlation':
+      col_function = functions._correlation
+    else:
+      raise BayesDBParseError('Invalid column function: %s' % col_function_name)
+
+    # If using a subset of the columns, get the appropriate names, and figure out their indices.
+    if column_names is not None:
+        num_cols = len(column_names)
+        column_indices = [M_c['name_to_idx'][name] for name in column_names]
     else:
         BayesDBParseError("Invalid query: column '%s' not found" % column)
 

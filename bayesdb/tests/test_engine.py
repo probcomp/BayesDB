@@ -212,9 +212,9 @@ def test_update_schema():
 def test_save_and_load_models():
   test_tablename, _ = create_dha()
   engine.initialize_models(test_tablename, 3)
-  engine.analyze(test_tablename, model_indices='all', iterations=1)
+  engine.analyze(test_tablename, model_indices='all', iterations=1, background=False)
   ## note that this won't save the models, since we didn't call this from the client.
-  ## engine.save_models actually just turns the models.
+  ## engine.save_models actually just returns the models.
   original_models = engine.save_models(test_tablename)
   
   test_tablename2, _ = create_dha()
@@ -240,12 +240,12 @@ def test_analyze():
   engine.initialize_models(test_tablename, num_models)
 
   for it in (1,2):
-    engine.analyze(test_tablename, model_indices='all', iterations=1)
+    engine.analyze(test_tablename, model_indices='all', iterations=1, background=False)
     model_ids = engine.persistence_layer.get_model_ids(test_tablename)
     assert sorted(model_ids) == range(num_models)
     for i in range(num_models):
       model = engine.persistence_layer.get_models(test_tablename, i)
-      assert model['iterations'] == it      
+      assert model['iterations'] == it
 
 def test_nan_handling():
   test_tablename1, _ = create_dha(path='data/dha_missing.csv') 
@@ -396,7 +396,7 @@ def test_show_models():
   engine.initialize_models(test_tablename, num_models)
 
   for it in (1,2):
-    analyze_out = engine.analyze(test_tablename, model_indices='all', iterations=1)
+    analyze_out = engine.analyze(test_tablename, model_indices='all', iterations=1, background=False)
     model_ids = engine.persistence_layer.get_model_ids(test_tablename)
     assert sorted(model_ids) == range(num_models)
     for i in range(num_models):
@@ -405,7 +405,6 @@ def test_show_models():
 
     ## models should be a list of (id, iterations) tuples.
     models = engine.show_models(test_tablename)['models']
-    assert analyze_out['models'] == models
     assert len(models) == num_models
     for iter_id, m in enumerate(models):
       assert iter_id == m[0]
