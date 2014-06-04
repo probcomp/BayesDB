@@ -536,7 +536,7 @@ def test_update_schema():
 
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
 
-  client('analyze %s for 2 iterations' % (test_tablename), debug=True, pretty=False)
+  client.engine.analyze(tablename=test_tablename, iterations=2, background=False)
 
   with pytest.raises(utils.BayesDBError):
     client('estimate columns from %s order by correlation with qual_score limit 5' % (test_tablename), debug=True, pretty=False)
