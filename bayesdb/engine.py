@@ -1112,19 +1112,24 @@ class AnalyzeWorker(StoppableThread):
       start_time = time.time()
       last_write_time = start_time
       models_per_call = 1
+
+      self.total_analyze_time = 0
+      self.total_write_time = 0
       
       self.iterations = iterations
       self.iterations_done = 0
       for i in range(iterations):
+        cur_time = time.time()
         X_L, X_D, diagnostics_dict = engine.call_backend('analyze', analyze_args)
+        self.total_analyze_time += time.time() - cur_time
+        
         analyze_args['X_L'] = X_L
         analyze_args['X_D'] = X_D
 
         cur_time = time.time()
         elapsed = cur_time - start_time
-        time_since_write = cur_time - last_write_time
-
         engine.persistence_layer.update_model(tablename, X_L, X_D, diagnostics_dict, modelid)
+        self.total_write_time += time.time() - cur_time
         self.iterations_done += 1
 
         if self.stopped() or (elapsed >= seconds and seconds is not None):
