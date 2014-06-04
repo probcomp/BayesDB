@@ -99,7 +99,7 @@ class Client(object):
 
         # Parse input, but catch parsing errors and abort
         try:
-            lines = self.parser.split_statements(self.parser.pyparse_input(bql_string))
+            lines = [bql_statement_ast for bql_statement_ast in self.parser.pyparse_input(bql_string)]
         except utils.BayesDBError as e:
             if debug:
                 raise e
