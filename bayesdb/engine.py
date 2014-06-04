@@ -100,7 +100,7 @@ class Engine(object):
     INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>]
     """
     help_methods['simulate'] = """
-    SIMULATE [HIST] <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
+    SIMULATE <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
     """
     help_methods['estimate'] = """
     ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>] 
@@ -202,8 +202,7 @@ class Engine(object):
     or one of the following: 
     \tHELP ''' + '\n\tHELP '.join(help_methods.keys()).upper()
 
-    print help_string
-    return help_string
+    return dict(message=help_string)
 
   def is_analyzing(self, tablename):
     return (tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive())
@@ -594,7 +593,7 @@ class Engine(object):
       raise utils.BayesDBNoModelsError(tablename)      
     
     if numsamples is None:
-      numsamples=50 ##TODO maybe put this in a config file
+      numsamples=50 ##TODO: put this in a config file
       
     return self.select(tablename, functions, whereclause, limit, order_by,
                        impute_confidence=confidence, numsamples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename)
