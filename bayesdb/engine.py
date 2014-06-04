@@ -1061,8 +1061,8 @@ class AnalyzeMaster(StoppableThread):
 
     threads = []
     # Create a thread for each modelid. Each thread will execute one iteration of analyze.
-    for modelid in modelids:
-      p = AnalyzeWorker(args=(modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L_list[modelid], X_D_list[modelid], background, engine))
+    for i, modelid in enumerate(modelids):
+      p = AnalyzeWorker(args=(modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L_list[i], X_D_list[i], background, engine))
       p.daemon = True
       p.start()
       threads.append(p)
