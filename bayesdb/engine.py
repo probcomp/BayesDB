@@ -942,8 +942,8 @@ class AnalyzeMaster(StoppableThread):
 
     # TODO: kill final model if over time? not important bc just running in background.
 
-    X_L_list = [model['X_L'] for model in models.values()]
-    X_D_list = [model['X_D'] for model in models.values()]
+    X_L_list = [models[i]['X_L'] for i in models.keys()]
+    X_D_list = [models[i]['X_D'] for i in models.keys()]
 
     threads = []
     # Create a thread for each modelid. Each thread will execute one iteration of analyze.
