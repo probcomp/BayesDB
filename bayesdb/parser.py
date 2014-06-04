@@ -885,6 +885,7 @@ class Parser(object):
         this method is used to convert the path to an absolute path
         by assuming that the correct base directory is self.root_directory.
         """
+        relative_path = os.path.expanduser(relative_path)
         if os.path.isabs(relative_path):
             return relative_path
         else:
