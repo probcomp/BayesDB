@@ -676,7 +676,6 @@ class Engine(object):
         function_list.append(o_fun)
         order_by_idxs.append(len(function_list) - 1)
         order_by_size += 1
-    print function_list
 
     for w_idx, w_fun in enumerate(where_functions):
       existing_f_idx = get_existing_f_idx(w_fun, function_list)
