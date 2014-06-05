@@ -37,6 +37,7 @@ quit_keyword = CaselessKeyword("quit").setResultsName("statement_id")
 to_keyword = CaselessKeyword('to')
 ## Many basic keywords will never be used alone
 ## creating them separately like this allows for simpler whitespace and case flexibility
+conf_keyword = CaselessKeyword("conf")
 create_keyword = CaselessKeyword("create")
 execute_keyword = CaselessKeyword("execute")
 file_keyword = CaselessKeyword("file")
@@ -475,7 +476,8 @@ whereclause_potential_function = (similarity_to_function |
 
 # ORDER BY <column|non-aggregate-function>[<column|function>...] [asc|desc]
 single_order_by = Group(whereclause_potential_function.setResultsName('function') + 
-                        Optional(asc_keyword | desc_keyword).setResultsName('asc_desc'))
+                        Optional(asc_keyword | desc_keyword).setResultsName('asc_desc') +
+                        Optional(conf_keyword + float_number.setResultsName('conf')))
 
 order_by_clause = Group(Suppress(order_by_keyword) + 
                         single_order_by + 
@@ -485,7 +487,7 @@ order_by_clause = Group(Suppress(order_by_keyword) +
 single_where_condition = Group(((whereclause_potential_function.setResultsName('function') + 
                                  operation_literal.setResultsName('operation') + 
                                  value.setResultsName('value')) | key_in_rowlist_clause) + 
-                               Optional(with_confidence_clause))
+                               Optional(conf_keyword + float_number.setResultsName('conf')))
 
 where_clause = (where_keyword.setResultsName('where_keyword') + 
                 Group(single_where_condition + 
@@ -540,7 +542,8 @@ function_in_query = (predictive_probability_of_function |
                      correlation_function |
                      column_keyword |
                      dependence_probability_keyword |
-                     Group((identifier|all_column_literal).setResultsName("column_id"))).setResultsName("function")
+                     Group((identifier|all_column_literal).setResultsName("column_id") + 
+                           Optional(conf_keyword + float_number.setResultsName('conf')))).setResultsName("function")
 
 functions_clause = Group(function_in_query + 
                          ZeroOrMore(Suppress(comma_literal) + 

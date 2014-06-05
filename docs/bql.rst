@@ -108,7 +108,7 @@ SELECT is just like SQL's SELECT, except in addition to selecting, filtering (wi
 
    SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [INTO <newbtablename>]
 
-INFER is just like SELECT, except that it also tries to fill in missing values. The user may specify the desired confidence level to use (a number between 0 and 1, where 0 means "fill in every missing value with whatever your best guess is", and 1 means "only fill in a missing value if you're sure what it is"). If confidence is not specified, 0 is chosen as default. Optionally, the user may specify the number of samples to use when filling in missing values: the default value is good in general, but if you know what you're doing and want higher accuracy, you can increase the numer of samples used::
+INFER is just like SELECT, except that it also tries to fill in missing values. The user may specify the desired confidence level to use (a number between 0 and 1, where 0 means "fill in every missing value with whatever your best guess is", and 1 means "only fill in a missing value if you're sure what it is"). If confidence is not specified, 0 is chosen as default. Confidence may be specified with more granularity by following a column name with "CONF <confidence>" to allow you to specify different confidence levels for different columns. Optionally, the user may specify the number of samples to use when filling in missing values: the default value is good in general, but if you know what you're doing and want higher accuracy, you can increase the numer of samples used::
 
    INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [INTO <newbtablename>]
 
@@ -142,7 +142,7 @@ Where Clause
 
 For SELECT, INFER, and ESTIMATE COLUMNS, you may include a where clause to filter results much like SQL. Where clauses have the following format::
 	
-	WHERE <column|function> <operator> <value> [AND <column|function> <operator> <value>...]
+	WHERE <column|function> <operator> <value> [CONF <confidence>] [AND <column|function> <operator> <value> [CONF <confidence>]...]
 
 SELECT and INFER where clauses may include columns and non-aggregate functions such as PREDICTIVE PROBABILITY and TYPICALITY. ESTIMATE COLUMNS where clause may include aggregate functions of columns such as MUTUAL INFORMATION or PROBABILITY. The operator can be one of (=, <, >, <=, >=, in)::
 

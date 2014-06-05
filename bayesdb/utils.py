@@ -29,6 +29,7 @@ import matplotlib.cm
 import time
 import pandas
 import math
+from collections import Counter
 
 import data_utils as du
 import select_utils
@@ -162,6 +163,92 @@ def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, en
       return code
     else:
       return None
+
+def get_imputation_and_confidence_from_samples(M_c, X_L, col_idx, samples):
+    samples = numpy.array(samples).T[0]
+    modeltype = M_c['column_metadata'][col_idx]['modeltype']
+    imputation_function = modeltype_to_imputation_function[modeltype]
+    e = imputation_function(samples)
+    imputation_confidence_function = modeltype_to_imputation_confidence_function[modeltype]
+    column_component_suffstats_i = \
+        get_column_component_suffstats_i(M_c, X_L, col_idx)
+    imputation_confidence = \
+        imputation_confidence_function(samples, e,
+                                       column_component_suffstats_i)
+    return e, imputation_confidence
+
+    return lambda in_dict: in_dict[name]
+
+def get_column_std(column_component_suffstats_i):
+    N = sum(map(lambda in_dict: in_dict['N'], column_component_suffstats_i))
+    sum_x = sum(map(lambda in_dict: in_dict['sum_x'], column_component_suffstats_i))
+    sum_x_squared = sum(map(lambda in_dict: in_dict['sum_x_squared'], column_component_suffstats_i))
+    #
+    exp_x = sum_x / float(N)
+    exp_x_squared = sum_x_squared / float(N)
+    col_var = exp_x_squared - (exp_x ** 2)
+    col_std = col_var ** .5
+    return col_std
+    
+
+def get_column_component_suffstats_i(M_c, X_L, col_idx):
+    column_name = M_c['idx_to_name'][str(col_idx)]
+    view_idx = X_L['column_partition']['assignments'][col_idx]
+    view_state_i = X_L['view_state'][view_idx]
+    local_col_idx = view_state_i['column_names'].index(column_name)
+    column_component_suffstats_i = \
+        view_state_i['column_component_suffstats'][local_col_idx]
+    return column_component_suffstats_i
+
+def continuous_imputation(samples):
+    imputed = numpy.median(samples)
+    return imputed
+
+def multinomial_imputation(samples):
+    counter = Counter(samples)
+    max_tuple = counter.most_common(1)[0]
+    max_count = max_tuple[1]
+    counter_counter = Counter(counter.values())
+    num_max_count = counter_counter[max_count]
+    imputed = max_tuple[0]
+    if num_max_count >= 1:
+        # if there is a tie, draw randomly
+        max_tuples = counter.most_common(num_max_count)
+        values = [max_tuple[0] for max_tuple in max_tuples]
+        random_state = numpy.random.RandomState()
+        draw = random_state.randint(len(values))
+        imputed = values[draw]
+    return imputed
+
+def multinomial_imputation_confidence(samples, imputed, column_hypers_i):
+    max_count = sum(numpy.array(samples) == imputed)
+    confidence = float(max_count) / len(samples)
+    return confidence
+
+def get_continuous_mass_within_delta(samples, center, delta):
+    num_samples = len(samples)
+    num_within_delta = sum(numpy.abs(samples - center) < delta)
+    mass_fraction = float(num_within_delta) / num_samples
+    return mass_fraction
+
+def continuous_imputation_confidence(samples, imputed,
+                                     column_component_suffstats_i):
+    col_std = get_column_std(column_component_suffstats_i)
+    delta = .1 * col_std
+    confidence = get_continuous_mass_within_delta(samples, imputed, delta)
+    return confidence
+    
+
+modeltype_to_imputation_function = {
+    'normal_inverse_gamma': continuous_imputation,
+    'symmetric_dirichlet_discrete': multinomial_imputation,
+    }
+
+modeltype_to_imputation_confidence_function = {
+    'normal_inverse_gamma': continuous_imputation_confidence,
+    'symmetric_dirichlet_discrete': multinomial_imputation_confidence,
+    }
+    
 
 def check_for_duplicate_columns(column_names):
     column_names_set = set()

@@ -554,30 +554,30 @@ def test_whereclause_pyparsing():
     assert parsed_14.where_conditions[0].value == '.5'    
     assert parsed_14.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
     # With Confidence
-    whereclause_15 = "WHERE TYPICALITY > .8 WITH CONFIDENCE .5"
+    whereclause_15 = "WHERE TYPICALITY > .8 CONF .5"
     parsed_15 = where_clause.parseString(whereclause_15,parseAll=True)
-    assert parsed_15.where_conditions[0].confidence == '.5'
-    whereclause_16 = "WHERE PREDICTIVE PROBABILITY OF column_1 > .1 WITH CONFIDENCE .5"
+    assert parsed_15.where_conditions[0].conf == '.5'
+    whereclause_16 = "WHERE PREDICTIVE PROBABILITY OF column_1 > .1 CONF .5"
     parsed_16 = where_clause.parseString(whereclause_16,parseAll=True)
-    assert parsed_16.where_conditions[0].confidence == '.5'
-    whereclause_17 = "WHERE SIMILARITY TO 2 > .1 WITH CONFIDENCE .5"
+    assert parsed_16.where_conditions[0].conf == '.5'
+    whereclause_17 = "WHERE SIMILARITY TO 2 > .1 CONF .5"
     parsed_17 = where_clause.parseString(whereclause_17,parseAll=True)
-    assert parsed_17.where_conditions[0].confidence == '.5'
-    whereclause_18 = "WHERE SIMILARITY TO 2 WITH RESPECT TO column_1 > .4 WITH CONFIDENCE .5"
+    assert parsed_17.where_conditions[0].conf == '.5'
+    whereclause_18 = "WHERE SIMILARITY TO 2 WITH RESPECT TO column_1 > .4 CONF .5"
     parsed_18 = where_clause.parseString(whereclause_18,parseAll=True)
-    assert parsed_18.where_conditions[0].confidence == '.5'
-    whereclause_19 = "WHERE SIMILARITY TO column_1 = 1 = .5 WITH CONFIDENCE .5"
+    assert parsed_18.where_conditions[0].conf == '.5'
+    whereclause_19 = "WHERE SIMILARITY TO column_1 = 1 = .5 CONF .5"
     parsed_19 = where_clause.parseString(whereclause_19,parseAll=True)
-    assert parsed_19.where_conditions[0].confidence == '.5'
-    whereclause_20 = "WHERE SIMILARITY TO column_1 = 'a' WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    assert parsed_19.where_conditions[0].conf == '.5'
+    whereclause_20 = "WHERE SIMILARITY TO column_1 = 'a' WITH RESPECT TO column_2 > .5 CONF .5"
     parsed_20 = where_clause.parseString(whereclause_20,parseAll=True)
-    assert parsed_20.where_conditions[0].confidence == '.5'
-    whereclause_21 = "WHERE SIMILARITY TO column_1 = 1.2 WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    assert parsed_20.where_conditions[0].conf == '.5'
+    whereclause_21 = "WHERE SIMILARITY TO column_1 = 1.2 WITH RESPECT TO column_2 > .5 CONF .5"
     parsed_21 = where_clause.parseString(whereclause_21,parseAll=True)
-    assert parsed_21.where_conditions[0].confidence == '.5'
-    whereclause_22 = "WHERE SIMILARITY TO column_1 = a WITH RESPECT TO column_2 > .5 WITH CONFIDENCE .5"
+    assert parsed_21.where_conditions[0].conf == '.5'
+    whereclause_22 = "WHERE SIMILARITY TO column_1 = a WITH RESPECT TO column_2 > .5 CONF .5"
     parsed_22 = where_clause.parseString(whereclause_22,parseAll=True)
-    assert parsed_22.where_conditions[0].confidence == '.5'
+    assert parsed_22.where_conditions[0].conf == '.5'
     # AND
     whereclause_23 = "WHERE column_1 = 'a' AND column_2 >= 3"
     parsed_23 = where_clause.parseString(whereclause_23,parseAll=True)
@@ -588,11 +588,11 @@ def test_whereclause_pyparsing():
     assert parsed_24.where_conditions[0].function.function_id == 'typicality'
     assert parsed_24.where_conditions[1].function.function_id == 'predictive probability'
     assert parsed_24.where_conditions[2].function.function_id == 'similarity'
-    whereclause_25 = "WHERE TYPICALITY > .8 WITH CONFIDENCE .4 AND PREDICTIVE PROBABILITY OF column_1 > .1 WITH CONFIDENCE .6 AND SIMILARITY TO 2 > .1 WITH CONFIDENCE .5"
+    whereclause_25 = "WHERE TYPICALITY > .8 CONF .4 AND PREDICTIVE PROBABILITY OF column_1 > .1 CONF .6 AND SIMILARITY TO 2 > .1 CONF .5"
     parsed_25 = where_clause.parseString(whereclause_25,parseAll=True)
-    assert parsed_25.where_conditions[0].confidence == '.4'
-    assert parsed_25.where_conditions[1].confidence == '.6'
-    assert parsed_25.where_conditions[2].confidence == '.5'
+    assert parsed_25.where_conditions[0].conf == '.4'
+    assert parsed_25.where_conditions[1].conf == '.6'
+    assert parsed_25.where_conditions[2].conf == '.5'
     whereclause_26 = "WHERE KEY IN row_list_1 AND column_1 = 'a' AND TYPICALITY > .4"
     parsed_26 = where_clause.parseString(whereclause_26,parseAll=True)
     assert parsed_26.where_conditions[0].function.function_id == 'key'
@@ -948,9 +948,9 @@ def test_parse_functions():
     assert queries[8] == (functions._probability, (1,1), True)
     assert queries[9] == (functions._col_typicality, 0, True)
     assert queries[10] == (functions._row_typicality, True, False)
-    assert queries[11] == (functions._column, 0, False)
-    assert queries[12] == (functions._column, 0, False)
-    assert queries[13] == (functions._column, 1, False)
+    assert queries[11] == (functions._column, (0, None), False)
+    assert queries[12] == (functions._column, (0, None), False)
+    assert queries[13] == (functions._column, (1, None), False)
     
 def test_select():
     ##TODO test client_dict
@@ -1287,6 +1287,10 @@ def test_disallowed_queries():
                "select * from test save clusters with threshold .5 as test.csv",
                "select * from test given a=5",
                "select * from test with confidence .4",
+               "select a conf .4 from test",
+               "select a conf .4, b from test",
+               "simulate a conf .4 from test times 10",
+               "simulate a conf .4, b from test times 10",
                "infer * from test times 10",
                "infer typicality from test",
                "simulate typicality from test",
