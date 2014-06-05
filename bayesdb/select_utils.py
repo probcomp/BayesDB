@@ -41,7 +41,7 @@ def evaluate_where_on_row(row_idx, row, where_conditions, M_c, X_L_list, X_D_lis
   clause, and the list of function results if it does satisfy the where clause.
   """
   function_values = []
-  for ((func, f_args), op, val) in where_conditions:
+  for (func, f_args, op, val) in where_conditions:
     if func == functions._column and f_args[1] != None and numpy.isnan(T[row_idx][f_args[0]]):
       col_idx = f_args[0]
       confidence = f_args[1]
@@ -85,7 +85,7 @@ def evaluate_where_on_row(row_idx, row, where_conditions, M_c, X_L_list, X_D_lis
           function_values.append(where_value)
         else:
           return False
-  return []
+  return function_values
 
 def convert_row_from_codes_to_values(row, M_c):
   """
@@ -110,77 +110,6 @@ def check_if_functions_need_models(queries, tablename, order_by, where_condition
   for bf in blacklisted_functions:
     if bf in queries:
       raise utils.BayesDBNoModelsError(tablename)
-
-###### TODO: UNUSED          
-def filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, engine, queries,
-                           impute_confidence, numsamples, tablename):
-    """
-    impute_confidence: if None, don't impute. otherwise, this is the imput confidence
-    Iterate through all rows of T, convert codes to values, filter by all predicates in where clause,
-    and fill in imputed values.
-    """
-    filtered_rows = list()
-    if impute_confidence is not None:
-      t_array = numpy.array(T, dtype=float)
-      query_col_indicies = [query[1][0] for query in queries[1:]]
-    for row_id, T_row in enumerate(T):
-      row_values = convert_row_from_codes_to_values(T_row, M_c) ## Convert row from codes to values
-
-      if False != evaluate_where_on_row(row_id, row_values, where_conditions, M_c, X_L_list, X_D_list, T, engine, tablename, numsamples, impute_confidence): ## Where clause filtering.
-        if impute_confidence is not None:
-          ## Determine which values are 'nan', which need to be imputed.
-          ## Only impute columns in 'query_colnames'
-          for col_id in query_col_indicies:
-            if numpy.isnan(t_array[row_id, col_id]):
-              # Found missing value! Try to fill it in.
-              # row_id, col_id is Q. Y is givens: All non-nan values in this row
-              Y = [(row_id, cidx, t_array[row_id, cidx]) for cidx in M_c['name_to_idx'].values() \
-                   if not numpy.isnan(t_array[row_id, cidx])]
-              code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples,
-                                 impute_confidence, engine)
-              if code is not None:
-                # Inferred successfully! Fill in the new value.
-                value = du.convert_code_to_value(M_c, col_id, code)
-                row_values = list(row_values)
-                row_values[col_id] = value
-                row_values = tuple(row_values)
-        filtered_rows.append((row_id, row_values))
-
-    return filtered_rows
-
-
-####### TODO: UNUSED
-def order_rows(rows, order_by, M_c, X_L_list, X_D_list, T, engine, column_lists, numsamples):
-  ##TODO deprecate one of these functions
-  """Input: rows are list of (row_id, row_values) tuples."""
-  if not order_by:
-      return rows
-  rows = _order_by(rows, order_by, M_c, X_L_list, X_D_list, T, engine, numsamples)
-  return rows
-
-####### TODO: UNUSED
-def _order_by(filtered_values, function_list, M_c, X_L_list, X_D_list, T, engine, numsamples):
-  """
-  Return the original data tuples, but sorted by the given functions.
-  The data_tuples must contain all __original__ data because you can order by
-  data that won't end up in the final result set.
-  """
-  if len(filtered_values) == 0 or not function_list:
-    return filtered_values
-
-  scored_data_tuples = list() ## Entries are (score, data_tuple)
-  for row_id, data_tuple in filtered_values:
-    ## Apply each function to each data_tuple to get a #functions-length tuple of scores.
-    scores = []
-    for (f, args, desc) in function_list:
-      score = f(args, row_id, data_tuple, M_c, X_L_list, X_D_list, T, engine, numsamples)
-      if desc:
-        score *= -1
-      scores.append(score)
-    scored_data_tuples.append((tuple(scores), (row_id, data_tuple)))
-  scored_data_tuples.sort(key=lambda tup: tup[0], reverse=False)
-
-  return [tup[1] for tup in scored_data_tuples]
 
 
 def compute_result_and_limit(rows, limit, queries, M_c, X_L_list, X_D_list, T, engine, numsamples):

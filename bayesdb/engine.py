@@ -614,7 +614,11 @@ class Engine(object):
       a function like row_id, column, similarity, or typicality, and 'query_args' are the function-specific
       arguments that that function takes (in addition to the normal arguments, like M_c, X_L_list, etc).
       aggregate specifies whether that individual function is aggregate or not
-    where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)    
+
+    queries: [(func, f_args, aggregate)]
+    order_by: [(function, f_args, expr, val)]
+    where_conditions: [(func, f_args, op, val)]
+    
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
@@ -628,6 +632,8 @@ class Engine(object):
       where_conditions = []
     else:
       where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, column_lists)
+      if len(where_conditions) > 0:
+        assert len(where_conditions[0]) == 4
     if order_by == False:
       order_by = []
     else:
@@ -752,18 +758,7 @@ class Engine(object):
       if row_count >= limit:
         break
 
-    """          
-    # List of rows; contains actual data values (not categorical codes, or functions),
-    # missing values imputed already, and rows that didn't satsify where clause filtered out.
-    filtered_rows = select_utils.filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, self,
-                                                        queries, impute_confidence, numsamples, tablename)
 
-    # Simply rearranges the order of the rows in filtered_rows according to the order_by query.
-    filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self, column_lists, numsamples)
-
-    # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
-    data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self, numsamples)
-    """
     # Execute INTO statement
     if newtablename is not None:
       self.create_btable_from_existing(newtablename, query_colnames, data, M_c)

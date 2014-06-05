@@ -799,7 +799,7 @@ class Parser(object):
                 op = operator_map[single_condition.operation]
             else: 
                 raise utils.BayesDBParseError("Invalid where clause: no operator found")
-            conditions.append(((function, args), op, value))
+            conditions.append((function, args, op, value))
         return conditions
     
     def parse_column_whereclause(self, whereclause, M_c, T): ##TODO throw exception on parseable, invalid
