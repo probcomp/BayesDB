@@ -203,6 +203,24 @@ class Client(object):
                 header, rows = data_utils.read_pandas_df(pandas_df)
             args_dict['header'] = header
             args_dict['raw_T_full'] = rows
+
+            # Display warning messages and get confirmation if btable is too large.
+            max_columns = 200
+            max_rows = 10000
+            max_cells = 100000
+            message = None
+            if not yes:
+                if len(rows[0]) > max_columns:
+                    message = "The btable you are uploading has %d columns, but BayesDB is currently designed to support only %d columns. If you proceed, performance may suffer unless you set many columns' datatypes to 'ignore'. Would you like to continue? Enter 'y' if yes." % (len(rows[0]), max_columns)
+                if len(rows) > max_rows:
+                    message = "The btable you are uploading has %d rows, but BayesDB is currently designed to support only %d rows. If you proceed, performance may suffer. Would you like to continue? Enter 'y' if yes." % (len(rows), max_rows)
+                if len(rows[0])*len(rows) > max_cells:
+                    message = "The btable you are uploading has %d cells, but BayesDB is currently designed to support only %d cells. If you proceed, performance may suffer. Would you like to continue? Enter 'y' if yes." % (len(rows)*len(rows[0]), max_cells)
+                if message is not None:
+                    print message
+                    user_confirmation = raw_input()
+                    if 'y' != user_confirmation.strip():
+                        return dict(message="Operation canceled by user.")
         elif method_name in ['label_columns', 'update_metadata']:
             if client_dict['source'] == 'file':
                 header, rows = data_utils.read_csv(client_dict['csv_path'])

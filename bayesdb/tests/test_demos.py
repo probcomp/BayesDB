@@ -37,8 +37,6 @@ def run_example(name):
 def test_dha_example():
     run_example('dha')
 
-# ONLY SLOW BECAUSE INFER NEEDS TO BE OPTIMIZED!    
-@pytest.mark.slow
 def test_gss_example():
     run_example('gss')
     

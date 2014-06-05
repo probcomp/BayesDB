@@ -354,7 +354,7 @@ class Engine(object):
     ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
-      
+
     # variables with "_full" include ignored columns.
     colnames_full = [h.lower().strip() for h in header]
     raw_T_full = data_utils.convert_nans(raw_T_full)
