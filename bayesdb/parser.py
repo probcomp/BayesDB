@@ -34,6 +34,7 @@ class Parser(object):
         Uses the grammar defined in bql_grammar to create a pyparsing object out of an input string
         :param str input_string: the input block of bql statement(s)
         :return: the pyparsing object for the parsed statement. 
+        :rtype: pyparsing.ParseResults
         :raises BayesDBParseError: if the string is not a valid bql statement. 
         """
         try:
@@ -43,6 +44,11 @@ class Parser(object):
         return bql_blob_ast
         
     def parse_single_statement(self,bql_statement_ast):
+        """
+        Calls parse_method on the statement_id in bql_statement_ast. 
+        :param bql_statement_ast pyparsing.ParseResults: The single statement pyparsing result
+        :return: parse_method(bql_statement_ast)
+        """
         ## TODO Check for nest
         parse_method = getattr(self,'parse_' + bql_statement_ast.statement_id)
         return parse_method(bql_statement_ast)
@@ -52,36 +58,68 @@ class Parser(object):
 #####################################################################################
 
     def parse_list_btables(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('list_btables', args_dict, None):
+        """
         if bql_statement_ast.statement_id == "list_btables":
             return 'list_btables', dict(), None
         else:
             raise utils.BayesDBParseError("Parsing statement as LIST BTABLES failed")
 
     def parse_help(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('help', args_dict, None):
+        """
         method= None
         if bql_statement_ast.method_name != '':
             method = bql_statement_ast.method_name
         return 'help', dict(method=method), None
 
     def parse_execute_file(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('execute_file', args_dict, None):
+        """
         return 'execute_file', dict(filename=self.get_absolute_path(bql_statement_ast.filename)), None
 
     def parse_show_schema(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('show_schema', args_dict, None):
+        """
         return 'show_schema', dict(tablename=bql_statement_ast.btable), None
 
     def parse_show_models(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('show_models', args_dict, None):
+        """
         return 'show_models', dict(tablename=bql_statement_ast.btable), None
 
     def parse_show_diagnostics(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('show_diagnostics', args_dict, None):
+        """
         return 'show_diagnostics', dict(tablename=bql_statement_ast.btable), None
 
     def parse_drop_models(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('drop_models', args_dict, None):
+        """
         model_indices = None
         if bql_statement_ast.index_clause != '':
             model_indices = bql_statement_ast.index_clause.asList()
         return 'drop_models', dict(tablename=bql_statement_ast.btable, model_indices=model_indices), None
 
     def parse_initialize_models(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('initialize_models', args_dict, None):
+        """
         n_models = 16 ##TODO magic number - move to config file
         if bql_statement_ast.num_models != '':
             n_models = int(bql_statement_ast.num_models)
@@ -92,12 +130,20 @@ class Parser(object):
         return 'initialize_models', arguments_dict, None
 
     def parse_create_btable(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('create_btable', args_dict, client_dict):
+        """
         tablename = bql_statement_ast.btable
         filename = self.get_absolute_path(bql_statement_ast.filename)
         return 'create_btable', dict(tablename=tablename, cctypes_full=None), dict(csv_path=filename)
         #TODO types?
 
     def parse_update_schema(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('update_schema', args_dict, None):
+        """
         tablename = bql_statement_ast.btable
         mappings = dict()
         type_clause = bql_statement_ast.type_clause
@@ -106,9 +152,17 @@ class Parser(object):
         return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
     def parse_drop_btable(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('drop_btable', args_dict, client_dict):
+        """
         return 'drop_btable', dict(tablename=bql_statement_ast.btable), None
 
     def parse_analyze(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('analyze', args_dict, None):
+        """
         model_indices = None
         iterations = None
         seconds = None
@@ -132,27 +186,59 @@ class Parser(object):
                                ct_kernel=kernel, background=wait), None
 
     def parse_cancel_analyze(self, bql_statement_ast): ##TODO no tests written
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('cancel_analyze', args_dict, None):
+        """
         return 'cancel_analyze', dict(tablename=bql_statement_ast.btable), None
     
     def parse_show_analyze(self, bql_statement_ast): ##TODO no tests written
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('show_analyze', args_dict, None):
+        """
         return 'show_analyze', dict(tablename=bql_statement_ast.btable), None
         
     def parse_show_row_lists(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('show_row_lists', args_dict, None):
+        """
         return 'show_row_lists', dict(tablename=bql_statement_ast.btable), None
 
     def parse_show_column_lists(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('show_column_lists', args_dict, None):
+        """
         return 'show_column_lists', dict(tablename=bql_statement_ast.btable), None
 
     def parse_show_columns(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('show_columns', args_dict, None):
+        """
         return 'show_columns', dict(tablename=bql_statement_ast.btable), None
 
     def parse_save_models(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('save_models', args_dict, client_dict):
+        """
         return 'save_models', dict(tablename=bql_statement_ast.btable), dict(pkl_path=bql_statement_ast.filename)
 
     def parse_load_models(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('load_models', args_dict, client_dict):
+        """
         return 'load_models', dict(tablename=bql_statement_ast.btable), dict(pkl_path=bql_statement_ast.filename)
 
     def parse_label_columns(self, bql_statement_ast): ##TODO only smoke test right now
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('label_columns', args_dict, client_dict):
+        """
         tablename = bql_statement_ast.btable
         source = None
         mappings = None
@@ -170,6 +256,10 @@ class Parser(object):
             dict(source=source, csv_path=csv_path)
 
     def parse_show_metadata(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('show_metadata', args_dict, None):
+        """
         tablename = None
         if bql_statement_ast.btable != '':
             tablename = bql_statement_ast.btable
@@ -179,6 +269,10 @@ class Parser(object):
         return 'show_metadata', dict(tablename=tablename, keyset=keyset), None
 
     def parse_show_label(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('show_label', args_dict, None):
+        """
         tablename = None
         if bql_statement_ast.btable != '':
             tablename = bql_statement_ast.btable
@@ -188,6 +282,10 @@ class Parser(object):
         return 'show_labels', dict(tablename=tablename, columnset=columnset), None
 
     def parse_update_metadata(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('update_metadata', args_dict, client_dict):
+        """
         tablename = bql_statement_ast.btable
         source = None
         mappings = None
@@ -209,6 +307,9 @@ class Parser(object):
         master parser for queries (select, infer, simulate, estimate pairwise, etc)
         returns a general args dict which the specific versions of those functions 
         will then trim and check for illegal aruguments through assertions. 
+
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return (statement_id, args_dict, client_dict):
         '''
         statement_id = bql_statement_ast.statement_id 
         
@@ -302,6 +403,10 @@ class Parser(object):
                  filename=filename)
 
     def parse_infer(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('infer', args_dict, client_dict):
+        """
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         tablename = args_dict['tablename']
         functions = args_dict['functions']
@@ -340,6 +445,10 @@ class Parser(object):
             dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
 
     def parse_select(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('select', args_dict, client_dict):
+        """
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         tablename = args_dict['tablename']
         functions = args_dict['functions']
@@ -376,6 +485,10 @@ class Parser(object):
             dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
 
     def parse_simulate(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('simulate', args_dict, client_dict):
+        """
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         tablename = args_dict['tablename']
         functions = args_dict['functions']
@@ -413,6 +526,10 @@ class Parser(object):
             dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
 
     def parse_estimate(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('estimate', args_dict, client_dict):
+        """
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         assert args_dict['functions'][0] == 'column', "BayesDBParseError: must be ESTIMATE COLUMNS."
         functions = args_dict['functions']
@@ -449,6 +566,10 @@ class Parser(object):
             None
 
     def parse_estimate_pairwise_row(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('estimate_pairwise_row', args_dict, client_dict):
+        """
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         functions = args_dict['functions'][0]
         assert len(args_dict['functions']) == 1, "BayesDBParsingError: Only one function allowed in estimate pairwise."
@@ -482,6 +603,10 @@ class Parser(object):
             dict(filename=filename)
 
     def parse_estimate_pairwise(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('estimate_pairwise', args_dict, client_dict):
+        """
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         functions = args_dict['functions']
         assert len(args_dict['functions']) == 1, "BayesDBParsingError: Only one function allowed in estimate pairwise."
