@@ -46,6 +46,7 @@ import data_utils as du
 # First argument of each of these functions is the function-specific argument list,
 # which is parsed from parse_<function_name>(), also in this file.
 #
+# TODO: data_values unused
 ##
 
 ###################################################################
@@ -55,8 +56,23 @@ import data_utils as du
 
 def _column(column_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine, numsamples):
     col_idx = column_args[0]
-    confidence = column_args[1] ##TODO Jay, implement this
-    return data_values[col_idx]
+    confidence = column_args[1]
+    if confidence is None or not numpy.isnan(T[row_id][col_idx]):
+        return du.convert_code_to_value(M_c, col_idx, T[row_id][col_idx])
+    else:
+        ## Do impute.
+        Y = [(row_id, cidx, T[row_id][cidx]) for cidx in M_c['name_to_idx'].values() \
+                   if not numpy.isnan(T[row_id][cidx])]
+        code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, col_idx, numsamples,
+                           confidence, engine)
+        if code is not None:
+            # Inferred successfully! Fill in the new value.
+            value = du.convert_code_to_value(M_c, col_idx, code)
+            return value
+        else:
+            return du.convert_code_to_value(M_c, col_idx, T[row_id][col_idx])
+
+        
 
 def _row_id(args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine, numsamples):
     return row_id

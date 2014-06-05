@@ -315,6 +315,8 @@ def convert_code_to_value(M_c, cidx, code):
     Note that the underlying store 'value_to_code' is unfortunately named backwards.
     TODO: fix the backwards naming.
     """
+    if numpy.isnan(code) or code=='nan':
+        return code
     if M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
         return float(code)
     else:

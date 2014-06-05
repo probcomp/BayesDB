@@ -213,7 +213,7 @@ class Parser(object):
         '''
         statement_id = bql_statement_ast.statement_id 
         
-        confidence = 0
+        confidence = None
         if bql_statement_ast.confidence != '':
             confidence = float(bql_statement_ast.confidence)
             if confidence > 1: 
@@ -366,7 +366,7 @@ class Parser(object):
         assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES clause not allowed in SELECT"
         assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in SELECT"
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SELECT"
-        assert args_dict['confidence'] == 0, "BayesDBParsingError: CONFIDENCE not allowed in SELECT"
+        assert args_dict['confidence'] == None, "BayesDBParsingError: CONFIDENCE not allowed in SELECT"
 
         for function in functions:
             assert function.conf == '', "BayesDBParsingError: CONF (WITH CONFIDENCE) not valid in SELECT" 
@@ -400,7 +400,7 @@ class Parser(object):
         assert args_dict['name'] == None, "BayesDBParsingError: SAVE AS <column_list> clause not allowed in SIMULATE."
         assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in SIMULATE."
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SIMULATE."
-        assert args_dict['confidence'] == 0, "BayesDBParsingError: CONFIDENCE not allowed in SIMULATE."
+        assert args_dict['confidence'] == None, "BayesDBParsingError: CONFIDENCE not allowed in SIMULATE."
         assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in SIMULATE. Use GIVEN instead."
         for function in functions:
             assert function.function_id == '', "BayesDBParsingError: %s not valid in SIMULATE" % function.function_id
@@ -426,7 +426,7 @@ class Parser(object):
         numsamples = args_dict['numsamples']        
 
         assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS not allowed in estimate columns."
-        assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in estimate columns."
+        assert args_dict['confidence'] == None, "BayesDBParsingError: WITH CONFIDENCE not allowed in estimate columns."
         assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in estimate columns."
         assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in estimate columns."
         assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in estimate columns."
@@ -460,7 +460,7 @@ class Parser(object):
         modelids = args_dict['modelids']
         filename = client_dict['filename']
 
-        assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['confidence'] == None, "BayesDBParsingError: WITH CONFIDENCE not allowed in ESTIMATE PAIRWISE."
         assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in ESTIMATE PAIRWISE."
         assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in ESTIMATE PAIRWISE."
         assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in ESTIMATE PAIRWISE."
@@ -499,7 +499,7 @@ class Parser(object):
         filename = client_dict['filename']
 
         
-        assert args_dict['confidence'] == 0, "BayesDBParsingError: WITH CONFIDENCE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['confidence'] == None, "BayesDBParsingError: WITH CONFIDENCE not allowed in ESTIMATE PAIRWISE."
         assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in ESTIMATE PAIRWISE."
         assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in ESTIMATE PAIRWISE."
         assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in ESTIMATE PAIRWISE."
@@ -630,8 +630,8 @@ class Parser(object):
         for single_condition in where_clause_ast:
             ## Confidence in the where clause not yet handled by client/engine. 
             confidence = None
-            if single_condition.confidence != '':
-                confidence = float(single_condition.confidence)
+            if single_condition.conf != '':
+                confidence = float(single_condition.conf)
                 
             raw_value = single_condition.value
             function = None
@@ -729,6 +729,9 @@ class Parser(object):
     def parse_order_by_clause(self, order_by_clause_ast, M_c, T, column_lists):
         function_list = []
         for orderable in order_by_clause_ast:
+            confidence = None
+            if orderable.conf != '':
+                confidence = float(orderable.conf)
             desc = True
             if orderable.asc_desc == 'asc':
                 desc = False
@@ -743,7 +746,7 @@ class Parser(object):
                 args = self.get_args_pred_prob(orderable.function, M_c)
             elif orderable.function.column != '': 
                 function = functions._column
-                args = (M_c['name_to_idx'][orderable.function.column], None)
+                args = (M_c['name_to_idx'][orderable.function.column], confidence)
             else:
                 raise utils.BayesDBParseError("Invalid order by clause.")
             function_list.append((function, args, desc))

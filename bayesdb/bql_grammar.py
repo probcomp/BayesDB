@@ -476,7 +476,8 @@ whereclause_potential_function = (similarity_to_function |
 
 # ORDER BY <column|non-aggregate-function>[<column|function>...] [asc|desc]
 single_order_by = Group(whereclause_potential_function.setResultsName('function') + 
-                        Optional(asc_keyword | desc_keyword).setResultsName('asc_desc'))
+                        Optional(asc_keyword | desc_keyword).setResultsName('asc_desc') +
+                        Optional(conf_keyword + float_number.setResultsName('conf')))
 
 order_by_clause = Group(Suppress(order_by_keyword) + 
                         single_order_by + 

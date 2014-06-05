@@ -46,7 +46,7 @@ import api_utils
 import data_utils
 import utils
 import pairwise
-import functions
+import functions as funcs
 import select_utils
 import estimate_columns_utils
 import plotting_utils
@@ -586,6 +586,7 @@ class Engine(object):
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
     Sample INFER INTO: INFER columnstring FROM tablename WHERE whereclause WITH confidence INTO newtablename LIMIT limit;
     Argument newtablename == null/emptystring if we don't want to do INTO
+
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
@@ -608,10 +609,12 @@ class Engine(object):
     Then, orders by the given order_by functions.
     Then, computes the queried values requested by the column string.
 
-    One refactoring option: you could try generating a list of all functions that will be needed, either
-    for selecting or for ordering. Then compute those and add them to the data tuples. Then just do the
-    order by as if you're doing it exclusively on columns. The only downside is that now if there isn't an
-    order by, but there is a limit, then we computed a large number of extra functions.
+    query_colnames is the list of the raw columns/functions from the columnstring, with row_id prepended
+    queries is a list of (query_function, query_args, aggregate) tuples, where 'query_function' is
+      a function like row_id, column, similarity, or typicality, and 'query_args' are the function-specific
+      arguments that that function takes (in addition to the normal arguments, like M_c, X_L_list, etc).
+      aggregate specifies whether that individual function is aggregate or not
+    where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)    
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
@@ -619,52 +622,149 @@ class Engine(object):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     column_lists = self.persistence_layer.get_column_lists(tablename)
 
-    # query_colnames is the list of the raw columns/functions from the columnstring, with row_id prepended
-    # queries is a list of (query_function, query_args, aggregate) tuples, where 'query_function' is
-    #   a function like row_id, column, similarity, or typicality, and 'query_args' are the function-specific
-    #   arguments that that function takes (in addition to the normal arguments, like M_c, X_L_list, etc).
-    #   aggregate specifies whether that individual function is aggregate or not
-
+    # Parse queries, where_conditions, and order by.
     queries, query_colnames = self.parser.parse_functions(functions, M_c, T, column_lists)
-    ##TODO check duplicates
-
-    # where_conditions is a list of (c_idx, op, val) tuples, e.g. name > 6 -> (0,>,6)
     if whereclause == None: 
-      where_conditions = None
+      where_conditions = []
     else:
       where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, column_lists)
-    # If there are no models, make sure that we aren't using functions that require models.
-    # TODO: make this less hardcoded
+    if order_by == False:
+      order_by = []
+    else:
+      order_by = self.parser.parse_order_by_clause(order_by, M_c, T, column_lists)
+
+    # Fill in individual impute confs with impute_confidence if they're None and impute_confidence isn't:
+    if impute_confidence is not None:
+      for f_list in (where_conditions, queries, order_by):
+        for i in range(len(f_list)):
+          if f_list[i][0] == funcs._column and f_list[i][1][1] is None:
+            new_f = list(f_list[i]) # (function, args, ...)
+            new_f_args = list(new_f[1]) # args = (idx, conf)
+            new_f_args[1] = impute_confidence
+            new_f[1] = tuple(new_f_args)
+            f_list[i] = tuple(new_f)
+
     if len(X_L_list) == 0:
-      blacklisted_functions = [functions._similarity, functions._row_typicality, functions._col_typicality, functions._probability]
-      used_functions = [q[0] for q in queries]
-      for bf in blacklisted_functions:
-        if bf in queries:
-          raise utils.BayesDBNoModelsError(tablename)
-      if order_by:
-        order_by_functions = [x[0] for x in order_by]
-        blacklisted_function_names = ['similarity', 'typicality', 'probability', 'predictive probability']        
-        for fname in blacklisted_function_names:
-          for order_by_f in order_by_functions:
-            if fname in order_by_f:
-              raise utils.BayesDBNoModelsError(tablename)              
+      select_utils.check_if_functions_need_models(queries, tablename, order_by, where_conditions)
+
+    ## Construct function list
+    query_functions = [(q[0], q[1]) for q in queries]
+    order_by_functions = [(o[0], o[1]) for o in order_by]
+    where_functions = [(w[0], w[1]) for w in where_conditions]
+
+    function_list = [q for q in query_functions]
+
+    # Look up index in the function list, based on your own index.
+    query_idxs = range(len(query_functions))
+    order_by_idxs = []
+    where_idxs = []
+
+    query_size = len(query_functions)
+    order_by_size = query_size
+    
+    def get_existing_f_idx(new_fun, function_list): 
+        for f_idx, fun in enumerate(function_list):
+          if new_fun == fun:
+            return f_idx
+        return False
+        
+    for o_idx, o_fun in enumerate(order_by_functions):
+      existing_f_idx = get_existing_f_idx(o_fun, function_list)
+      if existing_f_idx:
+        order_by_idxs.append(existing_f_idx)
+      else:
+        function_list.append(o_fun)
+        order_by_idxs.append(len(function_list) - 1)
+        order_by_size += 1
+    print function_list
+
+    for w_idx, w_fun in enumerate(where_functions):
+      existing_f_idx = get_existing_f_idx(w_fun, function_list)
+      if existing_f_idx:
+        where_idxs.append(existing_f_idx)
+      else:
+        function_list.append(w_fun)
+        where_idxs.append(len(function_list) - 1)
+          
+
+    ## Now function list is constructed, so create the data table one row at a time,
+    ## applying where clause in the process.
+    ## data_tuples means row_id, row tuples
+    data_tuples = []
+    for row_id, T_row in enumerate(T):
+      row = [None]*order_by_size
+      row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c) 
+      where_clause_eval = select_utils.evaluate_where_on_row(row_id, row_values, where_conditions, M_c,
+                               X_L_list, X_D_list, T, self, tablename, numsamples, impute_confidence)
+      if type(where_clause_eval) == list:
+        for w_idx, val in enumerate(where_clause_eval):
+          # Now, store the already-computed values, if they're used for anything besides the where clause.
+          if w_idx < order_by_size:
+            row[where_idxs[w_idx]] = val
+        data_tuples.append((row_id, row))
+
+          
+    ## Now, order the rows. First compute all values that will be necessary for order by.
+    if len(order_by) > 0:
+      scored_data_tuples = list() # Entries are score, data_tuple      
+      for (row_id, row) in data_tuples:
+        scores = []
+        for o_idx, (f, args, desc) in enumerate(order_by):
+          # Look up whether function evaluated earlier in select. # TODO: can functions ever return None?
+          if row[order_by_idxs[o_idx]] is not None:
+            score = row[order_by_idxs[o_idx]]
+          else:
+            score = f(args, row_id, row, M_c, X_L_list, X_D_list, T, self, numsamples)
+            # Save value, if it will be displayed in output.
+            if o_idx < query_size:
+              row[order_by_idxs[o_idx]] = score
+            
+          if desc:
+            score *= -1
+          scores.append(score)
+        scored_data_tuples.append((tuple(scores), (row_id, row)))
+      scored_data_tuples.sort(key=lambda tup: tup[0], reverse=False)
+      data_tuples = [(tup[1][0], tup[1][1][:query_size]) for tup in scored_data_tuples]
+
+
+    ## Now, apply the limit and compute the queried columns.
+    
+    # Compute aggregate functions just once, then cache them.
+    aggregate_cache = dict()
+    for q_idx, (query_function, query_args, aggregate) in enumerate(queries):
+      if aggregate:
+        aggregate_cache[q_idx] = query_function(query_args, None, None, M_c, X_L_list, X_D_list, T, self, numsamples)
+
+    # Only return one row if all aggregate functions (row_id will never be aggregate, so subtract 1 and don't return it).
+    if len(aggregate_cache) == len(queries):
+      limit = 1
+
+    # Iterate through data table, calling each query_function to fill in the output values.
+    data = []
+    row_count = 0
+    for row_id, row in data_tuples:
+      for q_idx, (query_function, query_args, aggregate) in enumerate(queries):
+        if aggregate:
+          row[q_idx] = aggregate_cache[q_idx]
+        elif row[q_idx] is None:
+          row[q_idx] = query_function(query_args, row_id, row, M_c, X_L_list, X_D_list, T, self, numsamples)
+      data.append(tuple(row))
+      row_count += 1
+      if row_count >= limit:
+        break
+
+    """          
     # List of rows; contains actual data values (not categorical codes, or functions),
     # missing values imputed already, and rows that didn't satsify where clause filtered out.
     filtered_rows = select_utils.filter_and_impute_rows(where_conditions, T, M_c, X_L_list, X_D_list, self,
                                                         queries, impute_confidence, numsamples, tablename)
-    ## TODO: In order to avoid double-calling functions when we both select them and order by them,
-    ## we should augment filtered_rows here with all functions that are going to be selected
-    ## (and maybe temporarily augmented with all functions that will be ordered only)
-    ## If only being selected: then want to compute after ordering...
 
     # Simply rearranges the order of the rows in filtered_rows according to the order_by query.
-    if order_by != False:
-      order_by = self.parser.parse_order_by_clause(order_by, M_c, T, column_lists)
     filtered_rows = select_utils.order_rows(filtered_rows, order_by, M_c, X_L_list, X_D_list, T, self, column_lists, numsamples)
 
     # Iterate through each row, compute the queried functions for each row, and limit the number of returned rows.
     data = select_utils.compute_result_and_limit(filtered_rows, limit, queries, M_c, X_L_list, X_D_list, T, self, numsamples)
-
+    """
     # Execute INTO statement
     if newtablename is not None:
       self.create_btable_from_existing(newtablename, query_colnames, data, M_c)
