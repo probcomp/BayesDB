@@ -33,21 +33,19 @@ You may write BQL commands in a file and run them all at once by use EXECUTE FIL
 
 Initializing models and running analysis
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-It is necessary to run INITIALIZE MODELS and ANALYZE in order for BayesDB to evaluate any query involving any predictions. The models that this command creates can be thought of as possible explanations for the underlying structure of the data in a Bayesian probability model. In order to generate reasonable predictions, it is recommended that a minimum of about 32 models should be initialized, and each model should be analyzed for a minimum of about 250 iterations. The more models you create, the higher quality your predictions will be, so if it is computationally feasible to initialize and analyze 128 or 256 models for your dataset, it is highly recommended. It is sensible to use 250-500 iterations of analyze for each model, no matter how many models you have.
+It is necessary to run INITIALIZE MODELS and ANALYZE in order for BayesDB to evaluate any query involving any predictions. The models that this command creates can be thought of as possible explanations for the underlying structure of the data in a Bayesian probability model. In order to generate reasonable predictions, it is recommended that a minimum of about 16 models should be initialized (which is the default value), and each model should be analyzed for a minimum of about 250 iterations. The more models you create, the higher quality your predictions will be, so if it is computationally feasible to initialize and analyze 128 or 256 models for your dataset, it is highly recommended. It is sensible to use 250-500 iterations of analyze for each model, no matter how many models you have.
 
 ::
 
-	INITIALIZE <num_models> MODELS FOR <btable> [WITH CONFIG <config>]
+	INITIALIZE [<num_models> MODELS] FOR <btable> [WITH CONFIG <config>]
 
-Initializes <num_models> models. 
-
-Available models include "naive bayes" and "crp mixture"
+Initializes <num_models> models. Advanced users interested in using custom model configurations may pass <config> here.
 
 ::
 
 	ANALYZE <btable> [MODEL[S] <model_index>-<model_index>] FOR (<num_iterations> ITERATIONS | <minutes> MINUTES) [WAIT]
 
-Analyze the specified models for the specified number of iterations (by default, analyze all models). If WAIT is included, the user is unable to make any other queries until ANALYZE has finished, otherwise it runs in the background. The state of a background ANALYZE may be checked with the query "SHOW ANALYZE FOR <btable>" and ANALYZE can be canceled with "CANCEL ANALYZE FOR <btable>"
+Analyze the specified models for the specified number of iterations (by default, analyze all models). If WAIT is included, the user is unable to make any other queries until ANALYZE has finished; by default ANALYZE runs in the background. The state of a background ANALYZE may be checked with the query "SHOW ANALYZE FOR <btable>" and ANALYZE can be canceled with "CANCEL ANALYZE FOR <btable>"
 
 Examining the state of your btables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -108,13 +106,20 @@ SELECT is just like SQL's SELECT, except in addition to selecting, filtering (wi
 
    SELECT <columns|functions> FROM <btable> [WHERE <whereclause>] [ORDER BY <columns|functions>] [LIMIT <limit>] [INTO <newbtablename>]
 
-INFER is just like SELECT, except that it also tries to fill in missing values. The user may specify the desired confidence level to use (a number between 0 and 1, where 0 means "fill in every missing value with whatever your best guess is", and 1 means "only fill in a missing value if you're sure what it is"). If confidence is not specified, 0 is chosen as default. Confidence may be specified with more granularity by following a column name with "CONF <confidence>" to allow you to specify different confidence levels for different columns. Optionally, the user may specify the number of samples to use when filling in missing values: the default value is good in general, but if you know what you're doing and want higher accuracy, you can increase the numer of samples used::
+INFER is just like SELECT, except that it also tries to fill in missing values. The user may specify the desired confidence level to use (a number between 0 and 1, where 0 means "fill in every missing value with whatever your best guess is", and 1 means "only fill in a missing value if you're sure what it is"). If confidence is not specified, no values are filled in. Confidence may be specified with more granularity by following a column name with "CONF <confidence>" to allow you to specify different confidence levels for different columns. Optionally, the user may specify the number of samples to use when filling in missing values: the default value is good in general, but if you know what you're doing and want higher accuracy, you can increase the numer of samples used::
 
    INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [INTO <newbtablename>]
+   
+   -- To specify individual confidence levels for each value to be filled in:
+   INFER col1 CONF 0.9, col2, col3 CONF 0.5 FROM table WHERE col1 > 100 CONF 0.8 AND col2 = 'True' CONF 0.9
+
+   -- To specify the same confidence level for every value of the query:
+   INFER col1, col2, col3 FROM table WHERE col1 > 100 AND col2 = 'True' WITH CONFIDENCE 0.9   
+
 
 SIMULATE generates new rows from the underlying probability model a specified number of times::
 
-   SIMULATE [HIST] <columns> FROM <btable> [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
+   SIMULATE <columns> FROM <btable> [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
 
 The optional INTO clause at the end of SELECT, INFER, or SIMULATE queries allows you to create a new btable from the query results. The new btable's schema will be created based on the schema of the original table in the query.
 
@@ -137,6 +142,10 @@ In the above query specifications, you may be wondering what some of the notatio
   SELECT name, age, date FROM...
   SELECT name, TYPICALITY, age, date FROM...
 
+Additionally, a "WITH <num_samples> SAMPLES" may be specified for any of the above queries to specify the number of predictive samples that should be used to evaluate predictive queries, including INFER or any predictive function. If this clause is not present, reasonable defaults are selected::
+
+  WITH <num_samples> SAMPLES
+
 Where Clause
 ~~~~~~~~~~~~~~~
 
@@ -144,7 +153,7 @@ For SELECT, INFER, and ESTIMATE COLUMNS, you may include a where clause to filte
 	
 	WHERE <column|function> <operator> <value> [CONF <confidence>] [AND <column|function> <operator> <value> [CONF <confidence>]...]
 
-SELECT and INFER where clauses may include columns and non-aggregate functions such as PREDICTIVE PROBABILITY and TYPICALITY. ESTIMATE COLUMNS where clause may include aggregate functions of columns such as MUTUAL INFORMATION or PROBABILITY. The operator can be one of (=, <, >, <=, >=, in)::
+SELECT and INFER where clauses may include columns and non-aggregate functions such as PREDICTIVE PROBABILITY and TYPICALITY. ESTIMATE COLUMNS where clause may include aggregate functions of columns such as MUTUAL INFORMATION or PROBABILITY. Only INFER allows CONF to be specified in its where clauses. The operator can be one of (=, <, >, <=, >=, in)::
 
   SELECT * FROM table WHERE name = 'Bob' AND age <= 18 AND TYPICALITY > 0.5 ....
 
@@ -153,12 +162,12 @@ Order By
 
 The order by clause changes the order of results by one or more conditions::
 
-	ORDER BY <column|function> [ASC|DESC] [, <column|function> [ASC|DESC]]
+	ORDER BY <column|function> [CONF <confidence>] [ASC|DESC] [, <column|function> [CONF <confidence>] [ASC|DESC]]
 
-Columns or rows returned are ordered by each condition in the order the conditions were specified. If not specified by ASC or DESC, the order is assumed to be descending. 
+Columns or rows returned are ordered by each condition in the order the conditions were specified. If not specified by ASC or DESC, the order is assumed to be descending. Only ORDER BY clauses within INFER queries may use CONF.
 
-Query Modifiers
-~~~~~~~~~~~~~~~
+Query Summarizers
+~~~~~~~~~~~~~~~~~
 
 SUMMARIZE or PLOT may be prepended to any query that returns table-formatted output (almost every query) in order to return a summary of the data table instead of the raw data itself. This is extremely useful as a tool to quickly understand a huge result set: it quickly becomes impossible to see trends in data by eye without the assistance of SUMMARIZE or PLOT.
 

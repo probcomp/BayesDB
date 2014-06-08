@@ -704,7 +704,7 @@ class Engine(object):
       if type(where_clause_eval) == list:
         for w_idx, val in enumerate(where_clause_eval):
           # Now, store the already-computed values, if they're used for anything besides the where clause.
-          if w_idx < order_by_size:
+          if where_idxs[w_idx] < order_by_size:
             row[where_idxs[w_idx]] = val
         data_tuples.append((row_id, row))
 
@@ -721,7 +721,7 @@ class Engine(object):
           else:
             score = f(args, row_id, row, M_c, X_L_list, X_D_list, T, self, numsamples)
             # Save value, if it will be displayed in output.
-            if o_idx < query_size:
+            if order_by_idxs[o_idx] < query_size:
               row[order_by_idxs[o_idx]] = score
             
           if desc:
