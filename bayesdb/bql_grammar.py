@@ -377,7 +377,7 @@ drop_btable_function = drop_btable_keyword + btable
 drop_model_function = drop_model_keyword + Optional(index_clause) + Suppress(from_keyword) + btable
 
 # Help [function name]
-help_function = help_keyword + Optional(Word(alphas).setParseAction(downcaseTokens)).setResultsName("method_name")
+help_function = help_keyword + Optional(Word(alphas).setParseAction(downcaseTokens)).setResultsName("method_name") + ZeroOrMore(Word(alphas))
 quit_function = quit_keyword
 
 management_query = (create_btable_function | 
