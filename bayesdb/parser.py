@@ -970,7 +970,7 @@ class Parser(object):
                 assert M_c is not None
                 index_list, name_list, ignore_column = self.parse_column_set(column_name, M_c, M_c_full, column_lists)
                 if ignore_column:
-                    queries += [(functions._column_ignore, (column_index), False) for column_index in index_list]
+                    queries += [(functions._column_ignore, column_index, False) for column_index in index_list]
                 else:
                     if function_group.conf != '':
                         confidence = float(function_group.conf)

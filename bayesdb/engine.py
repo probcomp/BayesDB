@@ -754,7 +754,10 @@ class Engine(object):
         if aggregate:
           row[q_idx] = aggregate_cache[q_idx]
         elif row[q_idx] is None:
-          row[q_idx] = query_function(query_args, row_id, row, M_c, X_L_list, X_D_list, T, self, numsamples)
+          if query_function != funcs._column_ignore:
+            row[q_idx] = query_function(query_args, row_id, row, M_c, X_L_list, X_D_list, T, self, numsamples)
+          else:
+            row[q_idx] = query_function(query_args, row_id, row, M_c_full, T_full, self)
       data.append(tuple(row))
       row_count += 1
       if row_count >= limit:
@@ -813,7 +816,7 @@ class Engine(object):
     
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
-    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, column_lists)
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=None, column_lists=column_lists)
     ##TODO check duplicates
     ##TODO check for no functions
     

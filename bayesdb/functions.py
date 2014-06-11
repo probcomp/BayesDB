@@ -71,7 +71,15 @@ def _column(column_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine
             return value
         else:
             return du.convert_code_to_value(M_c, col_idx, T[row_id][col_idx])
-        
+
+def _column_ignore(col_idx, row_id, data_values, M_c_full, T_full, engine):
+    """
+    This function handles selecting data from ignore columns. It's split into a different
+    function because it needs to be passed M_c_full and T_full instead of M_c and T, as in _column.
+    Since selecting ignore columns is probably a rare event, we can avoid passing M_c_full and T_full
+    to _column as "just in case" arguments.
+    """
+    return du.convert_code_to_value(M_c_full, col_idx, T_full[row_id][col_idx])    
 
 def _row_id(args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine, numsamples):
     return row_id

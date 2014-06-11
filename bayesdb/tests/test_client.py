@@ -523,13 +523,11 @@ def test_update_schema():
   assert (out['datatype'][out['column'] == 'name'] == 'key').all()
   assert (out['datatype'][out['column'] == 'ami_score'] == 'multinomial').all()
 
-  # Selecting qual_score should fail now that qual_score is set to be ignored
-  #with pytest.raises(utils.BayesDBError):
-  #  client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
+  # Selecting qual_score should still work even after it's ignored
+  client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
 
   # Set qual_score back to continuous, and select should work again
   client('update schema for %s set qual_score = continuous, name = multinomial, ami_score = continuous' % (test_tablename), debug=True, pretty=False)
-  client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
 
   # Set back to ignore, run models, and then estimation shouldn't work for qual_score
   client('update schema for %s set qual_score = ignore' % (test_tablename), debug=True, pretty=False)
