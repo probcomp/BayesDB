@@ -901,7 +901,7 @@ class Parser(object):
         
         return function_list
 
-    def parse_functions(self, function_groups, M_c=None, T=None, column_lists=None):
+    def parse_functions(self, function_groups, M_c=None, T=None, M_c_full=None, column_lists=None):
         '''
         Generates two lists of functions, arguments, aggregate tuples. 
         Returns queries, query_colnames
@@ -967,11 +967,14 @@ class Parser(object):
             elif function_group.column_id != '':
                 column_name = function_group.column_id
                 confidence = None
-                if function_group.conf != '':
-                    confidence = float(function_group.conf)
                 assert M_c is not None
-                index_list, name_list = self.parse_column_set(column_name, M_c, column_lists)
-                queries += [(functions._column, (column_index, confidence), False) for column_index in index_list]
+                index_list, name_list, ignore_column = self.parse_column_set(column_name, M_c, M_c_full, column_lists)
+                if ignore_column:
+                    queries += [(functions._column_ignore, (column_index), False) for column_index in index_list]
+                else:
+                    if function_group.conf != '':
+                        confidence = float(function_group.conf)
+                    queries += [(functions._column, (column_index, confidence), False) for column_index in index_list]
                 if confidence is not None:
                     query_colnames += [name + ' with confidence %s' % confidence for name in name_list]
                 else:
@@ -981,13 +984,14 @@ class Parser(object):
                 raise utils.BayesDBParseError("Invalid query: could not parse function")
         return queries, query_colnames
 
-    def parse_column_set(self, column_name, M_c, column_lists = None):
+    def parse_column_set(self, column_name, M_c, M_c_full, column_lists = None):
         """
         given a string representation of a column name or column_list,
         returns a list of the column indexes, list of column names. 
         """
         index_list = []
         name_list = []
+        ignore_column = False
         if column_name == '*':
             all_columns = utils.get_all_column_names_in_original_order(M_c)
             index_list += [M_c['name_to_idx'][column_name] for column_name in all_columns]
@@ -998,9 +1002,13 @@ class Parser(object):
         elif column_name in M_c['name_to_idx']:
             index_list += [M_c['name_to_idx'][column_name]]
             name_list += [column_name]
+        elif column_name in M_c_full['name_to_idx']:
+            index_list += [M_c_full['name_to_idx'][column_name]]
+            name_list += [column_name]
+            ignore_column = True
         else:
             raise utils.BayesDBParseError("Invalid query: %s not found." % column_name)
-        return index_list, name_list
+        return index_list, name_list, ignore_column
 
 #####################################################################################
 ## --------------------------- Other Helper functions ---------------------------- ##

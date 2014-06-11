@@ -629,7 +629,7 @@ class Engine(object):
     column_lists = self.persistence_layer.get_column_lists(tablename)
 
     # Parse queries, where_conditions, and order by.
-    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, column_lists)
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, column_lists)
     if whereclause == None: 
       where_conditions = []
     else:

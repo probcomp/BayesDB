@@ -71,7 +71,6 @@ def _column(column_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine
             return value
         else:
             return du.convert_code_to_value(M_c, col_idx, T[row_id][col_idx])
-
         
 
 def _row_id(args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine, numsamples):
