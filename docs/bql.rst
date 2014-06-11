@@ -129,13 +129,13 @@ ESTIMATE COLUMNS is like a SELECT statement, but lets you select columns instead
    
 With ESTIMATE PAIRWISE, you may use any function that takes two columns as input, i.e. DEPENDENCE PROBABILITY, CORRELATION, or MUTUAL INFORMATION, and generates a matrix showing the value of that function applied to each pair of columns. See the :ref:`functions` section for more information.
 
-In addition, you may also add "SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>" in order to compute groups of columns, where the value of the pairwise function is at least <threshold> between at least one pair of columns in the group. Then, those groups of columns are saved as column lists with names "column_list_<id>", where id is an integer starting with 0::
+In addition, you may also add "SAVE CLUSTERS WITH THRESHOLD <threshold> AS <column_list>" in order to compute groups of columns, where the value of the pairwise function is at least <threshold> between at least one pair of columns in the group. Then, those groups of columns are saved as column lists with names "column_list_<id>", where id is an integer starting with 0::
 
-   ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>]
+   ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CLUSTERS WITH THRESHOLD <threshold> AS <column_list>]
 
 You may also compute pairwise functions of rows with ESTIMATE PAIRWISE ROW::
 
-  ESTIMATE PAIRWISE ROW SIMILARITY [WITH RESPECT TO <columns|column_lists>]FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
+  ESTIMATE PAIRWISE ROW SIMILARITY [WITH RESPECT TO <columns|column_lists>]FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CLUSTERS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
 
 In the above query specifications, you may be wondering what some of the notation, such as <columns|functions> and <whereclause>, means. <columns|functions> just means a list of comma-separated column names or function specifications::
 
@@ -200,7 +200,7 @@ And you can view the columns in a given column list or table with::
 
 Row Lists
 ~~~~~~~~~
-In addition to storing lists of columns, BayesDB also allows you to store lists of rows. Currently, the only way to create row lists is by running ESTIMATE PAIRWISE ROW SIMILARITY with SAVE CONNECTED COMPONENTS. The components will be saved as row lists, which you can then view with the following command::
+In addition to storing lists of columns, BayesDB also allows you to store lists of rows. Currently, the only way to create row lists is by running ESTIMATE PAIRWISE ROW SIMILARITY with SAVE CLUSTERS. The components will be saved as row lists, which you can then view with the following command::
 
     SHOW ROW LISTS FOR <table>
 
