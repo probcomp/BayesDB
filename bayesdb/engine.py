@@ -623,6 +623,8 @@ class Engine(object):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    M_c_full, M_r_full, T_full = self.persistence_layer.get_metadata_and_table_full(tablename)
+
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     column_lists = self.persistence_layer.get_column_lists(tablename)
 

@@ -437,6 +437,14 @@ class PersistenceLayer():
         T = metadata['T']
         return M_c, M_r, T
 
+    def get_metadata_and_table_full(self, tablename):
+        """Return M_c_full and M_r_full and T_full"""
+        metadata_full = self.get_metadata_full(tablename)
+        M_c_full = metadata_full['M_c_full']
+        M_r_full = metadata_full['M_r_full']
+        T_full = metadata_full['T_full']
+        return M_c_full, M_r_full, T_full
+
     def has_models(self, tablename):
         return self.get_max_model_id(tablename) != -1
 
