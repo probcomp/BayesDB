@@ -633,7 +633,7 @@ class Engine(object):
     if whereclause == None: 
       where_conditions = []
     else:
-      where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, column_lists)
+      where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, M_c_full, column_lists)
       if len(where_conditions) > 0:
         assert len(where_conditions[0]) == 4
     if order_by == False:
@@ -701,8 +701,8 @@ class Engine(object):
     for row_id, T_row in enumerate(T):
       row = [None]*order_by_size
       row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c) 
-      where_clause_eval = select_utils.evaluate_where_on_row(row_id, row_values, where_conditions, M_c,
-                               X_L_list, X_D_list, T, self, tablename, numsamples, impute_confidence)
+      where_clause_eval = select_utils.evaluate_where_on_row(row_id, row_values, where_conditions, M_c, M_c_full,
+                               X_L_list, X_D_list, T, T_full, self, tablename, numsamples, impute_confidence)
       if type(where_clause_eval) == list:
         for w_idx, val in enumerate(where_clause_eval):
           # Now, store the already-computed values, if they're used for anything besides the where clause.

@@ -740,9 +740,9 @@ class Parser(object):
 
 #####################################################################################
 ## ----------------------------- Sub query parsing  ------------------------------ ##
-#####################################################################################
+########################parse_where#############################################################
 
-    def parse_where_clause(self, where_clause_ast, M_c, T, column_lists): 
+    def parse_where_clause(self, where_clause_ast, M_c, T, M_c_full, column_lists):
         """
         Creates conditions: the list of conditions in the whereclause
         List of (c_idx, op, val)
@@ -786,6 +786,10 @@ class Parser(object):
                     args = (M_c['name_to_idx'][column_name], confidence)
                     value = utils.string_to_column_type(raw_value, column_name, M_c)
                     function = functions._column
+                elif column_name in M_c_full['name_to_idx']:
+                    args = M_c_full['name_to_idx'][column_name]
+                    value = raw_value
+                    function = functions._column_ignore
                 else:
                     raise utils.BayesDBParseError("Invalid where clause: column %s was not found in the table" % 
                                                   column_name)

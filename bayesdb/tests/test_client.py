@@ -523,8 +523,16 @@ def test_update_schema():
   assert (out['datatype'][out['column'] == 'name'] == 'key').all()
   assert (out['datatype'][out['column'] == 'ami_score'] == 'multinomial').all()
 
-  # Selecting qual_score should still work even after it's ignored
+  # Selecting qual_score should still work even after it's ignored, also should work in where statements
   client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
+  out = client('select name, qual_score from %s where qual_score > 90' % (test_tablename), debug=True, pretty=False)[0]
+  assert (out['qual_score'] > 90).all()
+
+  # Also test where clause with ignored text column
+  client('update schema for %s set name = ignore' % (test_tablename), debug=True, pretty=False)
+  out = client('select name, qual_score from %s where name = "Albany NY"' % (test_tablename), debug=True, pretty=False)[0]
+  assert out.shape == (1, 3)
+  assert (out['name'] == "Albany NY").all()
 
   # Set qual_score back to continuous, and select should work again
   client('update schema for %s set qual_score = continuous, name = multinomial, ami_score = continuous' % (test_tablename), debug=True, pretty=False)
