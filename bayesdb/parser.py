@@ -854,7 +854,7 @@ class Parser(object):
             conditions.append(((function, args), op, value))
         return conditions
 
-    def parse_order_by_clause(self, order_by_clause_ast, M_c, T, column_lists):
+    def parse_order_by_clause(self, order_by_clause_ast, M_c, T, M_c_full, column_lists):
         function_list = []
         for orderable in order_by_clause_ast:
             confidence = None
@@ -873,8 +873,12 @@ class Parser(object):
                 function = functions._predictive_probability
                 args = self.get_args_pred_prob(orderable.function, M_c)
             elif orderable.function.column != '': 
-                function = functions._column
-                args = (M_c['name_to_idx'][orderable.function.column], confidence)
+                if orderable.function.column in M_c['name_to_idx']:
+                    function = functions._column
+                    args = (M_c['name_to_idx'][orderable.function.column], confidence)
+                else:
+                    function = functions._column_ignore
+                    args = M_c_full['name_to_idx'][orderable.function.column]
             else:
                 raise utils.BayesDBParseError("Invalid order by clause.")
             function_list.append((function, args, desc))
