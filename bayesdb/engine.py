@@ -730,6 +730,8 @@ class Engine(object):
               row[order_by_idxs[o_idx]] = score
             
           if desc:
+            if data_utils.get_can_cast_to_float([score]):
+              score = float(score)
             score *= -1
           scores.append(score)
         scored_data_tuples.append((tuple(scores), (row_id, row)))
