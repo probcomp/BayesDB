@@ -479,6 +479,10 @@ class PersistenceLayer():
         metadata = self.get_metadata(tablename)
         return metadata['cctypes']
 
+    def get_cctypes_full(self, tablename):
+        """Access the table's current cctypes."""
+        metadata_full = self.get_metadata_full(tablename)
+        return metadata_full['cctypes_full']
 
     def update_metadata(self, tablename, M_r=None, M_c=None, T=None, cctypes=None):
         """Overwrite M_r, M_c, and T (not cctypes) for the table."""
@@ -553,7 +557,7 @@ class PersistenceLayer():
         return self.get_metadata_full(tablename)
         
 
-    def create_btable(self, tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full):
+    def create_btable(self, tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full):
         """
         This function is called to create a btable.
         It creates the table's persistence directory, saves data.csv and metadata.pkl.
@@ -566,7 +570,7 @@ class PersistenceLayer():
         # Write metadata and metadata_full
         metadata_full = dict(M_c_full=M_c_full, M_r_full=M_r_full, T_full=T_full, cctypes_full=cctypes_full, raw_T_full=raw_T_full)
         self.write_metadata_full(tablename, metadata_full)
-        metadata = dict(M_c=M_c, M_r= M_r, T=T, cctypes=cctypes_full)
+        metadata = dict(M_c=M_c, M_r= M_r, T=T, cctypes=cctypes)
         self.write_metadata(tablename, metadata)
 
         # Write models

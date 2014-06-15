@@ -55,7 +55,7 @@ def teardown_function(function):
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
-  client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False)
+  client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False, key_column=0)
   
   global test_tablenames
   test_tablenames.append(test_tablename)
@@ -518,9 +518,10 @@ def test_update_schema():
   global client, test_filenames
 
   # Test setting one column to each type
-  out = client('update schema for %s set qual_score = ignore, name = key, ami_score = multinomial' % (test_tablename), debug=True, pretty=False)[0]
+  #out = client('update schema for %s set qual_score = ignore, name = key, ami_score = multinomial' % (test_tablename), debug=True, pretty=False)[0]
+  out = client('update schema for %s set qual_score = ignore, ami_score = multinomial' % (test_tablename), debug=True, pretty=False)[0]
   assert (out['datatype'][out['column'] == 'qual_score'] == 'ignore').all()
-  assert (out['datatype'][out['column'] == 'name'] == 'key').all()
+  #assert (out['datatype'][out['column'] == 'name'] == 'key').all()
   assert (out['datatype'][out['column'] == 'ami_score'] == 'multinomial').all()
 
   # Selecting qual_score should still work even after it's ignored, also should work in where clauses and order by clauses

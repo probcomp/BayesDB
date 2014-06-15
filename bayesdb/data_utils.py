@@ -383,7 +383,8 @@ def do_pop_list_indices(in_list, pop_indices):
 def get_list_indices(in_list, get_indices_of):
     lookup = dict(zip(in_list, range(len(in_list))))
     indices = map(lookup.get, get_indices_of)
-    indices = filter(None, indices)
+    # The line below removes [0] from indices. Need to check with Jay about how to handle those cases.
+    #indices = filter(None, indices)
     return indices
 
 def transpose_list(in_list):
@@ -527,18 +528,18 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None):
         user_confirmation = raw_input()
         key_column_selection = 0
     elif key_column is None or key_column not in range(key_eligibles_len + 1):
-            key_column_selection = None
-            pt = prettytable.PrettyTable()
-            pt.field_names = ['choice', 'key column']
-            pt.add_row([0, '<Create key column>'])
-            for index, key_eligible in enumerate(key_eligibles):
-                pt.add_row([index + 1, key_eligible])
-            while key_column_selection is None:
-                print str(pt)
-                print "Please select which column you would like to set as the table key:"
-                user_selection = int(raw_input())
-                if user_selection in range(key_eligibles_len + 1):
-                    key_column_selection = user_selection
+        key_column_selection = None
+        pt = prettytable.PrettyTable()
+        pt.field_names = ['choice', 'key column']
+        pt.add_row([0, '<Create key column>'])
+        for index, key_eligible in enumerate(key_eligibles):
+            pt.add_row([index + 1, key_eligible])
+        while key_column_selection is None:
+            print str(pt)
+            print "Please select which column you would like to set as the table key:"
+            user_selection = int(raw_input())
+            if user_selection in range(key_eligibles_len + 1):
+                key_column_selection = user_selection
     else:
         key_column_selection = key_column
 

@@ -203,6 +203,7 @@ class Client(object):
                 header, rows = data_utils.read_pandas_df(pandas_df)
             args_dict['header'] = header
             args_dict['raw_T_full'] = rows
+            args_dict['key_column'] = key_column
 
             # Display warning messages and get confirmation if btable is too large.
             max_columns = 200
