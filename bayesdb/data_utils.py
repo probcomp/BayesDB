@@ -523,7 +523,7 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None):
 
     key_eligibles = list(eligibility[eligibility].index)
     key_eligibles_len = len(key_eligibles)
-    if key_eligibles_len == 0:
+    if key_eligibles_len == 0 and key_column is None:
         print "None of the columns in this table is eligible to be the key. A key column will be created. Press Enter to continue."
         user_confirmation = raw_input()
         key_column_selection = 0
