@@ -527,7 +527,7 @@ def test_update_schema():
   client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
   out = client('select name, qual_score, ami_score from %s where qual_score > 90 order by qual_score' % (test_tablename), debug=True, pretty=False)[0]
   assert (out['qual_score'] > 90).all()
-  assert float(out['qual_score'][0]) == 95.6
+  assert (out['qual_score'] == out['qual_score'].order(ascending=False)).all()
 
   # Also test where clause with ignored text column
   client('update schema for %s set name = ignore' % (test_tablename), debug=True, pretty=False)
