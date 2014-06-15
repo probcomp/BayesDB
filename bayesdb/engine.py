@@ -345,7 +345,7 @@ class Engine(object):
 
     return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
 
-  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None):
+  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None):
     """Uplooad a csv table to the predictive db.
     cctypes must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
@@ -360,6 +360,7 @@ class Engine(object):
     raw_T_full = data_utils.convert_nans(raw_T_full)
     if cctypes_full is None:
       cctypes_full = data_utils.guess_column_types(raw_T_full)
+    raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column)
     T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
     # variables without "_full" don't include ignored columns.
