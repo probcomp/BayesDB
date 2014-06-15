@@ -550,19 +550,20 @@ class Engine(object):
       kernel_list = () # default kernel list
 
 
+    if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
+      raise utils.BayesDBError("%s is already being analzyed. Try using 'SHOW ANALYZE FOR %s' to get more information, or 'CANCEL ANALYZE FOR %s' to cancel the ANALYZE.")
+      
+
+    # Start analyze thread.
+    t = AnalyzeMaster(args=(tablename, modelids, kernel_list, iterations,
+                            seconds, M_c, T, models, background, self))
+    self.analyze_threads[tablename] = t
+    t.start()
+
     if not background:
-      am = AnalyzeMaster(None)
-      am.analyze_master(tablename, modelids, kernel_list, iterations, seconds, M_c, T, models, background, self)
+      t.join()
       return dict(message="Analyze complete.")
     else:
-      # Start analyze thread.
-      if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
-        raise utils.BayesDBError("%s is already being analzyed. Try using 'SHOW ANALYZE FOR %s' to get more information, or 'CANCEL ANALYZE FOR %s' to cancel the ANALYZE.")
-      t = AnalyzeMaster(args=(tablename, modelids, kernel_list, iterations,
-                              seconds, M_c, T, models, background, self))
-      self.analyze_threads[tablename] = t
-      t.start()
-      # TODO: how to remove when done?
       return dict(message="Analyzing %s: models will be updated in the background." % tablename)
 
   def show_analyze(self, tablename):
