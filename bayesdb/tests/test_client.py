@@ -434,7 +434,7 @@ def test_pandas():
 
   # Test creation of a btable from pandas DataFrame
   client("drop btable %s" % (test_tablename), yes=True)
-  client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df)
+  client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df, key_column=0)
 
 def test_summarize():
   test_tablename = create_dha()
