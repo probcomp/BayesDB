@@ -51,7 +51,7 @@ def teardown_function(function):
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   header, rows = data_utils.read_csv(path)  
-  create_btable_result = engine.create_btable(test_tablename, header, rows)
+  create_btable_result = engine.create_btable(test_tablename, header, rows, key_column=0)
   metadata = engine.persistence_layer.get_metadata(test_tablename)
   
   global test_tablenames
@@ -64,7 +64,7 @@ def test_create_btable():
   assert 'columns' in create_btable_result
   assert 'data' in create_btable_result
   assert 'message' in create_btable_result
-  assert len(create_btable_result['data'][0]) == 64 ## 64 is number of columns in DHA dataset
+  assert len(create_btable_result['data'][0]) == 65 ## 64 is number of columns in DHA dataset, plus 1 for added key
   list_btables_result = engine.list_btables()['data']
   assert [test_tablename] in list_btables_result
   engine.drop_btable(test_tablename)
@@ -378,8 +378,9 @@ def test_show_schema():
   assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
 
   schema = engine.show_schema(test_tablename)
-  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes)
-  assert schema['data'][0][0] == 'name'
+  cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)
+  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes_full)
+  assert schema['data'][0][0] == 'key'
   
   mappings = dict(qual_score='multinomial')
   engine.update_schema(test_tablename, mappings)
@@ -387,8 +388,9 @@ def test_show_schema():
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
   
   schema = engine.show_schema(test_tablename)
-  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes)
-  assert schema['data'][0][0] == 'name'
+  cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)
+  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes_full)
+  assert schema['data'][0][0] == 'key'
 
 def test_show_models():
   test_tablename, _ = create_dha()
