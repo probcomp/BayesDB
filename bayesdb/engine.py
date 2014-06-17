@@ -822,14 +822,15 @@ class Engine(object):
     
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
+    # Set M_c_full to None because we don't want to simulate key/ignore columns
     queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=None, column_lists=column_lists)
     ##TODO check duplicates
     ##TODO check for no functions
     
     ##TODO col_indices, colnames are a hack from old parsing
     
-    col_indices = [query[1][0] for query in queries[1:]]
-    colnames = query_colnames[1:]
+    col_indices = [query[1][0] for query in queries]
+    colnames = query_colnames
     query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
 

@@ -332,9 +332,8 @@ def freq_table(data, columns, M_c):
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
-        # Remove row_id column since summary stats of row_id are meaningless
-        if 'row_id' in df.columns:
-            df_drop(df, ['row_id'], axis=1)
+        # Remove the first column since summary stats of row_id are meaningless
+        df_drop(df, [columns[0]], axis=1)
 
         column = df.columns[0]
         cctype = get_cctype_from_M_c(M_c, column)
@@ -353,9 +352,8 @@ def histogram_table(data, columns, M_c):
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
-        # Remove row_id column since summary stats of row_id are meaningless
-        if 'row_id' in df.columns:
-            df_drop(df, ['row_id'], axis=1)
+        # Remove the first column since summary stats of the key are meaningless.
+        df_drop(df, [columns[0]], axis=1)
 
         column = df.columns[0]
         cctype = get_cctype_from_M_c(M_c, column)
@@ -429,9 +427,8 @@ def summarize_table(data, columns, M_c):
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
 
-        # Remove row_id column since summary stats of row_id are meaningless
-        if 'row_id' in df.columns:
-            df_drop(df, ['row_id'], axis=1)
+        # Remove the first column since it's the key and summarizing it is meaningless
+        df_drop(df, [columns[0]], axis=1)
 
         # Get column types as one-row DataFrame
         cctypes = pandas.DataFrame([[get_cctype_from_M_c(M_c, col) for col in df.columns]], columns=df.columns, index=['type'])

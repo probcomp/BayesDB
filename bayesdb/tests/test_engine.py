@@ -90,10 +90,10 @@ def test_select():
   select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
   assert 'columns' in select_result
   assert 'data' in select_result
-  assert select_result['columns'] == ['row_id', 'name', 'qual_score']
+  assert select_result['columns'] == ['key', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
   assert len(select_result['data']) == 307 and len(select_result['data'][0]) == len(select_result['columns'])
-  assert type(select_result['data'][0][0]) == int ## type of row_id is int
+  assert type(select_result['data'][0][0]) == numpy.string_
   t = type(select_result['data'][0][1]) 
   assert (t == unicode) or (t == str) or (t == numpy.string_) ## type of name is unicode or string
   assert type(select_result['data'][0][2]) == float ## type of qual_score is float
@@ -274,10 +274,10 @@ def test_infer():
   infer_result = engine.infer(test_tablename, functions, confidence, whereclause, limit, numsamples, order_by)
   assert 'columns' in infer_result
   assert 'data' in infer_result
-  assert infer_result['columns'] == ['row_id', 'name', 'qual_score']
+  assert infer_result['columns'] == ['key', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
   assert len(infer_result['data']) == 307 and len(infer_result['data'][0]) == len(infer_result['columns'])
-  assert type(infer_result['data'][0][0]) == int ## type of row_id is int
+  assert type(infer_result['data'][0][0]) == numpy.string_ ## type of key is int
   t = type(infer_result['data'][0][1])
   assert (t == unicode) or (t == numpy.string_) ## type of name is string
   assert type(infer_result['data'][0][2]) == float ## type of qual_score is float
