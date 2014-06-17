@@ -320,7 +320,7 @@ class Engine(object):
     ret['message'] = 'Updated schema.'
     return ret
     
-  def create_btable_from_existing(self, tablename, colnames_full, data, M_c):
+  def create_btable_from_existing(self, tablename, query_colnames, cctypes_existing_full, M_c_existing_full, query_data):
     """
     Used in INTO statements to create a new btable as a portion of an existing one.
     """
@@ -328,22 +328,19 @@ class Engine(object):
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
 
-    # Remove row_id from table
-    if 'row_id' in colnames_full:
-      df = pandas.DataFrame(data=data, columns=colnames_full)
-      utils.df_drop(df, ['row_id'], axis=1)
-      data = df.to_records(index=False)
-      colnames_full = df.columns
+    cctypes_full = data_utils.guess_column_types(query_data)        
+    for query_idx, query_colname in enumerate(query_colnames):
+        if query_colname in M_c_existing_full['name_to_idx']:
+            cctypes_full[query_idx] = cctypes_existing_full[M_c_existing_full['name_to_idx'][query_colname]]
 
-    cctypes_full = [utils.get_cctype_from_M_c(M_c, col) for col in colnames_full]
-    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, data, cctypes=cctypes_full)
+    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(query_colnames, query_data, cctypes=cctypes_full)
 
     # variables without "_full" don't include ignored columns.
-    raw_T, cctypes, colnames = data_utils.remove_ignore_cols(data, cctypes_full, colnames_full)
+    raw_T, cctypes, colnames = data_utils.remove_ignore_cols(query_data, cctypes_full, query_colnames)
     T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
-    self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, data)
+    self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, query_data)
 
-    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
+    return dict(columns=query_colnames, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
 
   def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None):
     """Uplooad a csv table to the predictive db.
@@ -630,8 +627,10 @@ class Engine(object):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     column_lists = self.persistence_layer.get_column_lists(tablename)
 
+    key_column_name = self.persistence_layer.get_key_column_name(tablename)
+
     # Parse queries, where_conditions, and order by.
-    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, column_lists)
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, column_lists, key_column_name)
     if whereclause == None: 
       where_conditions = []
     else:
@@ -772,7 +771,8 @@ class Engine(object):
 
     # Execute INTO statement
     if newtablename is not None:
-      self.create_btable_from_existing(newtablename, query_colnames, data, M_c)
+      cctypes_full = self.persistence_layer.get_cctypes_full(tablename)
+      self.create_btable_from_existing(newtablename, query_colnames, cctypes_full, M_c_full, data)
 
     ret = dict(data=data, columns=query_colnames)
     if plot:

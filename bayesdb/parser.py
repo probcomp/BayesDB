@@ -909,7 +909,7 @@ class Parser(object):
         
         return function_list
 
-    def parse_functions(self, function_groups, M_c=None, T=None, M_c_full=None, column_lists=None):
+    def parse_functions(self, function_groups, M_c=None, T=None, M_c_full=None, column_lists=None, key_column_name=None):
         '''
         Generates two lists of functions, arguments, aggregate tuples. 
         Returns queries, query_colnames
@@ -922,9 +922,14 @@ class Parser(object):
         For probability: query_args is a (c_idx, value) tuple.
         For similarity: query_args is a (target_row_id, target_column) tuple.
         '''
-        ## Always return row_id as the first column.
-        query_colnames = ['row_id'] 
-        queries = [(functions._row_id, None, False)]
+        ## Return the table key as the first column - should only be None if called from simulate
+        if key_column_name is not None:
+            query_colnames = [key_column_name]
+            index_list, name_list, ignore_column = self.parse_column_set(key_column_name, M_c, M_c_full, column_lists)
+            queries = [(functions._column_ignore, column_index, False) for column_index in index_list]
+        else:
+            query_colnames = []
+            queries = []
 
         for function_group in function_groups: 
             if function_group.function_id == 'predictive probability':
@@ -972,7 +977,7 @@ class Parser(object):
                                 True))
                 query_colnames.append(' '.join(function_group))
             ## single column, column_list, or *
-            elif function_group.column_id != '':
+            elif function_group.column_id not in ['', key_column_name]:
                 column_name = function_group.column_id
                 confidence = None
                 assert M_c is not None
@@ -987,7 +992,9 @@ class Parser(object):
                     query_colnames += [name + ' with confidence %s' % confidence for name in name_list]
                 else:
                     query_colnames += [name for name in name_list]
-                
+            elif function_group.column_id == key_column_name:
+                # Key column will be added to the output anyways.
+                pass
             else: 
                 raise utils.BayesDBParseError("Invalid query: could not parse function")
         return queries, query_colnames

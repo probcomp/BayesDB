@@ -484,6 +484,12 @@ class PersistenceLayer():
         metadata_full = self.get_metadata_full(tablename)
         return metadata_full['cctypes_full']
 
+    def get_key_column_name(self, tablename):
+        metadata_full = self.get_metadata_full(tablename)
+        key_column_index = metadata_full['cctypes_full'].index('key')
+        key_column_name = metadata_full['M_c_full']['idx_to_name'][str(key_column_index)]
+        return key_column_name            
+
     def update_metadata(self, tablename, M_r=None, M_c=None, T=None, cctypes=None):
         """Overwrite M_r, M_c, and T (not cctypes) for the table."""
         metadata = self.get_metadata(tablename)
