@@ -1,0 +1,4 @@
+pygments: true
+safe: true
+lsi: false
+baseurl: '/BayesDB'

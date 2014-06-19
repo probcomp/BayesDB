@@ -56,7 +56,7 @@ BayesDB has a statement to estimate the probability of a dependent relationship 
 
     ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FOR bobross SAVE TO dep_prob_all.png
 
-![dependence_probability_all]({{ site.url }}/assets/images/cs_bobross/dependence_probability_all.png)
+![dependence_probability_all]({{ site.baseurl }}/assets/images/cs_bobross/dependence_probability_all.png)
 
 You can see that BayesDB picks up a high dependence probability for a lot of the relationships that Walt described, like tree/trees and mountain/mountains (emphasis on singular versus plural), snow/winter/cabin, clouds/cumulus, and beach/clouds/sun/waves/palm trees.
 
@@ -72,7 +72,7 @@ Walt ran a k-means cluster analysis, a common technique to group items by their 
 
 We end up with 8 clusters. The image below shows the results of estimating pairwise row similarity:
 
-![pairwise_row_similarity_all]({{ site.url }}/assets/images/cs_bobross/pairwise_row_similarity_all.png)
+![pairwise_row_similarity_all]({{ site.baseurl }}/assets/images/cs_bobross/pairwise_row_similarity_all.png)
 
 It's not always clear exactly which features define clusters of rows, but one simple approach is to look at the columns with the highest probability within each cluster:
 
@@ -102,7 +102,7 @@ Interesting, right? Did the likelihood of Bob Ross including clouds change over 
 
     SELECT SCATTER clouds, season FROM bobross SAVE TO scatter_season_clouds.png
 
-![season versus clouds]({{ site.url }}/assets/images/cs_bobross/scatter_season_clouds.png)
+![season versus clouds]({{ site.baseurl }}/assets/images/cs_bobross/scatter_season_clouds.png)
 
 You can see that the distribution of paintings with clouds is clearly pulled toward the earlier seasons of the show. 
 
@@ -110,7 +110,7 @@ Let's look at the same plot for season versus framed:
 
     SELECT SCATTER framed, season FROM bobross SAVE TO scatter_season_framed.png
 
-![season versus framed]({{ site.url }}/assets/images/cs_bobross/scatter_season_framed.png)
+![season versus framed]({{ site.baseurl }}/assets/images/cs_bobross/scatter_season_framed.png)
 
 This time, you can clearly see that no paintings were framed in the first three seasons of the show, and also that the means aren't aligned, with the mean season for framed paintings occurring several seasons after the mean for unframed paintings. Although Ross never framed more than 32% of his paintings in any given season, this is evidence that something changed about his preference (or his producer's preference) for framed paintings.
 
