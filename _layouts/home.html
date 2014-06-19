@@ -1,0 +1,19 @@
+{% include html_head.html %}
+
+<div class="main">
+	<div class="header">
+		<div class="header-screen">
+			<div class="header-titles">
+				<h1><span class="t-bayes">Bayes</span><span class="t-db">DB</span></h1>
+				<h2>{{page.tagline}}</h2>
+			</div>
+			<pre style="text-align:center">INFER salary FROM mytable WHERE age > 30 WITH CONFIDENCE 0.95;</pre>
+			<br>
+		</div>
+	</div>
+
+	{% include nav-bow.html %}
+
+	{{content}}
+
+	{% include footer.html %}

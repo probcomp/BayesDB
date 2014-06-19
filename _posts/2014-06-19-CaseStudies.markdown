@@ -1,0 +1,174 @@
+---
+title: Case Studies
+layout: default
+---
+
+The Bayesian Approach to Bob Ross
+====================
+
+A few weeks ago, Walt Hickey of [fivethirtyeight.com](http://fivethirtyeight.com) published a [statistical analysis](http://fivethirtyeight.com/features/a-statistical-analysis-of-the-work-of-bob-ross/) of the career work of famed painter Bob Ross of the television show "The Joy of Painting." His findings didn't startle anyone who has seen at least a few episodes of the show, but were still interesting as a more systematic analysis of the full body of Ross's output.
+
+When we saw the findings, we couldn't help but wonder whether BayesDB could tell us more, in particular:
+
+- Would we see the same feature dependencies that Walt observed?
+- How would BayesDB's row clustering compare to the k-means clusters?
+- Did the output from "The Joy of Painting" change over time?
+- What would a simulation of _new_ Bob Ross paintings look like?
+
+Before going any further, we'd like to thank Walt Hickey and the folks at fivethirtyeight.com for making the data publicly available [here](https://raw.githubusercontent.com/fivethirtyeight/data/master/bob-ross/elements-by-episode.csv).
+
+Replication
+-----------
+
+Just to be sure we're using exactly the same data, it's worth replicating some empirical probabilities, like the fact that 85% of Bob Ross's paintings included two or more trees, or that 60% of paintings with at least _one_ mountain actually feature at least _two_ mountains (a conditional probability, as Walt described). We used BQL's `SUMMARIZE` statement, excluding episodes where a guest (such as Bob's son Steve) actually painted:
+
+    SUMMARIZE SELECT trees FROM bobross WHERE guest = 0
+
+|            |     trees      |
+|------------|----------------|
+|    type    |  multinomial   |
+|   count    |      381       |
+|   unique   |       2        |
+|   mode1    |       1        |
+|   mode2    |       0        |
+| prob_mode1 | 0.845144356955 |
+| prob_mode2 | 0.154855643045 |
+
+    SUMMARIZE SELECT mountains FROM bobross WHERE guest = 0 AND mountain = 1
+
+|            |   mountains    |
+|------------|----------------|
+|    type    |  multinomial   |
+|   count    |      149       |
+|   unique   |       2        |
+|   mode1    |       1        |
+|   mode2    |       0        |
+| prob_mode1 | 0.604026845638 |
+| prob_mode2 | 0.395973154362 |
+
+The results match Walt's, so I'm convinced - let's begin our Bayesian analysis of the data set.
+
+
+Feature Dependence
+------------------
+
+BayesDB has a statement to estimate the probability of a dependent relationship between two columns:
+
+    ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FOR bobross SAVE TO dep_prob_all.png
+
+![dependence_probability_all](/assets/images/cs_bobross/dependence_probability_all.png)
+
+You can see that BayesDB picks up a high dependence probability for a lot of the relationships that Walt described, like tree/trees and mountain/mountains (emphasis on singular versus plural), snow/winter/cabin, clouds/cumulus, and beach/clouds/sun/waves/palm trees.
+
+Most of the columns actually have very low probability of dependence, which is probably driven mainly by the fact that they occur so rarely. For example, just 1.5% of paintings feature any combination of a person, boat, mill, or lighthouse.
+
+
+Clustering
+----------
+
+Walt ran a k-means cluster analysis, a common technique to group items by their common characteristics. In BayesDB, we estimate _pairwise row similarity_, which is the similarity of every row with every other row based on back-end samples, and then save _connected components_ as clusters.
+
+    ESTIMATE PAIRWISE ROW SIMILARITY FROM bobross SAVE CONNECTED COMPONENTS WITH THRESHOLD 0.95 AS clusters
+
+We end up with 8 clusters. The image below shows the results of estimating pairwise row similarity:
+
+![pairwise_row_similarity_all](/assets/images/cs_bobross/pairwise_row_similarity_all.png)
+
+It's not always clear exactly which features define clusters of rows, but one simple approach is to look at the columns with the highest probability within each cluster:
+
+1. deciduous, tree, trees
+2. conifer, mountain, mountains, snow, snowy_mountain
+3. clouds, conifer, lake, mountain, mountains, snowy_mountain, tree, trees
+4. beach, clouds, ocean, rocks, waves
+5. cabin, conifer, deciduous, mountain(s), structure, tree(s)
+6. conifer, deciduous, snow, structure, tree(s), winter
+7. barn, deciduous, grass, path, structure, tree(s)
+8. cactus, clouds, guest, path, portrait
+
+Trees are the key feature of the first cluster, while snow and mountains make up the second. The third is a combination of trees, mountains, snow, and lakes, while the fourth seems to contain mainly beach/ocean scenes. The next three contain cabins, barns, or other structures in tree-filled settings, and the last cluster contains some rarities, like cacti (occuring 27.3% of the time in the cluster, versus 0.9% in the overall data) and guest painters (45.4% in the cluster, versus 5.5% in the overall data).
+
+Nothing Stays the Same
+----------------------
+
+Did the characteristics of Bob Ross's work change over time? We have data from 31 seasons - is a painting of a mountain more likely at the beginning of his career, the end, or does the probability remain relatively constant over the course of the show?
+
+Let's find the columns that are most probably dependent on which season of the show we observe:
+
+    ESTIMATE COLUMNS OF bobross ORDER BY MUTUAL INFORMATION WITH season DESC LIMIT 6
+
+The resultings columns (excluding season) are clouds, cumulus, oval_frame, framed and cirrus.
+
+Interesting, right? Did the likelihood of Bob Ross including clouds change over time, as well as the probability of framing a painting? This might be easier to confirm graphically. Here's a plot with seasons 1-31 on the horizontal axis, and the distribution of paintings without clouds (0) and paintings with clouds (1) on the vertical axis:
+
+    SELECT SCATTER clouds, season FROM bobross SAVE TO scatter_season_clouds.png
+
+![season versus clouds](/assets/images/cs_bobross/scatter_season_clouds.png)
+
+You can see that the distribution of paintings with clouds is clearly pulled toward the earlier seasons of the show. 
+
+Let's look at the same plot for season versus framed:
+
+    SELECT SCATTER framed, season FROM bobross SAVE TO scatter_season_framed.png
+
+![season versus framed](/assets/images/cs_bobross/scatter_season_framed.png)
+
+This time, you can clearly see that no paintings were framed in the first three seasons of the show, and also that the means aren't aligned, with the mean season for framed paintings occurring several seasons after the mean for unframed paintings. Although Ross never framed more than 32% of his paintings in any given season, this is evidence that something changed about his preference (or his producer's preference) for framed paintings.
+
+
+Predictive Probability
+----------------------
+
+BayesDB is also equipped with tools to estimate the probability that each data cell takes its observed value - or any value, for that matter (not including values that are never observed in multinomial columns).
+
+Let's take a look at a summary of the predicted probabilities of snow being featured in a painting that features at least one mountain:
+
+    SUMMARIZE SELECT PREDICTIVE PROBABILITY OF snow FROM bobross WHERE mountain = 1
+
+|            | predictive probability of snow |
+|------------|--------------------------------|
+|    type    |           continuous           |
+|   count    |             160.0              |
+|    mean    |         0.864959932721         |
+|    std     |         0.147145074073         |
+|    min     |         0.126740093439         |
+|    25%     |         0.907384611629         |
+|    50%     |         0.933116488507         |
+|    75%     |         0.93364806616          |
+|    max     |         0.973474530055         |
+
+In a vast majority of paintings that feature one or more mountains, BayesDB would have been able to predict whether or not the painting would also feature snow. The probabilities are pretty strong in this case, averaging 86% with the median at 93%.
+
+
+The Unreleased Collection
+----------------------
+
+Using BayesDB's SIMULATE statement, we can even simulate new observations (paintings) that have characteristics sampled from the estimated probability model. 
+
+We know that beach, rocks, and waves are probably dependent with ocean, so let's try simulating 100 paintings and see how often those characteristics occur together when ocean = 1.
+
+    SUMMARIZE SIMULATE beach, rocks, waves FROM bobross WHERE ocean = 1 TIMES 100
+
+|            |    beach    |    rocks    |    waves    |
+|------------|-------------|-------------|-------------|
+|    type    | multinomial | multinomial | multinomial |
+|   count    |     100     |     100     |     100     |
+|   unique   |      2      |      2      |      2      |
+|   mode1    |      1      |      1      |      1      |
+|   mode2    |      0      |      0      |      0      |
+| prob_mode1 |     0.68    |     0.52    |     0.75    |
+| prob_mode2 |     0.32    |     0.48    |     0.25    |
+
+So how did the simulation go? Well, of our 100 simulated ocean paintings, 68% featured a beach, 52% rocks, and 75% waves. Let's compare that to the empirical values where ocean = 1, where 75%, 56%, and 94% of paintings have a beach, rocks, and waves, respectively. That's reasonably close, especially when you consider that the empirical probabilites of those columns for the entire data set are 7%, 19%, and 8%, respectively.
+
+It's clear that BayesDB picked up on the relationship between those variables when simulating the new rows, so our 100 simulated Bob Ross paintings would look like, assuming they featured an ocean.
+
+Now if only we had a statement that could generate images from these simulated rows, we could add _art forgery_ to BayesDB's list of useful applications. Maybe in the next release?
+
+
+Notes and Caveats
+-----------------
+
+It sems there may be some incompleteness in the raw data, such as:
+
+1. There is a tag for 'lakes' (as opposed to the singular 'lake'), that is always 0.
+2. Sometimes paintings are coded 0 for a general feature, but 1 for a more specific feature that's a subset of the more general feature. For example, 3 paintings are tagged 'cumulus' but not 'clouds,' and 1 painting is tagged 'cirrus' but not 'clouds.'

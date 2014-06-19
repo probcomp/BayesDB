@@ -1,0 +1,70 @@
+---
+title: Documentation
+layout: docs
+tagline: Under construction...
+---
+
+##Installing BayesDB
+
+To get started using BayesDB as fast as possible, the VM Installation is recommended. Note that the VM is not suited to memory intensive tasks, but it is perfect as a way to try BayesDB that is guaranteed to work out-of-the-box. If you are interested in installing BayesDB to perform any medium to large scale analyses, please use either the Manual Installation or Amazon EC2 Starcluster Install (coming soon).
+
+###VM Installation
+
+**NOTE:**
+The VM is only meant to provide an out-of-the-box usable system setup. Its resources are limited and large jobs will cause memory errors. To run larger jobs, increase the VM resources or install directly to your system.
+
+####Overview
+After downloading the VM, working with the VM for the first time requires
+
+1. Uncompressing the VM
+2. Importing the VM
+3. Starting the VM
+4. Logging into the VM
+
+####Uncompressing the VM
+- Mac: double click the tgz file
+- Linux: right click the tgz file, select extract here
+
+####Importing the VM
+
+1. double click the extracted ovf file
+2. click import in the VirtualBox GUI
+
+See VirtualBox Manual for more info
+
+####Starting the VM
+
+- click Start in the VirtualBox GUI
+
+#### Logging into the VM
+
+At the prompt in the VM GUI
+
+- login/username: bayesdb
+- password: bayesdb
+
+#### Log in via SSH
+
+You can log in via ssh with (tested on Ubuntu and Mac OSX):
+
+    ssh-keygen -f ~/.ssh/known_hosts -R [localhost]:2222
+    ssh -i vm_guest_id_rsa -p 2222 -o StrictHostKeyChecking=no bayesdb@localhost
+
+### Manual Installation
+
+BayesDB depends on CrossCat, so first install CrossCat by following its local installation instructions here.
+
+BayesDB can be installed locally with:
+
+    $ git clone https://github.com/mit-probabilistic-computing-project/BayesDB.git
+    $ cd BayesDB
+    $ sudo python setup.py install
+
+If you have trouble with matplotlib, you should try switching to a different backend. Open a python prompt ($ python):
+
+    >>> import matplotlib
+    >>> matplotlib.matplotlib_fname()
+
+Then, edit the file at the path that was outputted, changing ‘backend’ to another one of the available values, until the matplotlib errors go away. Good ones to try are GTKAgg and Agg.
+
+    >>> matplotlib.use('Agg')
