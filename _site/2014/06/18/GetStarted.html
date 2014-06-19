@@ -1,0 +1,104 @@
+<!doctype html>
+<head>
+	<meta charset="utf-8"></meta>
+	<meta content="width=device-width, initial-scale=1.0" name="viewport"></meta>
+	<meta content="A set of small, responsive CSS modules that you can use in every web project." name="description"></meta>
+	
+	<title>Get Started</title>
+	<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/pure-min.css">
+	<!--[if lte IE 8]>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/grids-responsive-old-ie-min.css">
+<![endif]-->
+<!--[if gt IE 8]><!-->
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/grids-responsive-min.css">
+<!--<![endif]-->
+	<link href='http://fonts.googleapis.com/css?family=Raleway:400,100,200' rel='stylesheet' type='text/css'>
+	<link href="/css/style.css" rel="stylesheet"></link>
+	<link href="/css/type.css" rel="stylesheet"></link>
+	
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+	<script type="text/javascript"
+	  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+	</script>
+
+</head>
+<body>
+<div class="main">
+<div id="bayesdb-logo"><a href=""><span class="t-bayes">Bayes</span><span class="t-db">DB</span></a></div>
+	<div class="header">
+		<div class="default-header-titles">
+			<h1>Get Started</h1>
+			<h2>Download. Install. Explore.</h2>
+		</div>
+	</div>
+
+<div id="nav-bow">
+	<div class="pure-g">
+		<div class="pure-u-1 pure-u-md-1-5 pure-u-lg-1-5 nb-1"><div class="l-box-nb"><a href="/2014/06/18/GetStarted.html"><p>Get Started</p></a></div></div>
+		<div class="pure-u-1 pure-u-md-1-5 pure-u-lg-1-5 nb-2"><div class="l-box-nb"><a href="/2014/06/19/Docs.html"><p>Documentation</p></a></div></div>
+		<div class="pure-u-1 pure-u-md-1-5 pure-u-lg-1-5 nb-3"><div class="l-box-nb"><a href="/2014/06/19/CaseStudies.html"><p>Case Studies</p></a></div></div>
+		<div class="pure-u-1 pure-u-md-1-5 pure-u-lg-1-5 nb-4"><div class="l-box-nb"><a href="/2014/06/19/GetInvolved.html"><p>Get Involved</p></a></div></div>
+		<div class="pure-u-1 pure-u-md-1-5 pure-u-lg-1-5 nb-5"><div class="l-box-nb"><a href="/2014/06/18/FAQ.html"><p>FAQ / Help</p></a></div></div>
+	</div>
+</div>
+
+<div class="layout">
+	<h3 id="download">Download</h3>
+
+<p>BayesDB uses <a href="https://github.com/mit-probabilistic-computing-project/crosscat">CrossCat</a> as an inference engine so we install that first.</p>
+
+<pre><code>$ git clone https://github.com/mit-probabilistic-computing-project/crosscat.git
+$ sudo bash crosscat/scripts/install_scripts/install.sh
+$ sudo python crosscat/setup.py install</code></pre>
+
+<p>Clone BayesDB from <a href="www.github.com">Github</a>.</p>
+
+<pre><code>$ git clone https://github.com/mit-probabilistic-computing-project/BayesDB.git</code></pre>
+
+<h3 id="install">Install</h3>
+
+<pre><code>$ cd BayesDB
+$ sudo python setup.py install</code></pre>
+
+<p>Alternatively, you can avoid install BayesDB to your system python</p>
+
+<pre><code>$ sudo python setup.py develop</code></pre>
+
+<p>In this case you’ll need to add the BayesDB directory to your <code>PYTHONPATH</code>.</p>
+
+<h3 id="explore">Explore</h3>
+
+<p>BayesDB ships with a few example datasets with pre-computed models ready to go. Just navigate to an example directory and spool up an interactive python session.</p>
+
+<pre><code>$ cd examples/dha
+$ python</code></pre>
+
+<p>Now we’ll create a table, load in some models and start exploring the data.</p>
+
+<pre><code>&gt;&gt;&gt; from bayesdb.client import Client
+&gt;&gt;&gt; client = Client()
+&gt;&gt;&gt; client('CREATE BTABLE dha FROM dha.csv;')
+&gt;&gt;&gt; client('LOAD MODEL dha_models.pkl.gz INTO dha;')
+&gt;&gt;&gt; client('ESTIMATE PAIRWISE DEPENDENCE PROBABILIY FROM dha SAVE TO dha_z.png;')</code></pre>
+
+<p>You’ve just created a Z matrix, which shows you the dependence between each pair of columns, and saved it to <code>dha_z.png</code>.</p>
+<div class="layout">
+		<div id="footer">
+			<center><div class="footer-shadow"></div></center>
+			
+			<div class="footer-box"><div class="l-box">
+			<p>BayesDB and its sister project, CrossCat, are being developed by <a href="http://web.mit.edu/jbaxter/www">Jay Baxter</a>, Dan Lovell, and <a href="http://web.mit.edu/vkm/www">Vikash Mansinghka</a> from the <a href="http://probcomp.csail.mit.edu/">MIT Probabilistic Computing Project</a> and by <a href="http://shaftolab.com/index.php/people/patrick-shafto/">Pat Shafto</a> and <a href="http://shaftolab.com/index.php/people/baxter-eaves/">Baxter Eaves</a> from the <a href="http://shaftolab.com/">CoCoSci Lab</a> at University of Louisville.</p>
+
+		<p>Our work is generously supported by research a contract with DARPA (under the XDATA program) and the Google "Rethinking AI" project. The views expressed on this website and in our research are our own, and do not necessarily reflect the views of our government or corporate sponsors.</p>
+			</div></div>
+			<br>
+			<p class="align-center">
+				Copyright &copy; 2014 BayesDB
+			</p>
+			<p class="align-center">
+				Follow us on <a href="#">Github</a>, <a href="#">Facbook</a>, and <a href="#">Twitter</a>.
+			</p>
+		</div>
+	</div> <!-- end main -->
+</body>

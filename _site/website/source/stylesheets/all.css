@@ -1,0 +1,35 @@
+.container{
+	width:90%;
+	margin: 0 auto;
+}
+a:hover{
+	text-decoration: none;
+}
+p.lead{
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    }
+p {
+    font-size: 18px;
+    }
+img{
+	max-width: 100%;
+	margin:0 auto;
+}
+code {
+    font-size: 30px;
+}    
+
+#logo-text{
+	font-size: 100px; 
+	font-weight: normal;
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	text-align:center;
+}
+
+@media (max-width: 500px) {
+  #logo-text{ font-size: 50px; }
+}
+
+a.anchor { position: relative; top: -40px; }
