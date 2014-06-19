@@ -6,6 +6,6 @@ layout: default
 
 <center>
 <p>
-Fork us on [github](https://github.com/mit-probabilistic-computing-project/BayesDB) or contact us regarding pilot collaborations \( \text{bayesdb@mit.edu}\).
+Fork us on <a href="https://github.com/mit-probabilistic-computing-project/BayesDB">github</a> or contact us regarding pilot collaborations \( \text{bayesdb}\{\text{AT}\}\text{MIT}\{\cdot\}\text{edu}\).
 </p>
 </center>

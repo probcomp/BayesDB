@@ -34,9 +34,11 @@ pre, code{
 	font-family: monospace;
 }
 
+code{font-size:inherit;}
+
 p, pre{
 	line-height: 1.8em;
-	font-size: 1.2em;
+	font-size: 1.3em;
 	font-weight: 300;
 	color: #777;
 }
