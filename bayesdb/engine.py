@@ -328,19 +328,24 @@ class Engine(object):
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
 
-    cctypes_full = data_utils.guess_column_types(query_data)        
+    cctypes_full = data_utils.guess_column_types(query_data)
     for query_idx, query_colname in enumerate(query_colnames):
         if query_colname in M_c_existing_full['name_to_idx']:
             cctypes_full[query_idx] = cctypes_existing_full[M_c_existing_full['name_to_idx'][query_colname]]
-
-    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(query_colnames, query_data, cctypes=cctypes_full)
-
+    
+    if 'key' not in cctypes_full:
+        raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(query_data, query_colnames, cctypes_full, key_column=None)
+    else:
+        raw_T_full = query_data
+        colnames_full = query_colnames
+    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+    
     # variables without "_full" don't include ignored columns.
-    raw_T, cctypes, colnames = data_utils.remove_ignore_cols(query_data, cctypes_full, query_colnames)
+    raw_T, cctypes, colnames = data_utils.remove_ignore_cols(T_full, cctypes_full, colnames_full)
     T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
     self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, query_data)
 
-    return dict(columns=query_colnames, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
+    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
 
   def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None):
     """Uplooad a csv table to the predictive db.
@@ -830,7 +835,6 @@ class Engine(object):
     ##TODO col_indices, colnames are a hack from old parsing
     
     col_indices = [query[1][0] for query in queries]
-    colnames = query_colnames
     query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
 
@@ -856,9 +860,12 @@ class Engine(object):
 
     # Execute INTO statement
     if newtablename is not None:
-      self.create_btable_from_existing(newtablename, colnames, data, M_c)
-          
-    ret = {'columns': colnames, 'data': data}
+      cctypes = self.persistence_layer.get_cctypes(tablename)
+      newtable_info = self.create_btable_from_existing(newtablename, query_colnames, cctypes, M_c, data)
+      if 'key' in query_colnames:
+          query_colnames.remove('key')
+
+    ret = {'columns': query_colnames, 'data': data}
     if plot:
       ret['M_c'] = M_c
     elif summarize | hist | freq:
