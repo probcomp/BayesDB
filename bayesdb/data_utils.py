@@ -324,6 +324,9 @@ def convert_code_to_value(M_c, cidx, code):
         try:
             return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
         except KeyError:
+            print M_c
+            print cidx
+            print code
             return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))]
 
 def convert_value_to_code(M_c, cidx, value):
@@ -365,7 +368,7 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
         mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
         mapping['NAN'] = numpy.nan
         col_data = T_uncast_array[:, col_idx]
-        to_upper = lambda el: el.upper()
+        to_upper = lambda el: str(el).upper()
         is_nan_str = numpy.array(map(to_upper, col_data))=='NAN'
         col_data[is_nan_str] = 'NAN'
         # FIXME: THIS IS WHERE TO PUT NAN HANDLING
@@ -457,6 +460,14 @@ def get_can_cast_to_int(column_data):
     except ValueError, e:
         can_cast = False
     return can_cast
+
+def get_int_equals_str(column_data):
+    try:
+        equals = all([str(datum) == str(int(datum)) for datum in column_data])
+    except ValueError, e:
+        equals = False
+    return equals
+    
     
 def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
     num_distinct = len(set(column_data))
@@ -501,12 +512,15 @@ extract_cluster_counts = lambda X_L: map(extract_cluster_count, X_L['view_state'
 get_state_shape = lambda X_L: (extract_view_count(X_L), extract_cluster_counts(X_L))
 
 def is_key_eligible(x):
-	# A column is eligible to be the table key if:
-	# All values are unique, AND
-	# it can be cast to int OR can't be cast to float
-	values_unique = len(x) == len(set(x))
-	castable = get_can_cast_to_int(x) or not get_can_cast_to_float(x)
-	return values_unique and castable
+    """
+	A column is eligible to be the table key if:
+	All values are unique, AND
+    can't be cast to float (a string key) OR string representation of all values matches the
+    string representation of its int value
+    """
+    values_unique = len(x) == len(set(x))
+    castable = not get_can_cast_to_float(x) or get_int_equals_str(x)
+    return values_unique and castable
 
 def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None):
     """
