@@ -519,10 +519,8 @@ def test_update_schema():
   global client, test_filenames
 
   # Test setting one column to each type
-  #out = client('update schema for %s set qual_score = ignore, name = key, ami_score = multinomial' % (test_tablename), debug=True, pretty=False)[0]
   out = client('update schema for %s set qual_score = ignore, ami_score = multinomial' % (test_tablename), debug=True, pretty=False)[0]
   assert (out['datatype'][out['column'] == 'qual_score'] == 'ignore').all()
-  #assert (out['datatype'][out['column'] == 'name'] == 'key').all()
   assert (out['datatype'][out['column'] == 'ami_score'] == 'multinomial').all()
 
   # Selecting qual_score should still work even after it's ignored, also should work in where clauses and order by clauses
@@ -548,5 +546,9 @@ def test_update_schema():
   client.engine.analyze(tablename=test_tablename, iterations=2, background=False)
 
   with pytest.raises(utils.BayesDBError):
+    # Next two statements should fail because they attempt functions on an 'ignore' column
     client('estimate columns from %s order by correlation with qual_score limit 5' % (test_tablename), debug=True, pretty=False)
     client('estimate columns from %s order by dependence probability with qual_score limit 5' % (test_tablename), debug=True, pretty=False)
+    # Next two statements should fail because they 1) try to set a new key and 2) try to change the key's type
+    client('update schema for %s set name = key' % (test_tablename), debug=True, pretty=False)
+    client('update schema for %s set key = continuous' % (test_tablename), debug=True, pretty=False)

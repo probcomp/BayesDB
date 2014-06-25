@@ -541,14 +541,23 @@ class PersistenceLayer():
         for col, mapping in mappings.items():
             if col.lower() not in M_c_full['name_to_idx']:
                 raise utils.BayesDBError('Error: column %s does not exist.' % col)
-            if mapping not in mapping_set:
+            elif mapping not in mapping_set:
                 raise utils.BayesDBError('Error: datatype %s is not one of the valid datatypes: %s.' % (mapping, str(mapping_set)))
-                
+
             cidx = M_c_full['name_to_idx'][col.lower()]
+
+            # If the column's current type is key, don't allow the change.
+            if cctypes_full[cidx] == 'key':
+                raise utils.BayesDBError('Error: %s is already set as the table key. To change its type, reload the table using CREATE BTABLE and choose a different key column.' % col.lower())
+            # If the user tries to change a column to key, it's easier to reload the table, since at this point
+            # there aren't models anyways. Eventually we can build this in if it's desirable.
+            elif mapping == 'key':
+                raise utils.BayesDBError('Error: key column already exists. To choose a different key, reload the table using CREATE BTABLE')
+
             cctypes_full[cidx] = mapping
 
         # Make sure there isn't more than one key.
-        assert len(filter(lambda x: x=='key', cctypes_full)) <= 1
+        assert len(filter(lambda x: x=='key', cctypes_full)) == 1
 
         T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
