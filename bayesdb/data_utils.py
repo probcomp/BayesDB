@@ -519,7 +519,7 @@ def is_key_eligible(x):
     castable = not get_can_cast_to_float(x) or get_int_equals_str(x)
     return values_unique and castable
 
-def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None):
+def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, accept=False):
     """
     This function takes the raw data, colnames, and data types from an input CSV file from
     which a btable is being created.
@@ -535,8 +535,9 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None):
     key_eligibles = list(eligibility[eligibility].index)
     key_eligibles_len = len(key_eligibles)
     if key_eligibles_len == 0 and key_column is None:
-        print "None of the columns in this table is eligible to be the key. A key column will be created. Press Enter to continue."
-        user_confirmation = raw_input()
+        if not accept:
+            print "None of the columns in this table is eligible to be the key. A key column will be created. Press Enter to continue."
+            user_confirmation = raw_input()
         key_column_selection = 0
     elif key_column is None or key_column not in range(key_eligibles_len + 1):
         key_column_selection = None

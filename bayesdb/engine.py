@@ -332,9 +332,9 @@ class Engine(object):
     for query_idx, query_colname in enumerate(query_colnames):
         if query_colname in M_c_existing_full['name_to_idx']:
             cctypes_full[query_idx] = cctypes_existing_full[M_c_existing_full['name_to_idx'][query_colname]]
-    
+
     if 'key' not in cctypes_full:
-        raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(query_data, query_colnames, cctypes_full, key_column=None)
+        raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(query_data, query_colnames, cctypes_full, key_column=None, accept=True)
     else:
         raw_T_full = query_data
         colnames_full = query_colnames
@@ -352,7 +352,7 @@ class Engine(object):
     cctypes must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
     column name must be present in the dictionary: default is continuous."""
-    
+
     ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
@@ -628,7 +628,7 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     M_c_full, M_r_full, T_full = self.persistence_layer.get_metadata_and_table_full(tablename)
-
+    
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     column_lists = self.persistence_layer.get_column_lists(tablename)
 

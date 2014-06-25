@@ -402,8 +402,9 @@ def test_into():
   test_tablename = create_dha()
   global client
 
-  # Test that select can produce a new btable with INTO, and that it can be analyzed and manipulated like other btables
   client('drop btable test_btable_select', yes=True)
+
+  # Test that select can produce a new btable with INTO, and that it can be analyzed and manipulated like other btables
   client('select name, qual_score from %s limit 5 into test_btable_select' % test_tablename, debug=True, pretty=False)
   assert len(client('select * from test_btable_select', debug=True, pretty=False)[0]) == 5
 
