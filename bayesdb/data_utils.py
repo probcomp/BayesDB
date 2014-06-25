@@ -324,9 +324,6 @@ def convert_code_to_value(M_c, cidx, code):
         try:
             return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
         except KeyError:
-            print M_c
-            print cidx
-            print code
             return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))]
 
 def convert_value_to_code(M_c, cidx, value):
