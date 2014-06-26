@@ -444,6 +444,7 @@ def test_summarize():
   # Test that the output is a pandas DataFrame when pretty=False
   out = client('summarize select name, qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
+  assert (out.columns == [' ', 'name', 'qual_score']).all()
 
   # Test that stats from summary_describe and summary_freqs made it into the output DataFrame
   # Note that all of these stats won't be present in EVERY summarize output, but all should be in the output
@@ -458,19 +459,18 @@ def test_summarize():
   client('summarize select correlation of name with qual_score from %s' % (test_tablename), debug=True, pretty=False)
 
   # Test with fewer than 5 unique values (output should have fewer rows)
-  client('summarize select name, qual_score from %s limit 3' % (test_tablename), debug=True, pretty=False)
+  out = client('summarize select name, qual_score from %s limit 3' % (test_tablename), debug=True, pretty=False)[0]
+  assert out.shape == (16, 3)
 
   # Test with no rows
-  client('summarize select name, qual_score from %s where qual_score < 0' % (test_tablename), debug=True, pretty=False)
+  out = client('summarize select name, qual_score from %s where qual_score < 0' % (test_tablename), debug=True, pretty=False)[0]
+  assert out.shape == (0, 3)
 
   # Test with only a discrete column
   client('summarize select name from %s' % (test_tablename), debug=True, pretty=False)
 
   # Test with only a continuous column
   client('summarize select qual_score from %s' % (test_tablename), debug=True, pretty=False)
-
-  # Test shorthand: summary for all columns in btable - not working yet
-  # client('summarize %s' % (test_tablename), debug=True, pretty=False)
 
 def test_select_where_col_equal_val():
   test_tablename = create_dha()
@@ -510,9 +510,37 @@ def test_freq_hist():
   # Test that freq and hist work and return a DataFrame
   out = client('freq select qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
+  assert out['qual_score'][0] == 87.5
+  assert out['frequency'][0] == 7
 
   out = client('hist select qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
+  assert out.shape == (10, 4)
+  assert out['frequency'][0] == 1
+
+  client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
+  client.engine.analyze(tablename=test_tablename, iterations=2, background=False)
+
+  # Results for infer should match select, since there are no missing values
+  out = client('freq infer qual_score from %s with confidence 0' % (test_tablename), debug=True, pretty=False)[0]
+  assert type(out) == pandas.DataFrame
+  assert out['qual_score'][0] == 87.5
+  assert out['frequency'][0] == 7
+
+  out = client('hist infer qual_score from %s with confidence 0' % (test_tablename), debug=True, pretty=False)[0]
+  assert type(out) == pandas.DataFrame
+  assert out.shape == (10, 4)
+  assert out['frequency'][0] == 1
+
+  # For simulate, we just have to go by size and expected range
+  out = client('freq simulate qual_score from %s times 20' % (test_tablename), debug=True, pretty=False)[0]
+  assert out.shape[1] == 3
+  assert (out['probability'] < 1).all()
+
+  out = client('hist simulate qual_score from %s times 20' % (test_tablename), debug=True, pretty=False)[0]
+  assert out.shape[1] == 4
+  assert (out['frequency'] <= 20).all()
+  assert (out['probability'] < 1).all()
 
 def test_update_schema():
   test_tablename = create_dha()
