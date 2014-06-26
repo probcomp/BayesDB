@@ -870,11 +870,11 @@ class Engine(object):
       ret['M_c'] = M_c
     elif summarize | hist | freq:
       if summarize:
-        data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c)
+        data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c, remove_key=False)
       elif hist:
-        data, columns = utils.histogram_table(ret['data'], ret['columns'], M_c)
+        data, columns = utils.histogram_table(ret['data'], ret['columns'], M_c, remove_key=False)
       elif freq:
-        data, columns = utils.freq_table(ret['data'], ret['columns'], M_c)
+        data, columns = utils.freq_table(ret['data'], ret['columns'], M_c, remove_key=False)
       ret['data'] = data
       ret['columns'] = columns
     return ret

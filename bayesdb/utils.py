@@ -312,12 +312,16 @@ def freqs(x):
     x_probs = pandas.Series(x_probs)
     x_freqs = pandas.Series(x_freqs)
 
-    x_hist = pandas.concat([x_values, x_freqs, x_probs], axis=1)
-    return x_hist
+    x_stats = pandas.concat([x_values, x_freqs, x_probs], axis=1)
+    return x_stats
 
-# Function to calculate the most frequent values for each column
 def get_column_freqs(x):
-
+    """
+    Takes a pandas.Series of data and returns
+    1. the unique values
+    2. the empirical probabilities of those values
+    3. the empirical frequencies of those values
+    """
     x_freqs  = x.value_counts()
     x_probs  = list(x_freqs / len(x))
     x_values = list(x_freqs.index)
@@ -325,39 +329,39 @@ def get_column_freqs(x):
 
     return x_values, x_freqs, x_probs
 
-def freq_table(data, columns, M_c):
+def freq_table(data, columns, M_c, remove_key=True):
     """
     Returns a frequency table
     """
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
-        # Remove the first column since summary stats of row_id are meaningless
-        df_drop(df, [columns[0]], axis=1)
 
-        column = df.columns[0]
-        cctype = get_cctype_from_M_c(M_c, column)
+        # If the first column is the key (select/infer), summarizing it is meaningless
+        if remove_key:
+            df_drop(df, [columns[0]], axis=1)
 
+        column = df.columns[0]        
         summary_data = freqs(df[column])
-
-        data = summary_data.to_records(index=False)
         columns = [column, 'frequency', 'probability']
+        data = summary_data.to_records(index=False)
 
     return data, columns
 
-def histogram_table(data, columns, M_c):
+def histogram_table(data, columns, M_c, remove_key=True):
     """
     Returns a frequency table
     """
     if len(data) > 0:
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
-        # Remove the first column since summary stats of the key are meaningless.
-        df_drop(df, [columns[0]], axis=1)
+
+        # If the first column is the key (select/infer), summarizing it is meaningless
+        if remove_key:
+            df_drop(df, [columns[0]], axis=1)
 
         column = df.columns[0]
-        cctype = get_cctype_from_M_c(M_c, column)
-
+        
         # Use Sturges formula to calculate the number of bins to use.
         n_bins = math.ceil(math.log(df.shape[0], 2) + 1)
 
@@ -377,7 +381,6 @@ def histogram_table(data, columns, M_c):
         # Have to reorder columns, otherwise pandas defaults to alphabetical order
         columns = ['bin_minimum', 'bin_maximum', 'frequency', 'probability']
         summary_data = summary_data[columns]
-
         data = summary_data.to_records(index=False)
 
     return data, columns
@@ -412,7 +415,7 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
     else:
         BayesDBParseError("Invalid query: column '%s' not found" % column)
 
-def summarize_table(data, columns, M_c):
+def summarize_table(data, columns, M_c, remove_key=True):
     """
     Returns a summary of the data.
     Input: data is a list of lists, of raw data values about to be shown to the user.
@@ -427,8 +430,9 @@ def summarize_table(data, columns, M_c):
         # Construct a pandas.DataFrame out of data and columns
         df = pandas.DataFrame(data=data, columns=columns)
 
-        # Remove the first column since it's the key and summarizing it is meaningless
-        df_drop(df, [columns[0]], axis=1)
+        # If the first column is the key (select/infer), summarizing it is meaningless
+        if remove_key:
+            df_drop(df, [columns[0]], axis=1)
 
         # Get column types as one-row DataFrame
         cctypes = pandas.DataFrame([[get_cctype_from_M_c(M_c, col) for col in df.columns]], columns=df.columns, index=['type'])

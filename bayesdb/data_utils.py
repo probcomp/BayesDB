@@ -250,7 +250,9 @@ def construct_pandas_df(query_obj):
     if len(query_obj['data']) == 0:
         data = None
     else:
-        data = query_obj['data']
+        # Some types (numpy recarray for one) caused some issues when read into
+        # a DataFrame, so recasting this as a list of lists solves the problem
+        data = [list(row) for row in query_obj['data']]
     pandas_df = pandas.DataFrame(data = data, columns = query_obj['columns'])
     return pandas_df
 
