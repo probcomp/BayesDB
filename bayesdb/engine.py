@@ -371,7 +371,10 @@ class Engine(object):
       
     self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full)
 
-    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Inferred schema:' % tablename)
+    data = [[colname, cctype] for colname, cctype in zip(colnames_full, cctypes_full)]
+    columns = ['column', 'type']
+
+    return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename)
 
   def show_schema(self, tablename):
     if not self.persistence_layer.check_if_table_exists(tablename):

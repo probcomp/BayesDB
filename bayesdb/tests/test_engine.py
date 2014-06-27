@@ -64,7 +64,10 @@ def test_create_btable():
   assert 'columns' in create_btable_result
   assert 'data' in create_btable_result
   assert 'message' in create_btable_result
-  assert len(create_btable_result['data'][0]) == 65 ## 64 is number of columns in DHA dataset, plus 1 for added key
+  # Should be 65 rows (1 for each column inferred: 64 from data file, plus 1 for key)
+  assert len(create_btable_result['data']) == 65
+  # Should be 2 columns: 1 for column names, and 1 for the type
+  assert len(create_btable_result['data'][0]) == 2
   list_btables_result = engine.list_btables()['data']
   assert [test_tablename] in list_btables_result
   engine.drop_btable(test_tablename)
