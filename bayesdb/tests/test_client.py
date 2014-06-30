@@ -55,7 +55,7 @@ def teardown_function(function):
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
-  client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False)
+  client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False, key_column=0)
   
   global test_tablenames
   test_tablenames.append(test_tablename)
@@ -402,8 +402,9 @@ def test_into():
   test_tablename = create_dha()
   global client
 
-  # Test that select can produce a new btable with INTO, and that it can be analyzed and manipulated like other btables
   client('drop btable test_btable_select', yes=True)
+
+  # Test that select can produce a new btable with INTO, and that it can be analyzed and manipulated like other btables
   client('select name, qual_score from %s limit 5 into test_btable_select' % test_tablename, debug=True, pretty=False)
   assert len(client('select * from test_btable_select', debug=True, pretty=False)[0]) == 5
 
@@ -434,7 +435,7 @@ def test_pandas():
 
   # Test creation of a btable from pandas DataFrame
   client("drop btable %s" % (test_tablename), yes=True)
-  client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df)
+  client("create btable %s from pandas" % (test_tablename), debug=True, pretty=False, pandas_df=test_df, key_column=1)
 
 def test_summarize():
   test_tablename = create_dha()
@@ -443,6 +444,7 @@ def test_summarize():
   # Test that the output is a pandas DataFrame when pretty=False
   out = client('summarize select name, qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
+  assert (out.columns == [' ', 'name', 'qual_score']).all()
 
   # Test that stats from summary_describe and summary_freqs made it into the output DataFrame
   # Note that all of these stats won't be present in EVERY summarize output, but all should be in the output
@@ -457,10 +459,12 @@ def test_summarize():
   client('summarize select correlation of name with qual_score from %s' % (test_tablename), debug=True, pretty=False)
 
   # Test with fewer than 5 unique values (output should have fewer rows)
-  client('summarize select name, qual_score from %s limit 3' % (test_tablename), debug=True, pretty=False)
+  out = client('summarize select name, qual_score from %s limit 3' % (test_tablename), debug=True, pretty=False)[0]
+  assert out.shape == (16, 3)
 
   # Test with no rows
-  client('summarize select name, qual_score from %s where qual_score < 0' % (test_tablename), debug=True, pretty=False)
+  out = client('summarize select name, qual_score from %s where qual_score < 0' % (test_tablename), debug=True, pretty=False)[0]
+  assert out.shape == (0, 3)
 
   # Test with only a discrete column
   client('summarize select name from %s' % (test_tablename), debug=True, pretty=False)
@@ -468,15 +472,12 @@ def test_summarize():
   # Test with only a continuous column
   client('summarize select qual_score from %s' % (test_tablename), debug=True, pretty=False)
 
-  # Test shorthand: summary for all columns in btable - not working yet
-  # client('summarize %s' % (test_tablename), debug=True, pretty=False)
-
 def test_select_where_col_equal_val():
   test_tablename = create_dha()
   global client, test_filenames
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
-  basic_similarity = client('select * from %s where similarity to 1 > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['row_id']
-  col_val_similarity = client('select * from %s where similarity to name = "Akron OH" > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['row_id']
+  basic_similarity = client('select * from %s where similarity to 1 > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['key']
+  col_val_similarity = client('select * from %s where similarity to name = "Akron OH" > .6 limit 5' % (test_tablename),pretty=False, debug=True)[0]['key']
   assert len(basic_similarity) == len(col_val_similarity)
 
 def test_labeling():
@@ -509,27 +510,61 @@ def test_freq_hist():
   # Test that freq and hist work and return a DataFrame
   out = client('freq select qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
+  assert out['qual_score'][0] == 87.5
+  assert out['frequency'][0] == 7
 
   out = client('hist select qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
+  assert out.shape == (10, 4)
+  assert out['frequency'][0] == 1
+
+  client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
+  client.engine.analyze(tablename=test_tablename, iterations=2, background=False)
+
+  # Results for infer should match select, since there are no missing values
+  out = client('freq infer qual_score from %s with confidence 0' % (test_tablename), debug=True, pretty=False)[0]
+  assert type(out) == pandas.DataFrame
+  assert out['qual_score'][0] == 87.5
+  assert out['frequency'][0] == 7
+
+  out = client('hist infer qual_score from %s with confidence 0' % (test_tablename), debug=True, pretty=False)[0]
+  assert type(out) == pandas.DataFrame
+  assert out.shape == (10, 4)
+  assert out['frequency'][0] == 1
+
+  # For simulate, we just have to go by size and expected range
+  out = client('freq simulate qual_score from %s times 20' % (test_tablename), debug=True, pretty=False)[0]
+  assert out.shape[1] == 3
+  assert (out['probability'] < 1).all()
+
+  out = client('hist simulate qual_score from %s times 20' % (test_tablename), debug=True, pretty=False)[0]
+  assert out.shape[1] == 4
+  assert (out['frequency'] <= 20).all()
+  assert (out['probability'] < 1).all()
 
 def test_update_schema():
   test_tablename = create_dha()
   global client, test_filenames
 
   # Test setting one column to each type
-  out = client('update schema for %s set qual_score = ignore, name = key, ami_score = multinomial' % (test_tablename), debug=True, pretty=False)[0]
+  out = client('update schema for %s set qual_score = ignore, ami_score = multinomial' % (test_tablename), debug=True, pretty=False)[0]
   assert (out['datatype'][out['column'] == 'qual_score'] == 'ignore').all()
-  assert (out['datatype'][out['column'] == 'name'] == 'key').all()
   assert (out['datatype'][out['column'] == 'ami_score'] == 'multinomial').all()
 
-  # Selecting qual_score should fail now that qual_score is set to be ignored
-  with pytest.raises(utils.BayesDBError):
-    client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
+  # Selecting qual_score should still work even after it's ignored, also should work in where clauses and order by clauses
+  client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
+  out = client('select name, qual_score, ami_score from %s where qual_score > 90 order by qual_score' % (test_tablename), debug=True, pretty=False)[0]
+  assert (out['qual_score'] > 90).all()
+  assert (out['qual_score'] == out['qual_score'].order(ascending=False)).all()
+
+  # Also test where clause with ignored text column
+  client('update schema for %s set name = ignore' % (test_tablename), debug=True, pretty=False)
+  out = client('select name, qual_score from %s where name = "Albany NY"' % (test_tablename), debug=True, pretty=False)[0]
+  assert out.shape == (1, 3)
+  assert (out['name'] == "Albany NY").all()
 
   # Set qual_score back to continuous, and select should work again
   client('update schema for %s set qual_score = continuous, name = multinomial, ami_score = continuous' % (test_tablename), debug=True, pretty=False)
-  client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
 
   # Set back to ignore, run models, and then estimation shouldn't work for qual_score
   client('update schema for %s set qual_score = ignore' % (test_tablename), debug=True, pretty=False)
@@ -539,5 +574,9 @@ def test_update_schema():
   client.engine.analyze(tablename=test_tablename, iterations=2, background=False)
 
   with pytest.raises(utils.BayesDBError):
+    # Next two statements should fail because they attempt functions on an 'ignore' column
     client('estimate columns from %s order by correlation with qual_score limit 5' % (test_tablename), debug=True, pretty=False)
     client('estimate columns from %s order by dependence probability with qual_score limit 5' % (test_tablename), debug=True, pretty=False)
+    # Next two statements should fail because they 1) try to set a new key and 2) try to change the key's type
+    client('update schema for %s set name = key' % (test_tablename), debug=True, pretty=False)
+    client('update schema for %s set key = continuous' % (test_tablename), debug=True, pretty=False)

@@ -29,7 +29,7 @@ def teardown_function(function):
 def run_example(name):
     client = Client()
     file_path = os.path.join('../../examples/%s/%s_analysis.bql' % (name, name))
-    results = client(open(file_path, 'r'), yes=True, pretty=False, plots=False)
+    results = client(open(file_path, 'r'), yes=True, pretty=False, plots=False, key_column=0)
     for r in results:
         if 'Error' in r or ('error' in r and r['error']):
             raise Exception(str(r))

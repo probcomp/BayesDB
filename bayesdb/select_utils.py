@@ -35,7 +35,7 @@ import data_utils as du
 from pyparsing import *
 import bayesdb.bql_grammar as bql_grammar
 
-def evaluate_where_on_row(row_idx, row, where_conditions, M_c, X_L_list, X_D_list, T, engine, tablename, numsamples, impute_confidence):
+def evaluate_where_on_row(row_idx, row, where_conditions, M_c, M_c_full, X_L_list, X_D_list, T, T_full, engine, tablename, numsamples, impute_confidence):
   """
   Helper function that applies WHERE conditions to row, returning False if row doesn't satisfy where
   clause, and the list of function results if it does satisfy the where clause.
@@ -70,7 +70,10 @@ def evaluate_where_on_row(row_idx, row, where_conditions, M_c, X_L_list, X_D_lis
       else:
         return False
     else:
-      where_value = func(f_args, row_idx, row, M_c, X_L_list, X_D_list, T, engine, numsamples)        
+      if func != functions._column_ignore:
+        where_value = func(f_args, row_idx, row, M_c, X_L_list, X_D_list, T, engine, numsamples)
+      else:
+        where_value = func(f_args, row_idx, row, M_c_full, T_full, engine)
       if func == functions._row_id:
         # val should be a row list name in this case. look up the row list, and set val to be the list of
         # row indices in the row list. Throws BayesDBRowListDoesNotExistError if row list does not exist.

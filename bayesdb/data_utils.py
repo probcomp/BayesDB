@@ -23,6 +23,7 @@ import copy
 import pandas
 import re
 import numpy
+import prettytable
 
 import utils
 
@@ -249,7 +250,9 @@ def construct_pandas_df(query_obj):
     if len(query_obj['data']) == 0:
         data = None
     else:
-        data = query_obj['data']
+        # Some types (numpy recarray for one) caused some issues when read into
+        # a DataFrame, so recasting this as a list of lists solves the problem
+        data = [list(row) for row in query_obj['data']]
     pandas_df = pandas.DataFrame(data = data, columns = query_obj['columns'])
     return pandas_df
 
@@ -317,7 +320,7 @@ def convert_code_to_value(M_c, cidx, code):
     """
     if numpy.isnan(code) or code=='nan':
         return code
-    if M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
+    elif M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
         return float(code)
     else:
         try:
@@ -364,7 +367,7 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
         mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
         mapping['NAN'] = numpy.nan
         col_data = T_uncast_array[:, col_idx]
-        to_upper = lambda el: el.upper()
+        to_upper = lambda el: str(el).upper()
         is_nan_str = numpy.array(map(to_upper, col_data))=='NAN'
         col_data[is_nan_str] = 'NAN'
         # FIXME: THIS IS WHERE TO PUT NAN HANDLING
@@ -382,7 +385,8 @@ def do_pop_list_indices(in_list, pop_indices):
 def get_list_indices(in_list, get_indices_of):
     lookup = dict(zip(in_list, range(len(in_list))))
     indices = map(lookup.get, get_indices_of)
-    indices = filter(None, indices)
+    # The line below removes [0] from indices. Need to check with Jay about how to handle those cases.
+    #indices = filter(None, indices)
     return indices
 
 def transpose_list(in_list):
@@ -447,6 +451,22 @@ def get_can_cast_to_float(column_data):
     except ValueError, e:
         can_cast = False
     return can_cast
+
+def get_can_cast_to_int(column_data):
+    can_cast = True
+    try:
+        [int(datum) for datum in column_data]
+    except ValueError, e:
+        can_cast = False
+    return can_cast
+
+def get_int_equals_str(column_data):
+    try:
+        equals = all([str(datum) == str(int(datum)) for datum in column_data])
+    except ValueError, e:
+        equals = False
+    return equals
+    
     
 def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
     num_distinct = len(set(column_data))
@@ -489,3 +509,70 @@ extract_view_count = lambda X_L: len(X_L['view_state'])
 extract_cluster_count = lambda view_state_i: view_state_i['row_partition_model']['counts']
 extract_cluster_counts = lambda X_L: map(extract_cluster_count, X_L['view_state'])
 get_state_shape = lambda X_L: (extract_view_count(X_L), extract_cluster_counts(X_L))
+
+def is_key_eligible(x):
+    """
+	A column is eligible to be the table key if:
+	All values are unique, AND
+    can't be cast to float (a string key) OR string representation of all values matches the
+    string representation of its int value
+    """
+    values_unique = len(x) == len(set(x))
+    castable = not get_can_cast_to_float(x) or get_int_equals_str(x)
+    return values_unique and castable
+
+def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, accept=False):
+    """
+    This function takes the raw data, colnames, and data types from an input CSV file from
+    which a btable is being created.
+
+    It looks for every column that's eligible to be a table key, and prompts the user to select one,
+    or create a new key. If no eligible key is found, a new one is created by default.
+
+    That way a btable can't be created without a key column.
+    """
+    T_df = pandas.DataFrame(data=raw_T_full, columns=colnames_full)
+    eligibility = T_df.apply(is_key_eligible)
+
+    key_eligibles = list(eligibility[eligibility].index)
+    key_eligibles_len = len(key_eligibles)
+    if key_eligibles_len == 0 and key_column is None:
+        if not accept:
+            print "None of the columns in this table is eligible to be the key. A key column will be created. Press Enter to continue."
+            user_confirmation = raw_input()
+        key_column_selection = 0
+    elif key_column is None or key_column not in range(key_eligibles_len + 1):
+        key_column_selection = None
+        pt = prettytable.PrettyTable()
+        pt.field_names = ['choice', 'key column']
+        pt.add_row([0, '<Create key column>'])
+        for index, key_eligible in enumerate(key_eligibles):
+            pt.add_row([index + 1, key_eligible])
+        while key_column_selection is None:
+            print str(pt)
+            print "Please select which column you would like to set as the table key:"
+            user_selection = int(raw_input())
+            if user_selection in range(key_eligibles_len + 1):
+                key_column_selection = user_selection
+    else:
+        key_column_selection = key_column
+
+    # 0 always means insert a new key column.
+    if key_column_selection == 0:
+        raw_T_full, colnames_full, cctypes_full, key_column = insert_key_column(T_df, colnames_full, cctypes_full)
+    else:
+        key_column = key_eligibles[key_column_selection - 1]
+        cctypes_full[colnames_full.index(key_column)] = 'key'
+
+    return raw_T_full, colnames_full, cctypes_full
+
+def insert_key_column(T_df, colnames_full, cctypes_full):
+    """
+    Create a new table key column. It'll be the left-most column and an ascending integer column,
+    with name 'key' and cctype 'key'.
+    """
+    T_df.insert(0, 'key', map(str, range(T_df.shape[0])))
+    raw_T_full = T_df.to_records(index=False)
+    colnames_full.insert(0, 'key')
+    cctypes_full.insert(0, 'key')
+    return raw_T_full, colnames_full, cctypes_full, 'key'
