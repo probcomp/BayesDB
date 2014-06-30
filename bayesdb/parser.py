@@ -649,6 +649,10 @@ class Parser(object):
 #####################################################################################
     def get_args_pred_prob(self, function_group, M_c):
         """
+        :param function_group pyparsing.ParseResults:
+        :param M_c: 
+        :return c_idx: column index
+        :rtype int:
         returns the column index from a predictive probability function
         raises exceptions for unfound columns
         """
@@ -663,6 +667,7 @@ class Parser(object):
 
     def get_args_prob(self,function_group, M_c):
         """
+        :param function_group: 
         Returns column_index, value from a probability function
         raises exception for unfound columns
         """
