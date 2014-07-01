@@ -207,9 +207,9 @@ def run_experiment(argin):
         for i in range(0,num_iters+1):
             if i > 0:
                 if ct_kernel == 1:
-                    client( 'ANALYZE %s FOR 1 ITERATIONS WITH MH KERNEL;' % table )
+                    client( 'ANALYZE %s FOR 1 ITERATIONS WITH MH KERNEL WAIT;' % table )
                 else:
-                    client( 'ANALYZE %s FOR 1 ITERATIONS;' % table )
+                    client( 'ANALYZE %s FOR 1 ITERATIONS WAIT;' % table )
 
             for q in range(num_queries):
                 query = queries[q]

@@ -64,9 +64,9 @@ def gen_base_queries(num_iters, num_chains, num_rows, shape, ct_kernel):
     cmd_list.append('INITIALIZE %i MODELS FOR %s;' % (num_chains, table) )
     # analyze the data
     if ct_kernel == 1:
-        cmd_list.append('ANALYZE %s FOR %i ITERATIONS WITH MH KERNEL;' % (table, num_iters) )
+        cmd_list.append('ANALYZE %s FOR %i ITERATIONS WITH MH KERNEL WAIT;' % (table, num_iters) )
     else:
-        cmd_list.append('ANALYZE %s FOR %i ITERATIONS;' % (table, num_iters) )
+        cmd_list.append('ANALYZE %s FOR %i ITERATIONS WAIT;' % (table, num_iters) )
     # simulate new data
     
 
@@ -149,7 +149,7 @@ def gen_parser():
     parser.add_argument('--num_rows', default=500, type=int)
     parser.add_argument('--num_iters', default=200, type=int)
     parser.add_argument('--num_chains', default=1, type=int)
-    parser.add_argument('--ct_kernel', default=0, type=int)
+    parser.add_argument('--ct_kernel', default=0, type=int)     # 0 for Gibbs, 1 for MH
     parser.add_argument('--no_plots', action='store_true')
 
     return parser
