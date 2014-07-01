@@ -50,6 +50,7 @@ categorical_keyword = CaselessKeyword("categorical")
 numerical_keyword = CaselessKeyword("numerical")
 continuous_keyword = CaselessKeyword("continuous")
 multinomial_keyword = CaselessKeyword("multinomial")
+cyclic_keyword = CaselessKeyword("cyclic")
 ignore_keyword = CaselessKeyword("ignore")
 key_keyword = CaselessKeyword("key")
 wait_keyword = CaselessKeyword("wait")
@@ -265,7 +266,7 @@ filename = (QuotedString('"', escChar='\\') |
 label = (QuotedString('"', escChar='\\') | 
          QuotedString("'", escChar='\\') | 
          Word(printables, excludeChars=',;'))
-data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword
+data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword | cyclic_keyword
 
 ###################################################################################
 # ------------------------------------ Functions -------------------------------- #

@@ -550,20 +550,19 @@ class Engine(object):
       kernel_list = () # default kernel list
 
 
-    if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
-      raise utils.BayesDBError("%s is already being analzyed. Try using 'SHOW ANALYZE FOR %s' to get more information, or 'CANCEL ANALYZE FOR %s' to cancel the ANALYZE.")
-      
-
-    # Start analyze thread.
-    t = AnalyzeMaster(args=(tablename, modelids, kernel_list, iterations,
-                            seconds, M_c, T, models, background, self))
-    self.analyze_threads[tablename] = t
-    t.start()
-
     if not background:
-      t.join()
+      am = AnalyzeMaster(None)
+      am.analyze_master(tablename, modelids, kernel_list, iterations, seconds, M_c, T, models, background, self)
       return dict(message="Analyze complete.")
     else:
+      # Start analyze thread.
+      if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
+        raise utils.BayesDBError("%s is already being analzyed. Try using 'SHOW ANALYZE FOR %s' to get more information, or 'CANCEL ANALYZE FOR %s' to cancel the ANALYZE.")
+      t = AnalyzeMaster(args=(tablename, modelids, kernel_list, iterations,
+                              seconds, M_c, T, models, background, self))
+      self.analyze_threads[tablename] = t
+      t.start()
+      # TODO: how to remove when done?
       return dict(message="Analyzing %s: models will be updated in the background." % tablename)
 
   def show_analyze(self, tablename):
@@ -640,7 +639,7 @@ class Engine(object):
     if order_by == False:
       order_by = []
     else:
-      order_by = self.parser.parse_order_by_clause(order_by, M_c, T, M_c_full, column_lists)
+      order_by = self.parser.parse_order_by_clause(order_by, M_c, T, column_lists)
 
     # Fill in individual impute confs with impute_confidence if they're None and impute_confidence isn't:
     if impute_confidence is not None:
@@ -722,22 +721,18 @@ class Engine(object):
           if row[order_by_idxs[o_idx]] is not None:
             score = row[order_by_idxs[o_idx]]
           else:
-            if f != funcs._column_ignore:
-              score = f(args, row_id, row, M_c, X_L_list, X_D_list, T, self, numsamples)
-            else:
-              score = f(args, row_id, row, M_c_full, T_full, self)
+            score = f(args, row_id, row, M_c, X_L_list, X_D_list, T, self, numsamples)
             # Save value, if it will be displayed in output.
             if order_by_idxs[o_idx] < query_size:
               row[order_by_idxs[o_idx]] = score
             
           if desc:
-            if data_utils.get_can_cast_to_float([score]):
-              score = float(score)
             score *= -1
           scores.append(score)
         scored_data_tuples.append((tuple(scores), (row_id, row)))
       scored_data_tuples.sort(key=lambda tup: tup[0], reverse=False)
       data_tuples = [(tup[1][0], tup[1][1][:query_size]) for tup in scored_data_tuples]
+
 
     ## Now, apply the limit and compute the queried columns.
     
