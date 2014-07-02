@@ -210,8 +210,7 @@ def test_simple_functions():
 
     assert show_for_btable_statement.parseString("SHOW COLUMN LISTS FOR table_1",parseAll=True).btable == 'table_1'
     assert show_for_btable_statement.parseString("SHOW COLUMNS LIST FOR table_1",parseAll=True).statement_id == 'show_column_lists'
-    assert show_for_btable_statement.parseString("SHOW COLUMNS FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_for_btable_statement.parseString("SHOW column FOR table_1",parseAll=True).statement_id == 'show_columns'
+    assert show_columns_function.parseString("SHOW COLUMNS asdf FOR table_1",parseAll=True).column_list == 'asdf'
     assert show_for_btable_statement.parseString("SHOW ROW LISTS FOR table_1",parseAll=True).statement_id == 'show_row_lists'
     assert show_for_btable_statement.parseString("SHOW ROW list FOR table_1",parseAll=True).btable == 'table_1'
     assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load_models'
@@ -837,7 +836,7 @@ def test_master_query_for_parse_errors():
                   "SHOW SCHEMA FOR table_1",
                   "SHOW DIAGNOSTICS FOR table_1",
                   "SHOW COLUMN LISTS FOR table_1",
-                  "SHOW COLUMNS FOR table_1",
+                  "SHOW COLUMNS collist FOR table_1",
                   "LOAD MODELS ~/filename.csv INTO table_1",
                   "SAVE MODEL FROM table_1 to filename.pkl.gz",
                   "DROP BTABLE table_1",

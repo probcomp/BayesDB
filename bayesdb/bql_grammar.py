@@ -298,7 +298,7 @@ label_columns_for_function = (label_columns_for_keyword + btable +
 
 # SHOW COLUMNS <column_list> FOR <btable>
 show_columns_function = (show_columns_keyword +
-                         Group(identifier | all_column_literal).setResultsName('column_list') +
+                         Optional(identifier.setResultsName('column_list')) +
                          for_keyword +
                          btable)
 
