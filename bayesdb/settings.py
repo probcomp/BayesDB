@@ -38,7 +38,6 @@ class path():
     install_ubuntu_script = os.path.join(install_script_dir,
                                          'install_ubuntu_packages.sh')
     install_boost_script = os.path.join(install_script_dir, 'install_boost.sh')
-    postgres_setup_script = os.path.join(install_script_dir, 'postgres_setup.sh')
     virtualenv_setup_script = os.path.join(install_script_dir,
                                            'virtualenv_setup.sh')
     run_server_script = os.path.join(this_repo_dir, 'run_server.sh')

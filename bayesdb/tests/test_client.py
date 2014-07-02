@@ -523,10 +523,11 @@ def test_update_schema():
   assert (out['datatype'][out['column'] == 'name'] == 'key').all()
   assert (out['datatype'][out['column'] == 'ami_score'] == 'multinomial').all()
 
-  # Selecting qual_score should still work even after it's ignored, also should work in where statements
+  # Selecting qual_score should still work even after it's ignored, also should work in where clauses and order by clauses
   client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
-  out = client('select name, qual_score from %s where qual_score > 90' % (test_tablename), debug=True, pretty=False)[0]
+  out = client('select name, qual_score, ami_score from %s where qual_score > 90 order by qual_score' % (test_tablename), debug=True, pretty=False)[0]
   assert (out['qual_score'] > 90).all()
+  assert (out['qual_score'] == out['qual_score'].order(ascending=False)).all()
 
   # Also test where clause with ignored text column
   client('update schema for %s set name = ignore' % (test_tablename), debug=True, pretty=False)

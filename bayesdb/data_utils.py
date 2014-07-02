@@ -317,7 +317,7 @@ def convert_code_to_value(M_c, cidx, code):
     """
     if numpy.isnan(code) or code=='nan':
         return code
-    if M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
+    elif M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
         return float(code)
     else:
         try:
