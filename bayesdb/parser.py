@@ -218,7 +218,7 @@ class Parser(object):
         :param bql_statement_ast pyparsing.ParseResults:
         :return ('show_columns', args_dict, None):
         """
-        return 'show_columns', dict(tablename=bql_statement_ast.btable), None
+        return 'show_columns', dict(tablename=bql_statement_ast.btable, column_list=bql_statement_ast.column_list[0]), None
 
     def parse_save_models(self,bql_statement_ast):
         """
@@ -564,6 +564,43 @@ class Parser(object):
                  whereclause=whereclause, limit=limit, numsamples=numsamples,
                  order_by=order_by, name=name, modelids=modelids), \
             None
+
+    def parse_create_column_list(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('create_column_list', args_dict, client_dict):
+        """
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        functions = args_dict['functions']
+        name = args_dict['name']
+        tablename = args_dict['tablename']
+
+        assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS not allowed in create column list."
+        assert args_dict['confidence'] == None, "BayesDBParsingError: WITH CONFIDENCE not allowed in create column list."
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in create column list."
+        assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in create column list."
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in create column list."
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR COLUMNS not allowed in create column list."
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR ROWS not allowed in create column list."
+        assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in create column list."
+        assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in estimated columns."
+        assert args_dict['freq'] == False, "BayesDBParsingError: FREQ not allowed in estimated columns."
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CLUSTERS not allowed in create column list."
+        assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in create column list."
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: NUMSAMPLES not allowed in create column list."
+        assert args_dict['modelids'] == None, "BayesDBParsingError: USING MODELS not allowed in create column list."
+        assert args_dict['order_by'] == False, "BayesDBParsingError: ORDER BY not allowed in create column list."
+        assert args_dict['limit'] == float('inf'), "BayesDBParsingError: LIMIT not allowed in create column list."
+        assert args_dict['whereclause'] == None, "BayesDBParsingError: WHERE not allowed in create column list."        
+
+        assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in create column list."
+        assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in create column list."
+        assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in create column list."
+        assert client_dict['filename'] == None, "BayesDBParsingError: AS FILE not allowed in create column list."
+
+        return 'create_column_list', \
+            dict(tablename=tablename, functions=functions, name=name), None
+
 
     def parse_estimate_pairwise_row(self,bql_statement_ast):
         """

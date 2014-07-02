@@ -91,6 +91,8 @@ class Engine(object):
     help_methods = dict()
     help_methods['create'] = """
     CREATE BTABLE <btable> FROM <filename.csv>
+
+    CREATE COLUMN LIST <col1>[, <col2>...] FROM <btable> AS <column_list>
     """
 
     help_methods['select']="""
@@ -139,7 +141,7 @@ class Engine(object):
 
     SHOW COLUMN LISTS FOR <btable>
 
-    SHOW COLUMNS FOR <column_list|btable>
+    SHOW COLUMNS <column_list> FOR <btable>
 
     SHOW ROW LISTS FOR <table>
 
@@ -907,8 +909,23 @@ class Engine(object):
     import crosscat.utils.plot_utils
     crosscat.utils.plot_utils.plot_views(numpy.array(T), X_D_list[modelid], X_L_list[modelid], M_c, filename)
 
-  def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None, numsamples=None):
+  def create_column_list(self, tablename, functions, name):
+    """
+    Create the column list with the specified column names (functions).
+    """
+    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    column_lists = self.persistence_layer.get_column_lists(tablename)
+    queries, column_names = self.parser.parse_functions(functions, M_c, T, M_c, column_lists)
+    assert column_names.pop(0) == 'row_id'
 
+    # save column list, if given a name to save as
+    if name:
+      self.persistence_layer.add_column_list(tablename, name, column_names)
+
+    return dict(columns=column_names)
+
+
+  def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None, numsamples=None):
     """
     Return all the column names from the specified table as a list.
     First, columns are filtered based on whether they match the whereclause.
