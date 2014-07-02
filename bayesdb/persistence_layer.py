@@ -486,7 +486,11 @@ class PersistenceLayer():
 
     def get_key_column_name(self, tablename):
         metadata_full = self.get_metadata_full(tablename)
-        key_column_index = metadata_full['cctypes_full'].index('key')
+        try: 
+            key_column_index = metadata_full['cctypes_full'].index('key')
+        except ValueError as e:
+            print "If your btable was created with an older version of BayesDB, it might not have a default key column."
+            key_column_index = metadata_full['cctypes_full'].index('key')
         key_column_name = metadata_full['M_c_full']['idx_to_name'][str(key_column_index)]
         return key_column_name            
 
