@@ -69,6 +69,7 @@ def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, 
   for c_idx in column_indices:
     ## Apply each function to each cidx to get a #functions-length tuple of scores.
     scores = []
+    raw_scores = []
     for (f, f_args, desc) in function_list:
 
       # mutual_info, correlation, and dep_prob all take args=(i,j)
@@ -80,13 +81,14 @@ def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, 
         f_args = c_idx
         
       score = f(f_args, None, None, M_c, X_L_list, X_D_list, T, engine, numsamples)
+      raw_scores.append(score)
       if desc:
         score *= -1
       scores.append(score)
-    scored_column_indices.append((tuple(scores), c_idx))
+    scored_column_indices.append((tuple(scores), c_idx, tuple(raw_scores)))
   scored_column_indices.sort(key=lambda tup: tup[0], reverse=False)
 
-  return [tup for tup in scored_column_indices]
+  return [(raw_scores, c_idx) for (scores, c_idx, raw_scores) in scored_column_indices]
 
 def function_description(order_item, M_c):
   function_names = {'_col_typicality': 'typicality',

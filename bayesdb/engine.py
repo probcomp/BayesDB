@@ -948,7 +948,6 @@ class Engine(object):
     
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    ##TODO deprecate functions in args
     column_indices = list(M_c['name_to_idx'].values())
     
     ## filter based on where clause
@@ -968,6 +967,7 @@ class Engine(object):
 
     # Get tuples of column estimation function values and column indices
     column_idx_tups = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self, numsamples)
+    # tuple contains: (tuple(scores), cidx)
     
     # limit
     if limit != float('inf'):
@@ -977,6 +977,7 @@ class Engine(object):
     column_names = []
     column_data = []
 
+    # column_data should be a list of the data values
     for column_idx_tup in column_idx_tups:
       if type(column_idx_tup) == int:
         column_idx_tup = ((), column_idx_tup)
