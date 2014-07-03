@@ -241,11 +241,26 @@ def test_analyze():
 
   for it in (1,2):
     engine.analyze(test_tablename, model_indices='all', iterations=1, background=False)
+    analyze_results = engine.show_analyze(test_tablename)
+    assert 'not currently being analyzed' in analyze_results['message']
     model_ids = engine.persistence_layer.get_model_ids(test_tablename)
     assert sorted(model_ids) == range(num_models)
     for i in range(num_models):
       model = engine.persistence_layer.get_models(test_tablename, i)
       assert model['iterations'] == it
+
+  for it in (1,2):
+    engine.analyze(test_tablename, model_indices='all', iterations=1, background=True)
+    import time; time.sleep(5)
+    
+    analyze_results = engine.show_analyze(test_tablename)
+    assert 'not currently being analyzed' in analyze_results['message']
+    model_ids = engine.persistence_layer.get_model_ids(test_tablename)
+    assert sorted(model_ids) == range(num_models)
+    for i in range(num_models):
+      model = engine.persistence_layer.get_models(test_tablename, i)
+      assert model['iterations'] == it
+      
 
 def test_nan_handling():
   test_tablename1, _ = create_dha(path='data/dha_missing.csv') 
