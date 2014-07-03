@@ -619,7 +619,7 @@ class Engine(object):
       aggregate specifies whether that individual function is aggregate or not
 
     queries: [(func, f_args, aggregate)]
-    order_by: [(function, f_args, expr, val)]
+    order_by: [(func, f_args, desc)]
     where_conditions: [(func, f_args, op, val)]
     
     """
@@ -948,54 +948,75 @@ class Engine(object):
     
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
-    ##TODO deprecate functions in args
     column_indices = list(M_c['name_to_idx'].values())
+
+    # Store the names of each of the functions in the where or order by, to be displayed in output.    
+    func_descriptions = []
     
     ## filter based on where clause
     where_conditions = self.parser.parse_column_whereclause(whereclause, M_c, T)
     if where_conditions is not None and len(X_L_list) == 0:
       raise utils.BayesDBNoModelsError(tablename)      
-    column_indices = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self, numsamples)
+    column_indices_and_data = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self, numsamples)
+    func_descriptions += [estimate_columns_utils.function_description(where_item[0][0], where_item[0][1], M_c) for where_item in where_conditions]
     
     ## order
     if order_by and len(X_L_list) == 0:
       raise utils.BayesDBNoModelsError(tablename)      
     if order_by != False:
       order_by = self.parser.parse_column_order_by_clause(order_by, M_c)
-      order_func_descriptions = [estimate_columns_utils.function_description(order_item, M_c) for order_item in order_by]
-    else:
-      order_func_descriptions = []
+      func_descriptions += [estimate_columns_utils.function_description(order_item[0], order_item[1], M_c) for order_item in order_by]
 
     # Get tuples of column estimation function values and column indices
-    column_idx_tups = estimate_columns_utils.order_columns(column_indices, order_by, M_c, X_L_list, X_D_list, T, self, numsamples)
+    ordered_tuples = estimate_columns_utils.order_columns(column_indices_and_data, order_by, M_c, X_L_list, X_D_list, T, self, numsamples)
+    # tuple contains: (tuple(data), cidx)
     
     # limit
     if limit != float('inf'):
-      column_idx_tups = column_idx_tups[:limit]
+      ordered_tuples = ordered_tuples[:limit]
 
     # convert indices to names and create data list of column names and associated function values
     column_names = []
     column_data = []
 
-    for column_idx_tup in column_idx_tups:
-      if type(column_idx_tup) == int:
-        column_idx_tup = ((), column_idx_tup)
-      column_name_temp = M_c['idx_to_name'][str(column_idx_tup[1])]
-      column_names.append(column_name_temp)
+    # column_data should be a list of the data values
+    for ordered_tuple in ordered_tuples:
+      if type(ordered_tuple) == int:
+        # 
+        ordered_tuple = ((), column_idx_tup)
+      column_name_temp = M_c['idx_to_name'][str(ordered_tuple[1])]
+      column_names.append(column_name_temp)      
 
+      # Get the values of the functions that were used in where and order by
       column_data_temp = [column_name_temp]
-      column_data_temp.extend(column_idx_tup[0])
-
+      column_data_temp.extend(ordered_tuple[0])
       column_data.append(column_data_temp)
 
     # save column list, if given a name to save as
     if name:
       self.persistence_layer.add_column_list(tablename, name, column_names)
 
+    # De-duplicate values, if the same function was used in where and order by
+    used_names = set()
+    indices_to_pop = []
+    func_descriptions.insert(0, 'column')
+    for i, name in enumerate(func_descriptions):
+      if name not in used_names:
+        used_names.add(name)
+      else:
+        indices_to_pop.append(i)
+    indices_to_pop.sort(reverse=True) # put highest indices first, so popping them doesn't affect others
+    for i in indices_to_pop:
+      func_descriptions.pop(i)
+    for column_data_list in column_data:
+      for i in indices_to_pop:
+        column_data_list.pop(i)
+
+
     # Create column names ('column' followed by a string describing each function)
-    ret = {'columns': ['column']}
+    ret = dict()
     if column_data != []:
-      ret['columns'].extend(order_func_descriptions)
+      ret['columns'] = func_descriptions
       ret['data'] = column_data
 
     return ret
