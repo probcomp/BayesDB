@@ -1145,6 +1145,8 @@ class AnalyzeMaster(StoppableThread):
     super(AnalyzeMaster, self).__init__(target=self.target, args=args)
 
   def get_info(self):
+    if not hasattr(self, 'start_time'):
+      return "Analyze hasn't started"
     elapsed_seconds = time.time() - self.start_time    
     if self.requested_iterations is None:
       # User specified time constraint
