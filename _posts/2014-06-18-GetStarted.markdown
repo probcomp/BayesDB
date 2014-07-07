@@ -14,12 +14,12 @@ BayesDB uses [CrossCat](https://github.com/mit-probabilistic-computing-project/c
 Clone BayesDB from [Github](www.github.com). 
 
     $ git clone https://github.com/mit-probabilistic-computing-project/BayesDB.git
-		
+
 ###Install
     $ cd BayesDB
     $ sudo python setup.py install
-	
-Alternatively, you can avoid install BayesDB to your system python
+
+Alternatively, you can avoid the need to install BayesDB to your system python
 
     $ sudo python setup.py develop
 	
@@ -40,4 +40,4 @@ Now we'll create a table, load in some models and start exploring the data.
 	>>> client('LOAD MODEL dha_models.pkl.gz INTO dha;')
 	>>> client('ESTIMATE PAIRWISE DEPENDENCE PROBABILIY FROM dha SAVE TO dha_z.png;')
 	
-You've just created a Z matrix, which shows you the dependence between each pair of columns, and saved it to `dha_z.png`.
+You've just created a dependence probability matrix, which shows you the probability of dependence between each pair of columns, and saved it to `dha_z.png`.

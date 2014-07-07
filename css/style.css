@@ -22,18 +22,41 @@ table td{
 	padding-right: 1em;
 }
 
+blockquote{
+	border-left: 5px solid #ccc;
+	padding-left: 1em;
+}
+
+blockquote p{
+	font-style: italic;
+	font-size: 1em;
+	color:#444;
+}
+
+
+.divlink-span{
+	position:absolute; 
+	width:100%;
+	height:100%;
+	top:0;
+	left: 0;
+
+	z-index: 10;
+
+	background-image: url('empty.gif');
+}
+
 #mobile-button{
 	position:fixed;
 	background-color: #555;
 	top:0;
-	/* left: 200px; */
 	left: 0px;
 	height:30px;
 	width: 50px;
 	text-align: center;
 	padding-top:1em;
 	color: #ccc;
-	z-index:10;
+	z-index:100;
 	display: none;
 	box-shadow: 0px 0px 10px rgba(47,47,47,.7);
 	cursor: pointer;
@@ -58,7 +81,7 @@ table td{
 	top:0;
 	left: 0;
 	bottom:0;
-	z-index: 2;
+	z-index: 100;
 	width: 220px;
 	left: -220px;
 	display: none;
@@ -70,18 +93,18 @@ table td{
 	box-shadow: 0px 0px 10px rgba(47,47,47,.7);
 	background-color:#333;
 }
-#mobile-sidebar p:hover{color:#eee}
+#mobile-sidebar p:hover{color:#eee;}
 #mobile-sidebar .bax-menu-heading{padding:1em 0em .25em 1em;}
 #mobile-sidebar a{ 
 	font-size:95%;
 	display: block; 
 	font-family: raleway, 'helvetica neue', sans-serif;
-	color:#bbb;
+	color:#ddd;
 	line-height: 1;
 	padding:.75em 1em;
 }
 #mobile-sidebar a:hover{
-	color:#eee;
+	color:#fff;
 	background-color: #444;
 }
 
@@ -103,13 +126,17 @@ table td{
 	display:inline-block;
 }
 
-#nav-bow a{ color: inherit; display:block;}
+#nav-bow a{ 
+	color: inherit; 
+	display:block; 
+	/*text-shadow:1px 1px 1px rgba(0,0,0,.25);*/
+}
 #nav-bow a:hover{ color: inherit; }
 
 #footer{ 
 	margin: 5em 0; 
 	padding:1em;
-	}
+}
 #footer p{font-size: 75%;}
 #footer a{ color: inherit; font-weight: bold; }
 #footer a:hover{ color: #333; }
@@ -137,6 +164,7 @@ code{
 pre code{
 	background-color: #F8F8F8;
 	border: none;
+	line-height: 1.5;
 }
 
 html{
@@ -161,17 +189,56 @@ div.layout{
 div.header{
 	width:100%;
 	margin:0;
-/*
-	background-image: url(../assets/images/manul_2.jpg);
+}
+
+div.post-header{
+	overflow: hidden;
+	position: relative;
+	width:100%;
+	margin:0;
+}
+div.post-bkg{
+	position: absolute;
+	left: 0;
+	top: 0;
+	z-index: 1;
+
+	display: block;
+	width:100%;
+	height: 100%;
 	background-size: cover;
 	background-attachment: scroll;
 	background-position: center center;
-*/
+
+	opacity:.1;
 }
-div.header-screen{
+
+div.post-header:hover div.post-bkg{
+	-webkit-filter: blur(5px);
+	-moz-filter: blur(5px);
+	-o-filter: blur(5px);
+	-ms-filter: blur(5px);
+	filter: blur(5px);
+}
+
+div.header-screen-white{
+	position: relative;
+	z-index: 2;
 	width:100%;
 	margin:0;
-/* 	background-color: rgba(255,255,255,.8); */
+
+}
+
+div.post-header:hover div.header-screen-white{
+	background-color: rgba(255,255,255,.2);
+}
+
+div.header-screen-black{
+	position: relative;
+	z-index: 2;
+	width:100%;
+	margin:0;
+ 	background-color: rgba(0,0,0,.8); 
 }
 
 div.header-titles{
@@ -184,14 +251,30 @@ div.header-titles{
 	overflow: hidden;
 }
 
-div.default-header-titles{
-	
-	max-width:960px;
+div.post-titles{
+	position: relative;
+	z-index: 3;
+	max-width:900px;
+	padding: 1em;
 	margin:0;
-	margin-top: 1em;
 	margin-left:auto;
 	margin-right:auto;
+}
+
+div.header-titles{
+	max-width:700px;
 	padding:1em;
+	overflow: hidden;
+}
+
+div.default-header-titles{
+	
+	/*max-width:960px;*/
+	margin:0;
+	/*margin-top: 1em;*/
+	margin-left:auto;
+	margin-right:auto;
+	padding:2em;
 	overflow: hidden;
 }
 
@@ -204,6 +287,10 @@ div.header-titles h1{
 	font-weight: 200;
 }
 
+div.post-header a{
+	display: block;
+}
+
 div.header-titles h2{
 	margin:.2em;
 	text-align: center;
@@ -212,6 +299,35 @@ div.header-titles h2{
 	color: #555;
 	font-weight: 200;
 	line-height: 1.8em;
+}
+
+div.post-titles h1{
+	text-align: center;
+	font-family: raleway,'helvetica neue',sans-serif;
+	font-size: 250%;
+	/*color: #1F8DD6;*/
+	color:white;
+	/*margin:.5em;*/
+	padding: .5em .5em 0 .5em;
+	font-weight: 200;
+	text-shadow:1px 1px 1px rgba(0,0,0,.25);
+}
+
+div.post-titles h2{
+	margin:.2em;
+	text-align: center;
+	font-family: raleway,'helvetica neue',sans-serif;
+	font-size: 150%;
+	/*color: #555;*/
+	color: white;
+	font-weight: 200;
+	line-height: 1.8em;
+	padding: 0em .75em 0 .75em;
+	text-shadow:1px 1px 1px rgba(0,0,0,.25);
+}
+
+div.post-titles p{
+	padding: 1em 1em 2em 1em;
 }
 
 div.code-ribbon pre{
@@ -254,6 +370,8 @@ div.l-box-nb{
 }
 
 #nav-bow{
+	position:relative;
+	z-index:10;
 	width:100%;
 	margin: 0;
 	padding:0;

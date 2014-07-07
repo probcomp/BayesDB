@@ -1,0 +1,203 @@
+---
+title: The General Social Survey (2012)
+tagline: Are homeowners really better citizens?
+image: /cs_dha/gss_header.jpg
+layout: default
+---
+
+According to economics research, homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities (or so it was in 1999 \[1\]). For this reason, homeowners have been labeled better citizens \[1,2\]. Rather than looking singly as social capital measures we shall use the General Social Survey and BayesDB to explore home-ownership's relationship with moral and criminal variables.
+
+<!-- The General Social Survey (GSS) is a collection of demographic data as well as data on the social, moral, and political attitudes of Americans. -->
+
+We've already created a btable, `gss_pared`, from a subset of the full GSS dataset and analyzed the data.
+
+## Has anything changed since 1999 \[1\]?
+
+First we'll check whether the homeowners of 2012, like their predecessors, are more likely to vote than renters. Since we're using the 2012 GSS we'll summarize the `vote08` variable (whether the respondent voted in the 2008 presidential election).
+
+First, for homeowners (`dwelown=1`),
+
+    PLOT SELECT vote08 FROM gss_pared where dwelown=1 SAVE TO votedwel_1.png;
+
+<!-- |            |      vote08     |
+|    type    |   multinomial   |
+|   count    |       800       |
+|   unique   |        3        |
+|   mode1    |        1        |
+|   mode2    |        2        |
+|   mode3    |        3        |
+| prob_mode1 |  0.752475247525 |
+| prob_mode2 |  0.180693069307 |
+| prob_mode3 | 0.0569306930693 | -->
+
+![Vote variable plotted for homeowners]({{ site.baseurl }}/assets/images/cs_gss/votedwel_1.png)
+
+and second, for renters (`dwelown=2`)
+
+    PLOT SELECT vote08 FROM gss_pared where dwelown=2 SAVE TO votedwel_2.png;
+
+<!-- |            |     vote08     |
+|    type    |  multinomial   |
+|   count    |      466       |
+|   unique   |       3        |
+|   mode1    |       1        |
+|   mode2    |       2        |
+|   mode3    |       3        |
+| prob_mode1 | 0.501057082452 |
+| prob_mode2 | 0.353065539112 |
+| prob_mode3 | 0.131078224101 | -->
+
+![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/votedwel_2.png)
+
+We are looking at the value 1: did vote. We see that 75% of homeowners voted while 50% of renters voted.
+
+<!-- Also noted in \[1\]was homeowners' greater propensity to own firearms
+
+    PLOT SELECT owngun FROM gss_pared where dwelown=1;
+
+|            |      owngun     |
+
+|    type    |   multinomial   |
+|   count    |       396       |
+|   unique   |        3        |
+|   mode1    |        2        |
+|   mode2    |        1        |
+|   mode3    |        3        |
+| prob_mode1 |  0.258663366337 |
+| prob_mode2 |  0.220297029703 |
+| prob_mode3 | 0.0111386138614 |
+
+    PLOT SELECT owngun FROM gss_pared where dwelown=2;
+
+|            |      owngun      |
+
+|    type    |   multinomial    |
+|   count    |       230        |
+|   unique   |        3         |
+|   mode1    |        2         |
+|   mode2    |        1         |
+|   mode3    |        3         |
+| prob_mode1 |  0.38689217759   |
+| prob_mode2 |  0.093023255814  |
+| prob_mode3 | 0.00634249471459 |
+
+Here, note that mode2 is 1 which is 'owns a firearm'. 22% of homewoners own a firearm while do 9% of renters. Overall, gun ownership has dropped since the 1999 study during which 52% of homeowners and 26% of renters owned guns. -->
+
+## Are homeowners less likely to have been arrested
+
+There's more to being a good citizen than voting and exercising one's second amendment rights. We shall quickly check whether there is a relationship between homeownership and respondents' having been arrested (`arrest`), convicted of a crime (`convictd`), or crack-cocaine use (`evcrack`).
+
+First, arrests:
+
+    SELECT DEPENDENCE PROBABILITY OF dwelown WITH arrest FROM gss_pared LIMIT 1;
+
+| row_id | dependence probability of dwelown with arrest |
+|--------|-----------------------------------------------|
+|   0    |                 0.166666666667                |
+
+next, convictions:
+
+    SELECT DEPENDENCE PROBABILITY OF dwelown WITH convictd FROM gss_pared LIMIT 1;
+
+| row_id | dependence probability of dwelown with convictd |
+|--------|-------------------------------------------------|
+|   0    |                  0.104166666667                 |
+
+and finally, crack-cocaine use:
+
+    SELECT DEPENDENCE PROBABILITY OF dwelown WITH evcrack FROM gss_pared LIMIT 1;
+
+| row_id | dependence probability of dwelown with evcrack |
+|--------|------------------------------------------------|
+|   0    |                     0.1875                     |
+
+The probability of dependence in each case is fairly low.
+
+
+## Which variables are related to homeownership?
+
+One of the best things about BayesDB is that we don't have to take shots in the dark. It tells us which variables are most likely related so we don't have to guess which variables modulate others. Let's ask bayesDB which variables most likely share a relationship with homeownership.
+
+    ESTIMATE COLUMNS FROM gss_pared ORDER BY DEPENDENCE PROBABILITY WITH dwelown LIMIT 10;
+
+|  column  | desc dependence probability with dwelown |
+|----------|------------------------------------------|
+| dwelown  |                   1.0                    |
+|  rplace  |             0.833333333333               |
+|  relhh2  |                 0.8125                   |
+| relate2  |                 0.8125                   |
+| posslqy  |                 0.8125                   |
+|  relsp1  |                 0.8125                   |
+|  condom  |             0.791666666667               |
+| evstray  |             0.791666666667               |
+| gender2  |             0.791666666667               |
+| marital  |             0.791666666667               |
+
+
+We see that a respondent's homeownership status is related to his/her household status (head of household, etc \[`rplace`\]) relation to the other members of the household (`relhh2`, `relate2`, `relsp1`), relationship status (`posslqy`, `marital`), condom useage (`condom`), and...marital fidelity (`evstray`).
+
+From the GSS code book the `evstay` survey question asks:
+
+>Have you ever had sex with someone other than your husband or wife while you were married?
+
+Let's take a closer look at `evstray`. We are concerned with yes (1), no (2), and never married (3) responses.
+
+    PLOT SELECT evstray FROM gss_pared where dwelown=1 SAVE TO straydwel_1.png;
+
+![marital fidelity variable plotted for homeowners]({{ site.baseurl }}/assets/images/cs_gss/straydwel_1.png)
+
+<!-- |            |    evstray     |
+
+|    type    |  multinomial   |
+|   count    |      692       |
+|   unique   |       3        |
+|   mode1    |       2        |
+|   mode2    |       3        |
+|   mode3    |       1        |
+| prob_mode1 | 0.581683168317 |
+| prob_mode2 | 0.17202970297  |
+| prob_mode3 | 0.102722772277 | -->
+
+    PLOT SELECT evstray FROM gss_pared where dwelown=2 SAVE TO straydwel_2.png;
+
+![marital fidelity variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/straydwel_2.png)
+
+<!-- |            |     evstray     |
+
+|    type    |   multinomial   |
+|   count    |       409       |
+|   unique   |        3        |
+|   mode1    |        3        |
+|   mode2    |        2        |
+|   mode3    |        1        |
+| prob_mode1 |  0.399577167019 |
+| prob_mode2 |  0.365750528541 |
+| prob_mode3 | 0.0993657505285 |
+ -->
+It seems there is nothing sinister here; the relationship appears to be driven mainly by the difference in marital status (notice the difference in mode1: `evstray=3` \[never married\]), which is sensible given that marital status is related to homeownership. We can ask BayesDB to generate a set of plots showing the relationship between marital status (`marital`), fidelity, and home ownership.
+
+    PLOT SELECT evstray, dwelown, marital FROM gss_pared SAVE TO stray_dewel_mar.png;
+
+![The relationship between marital status, fidelity, and home ownership]({{ site.baseurl }}/assets/images/cs_gss/stray_dwel_mar.png)
+
+The plot confirms this suspicion. The are very different trends in the marital statuses of homeowners and renters. A large portion of renters have never been married which in turn affects the value of `evstray` .
+
+For now it seems that homeowners' good reputation remains intact.
+
+## References
+
+<p class='reference'>
+[1] DiPasquale, D., &amp; Glaeser, E. L. (1999). Incentives and social capital: are homeowners better citizens?. Journal of urban Economics, 45(2), 354-384.
+</p>
+<p class='reference'>
+[2] McCabe, B. J. (2013). Are Homeowners Better Citizens? Homeownership and Community Participation in the United States. Social forces, sos185.
+</p>
+<!-- <p class='reference'><a id='ref3'></a>
+[3] Aaronson, D. (2000). A Note on the Benefits of Homeownership. Journal of Urban Economics, 47(3), 356-369.
+</p> -->
+
+##Further information
+
+<!-- **FIXME: Where to get the .csv and models? (they are too big to put in a Github Repo)** -->
+
+The full GSS dataset can be downloaded from their website, [here](http://www3.norc.org/GSS+Website/Download/).

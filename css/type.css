@@ -4,6 +4,11 @@ h1,h2,h3,h4,h5,h5{
 	font-weight: normal;
 }
 
+p.reference{
+	padding-left: 2em;
+	text-indent: -2em;
+}
+
 h1{ font-size: 300%; }
 h2{ font-size: 250%; }
 h3{ font-size: 200%; }
@@ -38,7 +43,7 @@ code{font-size:inherit;}
 
 p, pre{
 	line-height: 1.8em;
-	font-size: 1.3em;
+	font-size: 1.2em;
 	font-weight: 300;
 	color: #777;
 }
@@ -69,7 +74,6 @@ table{
 	color: #777;
 }
 
-
 span.t-bayes{color:rgb(255,107,107);}
 span.t-db{color:rgb(78,205,196);}
 
@@ -88,6 +92,9 @@ span.t-db{color:rgb(78,205,196);}
 	h6{ font-size: 105%; }
 	p,pre,code, ol, ul{font-size: 100%}
 	table{font-size: 95%}
+	div.post-titles h1{font-size:2.5em;}
+	div.post-titles h2{font-size:1.5em; line-height: 1.2;}
+	div.post-titles p{font-size:1em;}
 }
 
 @media screen and (max-width: 35.5em){
@@ -105,4 +112,9 @@ span.t-db{color:rgb(78,205,196);}
 	p, ol, ul{line-height:1.2;}
 	table{font-size: 85%}
 	#nav-bow p{font-size:1.2em; padding:.5em; }
+	div.post-titles h1{font-size:2em;}
+	div.post-titles h2{font-size:1.25em; line-height: 1.1;}
+	div.post-titles p{font-size:.95em;}
 }
+
+.shrink-50{ font-size:50%; }
