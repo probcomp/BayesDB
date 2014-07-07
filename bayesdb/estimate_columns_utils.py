@@ -82,13 +82,15 @@ def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, 
 
       score = f(f_args, None, None, M_c, X_L_list, X_D_list, T, engine, numsamples)
       value = score
-      if desc:
+      # nan values create really unpredictable sort behavior, so set score to inf for consistency
+      if numpy.isnan(score):
+        score = float('inf')
+      elif desc:
         score *= -1
       scores.append(score)
       values.append(value)
     scored_column_indices.append((tuple(values), c_idx, tuple(scores)))
   scored_column_indices.sort(key=lambda tup: tup[2], reverse=False)
-
   return [tup for tup in scored_column_indices]
 
 def function_description(order_item, M_c):

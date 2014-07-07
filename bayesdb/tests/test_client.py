@@ -214,8 +214,12 @@ def test_estimate_columns():
   client('estimate columns from %s order by dependence probability with qual_score' % test_tablename, debug=True, pretty=False)
   client('estimate columns from %s order by dependence probability with qual_score limit 5' % test_tablename, debug=True, pretty=False)
 
-  client('estimate columns from %s order by correlation with qual_score limit 5' % test_tablename, debug=True, pretty=False)
-  client('estimate columns from %s where correlation with qual_score > 0 order by correlation with qual_score limit 5' % test_tablename, debug=True, pretty=False)  
+  out = client('estimate columns from %s order by correlation with qual_score limit 5' % test_tablename, debug=True, pretty=False)[0]
+  scores = out["desc correlation with qual_score"]
+  assert (0 <= scores).all() and (scores <= 1).all()
+  out = client('estimate columns from %s where correlation with qual_score > 0 order by correlation with qual_score limit 5' % test_tablename, debug=True, pretty=False)[0]
+  scores = out["desc correlation with qual_score"]
+  assert (0 <= scores).all() and (scores <= 1).all()
 
   client('estimate columns from %s order by mutual information with qual_score limit 5' % test_tablename, debug=True, pretty=False)
   client('estimate columns from %s where mutual information with qual_score > 1 order by typicality' % test_tablename, debug=True, pretty=False)

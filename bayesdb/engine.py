@@ -737,7 +737,7 @@ class Engine(object):
             # Save value, if it will be displayed in output.
             if order_by_idxs[o_idx] < query_size:
               row[order_by_idxs[o_idx]] = score
-            
+
           if desc:
             if data_utils.get_can_cast_to_float([score]):
               score = float(score)
