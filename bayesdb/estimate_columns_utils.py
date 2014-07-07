@@ -69,6 +69,7 @@ def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, 
   for c_idx in column_indices:
     ## Apply each function to each cidx to get a #functions-length tuple of scores.
     scores = []
+    values = []
     for (f, f_args, desc) in function_list:
 
       # mutual_info, correlation, and dep_prob all take args=(i,j)
@@ -78,13 +79,15 @@ def _column_order_by(column_indices, function_list, M_c, X_L_list, X_D_list, T, 
         f_args = (f_args, c_idx)
       else:
         f_args = c_idx
-        
+
       score = f(f_args, None, None, M_c, X_L_list, X_D_list, T, engine, numsamples)
+      value = score
       if desc:
         score *= -1
       scores.append(score)
-    scored_column_indices.append((tuple(scores), c_idx))
-  scored_column_indices.sort(key=lambda tup: tup[0], reverse=False)
+      values.append(value)
+    scored_column_indices.append((tuple(values), c_idx, tuple(scores)))
+  scored_column_indices.sort(key=lambda tup: tup[2], reverse=False)
 
   return [tup for tup in scored_column_indices]
 
