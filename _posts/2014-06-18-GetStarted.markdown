@@ -4,40 +4,16 @@ title: Get Started
 tagline: Download. Install. Explore.
 ---
 	
-###Download
-BayesDB uses [CrossCat](https://github.com/mit-probabilistic-computing-project/crosscat) as an inference engine so we install that first.
+BayesDB is distributed via a [Docker](http://www.docker.com/) container which is built weekly. Install intructions for Docker can be found [here](https://docs.docker.com/installation/#installation). **Note: Though Docker is compatible with many platforms, the container is only tested on Mac OSX and Ubuntu 12.04.**
 
-	$ git clone https://github.com/mit-probabilistic-computing-project/crosscat.git
-	$ sudo bash crosscat/scripts/install_scripts/install.sh
-	$ sudo python crosscat/setup.py install
-	
-Clone BayesDB from [Github](www.github.com). 
+Once docker has been installed and configured enter the following command in your Unix/Linux terminal to download and install the Docker container (this will take a few minutes):
 
-    $ git clone https://github.com/mit-probabilistic-computing-project/BayesDB.git
+	docker pull avinson/bayesdb
 
-###Install
-    $ cd BayesDB
-    $ sudo python setup.py install
+To run the Dartmouth Atlas of Health example analysis:
 
-Alternatively, you can avoid the need to install BayesDB to your system python
+	docker run -i -t avinson/bayesdb /bin/bash
+	su - bayesdb
+	cd BayesDB/ && python examples/dha/run_dha_example.py
 
-    $ sudo python setup.py develop
-	
-In this case you'll need to add the BayesDB directory to your `PYTHONPATH`.		
-
-###Explore
-	
-BayesDB ships with a few example datasets with pre-computed models ready to go. Just navigate to an example directory and spool up an interactive python session.
-
-	$ cd examples/dha
-	$ python
-	
-Now we'll create a table, load in some models and start exploring the data.
-
-	>>> from bayesdb.client import Client
-	>>> client = Client()
-	>>> client('CREATE BTABLE dha FROM dha.csv;')
-	>>> client('LOAD MODEL dha_models.pkl.gz INTO dha;')
-	>>> client('ESTIMATE PAIRWISE DEPENDENCE PROBABILIY FROM dha SAVE TO dha_z.png;')
-	
-You've just created a dependence probability matrix, which shows you the probability of dependence between each pair of columns, and saved it to `dha_z.png`.
+Users with Linux shell and python experience who wish to perform a custom install of the source are directed to [the code repository](https://github.com/mit-probabilistic-computing-project/BayesDB).
