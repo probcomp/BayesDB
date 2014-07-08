@@ -309,14 +309,23 @@ class Engine(object):
   def update_schema(self, tablename, mappings):
     """
     mappings is a dict of column name to 'continuous', 'multinomial',
-    or 'ignore', or 'key'.
-    Requires that models are already initialized.
+    or 'ignore', 'key', or discriminative.
+    Requires that no models are already initialized.    
+
+    For a column that maps to discriminative, the column name will
+    map to a dict specifying:
+    'type': sklearn predictor object
+      sklearn.linear_model.LinearRegression
+      sklearn.linear_model.LogisticRegression
+      sklearn.ensemble.RandomForestClassifier
+    'params': parameters dict to be passed to sklearn predictor, probably as kwargs
+    'inputs': column list, in some format, to specify input columns.
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     if self.persistence_layer.has_models(tablename):
       raise utils.BayesDBError("Error: btable %s already has models. The schema may not be updated after models have been initialized; please either create a new btable or drop the models from this one." % tablename)
-    
+
     msg = self.persistence_layer.update_schema(tablename, mappings)
     ret = self.show_schema(tablename)
     ret['message'] = 'Updated schema.'
@@ -829,8 +838,8 @@ class Engine(object):
     
     ##TODO col_indices, colnames are a hack from old parsing
     
-    col_indices = [query[1][0] for query in queries[1:]]
-    colnames = query_colnames[1:]
+    col_indices = [query[1][0] for query in queries[1:]] # remove row_id
+    colnames = query_colnames[1:] # remove row_id
     query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
 

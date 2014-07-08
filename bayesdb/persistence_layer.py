@@ -518,6 +518,7 @@ class PersistenceLayer():
     def update_schema(self, tablename, mappings):
         """
         mappings is a dict of column name to 'continuous', 'multinomial', 'ignore', or 'key'.
+        'discriminative' is complex: see docstring in engine.update_schema.
         TODO: can we get rid of cctypes?
         """
         metadata_full = self.get_metadata_full(tablename)
