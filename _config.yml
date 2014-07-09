@@ -1,5 +1,5 @@
 pygments: true
 safe: true
 lsi: false
-baseurl: '/BayesDB'
-# baseurl: ''
+baseurl: '/BayesDB' # make sure this line is uncommented when pushing to github
+# baseurl: '' # use this for testing on your local machine

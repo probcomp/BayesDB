@@ -153,11 +153,11 @@ Further down the list, we see two interesting case with a middling probability o
 
 plot simulate dwelown, fambudgt from gss_pared given realinc=22050 times 1000 save to figures/simulate_dwelown_fambudgt_realinc=22050.png
 
-FIXME: picture
+![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/budget_dwel_1.png)
 
 plot simulate dwelown, fambudgt from gss_pared given realinc=1.55E+05 times 1000 save to figures/simulate_dwelown_fambudgt_realinc=155E=05.png
 
-FIXME: picture
+![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/budget_dwel_2.png)
 
 These results suggest that homeownership has non-trivial dependencies with budgetting and income. Ultimately, disentangling these effects from relationship status will be a bit involved, but it does suggest that homewownership is related to a set of dispositions including strong familial relationships, careful budgetting, and, of course, solid income.
 
