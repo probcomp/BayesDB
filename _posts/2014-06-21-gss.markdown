@@ -5,15 +5,18 @@ image: /cs_dha/gss_header.jpg
 layout: default
 ---
 
-According to economics research, homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities (or so it was in 1999 \[1\]). For this reason, homeowners have been labeled better citizens \[1,2\]. Rather than looking singly as social capital measures we shall use the General Social Survey and BayesDB to explore home-ownership's relationship with moral and criminal variables.
+According to economics research, homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities  (DiPasquale, D., &amp; Glaeser, E. L., 1999). For this reason, homeowners have been labeled better citizens (DiPasquale, D., &amp; Glaeser, E. L., 1999; McCabe, 2013). 
 
-<!-- The General Social Survey (GSS) is a collection of demographic data as well as data on the social, moral, and political attitudes of Americans. -->
+We will revisit this analysis, making use of the General Social Survey (GSS). The GSS is a sociological survey that collects data on the demographic characteristics and attitudes of US residents. Among other things, it includes information on homeownership, moral attitudes, and criminal variables. We have started by loading a subset of the GSS data into BayesDB, created a btable, and analyzed the data. 
+
+<!-- The General Social Survey (GSS) is a collection of demographic data as well as data on the social, moral, and political attitudes of Americans. 
 
 We've already created a btable, `gss_pared`, from a subset of the full GSS dataset and analyzed the data.
+-->
 
-## Has anything changed since 1999 \[1\]?
+## Are homeowners more likely to vote?
 
-First we'll check whether the homeowners of 2012, like their predecessors, are more likely to vote than renters. Since we're using the 2012 GSS we'll summarize the `vote08` variable (whether the respondent voted in the 2008 presidential election).
+First we'll check whether the homeowners of 2012, like their predecessors, are more likely to vote than renters. Since we're using the 2012 GSS we'll investigate the relationship between `vote08` and `dwelown` variables. `vote08` is a categorical variable, where `1` indicates that the respondent voted in the 2008 presidential election, while `0` indicates that the did not. `dwelown` is also a categorical variable where `1` indicates that the respondent owns their home, and `2` indicates that the respondent rents their home.
 
 First, for homeowners (`dwelown=1`),
 
@@ -26,7 +29,7 @@ First, for homeowners (`dwelown=1`),
 |   mode1    |        1        |
 |   mode2    |        2        |
 |   mode3    |        3        |
-| prob_mode1 |  0.752475247525 |
+| prob_mode1 |  0.752475247525 |h
 | prob_mode2 |  0.180693069307 |
 | prob_mode3 | 0.0569306930693 | -->
 
@@ -49,7 +52,7 @@ and second, for renters (`dwelown=2`)
 
 ![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/votedwel_2.png)
 
-We are looking at the value 1: did vote. We see that 75% of homeowners voted while 50% of renters voted.
+We see that 75% of homeowners voted while only 50% of renters voted, confirming the previous finding.
 
 <!-- Also noted in \[1\]was homeowners' greater propensity to own firearms
 
@@ -83,9 +86,10 @@ We are looking at the value 1: did vote. We see that 75% of homeowners voted whi
 
 Here, note that mode2 is 1 which is 'owns a firearm'. 22% of homewoners own a firearm while do 9% of renters. Overall, gun ownership has dropped since the 1999 study during which 52% of homeowners and 26% of renters owned guns. -->
 
-## Are homeowners less likely to have been arrested
+## Are homeowners less likely to have been arrested?
 
-There's more to being a good citizen than voting and exercising one's second amendment rights. We shall quickly check whether there is a relationship between homeownership and respondents' having been arrested (`arrest`), convicted of a crime (`convictd`), or crack-cocaine use (`evcrack`).
+In addition to voting, previous results suggest that homeowners are more likely to stay on the right side of the law.
+To confirm that homeownership and criminality (or lack thereof) are related, we can check the probability of dependence. We focus on three criminality-related variables: having been arrested `arrest`, convicted of a crime `convictd`, or crack-cocaine use `evcrack`. For each variable, we will assess the probability of dependence, where values near 1 indicate a high probability of dependence between the pair of variables, whereas values near 0 indicate probable independence.
 
 First, arrests:
 
@@ -111,31 +115,54 @@ and finally, crack-cocaine use:
 |--------|------------------------------------------------|
 |   0    |                     0.1875                     |
 
-The probability of dependence in each case is fairly low.
-
+The probability of dependence between homeownership and criminality-related variables in each case is fairly low, which disagrees with previous findings. 
 
 ## Which variables are related to homeownership?
 
-One of the best things about BayesDB is that we don't have to take shots in the dark. It tells us which variables are most likely related so we don't have to guess which variables modulate others. Let's ask bayesDB which variables most likely share a relationship with homeownership.
+Given that the hypothesized variables are probably not dependent on homeownership, a natural question is which variables are? To answer this question, we can order the variables based on the probability of depndence with homeownership.
 
-    ESTIMATE COLUMNS FROM gss_pared ORDER BY DEPENDENCE PROBABILITY WITH dwelown LIMIT 10;
+    ESTIMATE COLUMNS FROM gss_pared ORDER BY DEPENDENCE PROBABILITY WITH dwelown LIMIT 20;
 
 |  column  | desc dependence probability with dwelown |
 |----------|------------------------------------------|
-| dwelown  |                   1.0                    |
-|  rplace  |             0.833333333333               |
-|  relhh2  |                 0.8125                   |
-| relate2  |                 0.8125                   |
-| posslqy  |                 0.8125                   |
-|  relsp1  |                 0.8125                   |
-|  condom  |             0.791666666667               |
-| evstray  |             0.791666666667               |
-| gender2  |             0.791666666667               |
-| marital  |             0.791666666667               |
+| dwelown  |                 1.0                 |
+|  rplace  |            0.833333333333           |
+|  relhh2  |                0.8125               |
+| relate2  |                0.8125               |
+| posslqy  |                0.8125               |
+|  relsp1  |                0.8125               |
+|  condom  |            0.791666666667           |
+| evstray  |            0.791666666667           |
+| gender2  |            0.791666666667           |
+| marital  |            0.791666666667           |
+| matesex  |            0.791666666667           |
+|  evwork  |                0.6875               |
+| dwelling |            0.666666666667           |
+| whoelse3 |            0.666666666667           |
+| whoelse6 |            0.645833333333           |
+| relatsex |            0.604166666667           |
+|  vote08  |            0.583333333333           |
+| fambudgt |            0.541666666667           |
+| whoelse1 |            0.520833333333           |
+| realinc  |            0.520833333333           |
 
 
-We see that a respondent's homeownership status is related to his/her household status (head of household, etc \[`rplace`\]) relation to the other members of the household (`relhh2`, `relate2`, `relsp1`), relationship status (`posslqy`, `marital`), condom useage (`condom`), and...marital fidelity (`evstray`).
+We see that a respondent's homeownership status is related to his/her familial and relationship status (head of household, `rplace`, relation to the other members of the household, `relhh2`, `relate2`, `relsp1`; relationship status, `posslqy`, `marital`, condom useage `condom`, marital fidelity `evstray`, etc. These are all variants on the theme that homeownership is related to marital/relationship status. 
 
+Further down the list, we see two interesting case with a middling probability of dependence---`fambudget` and `realinc`. Looking at extreme values of income we see a quantitative trend.
+
+plot simulate dwelown, fambudgt from gss_pared given realinc=22050 times 1000 save to figures/simulate_dwelown_fambudgt_realinc=22050.png
+
+FIXME: picture
+
+plot simulate dwelown, fambudgt from gss_pared given realinc=1.55E+05 times 1000 save to figures/simulate_dwelown_fambudgt_realinc=155E=05.png
+
+FIXME: picture
+
+These results suggest that homeownership has non-trivial dependencies with budgetting and income. Ultimately, disentangling these effects from relationship status will be a bit involved, but it does suggest that homewownership is related to a set of dispositions including strong familial relationships, careful budgetting, and, of course, solid income.
+
+
+<!--
 From the GSS code book the `evstay` survey question asks:
 
 >Have you ever had sex with someone other than your husband or wife while you were married?
@@ -145,6 +172,8 @@ Let's take a closer look at `evstray`. We are concerned with yes (1), no (2), an
     PLOT SELECT evstray FROM gss_pared where dwelown=1 SAVE TO straydwel_1.png;
 
 ![marital fidelity variable plotted for homeowners]({{ site.baseurl }}/assets/images/cs_gss/straydwel_1.png)
+-->
+
 
 <!-- |            |    evstray     |
 
@@ -158,9 +187,11 @@ Let's take a closer look at `evstray`. We are concerned with yes (1), no (2), an
 | prob_mode2 | 0.17202970297  |
 | prob_mode3 | 0.102722772277 | -->
 
+<!--
     PLOT SELECT evstray FROM gss_pared where dwelown=2 SAVE TO straydwel_2.png;
 
 ![marital fidelity variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/straydwel_2.png)
+-->
 
 <!-- |            |     evstray     |
 
@@ -174,15 +205,22 @@ Let's take a closer look at `evstray`. We are concerned with yes (1), no (2), an
 | prob_mode2 |  0.365750528541 |
 | prob_mode3 | 0.0993657505285 |
  -->
-It seems there is nothing sinister here; the relationship appears to be driven mainly by the difference in marital status (notice the difference in mode1: `evstray=3` \[never married\]), which is sensible given that marital status is related to homeownership. We can ask BayesDB to generate a set of plots showing the relationship between marital status (`marital`), fidelity, and home ownership.
+ 
+<!--
+The big difference between homeowners and renters is not in whther they have cheated, but in their marital status. `evstray=3` is much common for renters than homeowners, confirming the previous dependence between homeownership and marital status. 
+-->
+
+<!--
+We can ask BayesDB to generate a set of plots showing the relationship between marital status (`marital`), fidelity, and homeownership.
 
     PLOT SELECT evstray, dwelown, marital FROM gss_pared SAVE TO stray_dewel_mar.png;
 
-![The relationship between marital status, fidelity, and home ownership]({{ site.baseurl }}/assets/images/cs_gss/stray_dwel_mar.png)
+![The relationship between marital status, fidelity, and homeownership]({{ site.baseurl }}/assets/images/cs_gss/stray_dwel_mar.png)
 
 The plot confirms this suspicion. The are very different trends in the marital statuses of homeowners and renters. A large portion of renters have never been married which in turn affects the value of `evstray` .
 
 For now it seems that homeowners' good reputation remains intact.
+-->
 
 ## References
 
