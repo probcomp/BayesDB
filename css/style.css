@@ -12,6 +12,13 @@ table tr:first-child th{border-bottom: 1px solid #999;}
 
 img{
 	max-width: 100%;
+	margin: auto 0;
+}
+
+img.img-med{
+	margin: auto 0;
+	max-width: 100%;
+	width: 500px;
 }
 
 table{

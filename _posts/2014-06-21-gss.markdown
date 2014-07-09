@@ -33,7 +33,10 @@ First, for homeowners (`dwelown=1`),
 | prob_mode2 |  0.180693069307 |
 | prob_mode3 | 0.0569306930693 | -->
 
-![Vote variable plotted for homeowners]({{ site.baseurl }}/assets/images/cs_gss/votedwel_1.png)
+<center>
+<img src="{{ site.baseurl }}/assets/images/cs_gss/votedwel_1.png" class="img-med" alt="Vote variable plotted for homeowners">
+</center>
+<!-- ![Vote variable plotted for homeowners]({{ site.baseurl }}/assets/images/cs_gss/votedwel_1.png) -->
 
 and second, for renters (`dwelown=2`)
 
@@ -50,7 +53,11 @@ and second, for renters (`dwelown=2`)
 | prob_mode2 | 0.353065539112 |
 | prob_mode3 | 0.131078224101 | -->
 
-![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/votedwel_2.png)
+<center>
+<img src="{{ site.baseurl }}/assets/images/cs_gss/votedwel_2.png" class="img-med" alt="Vote variable plotted for homeowners">
+</center>
+
+<!-- ![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/votedwel_2.png) -->
 
 We see that 75% of homeowners voted while only 50% of renters voted, confirming the previous finding.
 
@@ -147,17 +154,23 @@ Given that the hypothesized variables are probably not dependent on homeownershi
 | realinc  |            0.520833333333           |
 
 
-We see that a respondent's homeownership status is related to his/her familial and relationship status (head of household, `rplace`, relation to the other members of the household, `relhh2`, `relate2`, `relsp1`; relationship status, `posslqy`, `marital`, condom useage `condom`, marital fidelity `evstray`, etc. These are all variants on the theme that homeownership is related to marital/relationship status. 
+We see that a respondent's homeownership status is related to his/her familial and relationship status (head of household, `rplace`, relation to the other members of the household, `relhh2`, `relate2`, `relsp1`, relationship status, `posslqy`, `marital`, condom useage `condom`, marital fidelity, `evstray`, etc. These are all variants on the theme that homeownership is related to marital/relationship status. 
 
 Further down the list, we see two interesting case with a middling probability of dependence---`fambudget` and `realinc`. Looking at extreme values of income we see a quantitative trend.
 
-plot simulate dwelown, fambudgt from gss_pared given realinc=22050 times 1000 save to figures/simulate_dwelown_fambudgt_realinc=22050.png
+    plot simulate dwelown, fambudgt from gss_pared given realinc=22050 times 1000 save to figures/simulate_dwelown_fambudgt_realinc=22050.png
 
-![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/budget_dwel_1.png)
+<center>
+<img src="{{ site.baseurl }}/assets/images/cs_gss/budget_dwel_1.png" class="img-med" alt="Budget variable plotted for homeowners">
+</center>
+<!-- ![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/budget_dwel_1.png) -->
 
-plot simulate dwelown, fambudgt from gss_pared given realinc=1.55E+05 times 1000 save to figures/simulate_dwelown_fambudgt_realinc=155E=05.png
+    plot simulate dwelown, fambudgt from gss_pared given realinc=1.55E+05 times 1000 save to figures/simulate_dwelown_fambudgt_realinc=155E=05.png
 
-![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/budget_dwel_2.png)
+<center>
+<img src="{{ site.baseurl }}/assets/images/cs_gss/budget_dwel_2.png" class="img-med" alt="Budget variable plotted for renters">
+</center>
+<!-- ![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/budget_dwel_2.png) -->
 
 These results suggest that homeownership has non-trivial dependencies with budgetting and income. Ultimately, disentangling these effects from relationship status will be a bit involved, but it does suggest that homewownership is related to a set of dispositions including strong familial relationships, careful budgetting, and, of course, solid income.
 
