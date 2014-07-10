@@ -1,6 +1,6 @@
 ---
-title: The General Social Survey (2012)
-tagline: Are homeowners really better citizens?
+title: General Social Survey
+tagline: Responses to ~5500 demographic, behavioral and attitudinal questions by US residents.
 image: /cs_dha/gss_header.jpg
 layout: default
 ---
