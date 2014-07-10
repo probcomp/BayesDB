@@ -7,7 +7,7 @@ layout: default
 
 What kinds of early educational experiences lead to the best outcomes for children? The Early Childhood Longitudinal Study (Kindergarten class) looks at a variety of variables---cultural, socioeconomic, and educational---as they relate to early proficiency in reading and mathematics. Research has found that pre-kindergarten programs are among the best early experiences in terms of improving school readiness (at least as it relates to math and reading at the beginning of kindergarten; Magnuson, Ruhm, & Waldfogel, 2007). 
 
-##Analyzing variables in the aggregate
+<!-- ##Analyzing variables in the aggregate -->
 
 Our first step is to look at which variables are probably dependent on each other. 
 
