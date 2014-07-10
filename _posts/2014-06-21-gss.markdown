@@ -172,7 +172,7 @@ Further down the list, we see two interesting case with a middling probability o
 </center>
 <!-- ![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/budget_dwel_2.png) -->
 
-These results suggest that homeownership has non-trivial dependencies with budgetting and income. Ultimately, disentangling these effects from relationship status will be a bit involved, but it does suggest that homewownership is related to a set of dispositions including strong familial relationships, careful budgetting, and, of course, solid income.
+These results suggest that homeownership has non-trivial dependencies with budgetting and income. Disentangling these effects from relationship status will be a bit involved, but the results suggest that homewownership is related to a set of dispositions including strong familial relationships, careful budgetting, and, of course, solid income.
 
 
 <!--
