@@ -205,7 +205,7 @@ Functions in this category include
 
     SIMILARITY TO <row> [WITH RESPECT TO <column>]
 
-Similarity measures the similarity between two rows. This can be interpreted by thinking of dividing the rows up into clusters, and measuring how likely it would be that these two rows would be in the same cluster. By default, similarity considers all columns when deciding how similar to rows are, but you may optionally specify a specifiic column to compute similarity with respect to.
+Similarity measures the similarity between two rows. This can be interpreted by thinking of dividing the rows up into clusters, and measuring how likely it would be that these two rows would be in the same cluster. By default, similarity considers all columns when deciding how similar to rows are, but you may optionally specify a specific column to compute similarity with respect to.
 
     TYPICALITY
 
