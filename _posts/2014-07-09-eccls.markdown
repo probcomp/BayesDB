@@ -1,6 +1,6 @@
 ---
 title: The Early Childhood Longitudinal Study
-tagline: Exploring the effect of pre-kindergarten on math and reading performance in kindergarten
+tagline: Exploring the effect of pre-kindergarten on early math and reading
 image: /cs_dha/eccls_header.jpg
 layout: default
 ---
