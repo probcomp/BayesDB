@@ -4,7 +4,7 @@ function show_docs_menu(){
 	window.menu_is_shown = false;
 	
 	$('#mobile-button').css('left','0px');
-	$('#mobile-button').html('M');
+	$('#mobile-button').html('<span class="glyphicon glyphicon-th-list"></span>');
 	$('#mobile-sidebar').css('left','-220px');	
 	window.menu_is_shown = false;
 }
@@ -13,7 +13,7 @@ function link_menu_button(){
 	$('.main').click(function(){
 		if(window.menu_is_shown) {
 			$('#mobile-button').css('left','0px');
-			$('#mobile-button').html('M');
+			$('#mobile-button').html('<span class="glyphicon glyphicon-th-list"></span>');
 			$('#mobile-sidebar').css('left','-220px');	
 			$('div.main').css('margin-left','0');
 			window.menu_is_shown = false;
@@ -24,13 +24,13 @@ function link_menu_button(){
 
 			if(window.menu_is_shown) {
 				$('#mobile-button').css('left','0px');
-				$('#mobile-button').html('M');
+				$('#mobile-button').html('<span class="glyphicon glyphicon-th-list"></span>');
 				$('#mobile-sidebar').css('left','-220px');	
 				$('div.main').css('margin-left','0');
 				window.menu_is_shown = false;
 			}else{
 				$('#mobile-button').css('left','220px');
-				$('#mobile-button').html('X');
+				$('#mobile-button').html('<span class="glyphicon glyphicon-remove"></span>');
 				$('#mobile-sidebar').css('left','0px');	
 /* 					$('div.main').css('margin-left','220px'); */
 				window.menu_is_shown = true;
