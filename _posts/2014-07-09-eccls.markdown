@@ -1,6 +1,6 @@
 ---
-title: The Early Childhood Longitudinal Study
-tagline: Exploring the effect of pre-kindergarten on early math and reading
+title: Early Childhood Longitudinal Study
+tagline: Relationships among demographic, social, and experiential variables and early achievement in math and reading
 image: /cs_dha/eccls_header.jpg
 layout: default
 ---
