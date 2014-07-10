@@ -4,10 +4,8 @@ layout: docs
 tagline: for BayesDB alpha 0.2.0
 ---
 
-**For complete documentation see [the documentation site](http://probcomp.csail.mit.edu/bayesdb/docs/0.2/)**
-
 ##Bayesian Query Language (BQL)
-Bayesian Query Language is a SQL-like language that adds support for running inference and executing predictive queries based on a bayesian model of the data.
+Bayesian Query Language is a SQL-like language that adds support for running inference and executing predictive queries based on a bayesian model of the data. The pages introduces a number of commonly used commands. For complete documentation see [the documentation site](http://probcomp.csail.mit.edu/bayesdb/docs/0.2/)
 
 ###Loading data
    
