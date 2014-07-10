@@ -4,7 +4,7 @@ title: Get Started
 tagline: Download. Install. Explore.
 ---
 	
-BayesDB is distributed via a [Docker](http://www.docker.com/) container which is built weekly. Install intructions for Docker can be found [here](https://docs.docker.com/installation/#installation). **Note: Though Docker is compatible with many platforms, the container is tested only on Mac OSX, Ubuntu, and Microsoft Windows.**
+BayesDB is distributed via a [Docker](http://www.docker.com/) container which is built weekly. Install intructions for Docker can be found [here](https://docs.docker.com/installation/#installation). **Note:** Though Docker is compatible with many platforms, the container is tested only on Mac OSX, Ubuntu, and Microsoft Windows.
 
 Once docker has been installed and configured enter the following command in your Unix/Linux terminal to download and install the Docker container (this will take a few minutes):
 
