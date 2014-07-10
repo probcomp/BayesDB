@@ -1,6 +1,6 @@
 ---
-title: The Dartmouth Atlas of Health (2008)
-tagline: Analyzing the cost structure and quality of care of US hospitals.
+title: Dartmouth Atlas of Health
+tagline: Recording the cost structure, capacity and quality of care of US hospitals.
 image: /cs_dha/dha_header.jpg
 layout: default
 ---
