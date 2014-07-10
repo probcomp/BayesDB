@@ -15,7 +15,7 @@ Our first step is to look at which variables are probably dependent on each othe
 
 ![dependence probability for ECCLS]({{ site.baseurl }}/assets/images/cs_eccls/dependence_probability_eccls.png)
 
-We can see that there are large blocks of dependent variables, as indicated by the dark blue, as well as variables that are probably independent of one another, as indicated by the white. The key variables in for this analysis are participation in a pre-K program, `prekindergarten`, and outcomes. There are multiple outcome measures in the dataset, and we will focus on kindergarten performance on math and reading: `c1r4mtsc` and `c1r4rtsc`. To assess the probability of dependence, we can create a column list with only these variables, and print out BayesDB’s estimate.
+We can see that there are large blocks of variables that are probably dependent, as indicated by the dark blue, as well as variables that are probably independent of one another, as indicated by the white. The key variables in for this analysis are participation in a pre-K program, `prekindergarten`, and outcomes. There are multiple outcome measures in the dataset, and we will focus on kindergarten performance on math and reading: `c1r4mtsc` and `c1r4rtsc`. To assess the probability of dependence, we can create a column list with only these variables, and print out BayesDB’s estimate.
 
     CREATE COLUMN LIST prekindergarten, C1R4MTSC, C1R4RTSC FROM eccls AS preK_outcomes; 
     ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM eccls FOR preK_outcomes;
@@ -172,7 +172,7 @@ To test the hypothesis that pre-K is most strongly predictive of performance, we
 
 After other math and reading scores, the most probably dependent variables are those related to parental education and poverty, followed by the skills that parents value, the resources at home, and the activities they engage in with their children. Relevant to our question, the probability of dependence between preK and our math and reading outcomes is not stronger than for other forms of care, which disagrees with the previous finding.
 
-If we focus in on pre-k versus parental care, we can get a better sense of what the relationships are. `Prekindergarten` and `parentalcare` are each binary variables, where 1 indicates true and 0 indicates false. `c1r4rtsc` is a continuous variable representing the child’s score on the exam. We create a column list with just these three variables, then we plot the data.
+If we focus on pre-k versus parental care, we can get a better sense of what the relationships are. `prekindergarten` and `parentalcare` are each binary variables, where 1 indicates true and 0 indicates false. `c1r4rtsc` is a continuous variable representing the child’s score on the exam. We create a column list with just these three variables, then plot the data.
 
     CREATE COLUMN LIST prekindergarten, C1R4MTSC, parentalcare FROM eccls AS math_prek_parent;
     PLOT SELECT math_prek_parent FROM eccls SAVE TO figures/select_math_prek_parent.png;
@@ -181,7 +181,7 @@ If we focus in on pre-k versus parental care, we can get a better sense of what 
 <img src="{{ site.baseurl }}/assets/images/cs_eccls/select_math_prek_parent.png" class="img-med" alt="pre-k versus parental care">
 </center>
 
-One can see that there is some difference in math scores between the `parentalcare=1` and `prekindergarten=1`, but it is not huge, consistent with Magnuson et al.’s finding of a 4 point difference. Turning from the observed data to BayesDB’s predictions, we can see that a difference of this size is small relative to the uncertainty of the prediction.
+One can see that there is some difference in math scores between the `parentalcare=1` and `prekindergarten=1`. The difference is not huge, consistent with Magnuson et al.’s finding of a 4 point difference. Turning from the observed data to BayesDB’s predictions, we can see that the difference in the empirical distributions is not as apparent in the predictive distributions.
 
     PLOT SIMULATE math_prek_parent FROM eccls TIMES 500 SAVE TO figures/simulate_math_prek_parent.png;
 
@@ -189,9 +189,9 @@ One can see that there is some difference in math scores between the `parentalca
 <img src="{{ site.baseurl }}/assets/images/cs_eccls/simulate_math_prek_parent.png" class="img-med" alt="simulated pre-k versus parental care">
 </center>
 
-Looking at BayesDB’s predictions, we can see why the probability of dependence is not especially high; although a small difference is visible between the averages, there remains considerable uncertainty which is reflected in the predictions.
+Looking at BayesDB’s predictions, we can see why the probability of dependence is not especially high. Although a small difference remains in the means, the main difference in the predictive distributions is that pre-K skews scores higher.
 
-Previous research argued that pre-K programs were best based on regression analyses in which factors like parental and neighborhood attributes were taken into account. Intuitively, one could imagine that the effects of pre-K would be most pronounced in kids who have the least resources, a finding that Magnuson et al. (2007) report. Focusing in on the children whose mothers have relatively little education and live in the least safe neighborhoods, we can investigate that question. Because there are relatively few datapoints that represent any specific situation, we turn our attention to simulated data. These bake-in the uncertainty associated with the limited observed data, but allow generating enough samples to make inferences, should they be supported.
+Previous research argued that pre-K programs were best based on regression analyses in which factors like parental and neighborhood attributes were taken into account. Intuitively, one could imagine that the effects of pre-K would be most pronounced in kids who have the least resources, a finding that Magnuson et al. (2007) report. Focusing on the children whose mothers have relatively little education and live in the least safe neighborhoods, we can investigate that question. Because there are relatively few datapoints that represent any specific situation, we look at the simulated data. These bake-in the uncertainty associated with the limited observed data, but allow generating enough samples to make inferences, should they be supported.
 
     plot simulate c1r4mtsc from eccls given p2safepl=1.00 and prekindergarten=1.00 and wkmomed=2.00 times 500 save to figures/simulate_c1r4mtsc_prek.png;
 
@@ -239,6 +239,6 @@ It appears that attending pre-K skews the distribution slightly upward. We can i
 |   mode     |  46.537475471 |
 | prob_mode  |     0.001     |
 
-The summary statistics confirm a slight trend toward pre-K increasing math scores. Notably, the difference is more evident in the shape of the distribution, rather than the mean. Relative to other relationships in the data, for example, the dependence between math scores and owning books, this effect is rather small. Nevertheless, these analyses support the original findings, while adding some nuance--the effects of pre-K are not overwhelming, even for children who are most disadvantaged. 
+The summary statistics confirm a slight trend toward pre-K increasing math scores. Notably, the difference is more evident in the shape of the distribution than the mean. Relative to other relationships in the data, for example, the dependence between math scores and owning books, this effect is rather small. Nevertheless, these analyses support the original findings, while adding some nuance--the effects of pre-K are not overwhelming, even for children who are most disadvantaged. 
 
 
