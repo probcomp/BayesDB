@@ -378,7 +378,7 @@ class Engine(object):
 
     return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename)
 
-  def upgrade_btables(self):
+  def upgrade_btables(self, upgrade_key_column=None):
     """
     Btables created in early versions of BayesDB may not have attributes that are required in more
     recent versions of BayesDB (example: required key column). This function allows them to be
@@ -404,7 +404,7 @@ class Engine(object):
             colnames_full = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
             cctypes_full = metadata_full['cctypes_full']
 
-            raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None)
+            raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=upgrade_key_column)
             T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
             # Don't need to update T, M_r, M_c, cctypes (variables without "_full")

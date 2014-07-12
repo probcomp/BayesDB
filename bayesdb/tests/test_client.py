@@ -41,7 +41,9 @@ def setup_function(function):
   global test_tablenames, client, test_filenames
   test_tablenames = []
   test_filenames = []
-  client = Client()
+  # Default upgrade_key_column is None, to let the user choose, but need to avoid
+  # user input during testing, so for testing just create a new key column.
+  client = Client(upgrade_key_column=0)
 
 def teardown_function(function):
   global tablename, client

@@ -36,7 +36,7 @@ from engine import Engine
 
 class Client(object):
     def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing',
-                 bayesdb_host=None, bayesdb_port=8008, seed=None):
+                 bayesdb_host=None, bayesdb_port=8008, seed=None, upgrade_key_column=None):
         """
         Create a client object. The client creates a parser, that is uses to parse all commands,
         and an engine, which is uses to execute all commands. The engine can be remote or local.
@@ -46,7 +46,7 @@ class Client(object):
         if bayesdb_host is None or bayesdb_host=='localhost':
             self.online = False
             self.engine = Engine(crosscat_host, crosscat_port, crosscat_engine_type, seed)
-            self.engine.upgrade_btables()
+            self.engine.upgrade_btables(upgrade_key_column)
         else:
             self.online = True
             self.hostname = bayesdb_host
