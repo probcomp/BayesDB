@@ -393,7 +393,11 @@ class Engine(object):
         except utils.BayesDBError:
             metadata = self.persistence_layer.get_metadata(tablename)
             metadata_full = metadata
-            metadata_full['raw_T_full'] = metadata['T']
+            # Rename metadata keys with suffix '_full'
+            for key in metadata.keys():
+                metadata_full[key + '_full'] = metadata_full.pop(key)
+            # Btables created without a metadata_full file don't have raw_T_full saved in metadata, so we need to recreate it.
+            metadata_full['raw_T_full'] = data_utils.gen_raw_T_full_from_T_full(metadata_full['T_full'], metadata_full['M_c_full'])
             self.persistence_layer.write_metadata_full(tablename, metadata_full)
             print "Upgraded %s: added metadata_full file" % tablename
 

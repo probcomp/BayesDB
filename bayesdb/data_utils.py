@@ -87,6 +87,19 @@ def gen_factorial_data(gen_seed, num_clusters,
     data = numpy.hstack(data_list)
     return data, inverse_permutation_indices_list
 
+def gen_raw_T_full_from_T_full(T_full, M_c):
+    """
+    engine.upgrade_btables needs a way to go from T to raw_T_full for tables
+    saved without a metadata_full file. This function takes T and M_c
+    and reconstructs the raw data list.
+    """
+    raw_T_full = T_full
+    for row_idx, row_data in enumerate(T_full):
+      for col_idx, code in enumerate(row_data):
+        code = T_full[row_idx][col_idx]
+        raw_T_full[row_idx][col_idx] = str(convert_code_to_value(M_c, col_idx, code))
+    return raw_T_full
+
 def gen_M_r_from_T(T):
     num_rows = len(T)
     num_cols = len(T[0])
