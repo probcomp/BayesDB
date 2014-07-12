@@ -378,36 +378,39 @@ class Engine(object):
 
     return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename)
 
-  def upgrade_btable(self, tablename):
+  def upgrade_btables(self):
     """
     Btables created in early versions of BayesDB may not have attributes that are required in more
     recent versions of BayesDB (example: required key column). This function allows them to be
     upgraded simply, without having to manually recreate the btable and re-load models.
     """
-    # 1. Check for metadata_full file - if not found, create it from metadata.
-    #       Okay to use metadata since btables created that long ago won't have ignore/key columns.
-    try:
-        metadata_full = self.persistence_layer.get_metadata_full(tablename)
-    except utils.BayesDBError:
-        metadata = self.persistence_layer.get_metadata(tablename)
-        metadata_full = metadata
-        metadata_full['raw_T_full'] = metadata['T']
-        self.persistence_layer.write_metadata_full(tablename, metadata_full)
+    tablenames = self.persistence_layer.btable_index
+    for tablename in tablenames:
+        # 1. Check for metadata_full file - if not found, create it from metadata.
+        #       Okay to use metadata since btables created that long ago won't have ignore/key columns.
+        try:
+            metadata_full = self.persistence_layer.get_metadata_full(tablename)
+        except utils.BayesDBError:
+            metadata = self.persistence_layer.get_metadata(tablename)
+            metadata_full = metadata
+            metadata_full['raw_T_full'] = metadata['T']
+            self.persistence_layer.write_metadata_full(tablename, metadata_full)
+            print "Upgraded %s: added metadata_full file" % tablename
 
-    # 2. Check for key column - if not found, add one.
-    if 'key' not in metadata_full['cctypes_full']:
-        raw_T_full = metadata_full['raw_T_full']
-        colnames_full = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
-        cctypes_full = metadata_full['cctypes_full']
+        # 2. Check for key column - if not found, add one.
+        if 'key' not in metadata_full['cctypes_full']:
+            print "Table %s is from an old version of BayesDB and does not have a key column." % tablename
+            raw_T_full = metadata_full['raw_T_full']
+            colnames_full = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
+            cctypes_full = metadata_full['cctypes_full']
 
-        raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None)
-        T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+            raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None)
+            T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
-        # Don't need to update T, M_r, M_c, cctypes (variables without "_full")
-        #   because they don't include ignore/key columns.
-        self.persistence_layer.upgrade_btable(tablename, cctypes_full, T_full, M_r_full, M_c_full, raw_T_full)
-
-    return dict(message = 'Upgraded btable %s to current requirements' % tablename)
+            # Don't need to update T, M_r, M_c, cctypes (variables without "_full")
+            #   because they don't include ignore/key columns.
+            self.persistence_layer.upgrade_btable(tablename, cctypes_full, T_full, M_r_full, M_c_full, raw_T_full)
+            print "Upgraded %s: added key column" % tablename
 
   def show_schema(self, tablename):
     if not self.persistence_layer.check_if_table_exists(tablename):

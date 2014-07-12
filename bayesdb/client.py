@@ -46,6 +46,7 @@ class Client(object):
         if bayesdb_host is None or bayesdb_host=='localhost':
             self.online = False
             self.engine = Engine(crosscat_host, crosscat_port, crosscat_engine_type, seed)
+            self.engine.upgrade_btables()
         else:
             self.online = True
             self.hostname = bayesdb_host
