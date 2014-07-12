@@ -243,12 +243,29 @@ def test_analyze():
   engine.initialize_models(test_tablename, num_models)
 
   for it in (1,2):
-    engine.analyze(test_tablename, model_indices='all', iterations=1, background=False)
+    engine.analyze(test_tablename, model_indices='all', iterations=1, background=True)
+
+    while 'not currently being analyzed' not in engine.show_analyze(test_tablename)['message']:
+      import time; time.sleep(0.1)
+    
+    #analyze_results = engine.show_analyze(test_tablename)
     model_ids = engine.persistence_layer.get_model_ids(test_tablename)
     assert sorted(model_ids) == range(num_models)
     for i in range(num_models):
       model = engine.persistence_layer.get_models(test_tablename, i)
       assert model['iterations'] == it
+  
+  for it in (3,4): # models were analyzed by previous for loop, so start counting at 3.
+    engine.analyze(test_tablename, model_indices='all', iterations=1, background=False)
+    analyze_results = engine.show_analyze(test_tablename)
+    assert 'not currently being analyzed' in analyze_results['message']
+    model_ids = engine.persistence_layer.get_model_ids(test_tablename)
+    assert sorted(model_ids) == range(num_models)
+    for i in range(num_models):
+      model = engine.persistence_layer.get_models(test_tablename, i)
+      assert model['iterations'] == it
+
+      
 
 def test_nan_handling():
   test_tablename1, _ = create_dha(path='data/dha_missing.csv') 

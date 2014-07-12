@@ -132,7 +132,7 @@ class Client(object):
         if not pretty:
             return return_list
 
-    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True, key_column=None):
+    def execute_statement(self, bql_statement_ast, pretty=True, timing=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True, key_column=None):
         """
         Accepts a SINGLE BQL STATEMENT as input, parses it, and executes it if it was parsed
         successfully.
@@ -150,11 +150,12 @@ class Client(object):
             start_time = time.time()
 
         parser_out = None
+        ##TODO move pyparsing objects out of client into parser
         if debug:
-            parser_out = self.parser.parse_single_statement(bql_statement_string)
+            parser_out = self.parser.parse_single_statement(bql_statement_ast)
         else:
             try:
-                parser_out = self.parser.parse_single_statement(bql_statement_string)
+                parser_out = self.parser.parse_single_statement(bql_statement_ast)
             except Exception as e:            
                 raise utils.BayesDBParseError(str(e))
         if parser_out is None:

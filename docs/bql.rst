@@ -198,7 +198,11 @@ Instead of manually typing in a comma-separated list of columns for queries, you
 
 Since it may be hard to see example what you'd put in the WHERE or ORDER by clause, take a look at an example, and be sure to read the :ref:`functions` section below::
 
-  ESTIMATE COLUMNS FROM table WHERE TYPICALITY > 0.6 ORDER BY DEPENDENCE PROBABILITY WITH name;  
+  ESTIMATE COLUMNS FROM table WHERE TYPICALITY > 0.6 ORDER BY DEPENDENCE PROBABILITY WITH name;
+
+A simpler way to create column lists by explicitly listing column names is to use CREATE COLUMN LIST::
+
+  CREATE COLUMN LIST <col1>[, <col2>...] FROM <btable> AS <column_list>
 
 You can print out the names of the stored column lists in your btable with::
 
@@ -206,7 +210,8 @@ You can print out the names of the stored column lists in your btable with::
 
 And you can view the columns in a given column list or table with::
 
-   SHOW COLUMNS FOR <column_list|btable>
+   SHOW COLUMNS <column_list> FOR <btable>
+
 
 Row Lists
 ~~~~~~~~~

@@ -154,6 +154,8 @@ update_metadata_for_keyword.setParseAction(replaceWith("update_metadata"))
 label_columns_for_keyword = Combine(label_keyword + single_white + 
                                     column_keyword + single_white + for_keyword).setResultsName("statement_id")
 label_columns_for_keyword.setParseAction(replaceWith("label_columns"))
+show_columns_keyword = Combine(show_keyword + single_white + multiple_columns_keyword).setResultsName("statement_id")
+show_columns_keyword.setParseAction(replaceWith("show_columns"))
 show_metadata_for_keyword = Combine(show_keyword + single_white + 
                                     metadata_keyword + single_white + for_keyword).setResultsName("statement_id")
 show_metadata_for_keyword.setParseAction(replaceWith("show_metadata"))
@@ -190,10 +192,6 @@ show_column_lists_for_keyword = Combine(show_keyword + single_white + column_key
                                         single_white + list_keyword + 
                                         single_white + for_keyword).setResultsName("statement_id")
 show_column_lists_for_keyword.setParseAction(replaceWith("show_column_lists"))
-show_columns_for_keyword = Combine(show_keyword + single_white + column_keyword + 
-                                   single_white + for_keyword).setResultsName("statement_id")
-show_columns_for_keyword.setParseAction(replaceWith("show_columns"))
-show_columns_keyword = Combine(show_keyword + single_white + column_keyword)
 show_row_lists_for_keyword = Combine(show_keyword + single_white + row_keyword + 
                                  single_white + list_keyword + 
                                  single_white + for_keyword).setResultsName("statement_id")
@@ -201,6 +199,8 @@ show_row_lists_for_keyword.setParseAction(replaceWith("show_row_lists"))
 estimate_pairwise_keyword = Combine(estimate_keyword + single_white + 
                                     pairwise_keyword).setResultsName("statement_id")
 estimate_pairwise_keyword.setParseAction(replaceWith("estimate_pairwise"))
+create_column_list_keyword = Combine(create_keyword + single_white + single_column_keyword + single_white + single_list_keyword).setResultsName("statement_id")
+create_column_list_keyword.setParseAction(replaceWith("create_column_list"))
 estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
                                         single_white + row_keyword).setResultsName("statement_id")
 estimate_pairwise_row_keyword.setParseAction(replaceWith('estimate_pairwise_row'))
@@ -296,6 +296,12 @@ update_metadata_for_function = (update_metadata_for_keyword + btable +
 label_columns_for_function = (label_columns_for_keyword + btable + 
                               (set_keyword + label_clause | from_keyword + filename))
 
+# SHOW COLUMNS <column_list> FOR <btable>
+show_columns_function = (show_columns_keyword +
+                         Optional(identifier.setResultsName('column_list')) +
+                         for_keyword +
+                         btable)
+
 # SHOW METADATA FOR <btable> [<metadata-key1> [, <metadata-key2>...]]
 show_metadata_function = (show_metadata_for_keyword + 
                           btable + 
@@ -358,7 +364,6 @@ show_for_btable_statement = ((show_schema_for_keyword |
                               show_models_for_keyword | 
                               show_diagnostics_for_keyword | 
                               show_column_lists_for_keyword |  
-                              show_columns_for_keyword |
                               show_analyze_for_keyword |
                               show_row_lists_for_keyword) + 
                              btable)
@@ -396,6 +401,7 @@ management_query = (create_btable_function |
                     label_columns_for_function | 
                     show_label_function |
                     show_metadata_function |
+                    show_columns_function |
                     cancel_analyze_for_function |
                     quit_function)
 
@@ -531,7 +537,8 @@ query_id = (select_keyword |
             simulate_keyword | 
             estimate_pairwise_row_keyword |
             estimate_pairwise_keyword |
-            estimate_keyword).setResultsName('statement_id')
+            estimate_keyword |
+            create_column_list_keyword).setResultsName('statement_id')
 
 function_in_query = (predictive_probability_of_function |
                      probability_of_function |
