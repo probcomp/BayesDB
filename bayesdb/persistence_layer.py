@@ -154,6 +154,7 @@ class PersistenceLayer():
 
     def get_metadata(self, tablename):
         try:
+            x = os.path.join(self.data_dir, tablename, 'metadata.pkl')
             f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'r')
         except Exception as e:
             raise utils.BayesDBError("Error: metadata does not exist. Has %s been corrupted?" % self.data_dir)
@@ -611,6 +612,19 @@ class PersistenceLayer():
         # Add to btable name index
         self.add_btable_to_index(tablename)
 
+    def upgrade_btable(self, tablename, cctypes_full, T_full, M_r_full, M_c_full, raw_T_full):
+        """
+        This function is called to upgrade a btable.
+        Right now, it only updates the _full version of variables, because those are the only
+        possible upgraded attributes, because the only possible upgrade reasons are:
+        1. Creation of metadata_full
+        2. Addition of key column.
+
+        This will leave models, column labels, columns lists, and row lists intact.
+        """
+        # Write metadata_full
+        metadata_full = dict(M_c_full=M_c_full, M_r_full=M_r_full, T_full=T_full, cctypes_full=cctypes_full, raw_T_full=raw_T_full)
+        self.write_metadata_full(tablename, metadata_full)
 
     def add_models(self, tablename, model_list):
         """

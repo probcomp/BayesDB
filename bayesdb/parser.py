@@ -139,6 +139,14 @@ class Parser(object):
         return 'create_btable', dict(tablename=tablename, cctypes_full=None), dict(csv_path=filename)
         #TODO types?
 
+    def parse_upgrade_btable(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('upgrade_btable', args_dict, client_dict):
+        """
+        tablename = bql_statement_ast.btable
+        return 'upgrade_btable', dict(tablename=tablename), None
+
     def parse_update_schema(self,bql_statement_ast):
         """
         :param bql_statement_ast pyparsing.ParseResults:
