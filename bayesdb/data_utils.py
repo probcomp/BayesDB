@@ -571,8 +571,14 @@ def insert_key_column(T_df, colnames_full, cctypes_full):
     Create a new table key column. It'll be the left-most column and an ascending integer column,
     with name 'key' and cctype 'key'.
     """
-    T_df.insert(0, 'key', map(str, range(T_df.shape[0])))
+    key_column_name = 'key'
+    if key_column_name in colnames_full:
+        key_column_suffix = 0
+        while key_column_name + str(key_column_suffix) in colnames_full:
+            key_column_suffix += 1
+        key_column_name = key_column_name + str(key_column_suffix)
+    T_df.insert(0, key_column_name, map(str, range(T_df.shape[0])))
     raw_T_full = T_df.to_records(index=False)
-    colnames_full.insert(0, 'key')
+    colnames_full.insert(0, key_column_name)
     cctypes_full.insert(0, 'key')
-    return raw_T_full, colnames_full, cctypes_full, 'key'
+    return raw_T_full, colnames_full, cctypes_full, key_column_name
