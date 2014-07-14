@@ -298,8 +298,8 @@ def summarize_freqs(x, n=5):
 
     # Create index labels ('mode1/2/3/... and prob_mode1/2/3...')
     x_range = range(1, len(x_values) + 1)
-    x_index = ['mode' + str(i) for i in x_range]
-    x_index += ['prob_mode' + str(i) for i in x_range]
+    x_index = ['mode' + str(i) if i > 1 else 'mode' for i in x_range]
+    x_index += ['prob_mode' + str(i) if i > 1 else 'prob_mode' for i in x_range]
 
     # Combine values and probabilities into a single list
     x_values.extend(x_probs)
@@ -448,7 +448,8 @@ def summarize_table(data, columns, M_c):
         if 'top' in summary_describe.index and 'freq' in summary_describe.index:
             summary_describe = summary_describe.drop(['top', 'freq'])
 
-        summary_freqs = df.apply(summarize_freqs, n=5)
+        # Past versions used n=5 for 5 most frequent values, but now we have FREQ SELECT for freq tables.
+        summary_freqs = df.apply(summarize_freqs, n=1)
 
         # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
         summary_data = pandas.concat([cctypes, summary_describe, summary_freqs], axis=0)
@@ -456,8 +457,8 @@ def summarize_table(data, columns, M_c):
         # Reorder rows: count, unique, mean, std, min, 25%, 50%, 75%, max, modes, prob_modes
         if hasattr(summary_data, 'loc'):
             potential_index = pandas.Index(['type', 'count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
-                'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
-                'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5'])
+                'mode', 'mode2', 'mode3', 'mode4', 'mode5', \
+                'prob_mode', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5'])
 
             reorder_index = potential_index[potential_index.isin(summary_data.index)]
             summary_data = summary_data.loc[reorder_index]
