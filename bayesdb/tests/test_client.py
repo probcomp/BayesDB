@@ -469,7 +469,7 @@ def test_summarize():
 
   # Test with fewer than 5 unique values (output should have fewer rows)
   out = client('summarize select name, qual_score from %s limit 3' % (test_tablename), debug=True, pretty=False)[0]
-  assert out.shape == (16, 3)
+  assert out.shape == (12, 3)
 
   # Test with no rows
   out = client('summarize select name, qual_score from %s where qual_score < 0' % (test_tablename), debug=True, pretty=False)[0]
