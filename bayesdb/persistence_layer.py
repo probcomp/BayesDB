@@ -387,7 +387,9 @@ class PersistenceLayer():
     def drop_btable(self, tablename):
         """Delete a single btable."""
         if tablename in self.btable_index:
-            shutil.rmtree(os.path.join(self.data_dir, tablename))
+            path = os.path.join(self.data_dir, tablename)
+            if os.path.isdir(path):
+                shutil.rmtree(path)
             self.remove_btable_from_index(tablename)
         return 0
         
