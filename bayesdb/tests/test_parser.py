@@ -936,20 +936,19 @@ def test_parse_functions():
     function_groups = ast_1.functions
     
     queries, query_cols = parser.parse_functions(function_groups, M_c = test_M_c, T=test_T)
-    assert queries[0] == (functions._row_id, None, False)
-    assert queries[1] == (functions._predictive_probability, 0, False)
-    assert queries[2] == (functions._mutual_information, (0,1), True)
-    assert queries[3] == (functions._correlation, (0,1), True)
-    assert queries[4] == (functions._dependence_probability, (0,1), True)
+    assert queries[0] == (functions._predictive_probability, 0, False)
+    assert queries[1] == (functions._mutual_information, (0,1), True)
+    assert queries[2] == (functions._correlation, (0,1), True)
+    assert queries[3] == (functions._dependence_probability, (0,1), True)
+    assert queries[4] == (functions._similarity, (0,None), False)
     assert queries[5] == (functions._similarity, (0,None), False)
-    assert queries[6] == (functions._similarity, (0,None), False)
-    assert queries[7] == (functions._probability, (0,'1'), True)
-    assert queries[8] == (functions._probability, (1,1), True)
-    assert queries[9] == (functions._col_typicality, 0, True)
-    assert queries[10] == (functions._row_typicality, True, False)
+    assert queries[6] == (functions._probability, (0,'1'), True)
+    assert queries[7] == (functions._probability, (1,1), True)
+    assert queries[8] == (functions._col_typicality, 0, True)
+    assert queries[9] == (functions._row_typicality, True, False)
+    assert queries[10] == (functions._column, (0, None), False)
     assert queries[11] == (functions._column, (0, None), False)
-    assert queries[12] == (functions._column, (0, None), False)
-    assert queries[13] == (functions._column, (1, None), False)
+    assert queries[12] == (functions._column, (1, None), False)
     
 def test_select():
     ##TODO test client_dict

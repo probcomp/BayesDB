@@ -51,7 +51,7 @@ def teardown_function(function):
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   header, rows = data_utils.read_csv(path)  
-  create_btable_result = engine.create_btable(test_tablename, header, rows)
+  create_btable_result = engine.create_btable(test_tablename, header, rows, key_column=0)
   metadata = engine.persistence_layer.get_metadata(test_tablename)
   
   global test_tablenames
@@ -64,7 +64,10 @@ def test_create_btable():
   assert 'columns' in create_btable_result
   assert 'data' in create_btable_result
   assert 'message' in create_btable_result
-  assert len(create_btable_result['data'][0]) == 64 ## 64 is number of columns in DHA dataset
+  # Should be 65 rows (1 for each column inferred: 64 from data file, plus 1 for key)
+  assert len(create_btable_result['data']) == 65
+  # Should be 2 columns: 1 for column names, and 1 for the type
+  assert len(create_btable_result['data'][0]) == 2
   list_btables_result = engine.list_btables()['data']
   assert [test_tablename] in list_btables_result
   engine.drop_btable(test_tablename)
@@ -90,10 +93,10 @@ def test_select():
   select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
   assert 'columns' in select_result
   assert 'data' in select_result
-  assert select_result['columns'] == ['row_id', 'name', 'qual_score']
+  assert select_result['columns'] == ['key', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
   assert len(select_result['data']) == 307 and len(select_result['data'][0]) == len(select_result['columns'])
-  assert type(select_result['data'][0][0]) == int ## type of row_id is int
+  assert type(select_result['data'][0][0]) == numpy.string_
   t = type(select_result['data'][0][1]) 
   assert (t == unicode) or (t == str) or (t == numpy.string_) ## type of name is unicode or string
   assert type(select_result['data'][0][2]) == float ## type of qual_score is float
@@ -291,10 +294,10 @@ def test_infer():
   infer_result = engine.infer(test_tablename, functions, confidence, whereclause, limit, numsamples, order_by)
   assert 'columns' in infer_result
   assert 'data' in infer_result
-  assert infer_result['columns'] == ['row_id', 'name', 'qual_score']
+  assert infer_result['columns'] == ['key', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
   assert len(infer_result['data']) == 307 and len(infer_result['data'][0]) == len(infer_result['columns'])
-  assert type(infer_result['data'][0][0]) == int ## type of row_id is int
+  assert type(infer_result['data'][0][0]) == numpy.string_ ## type of key is int
   t = type(infer_result['data'][0][1])
   assert (t == unicode) or (t == numpy.string_) ## type of name is string
   assert type(infer_result['data'][0][2]) == float ## type of qual_score is float
@@ -395,8 +398,9 @@ def test_show_schema():
   assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
 
   schema = engine.show_schema(test_tablename)
-  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes)
-  assert schema['data'][0][0] == 'name'
+  cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)
+  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes_full)
+  assert schema['data'][0][0] == 'key'
   
   mappings = dict(qual_score='multinomial')
   engine.update_schema(test_tablename, mappings)
@@ -404,8 +408,9 @@ def test_show_schema():
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
   
   schema = engine.show_schema(test_tablename)
-  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes)
-  assert schema['data'][0][0] == 'name'
+  cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)
+  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes_full)
+  assert schema['data'][0][0] == 'key'
 
 def test_show_models():
   test_tablename, _ = create_dha()

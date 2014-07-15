@@ -322,7 +322,7 @@ class Engine(object):
     ret['message'] = 'Updated schema.'
     return ret
     
-  def create_btable_from_existing(self, tablename, colnames_full, data, M_c):
+  def create_btable_from_existing(self, tablename, query_colnames, cctypes_existing_full, M_c_existing_full, query_data):
     """
     Used in INTO statements to create a new btable as a portion of an existing one.
     """
@@ -330,29 +330,31 @@ class Engine(object):
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
 
-    # Remove row_id from table
-    if 'row_id' in colnames_full:
-      df = pandas.DataFrame(data=data, columns=colnames_full)
-      utils.df_drop(df, ['row_id'], axis=1)
-      data = df.to_records(index=False)
-      colnames_full = df.columns
+    cctypes_full = data_utils.guess_column_types(query_data)
+    for query_idx, query_colname in enumerate(query_colnames):
+        if query_colname in M_c_existing_full['name_to_idx']:
+            cctypes_full[query_idx] = cctypes_existing_full[M_c_existing_full['name_to_idx'][query_colname]]
 
-    cctypes_full = [utils.get_cctype_from_M_c(M_c, col) for col in colnames_full]
-    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, data, cctypes=cctypes_full)
+    if 'key' not in cctypes_full:
+        raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(query_data, query_colnames, cctypes_full, key_column=None, accept=True)
+    else:
+        raw_T_full = query_data
+        colnames_full = query_colnames
+    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
     # variables without "_full" don't include ignored columns.
-    raw_T, cctypes, colnames = data_utils.remove_ignore_cols(data, cctypes_full, colnames_full)
+    raw_T, cctypes, colnames = data_utils.remove_ignore_cols(T_full, cctypes_full, colnames_full)
     T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
-    self.persistence_layer.create_btable(tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, data)
+    self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, query_data)
 
     return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
 
-  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None):
+  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None):
     """Uplooad a csv table to the predictive db.
     cctypes must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
     column name must be present in the dictionary: default is continuous."""
-    
+
     ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
@@ -362,15 +364,68 @@ class Engine(object):
     raw_T_full = data_utils.convert_nans(raw_T_full)
     if cctypes_full is None:
       cctypes_full = data_utils.guess_column_types(raw_T_full)
+    raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column)
     T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
     # variables without "_full" don't include ignored columns.
     raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
     T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
       
-    self.persistence_layer.create_btable(tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full)
+    self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full)
 
-    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Inferred schema:' % tablename)
+    data = [[colname, cctype] for colname, cctype in zip(colnames_full, cctypes_full)]
+    columns = ['column', 'type']
+
+    return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename)
+
+  def upgrade_btables(self, upgrade_key_column=None):
+    """
+    Btables created in early versions of BayesDB may not have attributes that are required in more
+    recent versions of BayesDB (example: required key column). This function allows them to be
+    upgraded simply, without having to manually recreate the btable and re-load models.
+    """
+    tablenames = self.persistence_layer.btable_index
+    for tablename in tablenames:
+        # 1. Check for readable metadata file - if not found or not readable, the table's data files 
+        #       have become corrupted, and the table must be dropped.
+        try:
+            metadata = self.persistence_layer.get_metadata(tablename)
+        except utils.BayesDBError:
+            print "Metadata for %s have been corrupted, and the table must be dropped." % tablename
+            print "Press any key to confirm, and then re-create it using CREATE BTABLE"
+            user_input = raw_input()
+            self.drop_btable(tablename)
+            continue
+
+        # 2. Check for metadata_full file - if not found, create it from metadata.
+        #       Okay to use metadata since btables created that long ago won't have ignore/key columns.
+        try:
+            metadata_full = self.persistence_layer.get_metadata_full(tablename)
+        except utils.BayesDBError:
+            metadata = self.persistence_layer.get_metadata(tablename)
+            metadata_full = metadata
+            # Rename metadata keys with suffix '_full'
+            for key in metadata.keys():
+                metadata_full[key + '_full'] = metadata_full.pop(key)
+            # Btables created without a metadata_full file don't have raw_T_full saved in metadata, so we need to recreate it.
+            metadata_full['raw_T_full'] = data_utils.gen_raw_T_full_from_T_full(metadata_full['T_full'], metadata_full['M_c_full'])
+            self.persistence_layer.write_metadata_full(tablename, metadata_full)
+            print "Upgraded %s: added metadata_full file" % tablename
+
+        # 3. Check for key column - if not found, add one.
+        if 'key' not in metadata_full['cctypes_full']:
+            print "Table %s is from an old version of BayesDB and does not have a key column." % tablename
+            raw_T_full = metadata_full['raw_T_full']
+            colnames_full = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
+            cctypes_full = metadata_full['cctypes_full']
+
+            raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=upgrade_key_column)
+            T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+
+            # Don't need to update T, M_r, M_c, cctypes (variables without "_full")
+            #   because they don't include ignore/key columns.
+            self.persistence_layer.upgrade_btable(tablename, cctypes_full, T_full, M_r_full, M_c_full, raw_T_full)
+            print "Upgraded %s: added key column" % tablename
 
   def show_schema(self, tablename):
     if not self.persistence_layer.check_if_table_exists(tablename):
@@ -627,12 +682,14 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     M_c_full, M_r_full, T_full = self.persistence_layer.get_metadata_and_table_full(tablename)
-
+    
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     column_lists = self.persistence_layer.get_column_lists(tablename)
 
+    key_column_name = self.persistence_layer.get_key_column_name(tablename)
+
     # Parse queries, where_conditions, and order by.
-    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, column_lists)
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, column_lists, key_column_name)
     if whereclause == None: 
       where_conditions = []
     else:
@@ -731,7 +788,7 @@ class Engine(object):
             # Save value, if it will be displayed in output.
             if order_by_idxs[o_idx] < query_size:
               row[order_by_idxs[o_idx]] = score
-            
+
           if desc:
             if data_utils.get_can_cast_to_float([score]):
               score = float(score)
@@ -773,7 +830,8 @@ class Engine(object):
 
     # Execute INTO statement
     if newtablename is not None:
-      self.create_btable_from_existing(newtablename, query_colnames, data, M_c)
+      cctypes_full = self.persistence_layer.get_cctypes_full(tablename)
+      self.create_btable_from_existing(newtablename, query_colnames, cctypes_full, M_c_full, data)
 
     ret = dict(data=data, columns=query_colnames)
     if plot:
@@ -823,14 +881,14 @@ class Engine(object):
     
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
+    # Set M_c_full to None because we don't want to simulate key/ignore columns
     queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=None, column_lists=column_lists)
     ##TODO check duplicates
     ##TODO check for no functions
     
     ##TODO col_indices, colnames are a hack from old parsing
     
-    col_indices = [query[1][0] for query in queries[1:]]
-    colnames = query_colnames[1:]
+    col_indices = [query[1][0] for query in queries]
     query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
 
@@ -856,18 +914,21 @@ class Engine(object):
 
     # Execute INTO statement
     if newtablename is not None:
-      self.create_btable_from_existing(newtablename, colnames, data, M_c)
-          
-    ret = {'columns': colnames, 'data': data}
+      cctypes = self.persistence_layer.get_cctypes(tablename)
+      newtable_info = self.create_btable_from_existing(newtablename, query_colnames, cctypes, M_c, data)
+      if 'key' in query_colnames:
+          query_colnames.remove('key')
+
+    ret = {'columns': query_colnames, 'data': data}
     if plot:
       ret['M_c'] = M_c
     elif summarize | hist | freq:
       if summarize:
-        data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c)
+        data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c, remove_key=False)
       elif hist:
-        data, columns = utils.histogram_table(ret['data'], ret['columns'], M_c)
+        data, columns = utils.histogram_table(ret['data'], ret['columns'], M_c, remove_key=False)
       elif freq:
-        data, columns = utils.freq_table(ret['data'], ret['columns'], M_c)
+        data, columns = utils.freq_table(ret['data'], ret['columns'], M_c, remove_key=False)
       ret['data'] = data
       ret['columns'] = columns
     return ret
