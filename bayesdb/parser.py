@@ -24,6 +24,9 @@ import bql_grammar as bql
 import pyparsing as pp
 import functions
 import operator
+import ast
+import sklearn.linear_model
+import sklearn.ensemble
 
 class Parser(object):
     def __init__(self):
@@ -156,7 +159,36 @@ class Parser(object):
         mappings = dict()
         type_clause = bql_statement_ast.type_clause
         for update in type_clause:
-            mappings[update[0]]=update[1]
+            if update[1] == 'discriminative':
+                disc_type = sklearn.linear_model.LinearRegression
+                if update.discriminative_type != '':
+                    ## Allowable cases. If the type is not recognized, raises error. 
+                    raw_type = update.discriminative_type
+                    if raw_type == 'linear regression':
+                        disc_type = sklearn.linear_model.LinearRegression
+                    elif raw_type == 'logistic regression':
+                        disc_type = sklearn.linear_model.LogisticRegression
+                    elif raw_type == 'multi-class random forest':
+                        disc_type = sklearn.ensemble.RandomForestClassifier
+                    else:
+                        raise utils.BayesDBParseError("Error: '%s' is not a valid discriminative type. Only 'linear regression', 'logistic regression', and 'multi-class random forest' are allowed." 
+                                                      % update.discriminative_type)
+                disc_params = dict()
+                if update.discriminative_params != '':
+                    for param in update.discriminative_params.asList():
+                        try:
+                            value = ast.literal_eval(param[1])
+                        except ValueError:
+                            value = param[1]
+                        except SyntaxError:
+                            value = param[1]
+                        disc_params[param[0]] = value
+                disc_input = None
+                if update.discriminative_input != '':
+                    disc_input = update.discriminative_input.asList()
+                mappings[update[0]] = dict(types=disc_type,params=disc_params,inputs=disc_input)
+            else:
+                mappings[update[0]]=update[1]
         return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
     def parse_drop_btable(self,bql_statement_ast):

@@ -30,6 +30,10 @@ from bayesdb.engine import Engine
 from bayesdb.parser import Parser
 import bayesdb.functions as functions
 import numpy
+import sklearn.linear_model
+import sklearn.ensemble
+
+
 engine = Engine('local')
 parser = Parser()
 
@@ -1004,7 +1008,36 @@ def test_parse_functions():
     assert queries[10] == (functions._column, (0, None), False)
     assert queries[11] == (functions._column, (0, None), False)
     assert queries[12] == (functions._column, (1, None), False)
-    
+
+def test_update_schema():
+    method, args, client_dict = parser.parse_update_schema(bql_statement.parseString("update schema for test_btable set test_col = discriminative type multi-class random forest, params {a=4 b=test c=None d = True e = 'a a'}, input col1, col2",parseAll=True))
+    assert method == 'update_schema'
+    assert args['tablename'] == 'test_btable'
+    mappings = args['mappings']['test_col']
+    assert mappings['types'] == sklearn.ensemble.RandomForestClassifier
+    assert mappings['params'] == {'a': 4, 'b': 'test', 'c': None, 'd': True, 'e': 'a a'}
+    assert mappings['inputs'] == ['col1', 'col2']
+
+    method, args, client_dict = parser.parse_update_schema(bql_statement.parseString("update schema for test_btable set test_col = discriminative type linear regression",parseAll=True))
+    mappings = args['mappings']['test_col']
+    assert mappings['types'] == sklearn.linear_model.LinearRegression
+    assert mappings['params'] == {}
+    assert mappings['inputs'] == None
+
+    method, args, client_dict = parser.parse_update_schema(bql_statement.parseString("update schema for test_btable set test_col = discriminative type logistic regression, params {a=4 b=test c=None d = True e = 'a a'}, input col1",parseAll=True))
+    mappings = args['mappings']['test_col']
+    assert mappings['types'] == sklearn.linear_model.LogisticRegression
+    assert mappings['inputs'] == ['col1']
+
+    method, args, client_dict = parser.parse_update_schema(bql_statement.parseString("update schema for test_btable set test_col = discriminative",parseAll=True))
+    assert method == 'update_schema'
+    assert args['tablename'] == 'test_btable'
+    mappings = args['mappings']['test_col']
+    assert mappings['types'] == sklearn.linear_model.LinearRegression
+    assert mappings['inputs'] == None
+    assert mappings['params'] == {}
+
+
 def test_select():
     ##TODO test client_dict
     tablename = 't'
