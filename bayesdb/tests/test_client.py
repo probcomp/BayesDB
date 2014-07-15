@@ -412,7 +412,9 @@ def test_into():
 
   # Test that select can produce a new btable with INTO, and that it can be analyzed and manipulated like other btables
   client('select name, qual_score from %s limit 5 into test_btable_select' % test_tablename, debug=True, pretty=False)
-  assert len(client('select * from test_btable_select', debug=True, pretty=False)[0]) == 5
+  out = client('select * from test_btable_select', debug=True, pretty=False)[0]
+  assert len(out) == 5
+  assert (out.columns == ['key', 'name', 'qual_score']).all()
 
   client('summarize select * from test_btable_select')
   client('label columns for test_btable_select set qual_score = quality')
@@ -420,6 +422,8 @@ def test_into():
   client('initialize 2 models for test_btable_select')
   client('analyze test_btable_select for 2 iterations')
   client('simulate * from test_btable_select times 5')
+
+  client('drop btable test_btable_select', yes=True)
 
 def test_pandas():
   test_tablename = create_dha()
