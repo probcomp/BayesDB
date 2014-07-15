@@ -158,7 +158,10 @@ class PersistenceLayer():
             f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'r')
         except Exception as e:
             raise utils.BayesDBError("Error: metadata does not exist. Has %s been corrupted?" % self.data_dir)
-        metadata = pickle.load(f)
+        try:
+            metadata = pickle.load(f)
+        except Exception as e:
+            raise utils.BayesDBError("Error: metadata file could not be loaded for table %s" % tablename)
         f.close()
         return metadata
 

@@ -386,7 +386,18 @@ class Engine(object):
     """
     tablenames = self.persistence_layer.btable_index
     for tablename in tablenames:
-        # 1. Check for metadata_full file - if not found, create it from metadata.
+        # 1. Check for readable metadata file - if not found or not readable, the table's data files 
+        #       have become corrupted, and the table must be dropped.
+        try:
+            metadata = self.persistence_layer.get_metadata(tablename)
+        except utils.BayesDBError:
+            print "Metadata for %s have been corrupted, and the table must be dropped." % tablename
+            print "Press any key to confirm, and then re-create it using CREATE BTABLE"
+            user_input = raw_input()
+            self.drop_btable(tablename)
+            continue
+
+        # 2. Check for metadata_full file - if not found, create it from metadata.
         #       Okay to use metadata since btables created that long ago won't have ignore/key columns.
         try:
             metadata_full = self.persistence_layer.get_metadata_full(tablename)
@@ -401,7 +412,7 @@ class Engine(object):
             self.persistence_layer.write_metadata_full(tablename, metadata_full)
             print "Upgraded %s: added metadata_full file" % tablename
 
-        # 2. Check for key column - if not found, add one.
+        # 3. Check for key column - if not found, add one.
         if 'key' not in metadata_full['cctypes_full']:
             print "Table %s is from an old version of BayesDB and does not have a key column." % tablename
             raw_T_full = metadata_full['raw_T_full']
