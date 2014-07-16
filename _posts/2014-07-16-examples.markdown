@@ -67,12 +67,12 @@ Here McAllen, Texas has a predictive probability orders of magnitide lower than 
 
 ###Further information
 
-#General Social Survey
-##Responses to ~5500 demographic, behavioral and attitudinal questions by US residents.
-
 The BayesDB-ready .csv and pre-computed models used here can be found in the `/examples` directory in the [BayesDB Github Repository](https://github.com/mit-probabilistic-computing-project/BayesDB/tree/master/examples/dha).
 
 For more information about the Dartmouth Atlas of Health Care, [http://www.dartmouthatlas.org/](http://www.dartmouthatlas.org/).
+
+#General Social Survey
+##Responses to ~5500 demographic, behavioral and attitudinal questions by US residents.
 
 According to economics research, homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities  (DiPasquale, D., &amp; Glaeser, E. L., 1999). For this reason, homeowners have been labeled better citizens (DiPasquale, D., &amp; Glaeser, E. L., 1999; McCabe, 2013). 
 
