@@ -37,7 +37,7 @@ def turn_off_labels(subplot):
     subplot.axes.get_yaxis().set_visible(False)
          
 
-def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False):
+def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, remove_key=False):
     '''
     colnames: list of column names
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
@@ -45,14 +45,14 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False):
     scatter: False if histogram, True if scatterplot
     '''
     numcols = len(colnames)
-    if colnames[0] == 'row_id':
+    if remove_key:
         numcols -= 1
     if numcols > 1:
         gsp = gs.GridSpec(1, 1)
-        plots = create_pairwise_plot(colnames, data, M_c, gsp)
+        plots = create_pairwise_plot(colnames, data, M_c, gsp, remove_key=remove_key)
     else:
         f, ax = p.subplots()
-        create_plot(parse_data_for_hist(colnames, data, M_c), ax, horizontal=True)
+        create_plot(parse_data_for_hist(colnames, data, M_c, remove_key=remove_key), ax, horizontal=True)
     if filename:
         p.savefig(filename)
         p.close()
@@ -190,7 +190,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
     subplot.set_aspect(aspect)
     return subplot
 
-def parse_data_for_hist(colnames, data, M_c):
+def parse_data_for_hist(colnames, data, M_c, remove_key=False):
     data_c = []
     for i in data:
         no_nan = True
@@ -202,12 +202,12 @@ def parse_data_for_hist(colnames, data, M_c):
     output = {}
     columns = colnames[:]
     data_no_id = [] # This will be the data with the row_ids removed if present
-    if colnames[0] == 'row_id':
+    if remove_key:
         columns.pop(0)
     if len(data_c) == 0:
         raise utils.BayesDBError('There are no datapoints that contain values from every category specified. Try excluding columns with many NaN values.')
     if len(columns) == 1:
-        if colnames[0] == 'row_id':
+        if remove_key:
             data_no_id = [x[1] for x in data_c]
         else:
             data_no_id = [x[0] for x in data_c]
@@ -236,7 +236,7 @@ def parse_data_for_hist(colnames, data, M_c):
             output['data'] = counts
 
     elif len(columns) == 2:
-        if colnames[0] == 'row_id':
+        if remove_key:
             data_no_id = [(x[1], x[2]) for x in data_c]
         else:
             data_no_id = [(x[0], x[1]) for x in data_c]
@@ -320,11 +320,11 @@ def parse_data_for_hist(colnames, data, M_c):
         output['datatype'] = None
     return output
 
-def create_pairwise_plot(colnames, data, M_c, gsp):
+def create_pairwise_plot(colnames, data, M_c, gsp, remove_key=False):
     output = {}
     columns = colnames[:]
     data_no_id = [] #This will be the data with the row_ids removed if present
-    if colnames[0] == 'row_id':
+    if remove_key:
         columns.pop(0)
         data_no_id = [x[1:] for x in data]
     else:
