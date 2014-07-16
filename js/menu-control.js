@@ -39,9 +39,20 @@ function link_menu_button(){
 	);
 };
 
-function get_menu_items(){
+function get_menu_items_docs(){
 	var menu = $('#mobile-sidebar-ul');
 	$('div.layout h1, div.layout h2, div.layout h3').each(function(){
+		var header_text = $(this).html();
+		var anchor_id = header_text.replace(/[^A-Z0-9]+/ig, "_");
+		$(this).prepend('<a id="' + anchor_id + '">');
+		menu.append('<li><a href="#' + anchor_id + '">' + header_text + '</a></li>');
+	});
+}
+
+
+function get_menu_items_examples(){
+	var menu = $('#mobile-sidebar-ul');
+	$('div.layout h1').each(function(){
 		var header_text = $(this).html();
 		var anchor_id = header_text.replace(/[^A-Z0-9]+/ig, "_");
 		$(this).prepend('<a id="' + anchor_id + '">');
