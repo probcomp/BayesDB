@@ -39,6 +39,7 @@ to_keyword = CaselessKeyword('to')
 ## creating them separately like this allows for simpler whitespace and case flexibility
 conf_keyword = CaselessKeyword("conf")
 create_keyword = CaselessKeyword("create")
+upgrade_keyword = CaselessKeyword("upgrade")
 execute_keyword = CaselessKeyword("execute")
 file_keyword = CaselessKeyword("file")
 update_keyword = CaselessKeyword("update")
@@ -145,6 +146,9 @@ execute_file_keyword = Combine(execute_keyword + single_white + file_keyword).se
 execute_file_keyword.setParseAction(replaceWith("execute_file"))
 create_btable_keyword = Combine(create_keyword + single_white + btable_keyword).setResultsName("statement_id")
 create_btable_keyword.setParseAction(replaceWith('create_btable'))
+upgrade_btable_keyword = Combine(upgrade_keyword + single_white + btable_keyword).setResultsName("statement_id")
+upgrade_btable_keyword.setParseAction(replaceWith('upgrade_btable'))
+
 update_schema_for_keyword = Combine(update_keyword + single_white + 
                                     schema_keyword + single_white + for_keyword).setResultsName("statement_id")
 update_schema_for_keyword.setParseAction(replaceWith("update_schema"))
@@ -276,6 +280,9 @@ data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | k
 # CREATE BTABLE <btable> FROM <filename.csv>
 create_btable_function = create_btable_keyword + btable + Suppress(from_keyword) + filename
 
+# UPGRADE BTABLE <btable>
+upgrade_btable_function = upgrade_btable_keyword + btable
+
 # UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
 type_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + data_type_literal) + 
                                Suppress(comma_literal)) + 
@@ -385,7 +392,8 @@ drop_model_function = drop_model_keyword + Optional(index_clause) + Suppress(fro
 help_function = help_keyword + Optional(Word(alphas).setParseAction(downcaseTokens)).setResultsName("method_name") + ZeroOrMore(Word(alphas))
 quit_function = quit_keyword
 
-management_query = (create_btable_function | 
+management_query = (create_btable_function |
+                    upgrade_btable_function |
                     update_schema_for_function | 
                     execute_file_function | 
                     initialize_function | 

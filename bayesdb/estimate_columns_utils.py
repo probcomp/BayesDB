@@ -93,6 +93,7 @@ def _column_order_by(column_indices_and_data, function_list, M_c, X_L_list, X_D_
   for data, c_idx in column_indices_and_data:
     ## Apply each function to each cidx to get a #functions-length tuple of scores.
     scores = []
+    values = []
     for (f, f_args, desc) in function_list:
 
       # mutual_info, correlation, and dep_prob all take args=(i,j)
@@ -102,10 +103,13 @@ def _column_order_by(column_indices_and_data, function_list, M_c, X_L_list, X_D_
         f_args = (f_args, c_idx)
       else:
         f_args = c_idx
-        
+
       score = f(f_args, None, None, M_c, X_L_list, X_D_list, T, engine, numsamples)
       data.append(score)
-      if desc:
+      # nan values create really unpredictable sort behavior, so set score to inf for consistency
+      if numpy.isnan(score):
+        score = float('inf')
+      elif desc:
         score *= -1
       scores.append(score)
     scored_column_indices.append((tuple(scores), c_idx, tuple(data)))

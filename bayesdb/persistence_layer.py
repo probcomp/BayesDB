@@ -154,10 +154,14 @@ class PersistenceLayer():
 
     def get_metadata(self, tablename):
         try:
+            x = os.path.join(self.data_dir, tablename, 'metadata.pkl')
             f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'r')
         except Exception as e:
             raise utils.BayesDBError("Error: metadata does not exist. Has %s been corrupted?" % self.data_dir)
-        metadata = pickle.load(f)
+        try:
+            metadata = pickle.load(f)
+        except Exception as e:
+            raise utils.BayesDBError("Error: metadata file could not be loaded for table %s" % tablename)
         f.close()
         return metadata
 
@@ -383,7 +387,9 @@ class PersistenceLayer():
     def drop_btable(self, tablename):
         """Delete a single btable."""
         if tablename in self.btable_index:
-            shutil.rmtree(os.path.join(self.data_dir, tablename))
+            path = os.path.join(self.data_dir, tablename)
+            if os.path.isdir(path):
+                shutil.rmtree(path)
             self.remove_btable_from_index(tablename)
         return 0
         
@@ -479,6 +485,20 @@ class PersistenceLayer():
         metadata = self.get_metadata(tablename)
         return metadata['cctypes']
 
+    def get_cctypes_full(self, tablename):
+        """Access the table's current cctypes."""
+        metadata_full = self.get_metadata_full(tablename)
+        return metadata_full['cctypes_full']
+
+    def get_key_column_name(self, tablename):
+        metadata_full = self.get_metadata_full(tablename)
+        try: 
+            key_column_index = metadata_full['cctypes_full'].index('key')
+        except ValueError as e:
+            print "If your btable was created with an older version of BayesDB, it might not have a default key column."
+            key_column_index = metadata_full['cctypes_full'].index('key')
+        key_column_name = metadata_full['M_c_full']['idx_to_name'][str(key_column_index)]
+        return key_column_name            
 
     def update_metadata(self, tablename, M_r=None, M_c=None, T=None, cctypes=None):
         """Overwrite M_r, M_c, and T (not cctypes) for the table."""
@@ -532,14 +552,23 @@ class PersistenceLayer():
         for col, mapping in mappings.items():
             if col.lower() not in M_c_full['name_to_idx']:
                 raise utils.BayesDBError('Error: column %s does not exist.' % col)
-            if mapping not in mapping_set:
+            elif mapping not in mapping_set:
                 raise utils.BayesDBError('Error: datatype %s is not one of the valid datatypes: %s.' % (mapping, str(mapping_set)))
-                
+
             cidx = M_c_full['name_to_idx'][col.lower()]
+
+            # If the column's current type is key, don't allow the change.
+            if cctypes_full[cidx] == 'key':
+                raise utils.BayesDBError('Error: %s is already set as the table key. To change its type, reload the table using CREATE BTABLE and choose a different key column.' % col.lower())
+            # If the user tries to change a column to key, it's easier to reload the table, since at this point
+            # there aren't models anyways. Eventually we can build this in if it's desirable.
+            elif mapping == 'key':
+                raise utils.BayesDBError('Error: key column already exists. To choose a different key, reload the table using CREATE BTABLE')
+
             cctypes_full[cidx] = mapping
 
         # Make sure there isn't more than one key.
-        assert len(filter(lambda x: x=='key', cctypes_full)) <= 1
+        assert len(filter(lambda x: x=='key', cctypes_full)) == 1
 
         T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
@@ -554,7 +583,7 @@ class PersistenceLayer():
         return self.get_metadata_full(tablename)
         
 
-    def create_btable(self, tablename, cctypes_full, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full):
+    def create_btable(self, tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full):
         """
         This function is called to create a btable.
         It creates the table's persistence directory, saves data.csv and metadata.pkl.
@@ -567,7 +596,7 @@ class PersistenceLayer():
         # Write metadata and metadata_full
         metadata_full = dict(M_c_full=M_c_full, M_r_full=M_r_full, T_full=T_full, cctypes_full=cctypes_full, raw_T_full=raw_T_full)
         self.write_metadata_full(tablename, metadata_full)
-        metadata = dict(M_c=M_c, M_r= M_r, T=T, cctypes=cctypes_full)
+        metadata = dict(M_c=M_c, M_r= M_r, T=T, cctypes=cctypes)
         self.write_metadata(tablename, metadata)
 
         # Write models
@@ -589,6 +618,19 @@ class PersistenceLayer():
         # Add to btable name index
         self.add_btable_to_index(tablename)
 
+    def upgrade_btable(self, tablename, cctypes_full, T_full, M_r_full, M_c_full, raw_T_full):
+        """
+        This function is called to upgrade a btable.
+        Right now, it only updates the _full version of variables, because those are the only
+        possible upgraded attributes, because the only possible upgrade reasons are:
+        1. Creation of metadata_full
+        2. Addition of key column.
+
+        This will leave models, column labels, columns lists, and row lists intact.
+        """
+        # Write metadata_full
+        metadata_full = dict(M_c_full=M_c_full, M_r_full=M_r_full, T_full=T_full, cctypes_full=cctypes_full, raw_T_full=raw_T_full)
+        self.write_metadata_full(tablename, metadata_full)
 
     def add_models(self, tablename, model_list):
         """
