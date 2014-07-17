@@ -508,7 +508,7 @@ class Engine(object):
     metadata = self.persistence_layer.get_metadata(tablename)
     M_c = metadata['M_c']
     M_r = metadata['M_r']
-    if 'T_sub' in metadata:
+    if 'T_sub' in metadata and metadata['T_sub']:
       T = metadata['T_sub']
     else:
       T = metadata['T']
@@ -658,7 +658,7 @@ class Engine(object):
     """
     assert T[:len(T_sub)] == T_sub
     new_rows = T[len(T_sub):]
-    insert_args = dict(M_c=M_c, T=T_sub, X_L=X_L_list, X_D=X_D_list, new_rows=new_rows)
+    insert_args = dict(M_c=M_c, T=T_sub, X_L_list=X_L_list, X_D_list=X_D_list, new_rows=new_rows)
     X_L_list, X_D_list, T_new = self.call_backend('insert', insert_args)
     assert T_new == T
 

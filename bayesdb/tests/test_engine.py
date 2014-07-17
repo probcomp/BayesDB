@@ -272,14 +272,14 @@ def test_subsampling():
   global test_tablenames
   test_tablenames.append(test_tablename)
   
-  path = 'data/kiva.csv'
+  path = 'data/kiva_small.csv'
   header, rows = data_utils.read_csv(path)
   
-  num_rows = 10000 # rows in kiva
+  num_rows = 4 # rows in kiva_small
   num_rows_subsample = 2
   
   #client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False)
-  engine.create_btable(test_tablename, header, rows, subsample=num_rows_subsample) # only analyze using some rows
+  engine.create_btable(test_tablename, header, rows, subsample=num_rows_subsample, key_column=0) # only analyze using some rows
   # make sure select (using no models) works and returns the correct number of rows
   functions = bql.bql_statement.parseString('select loan_id, loan_status from test',parseAll=True).functions
   whereclause = None

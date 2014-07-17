@@ -703,15 +703,17 @@ class PersistenceLayer():
 
         model['X_L'] = X_L
         model['X_D'] = X_D
-        model['iterations'] = model['iterations'] + len(diagnostics_dict['logscore'])
 
-        # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore, num_views.
-        for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
-            diag_list = [l[0] for l in diagnostics_dict[diag_key]]
-            if diag_key in model and type(model[diag_key]) == list:
-                model[diag_key] += diag_list
-            else:
-                model[diag_key] = diag_list
+        if len(diagnostics_dict) > 0: # If any iterations were performed
+            model['iterations'] = model['iterations'] + len(diagnostics_dict['logscore'])
+
+            # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore, num_views.
+            for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
+                diag_list = [l[0] for l in diagnostics_dict[diag_key]]
+                if diag_key in model and type(model[diag_key]) == list:
+                    model[diag_key] += diag_list
+                else:
+                    model[diag_key] = diag_list
         
         self.write_model(tablename, model, modelid)
         self.model_locks.release(tablename, modelid)
