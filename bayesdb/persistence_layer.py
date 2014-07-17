@@ -582,7 +582,7 @@ class PersistenceLayer():
         return self.get_metadata_full(tablename)
         
 
-    def create_btable(self, tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full):
+    def create_btable(self, tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full, T_sub=None):
         """
         This function is called to create a btable.
         It creates the table's persistence directory, saves data.csv and metadata.pkl.
@@ -595,7 +595,7 @@ class PersistenceLayer():
         # Write metadata and metadata_full
         metadata_full = dict(M_c_full=M_c_full, M_r_full=M_r_full, T_full=T_full, cctypes_full=cctypes_full, raw_T_full=raw_T_full)
         self.write_metadata_full(tablename, metadata_full)
-        metadata = dict(M_c=M_c, M_r= M_r, T=T, cctypes=cctypes)
+        metadata = dict(M_c=M_c, M_r= M_r, T=T, cctypes=cctypes, T_sub=T_sub)
         self.write_metadata(tablename, metadata)
 
         # Write models
@@ -703,15 +703,17 @@ class PersistenceLayer():
 
         model['X_L'] = X_L
         model['X_D'] = X_D
-        model['iterations'] = model['iterations'] + len(diagnostics_dict['logscore'])
 
-        # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore, num_views.
-        for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
-            diag_list = [l[0] for l in diagnostics_dict[diag_key]]
-            if diag_key in model and type(model[diag_key]) == list:
-                model[diag_key] += diag_list
-            else:
-                model[diag_key] = diag_list
+        if len(diagnostics_dict) > 0: # If any iterations were performed
+            model['iterations'] = model['iterations'] + len(diagnostics_dict['logscore'])
+
+            # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore, num_views.
+            for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
+                diag_list = [l[0] for l in diagnostics_dict[diag_key]]
+                if diag_key in model and type(model[diag_key]) == list:
+                    model[diag_key] += diag_list
+                else:
+                    model[diag_key] = diag_list
         
         self.write_model(tablename, model, modelid)
         self.model_locks.release(tablename, modelid)

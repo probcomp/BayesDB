@@ -76,8 +76,7 @@ def test_drop_btable():
   backup = sys.stdout
   sys.stdout = StringIO()     # capture output
 
-  # TODO
-
+  # TODO: not being tested at all yet...
   
   out = sys.stdout.getvalue() # release output
   sys.stdout.close()  # close the stream 

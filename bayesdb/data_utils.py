@@ -551,8 +551,7 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, 
     key_eligibles_len = len(key_eligibles)
     if key_eligibles_len == 0 and key_column is None:
         if not accept:
-            print "None of the columns in this table is eligible to be the key. A key column will be created. Press Enter to continue."
-            user_confirmation = raw_input()
+            print "None of the columns in this table is eligible to be the key. A key column will be created."
         key_column_selection = 0
     elif key_column is None or key_column not in range(key_eligibles_len + 1):
         key_column_selection = None
