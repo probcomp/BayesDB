@@ -358,12 +358,17 @@ class Engine(object):
 
     return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
 
-  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None):
-    """Uplooad a csv table to the predictive db.
+  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None, subsample=False):
+    """
+    Upload a csv table to the predictive db.
     cctypes must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
-    column name must be present in the dictionary: default is continuous."""
-
+    column name must be present in the dictionary: default is continuous.
+    
+    subsample is False by default, but if it is passed an int, it will subsample using
+    <subsample> rows for the initial ANALYZE, and then insert all other rows afterwards.
+    """
+    
     ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
@@ -379,8 +384,16 @@ class Engine(object):
     # variables without "_full" don't include ignored columns.
     raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
     T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+
+    # if subsampling enabled, create the subsampled version of T (be sure to use non-subsampled M_r and M_c)
+    # T_sub is T with only first <subsample> rows;
+    # TODO: in future can randomly pick rows, but need to reorder T post-ANALYZE to achieve T's original order.
+    T_sub = None
+    if subsample:
+      assert type(subsample) == int
+      T_sub = T[:subsample]
       
-    self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full)
+    self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full, T_sub)
 
     data = [[colname, cctype] for colname, cctype in zip(colnames_full, cctypes_full)]
     columns = ['column', 'type']
@@ -500,8 +513,14 @@ class Engine(object):
     if self.is_analyzing(tablename):
       raise utils.BayesDBError('Error: cannot initialize models with ANALYZE in progress. Please retry once ANALYZE is successfully completed or canceled.')      
 
-    # Get t, m_c, and m_r, and tableid
-    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    # Get t, m_c, and m_r
+    metadata = self.persistence_layer.get_metadata(tablename)
+    M_c = metadata['M_c']
+    M_r = metadata['M_r']
+    if 'T_sub' in metadata and metadata['T_sub']:
+      T = metadata['T_sub']
+    else:
+      T = metadata['T']
 
     # Set model configuration parameters.
     if type(model_config) == str and model_config.lower() == 'naive bayes':
@@ -595,8 +614,16 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
     if not self.persistence_layer.has_models(tablename):
       raise utils.BayesDBNoModelsError(tablename)
-    
-    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+
+    # Get t, m_c, and m_r, and tableid. Use subsampled T if subsampling is enabled.
+    metadata = self.persistence_layer.get_metadata(tablename)
+    M_c = metadata['M_c']
+    M_r = metadata['M_r']
+    T = metadata['T']
+    if 'T_sub' in metadata:
+      T_sub = metadata['T_sub']
+    else:
+      T_sub = None
     
     max_model_id = self.persistence_layer.get_max_model_id(tablename)
     if max_model_id == -1:
@@ -622,15 +649,32 @@ class Engine(object):
 
     # Start analyze thread.
     t = AnalyzeMaster(args=(tablename, modelids, kernel_list, iterations,
-                            seconds, M_c, T, models, background, self))
+                            seconds, M_c, T, T_sub, models, background, self))
     self.analyze_threads[tablename] = t
     t.start()
 
     if not background:
-      t.join()
+      t.join() # just wait for the AnalyzeMaster thread to finish before returning.
       return dict(message="Analyze complete.")
     else:
       return dict(message="Analyzing %s: models will be updated in the background." % tablename)
+
+  def _insert_subsampled_rows(self, tablename, T, T_sub, M_c, X_L_list, X_D_list, modelids):
+    """
+    If the analyze in progress was using subsampling, then insert all the non-subsampled rows now.
+    TODO: asserts are costly, remove before performance-critical use. They're just there for code
+    correctness and readability right now.
+    """
+    assert T[:len(T_sub)] == T_sub
+    new_rows = T[len(T_sub):]
+    insert_args = dict(M_c=M_c, T=T_sub, X_L_list=X_L_list, X_D_list=X_D_list, new_rows=new_rows)
+    X_L_list, X_D_list, T_new = self.call_backend('insert', insert_args)
+    assert T_new == T
+
+    # TODO: each loop through this for loop is parallelizable
+    for i, modelid in enumerate(modelids):
+      self.persistence_layer.update_model(tablename, X_L_list[i], X_D_list[i], dict(), modelid)
+    
 
   def show_analyze(self, tablename):
     if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
@@ -1230,7 +1274,7 @@ class AnalyzeMaster(StoppableThread):
       return "Iterations completed: %d\nRemaining iterations: %d\nElapsed minutes: %02.f\nEstimated remaining minutes:%0.2f" % (self.iters_done, self.requested_iterations - self.iters_done, elapsed_seconds/60.0, self.time_remaining_estimate/60.0)
     return timing_str
   
-  def analyze_master(self, tablename, modelids, kernel_list, iterations, seconds, M_c, T, models, background, engine):
+  def analyze_master(self, tablename, modelids, kernel_list, iterations, seconds, M_c, T, T_sub, models, background, engine):
     """
     Helper function for analyze. This is the thread that runs in the background as the previous analyze
     command returns before analyze is complete.
@@ -1280,7 +1324,10 @@ class AnalyzeMaster(StoppableThread):
     threads = []
     # Create a thread for each modelid. Each thread will execute one iteration of analyze.
     for i, modelid in enumerate(modelids):
-      p = AnalyzeWorker(args=(modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L_list[i], X_D_list[i], background, engine))
+      if T_sub is None:
+        p = AnalyzeWorker(args=(modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L_list[i], X_D_list[i], background, engine))
+      else:
+        p = AnalyzeWorker(args=(modelid, tablename, kernel_list, iterations, seconds, M_c, T_sub, X_L_list[i], X_D_list[i], background, engine))
       p.daemon = True
       p.start()
       threads.append(p)
@@ -1309,6 +1356,8 @@ class AnalyzeMaster(StoppableThread):
           if p.isAlive():
             p.stop()
 
+    if T_sub is not None:
+      engine._insert_subsampled_rows(tablename, T, T_sub, M_c, X_L_list, X_D_list, modelids)
     if background:
       print "\nAnalyze for table %s complete. Use 'SHOW MODELS FOR %s' to view models." % (tablename, tablename)
 
