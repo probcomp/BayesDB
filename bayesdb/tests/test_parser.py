@@ -30,6 +30,10 @@ from bayesdb.engine import Engine
 from bayesdb.parser import Parser
 import bayesdb.functions as functions
 import numpy
+import sklearn.linear_model
+import sklearn.ensemble
+
+
 engine = Engine('local')
 parser = Parser()
 
@@ -143,11 +147,11 @@ def test_valid_values_names_pyparsing():
         '42.04',
         '.4',
         '4.',
-        "'\sjekja8391(*^@(%()!@#$%^&*()_+=-~'",
-        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+-./:<=>?@[\]^_`{|}~",
-        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+-./:<=>?@[\]^_`{|}~',
-        '"c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\\"#$%&\'()*+-./:<=>?@[\]^_`{|}~"',
-        "'d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\\'()*+-./:<=>?@[\]^_`{|}~'",
+        "'\sjekja8391*^@%!@#$%^&*_+=-~'",
+        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'*+-./:<=>?@[\]^_`|~",
+        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'*+-./:<=>?@[\]^_`|~',
+        '"c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\\"#$%&\'*+-./:<=>?@[\]^_`|~"',
+        "'d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\\'*+-./:<=>?@[\]^_`|~'",
         "'numbers 0'", 
         "'k skj s'",
         ]
@@ -156,11 +160,11 @@ def test_valid_values_names_pyparsing():
         '42.04',
         '.4',
         '4.',
-        '\sjekja8391(*^@(%()!@#$%^&*()_+=-~',
-        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+-./:<=>?@[\]^_`{|}~",
-        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+-./:<=>?@[\]^_`{|}~',
-        "c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+-./:<=>?@[\]^_`{|}~",
-        "d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+-./:<=>?@[\]^_`{|}~",
+        '\sjekja8391*^@%!@#$%^&*_+=-~',
+        "a0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'*+-./:<=>?@[\]^_`|~",
+        'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'*+-./:<=>?@[\]^_`|~',
+        "c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'*+-./:<=>?@[\]^_`|~",
+        "d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'*+-./:<=>?@[\]^_`|~",
         'numbers 0', 
         'k skj s',
         ]
@@ -249,6 +253,61 @@ def test_update_schema_pyparsing():
     update_schema_2 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = key",parseAll=True)
     assert update_schema_2.type_clause[0][0] == 'col_1'
     assert update_schema_2.type_clause[0][1] == 'key'
+    discriminative_string = "discriminative type logistic regression"
+    ast = discriminative_type_clause.parseString(discriminative_string,parseAll=True)
+    assert ast.discriminative_type == "logistic regression"
+    discriminative_string = "discriminative type linear regression"
+    ast = discriminative_type_clause.parseString(discriminative_string,parseAll=True)
+    assert ast.discriminative_type == "linear regression"
+    discriminative_string = "discriminative type multi-class random forest"
+    ast = discriminative_type_clause.parseString(discriminative_string,parseAll=True)
+    assert ast.discriminative_type == "multi-class random forest"
+    discriminative_string = "discriminative params {a= 4}"
+    ast = discriminative_type_clause.parseString(discriminative_string,parseAll=True)
+    assert ast.discriminative_params.asList() == [['a','4']]
+    discriminative_string = "discriminative params { a = 4 } "
+    ast = discriminative_type_clause.parseString(discriminative_string,parseAll=True)
+    assert ast.discriminative_params.asList() == [['a','4']]
+    discriminative_string = "discriminative params {c=4}"
+    ast = discriminative_type_clause.parseString(discriminative_string,parseAll=True)
+    assert ast.discriminative_params.asList() == [['c','4']]
+    discriminative_string = "discriminative params { a = 4 c = 4 } "
+    ast = discriminative_type_clause.parseString(discriminative_string,parseAll=True)
+    assert ast.discriminative_params.asList() == [['a','4'],['c','4']]
+    discriminative_string = "discriminative params { a = 4 c=4} "
+    ast = discriminative_type_clause.parseString(discriminative_string,parseAll=True)
+    assert ast.discriminative_params.asList() == [['a','4'],['c','4']]
+    discriminative_string = "discriminative input col1, col2"
+    ast = discriminative_type_clause.parseString(discriminative_string,parseAll=True)
+    assert ast.discriminative_input.asList() == ['col1','col2']
+    discriminative_string = "discriminative input *"
+    ast = discriminative_type_clause.parseString(discriminative_string,parseAll=True)
+    assert ast.discriminative_input.asList() == ['*']
+    discriminative_string = "discriminative input a"
+    ast = discriminative_type_clause.parseString(discriminative_string,parseAll=True)
+    assert ast.discriminative_input.asList() == ['a']
+    discriminative_string = "UPDATE SCHEMA FOR test_btablE SET col_1 = discriminative type logistic regression"
+    ast = update_schema_for_function.parseString(discriminative_string,parseAll=True)
+    assert ast.type_clause[0][0] == 'col_1'
+    assert ast.type_clause[0][1] == 'discriminative'
+    assert ast.type_clause[0].discriminative_type == 'logistic regression'
+    discriminative_string = "UPDATE SCHEMA FOR test_btablE SET col_1 = discriminative params { a = 4 c=4}"
+    ast = update_schema_for_function.parseString(discriminative_string,parseAll=True)
+    assert ast.type_clause[0][0] == 'col_1'
+    assert ast.type_clause[0][1] == 'discriminative'
+    assert ast.type_clause[0].discriminative_params.asList() == [['a','4'],['c','4']]
+    discriminative_string = "UPDATE SCHEMA FOR test_btablE SET col_1 = discriminative input a, b"
+    ast = update_schema_for_function.parseString(discriminative_string,parseAll=True)
+    assert ast.type_clause[0][0] == 'col_1'
+    assert ast.type_clause[0][1] == 'discriminative'
+    assert ast.type_clause[0].discriminative_input.asList() == ['a','b']
+    discriminative_string = "UPDATE SCHEMA FOR test_btablE SET col_1 = discriminative type logistic regression, params { a = 4 c=4}, input a, b"
+    ast = update_schema_for_function.parseString(discriminative_string,parseAll=True)
+    assert ast.type_clause[0][0] == 'col_1'
+    assert ast.type_clause[0][1] == 'discriminative'
+    assert ast.type_clause[0].discriminative_type == 'logistic regression'
+    assert ast.type_clause[0].discriminative_params.asList() == [['a','4'],['c','4']]
+    assert ast.type_clause[0].discriminative_input.asList() == ['a','b']
 
 def test_create_btable_pyparsing():
     create_btable_1 = create_btable_function.parseString("CREATE BTABLE test.btable FROM '~/filenam e.csv'", parseAll=True)
@@ -949,7 +1008,36 @@ def test_parse_functions():
     assert queries[10] == (functions._column, (0, None), False)
     assert queries[11] == (functions._column, (0, None), False)
     assert queries[12] == (functions._column, (1, None), False)
-    
+
+def test_update_schema():
+    method, args, client_dict = parser.parse_update_schema(bql_statement.parseString("update schema for test_btable set test_col = discriminative type multi-class random forest, params {a=4 b=test c=None d = True e = 'a a'}, input col1, col2",parseAll=True))
+    assert method == 'update_schema'
+    assert args['tablename'] == 'test_btable'
+    mappings = args['mappings']['test_col']
+    assert mappings['types'] == sklearn.ensemble.RandomForestClassifier
+    assert mappings['params'] == {'a': 4, 'b': 'test', 'c': None, 'd': True, 'e': 'a a'}
+    assert mappings['inputs'] == ['col1', 'col2']
+
+    method, args, client_dict = parser.parse_update_schema(bql_statement.parseString("update schema for test_btable set test_col = discriminative type linear regression",parseAll=True))
+    mappings = args['mappings']['test_col']
+    assert mappings['types'] == sklearn.linear_model.LinearRegression
+    assert mappings['params'] == {}
+    assert mappings['inputs'] == None
+
+    method, args, client_dict = parser.parse_update_schema(bql_statement.parseString("update schema for test_btable set test_col = discriminative type logistic regression, params {a=4 b=test c=None d = True e = 'a a'}, input col1",parseAll=True))
+    mappings = args['mappings']['test_col']
+    assert mappings['types'] == sklearn.linear_model.LogisticRegression
+    assert mappings['inputs'] == ['col1']
+
+    method, args, client_dict = parser.parse_update_schema(bql_statement.parseString("update schema for test_btable set test_col = discriminative",parseAll=True))
+    assert method == 'update_schema'
+    assert args['tablename'] == 'test_btable'
+    mappings = args['mappings']['test_col']
+    assert mappings['types'] == sklearn.linear_model.LinearRegression
+    assert mappings['inputs'] == None
+    assert mappings['params'] == {}
+
+
 def test_select():
     ##TODO test client_dict
     tablename = 't'
