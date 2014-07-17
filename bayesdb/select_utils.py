@@ -35,7 +35,7 @@ import data_utils as du
 from pyparsing import *
 import bayesdb.bql_grammar as bql_grammar
 
-def evaluate_where_on_row(row_idx, row, where_conditions, M_c, M_c_full, X_L_list, X_D_list, T, T_full, engine, tablename, numsamples, impute_confidence):
+def evaluate_where_on_row(row_idx, row, where_conditions, M_c, M_c_full, X_L_list, X_D_list, T, T_full, engine, tablename, numsamples, impute_confidence, resolution=1.0):
   """
   Helper function that applies WHERE conditions to row, returning False if row doesn't satisfy where
   clause, and the list of function results if it does satisfy the where clause.
@@ -61,7 +61,7 @@ def evaluate_where_on_row(row_idx, row, where_conditions, M_c, M_c_full, X_L_lis
       if float(samples_satisfying_where)/len(samples) >= confidence:
         # Where clause is satisfied! Now, generate impute summary.
         imputed_code, imputation_confidence = utils.get_imputation_and_confidence_from_samples(
-          M_c, X_L_list[0], col_idx, samples)
+          M_c, X_L_list[0], col_idx, samples, resolution)
         if imputed_code is not None:
           imputed_value = du.convert_code_to_value(M_c, col_idx, imputed_code)
         else:

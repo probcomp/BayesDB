@@ -164,7 +164,7 @@ def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, en
     else:
       return None
 
-def get_imputation_and_confidence_from_samples(M_c, X_L, col_idx, samples):
+def get_imputation_and_confidence_from_samples(M_c, X_L, col_idx, samples, resolution=1.0):
     samples = numpy.array(samples).T[0]
     modeltype = M_c['column_metadata'][col_idx]['modeltype']
     imputation_function = modeltype_to_imputation_function[modeltype]
@@ -174,7 +174,7 @@ def get_imputation_and_confidence_from_samples(M_c, X_L, col_idx, samples):
         get_column_component_suffstats_i(M_c, X_L, col_idx)
     imputation_confidence = \
         imputation_confidence_function(samples, e,
-                                       column_component_suffstats_i)
+                                       column_component_suffstats_i, resolution)
     return e, imputation_confidence
 
     return lambda in_dict: in_dict[name]
@@ -220,7 +220,7 @@ def multinomial_imputation(samples):
         imputed = values[draw]
     return imputed
 
-def multinomial_imputation_confidence(samples, imputed, column_hypers_i):
+def multinomial_imputation_confidence(samples, imputed, column_hypers_i, resolution=None):
     max_count = sum(numpy.array(samples) == imputed)
     confidence = float(max_count) / len(samples)
     return confidence
@@ -232,9 +232,9 @@ def get_continuous_mass_within_delta(samples, center, delta):
     return mass_fraction
 
 def continuous_imputation_confidence(samples, imputed,
-                                     column_component_suffstats_i):
+                                     column_component_suffstats_i, resolution=1.0):
     col_std = get_column_std(column_component_suffstats_i)
-    delta = .1 * col_std
+    delta = resolution * col_std
     confidence = get_continuous_mass_within_delta(samples, imputed, delta)
     return confidence
     
