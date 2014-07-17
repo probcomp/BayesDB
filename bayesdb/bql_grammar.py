@@ -109,6 +109,7 @@ bayes_keyword = CaselessKeyword("bayes")
 config_keyword = CaselessKeyword("config")
 using_keyword = CaselessKeyword("using")
 all_keyword = CaselessKeyword("all")
+resolution_keyword = CaselessKeyword("resolution")
 ## Single and plural keywords
 single_model_keyword = CaselessKeyword("model")
 multiple_models_keyword = CaselessKeyword("models")
@@ -574,6 +575,7 @@ query = (Optional(freq_keyword | hist_keyword | summarize_keyword | plot_keyword
               Optional(with_confidence_clause) + 
               Optional(Suppress(with_keyword) + int_number.setResultsName('samples') + Suppress(sample_keyword)) + 
               Optional(Suppress(limit_keyword) + int_number.setResultsName("limit")) + 
+              Optional(with_keyword + resolution_keyword + float_number.setResultsName("with_resolution")) + 
               Optional(given_clause) + 
               Optional(for_keyword + list_clause.setResultsName('for_list')) +
               Optional(Suppress(save_to_keyword) + filename) + 

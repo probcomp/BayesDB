@@ -384,6 +384,9 @@ class Parser(object):
         whereclause = None
         if bql_statement_ast.where_conditions != '':
             whereclause = bql_statement_ast.where_conditions
+        resolution = 1.0
+        if bql_statement_ast.with_resolution != '':
+            resolution = float(bql_statement_ast.with_resolution)
         return statement_id, \
             dict(clusters_name=clusters_name,
                  confidence = confidence,
@@ -404,7 +407,8 @@ class Parser(object):
                  freq=freq,
                  tablename=tablename,
                  threshold=threshold,
-                 whereclause=whereclause), \
+                 whereclause=whereclause,
+                 resolution=resolution), \
             dict(plot=plot, 
                  scatter=False, ##TODO remove scatter from args
                  pairwise=False, ##TODO remove pairwise from args
@@ -429,6 +433,7 @@ class Parser(object):
         newtablename = args_dict['newtablename']
         confidence = args_dict['confidence']
         numsamples = args_dict['numsamples']
+        resolution = args_dict['resolution']
 
         pairwise = client_dict['pairwise']
         filename = client_dict['filename']
@@ -449,7 +454,8 @@ class Parser(object):
                  newtablename=newtablename, confidence=confidence, 
                  whereclause=whereclause, limit=limit,
                  numsamples=numsamples, order_by=order_by, 
-                 plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq), \
+                 plot=plot, modelids=modelids, 
+                 summarize=summarize, hist=hist, freq=freq, resolution=resolution), \
             dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
 
     def parse_select(self,bql_statement_ast):
@@ -483,6 +489,7 @@ class Parser(object):
         assert args_dict['column_list'] == None, "BayesDBParsingError: FOR <columns> clause not allowed in SELECT"
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SELECT"
         assert args_dict['confidence'] == None, "BayesDBParsingError: CONFIDENCE not allowed in SELECT"
+        assert args_dict['resolution'] == 1.0, "BayesDBParsingError: RESOLUTION not allowed in SELECT"
 
         for function in functions:
             assert function.conf == '', "BayesDBParsingError: CONF (WITH CONFIDENCE) not valid in SELECT" 
@@ -522,10 +529,11 @@ class Parser(object):
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in SIMULATE."
         assert args_dict['confidence'] == None, "BayesDBParsingError: CONFIDENCE not allowed in SIMULATE."
         assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in SIMULATE. Use GIVEN instead."
+        assert args_dict['resolution'] == 1.0, "BayesDBParsingError: RESOLUTION not allowed in SELECT"
         for function in functions:
             assert function.function_id == '', "BayesDBParsingError: %s not valid in SIMULATE" % function.function_id
             assert function.conf == '', "BayesDBParsingError: CONF (WITH CONFIDENCE) not valid in SIMULATE" 
-
+        
         return 'simulate', \
             dict(tablename=tablename, functions=functions, 
                  newtablename=newtablename, givens=givens, 
@@ -566,6 +574,7 @@ class Parser(object):
         assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in estimate columns."
         assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in estimate columns."
         assert client_dict['filename'] == None, "BayesDBParsingError: AS FILE not allowed in estimate columns."
+        assert args_dict['resolution'] == 1.0, "BayesDBParsingError: RESOLUTION not allowed in SELECT"
 
         return 'estimate_columns', \
             dict(tablename=tablename, functions=functions, 
@@ -605,6 +614,7 @@ class Parser(object):
         assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in create column list."
         assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in create column list."
         assert client_dict['filename'] == None, "BayesDBParsingError: AS FILE not allowed in create column list."
+        assert args_dict['resolution'] == 1.0, "BayesDBParsingError: RESOLUTION not allowed in SELECT"
 
         return 'create_column_list', \
             dict(tablename=tablename, functions=functions, name=name), None
@@ -640,6 +650,7 @@ class Parser(object):
         assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
         assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in ESTIMATE PAIRWISE."
         assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['resolution'] == 1.0, "BayesDBParsingError: RESOLUTION not allowed in SELECT"
 
         return 'estimate_pairwise_row', \
             dict(tablename=tablename, function=functions,
@@ -682,6 +693,7 @@ class Parser(object):
         assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in ESTIMATE PAIRWISE."
         assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in ESTIMATE PAIRWISE."
         assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in ESTIMATE PAIRWISE."
+        assert args_dict['resolution'] == 1.0, "BayesDBParsingError: RESOLUTION not allowed in SELECT"
 
         return 'estimate_pairwise', \
             dict(tablename=tablename, function_name=function_name, numsamples=numsamples,

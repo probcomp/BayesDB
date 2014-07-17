@@ -1101,7 +1101,7 @@ def test_infer(): ##TODO
 
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer * from t'))
     d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False, resolution = 1.0)
     assert method == 'infer'
     assert args['tablename'] == d['tablename']
     assert args['functions'][0].column_id == d['functions'][0].column_id
@@ -1111,11 +1111,12 @@ def test_infer(): ##TODO
     assert args['plot'] == d['plot']
     assert args['modelids'] == d['modelids']
     assert args['summarize'] == d['summarize']
+    assert args['resolution'] == d['resolution']
 
-    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('summarize infer * from t'))
+    method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('summarize infer * from t with resolution .4'))
 
     d = dict(tablename=tablename, functions=functions, whereclause=whereclause,
-             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=True)
+             limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=True, resolution = .4)
     assert method == 'infer'
     assert args['tablename'] == d['tablename']
     assert args['functions'][0].column_id == d['functions'][0].column_id
@@ -1125,6 +1126,7 @@ def test_infer(): ##TODO
     assert args['plot'] == d['plot']
     assert args['modelids'] == d['modelids']
     assert args['summarize'] == d['summarize']
+    assert args['resolution'] == d['resolution']
     
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer a, b, a_b from t'))
     d = dict(tablename=tablename, functions=None, whereclause=whereclause,
