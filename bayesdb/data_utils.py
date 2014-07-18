@@ -141,12 +141,13 @@ def gen_multinomial_metadata(column_data):
         code_to_value=code_to_value,
         )
 
-metadata_generator_lookup = dict(
-    continuous=gen_continuous_metadata,
-    multinomial=gen_multinomial_metadata,
-    ignore=gen_ignore_metadata,
-    key=gen_ignore_metadata,
-)
+def metadata_generator_lookup(cctype):
+    if cctype == 'continuous':
+        return gen_continuous_metadata
+    elif cctype == 'multinomial':
+        return gen_multinomial_metadata
+    else: # discriminative, ignore, key
+        return gen_ignore_metadata
 
 def gen_M_c_from_T(T, cctypes=None, colnames=None):
     num_rows = len(T)
@@ -159,7 +160,7 @@ def gen_M_c_from_T(T, cctypes=None, colnames=None):
     T_array_transpose = numpy.array(T).T
     column_metadata = []
     for cctype, column_data in zip(cctypes, T_array_transpose):
-        metadata_generator = metadata_generator_lookup[cctype]
+        metadata_generator = metadata_generator_lookup(cctype)
         metadata = metadata_generator(column_data)
         column_metadata.append(metadata)
     name_to_idx = dict(zip(colnames, range(num_cols)))

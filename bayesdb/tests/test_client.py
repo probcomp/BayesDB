@@ -550,6 +550,13 @@ def test_freq_hist():
   assert (out['frequency'] <= 20).all()
   assert (out['probability'] < 1).all()
 
+def test_discriminative():
+  test_tablename = create_dha()
+  global client, test_filenames
+
+  out = client("update schema for %s set qual_score = discriminative type linear regression" % (test_tablename), debug=True, pretty=False)[0]
+  
+
 def test_update_schema():
   test_tablename = create_dha()
   global client, test_filenames

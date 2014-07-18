@@ -31,6 +31,7 @@ from threading import RLock
 
 import data_utils
 import utils
+import pairwise
 
 import bayesdb.settings as S
 
@@ -539,7 +540,15 @@ class PersistenceLayer():
         """
         mappings is a dict of column name to 'continuous', 'multinomial', 'ignore', or 'key'.
         'discriminative' is complex: see docstring in engine.update_schema.
-        TODO: can we get rid of cctypes?
+    
+        For a column that maps to discriminative, the column name will
+        map to a dict specifying:
+        'types': sklearn predictor object
+          sklearn.linear_model.LinearRegression
+          sklearn.linear_model.LogisticRegression
+          sklearn.ensemble.RandomForestClassifier
+        'params': parameters dict to be passed to sklearn predictor, probably as kwargs
+        'inputs': column list, in some format, to specify input columns.
         """
         metadata_full = self.get_metadata_full(tablename)
         cctypes_full = metadata_full['cctypes_full']
@@ -548,11 +557,11 @@ class PersistenceLayer():
         colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
 
         # Now, update cctypes_full (cctypes updated later, after removing ignores).
-        mapping_set = 'continuous', 'multinomial', 'ignore', 'key', 'discriminative'
+        mapping_set = 'continuous', 'multinomial', 'ignore', 'key' # discriminative is separate from mapping_set
         for col, mapping in mappings.items():
             if col.lower() not in M_c_full['name_to_idx']:
                 raise utils.BayesDBError('Error: column %s does not exist.' % col)
-            elif mapping not in mapping_set:
+            elif mapping not in mapping_set and not (type(mapping)==dict and 'types' in mapping and 'params' in mapping and 'inputs' in mapping):
                 raise utils.BayesDBError('Error: datatype %s is not one of the valid datatypes: %s.' % (mapping, str(mapping_set)))
 
             cidx = M_c_full['name_to_idx'][col.lower()]
@@ -564,6 +573,15 @@ class PersistenceLayer():
             # there aren't models anyways. Eventually we can build this in if it's desirable.
             elif mapping == 'key':
                 raise utils.BayesDBError('Error: key column already exists. To choose a different key, reload the table using CREATE BTABLE')
+
+            # if type is discriminative, convert column names of input columns to column indices here
+            # also convert to tuple so we can hash: (inputs, params, types)
+            if type(mapping) == dict: # only discriminative is a dict
+                _, column_indices = pairwise.get_columns(mapping['inputs'], M_c_full)
+                inputs = column_indices
+                params = mapping['params']
+                types = mapping['types']
+                mapping = (inputs, params, types)
 
             cctypes_full[cidx] = mapping
 
