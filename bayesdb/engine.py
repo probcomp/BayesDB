@@ -34,6 +34,7 @@ import threading
 import multiprocessing
 import Queue
 import pandas
+import toposort
 
 import pylab
 import numpy
@@ -565,7 +566,75 @@ class Engine(object):
 
     # Insert results into persistence layer
     self.persistence_layer.add_models(tablename, model_list)
+    
+    # Fit and save discriminative models
+    self._fit_discriminative_models(tablename)
+
     return self.show_models(tablename)
+
+  def _fit_discriminative_models(self, tablename):
+    """ Train all discriminative models. TODO: be wary of subsampling"""
+    # get required things like M_c or whatever
+    #metadata = self.persistence_layer.get_metadata(tablename)
+    metadata_full = self.persistence_layer.get_metadata_full(tablename)
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    T_full = metadata_full['T_full']
+
+    #discriminative_models = list() # list of models. is sorted to be in topological order.
+    # each model is a dict of "trained_model", "col_id", "input_col_ids"
+
+    # dependency dict is list of dependencies
+    dependency_dict = dict()
+    all_input_col_ids = set()
+
+    cctypes_full = self.persistence_layer.get_cctypes_full(tablename)
+    for col_id, cctype in enumerate(cctypes_full):
+      if type(cctype) == dict: # discriminative
+        input_col_id_set = set(cctype['inputs'])
+        dependency_dict[col_id] = input_col_id_set
+        all_input_col_ids.update(input_col_id_set)
+
+    # do topological sort
+    sorted_ids = toposort.toposort_flatten(dependency_dict)
+    # now remove all non-discriminative ids
+    sorted_ids = [col_id for col_id in sorted_ids if col_id in dependency_dict.keys()]
+
+    # impute all missing crosscat values (at least for columns that are in inputs)
+    numsamples = 50 #TODO, like infer, read this from a config file
+    T_full_imputed = list()
+    for row_id, T_row in enumerate(T_full):
+      new_row = list()
+      for col_id in range(len(T_row)):
+        if col_id in all_input_col_ids and numpy.isnan(T_row[col_id]):
+          Y = [(row_id, cidx, T_full[row_id][cidx]) for cidx in M_c['name_to_idx'].values() \
+                 if not numpy.isnan(T_full[row_id][cidx])]
+          code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, 0, self)
+          assert code is not None
+          new_row.append(code)
+        else:
+          new_row.append(T_row[col_id])
+      T_full_imputed.append(new_row)
+
+    # train each model in order
+    discriminative_models = list() # list of models, which are dicts with "predictor", "col_id", "input_col_ids"
+    T_imputed_array = numpy.array(T_full_imputed)
+    for col_id in sorted_ids:
+      cctype = cctypes_full[col_id]
+      predictor = cctype['types'](**cctype['params'])
+      X = T_imputed_array[:,cctype['inputs']]
+      y = T_imputed_array[:,col_id]
+      # Filter out rows where y is missing, since we can't train on those.
+      nan_mask = numpy.isnan(y)
+      not_nan_mask = numpy.invert(nan_mask)
+      predictor.fit(X[not_nan_mask],y[not_nan_mask])
+      discriminative_models.append(dict(predictor=predictor, col_id=col_id, input_col_ids=cctype['inputs']))
+      # Use the newly trained predictor to fill in its missing values, so we can train the next predictor.
+      y_predicted = predictor.predict(X[nan_mask])
+      T_imputed_array[nan_mask, col_id] = y_predicted
+
+    self.persistence_layer.set_discriminative_models(tablename, discriminative_models)
+      
+      
 
   def show_models(self, tablename):
     """Return the current models and their iteration counts."""
@@ -1358,6 +1427,10 @@ class AnalyzeMaster(StoppableThread):
 
     if T_sub is not None:
       engine._insert_subsampled_rows(tablename, T, T_sub, M_c, X_L_list, X_D_list, modelids)
+
+    # Fit and save discriminative models
+    self._fit_discriminative_models(tablename)
+
     if background:
       print "\nAnalyze for table %s complete. Use 'SHOW MODELS FOR %s' to view models." % (tablename, tablename)
 

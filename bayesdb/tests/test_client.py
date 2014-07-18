@@ -562,10 +562,18 @@ def test_discriminative():
   num_models = 2
   num_iters = 1
   out = client("initialize %d models for %s" % (num_models, test_tablename))
+  # TODO: make sure stuff works after init models
+
   out = client.engine.analyze(tablename=test_tablename, iterations=num_iters, background=False)
+  # TODO: also make sure stuff works after analyze
+
+  out = client("simulate qual_score from %s times 10" % (test_tablename))
 
   # in dha_missing, qual_score is missing in rows 0-4
   out = client("infer qual_score conf 0 from %s" % test_tablename, debug=True, pretty=False)[0]
+  # all 5 values must be filled in at confidence 0
+  for i in range(5):
+    assert not numpy.isnan(out['qual_score'][i])
   out = client("infer qual_score conf 1 from %s" % test_tablename, debug=True, pretty=False)[0]
 
   

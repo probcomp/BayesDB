@@ -101,6 +101,7 @@ class PersistenceLayer():
     ....row_lists.pkl
     ....models/
     ......model_<id>.pkl
+    ......discrim.pkl
 
     table_index.pkl: list of btable names.
     
@@ -108,7 +109,7 @@ class PersistenceLayer():
     metadata_full.pkl: dict. keys: M_r_full, M_c_full, T_full, cctypes_full
     column_lists.pkl: dict. keys: column list names, values: list of column names.
     row_lists.pkl: dict. keys: row list names, values: list of row keys (need to update all these if table key is changed!).
-    models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views, model_config]. Idx starting at 1.
+    model_id.pkl: dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views, model_config]. Idx starting at 1. Also, dict['discriminative'] stores the trained discriminative models.
     data.csv: the raw csv file that the data was loaded from.
 
     Should be a Singleton class, but Python doesn't enforce that. Could be refactored as just a module.
@@ -236,6 +237,8 @@ class PersistenceLayer():
                 fnames = os.listdir(models_dir)                
                 for fname in fnames:
                     model_id = fname[6:] # remove preceding 'model_'
+                    if model_id[:-4] == 'm':
+                        continue
                     model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
                     full_fname = os.path.join(models_dir, fname)
                     f = open(full_fname, 'r')
@@ -737,4 +740,18 @@ class PersistenceLayer():
         self.write_model(tablename, model, modelid)
         self.model_locks.release(tablename, modelid)
 
-            
+    def set_discriminative_models(self, tablename, discriminative_models):
+        assert type(discriminative_models) == list
+        f = open(os.path.join(self.data_dir, tablename,'models', 'discrim.pkl'), 'w')
+        pickle.dump(discriminative_models, f, pickle.HIGHEST_PROTOCOL)
+        f.close()
+
+    def get_discriminative_models(self, tablename):
+        try:
+            f = open(os.path.join(self.data_dir, tablename, 'models', 'discrim.pkl'), 'r')
+            discriminative_models = pickle.load(f)
+            f.close()
+            return discriminative_models
+        except Exception as e:
+            return []
+
