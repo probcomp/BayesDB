@@ -551,10 +551,23 @@ def test_freq_hist():
   assert (out['probability'] < 1).all()
 
 def test_discriminative():
-  test_tablename = create_dha()
+  test_tablename = create_dha(path='data/dha_missing.csv')
   global client, test_filenames
 
   out = client("update schema for %s set qual_score = discriminative type linear regression" % (test_tablename), debug=True, pretty=False)[0]
+
+  # now that qual_score is type discriminative... let's do stuff with it! expect a pandas dataframe out.
+  out = client("select qual_score from %s" % test_tablename, debug=True, pretty=False)[0]
+
+  num_models = 2
+  num_iters = 1
+  out = client("initialize %d models for %s" % (num_models, test_tablename))
+  out = client.engine.analyze(tablename=test_tablename, iterations=num_iters, background=False)
+
+  # in dha_missing, qual_score is missing in rows 0-4
+  out = client("infer qual_score conf 0 from %s" % test_tablename, debug=True, pretty=False)[0]
+  out = client("infer qual_score conf 1 from %s" % test_tablename, debug=True, pretty=False)[0]
+
   
 
 def test_update_schema():

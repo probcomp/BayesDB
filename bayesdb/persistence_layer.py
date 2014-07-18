@@ -578,10 +578,10 @@ class PersistenceLayer():
             # also convert to tuple so we can hash: (inputs, params, types)
             if type(mapping) == dict: # only discriminative is a dict
                 _, column_indices = pairwise.get_columns(mapping['inputs'], M_c_full)
-                inputs = column_indices
-                params = mapping['params']
-                types = mapping['types']
-                mapping = (inputs, params, types)
+                # now remove own column index, if it's there. a column can't depend on itself!
+                if cidx in column_indices:
+                    column_indices.remove(cidx)
+                mapping['inputs'] = column_indices
 
             cctypes_full[cidx] = mapping
 
