@@ -272,10 +272,10 @@ def test_subsampling():
   global test_tablenames
   test_tablenames.append(test_tablename)
   
-  path = 'data/kiva_small.csv'
+  path = 'data/kiva.csv'
   header, rows = data_utils.read_csv(path)
   
-  num_rows = 4 # rows in kiva_small
+  num_rows = 10000 # rows in kiva_small
   num_rows_subsample = 2
   
   #client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False)
