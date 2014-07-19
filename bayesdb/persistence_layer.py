@@ -123,6 +123,7 @@ class PersistenceLayer():
             os.makedirs(self.data_dir)
         self.load_btable_index() # sets self.btable_index
         self.model_locks = ModelLocks(self)
+        self.btable_check_index = list()
 
     def load_btable_index(self):
         """
