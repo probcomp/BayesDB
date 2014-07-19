@@ -76,8 +76,7 @@ def test_drop_btable():
   backup = sys.stdout
   sys.stdout = StringIO()     # capture output
 
-  # TODO
-
+  # TODO: not being tested at all yet...
   
   out = sys.stdout.getvalue() # release output
   sys.stdout.close()  # close the stream 
@@ -460,8 +459,7 @@ def test_summarize():
   # Note that all of these stats won't be present in EVERY summarize output, but all should be in the output
   # from the previous test.
   expected_indices = ['type', 'count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
-    'mode1', 'mode2', 'mode3', 'mode4', 'mode5', \
-    'prob_mode1', 'prob_mode2', 'prob_mode3', 'prob_mode4', 'prob_mode5']
+    'mode', 'prob_mode']
   assert all([x in list(out[' ']) for x in expected_indices])
 
   # Test that it works on columns of predictive functions.
@@ -470,7 +468,7 @@ def test_summarize():
 
   # Test with fewer than 5 unique values (output should have fewer rows)
   out = client('summarize select name, qual_score from %s limit 3' % (test_tablename), debug=True, pretty=False)[0]
-  assert out.shape == (16, 3)
+  assert out.shape == (12, 3)
 
   # Test with no rows
   out = client('summarize select name, qual_score from %s where qual_score < 0' % (test_tablename), debug=True, pretty=False)[0]
