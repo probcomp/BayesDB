@@ -20,6 +20,7 @@
 
 import time
 import inspect
+import sys
 import pickle
 import os
 import numpy
@@ -27,6 +28,7 @@ import pytest
 import random
 import shutil
 import pandas
+from cStringIO import StringIO
 
 import bayesdb.utils as utils
 from bayesdb.client import Client
@@ -54,10 +56,10 @@ def teardown_function(function):
     if os.path.exists(test_filename):
         os.remove(test_filename)
 
-def create_dha(path='data/dha.csv'):
+def create_dha(path='data/dha.csv', key_column=0):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
-  client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False, key_column=0)
+  client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False, key_column=key_column)
   
   global test_tablenames
   test_tablenames.append(test_tablename)
@@ -302,6 +304,29 @@ def test_model_config():
   # test that you can't change model config
   with pytest.raises(utils.BayesDBError):
     client.engine.initialize_models(test_tablename, 2, 'crp mixture')
+
+def test_analyze():
+  """ test designed to make sure that analyze in background runs correct number of iterations """
+  # 1 iteration works fine, but multiple iterations don't.
+  # AnalyzeMaster is getting called multiple fucking times.
+  # 9, 11, 11, 13 analyze_master calls, and 4 iterations done on every model each of those times (except first one did 3 iters once)
+  test_tablename = create_dha(key_column=1) # key column is irrelevant, but let's use it
+  global client, test_filenames
+
+  models = 3
+  out = client('initialize %d models for %s' % (models, test_tablename), debug=True, pretty=False)[0]
+
+  iterations = 3
+  out = client('analyze %s for %d iterations' % (test_tablename, iterations), debug=True, pretty=False)[0]
+  
+  out = ''
+  while 'not currently being analyzed' not in out:
+    out = client('show analyze for %s' % test_tablename, debug=True, pretty=False)[0]['message']
+  
+  models = client('show models for %s' % test_tablename, debug=True, pretty=False)[0]['models']
+  iters_by_model = [v for k,v in models]
+  for i in iters_by_model:
+    assert i == iterations
 
 def test_using_models():
   """ smoke test """
