@@ -272,7 +272,7 @@ def test_subsampling():
   global test_tablenames
   test_tablenames.append(test_tablename)
   
-  path = 'data/kiva.csv'
+  path = 'data/kiva_small.csv'
   header, rows = data_utils.read_csv(path)
   
   num_rows = 10000 # rows in kiva_small
