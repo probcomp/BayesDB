@@ -236,15 +236,14 @@ class PersistenceLayer():
                 self.model_locks.acquire_table(tablename)
                 fnames = os.listdir(models_dir)                
                 for fname in fnames:
-                    model_id = fname[6:] # remove preceding 'model_'
-                    if model_id[:-4] == 'm':
-                        continue
-                    model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
-                    full_fname = os.path.join(models_dir, fname)
-                    f = open(full_fname, 'r')
-                    m = pickle.load(f)
-                    f.close()
-                    models[model_id] = m
+                    if fname.startswith('model_'):
+                        model_id = fname[6:] # remove preceding 'model_'
+                        model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
+                        full_fname = os.path.join(models_dir, fname)
+                        f = open(full_fname, 'r')
+                        m = pickle.load(f)
+                        f.close()
+                        models[model_id] = m
                 self.model_locks.release_table(tablename)
                 return models
         else:
@@ -409,7 +408,7 @@ class PersistenceLayer():
                 self.model_locks.acquire_table(tablename)
                 fnames = os.listdir(models_dir)
                 for fname in fnames:
-                    if 'model_' in fname:
+                    if 'model_' in fname or 'discrim.pkl' in fname:
                         os.remove(os.path.join(models_dir, fname))
                 self.model_locks.drop_all(tablename)
                 self.model_locks.release_table(tablename)                
@@ -479,9 +478,10 @@ class PersistenceLayer():
                 model_ids = []                
                 fnames = os.listdir(models_dir)
                 for fname in fnames:
-                    model_id = fname[6:] # remove preceding 'model_'
-                    model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
-                    model_ids.append(model_id)
+                    if fname.startswith('model_'):
+                        model_id = fname[6:] # remove preceding 'model_'
+                        model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
+                        model_ids.append(model_id)
         return model_ids
 
     def get_cctypes(self, tablename):
@@ -584,9 +584,15 @@ class PersistenceLayer():
                 # now remove own column index, if it's there. a column can't depend on itself!
                 if cidx in column_indices:
                     column_indices.remove(cidx)
+                # now remove key/ignore column indexes.
                 mapping['inputs'] = column_indices
 
             cctypes_full[cidx] = mapping
+
+        # Go through cctypes_full one more time, this time removing all key/ignore columns from discrim inputs.
+        for cidx in range(len(cctypes_full)):
+            if type(cctypes_full[cidx]) == dict: # discrim
+                cctypes_full[cidx]['inputs'] = [x for x in cctypes_full[cidx]['inputs'] if cctypes_full[x] not in ('key', 'ignore')]
 
         # Make sure there isn't more than one key.
         assert len(filter(lambda x: x=='key', cctypes_full)) == 1

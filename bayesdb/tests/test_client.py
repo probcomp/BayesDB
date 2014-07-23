@@ -576,7 +576,7 @@ def test_freq_hist():
   assert (out['probability'] < 1).all()
 
 def test_discriminative():
-  test_tablename = create_dha(path='data/dha_missing.csv')
+  test_tablename = create_dha(path='data/dha_missing_small.csv')
   global client, test_filenames
 
   out = client("update schema for %s set qual_score = discriminative type linear regression" % (test_tablename), debug=True, pretty=False)[0]
@@ -590,9 +590,13 @@ def test_discriminative():
   # TODO: make sure stuff works after init models
 
   out = client.engine.analyze(tablename=test_tablename, iterations=num_iters, background=False)
+  print client("show models for %s" % test_tablename)
   # TODO: also make sure stuff works after analyze
 
-  out = client("simulate qual_score from %s times 10" % (test_tablename))
+  out = client("simulate ami_score, qual_score from %s times 10" % (test_tablename))
+
+  # TODO: given discriminative. need to do MCMC here.
+  #out = client("simulate ami_score, qual_score from %s given qual_score = 70 times 10" % (test_tablename))
 
   # in dha_missing, qual_score is missing in rows 0-4
   out = client("infer qual_score conf 0 from %s" % test_tablename, debug=True, pretty=False)[0]
