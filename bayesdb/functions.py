@@ -28,7 +28,7 @@ import inspect
 import operator
 import ast
 import math
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, chi2_contingency, f_oneway
 
 import utils
 import select_utils
@@ -176,8 +176,53 @@ def _mutual_information(mutual_information_args, row_id, data_values, M_c, X_L_l
     
 def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine, numsamples):
     col1, col2 = correlation_args
+
+    cctype_map = {'normal_inverse_gamma': 'continuous', 'symmetric_dirichlet_discrete': 'multinomial'}
+    cctype1 = cctype_map[M_c['column_metadata'][col1]['modeltype']]
+    cctype2 = cctype_map[M_c['column_metadata'][col2]['modeltype']]
+
+    correlation = numpy.nan
     t_array = numpy.array(T, dtype=float)
     nan_index = numpy.logical_or(numpy.isnan(t_array[:,col1]), numpy.isnan(t_array[:,col2]))
     t_array = t_array[numpy.logical_not(nan_index),:]
-    correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
+    n = t_array.shape[0]
+
+    if cctype1 == 'continuous' and cctype2 == 'continuous':
+        # Two continuous columns: Pearson R squared
+        correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
+        correlation = correlation ** 2
+    elif cctype1 == 'multinomial' and cctype2 == 'multinomial':
+        # Two multinomial columns: Cramer's phi
+        data_i = numpy.array(t_array[:, col1], dtype='int32')
+        data_j = numpy.array(t_array[:, col2], dtype='int32')
+        unique_i = numpy.unique(data_i)
+        unique_j = numpy.unique(data_j)
+        min_levels = min(len(unique_i), len(unique_j))
+
+        if min_levels >= 2:
+            # Create contingency table - built-in way to do this?
+            contingency_table = numpy.zeros((len(unique_i), len(unique_j)), dtype='int')
+            for i in unique_i:
+                for j in unique_j:
+                    contingency_table[i][j] = numpy.logical_and(data_i == i, data_j == j).sum()
+
+            chisq, p, dof, expected = chi2_contingency(contingency_table, correction=False)
+            correlation = (chisq / (n * (min_levels - 1))) ** 0.5
+    else:
+        # One continuous, one multinomial column: ANOVA R-squared
+        if cctype1 == 'multinomial':
+            data_group = t_array[:, col1]
+            data_y = t_array[:, col2]
+        else:
+            data_group = t_array[:, col2]
+            data_y = t_array[:, col1]
+        group_values = numpy.unique(data_group)
+        n_groups = float(len(group_values))
+
+        if n > n_groups:
+            # Use scipy.stats.f_oneway to calculate F-statistic and p-value.
+            F, p = f_oneway(*[data_y[data_group == j] for j in group_values])
+            # Convert F-stat and number of groups into R-squared.
+            correlation = 1 - (1 + F * ((n_groups - 1) / (n - n_groups))) ** -1
+
     return correlation

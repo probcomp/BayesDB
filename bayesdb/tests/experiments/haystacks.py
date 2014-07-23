@@ -172,9 +172,9 @@ def run_experiment(argin):
     # do the analyses
     for i in range(num_iters):
         if ct_kernel == 1:
-            client( 'ANALYZE %s FOR 1 ITERATIONS WITH MH KERNEL;' % table )
+            client( 'ANALYZE %s FOR 1 ITERATIONS WITH MH KERNEL WAIT;' % table )
         else:
-            client( 'ANALYZE %s FOR 1 ITERATIONS;' % table )
+            client( 'ANALYZE %s FOR 1 ITERATIONS WAIT;' % table )
 
         for q in range(num_queries):
             query = queries[q]
@@ -214,15 +214,15 @@ def gen_parser():
     parser.add_argument('--multinomial_categories', default=0, type=int)
     parser.add_argument('--num_iters', default=100, type=int)
     parser.add_argument('--num_chains', default=8, type=int)
-    parser.add_argument('--separation', default=.9, type=float)
+    parser.add_argument('--separation', default=.9, type=float) # separation (0-1) between clusters
     parser.add_argument('--needles', action='store_true')
-    parser.add_argument('--mixed_types', action='store_true')
-    parser.add_argument('--with_id', action='store_true')
+    parser.add_argument('--mixed_types', action='store_true')   # use multinomial and continuous
+    parser.add_argument('--with_id', action='store_true')       # simulate an ID column (unique integer values)
     parser.add_argument('--seed', default=0, type=int)
-    parser.add_argument('--ct_kernel', default=0, type=int)
+    parser.add_argument('--ct_kernel', default=0, type=int)     # 0 for Gibbs, 1 for MH
     parser.add_argument('--no_plots', action='store_true')
-    parser.add_argument('--independent_clusters', action='store_true')
-    parser.add_argument('--num_indep_queries', default=10, type=int)
+    parser.add_argument('--independent_clusters', action='store_true')  # clusters or correlated data
+    parser.add_argument('--num_indep_queries', default=10, type=int)    # num column dependence queries for noise columns 
 
     return parser
 

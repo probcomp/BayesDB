@@ -89,9 +89,9 @@ def run_experiment(argin):
         these_ps_errors = numpy.zeros(num_iters)
         for i in range(num_iters):
             if ct_kernel == 1:
-                client('ANALYZE %s FOR 1 ITERATIONS WITH MH KERNEL;' % table )
+                client('ANALYZE %s FOR 1 ITERATIONS WITH MH KERNEL WAIT;' % table )
             else:
-                client('ANALYZE %s FOR 1 ITERATIONS;' % table )
+                client('ANALYZE %s FOR 1 ITERATIONS WAIT;' % table )
 
             # imput each index in indices and calculate the squared error
             mean_p = []
@@ -128,15 +128,15 @@ def run_experiment(argin):
 
 def gen_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_iters', default=100, type=int)
+    parser.add_argument('--num_iters', default=100, type=int) 
     parser.add_argument('--num_chains', default=20, type=int)
     parser.add_argument('--num_rows', default=300, type=int)
     parser.add_argument('--num_cols', default=20, type=int)
     parser.add_argument('--num_clusters', default=8, type=int)
     parser.add_argument('--num_views', default=4, type=int)
-    parser.add_argument('--separation', default=.9, type=float)
+    parser.add_argument('--separation', default=.9, type=float) # separation (0-1) between clusters
     parser.add_argument('--seed', default=0, type=int)
-    parser.add_argument('--ct_kernel', default=0, type=int)
+    parser.add_argument('--ct_kernel', default=0, type=int)     # 0 for gibbs w for MH
     parser.add_argument('--no_plots', action='store_true')
     return parser
 

@@ -10,6 +10,12 @@ Loading data
    CREATE BTABLE <btable> FROM <filename.csv>
 
 Creates a btable by importing data from the specified CSV file. The file must be in CSV format, and the first line must be a header indicating the names of each column.
+When you create a new btable, you must specify a key column. BayesDB will scan the data for all columns eligible to be the key (all values unique, either strings or
+integers) and present a table of options.
+
+You always have the option to create a new column as key, which will be named "key" and have integer values spanning the range of the number of rows in the table.
+
+The key column cannot be changed after creating the btable.
 
 ::
 
@@ -23,10 +29,10 @@ If you don't have a csv of your dataset, but you have a Pandas dataframe in Pyth
 
    UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
 
-Types are categorical (multinomial), numerical (continuous), ignore, and key. “Key” types are ignored for inference, but can be used lower to uniquely identify rows instead of using ID. Note that datatypes cannot be updated once the model has been analyzed.
+Types are categorical (multinomial), numerical (continuous), ignore, and key. "Key" and "ignore" types are excluded from analysis, but can be used later to uniquely identify rows instead of using ID. Note that datatypes cannot be updated once the model has been analyzed.
 
 ::
-   
+
    EXECUTE FILE <filename.bql>
 
 You may write BQL commands in a file and run them all at once by use EXECUTE FILE and passing your .bql file. This is especially handy with UPDATE SCHEMA for tables with many columns, where you may want to write a long, cumbersome UPDATE SCHEMA query in a separate file to preserve it.
@@ -146,6 +152,10 @@ Additionally, a "WITH <num_samples> SAMPLES" may be specified for any of the abo
 
   WITH <num_samples> SAMPLES
 
+The key column is always returned as the first column of SELECT and INFER queries, but not SIMULATE (since simulating a key column doesn't make sense).
+
+Ignored columns can be queried using SELECT, but not with any statement dependent on inference from models (INFER/SIMULATE/ESTIMATE), since they are excluded from the analysis step.
+
 Where Clause
 ~~~~~~~~~~~~~~~
 
@@ -188,7 +198,11 @@ Instead of manually typing in a comma-separated list of columns for queries, you
 
 Since it may be hard to see example what you'd put in the WHERE or ORDER by clause, take a look at an example, and be sure to read the :ref:`functions` section below::
 
-  ESTIMATE COLUMNS FROM table WHERE TYPICALITY > 0.6 ORDER BY DEPENDENCE PROBABILITY WITH name;  
+  ESTIMATE COLUMNS FROM table WHERE TYPICALITY > 0.6 ORDER BY DEPENDENCE PROBABILITY WITH name;
+
+A simpler way to create column lists by explicitly listing column names is to use CREATE COLUMN LIST::
+
+  CREATE COLUMN LIST <col1>[, <col2>...] FROM <btable> AS <column_list>
 
 You can print out the names of the stored column lists in your btable with::
 
@@ -196,7 +210,8 @@ You can print out the names of the stored column lists in your btable with::
 
 And you can view the columns in a given column list or table with::
 
-   SHOW COLUMNS FOR <column_list|btable>
+   SHOW COLUMNS <column_list> FOR <btable>
+
 
 Row Lists
 ~~~~~~~~~
@@ -355,7 +370,7 @@ Modal values and their empirical probabilities are returned for every column, wh
 Frequency and Histogram Tables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Prepending a SELECT, INFER, or SIMULATE statement with the keyword FREQ or HIST wil return a frequency or histogram table, respectively. If multiple
+Prepending a SELECT, INFER, or SIMULATE statement with the keyword FREQ or HIST will return a frequency or histogram table, respectively. If multiple
 columns are included in the statement, the frequency or histogram table is only returned for the first column.
 
 A frequency table returns the number and percentage of occurrences of each distinct value in the column::

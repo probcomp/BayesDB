@@ -139,6 +139,14 @@ class Parser(object):
         return 'create_btable', dict(tablename=tablename, cctypes_full=None), dict(csv_path=filename)
         #TODO types?
 
+    def parse_upgrade_btable(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('upgrade_btable', args_dict, client_dict):
+        """
+        tablename = bql_statement_ast.btable
+        return 'upgrade_btable', dict(tablename=tablename), None
+
     def parse_update_schema(self,bql_statement_ast):
         """
         :param bql_statement_ast pyparsing.ParseResults:
@@ -218,7 +226,7 @@ class Parser(object):
         :param bql_statement_ast pyparsing.ParseResults:
         :return ('show_columns', args_dict, None):
         """
-        return 'show_columns', dict(tablename=bql_statement_ast.btable), None
+        return 'show_columns', dict(tablename=bql_statement_ast.btable, column_list=bql_statement_ast.column_list[0]), None
 
     def parse_save_models(self,bql_statement_ast):
         """
@@ -565,6 +573,43 @@ class Parser(object):
                  order_by=order_by, name=name, modelids=modelids), \
             None
 
+    def parse_create_column_list(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('create_column_list', args_dict, client_dict):
+        """
+        method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
+        functions = args_dict['functions']
+        name = args_dict['name']
+        tablename = args_dict['tablename']
+
+        assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS not allowed in create column list."
+        assert args_dict['confidence'] == None, "BayesDBParsingError: WITH CONFIDENCE not allowed in create column list."
+        assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in create column list."
+        assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in create column list."
+        assert args_dict['numpredictions'] == None, "BayesDBParsingError: TIMES not allowed in create column list."
+        assert args_dict['column_list'] == None, "BayesDBParsingError: FOR COLUMNS not allowed in create column list."
+        assert args_dict['row_list'] == None, "BayesDBParsingError: FOR ROWS not allowed in create column list."
+        assert args_dict['summarize'] == False, "BayesDBParsingError: SUMMARIZE not allowed in create column list."
+        assert args_dict['hist'] == False, "BayesDBParsingError: HIST not allowed in estimated columns."
+        assert args_dict['freq'] == False, "BayesDBParsingError: FREQ not allowed in estimated columns."
+        assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CLUSTERS not allowed in create column list."
+        assert args_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in create column list."
+        assert args_dict['numsamples'] == None, "BayesDBParsingError: NUMSAMPLES not allowed in create column list."
+        assert args_dict['modelids'] == None, "BayesDBParsingError: USING MODELS not allowed in create column list."
+        assert args_dict['order_by'] == False, "BayesDBParsingError: ORDER BY not allowed in create column list."
+        assert args_dict['limit'] == float('inf'), "BayesDBParsingError: LIMIT not allowed in create column list."
+        assert args_dict['whereclause'] == None, "BayesDBParsingError: WHERE not allowed in create column list."        
+
+        assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in create column list."
+        assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in create column list."
+        assert client_dict['pairwise'] == False, "BayesDBParsingError: PAIRWISE not allowed in create column list."
+        assert client_dict['filename'] == None, "BayesDBParsingError: AS FILE not allowed in create column list."
+
+        return 'create_column_list', \
+            dict(tablename=tablename, functions=functions, name=name), None
+
+
     def parse_estimate_pairwise_row(self,bql_statement_ast):
         """
         :param bql_statement_ast pyparsing.ParseResults:
@@ -649,6 +694,10 @@ class Parser(object):
 #####################################################################################
     def get_args_pred_prob(self, function_group, M_c):
         """
+        :param function_group pyparsing.ParseResults:
+        :param M_c: 
+        :return c_idx: column index
+        :rtype int:
         returns the column index from a predictive probability function
         raises exceptions for unfound columns
         """
@@ -663,6 +712,7 @@ class Parser(object):
 
     def get_args_prob(self,function_group, M_c):
         """
+        :param function_group: 
         Returns column_index, value from a probability function
         raises exception for unfound columns
         """
@@ -909,7 +959,7 @@ class Parser(object):
         
         return function_list
 
-    def parse_functions(self, function_groups, M_c=None, T=None, M_c_full=None, column_lists=None):
+    def parse_functions(self, function_groups, M_c=None, T=None, M_c_full=None, column_lists=None, key_column_name=None):
         '''
         Generates two lists of functions, arguments, aggregate tuples. 
         Returns queries, query_colnames
@@ -922,9 +972,14 @@ class Parser(object):
         For probability: query_args is a (c_idx, value) tuple.
         For similarity: query_args is a (target_row_id, target_column) tuple.
         '''
-        ## Always return row_id as the first column.
-        query_colnames = ['row_id'] 
-        queries = [(functions._row_id, None, False)]
+        ## Return the table key as the first column - should only be None if called from simulate
+        if key_column_name is not None:
+            query_colnames = [key_column_name]
+            index_list, name_list, ignore_column = self.parse_column_set(key_column_name, M_c, M_c_full, column_lists)
+            queries = [(functions._column_ignore, column_index, False) for column_index in index_list]
+        else:
+            query_colnames = []
+            queries = []
 
         for function_group in function_groups: 
             if function_group.function_id == 'predictive probability':
@@ -972,7 +1027,7 @@ class Parser(object):
                                 True))
                 query_colnames.append(' '.join(function_group))
             ## single column, column_list, or *
-            elif function_group.column_id != '':
+            elif function_group.column_id not in ['', key_column_name]:
                 column_name = function_group.column_id
                 confidence = None
                 assert M_c is not None
@@ -987,7 +1042,9 @@ class Parser(object):
                     query_colnames += [name + ' with confidence %s' % confidence for name in name_list]
                 else:
                     query_colnames += [name for name in name_list]
-                
+            elif function_group.column_id == key_column_name:
+                # Key column will be added to the output anyways.
+                pass
             else: 
                 raise utils.BayesDBParseError("Invalid query: could not parse function")
         return queries, query_colnames

@@ -51,7 +51,7 @@ def teardown_function(function):
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   header, rows = data_utils.read_csv(path)  
-  create_btable_result = engine.create_btable(test_tablename, header, rows)
+  create_btable_result = engine.create_btable(test_tablename, header, rows, key_column=0)
   metadata = engine.persistence_layer.get_metadata(test_tablename)
   
   global test_tablenames
@@ -64,7 +64,10 @@ def test_create_btable():
   assert 'columns' in create_btable_result
   assert 'data' in create_btable_result
   assert 'message' in create_btable_result
-  assert len(create_btable_result['data'][0]) == 64 ## 64 is number of columns in DHA dataset
+  # Should be 65 rows (1 for each column inferred: 64 from data file, plus 1 for key)
+  assert len(create_btable_result['data']) == 65
+  # Should be 2 columns: 1 for column names, and 1 for the type
+  assert len(create_btable_result['data'][0]) == 2
   list_btables_result = engine.list_btables()['data']
   assert [test_tablename] in list_btables_result
   engine.drop_btable(test_tablename)
@@ -90,10 +93,10 @@ def test_select():
   select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
   assert 'columns' in select_result
   assert 'data' in select_result
-  assert select_result['columns'] == ['row_id', 'name', 'qual_score']
+  assert select_result['columns'] == ['key', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
   assert len(select_result['data']) == 307 and len(select_result['data'][0]) == len(select_result['columns'])
-  assert type(select_result['data'][0][0]) == int ## type of row_id is int
+  assert type(select_result['data'][0][0]) == numpy.string_
   t = type(select_result['data'][0][1]) 
   assert (t == unicode) or (t == str) or (t == numpy.string_) ## type of name is unicode or string
   assert type(select_result['data'][0][2]) == float ## type of qual_score is float
@@ -240,12 +243,72 @@ def test_analyze():
   engine.initialize_models(test_tablename, num_models)
 
   for it in (1,2):
-    engine.analyze(test_tablename, model_indices='all', iterations=1, background=False)
+    engine.analyze(test_tablename, model_indices='all', iterations=1, background=True)
+
+    while 'not currently being analyzed' not in engine.show_analyze(test_tablename)['message']:
+      import time; time.sleep(0.1)
+    
+    #analyze_results = engine.show_analyze(test_tablename)
     model_ids = engine.persistence_layer.get_model_ids(test_tablename)
     assert sorted(model_ids) == range(num_models)
     for i in range(num_models):
       model = engine.persistence_layer.get_models(test_tablename, i)
       assert model['iterations'] == it
+  
+  for it in (3,4): # models were analyzed by previous for loop, so start counting at 3.
+    engine.analyze(test_tablename, model_indices='all', iterations=1, background=False)
+    analyze_results = engine.show_analyze(test_tablename)
+    assert 'not currently being analyzed' in analyze_results['message']
+    model_ids = engine.persistence_layer.get_model_ids(test_tablename)
+    assert sorted(model_ids) == range(num_models)
+    for i in range(num_models):
+      model = engine.persistence_layer.get_models(test_tablename, i)
+      assert model['iterations'] == it
+
+
+def test_subsampling():
+  # Use Kiva table, which has 10000 rows, instead of DHA.
+  test_tablename = 'kivatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
+  global test_tablenames
+  test_tablenames.append(test_tablename)
+  
+  path = 'data/kiva_small.csv'
+  header, rows = data_utils.read_csv(path)
+  
+  num_rows = 4 # rows in kiva_small
+  num_rows_subsample = 2
+  
+  #client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False)
+  engine.create_btable(test_tablename, header, rows, subsample=num_rows_subsample, key_column=0) # only analyze using some rows
+  # make sure select (using no models) works and returns the correct number of rows
+  functions = bql.bql_statement.parseString('select loan_id, loan_status from test',parseAll=True).functions
+  whereclause = None
+  limit = float('inf')
+  order_by = False
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
+  assert len(select_result['data']) == num_rows # number of rows in Kiva
+
+  # TODO: better testing to see what we can do before subsampling (with partial models)
+
+  num_models = 2
+  iterations = 1
+  engine.initialize_models(test_tablename, num_models)
+  # analyze segfaults
+  engine.analyze(test_tablename, model_indices='all', iterations=iterations, background=False)
+  print 'analyzed'  
+  model_ids = engine.persistence_layer.get_model_ids(test_tablename)
+  for i in range(num_models):
+    model = engine.persistence_layer.get_models(test_tablename, i)
+    assert model['iterations'] == iterations
+
+  # make sure normal queries work and return the correct number of rows
+  functions = bql.bql_statement.parseString('select loan_id, predictive probability of loan_status from test',parseAll=True).functions
+  whereclause = None
+  limit = float('inf')
+  order_by = False
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
+  assert len(select_result['data']) == num_rows # number of rows in Kiva
+                       
 
 def test_nan_handling():
   test_tablename1, _ = create_dha(path='data/dha_missing.csv') 
@@ -274,10 +337,10 @@ def test_infer():
   infer_result = engine.infer(test_tablename, functions, confidence, whereclause, limit, numsamples, order_by)
   assert 'columns' in infer_result
   assert 'data' in infer_result
-  assert infer_result['columns'] == ['row_id', 'name', 'qual_score']
+  assert infer_result['columns'] == ['key', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
   assert len(infer_result['data']) == 307 and len(infer_result['data'][0]) == len(infer_result['columns'])
-  assert type(infer_result['data'][0][0]) == int ## type of row_id is int
+  assert type(infer_result['data'][0][0]) == numpy.string_ ## type of key is int
   t = type(infer_result['data'][0][1])
   assert (t == unicode) or (t == numpy.string_) ## type of name is string
   assert type(infer_result['data'][0][2]) == float ## type of qual_score is float
@@ -378,8 +441,9 @@ def test_show_schema():
   assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
 
   schema = engine.show_schema(test_tablename)
-  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes)
-  assert schema['data'][0][0] == 'name'
+  cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)
+  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes_full)
+  assert schema['data'][0][0] == 'key'
   
   mappings = dict(qual_score='multinomial')
   engine.update_schema(test_tablename, mappings)
@@ -387,8 +451,9 @@ def test_show_schema():
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
   
   schema = engine.show_schema(test_tablename)
-  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes)
-  assert schema['data'][0][0] == 'name'
+  cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)
+  assert sorted([d[1] for d in schema['data']]) == sorted(cctypes_full)
+  assert schema['data'][0][0] == 'key'
 
 def test_show_models():
   test_tablename, _ = create_dha()

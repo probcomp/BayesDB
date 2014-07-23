@@ -36,7 +36,7 @@ from engine import Engine
 
 class Client(object):
     def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing',
-                 bayesdb_host=None, bayesdb_port=8008, seed=None):
+                 bayesdb_host=None, bayesdb_port=8008, seed=None, upgrade_key_column=None):
         """
         Create a client object. The client creates a parser, that is uses to parse all commands,
         and an engine, which is uses to execute all commands. The engine can be remote or local.
@@ -46,6 +46,7 @@ class Client(object):
         if bayesdb_host is None or bayesdb_host=='localhost':
             self.online = False
             self.engine = Engine(crosscat_host, crosscat_port, crosscat_engine_type, seed)
+            self.engine.upgrade_btables(upgrade_key_column)
         else:
             self.online = True
             self.hostname = bayesdb_host
@@ -71,11 +72,11 @@ class Client(object):
                     out = dict(message=str(e), error=True)
         return out
 
-    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
+    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True, key_column=None):
         """Wrapper around execute."""
-        return self.execute(call_input, pretty, timing, wait, plots, yes, debug, pandas_df, pandas_output)
+        return self.execute(call_input, pretty, timing, wait, plots, yes, debug, pandas_df, pandas_output, key_column)
 
-    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
+    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True, key_column=None):
         """
         Execute a chunk of BQL. This method breaks a large chunk of BQL (like a file)
         consisting of possibly many BQL statements, breaks them up into individual statements,
@@ -116,7 +117,7 @@ class Client(object):
                 user_input = raw_input()
                 if len(user_input) > 0 and (user_input[0] == 'q' or user_input[0] == 's'):
                     continue
-            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, debug=debug, pandas_df=pandas_df, pandas_output=pandas_output)
+            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, debug=debug, pandas_df=pandas_df, pandas_output=pandas_output, key_column=key_column)
 
             if type(result) == dict and 'message' in result and result['message'] == 'execute_file':
                 ## special case for one command: execute_file
@@ -132,7 +133,7 @@ class Client(object):
         if not pretty:
             return return_list
 
-    def execute_statement(self, bql_statement_string, pretty=True, timing=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True):
+    def execute_statement(self, bql_statement_ast, pretty=True, timing=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True, key_column=None):
         """
         Accepts a SINGLE BQL STATEMENT as input, parses it, and executes it if it was parsed
         successfully.
@@ -150,11 +151,12 @@ class Client(object):
             start_time = time.time()
 
         parser_out = None
+        ##TODO move pyparsing objects out of client into parser
         if debug:
-            parser_out = self.parser.parse_single_statement(bql_statement_string)
+            parser_out = self.parser.parse_single_statement(bql_statement_ast)
         else:
             try:
-                parser_out = self.parser.parse_single_statement(bql_statement_string)
+                parser_out = self.parser.parse_single_statement(bql_statement_ast)
             except Exception as e:            
                 raise utils.BayesDBParseError(str(e))
         if parser_out is None:
@@ -203,23 +205,34 @@ class Client(object):
                 header, rows = data_utils.read_pandas_df(pandas_df)
             args_dict['header'] = header
             args_dict['raw_T_full'] = rows
+            args_dict['key_column'] = key_column
+            args_dict['subsample'] = False
 
             # Display warning messages and get confirmation if btable is too large.
+            # Ask user if they want to turn on subsampling.
             max_columns = 200
-            max_rows = 10000
+            max_rows = 1000
             max_cells = 100000
             message = None
             if not yes:
                 if len(rows[0]) > max_columns:
                     message = "The btable you are uploading has %d columns, but BayesDB is currently designed to support only %d columns. If you proceed, performance may suffer unless you set many columns' datatypes to 'ignore'. Would you like to continue? Enter 'y' if yes." % (len(rows[0]), max_columns)
                 if len(rows) > max_rows:
-                    message = "The btable you are uploading has %d rows, but BayesDB is currently designed to support only %d rows. If you proceed, performance may suffer. Would you like to continue? Enter 'y' if yes." % (len(rows), max_rows)
+                    message = "The btable you are uploading has %d rows, but BayesDB is currently designed to support only %d rows. If you proceed, performance may suffer. Would you like to continue? Enter 'y' to continue without subsampling, 'n' to abort, 's' to continue by subsampling %d rows, or a positive integer to specify the number of rows to be subsampled." % (len(rows), max_rows, max_rows)
                 if len(rows[0])*len(rows) > max_cells:
-                    message = "The btable you are uploading has %d cells, but BayesDB is currently designed to support only %d cells. If you proceed, performance may suffer. Would you like to continue? Enter 'y' if yes." % (len(rows)*len(rows[0]), max_cells)
+                    message = "The btable you are uploading has %d cells, but BayesDB is currently designed to support only %d cells. If you proceed, performance may suffer unless you enable subsampling. Enter 'y' to continue without subsampling, 'n' to abort, 's' to continue by subsampling %d rows, or a positive integer to specify the number of rows to be subsampled." % (len(rows)*len(rows[0]), max_cells, max_rows)
                 if message is not None:
                     print message
                     user_confirmation = raw_input()
-                    if 'y' != user_confirmation.strip():
+                    if 'y' == user_confirmation.strip():
+                        pass
+                    elif 'n' == user_confirmation.strip():
+                        return dict(message="Operation canceled by user.")
+                    elif 's' == user_confirmation.strip():
+                        args_dict['subsample'] = min(max_rows, len(rows))
+                    elif utils.is_int(user_confirmation.strip()):
+                        args_dict['subsample'] = int(user_confirmation.strip())
+                    else:
                         return dict(message="Operation canceled by user.")
         elif method_name in ['label_columns', 'update_metadata']:
             if client_dict['source'] == 'file':
@@ -261,7 +274,8 @@ class Client(object):
         if ('plot' in client_dict and client_dict['plot']):
             if (plots or client_dict['filename']):
                 # Plot generalized histograms or scatterplots
-                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'])
+                plot_remove_key = method_name in ['select', 'infer']
+                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], remove_key=plot_remove_key)
                 return self.pretty_print(result)
             else:
                 if 'message' not in result:

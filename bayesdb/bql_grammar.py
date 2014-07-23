@@ -39,6 +39,7 @@ to_keyword = CaselessKeyword('to')
 ## creating them separately like this allows for simpler whitespace and case flexibility
 conf_keyword = CaselessKeyword("conf")
 create_keyword = CaselessKeyword("create")
+upgrade_keyword = CaselessKeyword("upgrade")
 execute_keyword = CaselessKeyword("execute")
 file_keyword = CaselessKeyword("file")
 update_keyword = CaselessKeyword("update")
@@ -146,6 +147,9 @@ execute_file_keyword = Combine(execute_keyword + single_white + file_keyword).se
 execute_file_keyword.setParseAction(replaceWith("execute_file"))
 create_btable_keyword = Combine(create_keyword + single_white + btable_keyword).setResultsName("statement_id")
 create_btable_keyword.setParseAction(replaceWith('create_btable'))
+upgrade_btable_keyword = Combine(upgrade_keyword + single_white + btable_keyword).setResultsName("statement_id")
+upgrade_btable_keyword.setParseAction(replaceWith('upgrade_btable'))
+
 update_schema_for_keyword = Combine(update_keyword + single_white + 
                                     schema_keyword + single_white + for_keyword).setResultsName("statement_id")
 update_schema_for_keyword.setParseAction(replaceWith("update_schema"))
@@ -155,6 +159,8 @@ update_metadata_for_keyword.setParseAction(replaceWith("update_metadata"))
 label_columns_for_keyword = Combine(label_keyword + single_white + 
                                     column_keyword + single_white + for_keyword).setResultsName("statement_id")
 label_columns_for_keyword.setParseAction(replaceWith("label_columns"))
+show_columns_keyword = Combine(show_keyword + single_white + multiple_columns_keyword).setResultsName("statement_id")
+show_columns_keyword.setParseAction(replaceWith("show_columns"))
 show_metadata_for_keyword = Combine(show_keyword + single_white + 
                                     metadata_keyword + single_white + for_keyword).setResultsName("statement_id")
 show_metadata_for_keyword.setParseAction(replaceWith("show_metadata"))
@@ -191,10 +197,6 @@ show_column_lists_for_keyword = Combine(show_keyword + single_white + column_key
                                         single_white + list_keyword + 
                                         single_white + for_keyword).setResultsName("statement_id")
 show_column_lists_for_keyword.setParseAction(replaceWith("show_column_lists"))
-show_columns_for_keyword = Combine(show_keyword + single_white + column_keyword + 
-                                   single_white + for_keyword).setResultsName("statement_id")
-show_columns_for_keyword.setParseAction(replaceWith("show_columns"))
-show_columns_keyword = Combine(show_keyword + single_white + column_keyword)
 show_row_lists_for_keyword = Combine(show_keyword + single_white + row_keyword + 
                                  single_white + list_keyword + 
                                  single_white + for_keyword).setResultsName("statement_id")
@@ -202,6 +204,8 @@ show_row_lists_for_keyword.setParseAction(replaceWith("show_row_lists"))
 estimate_pairwise_keyword = Combine(estimate_keyword + single_white + 
                                     pairwise_keyword).setResultsName("statement_id")
 estimate_pairwise_keyword.setParseAction(replaceWith("estimate_pairwise"))
+create_column_list_keyword = Combine(create_keyword + single_white + single_column_keyword + single_white + single_list_keyword).setResultsName("statement_id")
+create_column_list_keyword.setParseAction(replaceWith("create_column_list"))
 estimate_pairwise_row_keyword = Combine(estimate_keyword + single_white + pairwise_keyword + 
                                         single_white + row_keyword).setResultsName("statement_id")
 estimate_pairwise_row_keyword.setParseAction(replaceWith('estimate_pairwise_row'))
@@ -277,6 +281,9 @@ data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | k
 # CREATE BTABLE <btable> FROM <filename.csv>
 create_btable_function = create_btable_keyword + btable + Suppress(from_keyword) + filename
 
+# UPGRADE BTABLE <btable>
+upgrade_btable_function = upgrade_btable_keyword + btable
+
 # UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
 type_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + data_type_literal) + 
                                Suppress(comma_literal)) + 
@@ -296,6 +303,12 @@ update_metadata_for_function = (update_metadata_for_keyword + btable +
 # LABEL COLUMNS FOR <btable> (SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...] | FROM <filename.csv>)
 label_columns_for_function = (label_columns_for_keyword + btable + 
                               (set_keyword + label_clause | from_keyword + filename))
+
+# SHOW COLUMNS <column_list> FOR <btable>
+show_columns_function = (show_columns_keyword +
+                         Optional(identifier.setResultsName('column_list')) +
+                         for_keyword +
+                         btable)
 
 # SHOW METADATA FOR <btable> [<metadata-key1> [, <metadata-key2>...]]
 show_metadata_function = (show_metadata_for_keyword + 
@@ -359,7 +372,6 @@ show_for_btable_statement = ((show_schema_for_keyword |
                               show_models_for_keyword | 
                               show_diagnostics_for_keyword | 
                               show_column_lists_for_keyword |  
-                              show_columns_for_keyword |
                               show_analyze_for_keyword |
                               show_row_lists_for_keyword) + 
                              btable)
@@ -381,7 +393,8 @@ drop_model_function = drop_model_keyword + Optional(index_clause) + Suppress(fro
 help_function = help_keyword + Optional(Word(alphas).setParseAction(downcaseTokens)).setResultsName("method_name") + ZeroOrMore(Word(alphas))
 quit_function = quit_keyword
 
-management_query = (create_btable_function | 
+management_query = (create_btable_function |
+                    upgrade_btable_function |
                     update_schema_for_function | 
                     execute_file_function | 
                     initialize_function | 
@@ -397,6 +410,7 @@ management_query = (create_btable_function |
                     label_columns_for_function | 
                     show_label_function |
                     show_metadata_function |
+                    show_columns_function |
                     cancel_analyze_for_function |
                     quit_function)
 
@@ -532,7 +546,8 @@ query_id = (select_keyword |
             simulate_keyword | 
             estimate_pairwise_row_keyword |
             estimate_pairwise_keyword |
-            estimate_keyword).setResultsName('statement_id')
+            estimate_keyword |
+            create_column_list_keyword).setResultsName('statement_id')
 
 function_in_query = (predictive_probability_of_function |
                      probability_of_function |

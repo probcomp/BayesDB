@@ -88,9 +88,9 @@ def run_experiment(argin):
             client('INITIALIZE %i MODELS FOR %s %s;' % (num_chains, table, config_string))
 
             if ct_kernel == 1:
-                client('ANALYZE %s FOR %i ITERATIONS WITH MH KENEL;' % (table, num_iters) )
+                client('ANALYZE %s FOR %i ITERATIONS WITH MH KENEL WAIT;' % (table, num_iters) )
             else:
-                client('ANALYZE %s FOR %i ITERATIONS;' % (table, num_iters) )
+                client('ANALYZE %s FOR %i ITERATIONS WAIT;' % (table, num_iters) )
 
             MSE = 0.0
             count = 0.0
@@ -127,12 +127,12 @@ def gen_parser():
     parser.add_argument('--num_rows', default=300, type=int)
     parser.add_argument('--num_cols', default=8, type=int)
     parser.add_argument('--num_clusters', default=4, type=int)
-    parser.add_argument('--impute_samples', default=100, type=int)
+    parser.add_argument('--impute_samples', default=100, type=int)  # samples for IMPUTE
     parser.add_argument('--num_views', default=2, type=int)
     parser.add_argument('--separation', default=.9, type=float)
-    parser.add_argument('--prop_missing', nargs='+', type=float, default=[.1, .25, .5, .75, .9])
+    parser.add_argument('--prop_missing', nargs='+', type=float, default=[.1, .25, .5, .75, .9])  # list of missing proportions
     parser.add_argument('--seed', default=0, type=int)
-    parser.add_argument('--ct_kernel', default=0, type=int)
+    parser.add_argument('--ct_kernel', default=0, type=int) # 0 for gibbs, 1 for MH
     parser.add_argument('--no_plots', action='store_true')
     return parser
 

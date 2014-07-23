@@ -210,8 +210,7 @@ def test_simple_functions():
 
     assert show_for_btable_statement.parseString("SHOW COLUMN LISTS FOR table_1",parseAll=True).btable == 'table_1'
     assert show_for_btable_statement.parseString("SHOW COLUMNS LIST FOR table_1",parseAll=True).statement_id == 'show_column_lists'
-    assert show_for_btable_statement.parseString("SHOW COLUMNS FOR table_1",parseAll=True).btable == 'table_1'
-    assert show_for_btable_statement.parseString("SHOW column FOR table_1",parseAll=True).statement_id == 'show_columns'
+    assert show_columns_function.parseString("SHOW COLUMNS asdf FOR table_1",parseAll=True).column_list == 'asdf'
     assert show_for_btable_statement.parseString("SHOW ROW LISTS FOR table_1",parseAll=True).statement_id == 'show_row_lists'
     assert show_for_btable_statement.parseString("SHOW ROW list FOR table_1",parseAll=True).btable == 'table_1'
     assert load_model_function.parseString("LOAD MODELS ~/filename.csv INTO table_1",parseAll=True).statement_id == 'load_models'
@@ -837,7 +836,7 @@ def test_master_query_for_parse_errors():
                   "SHOW SCHEMA FOR table_1",
                   "SHOW DIAGNOSTICS FOR table_1",
                   "SHOW COLUMN LISTS FOR table_1",
-                  "SHOW COLUMNS FOR table_1",
+                  "SHOW COLUMNS collist FOR table_1",
                   "LOAD MODELS ~/filename.csv INTO table_1",
                   "SAVE MODEL FROM table_1 to filename.pkl.gz",
                   "DROP BTABLE table_1",
@@ -937,20 +936,19 @@ def test_parse_functions():
     function_groups = ast_1.functions
     
     queries, query_cols = parser.parse_functions(function_groups, M_c = test_M_c, T=test_T)
-    assert queries[0] == (functions._row_id, None, False)
-    assert queries[1] == (functions._predictive_probability, 0, False)
-    assert queries[2] == (functions._mutual_information, (0,1), True)
-    assert queries[3] == (functions._correlation, (0,1), True)
-    assert queries[4] == (functions._dependence_probability, (0,1), True)
+    assert queries[0] == (functions._predictive_probability, 0, False)
+    assert queries[1] == (functions._mutual_information, (0,1), True)
+    assert queries[2] == (functions._correlation, (0,1), True)
+    assert queries[3] == (functions._dependence_probability, (0,1), True)
+    assert queries[4] == (functions._similarity, (0,None), False)
     assert queries[5] == (functions._similarity, (0,None), False)
-    assert queries[6] == (functions._similarity, (0,None), False)
-    assert queries[7] == (functions._probability, (0,'1'), True)
-    assert queries[8] == (functions._probability, (1,1), True)
-    assert queries[9] == (functions._col_typicality, 0, True)
-    assert queries[10] == (functions._row_typicality, True, False)
+    assert queries[6] == (functions._probability, (0,'1'), True)
+    assert queries[7] == (functions._probability, (1,1), True)
+    assert queries[8] == (functions._col_typicality, 0, True)
+    assert queries[9] == (functions._row_typicality, True, False)
+    assert queries[10] == (functions._column, (0, None), False)
     assert queries[11] == (functions._column, (0, None), False)
-    assert queries[12] == (functions._column, (0, None), False)
-    assert queries[13] == (functions._column, (1, None), False)
+    assert queries[12] == (functions._column, (1, None), False)
     
 def test_select():
     ##TODO test client_dict

@@ -27,9 +27,11 @@ def teardown_function(function):
             os.remove(fname)
 
 def run_example(name):
-    client = Client()
+    # Default upgrade_key_column is None, to let the user choose, but need to avoid
+    # user input during testing, so default will be to create a new key column.
+    client = Client(upgrade_key_column=0)
     file_path = os.path.join('../../examples/%s/%s_analysis.bql' % (name, name))
-    results = client(open(file_path, 'r'), yes=True, pretty=False, plots=False)
+    results = client(open(file_path, 'r'), yes=True, pretty=False, plots=False, key_column=0)
     for r in results:
         if 'Error' in r or ('error' in r and r['error']):
             raise Exception(str(r))

@@ -88,9 +88,9 @@ def run_experiment(argin):
         client('INITIALIZE %i MODELS FOR %s %s;' % (num_chains, table, config_string))
 
         if ct_kernel == 1:
-            client('ANALYZE %s FOR %i ITERATIONS WITH MH KERNEL;' % (table, num_iters) )
+            client('ANALYZE %s FOR %i ITERATIONS WITH MH KERNEL WAIT;' % (table, num_iters) )
         else:
-            client('ANALYZE %s FOR %i ITERATIONS;' % (table, num_iters) )
+            client('ANALYZE %s FOR %i ITERATIONS WAIT;' % (table, num_iters) )
 
 
         # imput each index in indices and calculate the squared error
