@@ -572,54 +572,27 @@ class Engine(object):
 
     return self.show_models(tablename)
 
-  def _fit_discriminative_models(self, tablename):
+  def _fit_discriminative_models(self, tablename, numsamples=50):
     """ Train all discriminative models. TODO: be wary of subsampling"""
+    # TODO: factor out the part that generates the totally-imputed T_full? Or factor it out of simulate?
     # get required things like M_c or whatever
     #metadata = self.persistence_layer.get_metadata(tablename)
     metadata_full = self.persistence_layer.get_metadata_full(tablename)
     M_c_full = metadata_full['M_c_full']
+    cctypes_full = metadata_full['cctypes_full']
+    T_full = metadata_full['T_full']
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
     
-    T_full = metadata_full['T_full']
-
-    #discriminative_models = list() # list of models. is sorted to be in topological order.
-    # each model is a dict of "trained_model", "col_id", "input_col_ids"
-
     # dependency dict is list of dependencies
-    dependency_dict = dict()
-    all_input_col_ids = set()
-
-    cctypes_full = self.persistence_layer.get_cctypes_full(tablename)
-    for col_id, cctype in enumerate(cctypes_full):
-      if type(cctype) == dict: # discriminative
-        input_col_id_set = set(cctype['inputs'])
-        dependency_dict[col_id] = input_col_id_set
-        all_input_col_ids.update(input_col_id_set)
+    all_input_col_ids, dependency_dict = self._get_all_input_col_ids(cctypes_full)
 
     # do topological sort
     sorted_ids = toposort.toposort_flatten(dependency_dict)
     # now remove all non-discriminative ids
     sorted_ids = [col_id for col_id in sorted_ids if col_id in dependency_dict.keys()]
 
-    # impute all missing crosscat values (at least for columns that are in inputs)
-    numsamples = 50 #TODO, like infer, read this from a config file
-    T_full_imputed = list()
-    for row_id, T_full_row in enumerate(T_full):
-      new_row = list()
-      for col_id in range(len(T_full_row)): 
-        # Use crosscat to impute if type isn't discriminative or ignore, but it is in inputs.
-        if cctypes_full[col_id] not in ('ignore', 'key') and type(cctypes_full[col_id]) != dict and \
-              col_id in all_input_col_ids and numpy.isnan(T_full_row[col_id]):
-          # Convert full col_id to non-full col_id
-          Y = [(row_id, cidx, T_full[row_id][cidx]) for cidx in M_c['name_to_idx'].values() \
-                 if not numpy.isnan(T_full[row_id][cidx])]
-          original_col_id = M_c['name_to_idx'][M_c_full['idx_to_name'][str(col_id)]]
-          code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, original_col_id, numsamples, 0, self)
-          assert code is not None
-          new_row.append(code)
-        else:
-          new_row.append(T_full_row[col_id])
-      T_full_imputed.append(new_row)
+    # impute all values of T. We won't use the confidences array here, since we need everything imputed no matter what.
+    T_full_imputed, T_full_imputed_confidences = self._get_T_full_imputed(T_full, M_c_full, M_c, X_L_list, X_D_list, cctypes_full, all_input_col_ids, numsamples)
 
     # train each model in order
     discriminative_models = list() # list of models, which are dicts with "predictor", "col_id", "input_col_ids"
@@ -640,7 +613,51 @@ class Engine(object):
       T_full_imputed_array[nan_mask, col_id] = y_predicted
 
     self.persistence_layer.set_discriminative_models(tablename, discriminative_models)
+
+  def _get_all_input_col_ids(self, cctypes_full, discrim_target_col_ids=None):
+    """ If discrim_target_col_ids is None, then assume all! """
+    all_input_col_ids = set()
+    dependency_dict = dict()
+    queue_of_discrim_cols_to_add = [(col_id, cctype) for (col_id, cctype) in enumerate(cctypes_full)]
+    done_list = []
+    while len(queue_of_discrim_cols_to_add) > 0:
+      col_id, cctype = queue_of_discrim_cols_to_add.pop()
+      done_list.append((col_id, cctype))
+      if type(cctype) == dict and (discrim_target_col_ids is None or col_id in discrim_target_col_ids):
+        input_col_id_set = set(cctype['inputs'])
+        dependency_dict[col_id] = input_col_id_set
+        all_input_col_ids.update(input_col_id_set)
+        for i in input_col_id_set:
+          if type(cctypes_full[i]) == dict and (i, cctypes_full[i]) not in done_list and (i, cctypes_full[i]) not in queue_of_discrim_cols_to_add:
+            queue_of_discrim_cols_to_add.append((i, cctypes_full[i]))
+    return all_input_col_ids, dependency_dict
       
+  def _get_T_full_imputed(self, T_full, M_c_full, M_c, X_L_list, X_D_list, cctypes_full, all_input_col_ids, numsamples=50):
+    # impute all missing crosscat values (at least for columns that are in inputs)
+    T_full_imputed = list()
+    T_full_imputed_confidences = list()
+    for row_id, T_full_row in enumerate(T_full):
+      new_row = list()
+      new_row_confidences = list()
+      for col_id in range(len(T_full_row)): 
+        # Use crosscat to impute if type isn't discriminative or ignore, but it is in inputs.
+        if cctypes_full[col_id] not in ('ignore', 'key') and type(cctypes_full[col_id]) != dict and \
+              col_id in all_input_col_ids and numpy.isnan(T_full_row[col_id]):
+          # Convert full col_id to non-full col_id
+          Y = [(row_id, cidx, T_full[row_id][cidx]) for cidx in M_c['name_to_idx'].values() \
+                 if not numpy.isnan(T_full[row_id][cidx])]
+          original_col_id = M_c['name_to_idx'][M_c_full['idx_to_name'][str(col_id)]]
+          code, confidence = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, original_col_id, 
+                                         numsamples, 0, self, get_confidence_too=True)
+          assert code is not None
+          new_row.append(code)
+          new_row_confidences.append(confidence)
+        else:
+          new_row.append(T_full_row[col_id])
+          new_row_confidences.append(1)
+      T_full_imputed.append(new_row)
+      T_full_imputed_confidences.append(new_row_confidences)
+    return T_full_imputed, T_full_imputed_confidences
       
 
   def show_models(self, tablename):
