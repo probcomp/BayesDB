@@ -869,7 +869,7 @@ class Parser(object):
                     value = utils.string_to_column_type(raw_value, column_name, M_c)
                     function = functions._column
                 elif column_name in M_c_full['name_to_idx']:
-                    args = M_c_full['name_to_idx'][column_name]
+                    args = (M_c_full['name_to_idx'][column_name], confidence)
                     value = raw_value
                     function = functions._column_ignore
                 else:
@@ -960,7 +960,7 @@ class Parser(object):
                     args = (M_c['name_to_idx'][orderable.function.column], confidence)
                 else:
                     function = functions._column_ignore
-                    args = M_c_full['name_to_idx'][orderable.function.column]
+                    args = (M_c_full['name_to_idx'][orderable.function.column], confidence)
             else:
                 raise utils.BayesDBParseError("Invalid order by clause.")
             function_list.append((function, args, desc))
@@ -1008,7 +1008,7 @@ class Parser(object):
         if key_column_name is not None:
             query_colnames = [key_column_name]
             index_list, name_list, ignore_column = self.parse_column_set(key_column_name, M_c, M_c_full, column_lists)
-            queries = [(functions._column_ignore, column_index, False) for column_index in index_list]
+            queries = [(functions._column_ignore, (column_index, None), False) for column_index in index_list]
         else:
             query_colnames = []
             queries = []
@@ -1064,11 +1064,11 @@ class Parser(object):
                 confidence = None
                 assert M_c is not None
                 index_list, name_list, ignore_column = self.parse_column_set(column_name, M_c, M_c_full, column_lists)
+                if function_group.conf != '':
+                    confidence = float(function_group.conf)
                 if ignore_column:
-                    queries += [(functions._column_ignore, column_index, False) for column_index in index_list]
+                    queries += [(functions._column_ignore, (column_index, confidence), False) for column_index in index_list]
                 else:
-                    if function_group.conf != '':
-                        confidence = float(function_group.conf)
                     queries += [(functions._column, (column_index, confidence), False) for column_index in index_list]
                 if confidence is not None:
                     query_colnames += [name + ' with confidence %s' % confidence for name in name_list]

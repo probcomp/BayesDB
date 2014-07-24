@@ -828,6 +828,7 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     M_c_full, M_r_full, T_full = self.persistence_layer.get_metadata_and_table_full(tablename)
+    cctypes_full = self.persistence_layer.get_cctypes_full(tablename)
     
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     column_lists = self.persistence_layer.get_column_lists(tablename)
@@ -898,7 +899,59 @@ class Engine(object):
       else:
         function_list.append(w_fun)
         where_idxs.append(len(function_list) - 1)
-          
+
+    # TODO: right now function_list looks like this for key (0), ami-col (60), qual-discrim(61):
+    # (<function _column_ignore at 0x3755f50>, 0), (<function _column at 0x3755ed8>, (60, None)), (<function _column_ignore at 0x3755f50>, 61)]
+    # TODO: need to store confidence (currently just 61 instead of (61, None) for discrim.
+    # This might involve re-doing all of the functions._column_ignore stuff? It's currently special-cased.
+    # Or could just remake _column_ignore arguments so that they include a confidence... Let's do this. #TODO
+
+    # Same as T_full, except values are imputed if and only if: they are an input to a discriminative 
+    # column that is required by this query (and they are nan). If not imputed, then the confidence given is 1.
+    # In this case the raw value may still be None, if it was not required for this specific purpose.
+    # TODO: this is only relevant for INFER
+    # TODO: maybe allow you to specify to impute some other values too?
+    discrim_target_col_ids = [] # the full_col_ids for all queried (in where, query, or order) discrim columns.
+    for f, f_args in function_list:
+      full_id, conf = f_args
+      if type(cctypes_full[full_id]) == dict: # discrim
+        discrim_target_col_ids.append(full_id)
+    all_input_col_ids, dependency_dict = self._get_all_input_col_ids(cctypes_full, discrim_target_col_ids)
+    T_full_imputed, T_full_imputed_confidences = self._get_T_full_imputed(T_full, M_c_full, M_c, X_L_list, 
+                                                         X_D_list, cctypes_full, all_input_col_ids, numsamples)
+
+    # now we have our T_full_imputed! let's fill in some discrim shit with it
+    # TODO: this should also impute other values for INFER, and should use these values for all
+    # imputations made in this function, in order to preserve the consistency of chained estimates
+    # (e.g. if you impute x as 5 and feed it into discrim y = x + 1 so y = 6, but then in the actual output
+    # you impute x as 3 so y should be 4 to be consistent.)
+    T_full_imputed_array = numpy.array(T_full_imputed)
+    T_full_imputed_confidences_array = numpy.array(T_full_imputed_confidences)
+    discriminative_models = self.persistence_layer.get_discriminative_models(tablename)
+    for discrim_model in discriminative_models: # already in topological order
+      if discrim_model['col_id'] in discrim_target_col_ids: # if the select query needs to evaluate this one
+        # Major optimization: could do this for only some of the rows instead of all, lol...so slow
+        X = T_full_imputed_array[:,discrim_model['input_col_ids']]
+        y_predicted = discrim_model['predictor'].predict(X)
+        T_full_imputed_array[:,discrim_model['col_id']] = y_predicted
+        if hasattr(discrim_model['predictor'], 'predict_proba'):
+          confidence = discrim_model['predictor'].predict_proba(X)
+        else:
+          confidence = numpy.zeros(len(T_full_imputed))
+        T_full_imputed_confidences_array[:,discrim_model['col_id']] = confidence
+    # Need to convert codes to values: select likes values not codes.
+    T_full_imputed = []
+    for row_id in range(len(T_full)):
+      T_full_imputed_row = []
+      for full_col_id in range(len(T_full[0])):
+        code = T_full_imputed_array[row_id, full_col_id]
+        if cctypes_full[full_col_id] not in ('key', 'ignore') and type(cctypes_full[full_col_id]) != dict:
+          T_full_imputed_row.append(data_utils.convert_code_to_value(M_c_full, full_col_id, code))
+        else:
+          T_full_imputed_row.append(code)
+      T_full_imputed.append(T_full_imputed_row)
+    T_full_imputed_confidences = T_full_imputed_confidences_array.tolist()
+    # Now T_full_imputed is ready to go, and all values.
 
     ## Now function list is constructed, so create the data table one row at a time,
     ## applying where clause in the process.
@@ -908,7 +961,8 @@ class Engine(object):
       row = [None]*order_by_size
       row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c) 
       where_clause_eval = select_utils.evaluate_where_on_row(row_id, row_values, where_conditions, M_c, M_c_full,
-                               X_L_list, X_D_list, T, T_full, self, tablename, numsamples, impute_confidence)
+                               X_L_list, X_D_list, T, T_full, self, tablename, numsamples, impute_confidence, 
+                               T_full_imputed, T_full_imputed_confidences, cctypes_full)
       if type(where_clause_eval) == list:
         for w_idx, val in enumerate(where_clause_eval):
           # Now, store the already-computed values, if they're used for anything besides the where clause.
@@ -930,7 +984,7 @@ class Engine(object):
             if f != funcs._column_ignore:
               score = f(args, row_id, row, M_c, X_L_list, X_D_list, T, self, numsamples)
             else:
-              score = f(args, row_id, row, M_c_full, T_full, self)
+              score = f(args, row_id, row, M_c_full, T_full, self, T_full_imputed, T_full_imputed_confidences, cctypes_full)
             # Save value, if it will be displayed in output.
             if order_by_idxs[o_idx] < query_size:
               row[order_by_idxs[o_idx]] = score
@@ -967,7 +1021,7 @@ class Engine(object):
           if query_function != funcs._column_ignore:
             row[q_idx] = query_function(query_args, row_id, row, M_c, X_L_list, X_D_list, T, self, numsamples)
           else:
-            row[q_idx] = query_function(query_args, row_id, row, M_c_full, T_full, self)
+            row[q_idx] = query_function(query_args, row_id, row, M_c_full, T_full, self, T_full_imputed, T_full_imputed_confidences, cctypes_full)
       data.append(tuple(row))
       row_count += 1
       if row_count >= limit:
