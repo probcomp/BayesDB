@@ -56,16 +56,6 @@ def teardown_function(function):
     if os.path.exists(test_filename):
         os.remove(test_filename)
 
-# def create_cyclic(path='data/cyclic_test.csv'):
-#   test_tablename = 'cyclictest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
-#   csv_file_contents = open(path, 'r').read()
-#   client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False)
-  
-#   global test_tablenames
-#   test_tablenames.append(test_tablename)
-  
-#   return test_tablename
-
 def create_dha(path='data/dha.csv', key_column=0):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
