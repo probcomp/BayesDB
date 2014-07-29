@@ -78,7 +78,9 @@ Which hospitals are most anomalous? This is, which hospitals have the least prob
 | New Brunswick NJ |           0.111456521019          |
 |    Abilene TX    |           0.119637066987          |
 
-Here McAllen, Texas has a predictive probability orders of magnitide lower than the others. McAllen is a notoriously odd town when it comes to healthcare. In fact, the oddness of McAllen has been documented by the popular press ([The NewYorker](http://www.newyorker.com/reporting/2009/06/01/090601fa_fact_gawande), [CBS News](http://www.cbsnews.com/news/texas-town-at-center-of-healthcare-debate/) and [NPR](http://www.npr.org/blogs/health/2012/05/10/152417875/recalculating-the-health-bill-in-mcallen-texas)).
+<!--Here McAllen, Texas has a predictive probability orders of magnitide lower than the others. -->
+Here McAllen, Texas has a predictive probability that is among the lowest. 
+McAllen is a notoriously odd town when it comes to healthcare. In fact, the oddness of McAllen has been documented by the popular press ([The NewYorker](http://www.newyorker.com/reporting/2009/06/01/090601fa_fact_gawande), [CBS News](http://www.cbsnews.com/news/texas-town-at-center-of-healthcare-debate/) and [NPR](http://www.npr.org/blogs/health/2012/05/10/152417875/recalculating-the-health-bill-in-mcallen-texas)).
 
 ###Further information
 
