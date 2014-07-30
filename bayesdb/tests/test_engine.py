@@ -221,7 +221,9 @@ def test_save_and_load_models():
   original_models = engine.save_models(test_tablename)
   
   test_tablename2, _ = create_dha()
-  engine.load_models(test_tablename2, original_models)
+  models = original_models['models']
+  model_schema = original_models['schema']
+  engine.load_models(test_tablename2, models, model_schema)
   assert engine.save_models(test_tablename2).values() == original_models.values()
 
 def test_initialize_models():
@@ -275,7 +277,7 @@ def test_subsampling():
   path = 'data/kiva_small.csv'
   header, rows = data_utils.read_csv(path)
   
-  num_rows = 10000 # rows in kiva_small
+  num_rows = 4 # rows in kiva_small
   num_rows_subsample = 2
   
   #client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False)
