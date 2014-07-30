@@ -202,17 +202,24 @@ class Client(object):
         elif method_name == 'load_models':
             pklpath = client_dict['pkl_path']
             try:
-                models = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
+                model_data = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
             except IOError as e:
                 if pklpath[-7:] != '.pkl.gz':
                     if pklpath[-4:] == '.pkl':
-                        models = pickle.load(open(self.parser.get_absolute_path(pklpath), 'rb'))
+                        model_data = pickle.load(open(self.parser.get_absolute_path(pklpath), 'rb'))
                     else:
                         pklpath = pklpath + ".pkl.gz"
-                        models = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
+                        model_data = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
                 else:
                     raise utils.BayesDBError('Models file %s could not be found.' % pklpath)
-            args_dict['models'] = models
+            # This is the more recent version, where schema is stored with models.
+            if 'schema' in model_data.keys():
+                args_dict['models'] = model_data['models']
+                args_dict['model_schema'] = model_data['schema']
+            # This support older saved models, where only the model info was stored.
+            else:
+                args_dict['models'] = model_data
+                args_dict['model_schema'] = None
         elif method_name == 'create_btable':
             if pandas_df is None:
                 header, rows = data_utils.read_csv(client_dict['csv_path'])

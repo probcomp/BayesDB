@@ -456,10 +456,12 @@ class Engine(object):
     the client then saves to disk (in a pickle file)."""
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-    
-    return self.persistence_layer.get_models(tablename)
 
-  def load_models(self, tablename, models):
+    models = self.persistence_layer.get_models(tablename)
+    schema = self.persistence_layer.get_schema(tablename)
+    return dict(models=models, schema=schema)
+
+  def load_models(self, tablename, models, model_schema):
     """Load these models as if they are new models"""
     # Models are stored in the format: dict[model_id] = dict[X_L, X_D, iterations].
     # We just want to pass the values.
@@ -478,8 +480,25 @@ class Engine(object):
       models = dict()
       for id, (X_L, X_D) in enumerate(zip(old_models['X_L_list'], old_models['X_D_list'])):
         models[id] = dict(X_L=X_L, X_D=X_D, iterations=0)
-      
+
+    if model_schema is None:
+        print """WARNING! The models you are currently importing were saved without a schema.
+            If you've edited the table schema since analyzing models, analysis steps may give errors. 
+            Please use "SAVE MODELS" to create an updated copy of your models."""
+    else:
+        table_schema = self.persistence_layer.get_schema(tablename)
+        # If schemas match, add the models
+        # If schemas don't match:
+        #   If there are models, don't add the new ones (they'll be incompatible)
+        #   If there aren't models, add the new ones.
+        if table_schema != model_schema:
+            if self.persistence_layer.has_models(tablename):
+                raise utils.BayesDBError('Table %s already has models under a different schema than the models you are loading. All models used must have the same schema.' % tablename)
+            else:
+                self.persistence_layer.update_schema(tablename, model_schema)
+
     result = self.persistence_layer.add_models(tablename, models.values())
+
     return self.show_models(tablename)
 
   def drop_models(self, tablename, model_indices=None):
@@ -565,7 +584,11 @@ class Engine(object):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
 
-    models = self.persistence_layer.get_models(tablename)
+    model_data = self.persistence_layer.get_models(tablename)
+    if 'schema' in model_data.keys():
+        models = model_data['models']
+    else:
+        models = model_data
     modelid_iteration_info = list()
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
       modelid_iteration_info.append((modelid, model['iterations']))
