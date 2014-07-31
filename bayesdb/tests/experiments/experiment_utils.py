@@ -696,17 +696,17 @@ def plot_discriminative(result, filename=None):
     iterations = result['iterations']
 
     ax = pylab.subplot(2,1,1)
-    pylab.plot(iterations, result['MSE_naive_bayes_indexer'], lw=3, c='red', label='Naive Bayes')
-    pylab.plot(iterations, result['MSE_crp_mixture_indexer'], lw=3, c='blue', label='CRP mixture')
-    pylab.plot(iterations, result['MSE_crosscat_indexer'], lw=3, c='green', label='CrossCat')
-    pylab.plot(iterations, result['MSE_random_forest_indexer'], lw=3, c='cyan', label='CrossCat/Random Forest')
-    pylab.plot(iterations, result['MSE_logistic_regression_indexer'], lw=3, c='magenta', label='CrossCat/Logistic Regression')
+    pylab.plot(iterations, result['MSE_naive_bayes_indexer'], lw=3, c='red', label='NB')
+    pylab.plot(iterations, result['MSE_crp_mixture_indexer'], lw=3, c='blue', label='DPM')
+    pylab.plot(iterations, result['MSE_crosscat_indexer'], lw=3, c='green', label='CC')
+    pylab.plot(iterations, result['MSE_random_forest_indexer'], lw=3, c='cyan', label='CC/RF')
+    pylab.plot(iterations, result['MSE_logistic_regression_indexer'], lw=3, c='magenta', label='CC/LR')
 
     ax.set_xticks(iterations)
     ax.yaxis.set_major_locator(MaxNLocator(3))
     pylab.ylabel('Imputation MSE on Logistic Regression Column')
     pylab.xlabel('Iterations')
-    pylab.legend(loc=4)
+    pylab.legend(loc=2)
 
     num_iters = result['config']['num_iters']
     num_rows = result['config']['num_rows']
