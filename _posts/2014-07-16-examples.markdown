@@ -146,11 +146,11 @@ We can see that there are large blocks of variables that are probably dependent,
     ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM ecls FOR books_achievement;
 
 |          |    p1chlboo    |    c1r4mtsc    |    c1r4rtsc    |
-|----------+----------------|----------------|----------------|
+|----------|----------------|----------------|----------------|
 | p1chlboo |      1.0       |      0.67      |      0.67      |
-|----------+----------------|----------------|----------------|
+|----------|----------------|----------------|----------------|
 | c1r4mtsc |      0.67      |      1.0       |      1.0       |
-|----------+----------------|----------------|----------------|
+|----------|----------------|----------------|----------------|
 | c1r4rtsc |      0.67      |      1.0       |      1.0       |
 
 
@@ -215,3 +215,9 @@ Given that the estimated probability of dependence was not especially high, we m
 | prob_mode |     0.002     |
 
 If a household has no books at all, BayesDB predicts that a child will score ~45.5 on his or her kindergarten math exam. In constrast, if a household has 200 books, BayesDB predicts that he or she will score 52.1. That is a sizeable difference, more than half a standard deviation increase in expected math achievement, based on simply owning books. 
+
+## References
+
+<p class='reference'>
+[1] Evans, M. D. R., Kelley, J., Sikora, J. &amp; Treiman, D. J. (2010). Family scholarly culture and educational success: Books and schooling in 27 nations. Research in Social Stratification and Mobility, 28(2), 171-197.
+</p>
