@@ -1024,8 +1024,7 @@ class Engine(object):
     """
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     column_lists = self.persistence_layer.get_column_lists(tablename)
-    queries, column_names = self.parser.parse_functions(functions, M_c, T, M_c, column_lists)
-    assert column_names.pop(0) == 'row_id'
+    queries, column_names = self.parser.parse_functions(functions, M_c, T, M_c, column_lists, key_column_name=None)
 
     # save column list, if given a name to save as
     if name:
