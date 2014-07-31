@@ -4,7 +4,7 @@ tagline:
 layout: examples
 ---
 # Dartmouth Atlas of Health
-
++
 ## Recording the cost structure, capacity and quality of care of US hospitals.
 
 One of the main concerns in American health care is addressing *unwarranted variations* in quality: a disparity between the cost and outcomes of care. The cost-care disparity is well-documented mainly as a result of the Dartmouth Atlas of Health Care, a freely available dataset which
@@ -75,7 +75,7 @@ The BayesDB-ready .csv and pre-computed models used here can be found in the `/e
 For more information about the Dartmouth Atlas of Health Care, [http://www.dartmouthatlas.org/](http://www.dartmouthatlas.org/).
 
 #General Social Survey
-
++
 ##Responses to ~5500 demographic, behavioral and attitudinal questions by US residents.
 
 According to economics research, homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities  (DiPasquale, D., &amp; Glaeser, E. L., 1999). For this reason, homeowners have been labeled better citizens (DiPasquale, D., &amp; Glaeser, E. L., 1999; McCabe, 2013). 
@@ -129,10 +129,10 @@ We see that 75% of homeowners voted while only 50% of renters voted, confirming 
 The full GSS dataset can be downloaded from their website, [here](http://www3.norc.org/GSS+Website/Download/).
 
 #Early Childhood Longitudinal Study
-
++
 ##Relationships among demographic, social, and experiential variables and early achievement 
 
-What kinds of early childhood environments are associated with improved educational outcomes? The Early Childhood Longitudinal Study (Kindergarten class) looks at a variety of variables---cultural, socioeconomic, and educational---as they relate to early proficiency in reading and mathematics. Research has found that sometimes simple things, such as the number of books in the home, have surprisingly strong associations with educational achivement (Evans, Kelley, Sikora, & Trieman, 2010). We investiate this finding using ECCLs dataset using BayesDB. 
+What kinds of early childhood environments are associated with improved educational outcomes? The Early Childhood Longitudinal Study (Kindergarten class) looks at a variety of variables---cultural, socioeconomic, and educational---as they relate to early proficiency in reading and mathematics. Research has found that sometimes simple things, such as the number of books in the home, have surprisingly strong associations with educational achivement (Evans, Kelley, Sikora, & Trieman, 2010). We investigate this finding using ECCLs dataset using BayesDB. 
 
 Our first step is to look at which variables are probably dependent on each other. 
 
@@ -142,14 +142,21 @@ Our first step is to look at which variables are probably dependent on each othe
 
 We can see that there are large blocks of variables that are probably dependent, as indicated by the dark blue, as well as variables that are probably independent of one another, as indicated by the white. The key variables for this analysis are the number of books in the home, `p1chlboo`, and outcomes. There are multiple outcome measures in the dataset, and we will focus on kindergarten performance on math and reading: `c1r4mtsc` and `c1r4rtsc`. To assess the probability of dependence, we can create a column list with only these variables, and print out BayesDB’s estimate.
 
-    CREATE COLUMN LIST p1chlboo, C1R4MTSC, C1R4RTSC FROM eccls AS books_outcomes; 
-    ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM ecls FOR books_outcomes;
+    CREATE COLUMN LIST p1chlboo, C1R4MTSC, C1R4RTSC FROM eccls AS books_achievement; 
+    ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM ecls FOR books_achievement;
 
-FIXME
+|          |    p1chlboo    |    c1r4mtsc    |    c1r4rtsc    |
+|----------+----------------|----------------|----------------|
+| p1chlboo |      1.0       |      0.67      |      0.67      |
+|----------+----------------|----------------|----------------|
+| c1r4mtsc |      0.67      |      1.0       |      1.0       |
+|----------+----------------|----------------|----------------|
+| c1r4rtsc |      0.67      |      1.0       |      1.0       |
 
-BayesDB says there is a moderate probability of dependence between reading and math scores in kindergarten and the number of books in the home. 
 
-Where does the number of books in the home lie relative to other possible predictors? To investigate this question, we can sort the variables based on the estimated probability of dependence with the target variable. Here we narrow our focus to just maths scores, as that is the more interesting potential association. (It is pretty clear why having books may be related to reading scores, less so for math scores.)
+BayesDB has inferred that there is a modest probability of dependence between reading and math scores in kindergarten and the number of books in the home. 
+
+Where does the number of books in the home lie relative to other possible predictors? To investigate this question, we can sort the variables based on the estimated probability of dependence with the target variable. Here we narrow our focus to just math scores, as that is the more interesting potential association. (It is pretty clear why having books may be related to reading scores, less so for math scores.)
 
     ESTIMATE COLUMNS FROM ecls ORDER BY DEPENDENCE PROBABILITY WITH C1R4MTSC LIMIT 15;
 
@@ -171,7 +178,7 @@ Where does the number of books in the home lie relative to other possible predic
 | p1chlboo |            0.666666666667            |
 | p1chlaud |            0.666666666667            |
 
-After other math and reading scores, the variables with the highest probability of dependence are the mother and father's education levels, expectations for child's education level, `wkmomed`, `wkmomed`, `p1expect`, poverty level, `wkpov_r`, having a home computer, `p2homecm`, parents' race and language, `race` and `p1prmlng`, and whether a parent is depressed `p2depres`. For most of these, with the possible exception of having a computer, the relationship between these variables and achievement is clear. However, the association between having books in the home and achievement on math is less clear. Indeed, this is the finding of Evans et al. (2010), across cultures, the association between having books in the home and educational outcomes such as the highest level of schooling completed, is quite robust. 
+After other math and reading scores, the variables with the highest probability of dependence are the mother and father's education levels and expectations for child's education level, `wkmomed`, `wkmomed`, `p1expect`, poverty level, `wkpov_r`, having a home computer, `p2homecm`, parents' race and language, `race` and `p1prmlng`, and whether a parent is depressed `p2depres`. For most of these, with the possible exception of having a computer, the relationship between these variables and achievement is clear. However, the association between having books in the home and achievement on math is less clear. Indeed, this is the finding of Evans et al. (2010). Across cultures, the association between having books in the home and educational outcomes such as the highest level of schooling completed is quite robust. 
 
 Given that the estimated probability of dependence was not especially high, we might ask, what is the magnitude of the effect of having books? To investigate this question, we consider the predicted math achievement based on two possible scenarios: the case where there are no books in the home (`p1chlboo`=0), and the case where there are a very large number of books (`p1chlboo`=200). 
 
