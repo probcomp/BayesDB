@@ -129,8 +129,7 @@ The full GSS dataset can be downloaded from their website, [here](http://www3.no
 #Early Childhood Longitudinal Study
 ##Relationships among demographic, social, and experiential variables and early achievement 
 
-What kinds of early educational experiences lead to the best outcomes for children? The Early Childhood Longitudinal Study (Kindergarten class) looks at a variety of variables---cultural, socioeconomic, and educational---as they relate to early proficiency in reading and mathematics. Research has found that pre-kindergarten programs are among the best early experiences in terms of improving school readiness (at least as it relates to math and reading at the beginning of kindergarten; Magnuson, Ruhm, & Waldfogel, 2007). 
-
+What kinds of early childhood environments are associated with improved educational outcomes? The Early Childhood Longitudinal Study (Kindergarten class) looks at a variety of variables---cultural, socioeconomic, and educational---as they relate to early proficiency in reading and mathematics. Research has found that sometimes simple things, such as the number of books in the home, have surprisingly strong associations with educational achivement (Evans, Kelley, Sikora, & Trieman, 2010). We investiate this finding using ECCLs dataset using BayesDB. 
 
 Our first step is to look at which variables are probably dependent on each other. 
 
@@ -138,228 +137,71 @@ Our first step is to look at which variables are probably dependent on each othe
 
 ![dependence probability for ECCLS]({{ site.baseurl }}/assets/images/cs_eccls/dependence_probability_eccls.png)
 
-We can see that there are large blocks of variables that are probably dependent, as indicated by the dark blue, as well as variables that are probably independent of one another, as indicated by the white. The key variables in for this analysis are participation in a pre-K program, `prekindergarten`, and outcomes. There are multiple outcome measures in the dataset, and we will focus on kindergarten performance on math and reading: `c1r4mtsc` and `c1r4rtsc`. To assess the probability of dependence, we can create a column list with only these variables, and print out BayesDB’s estimate.
+We can see that there are large blocks of variables that are probably dependent, as indicated by the dark blue, as well as variables that are probably independent of one another, as indicated by the white. The key variables for this analysis are the number of books in the home, `p1chlboo`, and outcomes. There are multiple outcome measures in the dataset, and we will focus on kindergarten performance on math and reading: `c1r4mtsc` and `c1r4rtsc`. To assess the probability of dependence, we can create a column list with only these variables, and print out BayesDB’s estimate.
 
-    CREATE COLUMN LIST prekindergarten, C1R4MTSC, C1R4RTSC FROM eccls AS preK_outcomes; 
-    ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM eccls FOR preK_outcomes;
+    CREATE COLUMN LIST p1chlboo, C1R4MTSC, C1R4RTSC FROM eccls AS books_outcomes; 
+    ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM ecls FOR books_outcomes;
 
-|                 | prekindergarten |    c1r4mtsc    |    c1r4rtsc    |
-|-----------------|-----------------|----------------|----------------|
-| prekindergarten |       1.0       | 0.416666666667 | 0.416666666667 |
-|     c1r4mtsc    |  0.416666666667 |      1.0       |      1.0       |
-|     c1r4rtsc    |  0.416666666667 |      1.0       |      1.0       |
+FIXME
 
-Interestingly, BayesDB suggests that there is not a particularly high probability of dependence between pre-K and math and reading skills. 
+BayesDB says there is a moderate probability of dependence between reading and math scores in kindergarten and the number of books in the home. 
 
-To test the hypothesis that pre-K is most strongly predictive of performance, we need to contrast with other alternatives such as staying at home with a parent, relative, or going to nursery school: `parentalcare`, `relativecare`, and `nurseryschool`, respectively. Focusing on the outcome variables of interest, namely math and reading performance, we order the other variables in terms of the probability of dependence.
+Where does the number of books in the home lie relative to other possible predictors? To investigate this question, we can sort the variables based on the estimated probability of dependence with the target variable. Here we narrow our focus to just maths scores, as that is the more interesting potential association. (It is pretty clear why having books may be related to reading scores, less so for math scores.)
 
-    ESTIMATE COLUMNS FROM eccls ORDER BY DEPENDENCE PROBABILITY WITH C1R4MTSC LIMIT 65;
+    ESTIMATE COLUMNS FROM ecls ORDER BY DEPENDENCE PROBABILITY WITH C1R4MTSC LIMIT 15;
 
-|      column      | dependence probability with c1r4mtsc |
-|------------------|--------------------------------------|
-|     c4r4rtsc     |                 1.0                  |
-|     c1r4mtsc     |                 1.0                  |
-|     c1r4rtsc     |                 1.0                  |
-|     c4r4mtsc     |            0.979166666667            |
-|     wkmomed      |            0.770833333333            |
-|     wkdaded      |            0.770833333333            |
-|     wkpov_r      |            0.770833333333            |
-|     p2homecm     |            0.770833333333            |
-|     p1expect     |                 0.75                 |
-|       race       |                 0.75                 |
-|     p2safepl     |            0.729166666667            |
-|     p1prmlng     |            0.729166666667            |
-|     p2depres     |                0.6875                |
-|     p1chlboo     |            0.666666666667            |
-|     p1chlaud     |            0.666666666667            |
-|     p1hfamil     |            0.645833333333            |
-|     p1nature     |            0.645833333333            |
-|     p1hparnt     |            0.645833333333            |
-|     p1chlpic     |            0.645833333333            |
-|     p1readbo     |            0.645833333333            |
-|     p1helpar     |                0.625                 |
-|     p1games      |                0.625                 |
-|     p1build      |                0.625                 |
-|     p1singso     |            0.604166666667            |
-|     p1letter     |            0.604166666667            |
-|     p1sport      |            0.604166666667            |
-|     p1count      |            0.604166666667            |
-|     p1numsib     |            0.583333333333            |
-|     p1verbal     |            0.583333333333            |
-|     p1pencil     |            0.583333333333            |
-|     p1htotal     |            0.583333333333            |
-|     p1share      |            0.583333333333            |
-|     p1still      |            0.583333333333            |
-|     p1tellst     |            0.583333333333            |
-|     s2crime      |                 0.5                  |
-|     s2drugs      |                 0.5                  |
-|     s2gangs      |                 0.5                  |
-|     s2vcancy     |                 0.5                  |
-|     s2litter     |                 0.5                  |
-|     s2trffic     |                 0.5                  |
-|     s2vlence     |                 0.5                  |
-|     s2tnsion     |                 0.5                  |
-|     t4extern     |            0.479166666667            |
-|     t4contro     |            0.479166666667            |
-|     t1contro     |            0.479166666667            |
-|     cs_type2     |            0.479166666667            |
-|     cregion      |            0.479166666667            |
-|     t1extern     |            0.458333333333            |
-|     p1nprek      |                0.4375                |
-|   parentalcare   |                0.4375                |
-|     p1csamek     |                0.4375                |
-| othernonparental |                0.4375                |
-|   relativecare   |                0.4375                |
-|     p1cever      |                0.4375                |
-|  nurseryschool   |                0.4375                |
-|    preschool     |                0.4375                |
-|     p1cprek      |                0.4375                |
-|     p1primpk     |                0.4375                |
-|     p1rprek      |                0.4375                |
-|  daycarecenter   |                0.4375                |
-|    headstart     |            0.416666666667            |
-| prekindergarten  |            0.416666666667            |
-|     p1hsever     |            0.416666666667            |
-|     p1hsprek     |            0.416666666667            |
-|     p1cprgpk     |            0.416666666667            |
+|  column  | dependence probability with c1r4mtsc |
+|----------|--------------------------------------|
+| c4r4rtsc |                 1.0                  |
+| c1r4mtsc |                 1.0                  |
+| c1r4rtsc |                 1.0                  |
+| c4r4mtsc |            0.979166666667            |
+| wkmomed  |            0.770833333333            |
+| wkdaded  |            0.770833333333            |
+| wkpov_r  |            0.770833333333            |
+| p2homecm |            0.770833333333            |
+| p1expect |                 0.75                 |
+|   race   |                 0.75                 |
+| p2safepl |            0.729166666667            |
+| p1prmlng |            0.729166666667            |
+| p2depres |                0.6875                |
+| p1chlboo |            0.666666666667            |
+| p1chlaud |            0.666666666667            |
 
-    ESTIMATE COLUMNS FROM eccls ORDER BY DEPENDENCE PROBABILITY WITH C1R4RTSC LIMIT 65;
+After other math and reading scores, the variables with the highest probability of dependence are the mother and father's education levels, expectations for child's education level, `wkmomed`, `wkmomed`, `p1expect`, poverty level, `wkpov_r`, having a home computer, `p2homecm`, parents' race and language, `race` and `p1prmlng`, and whether a parent is depressed `p2depres`. For most of these, with the possible exception of having a computer, the relationship between these variables and achievement is clear. However, the association between having books in the home and achievement on math is less clear. Indeed, this is the finding of Evans et al. (2010), across cultures, the association between having books in the home and educational outcomes such as the highest level of schooling completed, is quite robust. 
 
-|      column      | dependence probability with c1r4rtsc |
-|------------------|--------------------------------------|
-|     c4r4rtsc     |                 1.0                  |
-|     c1r4mtsc     |                 1.0                  |
-|     c1r4rtsc     |                 1.0                  |
-|     c4r4mtsc     |            0.979166666667            |
-|     wkmomed      |            0.770833333333            |
-|     wkdaded      |            0.770833333333            |
-|     wkpov_r      |            0.770833333333            |
-|     p2homecm     |            0.770833333333            |
-|     p1expect     |                 0.75                 |
-|       race       |                 0.75                 |
-|     p2safepl     |            0.729166666667            |
-|     p1prmlng     |            0.729166666667            |
-|     p2depres     |                0.6875                |
-|     p1chlboo     |            0.666666666667            |
-|     p1chlaud     |            0.666666666667            |
-|     p1hfamil     |            0.645833333333            |
-|     p1nature     |            0.645833333333            |
-|     p1hparnt     |            0.645833333333            |
-|     p1chlpic     |            0.645833333333            |
-|     p1readbo     |            0.645833333333            |
-|     p1helpar     |                0.625                 |
-|     p1games      |                0.625                 |
-|     p1build      |                0.625                 |
-|     p1singso     |            0.604166666667            |
-|     p1letter     |            0.604166666667            |
-|     p1sport      |            0.604166666667            |
-|     p1count      |            0.604166666667            |
-|     p1numsib     |            0.583333333333            |
-|     p1verbal     |            0.583333333333            |
-|     p1pencil     |            0.583333333333            |
-|     p1htotal     |            0.583333333333            |
-|     p1share      |            0.583333333333            |
-|     p1still      |            0.583333333333            |
-|     p1tellst     |            0.583333333333            |
-|     s2crime      |                 0.5                  |
-|     s2drugs      |                 0.5                  |
-|     s2gangs      |                 0.5                  |
-|     s2vcancy     |                 0.5                  |
-|     s2litter     |                 0.5                  |
-|     s2trffic     |                 0.5                  |
-|     s2vlence     |                 0.5                  |
-|     s2tnsion     |                 0.5                  |
-|     t4extern     |            0.479166666667            |
-|     t4contro     |            0.479166666667            |
-|     t1contro     |            0.479166666667            |
-|     cs_type2     |            0.479166666667            |
-|     cregion      |            0.479166666667            |
-|     t1extern     |            0.458333333333            |
-|     p1nprek      |                0.4375                |
-|   parentalcare   |                0.4375                |
-|     p1csamek     |                0.4375                |
-| othernonparental |                0.4375                |
-|   relativecare   |                0.4375                |
-|     p1cever      |                0.4375                |
-|  nurseryschool   |                0.4375                |
-|    preschool     |                0.4375                |
-|     p1cprek      |                0.4375                |
-|     p1primpk     |                0.4375                |
-|     p1rprek      |                0.4375                |
-|  daycarecenter   |                0.4375                |
-|    headstart     |            0.416666666667            |
-| prekindergarten  |            0.416666666667            |
-|     p1hsever     |            0.416666666667            |
-|     p1hsprek     |            0.416666666667            |
-|     p1cprgpk     |            0.416666666667            |
+Given that the estimated probability of dependence was not especially high, we might ask, what is the magnitude of the effect of having books? To investigate this question, we consider the predicted math achievement based on two possible scenarios: the case where there are no books in the home (`p1chlboo`=0), and the case where there are a very large number of books (`p1chlboo`=200). 
 
-After other math and reading scores, the most probably dependent variables are those related to parental education and poverty, followed by the skills that parents value, the resources at home, and the activities they engage in with their children. Relevant to our question, the probability of dependence between preK and our math and reading outcomes is not stronger than for other forms of care, which disagrees with the previous finding.
+    SUMMARIZE SIMULATE C1R4MTSC FROM ecls GIVEN p1chlboo=0.00 TIMES 500
+    
+|           |    c1r4mtsc   |
+|-----------|---------------|
+|    type   |   continuous  |
+|   count   |     500.0     |
+|    mean   |  45.470765694 |
+|    std    | 10.4608755698 |
+|    min    | 20.4179280491 |
+|    25%    | 38.3920501622 |
+|    50%    | 45.0353491704 |
+|    75%    | 51.5711362501 |
+|    max    | 74.9516811658 |
+|    mode   | 32.7555846674 |
+| prob_mode |     0.002     |
 
-If we focus on pre-k versus parental care, we can get a better sense of what the relationships are. `prekindergarten` and `parentalcare` are each binary variables, where 1 indicates true and 0 indicates false. `c1r4rtsc` is a continuous variable representing the child’s score on the exam. We create a column list with just these three variables, then plot the data.
+    SUMMARIZE SIMULATE C1R4MTSC FROM ecls GIVEN p1chlboo=200.00 TIMES 500
+    
+|           |    c1r4mtsc   |
+|-----------|---------------|
+|    type   |   continuous  |
+|   count   |     500.0     |
+|    mean   | 52.0831026527 |
+|    std    | 9.40720930617 |
+|    min    | 23.8979427747 |
+|    25%    | 45.8599243775 |
+|    50%    | 51.9570269894 |
+|    75%    | 58.2441761506 |
+|    max    | 84.2324150938 |
+|    mode   | 53.6594560334 |
+| prob_mode |     0.002     |
 
-    CREATE COLUMN LIST prekindergarten, C1R4MTSC, parentalcare FROM eccls AS math_prek_parent;
-    PLOT SELECT math_prek_parent FROM eccls SAVE TO figures/select_math_prek_parent.png;
-
-<center>
-<img src="{{ site.baseurl }}/assets/images/cs_eccls/select_math_prek_parent.png" class="img-med" alt="pre-k versus parental care">
-</center>
-
-One can see that there is some difference in math scores between the `parentalcare=1` and `prekindergarten=1`. The difference is not huge, consistent with Magnuson et al.’s finding of a 4 point difference. Turning from the observed data to BayesDB’s predictions, we can see that the difference in the empirical distributions is not as apparent in the predictive distributions.
-
-    PLOT SIMULATE math_prek_parent FROM eccls TIMES 500 SAVE TO figures/simulate_math_prek_parent.png;
-
-<center>
-<img src="{{ site.baseurl }}/assets/images/cs_eccls/simulate_math_prek_parent.png" class="img-med" alt="simulated pre-k versus parental care">
-</center>
-
-Looking at BayesDB’s predictions, we can see why the probability of dependence is not especially high. Although a small difference remains in the means, the main difference in the predictive distributions is that pre-K skews scores higher.
-
-Previous research argued that pre-K programs were best based on regression analyses in which factors like parental and neighborhood attributes were taken into account. Intuitively, one could imagine that the effects of pre-K would be most pronounced in kids who have the least resources, a finding that Magnuson et al. (2007) report. Focusing on the children whose mothers have relatively little education and live in the least safe neighborhoods, we can investigate that question. Because there are relatively few datapoints that represent any specific situation, we look at the simulated data. These bake-in the uncertainty associated with the limited observed data, but allow generating enough samples to make inferences, should they be supported.
-
-    plot simulate c1r4mtsc from eccls given p2safepl=1.00 and prekindergarten=1.00 and wkmomed=2.00 times 500 save to figures/simulate_c1r4mtsc_prek.png;
-
-<center>
-<img src="{{ site.baseurl }}/assets/images/cs_eccls/simulate_c1r4mtsc_prek.png" class="img-med" alt="simulated data">
-</center>
-
-    plot simulate c1r4mtsc from eccls given p2safepl=1.00 and parentalcare=1.00 and wkmomed=2.00 times 500 save to figures/simulate_c1r4mtsc_parental.png;
-
-<center>
-<img src="{{ site.baseurl }}/assets/images/cs_eccls/simulate_c1r4mtsc_parental.png" class="img-med" alt="simulated data">
-</center>
-
-It appears that attending pre-K skews the distribution slightly upward. We can inspect summary statistics of the simulated distribution.
-
-    summarize simulate c1r4mtsc from eccls given p2safepl=1.00 and prekindergarten=1.00 and wkmomed=2.00 times 1000;
-
-|            |    c1r4mtsc   |
-|------------|---------------|
-|    type    |   continuous  |
-|   count    |     1000.0    |
-|    mean    | 45.2458640181 |
-|    std     | 9.28436570631 |
-|    min     | 18.8392769098 |
-|    25%     | 38.9974312976 |
-|    50%     | 45.0942152006 |
-|    75%     | 51.1673499342 |
-|    max     | 82.1694368985 |
-|   mode     | 55.3516235201 |
-| prob_mode  |     0.001     |
-
-    summarize simulate c1r4mtsc from eccls given p2safepl=1.00 and parentalcare=1.00 and wkmomed=2.00 times 1000;
-
-|            |    c1r4mtsc   |
-|------------|---------------|
-|    type    |   continuous  |
-|   count    |     500.0     |
-|    mean    | 43.7200395167 |
-|    std     | 9.50747027352 |
-|    min     | 12.9429919217 |
-|    25%     | 37.2475794971 |
-|    50%     | 43.2027073986 |
-|    75%     | 49.7351282305 |
-|    max     |  78.477569055 |
-|   mode     |  46.537475471 |
-| prob_mode  |     0.001     |
-
-The summary statistics confirm a slight trend toward pre-K increasing math scores. Notably, the difference is more evident in the shape of the distribution than the mean. Relative to other relationships in the data, for example, the dependence between math scores and owning books, this effect is rather small. Nevertheless, these analyses support the original findings, while adding some nuance--the effects of pre-K are not overwhelming, even for children who are most disadvantaged. 
+If a household has no books at all, BayesDB predicts that a child will score ~45.5 on his or her kindergarten math exam. In constrast, if a household has 200 books, BayesDB predicts that he or she will score 52.1. That is a sizeable difference, more than half a standard deviation increase in expected math achievement, based on simply owning books. 
