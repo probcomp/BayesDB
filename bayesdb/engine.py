@@ -936,6 +936,8 @@ class Engine(object):
         T_full_imputed_array[:,discrim_model['col_id']] = y_predicted
         if hasattr(discrim_model['predictor'], 'predict_proba'):
           confidence = discrim_model['predictor'].predict_proba(X)
+          # shape is (n_rows, n_classes), which we need to convert to (n_rows, 1) for only the maximum value.
+          confidence = confidence.max(axis=1)
         else:
           confidence = numpy.zeros(len(T_full_imputed))
         T_full_imputed_confidences_array[:,discrim_model['col_id']] = confidence
