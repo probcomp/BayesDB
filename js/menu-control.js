@@ -1,7 +1,7 @@
 function show_docs_menu(){
 	// $('#mobile-button').show();
 	// $('#mobile-sidebar').show();
-	window.menu_is_shown = false;
+	window.menu_is_shown = true;
 	if( $('#mobile-button').is(":hidden") ){
 		$('div.main').css('margin-left','220px');
 	}else{
@@ -12,19 +12,22 @@ function show_docs_menu(){
 	$(window).resize(function(){
 		if( $('#mobile-button').is(":hidden") ){
 			$('div.main').css('margin-left','220px');
+			$('#mobile-sidebar').css('left','0px');	
+			window.menu_is_shown = true;
 		}else{
+			window.menu_is_shown = false;
 			$('div.main').css('margin-left','0px');
+			$('#mobile-sidebar').css('left','-220px');	
 		}
 	});
 	// $('#mobile-button').css('left','0px');
 	// $('#mobile-button').html('<span class="glyphicon glyphicon-th-list"></span>');
 	// $('#mobile-sidebar').css('left','-220px');	
-	window.menu_is_shown = false;
 }
 
 function link_menu_button(){
 	$('.main').click(function(){
-		if(window.menu_is_shown) {
+		if( window.menu_is_shown && $('#mobile-button').is(":visible") ) {
 			$('#mobile-button').css('left','0px');
 			$('#mobile-button').html('<span class="glyphicon glyphicon-th-list"></span>');
 			$('#mobile-sidebar').css('left','-220px');	
