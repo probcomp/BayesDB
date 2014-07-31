@@ -221,7 +221,9 @@ def test_save_and_load_models():
   original_models = engine.save_models(test_tablename)
   
   test_tablename2, _ = create_dha()
-  engine.load_models(test_tablename2, original_models)
+  models = original_models['models']
+  model_schema = original_models['schema']
+  engine.load_models(test_tablename2, models, model_schema)
   assert engine.save_models(test_tablename2).values() == original_models.values()
 
 def test_initialize_models():

@@ -36,7 +36,7 @@ from engine import Engine
 
 class Client(object):
     def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='multiprocessing',
-                 bayesdb_host=None, bayesdb_port=8008, seed=None, upgrade_key_column=None):
+                 bayesdb_host=None, bayesdb_port=8008, seed=None, testing=False):
         """
         Create a client object. The client creates a parser, that is uses to parse all commands,
         and an engine, which is uses to execute all commands. The engine can be remote or local.
@@ -45,8 +45,7 @@ class Client(object):
         self.parser = Parser()
         if bayesdb_host is None or bayesdb_host=='localhost':
             self.online = False
-            self.engine = Engine(crosscat_host, crosscat_port, crosscat_engine_type, seed)
-            self.engine.upgrade_btables(upgrade_key_column)
+            self.engine = Engine(crosscat_host, crosscat_port, crosscat_engine_type, seed, testing=testing)
         else:
             self.online = True
             self.hostname = bayesdb_host
@@ -57,10 +56,26 @@ class Client(object):
         """
         Helper function used to call the BayesDB engine, whether it is remote or local.
         Accepts method name and arguments for that method as input.
+        If this is the first time a query has been executed on the given tablename
+        during this session, first check that the table doesn't need any upgrades to
+        work with the current version of BayesDB. (After checking/upgrading, the table
+        will be considered upgraded for the duration of the session.)
         """
+        table_query = 'tablename' in args_dict
+        if table_query:
+            tablename = args_dict['tablename']
+            table_created = tablename in self.engine.persistence_layer.btable_index
+            table_checked = tablename in self.engine.persistence_layer.btable_check_index
+
         if self.online:
+            if table_query:
+                if table_created and not table_checked:
+                    out, id = aqupi_utils.call('upgrade_btable', {'tablename': tablename}, self.URI)
             out, id = aqupi_utils.call(method_name, args_dict, self.URI)
         else:
+            if table_query:
+                if table_created and not table_checked:
+                    self.engine.upgrade_btable(tablename)
             method = getattr(self.engine, method_name)
             if debug:
                 out = method(**args_dict)
@@ -187,17 +202,24 @@ class Client(object):
         elif method_name == 'load_models':
             pklpath = client_dict['pkl_path']
             try:
-                models = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
+                model_data = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
             except IOError as e:
                 if pklpath[-7:] != '.pkl.gz':
                     if pklpath[-4:] == '.pkl':
-                        models = pickle.load(open(self.parser.get_absolute_path(pklpath), 'rb'))
+                        model_data = pickle.load(open(self.parser.get_absolute_path(pklpath), 'rb'))
                     else:
                         pklpath = pklpath + ".pkl.gz"
-                        models = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
+                        model_data = pickle.load(gzip.open(self.parser.get_absolute_path(pklpath), 'rb'))
                 else:
                     raise utils.BayesDBError('Models file %s could not be found.' % pklpath)
-            args_dict['models'] = models
+            # This is the more recent version, where schema is stored with models.
+            if 'schema' in model_data.keys():
+                args_dict['models'] = model_data['models']
+                args_dict['model_schema'] = model_data['schema']
+            # This support older saved models, where only the model info was stored.
+            else:
+                args_dict['models'] = model_data
+                args_dict['model_schema'] = None
         elif method_name == 'create_btable':
             if pandas_df is None:
                 header, rows = data_utils.read_csv(client_dict['csv_path'])

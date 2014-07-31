@@ -53,14 +53,15 @@ import plotting_utils
 import parser as p
 
 class Engine(object):
-  def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='local', seed=None, **kwargs):
+  def __init__(self, crosscat_host=None, crosscat_port=8007, crosscat_engine_type='local', seed=None, testing=False, **kwargs):
     """ One optional argument that you may find yourself using frequently is seed.
     It defaults to random seed, but for testing/reproduceability purposes you may
     want a deterministic one. """
-    
+
     self.persistence_layer = PersistenceLayer()
     self.parser = p.Parser()
     self.analyze_threads = dict() # Maps tablenames to whether they are doing an ANALYZE.
+    self.testing = testing
 
     if crosscat_host is None or crosscat_host == 'localhost':
       self.online = False
@@ -336,7 +337,7 @@ class Engine(object):
             cctypes_full[query_idx] = cctypes_existing_full[M_c_existing_full['name_to_idx'][query_colname]]
 
     if 'key' not in cctypes_full:
-        raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(query_data, query_colnames, cctypes_full, key_column=None, accept=True)
+        raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(query_data, query_colnames, cctypes_full, key_column=None, testing=self.testing)
     else:
         raw_T_full = query_data
         colnames_full = query_colnames
@@ -369,7 +370,7 @@ class Engine(object):
     raw_T_full = data_utils.convert_nans(raw_T_full)
     if cctypes_full is None:
       cctypes_full = data_utils.guess_column_types(raw_T_full)
-    raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column)
+    raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column, testing=self.testing)
     T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
     # variables without "_full" don't include ignored columns.
@@ -391,54 +392,55 @@ class Engine(object):
 
     return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename)
 
-  def upgrade_btables(self, upgrade_key_column=None):
+  def upgrade_btable(self, tablename, upgrade_key_column=None):
     """
     Btables created in early versions of BayesDB may not have attributes that are required in more
     recent versions of BayesDB (example: required key column). This function allows them to be
     upgraded simply, without having to manually recreate the btable and re-load models.
     """
-    tablenames = self.persistence_layer.btable_index
-    for tablename in tablenames:
-        # 1. Check for readable metadata file - if not found or not readable, the table's data files 
-        #       have become corrupted, and the table must be dropped.
-        try:
-            metadata = self.persistence_layer.get_metadata(tablename)
-        except utils.BayesDBError:
-            print "Metadata for %s have been corrupted, and the table must be dropped." % tablename
-            print "Press any key to confirm, and then re-create it using CREATE BTABLE"
+    # 1. Check for readable metadata file - if not found or not readable, the table's data files 
+    #       have become corrupted, and the table must be dropped.
+    try:
+        metadata = self.persistence_layer.get_metadata(tablename)
+    except utils.BayesDBError:
+        print "Metadata for %s have been corrupted, and the table must be dropped." % tablename
+        print "Press any key to confirm, and then re-create it using CREATE BTABLE"
+        if not self.testing:
             user_input = raw_input()
-            self.drop_btable(tablename)
-            continue
+        self.drop_btable(tablename)
+        return
 
-        # 2. Check for metadata_full file - if not found, create it from metadata.
-        #       Okay to use metadata since btables created that long ago won't have ignore/key columns.
-        try:
-            metadata_full = self.persistence_layer.get_metadata_full(tablename)
-        except utils.BayesDBError:
-            metadata = self.persistence_layer.get_metadata(tablename)
-            metadata_full = metadata
-            # Rename metadata keys with suffix '_full'
-            for key in metadata.keys():
-                metadata_full[key + '_full'] = metadata_full.pop(key)
-            # Btables created without a metadata_full file don't have raw_T_full saved in metadata, so we need to recreate it.
-            metadata_full['raw_T_full'] = data_utils.gen_raw_T_full_from_T_full(metadata_full['T_full'], metadata_full['M_c_full'])
-            self.persistence_layer.write_metadata_full(tablename, metadata_full)
-            print "Upgraded %s: added metadata_full file" % tablename
+    # 2. Check for metadata_full file - if not found, create it from metadata.
+    #       Okay to use metadata since btables created that long ago won't have ignore/key columns.
+    try:
+        metadata_full = self.persistence_layer.get_metadata_full(tablename)
+    except utils.BayesDBError:
+        metadata = self.persistence_layer.get_metadata(tablename)
+        metadata_full = metadata
+        # Rename metadata keys with suffix '_full'
+        for key in metadata.keys():
+            metadata_full[key + '_full'] = metadata_full.pop(key)
+        # Btables created without a metadata_full file don't have raw_T_full saved in metadata, so we need to recreate it.
+        metadata_full['raw_T_full'] = data_utils.gen_raw_T_full_from_T_full(metadata_full['T_full'], metadata_full['M_c_full'])
+        self.persistence_layer.write_metadata_full(tablename, metadata_full)
+        print "Upgraded %s: added metadata_full file" % tablename
 
-        # 3. Check for key column - if not found, add one.
-        if 'key' not in metadata_full['cctypes_full']:
-            print "Table %s is from an old version of BayesDB and does not have a key column." % tablename
-            raw_T_full = metadata_full['raw_T_full']
-            colnames_full = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
-            cctypes_full = metadata_full['cctypes_full']
+    # 3. Check for key column - if not found, add one.
+    if 'key' not in metadata_full['cctypes_full']:
+        print "Table %s is from an old version of BayesDB and does not have a key column." % tablename
+        raw_T_full = metadata_full['raw_T_full']
+        colnames_full = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
+        cctypes_full = metadata_full['cctypes_full']
 
-            raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=upgrade_key_column)
-            T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+        raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, testing=self.testing)
+        T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
-            # Don't need to update T, M_r, M_c, cctypes (variables without "_full")
-            #   because they don't include ignore/key columns.
-            self.persistence_layer.upgrade_btable(tablename, cctypes_full, T_full, M_r_full, M_c_full, raw_T_full)
-            print "Upgraded %s: added key column" % tablename
+        # Don't need to update T, M_r, M_c, cctypes (variables without "_full")
+        #   because they don't include ignore/key columns.
+        self.persistence_layer.upgrade_btable(tablename, cctypes_full, T_full, M_r_full, M_c_full, raw_T_full)
+        print "Upgraded %s: added key column" % tablename
+
+    self.persistence_layer.btable_check_index.append(tablename)
 
   def show_schema(self, tablename):
     if not self.persistence_layer.check_if_table_exists(tablename):
@@ -454,10 +456,12 @@ class Engine(object):
     the client then saves to disk (in a pickle file)."""
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-    
-    return self.persistence_layer.get_models(tablename)
 
-  def load_models(self, tablename, models):
+    models = self.persistence_layer.get_models(tablename)
+    schema = self.persistence_layer.get_schema(tablename)
+    return dict(models=models, schema=schema)
+
+  def load_models(self, tablename, models, model_schema):
     """Load these models as if they are new models"""
     # Models are stored in the format: dict[model_id] = dict[X_L, X_D, iterations].
     # We just want to pass the values.
@@ -476,8 +480,25 @@ class Engine(object):
       models = dict()
       for id, (X_L, X_D) in enumerate(zip(old_models['X_L_list'], old_models['X_D_list'])):
         models[id] = dict(X_L=X_L, X_D=X_D, iterations=0)
-      
+
+    if model_schema is None:
+        print """WARNING! The models you are currently importing were saved without a schema.
+            If you've edited the table schema since analyzing models, analysis steps may give errors. 
+            Please use "SAVE MODELS" to create an updated copy of your models."""
+    else:
+        table_schema = self.persistence_layer.get_schema(tablename)
+        # If schemas match, add the models
+        # If schemas don't match:
+        #   If there are models, don't add the new ones (they'll be incompatible)
+        #   If there aren't models, add the new ones.
+        if table_schema != model_schema:
+            if self.persistence_layer.has_models(tablename):
+                raise utils.BayesDBError('Table %s already has models under a different schema than the models you are loading. All models used must have the same schema.' % tablename)
+            else:
+                self.persistence_layer.update_schema(tablename, model_schema)
+
     result = self.persistence_layer.add_models(tablename, models.values())
+
     return self.show_models(tablename)
 
   def drop_models(self, tablename, model_indices=None):
@@ -563,7 +584,11 @@ class Engine(object):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
 
-    models = self.persistence_layer.get_models(tablename)
+    model_data = self.persistence_layer.get_models(tablename)
+    if 'schema' in model_data.keys():
+        models = model_data['models']
+    else:
+        models = model_data
     modelid_iteration_info = list()
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
       modelid_iteration_info.append((modelid, model['iterations']))

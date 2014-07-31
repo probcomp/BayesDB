@@ -123,6 +123,7 @@ class PersistenceLayer():
             os.makedirs(self.data_dir)
         self.load_btable_index() # sets self.btable_index
         self.model_locks = ModelLocks(self)
+        self.btable_check_index = list()
 
     def load_btable_index(self):
         """
@@ -234,13 +235,14 @@ class PersistenceLayer():
                 self.model_locks.acquire_table(tablename)
                 fnames = os.listdir(models_dir)                
                 for fname in fnames:
-                    model_id = fname[6:] # remove preceding 'model_'
-                    model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
-                    full_fname = os.path.join(models_dir, fname)
-                    f = open(full_fname, 'r')
-                    m = pickle.load(f)
-                    f.close()
-                    models[model_id] = m
+                    if fname.startswith('model_'):
+                        model_id = fname[6:] # remove preceding 'model_'
+                        model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
+                        full_fname = os.path.join(models_dir, fname)
+                        f = open(full_fname, 'r')
+                        m = pickle.load(f)
+                        f.close()
+                        models[model_id] = m
                 self.model_locks.release_table(tablename)
                 return models
         else:
@@ -475,9 +477,10 @@ class PersistenceLayer():
                 model_ids = []                
                 fnames = os.listdir(models_dir)
                 for fname in fnames:
-                    model_id = fname[6:] # remove preceding 'model_'
-                    model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
-                    model_ids.append(model_id)
+                    if fname.startswith('model_'):
+                        model_id = fname[6:] # remove preceding 'model_'
+                        model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
+                        model_ids.append(model_id)
         return model_ids
 
     def get_cctypes(self, tablename):
@@ -489,6 +492,25 @@ class PersistenceLayer():
         """Access the table's current cctypes."""
         metadata_full = self.get_metadata_full(tablename)
         return metadata_full['cctypes_full']
+
+    def get_colnames(self, tablename):
+        """
+        Return column names of analysis columns
+        """
+        M_c = self.get_metadata(tablename)['M_c']
+        colnames = utils.get_all_column_names_in_original_order(M_c)
+        return colnames
+
+    def get_schema(self, tablename):
+        """
+        Return colnames and cctypes of analysis columns
+        """
+        colnames = self.get_colnames(tablename)
+        cctypes = self.get_cctypes(tablename)
+        schema = dict()
+        for colname, cctype in zip(colnames, cctypes):
+            schema[colname] = cctype
+        return schema
 
     def get_key_column_name(self, tablename):
         metadata_full = self.get_metadata_full(tablename)

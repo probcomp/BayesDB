@@ -45,7 +45,7 @@ def setup_function(function):
   test_filenames = []
   # Default upgrade_key_column is None, to let the user choose, but need to avoid
   # user input during testing, so for testing just create a new key column.
-  client = Client(upgrade_key_column=0)
+  client = Client(testing=True)
 
 def teardown_function(function):
   global tablename, client
@@ -133,9 +133,30 @@ def test_save_and_load_models():
   original_models = client.engine.save_models(test_tablename1)
   
   client('load models %s into %s' % (pkl_path, test_tablename2), debug=True, pretty=False)
-  new_models = client.engine.save_models(test_tablename1)         
+  new_models = client.engine.save_models(test_tablename2)
 
   assert new_models.values() == original_models.values()
+
+  # Models are saved with schema now, so check that they can be loaded into a table
+  # with the same schema that already has models, and can't be loaded into a table
+  # with a different schema that already has models.
+
+  # Should work - schemas are the same and table2 already has models
+  client('load models %s into %s' % (pkl_path, test_tablename2), debug=True, pretty=False)
+
+  test_tablename3 = create_dha()
+  client('update schema for %s set qual_score = multinomial' % (test_tablename3), debug=True, pretty=False)
+
+  # Should work - schemas aren't the same, but table3 doesn't have any models, so the schema will be changed.
+  client('load models %s into %s' % (pkl_path, test_tablename3), debug=True, pretty=False)
+
+  test_tablename4 = create_dha()
+  client('update schema for %s set qual_score = multinomial' % (test_tablename4), debug=True, pretty=False)
+  client('initialize 2 models for %s' % (test_tablename4), debug=True, pretty=False)
+
+  # Should fail - schemas aren't the same, and table4 already has models, so the models will be incompatible.
+  with pytest.raises(utils.BayesDBError):  
+    client('load models %s into %s' % (pkl_path, test_tablename4), debug=True, pretty=False)
 
 def test_column_lists():
   """ smoke test """
