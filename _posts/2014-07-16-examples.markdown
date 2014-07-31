@@ -212,7 +212,7 @@ Given that the estimated probability of dependence was not especially high, we m
 |    mode   | 53.6594560334 |
 | prob_mode |     0.002     |
 
-If a household has no books at all, BayesDB predicts that a child will score ~45.5 on his or her kindergarten math exam. In constrast, if a household has 200 books, BayesDB predicts that he or she will score 52.1. That is a sizeable difference, more than half a standard deviation increase in expected math achievement, based on simply owning books. 
+If a household has no books at all, BayesDB predicts that a child will score ~45.5 on his or her kindergarten math exam. In constrast, if a household has 200 books, BayesDB predicts that he or she will score ~52.1. That is a sizeable difference, more than half a standard deviation increase in expected math achievement, based on simply owning books. 
 
 ## References
 
