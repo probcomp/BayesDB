@@ -4,6 +4,7 @@ tagline:
 layout: examples
 ---
 # Dartmouth Atlas of Health
+
 ## Recording the cost structure, capacity and quality of care of US hospitals.
 
 One of the main concerns in American health care is addressing *unwarranted variations* in quality: a disparity between the cost and outcomes of care. The cost-care disparity is well-documented mainly as a result of the Dartmouth Atlas of Health Care, a freely available dataset which
@@ -74,6 +75,7 @@ The BayesDB-ready .csv and pre-computed models used here can be found in the `/e
 For more information about the Dartmouth Atlas of Health Care, [http://www.dartmouthatlas.org/](http://www.dartmouthatlas.org/).
 
 #General Social Survey
+
 ##Responses to ~5500 demographic, behavioral and attitudinal questions by US residents.
 
 According to economics research, homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities  (DiPasquale, D., &amp; Glaeser, E. L., 1999). For this reason, homeowners have been labeled better citizens (DiPasquale, D., &amp; Glaeser, E. L., 1999; McCabe, 2013). 
@@ -127,6 +129,7 @@ We see that 75% of homeowners voted while only 50% of renters voted, confirming 
 The full GSS dataset can be downloaded from their website, [here](http://www3.norc.org/GSS+Website/Download/).
 
 #Early Childhood Longitudinal Study
+
 ##Relationships among demographic, social, and experiential variables and early achievement 
 
 What kinds of early childhood environments are associated with improved educational outcomes? The Early Childhood Longitudinal Study (Kindergarten class) looks at a variety of variables---cultural, socioeconomic, and educational---as they relate to early proficiency in reading and mathematics. Research has found that sometimes simple things, such as the number of books in the home, have surprisingly strong associations with educational achivement (Evans, Kelley, Sikora, & Trieman, 2010). We investiate this finding using ECCLs dataset using BayesDB. 
