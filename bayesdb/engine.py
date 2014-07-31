@@ -801,9 +801,9 @@ class Engine(object):
       numsamples=50 ##TODO: put this in a config file
       
     return self.select(tablename, functions, whereclause, limit, order_by,
-                       impute_confidence=confidence, numsamples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename)
+                       impute_confidence=confidence, numsamples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename, infer=True)
     
-  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, numsamples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
+  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, numsamples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None, infer=False):
     """
     BQL's version of the SQL SELECT query.
     
@@ -905,55 +905,58 @@ class Engine(object):
     # TODO: need to store confidence (currently just 61 instead of (61, None) for discrim.
     # This might involve re-doing all of the functions._column_ignore stuff? It's currently special-cased.
     # Or could just remake _column_ignore arguments so that they include a confidence... Let's do this. #TODO
+    if infer:
+      # Same as T_full, except values are imputed if and only if: they are an input to a discriminative 
+      # column that is required by this query (and they are nan). If not imputed, then the confidence given is 1.
+      # In this case the raw value may still be None, if it was not required for this specific purpose.
+      # TODO: this is only relevant for INFER
+      # TODO: maybe allow you to specify to impute some other values too?
+      discrim_target_col_ids = [] # the full_col_ids for all queried (in where, query, or order) discrim columns.
+      for f, f_args in function_list:
+        full_id, conf = f_args
+        if type(cctypes_full[full_id]) == dict: # discrim
+          discrim_target_col_ids.append(full_id)
+      all_input_col_ids, dependency_dict = self._get_all_input_col_ids(cctypes_full, discrim_target_col_ids)
+      T_full_imputed, T_full_imputed_confidences = self._get_T_full_imputed(T_full, M_c_full, M_c, X_L_list, 
+                                                           X_D_list, cctypes_full, all_input_col_ids, numsamples)
 
-    # Same as T_full, except values are imputed if and only if: they are an input to a discriminative 
-    # column that is required by this query (and they are nan). If not imputed, then the confidence given is 1.
-    # In this case the raw value may still be None, if it was not required for this specific purpose.
-    # TODO: this is only relevant for INFER
-    # TODO: maybe allow you to specify to impute some other values too?
-    discrim_target_col_ids = [] # the full_col_ids for all queried (in where, query, or order) discrim columns.
-    for f, f_args in function_list:
-      full_id, conf = f_args
-      if type(cctypes_full[full_id]) == dict: # discrim
-        discrim_target_col_ids.append(full_id)
-    all_input_col_ids, dependency_dict = self._get_all_input_col_ids(cctypes_full, discrim_target_col_ids)
-    T_full_imputed, T_full_imputed_confidences = self._get_T_full_imputed(T_full, M_c_full, M_c, X_L_list, 
-                                                         X_D_list, cctypes_full, all_input_col_ids, numsamples)
-
-    # now we have our T_full_imputed! let's fill in some discrim shit with it
-    # TODO: this should also impute other values for INFER, and should use these values for all
-    # imputations made in this function, in order to preserve the consistency of chained estimates
-    # (e.g. if you impute x as 5 and feed it into discrim y = x + 1 so y = 6, but then in the actual output
-    # you impute x as 3 so y should be 4 to be consistent.)
-    T_full_imputed_array = numpy.array(T_full_imputed)
-    T_full_imputed_confidences_array = numpy.array(T_full_imputed_confidences)
-    discriminative_models = self.persistence_layer.get_discriminative_models(tablename)
-    for discrim_model in discriminative_models: # already in topological order
-      if discrim_model['col_id'] in discrim_target_col_ids: # if the select query needs to evaluate this one
-        # Major optimization: could do this for only some of the rows instead of all, lol...so slow
-        X = T_full_imputed_array[:,discrim_model['input_col_ids']]
-        y_predicted = discrim_model['predictor'].predict(X)
-        T_full_imputed_array[:,discrim_model['col_id']] = y_predicted
-        if hasattr(discrim_model['predictor'], 'predict_proba'):
-          confidence = discrim_model['predictor'].predict_proba(X)
-          # shape is (n_rows, n_classes), which we need to convert to (n_rows, 1) for only the maximum value.
-          confidence = confidence.max(axis=1)
-        else:
-          confidence = numpy.zeros(len(T_full_imputed))
-        T_full_imputed_confidences_array[:,discrim_model['col_id']] = confidence
-    # Need to convert codes to values: select likes values not codes.
-    T_full_imputed = []
-    for row_id in range(len(T_full)):
-      T_full_imputed_row = []
-      for full_col_id in range(len(T_full[0])):
-        code = T_full_imputed_array[row_id, full_col_id]
-        if cctypes_full[full_col_id] not in ('key', 'ignore') and type(cctypes_full[full_col_id]) != dict:
-          T_full_imputed_row.append(data_utils.convert_code_to_value(M_c_full, full_col_id, code))
-        else:
-          T_full_imputed_row.append(code)
-      T_full_imputed.append(T_full_imputed_row)
-    T_full_imputed_confidences = T_full_imputed_confidences_array.tolist()
-    # Now T_full_imputed is ready to go, and all values.
+      # now we have our T_full_imputed! let's fill in some discrim shit with it
+      # TODO: this should also impute other values for INFER, and should use these values for all
+      # imputations made in this function, in order to preserve the consistency of chained estimates
+      # (e.g. if you impute x as 5 and feed it into discrim y = x + 1 so y = 6, but then in the actual output
+      # you impute x as 3 so y should be 4 to be consistent.)
+      T_full_imputed_array = numpy.array(T_full_imputed)
+      T_full_imputed_confidences_array = numpy.array(T_full_imputed_confidences)
+      discriminative_models = self.persistence_layer.get_discriminative_models(tablename)
+      for discrim_model in discriminative_models: # already in topological order
+        if discrim_model['col_id'] in discrim_target_col_ids: # if the select query needs to evaluate this one
+          # Major optimization: could do this for only some of the rows instead of all, lol...so slow
+          X = T_full_imputed_array[:,discrim_model['input_col_ids']]
+          y_predicted = discrim_model['predictor'].predict(X)
+          T_full_imputed_array[:,discrim_model['col_id']] = y_predicted
+          if hasattr(discrim_model['predictor'], 'predict_proba'):
+            confidence = discrim_model['predictor'].predict_proba(X)
+            # shape is (n_rows, n_classes), which we need to convert to (n_rows, 1) for only the maximum value.
+            confidence = confidence.max(axis=1)
+          else:
+            confidence = numpy.zeros(len(T_full_imputed))
+          T_full_imputed_confidences_array[:,discrim_model['col_id']] = confidence
+      # Need to convert codes to values: select likes values not codes.
+      T_full_imputed = []
+      for row_id in range(len(T_full)):
+        T_full_imputed_row = []
+        for full_col_id in range(len(T_full[0])):
+          code = T_full_imputed_array[row_id, full_col_id]
+          if cctypes_full[full_col_id] not in ('key', 'ignore') and type(cctypes_full[full_col_id]) != dict:
+            T_full_imputed_row.append(data_utils.convert_code_to_value(M_c_full, full_col_id, code))
+          else:
+            T_full_imputed_row.append(code)
+        T_full_imputed.append(T_full_imputed_row)
+      T_full_imputed_confidences = T_full_imputed_confidences_array.tolist()
+      # Now T_full_imputed and T_full_imputed_confidences is ready to go, and all values. 
+    else: # not infer, so create dummy versions of T_full_imputed and T_full_imputed_confidences
+      T_full_imputed = None
+      T_full_imputed_confidences = None
 
     ## Now function list is constructed, so create the data table one row at a time,
     ## applying where clause in the process.
