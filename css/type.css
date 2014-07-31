@@ -79,6 +79,19 @@ span.t-db{color:rgb(78,205,196);}
 
 .align-center{text-align: center;}
 
+@media screen and (min-width: 48em){
+	#mobile-button{
+		display: none;
+	}
+	#mobile-sidebar{
+		left:0px;
+		display: block;
+	}
+	/*div.main{
+		margin-left:220px;
+	}*/
+}
+
 @media screen and (max-width: 48em){
 	div.default-header-titles h1{font-size:300%}
 	div.default-header-titles h2{font-size:160%}
@@ -95,6 +108,11 @@ span.t-db{color:rgb(78,205,196);}
 	div.post-titles h1{font-size:2.5em;}
 	div.post-titles h2{font-size:1.5em; line-height: 1.2;}
 	div.post-titles p{font-size:1em;}
+	#mobile-button{ display: block; }
+	#mobile-sidebar{
+		left:-220px;
+		display: block;
+	}
 }
 
 @media screen and (max-width: 35.5em){
@@ -115,6 +133,11 @@ span.t-db{color:rgb(78,205,196);}
 	div.post-titles h1{font-size:2em;}
 	div.post-titles h2{font-size:1.25em; line-height: 1.1;}
 	div.post-titles p{font-size:.95em;}
+	#mobile-button{ display: block; }
+	#mobile-sidebar{
+		left:-220px;
+		display: block;
+	}
 }
 
 .shrink-50{ font-size:50%; }

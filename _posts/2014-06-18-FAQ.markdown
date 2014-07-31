@@ -12,7 +12,7 @@ BayesDB is aimed at:
 
 2. Users with statistics expertise who either have a problem that doesn't fit the standard supervised templates (e.g. the data is too sparse) or who want to analyze a tabular dataset but don't have the time or inclination for custom modeling.
 
-The main goal is to broaden access to analytics and increase productivity. We also hope it will increase the reliability of the empirical reasoning performed by non-experts, who currently lack the ability to build good models or critique the simplistic models that they do have access to.
+The main goal is to broaden access to analytics and increase productivity. We also hope it will increase the reliability of the empirical reasoning performed by non-experts, who currently lack the resources to build good models or critique the simplistic models that they do have access to.
 
 Of course, when decisions can have costly consequences, there is no substitute for a critical assessment of the underlying rationale. In these situations, please consult a good statistician (be they "Bayesian" or "frequentist"), and if possible invest the time to critically assess her reasoning and methodology. Although BayesDB relies on unusually flexible assumptions, reports its uncertainty and is designed to err in the direction of underconfidence, all assumptions can be misleading in some circumstances.
 
@@ -22,7 +22,7 @@ An 'expert' mode (enabling e.g. custom models via call-outs to, say, custom Pyth
 
 Two ideas:
 
-1. The BQL language. BQL is designed to encapsulate exploratory analysis and predictive modeling workflows in a way that is (essentially) independent of the underlying probabilistic modeling and inference approach. The technical idea is to turn analytic queries into approximate Bayesian inferences about joint distribution induced by the underlying data generating process, and decouple that from the problem of building a model of that process. We see this as an inferential analogue of the physical data independence afforded by traditional DBMSs; our upcoming paper for more discussion.
+1. The BQL language. BQL is designed to encapsulate exploratory analysis and predictive modeling workflows in a way that is (essentially) independent of the underlying probabilistic modeling and inference approach. The technical idea is to turn analytic queries into approximate Bayesian inferences about joint distribution induced by the underlying data generating process, and decouple that from the problem of building a model of that process. We see this as an inferential analogue of the physical data independence afforded by traditional DBMSs; see our upcoming paper for more discussion.
 
 2. CrossCat. CrossCat can be thought of as a flexible, generic meta-model for probabilistic models of data tables that relaxes some of the unrealistic assumptions of typical Bayesian learning techniques. Approximate Bayesian inference in CrossCat tackles some of the model selection and parameter estimation issues that experts normally address by custom exploration, feature selection, model building and validation. Also, it produces estimates of the joint distribution of the data that is easy to conditionally query (unlike a Bayesian network) and that also has some useful latent variables. This makes several BQL commands natural to implement, and supports a "general purpose" BayesDB implementation.
 
@@ -32,7 +32,7 @@ Just as traditional SQL-based DBMSs are specialized for different data shapes an
 
 **WARNING**: BayesDB is rapidly-evolving, alpha-quality research software. Some key ideas behind its design and implementation have yet to be published, documentation is currently sparse, our release engineering is rough, and there may well be front-end and back-end bugs.
 
-We are humbled and excited by the interest in the project, and are working hard to improve BayesDB's maturity
+We are humbled and excited by the interest in the project, and are working hard to improve BayesDB's maturity.
 
 Please send us your application ideas, bug reports, and feature requests. Also, if you think you might be interested in alpha testing, collaborating, or contributing, please write us! We'd love to hear from you at bayesdb (AT) mit.edu or by filling out the [BayesDB Tester Signup Form](https://docs.google.com/forms/d/1fPIMx-5YdyfD4G4VAQiC5PCQ2m0hiMoYa0j0EJfGfZE/viewform).
 
@@ -60,7 +60,7 @@ Modulo bugs, we feel that BayesDB is reliable enough to trust as a first pass on
 
 Ultimately, of course, there is no substitute for closely scrutinizing our modeling assumptions and implementation. 
 
-###Is there a scaling path to millions or billions of rows? tens of thousands of columns? both?
+###Is there a scaling path to millions or billions of rows? Tens of thousands of columns? Both?
 
 Our models are memory efficient, our inference algorithms scale linearly in runtime, we have yet to do serious performance engineering, there is a lot of unexploited parallelism, and we haven't yet incorporated subsampling or more advanced inference techniques. Thus we do not think there are intrinsic barriers to greater scale, even remaining with the CrossCat backend.
 

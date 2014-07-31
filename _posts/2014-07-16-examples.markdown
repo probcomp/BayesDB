@@ -50,21 +50,6 @@ Which hospitals are most anomalous? This is, which hospitals have the least prob
 
     SELECT name,  PREDICTIVE PROBABILITY OF qual_score FROM dha ORDER BY PREDICTIVE PROBABILITY OF qual_score ASC LIMIT 10
 
-<!--
-| row_id |        name       | predictive probability qual_score |
-|--------|-------------------|-----------------------------------|
-|  161   |     McAllen TX    |         0.000305809830999         |
-|   79   |     Elyria OH     |          0.0386015426914          |
-|  171   |      Minot ND     |          0.0408746077354          |
-|  152   |     Lubbock TX    |          0.0686783885467          |
-|  185   |  New Brunswick NJ |          0.0817273108102          |
-|   94   |     Fresno CA     |          0.0872660495903          |
-|  175   |     Monroe LA     |          0.0880447645968          |
-|  124   |     Jackson TN    |          0.0901135638775          |
-|  239   | San Bernardino CA |          0.0923877470568          |
-|   76   |     El Paso TX    |           0.094225198692          |
--->
-
 |       name       | predictive probability qual_score |
 |------------------|-----------------------------------|
 |     Minot ND     |          0.0510907536854          |
@@ -108,42 +93,21 @@ First, for homeowners (`dwelown=1`),
 
     PLOT SELECT vote08 FROM gss_pared where dwelown=1 SAVE TO votedwel_1.png;
 
-<!-- |            |      vote08     |
-|    type    |   multinomial   |
-|   count    |       800       |
-|   unique   |        3        |
-|   mode1    |        1        |
-|   mode2    |        2        |
-|   mode3    |        3        |
-| prob_mode1 |  0.752475247525 |h
-| prob_mode2 |  0.180693069307 |
-| prob_mode3 | 0.0569306930693 | -->
 
 <center>
 <img src="{{ site.baseurl }}/assets/images/cs_gss/votedwel_1.png" class="img-med" alt="Vote variable plotted for homeowners">
 </center>
-<!-- ![Vote variable plotted for homeowners]({{ site.baseurl }}/assets/images/cs_gss/votedwel_1.png) -->
+
 
 and second, for renters (`dwelown=2`)
 
     PLOT SELECT vote08 FROM gss_pared where dwelown=2 SAVE TO votedwel_2.png;
 
-<!-- |            |     vote08     |
-|    type    |  multinomial   |
-|   count    |      466       |
-|   unique   |       3        |
-|   mode1    |       1        |
-|   mode2    |       2        |
-|   mode3    |       3        |
-| prob_mode1 | 0.501057082452 |
-| prob_mode2 | 0.353065539112 |
-| prob_mode3 | 0.131078224101 | -->
 
 <center>
 <img src="{{ site.baseurl }}/assets/images/cs_gss/votedwel_2.png" class="img-med" alt="Vote variable plotted for homeowners">
 </center>
 
-<!-- ![Vote variable plotted for renters]({{ site.baseurl }}/assets/images/cs_gss/votedwel_2.png) -->
 
 We see that 75% of homeowners voted while only 50% of renters voted, confirming the previous finding.
 
@@ -155,9 +119,6 @@ We see that 75% of homeowners voted while only 50% of renters voted, confirming 
 <p class='reference'>
 [2] McCabe, B. J. (2013). Are Homeowners Better Citizens? Homeownership and Community Participation in the United States. Social forces, sos185.
 </p>
-<!-- <p class='reference'><a id='ref3'></a>
-[3] Aaronson, D. (2000). A Note on the Benefits of Homeownership. Journal of Urban Economics, 47(3), 356-369.
-</p> -->
 
 ##Further information
 
