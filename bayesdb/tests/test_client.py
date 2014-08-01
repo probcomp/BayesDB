@@ -20,6 +20,7 @@
 
 import time
 import inspect
+import sys
 import pickle
 import os
 import numpy
@@ -27,6 +28,7 @@ import pytest
 import random
 import shutil
 import pandas
+from cStringIO import StringIO
 
 import bayesdb.utils as utils
 from bayesdb.client import Client
@@ -43,7 +45,7 @@ def setup_function(function):
   test_filenames = []
   # Default upgrade_key_column is None, to let the user choose, but need to avoid
   # user input during testing, so for testing just create a new key column.
-  client = Client(upgrade_key_column=0)
+  client = Client(testing=True)
 
 def teardown_function(function):
   global tablename, client
@@ -54,10 +56,10 @@ def teardown_function(function):
     if os.path.exists(test_filename):
         os.remove(test_filename)
 
-def create_dha(path='data/dha.csv'):
+def create_dha(path='data/dha.csv', key_column=0):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
-  client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False, key_column=0)
+  client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False, key_column=key_column)
   
   global test_tablenames
   test_tablenames.append(test_tablename)
@@ -76,8 +78,7 @@ def test_drop_btable():
   backup = sys.stdout
   sys.stdout = StringIO()     # capture output
 
-  # TODO
-
+  # TODO: not being tested at all yet...
   
   out = sys.stdout.getvalue() # release output
   sys.stdout.close()  # close the stream 
@@ -132,9 +133,30 @@ def test_save_and_load_models():
   original_models = client.engine.save_models(test_tablename1)
   
   client('load models %s into %s' % (pkl_path, test_tablename2), debug=True, pretty=False)
-  new_models = client.engine.save_models(test_tablename1)         
+  new_models = client.engine.save_models(test_tablename2)
 
   assert new_models.values() == original_models.values()
+
+  # Models are saved with schema now, so check that they can be loaded into a table
+  # with the same schema that already has models, and can't be loaded into a table
+  # with a different schema that already has models.
+
+  # Should work - schemas are the same and table2 already has models
+  client('load models %s into %s' % (pkl_path, test_tablename2), debug=True, pretty=False)
+
+  test_tablename3 = create_dha()
+  client('update schema for %s set qual_score = multinomial' % (test_tablename3), debug=True, pretty=False)
+
+  # Should work - schemas aren't the same, but table3 doesn't have any models, so the schema will be changed.
+  client('load models %s into %s' % (pkl_path, test_tablename3), debug=True, pretty=False)
+
+  test_tablename4 = create_dha()
+  client('update schema for %s set qual_score = multinomial' % (test_tablename4), debug=True, pretty=False)
+  client('initialize 2 models for %s' % (test_tablename4), debug=True, pretty=False)
+
+  # Should fail - schemas aren't the same, and table4 already has models, so the models will be incompatible.
+  with pytest.raises(utils.BayesDBError):  
+    client('load models %s into %s' % (pkl_path, test_tablename4), debug=True, pretty=False)
 
 def test_column_lists():
   """ smoke test """
@@ -303,6 +325,29 @@ def test_model_config():
   # test that you can't change model config
   with pytest.raises(utils.BayesDBError):
     client.engine.initialize_models(test_tablename, 2, 'crp mixture')
+
+def test_analyze():
+  """ test designed to make sure that analyze in background runs correct number of iterations """
+  # 1 iteration works fine, but multiple iterations don't.
+  # AnalyzeMaster is getting called multiple fucking times.
+  # 9, 11, 11, 13 analyze_master calls, and 4 iterations done on every model each of those times (except first one did 3 iters once)
+  test_tablename = create_dha(key_column=1) # key column is irrelevant, but let's use it
+  global client, test_filenames
+
+  models = 3
+  out = client('initialize %d models for %s' % (models, test_tablename), debug=True, pretty=False)[0]
+
+  iterations = 3
+  out = client('analyze %s for %d iterations' % (test_tablename, iterations), debug=True, pretty=False)[0]
+  
+  out = ''
+  while 'not currently being analyzed' not in out:
+    out = client('show analyze for %s' % test_tablename, debug=True, pretty=False)[0]['message']
+  
+  models = client('show models for %s' % test_tablename, debug=True, pretty=False)[0]['models']
+  iters_by_model = [v for k,v in models]
+  for i in iters_by_model:
+    assert i == iterations
 
 def test_using_models():
   """ smoke test """
