@@ -20,11 +20,11 @@ First, we create a btable and load in pre-computed models,
     CREATE BTABLE dha FROM dha.csv;
     LOAD MODELS dha_models.pkl.gz INTO dha;
 
-The first thing to do is to is get a general sense of the data by creating a column dependence probability matrix in which each cell represents a pair of variables and the value represents the probability of their being statistically dependent under the inferred CrossCat model.
+The first thing to do is to is get a general sense of the data by creating a column dependence probability matrix in which each cell represents a pair of variables and the value represents the probability of their being statistically dependent under the inferred CrossCat model. Here, we have zoomed in on two variables, the first related to medicare spending, and the second related to quality. 
 
     ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha SAVE TO dha_z.png;
 
-![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z.png)
+![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z_subset.png)
 
 Notice that quality and cost show no dependence.  We can list the variables that share the most dependence with quality,
 
@@ -160,8 +160,8 @@ After other math and reading scores, there are a collection of variables whose r
 
 To investigate this further, we can explore how different values of each variable affect math scores. We will simulate predicted math scores given very small numbers of CDs and books (zero in each case), and given relatively large numbers of CDs and books (100 and 200, respectively). We have superimposed each pair of figures to compare the results
 
-    PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlaud=0.00 TIMES 500 Save to simulate-C1R4MTSC-p1chlaud=0.png
-    PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlaud=100.00 TIMES 500 Save to simulate-C1R4MTSC-p1chlaud=100.png
+    PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlaud=0.00 TIMES 500 Save to simulate_C1R4MTSC_p1chlaud=0.png
+    PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlaud=100.00 TIMES 500 Save to simulate_C1R4MTSC_p1chlaud=100.png
     
 <center>
 <img src="{{ site.baseurl }}/assets/images/cs_eccls/ecls_comparison_cds.png" class="img-med" alt="Math outcomes given number of tapes">
