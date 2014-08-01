@@ -167,8 +167,8 @@ To investigate this further, we can explore how different values of each variabl
 <img src="{{ site.baseurl }}/assets/images/cs_eccls/ecls_comparison_cds.png" class="img-med" alt="Math outcomes given number of tapes">
 </center>
     
-    PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlboo=0.00 TIMES 500 Save to simulate-C1R4MTSC-p1chlboo=0.png
-    PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlboo=200.00 TIMES 500 Save to simulate-C1R4MTSC-p1chlboo=200.png
+    PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlboo=0.00 TIMES 500 Save to simulate_C1R4MTSC_p1chlboo=0.png
+    PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlboo=200.00 TIMES 500 Save to simulate_C1R4MTSC_p1chlboo=200.png
 
 <center>
 <img src="{{ site.baseurl }}/assets/images/cs_eccls/ecls_comparison_books.png" class="img-med" alt="Math outcomes given number of books">
