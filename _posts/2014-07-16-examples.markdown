@@ -164,14 +164,14 @@ To investigate this further, we can explore how different values of each variabl
     PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlaud=100.00 TIMES 500 Save to simulate-C1R4MTSC-p1chlaud=100.png
     
 <center>
-<img src="{{ site.baseurl }}/assets/images/cs_gss/ecls_comparison_cds.png" class="img-med" alt="Math outcomes given number of tapes">
+<img src="{{ site.baseurl }}/assets/images/cs_eccls/ecls_comparison_cds.png" class="img-med" alt="Math outcomes given number of tapes">
 </center>
     
     PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlboo=0.00 TIMES 500 Save to simulate-C1R4MTSC-p1chlboo=0.png
     PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlboo=200.00 TIMES 500 Save to simulate-C1R4MTSC-p1chlboo=200.png
 
 <center>
-<img src="{{ site.baseurl }}/assets/images/cs_gss/ecls_comparison_books.png" class="img-med" alt="Math outcomes given number of books">
+<img src="{{ site.baseurl }}/assets/images/cs_eccls/ecls_comparison_books.png" class="img-med" alt="Math outcomes given number of books">
 </center>
 
 Larger numbers of tapes and CDs and larger numbers of books are both associated with higher scores. Indeed, our finding regarding books agrees with previous research showing that children that grow up around large numbers of books tend to attain greater degrees of education (Evans et al., 2010). 
