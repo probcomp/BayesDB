@@ -38,6 +38,7 @@ to_keyword = CaselessKeyword('to')
 ## Many basic keywords will never be used alone
 ## creating them separately like this allows for simpler whitespace and case flexibility
 conf_keyword = CaselessKeyword("conf")
+res_keyword = CaselessKeyword("res")
 create_keyword = CaselessKeyword("create")
 upgrade_keyword = CaselessKeyword("upgrade")
 execute_keyword = CaselessKeyword("execute")
@@ -501,7 +502,8 @@ order_by_clause = Group(Suppress(order_by_keyword) +
 # WHERE <whereclause>
 single_where_condition = Group(((whereclause_potential_function.setResultsName('function') + 
                                  operation_literal.setResultsName('operation') + 
-                                 value.setResultsName('value')) | key_in_rowlist_clause) + 
+                                 value.setResultsName('value')) | key_in_rowlist_clause) +
+                               Optional(res_keyword + float_number.setResultsName('res')) + 
                                Optional(conf_keyword + float_number.setResultsName('conf')))
 
 where_clause = (where_keyword.setResultsName('where_keyword') + 
@@ -558,7 +560,8 @@ function_in_query = (predictive_probability_of_function |
                      correlation_function |
                      column_keyword |
                      dependence_probability_keyword |
-                     Group((identifier|all_column_literal).setResultsName("column_id") + 
+                     Group((identifier|all_column_literal).setResultsName("column_id") +
+                           Optional(res_keyword + float_number.setResultsName('res')) + 
                            Optional(conf_keyword + float_number.setResultsName('conf')))).setResultsName("function")
 
 functions_clause = Group(function_in_query + 

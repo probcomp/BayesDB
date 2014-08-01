@@ -35,7 +35,7 @@ import data_utils as du
 from pyparsing import *
 import bayesdb.bql_grammar as bql_grammar
 
-def evaluate_where_on_row(row_idx, row, where_conditions, M_c, M_c_full, X_L_list, X_D_list, T, T_full, engine, tablename, numsamples, impute_confidence, resolution=1.0):
+def evaluate_where_on_row(row_idx, row, where_conditions, M_c, M_c_full, X_L_list, X_D_list, T, T_full, engine, tablename, numsamples, impute_confidence, resolution):
   """
   Helper function that applies WHERE conditions to row, returning False if row doesn't satisfy where
   clause, and the list of function results if it does satisfy the where clause.
@@ -45,6 +45,7 @@ def evaluate_where_on_row(row_idx, row, where_conditions, M_c, M_c_full, X_L_lis
     if func == functions._column and f_args[1] != None and numpy.isnan(T[row_idx][f_args[0]]):
       col_idx = f_args[0]
       confidence = f_args[1]
+      resolution = f_args[2]
       ## need to do predictive sampling to evaluate where condition with confidence
       ## TODO: easier way to do this would be to call impute on backend, but would need to change
       ## crosscat so that impute_and_confidence could also return the original samples, or evaluate
@@ -56,6 +57,10 @@ def evaluate_where_on_row(row_idx, row, where_conditions, M_c, M_c_full, X_L_lis
       samples_satisfying_where = 0
       for sample in samples:
         value = du.convert_code_to_value(M_c, col_idx, sample[0])
+        ## If multinomial or discrim (multinomial), ignore resolution.
+        ## If continuous or discrim (continuous), need to use resolution.
+        # TODO: check type
+        assert False
         if op(value, val):
           samples_satisfying_where += 1
       if float(samples_satisfying_where)/len(samples) >= confidence:

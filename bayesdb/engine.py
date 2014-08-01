@@ -707,7 +707,7 @@ class Engine(object):
       raise utils.BayesDBError("Table %s is not being analyzed." % tablename)              
 
 
-  def infer(self, tablename, functions, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None, resolution=1.0):
+  def infer(self, tablename, functions, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None, resolution=None):
     """
     Impute missing values.
     Sample INFER: INFER columnstring FROM tablename WHERE whereclause WITH confidence LIMIT limit;
@@ -778,8 +778,19 @@ class Engine(object):
         for i in range(len(f_list)):
           if f_list[i][0] == funcs._column and f_list[i][1][1] is None:
             new_f = list(f_list[i]) # (function, args, ...)
-            new_f_args = list(new_f[1]) # args = (idx, conf)
+            new_f_args = list(new_f[1]) # args = (idx, conf, res)
             new_f_args[1] = impute_confidence
+            new_f[1] = tuple(new_f_args)
+            f_list[i] = tuple(new_f)
+
+    # Fill in individual impute res confs with resolution if they're None and resolution isn't:
+    if resolution is not None:
+      for f_list in (where_conditions, queries):
+        for i in range(len(f_list)):
+          if f_list[i][0] == funcs._column and f_list[i][1][2] is None:
+            new_f = list(f_list[i]) # (function, args, ...)
+            new_f_args = list(new_f[1])
+            new_f_args[2] = resolution
             new_f[1] = tuple(new_f_args)
             f_list[i] = tuple(new_f)
 
@@ -833,7 +844,8 @@ class Engine(object):
       row = [None]*order_by_size
       row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c) 
       where_clause_eval = select_utils.evaluate_where_on_row(row_id, row_values, where_conditions, M_c, M_c_full,
-                               X_L_list, X_D_list, T, T_full, self, tablename, numsamples, impute_confidence)
+                                                             X_L_list, X_D_list, T, T_full, self, tablename,
+                                                             numsamples, impute_confidence, resolution)
       if type(where_clause_eval) == list:
         for w_idx, val in enumerate(where_clause_eval):
           # Now, store the already-computed values, if they're used for anything besides the where clause.

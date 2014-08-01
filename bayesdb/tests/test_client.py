@@ -371,7 +371,26 @@ def test_using_models():
 
   client('drop model 0 from %s' % test_tablename, debug=True, pretty=False, yes=True)
   with pytest.raises(utils.BayesDBError):
-    client('infer name from %s with confidence 0.1 limit 10 using models 0-2' % test_tablename, debug=True, pretty=False)    
+    client('infer name from %s with confidence 0.1 limit 10 using models 0-2' % test_tablename, debug=True, pretty=False)
+
+def test_resolution():
+  test_tablename = create_dha(path='data/dha_missing_small.csv')  
+  global client, test_filenames
+  client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
+
+  # test infer
+  client('infer name from %s with confidence 0.1 limit 10' % test_tablename, debug=True, pretty=False)
+  client('infer qual_score from %s with confidence 0.1 with resolution 1 limit 10' % test_tablename, debug=True, pretty=False)
+  client('infer qual_score from %s with confidence 0.1 with resolution 0 limit 10' % test_tablename, debug=True, pretty=False)
+  client('infer qual_score res 0 from %s with confidence 0.1 limit 10' % test_tablename, debug=True, pretty=False)
+  client('infer qual_score res 1 from %s with confidence 0.1 limit 10' % test_tablename, debug=True, pretty=False)
+  client('infer qual_score res 10 from %s with confidence 0.1 limit 10' % test_tablename, debug=True, pretty=False)
+
+  # now test where clause of infer
+  client('infer qual_score res 0 from %s where qual_score > 70 with confidence 0.1 limit 10' % test_tablename, debug=True, pretty=False)
+  client('infer qual_score res 1 from %s where qual_score > 70 res 10 with confidence 0.1 limit 10' % test_tablename, debug=True, pretty=False)
+  client('infer qual_score res 10 from %s where qual_score = 70 res 10 with confidence 0.1 limit 10' % test_tablename, debug=True, pretty=False)
+
   
 def test_select():
   """ smoke test """
