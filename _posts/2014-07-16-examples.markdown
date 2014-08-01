@@ -26,7 +26,7 @@ The first thing to do is to is get a general sense of the data by creating a col
 
 ![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z_subset.png)
 
-Notice that quality and cost show no dependence.  We can list the variables that share the most dependence with quality,
+Dark areas represent variables with a high probability of dependence, light areas indicate a low probability of dependence. Notice that quality and cost show no dependence.  We can list the variables that share the most dependence with quality,
 
     ESTIMATE COLUMNS FROM dha ORDER BY DEPENDENCE PROBABILITY WITH qual_score LIMIT 10
 
