@@ -265,7 +265,50 @@ def test_analyze():
       model = engine.persistence_layer.get_models(test_tablename, i)
       assert model['iterations'] == it
 
-      
+
+def test_subsampling():
+  # Use Kiva table, which has 10000 rows, instead of DHA.
+  test_tablename = 'kivatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
+  global test_tablenames
+  test_tablenames.append(test_tablename)
+  
+  path = 'data/kiva_small.csv'
+  header, rows = data_utils.read_csv(path)
+  
+  num_rows = 4 # rows in kiva_small
+  num_rows_subsample = 2
+  
+  #client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False)
+  engine.create_btable(test_tablename, header, rows, subsample=num_rows_subsample, key_column=0) # only analyze using some rows
+  # make sure select (using no models) works and returns the correct number of rows
+  functions = bql.bql_statement.parseString('select loan_id, loan_status from test',parseAll=True).functions
+  whereclause = None
+  limit = float('inf')
+  order_by = False
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
+  assert len(select_result['data']) == num_rows # number of rows in Kiva
+
+  # TODO: better testing to see what we can do before subsampling (with partial models)
+
+  num_models = 2
+  iterations = 1
+  engine.initialize_models(test_tablename, num_models)
+  # analyze segfaults
+  engine.analyze(test_tablename, model_indices='all', iterations=iterations, background=False)
+  print 'analyzed'  
+  model_ids = engine.persistence_layer.get_model_ids(test_tablename)
+  for i in range(num_models):
+    model = engine.persistence_layer.get_models(test_tablename, i)
+    assert model['iterations'] == iterations
+
+  # make sure normal queries work and return the correct number of rows
+  functions = bql.bql_statement.parseString('select loan_id, predictive probability of loan_status from test',parseAll=True).functions
+  whereclause = None
+  limit = float('inf')
+  order_by = False
+  select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
+  assert len(select_result['data']) == num_rows # number of rows in Kiva
+                       
 
 def test_nan_handling():
   test_tablename1, _ = create_dha(path='data/dha_missing.csv') 

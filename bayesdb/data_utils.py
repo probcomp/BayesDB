@@ -110,9 +110,11 @@ def gen_M_r_from_T(T):
     return M_r
 
 def gen_ignore_metadata(column_data):
-    ret = gen_multinomial_metadata(column_data)
-    ret['modeltype'] = 'ignore'
-    return ret
+    return dict(
+        modeltype="ignore",
+        value_to_code=dict(),
+        code_to_value=dict(),
+        )        
 
 def gen_continuous_metadata(column_data):
     return dict(
@@ -141,12 +143,13 @@ def gen_multinomial_metadata(column_data):
         code_to_value=code_to_value,
         )
 
-metadata_generator_lookup = dict(
-    continuous=gen_continuous_metadata,
-    multinomial=gen_multinomial_metadata,
-    ignore=gen_ignore_metadata,
-    key=gen_ignore_metadata,
-)
+def metadata_generator_lookup(cctype):
+    if cctype == 'continuous':
+        return gen_continuous_metadata
+    elif cctype == 'multinomial':
+        return gen_multinomial_metadata
+    else: # discriminative, ignore, key
+        return gen_ignore_metadata
 
 def gen_M_c_from_T(T, cctypes=None, colnames=None):
     num_rows = len(T)
@@ -159,7 +162,7 @@ def gen_M_c_from_T(T, cctypes=None, colnames=None):
     T_array_transpose = numpy.array(T).T
     column_metadata = []
     for cctype, column_data in zip(cctypes, T_array_transpose):
-        metadata_generator = metadata_generator_lookup[cctype]
+        metadata_generator = metadata_generator_lookup(cctype)
         metadata = metadata_generator(column_data)
         column_metadata.append(metadata)
     name_to_idx = dict(zip(colnames, range(num_cols)))
@@ -333,8 +336,10 @@ def convert_code_to_value(M_c, cidx, code):
     """
     if numpy.isnan(code) or code=='nan':
         return code
-    elif M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
+    elif M_c['column_metadata'][cidx]['modeltype'] in 'normal_inverse_gamma':
         return float(code)
+    elif M_c['column_metadata'][cidx]['modeltype'] in 'ignore':
+        return code
     else:
         try:
             return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
@@ -375,7 +380,7 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
     # WARNING: array argument is mutated
     for col_idx in range(T_uncast_array.shape[1]):
         modeltype = M_c['column_metadata'][col_idx]['modeltype']
-        if modeltype == 'normal_inverse_gamma': continue
+        if modeltype in ('ignore', 'normal_inverse_gamma'): continue
         # copy.copy else you mutate M_c
         mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
         mapping['NAN'] = numpy.nan
@@ -410,7 +415,7 @@ def get_pop_indices(cctypes, colnames):
     pop_columns = [
             colname
             for (cctype, colname) in zip(cctypes, colnames)
-            if (cctype == 'ignore' or cctype == 'key')
+            if (cctype == 'ignore' or cctype == 'key' or type(cctype) == dict)
             ]
     pop_indices = get_list_indices(colnames, pop_columns)
     return pop_indices
@@ -551,8 +556,7 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, 
     key_eligibles_len = len(key_eligibles)
     if key_eligibles_len == 0 and key_column is None:
         if not accept:
-            print "None of the columns in this table is eligible to be the key. A key column will be created. Press Enter to continue."
-            user_confirmation = raw_input()
+            print "None of the columns in this table is eligible to be the key. A key column will be created."
         key_column_selection = 0
     elif key_column is None or key_column not in range(key_eligibles_len + 1):
         key_column_selection = None

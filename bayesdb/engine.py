@@ -34,6 +34,7 @@ import threading
 import multiprocessing
 import Queue
 import pandas
+import toposort
 
 import pylab
 import numpy
@@ -314,7 +315,7 @@ class Engine(object):
 
     For a column that maps to discriminative, the column name will
     map to a dict specifying:
-    'type': sklearn predictor object
+    'types': sklearn predictor object
       sklearn.linear_model.LinearRegression
       sklearn.linear_model.LogisticRegression
       sklearn.ensemble.RandomForestClassifier
@@ -326,8 +327,6 @@ class Engine(object):
     if self.persistence_layer.has_models(tablename):
       raise utils.BayesDBError("Error: btable %s already has models. The schema may not be updated after models have been initialized; please either create a new btable or drop the models from this one." % tablename)
 
-    
-    ##TODO mappings in persistence layer can't handle discriminative
     msg = self.persistence_layer.update_schema(tablename, mappings)
     ret = self.show_schema(tablename)
     ret['message'] = 'Updated schema.'
@@ -360,12 +359,17 @@ class Engine(object):
 
     return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
 
-  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None):
-    """Uplooad a csv table to the predictive db.
+  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None, subsample=False):
+    """
+    Upload a csv table to the predictive db.
     cctypes must be a dictionary mapping column names
     to either 'ignore', 'continuous', or 'multinomial'. Not every
-    column name must be present in the dictionary: default is continuous."""
-
+    column name must be present in the dictionary: default is continuous.
+    
+    subsample is False by default, but if it is passed an int, it will subsample using
+    <subsample> rows for the initial ANALYZE, and then insert all other rows afterwards.
+    """
+    
     ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
@@ -381,8 +385,16 @@ class Engine(object):
     # variables without "_full" don't include ignored columns.
     raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
     T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+
+    # if subsampling enabled, create the subsampled version of T (be sure to use non-subsampled M_r and M_c)
+    # T_sub is T with only first <subsample> rows;
+    # TODO: in future can randomly pick rows, but need to reorder T post-ANALYZE to achieve T's original order.
+    T_sub = None
+    if subsample:
+      assert type(subsample) == int
+      T_sub = T[:subsample]
       
-    self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full)
+    self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full, T_sub)
 
     data = [[colname, cctype] for colname, cctype in zip(colnames_full, cctypes_full)]
     columns = ['column', 'type']
@@ -502,8 +514,14 @@ class Engine(object):
     if self.is_analyzing(tablename):
       raise utils.BayesDBError('Error: cannot initialize models with ANALYZE in progress. Please retry once ANALYZE is successfully completed or canceled.')      
 
-    # Get t, m_c, and m_r, and tableid
-    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+    # Get t, m_c, and m_r
+    metadata = self.persistence_layer.get_metadata(tablename)
+    M_c = metadata['M_c']
+    M_r = metadata['M_r']
+    if 'T_sub' in metadata and metadata['T_sub']:
+      T = metadata['T_sub']
+    else:
+      T = metadata['T']
 
     # Set model configuration parameters.
     if type(model_config) == str and model_config.lower() == 'naive bayes':
@@ -548,7 +566,99 @@ class Engine(object):
 
     # Insert results into persistence layer
     self.persistence_layer.add_models(tablename, model_list)
+    
+    # Fit and save discriminative models
+    self._fit_discriminative_models(tablename)
+
     return self.show_models(tablename)
+
+  def _fit_discriminative_models(self, tablename, numsamples=50):
+    """ Train all discriminative models. TODO: be wary of subsampling"""
+    # TODO: factor out the part that generates the totally-imputed T_full? Or factor it out of simulate?
+    # get required things like M_c or whatever
+    #metadata = self.persistence_layer.get_metadata(tablename)
+    metadata_full = self.persistence_layer.get_metadata_full(tablename)
+    M_c_full = metadata_full['M_c_full']
+    cctypes_full = metadata_full['cctypes_full']
+    T_full = metadata_full['T_full']
+    X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
+    
+    # dependency dict is list of dependencies
+    all_input_col_ids, dependency_dict = self._get_all_input_col_ids(cctypes_full)
+
+    # do topological sort
+    sorted_ids = toposort.toposort_flatten(dependency_dict)
+    # now remove all non-discriminative ids
+    sorted_ids = [col_id for col_id in sorted_ids if col_id in dependency_dict.keys()]
+
+    # impute all values of T. We won't use the confidences array here, since we need everything imputed no matter what.
+    T_full_imputed, T_full_imputed_confidences = self._get_T_full_imputed(T_full, M_c_full, M_c, X_L_list, X_D_list, cctypes_full, all_input_col_ids, numsamples)
+
+    # train each model in order
+    discriminative_models = list() # list of models, which are dicts with "predictor", "col_id", "input_col_ids"
+    T_full_imputed_array = numpy.array(T_full_imputed) # T, plus ignored and discrim columns. col_ids index into it.
+    for col_id in sorted_ids:
+      cctype = cctypes_full[col_id]
+      predictor = cctype['types'](**cctype['params'])
+      X = T_full_imputed_array[:,cctype['inputs']]
+      y = T_full_imputed_array[:,col_id]
+      # Filter out rows where y is missing, since we can't train on those.
+      nan_mask = numpy.isnan(y)
+      not_nan_mask = numpy.invert(nan_mask)
+      predictor.fit(X[not_nan_mask],y[not_nan_mask])
+      discriminative_models.append(dict(predictor=predictor, col_id=col_id, input_col_ids=cctype['inputs']))
+      # Use the newly trained predictor to fill in its missing values, so we can train the next predictor.
+      # TODO: technically only need to do this if this column is an input to another column.
+      y_predicted = predictor.predict(X[nan_mask])
+      T_full_imputed_array[nan_mask, col_id] = y_predicted
+
+    self.persistence_layer.set_discriminative_models(tablename, discriminative_models)
+
+  def _get_all_input_col_ids(self, cctypes_full, discrim_target_col_ids=None):
+    """ If discrim_target_col_ids is None, then assume all! """
+    all_input_col_ids = set()
+    dependency_dict = dict()
+    queue_of_discrim_cols_to_add = [(col_id, cctype) for (col_id, cctype) in enumerate(cctypes_full)]
+    done_list = []
+    while len(queue_of_discrim_cols_to_add) > 0:
+      col_id, cctype = queue_of_discrim_cols_to_add.pop()
+      done_list.append((col_id, cctype))
+      if type(cctype) == dict and (discrim_target_col_ids is None or col_id in discrim_target_col_ids):
+        input_col_id_set = set(cctype['inputs'])
+        dependency_dict[col_id] = input_col_id_set
+        all_input_col_ids.update(input_col_id_set)
+        for i in input_col_id_set:
+          if type(cctypes_full[i]) == dict and (i, cctypes_full[i]) not in done_list and (i, cctypes_full[i]) not in queue_of_discrim_cols_to_add:
+            queue_of_discrim_cols_to_add.append((i, cctypes_full[i]))
+    return all_input_col_ids, dependency_dict
+      
+  def _get_T_full_imputed(self, T_full, M_c_full, M_c, X_L_list, X_D_list, cctypes_full, all_input_col_ids, numsamples=50):
+    # impute all missing crosscat values (at least for columns that are in inputs)
+    T_full_imputed = list()
+    T_full_imputed_confidences = list()
+    for row_id, T_full_row in enumerate(T_full):
+      new_row = list()
+      new_row_confidences = list()
+      for col_id in range(len(T_full_row)): 
+        # Use crosscat to impute if type isn't discriminative or ignore, but it is in inputs.
+        if cctypes_full[col_id] not in ('ignore', 'key') and type(cctypes_full[col_id]) != dict and \
+              col_id in all_input_col_ids and numpy.isnan(T_full_row[col_id]):
+          # Convert full col_id to non-full col_id
+          Y = [(row_id, cidx, T_full[row_id][cidx]) for cidx in M_c['name_to_idx'].values() \
+                 if not numpy.isnan(T_full[row_id][cidx])]
+          original_col_id = M_c['name_to_idx'][M_c_full['idx_to_name'][str(col_id)]]
+          code, confidence = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, original_col_id, 
+                                         numsamples, 0, self, get_confidence_too=True)
+          assert code is not None
+          new_row.append(code)
+          new_row_confidences.append(confidence)
+        else:
+          new_row.append(T_full_row[col_id])
+          new_row_confidences.append(1)
+      T_full_imputed.append(new_row)
+      T_full_imputed_confidences.append(new_row_confidences)
+    return T_full_imputed, T_full_imputed_confidences
+      
 
   def show_models(self, tablename):
     """Return the current models and their iteration counts."""
@@ -597,8 +707,16 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
     if not self.persistence_layer.has_models(tablename):
       raise utils.BayesDBNoModelsError(tablename)
-    
-    M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+
+    # Get t, m_c, and m_r, and tableid. Use subsampled T if subsampling is enabled.
+    metadata = self.persistence_layer.get_metadata(tablename)
+    M_c = metadata['M_c']
+    M_r = metadata['M_r']
+    T = metadata['T']
+    if 'T_sub' in metadata:
+      T_sub = metadata['T_sub']
+    else:
+      T_sub = None
     
     max_model_id = self.persistence_layer.get_max_model_id(tablename)
     if max_model_id == -1:
@@ -624,15 +742,32 @@ class Engine(object):
 
     # Start analyze thread.
     t = AnalyzeMaster(args=(tablename, modelids, kernel_list, iterations,
-                            seconds, M_c, T, models, background, self))
+                            seconds, M_c, T, T_sub, models, background, self))
     self.analyze_threads[tablename] = t
     t.start()
 
     if not background:
-      t.join()
+      t.join() # just wait for the AnalyzeMaster thread to finish before returning.
       return dict(message="Analyze complete.")
     else:
       return dict(message="Analyzing %s: models will be updated in the background." % tablename)
+
+  def _insert_subsampled_rows(self, tablename, T, T_sub, M_c, X_L_list, X_D_list, modelids):
+    """
+    If the analyze in progress was using subsampling, then insert all the non-subsampled rows now.
+    TODO: asserts are costly, remove before performance-critical use. They're just there for code
+    correctness and readability right now.
+    """
+    assert T[:len(T_sub)] == T_sub
+    new_rows = T[len(T_sub):]
+    insert_args = dict(M_c=M_c, T=T_sub, X_L_list=X_L_list, X_D_list=X_D_list, new_rows=new_rows)
+    X_L_list, X_D_list, T_new = self.call_backend('insert', insert_args)
+    assert T_new == T
+
+    # TODO: each loop through this for loop is parallelizable
+    for i, modelid in enumerate(modelids):
+      self.persistence_layer.update_model(tablename, X_L_list[i], X_D_list[i], dict(), modelid)
+    
 
   def show_analyze(self, tablename):
     if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
@@ -666,9 +801,9 @@ class Engine(object):
       numsamples=50 ##TODO: put this in a config file
       
     return self.select(tablename, functions, whereclause, limit, order_by,
-                       impute_confidence=confidence, numsamples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename)
+                       impute_confidence=confidence, numsamples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename, infer=True)
     
-  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, numsamples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
+  def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, numsamples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None, infer=False):
     """
     BQL's version of the SQL SELECT query.
     
@@ -693,6 +828,7 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     M_c_full, M_r_full, T_full = self.persistence_layer.get_metadata_and_table_full(tablename)
+    cctypes_full = self.persistence_layer.get_cctypes_full(tablename)
     
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     column_lists = self.persistence_layer.get_column_lists(tablename)
@@ -763,7 +899,64 @@ class Engine(object):
       else:
         function_list.append(w_fun)
         where_idxs.append(len(function_list) - 1)
-          
+
+    # TODO: right now function_list looks like this for key (0), ami-col (60), qual-discrim(61):
+    # (<function _column_ignore at 0x3755f50>, 0), (<function _column at 0x3755ed8>, (60, None)), (<function _column_ignore at 0x3755f50>, 61)]
+    # TODO: need to store confidence (currently just 61 instead of (61, None) for discrim.
+    # This might involve re-doing all of the functions._column_ignore stuff? It's currently special-cased.
+    # Or could just remake _column_ignore arguments so that they include a confidence... Let's do this. #TODO
+    if infer:
+      # Same as T_full, except values are imputed if and only if: they are an input to a discriminative 
+      # column that is required by this query (and they are nan). If not imputed, then the confidence given is 1.
+      # In this case the raw value may still be None, if it was not required for this specific purpose.
+      # TODO: this is only relevant for INFER
+      # TODO: maybe allow you to specify to impute some other values too?
+      discrim_target_col_ids = [] # the full_col_ids for all queried (in where, query, or order) discrim columns.
+      for f, f_args in function_list:
+        full_id, conf = f_args
+        if type(cctypes_full[full_id]) == dict: # discrim
+          discrim_target_col_ids.append(full_id)
+      all_input_col_ids, dependency_dict = self._get_all_input_col_ids(cctypes_full, discrim_target_col_ids)
+      T_full_imputed, T_full_imputed_confidences = self._get_T_full_imputed(T_full, M_c_full, M_c, X_L_list, 
+                                                           X_D_list, cctypes_full, all_input_col_ids, numsamples)
+
+      # now we have our T_full_imputed! let's fill in some discrim shit with it
+      # TODO: this should also impute other values for INFER, and should use these values for all
+      # imputations made in this function, in order to preserve the consistency of chained estimates
+      # (e.g. if you impute x as 5 and feed it into discrim y = x + 1 so y = 6, but then in the actual output
+      # you impute x as 3 so y should be 4 to be consistent.)
+      T_full_imputed_array = numpy.array(T_full_imputed)
+      T_full_imputed_confidences_array = numpy.array(T_full_imputed_confidences)
+      discriminative_models = self.persistence_layer.get_discriminative_models(tablename)
+      for discrim_model in discriminative_models: # already in topological order
+        if discrim_model['col_id'] in discrim_target_col_ids: # if the select query needs to evaluate this one
+          # Major optimization: could do this for only some of the rows instead of all, lol...so slow
+          X = T_full_imputed_array[:,discrim_model['input_col_ids']]
+          y_predicted = discrim_model['predictor'].predict(X)
+          T_full_imputed_array[:,discrim_model['col_id']] = y_predicted
+          if hasattr(discrim_model['predictor'], 'predict_proba'):
+            confidence = discrim_model['predictor'].predict_proba(X)
+            # shape is (n_rows, n_classes), which we need to convert to (n_rows, 1) for only the maximum value.
+            confidence = confidence.max(axis=1)
+          else:
+            confidence = numpy.zeros(len(T_full_imputed))
+          T_full_imputed_confidences_array[:,discrim_model['col_id']] = confidence
+      # Need to convert codes to values: select likes values not codes.
+      T_full_imputed = []
+      for row_id in range(len(T_full)):
+        T_full_imputed_row = []
+        for full_col_id in range(len(T_full[0])):
+          code = T_full_imputed_array[row_id, full_col_id]
+          if cctypes_full[full_col_id] not in ('key', 'ignore') and type(cctypes_full[full_col_id]) != dict:
+            T_full_imputed_row.append(data_utils.convert_code_to_value(M_c_full, full_col_id, code))
+          else:
+            T_full_imputed_row.append(code)
+        T_full_imputed.append(T_full_imputed_row)
+      T_full_imputed_confidences = T_full_imputed_confidences_array.tolist()
+      # Now T_full_imputed and T_full_imputed_confidences is ready to go, and all values. 
+    else: # not infer, so create dummy versions of T_full_imputed and T_full_imputed_confidences
+      T_full_imputed = None
+      T_full_imputed_confidences = None
 
     ## Now function list is constructed, so create the data table one row at a time,
     ## applying where clause in the process.
@@ -773,7 +966,8 @@ class Engine(object):
       row = [None]*order_by_size
       row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c) 
       where_clause_eval = select_utils.evaluate_where_on_row(row_id, row_values, where_conditions, M_c, M_c_full,
-                               X_L_list, X_D_list, T, T_full, self, tablename, numsamples, impute_confidence)
+                               X_L_list, X_D_list, T, T_full, self, tablename, numsamples, impute_confidence, 
+                               T_full_imputed, T_full_imputed_confidences, cctypes_full)
       if type(where_clause_eval) == list:
         for w_idx, val in enumerate(where_clause_eval):
           # Now, store the already-computed values, if they're used for anything besides the where clause.
@@ -795,7 +989,7 @@ class Engine(object):
             if f != funcs._column_ignore:
               score = f(args, row_id, row, M_c, X_L_list, X_D_list, T, self, numsamples)
             else:
-              score = f(args, row_id, row, M_c_full, T_full, self)
+              score = f(args, row_id, row, M_c_full, T_full, self, T_full_imputed, T_full_imputed_confidences, cctypes_full)
             # Save value, if it will be displayed in output.
             if order_by_idxs[o_idx] < query_size:
               row[order_by_idxs[o_idx]] = score
@@ -832,7 +1026,7 @@ class Engine(object):
           if query_function != funcs._column_ignore:
             row[q_idx] = query_function(query_args, row_id, row, M_c, X_L_list, X_D_list, T, self, numsamples)
           else:
-            row[q_idx] = query_function(query_args, row_id, row, M_c_full, T_full, self)
+            row[q_idx] = query_function(query_args, row_id, row, M_c_full, T_full, self, T_full_imputed, T_full_imputed_confidences, cctypes_full)
       data.append(tuple(row))
       row_count += 1
       if row_count >= limit:
@@ -867,6 +1061,9 @@ class Engine(object):
     if not self.persistence_layer.has_models(tablename):
       raise utils.BayesDBNoModelsError(tablename)            
 
+    metadata_full = self.persistence_layer.get_metadata_full(tablename)
+    M_c_full = metadata_full['M_c_full']
+    cctypes_full = metadata_full['cctypes_full']
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     if len(X_L_list) == 0:
       return {'message': 'You must INITIALIZE MODELS (and highly preferably ANALYZE) before using predictive queries.'}
@@ -881,6 +1078,7 @@ class Engine(object):
     if givens is not None:
       Y = []
       for given_condition in givens.given_conditions:
+        # TODO: add discrim givens...
         column_value = given_condition.value
         column_name = given_condition.column
         column_value = utils.string_to_column_type(column_value, column_name, M_c)
@@ -892,37 +1090,109 @@ class Engine(object):
     
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
-    # Set M_c_full to None because we don't want to simulate key/ignore columns
-    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=None, column_lists=column_lists)
+
+    # queries: [(functions._column_ignore, full col_id, False) if ignore/discrim, (functions._column, (column_index, confidence), False) if not ignore]
+    # query_colnames: [column display names]
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=M_c_full, column_lists=column_lists)
     ##TODO check duplicates
     ##TODO check for no functions
-    
     ##TODO col_indices, colnames are a hack from old parsing
-    
-    col_indices = [query[1][0] for query in queries]
-    query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
-    Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
 
+
+    # Do actual simulation:
+    # First simulate crosscat values by calling simple predictive sample for each of them.
+    # Then loop through discrim values, calling simple predictive sample for each of those.
+    # For discrim values, simple predictive sample consists of running its inputs through its predictor.
+    crosscat_col_indices = list() # non-full indices, in the order they appear in Q.
+    output_indices_to_crosscat_indices = dict() # map values in above array to output position. None if not in out.
+    discrim_indices = set() # full indices.
+    discrim_indices_to_output_indices = dict() # map values in above array to output position. None if not in out.
+    output_idx_to_full_idx = dict()
+    for output_index, query in enumerate(queries):
+      # if normal crosscat column, do normal crosscat simulate.
+      if query[0] == funcs._column: 
+        col_idx = query[1][0]
+        if col_idx in crosscat_col_indices:
+          # switch to last
+          crosscat_col_indices.remove(col_idx)
+          crosscat_col_indices.append(col_idx)
+        crosscat_col_indices.append(col_idx)
+        output_indices_to_crosscat_indices[output_index] = col_idx
+        output_idx_to_full_idx[output_index] = M_c_full['name_to_idx'][M_c['idx_to_name'][str(col_idx)]]
+      # discrim, ignore, or key. if ignore or key, then raise an error.
+      elif query[0] == funcs._column_ignore: 
+        col_idx_full = query[1]
+        if type(cctypes_full[col_idx_full]) != dict: # not discrim
+          raise utils.BayesDBError('Cannot simulate ignore or key columns.')
+
+        discrim_indices.add(col_idx_full)
+        discrim_indices_to_output_indices[col_idx_full] = output_index
+        output_idx_to_full_idx[output_index] = col_idx_full
+        # this is a discrim column to sample. add all input indices to Q, if they're crosscat,
+        # and to discrim_indices if they're discrim.
+        for full_idx in cctypes_full[col_idx_full]['inputs']:
+          if cctypes_full[full_idx] not in ('key', 'ignore') and type(cctypes_full[full_idx]) != dict:
+            non_full_idx = M_c['name_to_idx'][M_c_full['idx_to_name'][str(full_idx)]]
+            if non_full_idx not in crosscat_col_indices:
+              crosscat_col_indices.append(non_full_idx)
+          elif type(cctypes_full[full_idx]) == dict:
+            discrim_indices.add(full_idx)
+            if full_idx not in discrim_indices_to_output_indices.keys():
+              discrim_indices_to_output_indices[full_idx] = None
+      else:
+        raise utils.BayesDBError('Can only simulate normal columns.')
+
+    # trained models in topological order. list of "predictor", "col_id" (full), "input_col_ids" (full)
+    discriminative_models = self.persistence_layer.get_discriminative_models(tablename)
+
+    # 3 sets of indices
+    # crosscat indices: indices from Q
+    # full indices: indices we use when doing discriminative
+    # output indices: indices we use when reporting output
+
+    # HUGE TODO: DEAL WITH GIVENS ON DISCRIMINATIVE COLUMNS! IN THE WORST CASE, THIS IS MCMC...
+    Q = [(numrows+1, crosscat_col_idx) for crosscat_col_idx in crosscat_col_indices]
     if len(Q) > 0:
-      out = self.call_backend('simple_predictive_sample', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=Q, n=numpredictions))
-    else:
-      out = [[] for x in range(numpredictions)]
-    assert type(out) == list and len(out) >= 1 and type(out[0]) == list and len(out) == numpredictions
-    
-    # convert to data, columns dict output format
-    # map codes to original values
-    data = []
-    for out_row in out:
-      row = []
-      i = 0
-      for idx in col_indices:
-        if idx in given_col_idxs_to_vals:
-          row.append(given_col_idxs_to_vals[idx])
-        else:
-          row.append(data_utils.convert_code_to_value(M_c, idx, out_row[i]))
-          i += 1
-      data.append(row)
+      simulate_out = self.call_backend('simple_predictive_sample', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=Q, n=numpredictions))
 
+      # construct simulated_T_full
+      simulated_T_full = numpy.empty((len(simulate_out), len(M_c_full['idx_to_name'].keys())))
+      simulated_T_full[:] = numpy.nan
+      for row_id, simulated_row in enumerate(simulate_out):
+        # fill in the appropriate nans with simulated values.
+        for i, cc_col_idx in enumerate(crosscat_col_indices): # the indices of the simulated output
+          full_idx = M_c_full['name_to_idx'][M_c['idx_to_name'][str(cc_col_idx)]]
+          simulated_T_full[row_id, full_idx] = simulated_row[i]
+
+      # Now simulate discriminative values. "simple predictive sample" for discriminative.
+      # MUST SAMPLE ALL INPUTS THAT ARE REQUIRED BY DISCRIM, EVEN IF NOT REQUIRED BY SIMULATE
+      for discrim_model in discriminative_models: # check to see if in discrim_indices. TODO
+        if discrim_model['col_id'] in discrim_indices:
+          X = simulated_T_full[:,discrim_model['input_col_ids']]
+          simulated_T_full[:,discrim_model['col_id']] = discrim_model['predictor'].predict(X)
+         
+      # Convert to list of lists, codes to values, and replace simulated values with givens
+      data = []
+      for row_id in range(len(simulate_out)):
+        data_row = []
+        for output_id in range(len(output_idx_to_full_idx)):
+          full_idx = output_idx_to_full_idx[output_id]
+          code = simulated_T_full[row_id,full_idx]
+          if output_id in output_indices_to_crosscat_indices:
+            crosscat_col_id = crosscat_col_indices[output_indices_to_crosscat_indices[output_id]]
+            if crosscat_col_id in given_col_idxs_to_vals:
+              data_row.append(given_col_idxs_to_vals[crosscat_col_id])
+            elif type(cctypes_full[full_idx]) != dict: # not discrim
+              data_row.append(data_utils.convert_code_to_value(M_c_full, full_idx, code))
+            else:
+              raise utils.BayesDBError()
+          else: # discrim: data is already value
+            data_row.append(code)
+        data.append(data_row)
+    else:
+      data = [[] for x in range(numpredictions)]
+    assert type(data) == list and len(data) >= 1 and type(data[0]) == list and len(data) == numpredictions
+    
     # Execute INTO statement
     if newtablename is not None:
       cctypes = self.persistence_layer.get_cctypes(tablename)
@@ -1232,7 +1502,7 @@ class AnalyzeMaster(StoppableThread):
       return "Iterations completed: %d\nRemaining iterations: %d\nElapsed minutes: %02.f\nEstimated remaining minutes:%0.2f" % (self.iters_done, self.requested_iterations - self.iters_done, elapsed_seconds/60.0, self.time_remaining_estimate/60.0)
     return timing_str
   
-  def analyze_master(self, tablename, modelids, kernel_list, iterations, seconds, M_c, T, models, background, engine):
+  def analyze_master(self, tablename, modelids, kernel_list, iterations, seconds, M_c, T, T_sub, models, background, engine):
     """
     Helper function for analyze. This is the thread that runs in the background as the previous analyze
     command returns before analyze is complete.
@@ -1282,7 +1552,10 @@ class AnalyzeMaster(StoppableThread):
     threads = []
     # Create a thread for each modelid. Each thread will execute one iteration of analyze.
     for i, modelid in enumerate(modelids):
-      p = AnalyzeWorker(args=(modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L_list[i], X_D_list[i], background, engine))
+      if T_sub is None:
+        p = AnalyzeWorker(args=(modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L_list[i], X_D_list[i], background, engine))
+      else:
+        p = AnalyzeWorker(args=(modelid, tablename, kernel_list, iterations, seconds, M_c, T_sub, X_L_list[i], X_D_list[i], background, engine))
       p.daemon = True
       p.start()
       threads.append(p)
@@ -1310,6 +1583,12 @@ class AnalyzeMaster(StoppableThread):
         for p in threads:
           if p.isAlive():
             p.stop()
+
+    if T_sub is not None:
+      engine._insert_subsampled_rows(tablename, T, T_sub, M_c, X_L_list, X_D_list, modelids)
+
+    # Fit and save discriminative models
+    engine._fit_discriminative_models(tablename)
 
     if background:
       print "\nAnalyze for table %s complete. Use 'SHOW MODELS FOR %s' to view models." % (tablename, tablename)

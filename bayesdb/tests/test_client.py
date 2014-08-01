@@ -20,6 +20,7 @@
 
 import time
 import inspect
+import sys
 import pickle
 import os
 import numpy
@@ -27,6 +28,7 @@ import pytest
 import random
 import shutil
 import pandas
+from cStringIO import StringIO
 
 import bayesdb.utils as utils
 from bayesdb.client import Client
@@ -54,10 +56,10 @@ def teardown_function(function):
     if os.path.exists(test_filename):
         os.remove(test_filename)
 
-def create_dha(path='data/dha.csv'):
+def create_dha(path='data/dha.csv', key_column=0):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
-  client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False, key_column=0)
+  client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False, key_column=key_column)
   
   global test_tablenames
   test_tablenames.append(test_tablename)
@@ -76,8 +78,7 @@ def test_drop_btable():
   backup = sys.stdout
   sys.stdout = StringIO()     # capture output
 
-  # TODO
-
+  # TODO: not being tested at all yet...
   
   out = sys.stdout.getvalue() # release output
   sys.stdout.close()  # close the stream 
@@ -303,6 +304,29 @@ def test_model_config():
   # test that you can't change model config
   with pytest.raises(utils.BayesDBError):
     client.engine.initialize_models(test_tablename, 2, 'crp mixture')
+
+def test_analyze():
+  """ test designed to make sure that analyze in background runs correct number of iterations """
+  # 1 iteration works fine, but multiple iterations don't.
+  # AnalyzeMaster is getting called multiple fucking times.
+  # 9, 11, 11, 13 analyze_master calls, and 4 iterations done on every model each of those times (except first one did 3 iters once)
+  test_tablename = create_dha(key_column=1) # key column is irrelevant, but let's use it
+  global client, test_filenames
+
+  models = 3
+  out = client('initialize %d models for %s' % (models, test_tablename), debug=True, pretty=False)[0]
+
+  iterations = 3
+  out = client('analyze %s for %d iterations' % (test_tablename, iterations), debug=True, pretty=False)[0]
+  
+  out = ''
+  while 'not currently being analyzed' not in out:
+    out = client('show analyze for %s' % test_tablename, debug=True, pretty=False)[0]['message']
+  
+  models = client('show models for %s' % test_tablename, debug=True, pretty=False)[0]['models']
+  iters_by_model = [v for k,v in models]
+  for i in iters_by_model:
+    assert i == iterations
 
 def test_using_models():
   """ smoke test """
@@ -550,6 +574,49 @@ def test_freq_hist():
   assert out.shape[1] == 4
   assert (out['frequency'] <= 20).all()
   assert (out['probability'] < 1).all()
+
+def test_discriminative():
+  for discrim_type in ['logistic regression']:
+  #for discrim_type in ['linear regression', 'logistic regression', 'multi-class random forest']:
+      test_tablename = create_dha(path='data/dha_missing_small.csv')
+      global client, test_filenames
+
+      out = client("update schema for %s set qual_score = discriminative type %s" % (test_tablename, discrim_type), debug=True, pretty=False)[0]
+
+      # now that qual_score is type discriminative... let's do stuff with it! expect a pandas dataframe out.
+      #out = client("select qual_score from %s" % test_tablename, debug=True, pretty=False)[0]
+
+      num_models = 2
+      num_iters = 1
+      out = client("initialize %d models for %s" % (num_models, test_tablename))
+      # TODO: make sure stuff works after init models
+
+      #out = client.engine.analyze(tablename=test_tablename, iterations=num_iters, background=False)
+      #print client("show models for %s" % test_tablename)
+      # TODO: also make sure stuff works after analyze
+
+      #out = client("simulate ami_score, qual_score from %s times 10" % (test_tablename))
+
+      # TODO: given discriminative. need to do MCMC here.
+      #out = client("simulate ami_score, qual_score from %s given qual_score = 70 times 10" % (test_tablename))
+
+      # in dha_missing, qual_score is missing in rows 0-4
+      out = client("infer ami_score, qual_score conf 0 from %s" % test_tablename, debug=True, pretty=False)[0]
+      # all 5 values must be filled in at confidence 0
+      for i in range(5):
+        assert not numpy.isnan(out['qual_score with confidence 0.0'][i])
+
+      out = client("select *, qual_score from %s" % test_tablename, debug=True, pretty=False)[0]
+      assert 'qual_score' in out
+      out = client("select * from %s" % test_tablename, debug=True, pretty=False)[0]
+
+      # TODO: make * include ignore and discrim columns
+      #assert 'qual_score' in out
+      #out = client("infer qual_score conf 1 from %s" % test_tablename, debug=True, pretty=False)[0]
+
+      # TODO: test logreg and rf. what's a binary column to even test that on? 
+      # TODO: try testing discrim in where and order by.
+      # TODO: make the plots! you should have enough :)
 
 def test_update_schema():
   test_tablename = create_dha()

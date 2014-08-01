@@ -39,7 +39,9 @@ from matplotlib.ticker import MaxNLocator
 config_map = {
     'cc'  : '',
     'crp' : 'WITH CONFIG crp mixture', 
-    'nb'  : 'WITH CONFIG naive bayes'
+    'nb'  : 'WITH CONFIG naive bayes',
+    'rf'  : '',
+    'lr'  : '',
 }
 
 def parser_args_to_dict(args):
@@ -249,6 +251,43 @@ def get_true_logp(x, col, structure):
 
     return logsumexp(logps)
 
+def gen_data_discriminative(filename, argsin, save_csv=True):
+    cctypes_full = argsin['cctypes']
+
+    # Remove discriminative columns, generate data from non-discriminative columns,
+    # then append discriminative rows. Assert that discrim columns must be after all crosscat cols.
+    # Also must already be in topological order.
+
+    cctypes_crosscat_only = list()
+    discriminative_models = list()
+    for i, cctype in enumerate(cctypes_full):
+        if type(cctype) == dict: # test if discriminative
+            discriminative_models.append(dict(col_id=i, input_col_ids=cctype['inputs'], predictor=cctype['types'](**cctype['params'])))
+        else:
+            cctypes_crosscat_only.append(cctype)
+
+    argsin['cctypes'] = cctypes_crosscat_only
+    argsin['num_cols'] = len(cctypes_crosscat_only)
+    assert [max(cctypes_crosscat_only) < m['col_id'] for m in discriminative_models]
+    T, structure = gen_data(filename, argsin, save_csv=False)
+    
+    T_array = numpy.array(T)
+    T_full_array = numpy.append(T_array, numpy.empty((len(T),len(discriminative_models))), axis=1)
+    # now, append discrim columns
+    T_full_array[[0,1],[d['col_id'] for d in discriminative_models]] = [0,1]
+    for discrim_model in discriminative_models:
+        # Fill in first two rows with a 0 and 1, randomly. Then we will train on those two rows only.
+        T_full_array[0,discrim_model['col_id']] = 0
+        T_full_array[1,discrim_model['col_id']] = 1
+        discrim_model['predictor'].fit(T_full_array[0:2, discrim_model['input_col_ids']], T_full_array[0:2, discrim_model['col_id']])
+        T_full_array[2:len(T),discrim_model['col_id']] = discrim_model['predictor'].predict(T_full_array[2:len(T), discrim_model['input_col_ids']])
+    T = T_full_array.tolist()
+
+    if save_csv:
+        do_save_csv(T, cctypes_full, filename)
+    return T, structure
+
+    
 
 def gen_data(filename, arsgin, save_csv=True):
     """
@@ -286,25 +325,34 @@ def gen_data(filename, arsgin, save_csv=True):
     T = numpy.array(T)
 
     if save_csv:
-        header = [ 'col_'+str(col) for col in range(n_cols) ]
-
-        # write the data to a list of list
-        out = [header]
-        for row in range(n_rows):
-            row_out = []
-            for col in range(n_cols):
-                if cctypes[col] == 'continuous':
-                    value = T[row][col]
-                elif cctypes[col] == 'multinomial':
-                    value = int(T[row][col])
-                else:
-                    raise ValueError("unsupported cctype: %s" % cctypes[col])
-                row_out.append(value)
-            out.append(row_out)
-
-        list_to_csv(filename, out)
+        do_save_csv(T, cctypes, filename)
 
     return T, structure
+
+def do_save_csv(T, cctypes, filename):
+    n_rows = len(T)
+    n_cols = len(T[0])
+    
+    header = [ 'col_'+str(col) for col in range(n_cols) ]
+
+    # write the data to a list of list
+    out = [header]
+    for row in range(n_rows):
+        row_out = []
+        for col in range(n_cols):
+            if cctypes[col] == 'continuous':
+                value = T[row][col]
+            elif cctypes[col] == 'multinomial':
+                value = int(T[row][col])
+            elif type(cctypes[col]) == dict: # discrim
+                value = T[row][col]
+            else:
+                raise ValueError("unsupported cctype: %s" % cctypes[col])
+            row_out.append(value)
+        out.append(row_out)
+
+    list_to_csv(filename, out)
+
 
 def generate_noise(mode, num_rows, num_cols, multinomial_categories=5):
     """
@@ -638,6 +686,60 @@ def plot_estimate_the_full_joint(result, filename=None):
     pylab.savefig( filename )
 
 # `````````````````````````````````````````````````````````````````````````````
+
+def plot_discriminative(result, filename=None):
+    pylab.rcParams.update({'font.size': 8})
+    pylab.locator_params(nbins=3)
+    fig = pylab.figure(num=None, figsize=(10,8), facecolor='w', edgecolor='k')
+
+    prop_missing = result['config']['prop_missing']
+    iterations = result['iterations']
+
+    ax = pylab.subplot(2,1,1)
+    pylab.plot(iterations, result['MSE_naive_bayes_indexer'], lw=3, c='red', label='NB')
+    pylab.plot(iterations, result['MSE_crp_mixture_indexer'], lw=3, c='blue', label='DPM')
+    pylab.plot(iterations, result['MSE_crosscat_indexer'], lw=3, c='green', label='CC')
+    pylab.plot(iterations, result['MSE_random_forest_indexer'], lw=3, c='cyan', label='CC/RF')
+    pylab.plot(iterations, result['MSE_logistic_regression_indexer'], lw=3, c='magenta', label='CC/LR')
+
+    ax.set_xticks(iterations)
+    ax.yaxis.set_major_locator(MaxNLocator(3))
+    pylab.ylabel('Imputation MSE on Logistic Regression Column')
+    pylab.xlabel('Iterations')
+    pylab.legend(loc=2)
+
+    num_iters = result['config']['num_iters']
+    num_rows = result['config']['num_rows']
+    num_cols = result['config']['num_cols']
+    num_chains = result['config']['num_chains']
+    impute_samples = result['config']['impute_samples']
+
+    txt = '''
+        Mean squared error over the imputed missing values for a single column (y-axis) for a %i rows by %i table with
+        %f of the data throughout the table missing. All columns but one were generated by crosscat, but the column
+        of interest was generated as a logistic regression of the values of the other columns.
+
+        Green line: BayesDB normal configuration
+        Blue line: BayesDB CRP mixture configuration (one view, no column transitions)
+        Red line: BayesDB Naive Bayes configuration (one view, one category, only hyperparameter
+        transitions)
+        Cyan line: BayesDB CrossCat, except last column modeled as random forest
+        Magenta line: BayesDB CrossCat, except last column modeled as logistic regression
+
+        Each imputation was calculated with %i samples from %i chains run for %i iterations.
+    ''' % (num_rows, num_cols, prop_missing[0], impute_samples, num_chains, num_iters)
+
+    if filename is None:
+        filename = 'Discriminative-iters=%i_chains=%i_T=%i.png' % \
+            (num_iters, num_chains, int(time.time()))
+
+    ax = pylab.subplot(2,1,2)
+    ax.text(-2,.5,txt, fontsize=10)
+    ax.axis('off')
+
+    pylab.savefig( filename )
+
+    
 def plot_fills_in_the_blanks(result, filename=None):
     pylab.rcParams.update({'font.size': 8})
     pylab.locator_params(nbins=3)

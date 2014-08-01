@@ -25,7 +25,7 @@ setup(
                       'numpy', 'scipy', 'matplotlib>=1.2.0',
                       'Sphinx', 'pytest',
                       'prettytable', 'cmd2', 'pyparsing>=2.0.1',
-                      'ipython', 'pandas>=0.13',
+                      'ipython', 'pandas>=0.13', 'toposort'
                       ],
     license='Apache License, Version 2.0',
     entry_points = """
