@@ -22,6 +22,8 @@ from pyparsing import *
 ## uses the module pyparsing. This document provides a very good explanation of pyparsing: 
 ## http://www.nmt.edu/tcc/help/pubs/pyparsing/pyparsing.pdf
 
+##TODO replace zeroormore(x + comma + x...) with commaSeparatedList
+
 ## Matches any white space and stores it as a single space
 single_white = White().setParseAction(replaceWith(' '))
 
@@ -111,6 +113,10 @@ config_keyword = CaselessKeyword("config")
 using_keyword = CaselessKeyword("using")
 all_keyword = CaselessKeyword("all")
 resolution_keyword = CaselessKeyword("resolution")
+discriminitive_keyword = CaselessKeyword("discriminative")
+type_keyword = CaselessKeyword("type")
+params_keyword = CaselessKeyword('params')
+input_keyword = CaselessKeyword('input')
 ## Single and plural keywords
 single_model_keyword = CaselessKeyword("model")
 multiple_models_keyword = CaselessKeyword("models")
@@ -262,7 +268,7 @@ comment = (Literal('--') + restOfLine).suppress()
 # single and double quotes inside value must be escaped. 
 value = (QuotedString('"', escChar='\\') | 
          QuotedString("'", escChar='\\') | 
-         Word(printables,excludeChars=',;')|
+         Word(printables,excludeChars=',;{}()')|
          float_number | 
          sub_query)
 filename = (QuotedString('"', escChar='\\') | 
@@ -285,10 +291,32 @@ create_btable_function = create_btable_keyword + btable + Suppress(from_keyword)
 # UPGRADE BTABLE <btable>
 upgrade_btable_function = upgrade_btable_keyword + btable
 
+# DISCRIMINATIVE(<type>, <params>, <input cols: comma-delimited list, or all>)
+## Final data type for schema
+discriminative_type_clause = (discriminitive_keyword + 
+                              Optional(Suppress(type_keyword) + 
+                                       Combine(OneOrMore(Word(alphas + '-') + 
+                                                         Optional(single_white)))
+                                       .setResultsName('discriminative_type')) + 
+                              Suppress(Optional(comma_literal)) + 
+                              Optional(Suppress(params_keyword) + Suppress(Literal('{')) + 
+                                       Group(OneOrMore(
+                                           Group((Word(alphanums + '_') + 
+                                                  Suppress(equal_literal) + 
+                                                  value))))
+                                       .setResultsName('discriminative_params') + 
+                                       Suppress(Literal('}'))) + 
+                              Suppress(Optional(comma_literal)) + 
+                              Optional(Suppress(input_keyword) + 
+                                       commaSeparatedList.setResultsName('discriminative_input')))
+
 # UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
-type_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + data_type_literal) + 
+type_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + 
+                                     (data_type_literal | discriminative_type_clause)) + 
                                Suppress(comma_literal)) + 
-                    Group(identifier + Suppress(equal_literal) + data_type_literal)).setResultsName("type_clause")
+                    Group(identifier + Suppress(equal_literal) + 
+                          (data_type_literal | discriminative_type_clause))).setResultsName("type_clause")
+
 update_schema_for_function = (update_schema_for_keyword + 
                               btable + 
                               Suppress(set_keyword) + 

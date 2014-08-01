@@ -155,14 +155,18 @@ def row_id_from_col_value(value, column, M_c, T):
     return target_row_id
 
 ##TODO move to engine
-def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, engine):
+def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, engine, get_confidence_too=False):
     q = [row_id, col_id]
     out = engine.call_backend('impute_and_confidence', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=[q], n=numsamples))
     code, conf = out
     if conf >= confidence:
-      return code
+        if get_confidence_too:
+            return code, confidence
+        return code
     else:
-      return None
+        if get_confidence_too:
+            return None, confidence
+        return None
 
 def get_imputation_and_confidence_from_samples(M_c, X_L, col_idx, samples, resolution=1.0):
     samples = numpy.array(samples).T[0]

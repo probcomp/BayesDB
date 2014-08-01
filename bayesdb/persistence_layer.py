@@ -31,6 +31,7 @@ from threading import RLock
 
 import data_utils
 import utils
+import pairwise
 
 import bayesdb.settings as S
 
@@ -100,6 +101,7 @@ class PersistenceLayer():
     ....row_lists.pkl
     ....models/
     ......model_<id>.pkl
+    ......discrim.pkl
 
     table_index.pkl: list of btable names.
     
@@ -107,7 +109,7 @@ class PersistenceLayer():
     metadata_full.pkl: dict. keys: M_r_full, M_c_full, T_full, cctypes_full
     column_lists.pkl: dict. keys: column list names, values: list of column names.
     row_lists.pkl: dict. keys: row list names, values: list of row keys (need to update all these if table key is changed!).
-    models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views, model_config]. Idx starting at 1.
+    model_id.pkl: dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views, model_config]. Idx starting at 1. Also, dict['discriminative'] stores the trained discriminative models.
     data.csv: the raw csv file that the data was loaded from.
 
     Should be a Singleton class, but Python doesn't enforce that. Could be refactored as just a module.
@@ -407,7 +409,7 @@ class PersistenceLayer():
                 self.model_locks.acquire_table(tablename)
                 fnames = os.listdir(models_dir)
                 for fname in fnames:
-                    if 'model_' in fname:
+                    if 'model_' in fname or 'discrim.pkl' in fname:
                         os.remove(os.path.join(models_dir, fname))
                 self.model_locks.drop_all(tablename)
                 self.model_locks.release_table(tablename)                
@@ -560,7 +562,16 @@ class PersistenceLayer():
     def update_schema(self, tablename, mappings):
         """
         mappings is a dict of column name to 'continuous', 'multinomial', 'ignore', or 'key'.
-        TODO: can we get rid of cctypes?
+        'discriminative' is complex: see docstring in engine.update_schema.
+    
+        For a column that maps to discriminative, the column name will
+        map to a dict specifying:
+        'types': sklearn predictor object
+          sklearn.linear_model.LinearRegression
+          sklearn.linear_model.LogisticRegression
+          sklearn.ensemble.RandomForestClassifier
+        'params': parameters dict to be passed to sklearn predictor, probably as kwargs
+        'inputs': column list, in some format, to specify input columns.
         """
         metadata_full = self.get_metadata_full(tablename)
         cctypes_full = metadata_full['cctypes_full']
@@ -569,11 +580,11 @@ class PersistenceLayer():
         colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
 
         # Now, update cctypes_full (cctypes updated later, after removing ignores).
-        mapping_set = 'continuous', 'multinomial', 'ignore', 'key'
+        mapping_set = 'continuous', 'multinomial', 'ignore', 'key' # discriminative is separate from mapping_set
         for col, mapping in mappings.items():
             if col.lower() not in M_c_full['name_to_idx']:
                 raise utils.BayesDBError('Error: column %s does not exist.' % col)
-            elif mapping not in mapping_set:
+            elif mapping not in mapping_set and not (type(mapping)==dict and 'types' in mapping and 'params' in mapping and 'inputs' in mapping):
                 raise utils.BayesDBError('Error: datatype %s is not one of the valid datatypes: %s.' % (mapping, str(mapping_set)))
 
             cidx = M_c_full['name_to_idx'][col.lower()]
@@ -586,7 +597,22 @@ class PersistenceLayer():
             elif mapping == 'key':
                 raise utils.BayesDBError('Error: key column already exists. To choose a different key, reload the table using CREATE BTABLE')
 
+            # if type is discriminative, convert column names of input columns to column indices here
+            # also convert to tuple so we can hash: (inputs, params, types)
+            if type(mapping) == dict: # only discriminative is a dict
+                _, column_indices = pairwise.get_columns(mapping['inputs'], M_c_full)
+                # now remove own column index, if it's there. a column can't depend on itself!
+                if cidx in column_indices:
+                    column_indices.remove(cidx)
+                # now remove key/ignore column indexes.
+                mapping['inputs'] = column_indices
+
             cctypes_full[cidx] = mapping
+
+        # Go through cctypes_full one more time, this time removing all key/ignore columns from discrim inputs.
+        for cidx in range(len(cctypes_full)):
+            if type(cctypes_full[cidx]) == dict: # discrim
+                cctypes_full[cidx]['inputs'] = [x for x in cctypes_full[cidx]['inputs'] if cctypes_full[x] not in ('key', 'ignore')]
 
         # Make sure there isn't more than one key.
         assert len(filter(lambda x: x=='key', cctypes_full)) == 1
@@ -740,4 +766,18 @@ class PersistenceLayer():
         self.write_model(tablename, model, modelid)
         self.model_locks.release(tablename, modelid)
 
-            
+    def set_discriminative_models(self, tablename, discriminative_models):
+        assert type(discriminative_models) == list
+        f = open(os.path.join(self.data_dir, tablename,'models', 'discrim.pkl'), 'w')
+        pickle.dump(discriminative_models, f, pickle.HIGHEST_PROTOCOL)
+        f.close()
+
+    def get_discriminative_models(self, tablename):
+        try:
+            f = open(os.path.join(self.data_dir, tablename, 'models', 'discrim.pkl'), 'r')
+            discriminative_models = pickle.load(f)
+            f.close()
+            return discriminative_models
+        except Exception as e:
+            return []
+

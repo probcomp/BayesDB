@@ -62,6 +62,7 @@ def _column(column_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine
         return du.convert_code_to_value(M_c, col_idx, T[row_id][col_idx])
     else:
         ## Do impute.
+        ## TODO: RESOLUTION
         Y = [(row_id, cidx, T[row_id][cidx]) for cidx in M_c['name_to_idx'].values() \
                    if not numpy.isnan(T[row_id][cidx])]
         code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, col_idx, numsamples,
@@ -73,17 +74,25 @@ def _column(column_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine
         else:
             return du.convert_code_to_value(M_c, col_idx, T[row_id][col_idx])
 
-def _column_ignore(column_args, row_id, data_values, M_c_full, T_full, engine):
+def _column_ignore(column_ignore_args, row_id, data_values, M_c_full, T_full, engine, T_full_imputed=None, T_full_imputed_confidences=None, cctypes_full=None):
     """
     This function handles selecting data from ignore columns. It's split into a different
     function because it needs to be passed M_c_full and T_full instead of M_c and T, as in _column.
     Since selecting ignore columns is probably a rare event, we can avoid passing M_c_full and T_full
     to _column as "just in case" arguments.
     """
-    col_idx = column_args[0]
-    confidence = column_args[1]
-    resolution = column_args[2]
-    return du.convert_code_to_value(M_c_full, col_idx, T_full[row_id][col_idx])    
+    full_col_idx = column_ignore_args[0]
+    confidence = column_ignore_args[1]
+    resolution = column_ignore_args[2]
+    ## TODO: RESOLUTION
+    if cctypes_full is None or T_full_imputed is None or type(cctypes_full[full_col_idx]) != dict or \
+            T_full_imputed_confidences is None:
+        return du.convert_code_to_value(M_c_full, full_col_idx, T_full[row_id][full_col_idx])    
+    else: # discrim
+        if confidence is None or T_full_imputed_confidences[row_id][full_col_idx] < confidence:
+            return numpy.nan # TODO: check what this should be
+        else:
+            return T_full_imputed[row_id][full_col_idx]
 
 def _row_id(args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine, numsamples):
     return row_id

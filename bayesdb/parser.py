@@ -24,6 +24,9 @@ import bql_grammar as bql
 import pyparsing as pp
 import functions
 import operator
+import ast
+import sklearn.linear_model
+import sklearn.ensemble
 
 class Parser(object):
     def __init__(self):
@@ -156,7 +159,36 @@ class Parser(object):
         mappings = dict()
         type_clause = bql_statement_ast.type_clause
         for update in type_clause:
-            mappings[update[0]]=update[1]
+            if update[1] == 'discriminative':
+                disc_type = sklearn.linear_model.LinearRegression
+                if update.discriminative_type != '':
+                    ## Allowable cases. If the type is not recognized, raises error. 
+                    raw_type = update.discriminative_type
+                    if raw_type == 'linear regression':
+                        disc_type = sklearn.linear_model.LinearRegression
+                    elif raw_type == 'logistic regression':
+                        disc_type = sklearn.linear_model.LogisticRegression
+                    elif raw_type == 'multi-class random forest':
+                        disc_type = sklearn.ensemble.RandomForestClassifier
+                    else:
+                        raise utils.BayesDBParseError("Error: '%s' is not a valid discriminative type. Only 'linear regression', 'logistic regression', and 'multi-class random forest' are allowed." 
+                                                      % update.discriminative_type)
+                disc_params = dict()
+                if update.discriminative_params != '':
+                    for param in update.discriminative_params.asList():
+                        try:
+                            value = ast.literal_eval(param[1])
+                        except ValueError:
+                            value = param[1]
+                        except SyntaxError:
+                            value = param[1]
+                        disc_params[param[0]] = value
+                disc_input = None
+                if update.discriminative_input != '':
+                    disc_input = update.discriminative_input.asList()
+                mappings[update[0]] = dict(types=disc_type,params=disc_params,inputs=disc_input)
+            else:
+                mappings[update[0]]=update[1]
         return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
     def parse_drop_btable(self,bql_statement_ast):
@@ -943,7 +975,7 @@ class Parser(object):
                     args = (M_c['name_to_idx'][orderable.function.column], confidence)
                 else:
                     function = functions._column_ignore
-                    args = M_c_full['name_to_idx'][orderable.function.column]
+                    args = (M_c_full['name_to_idx'][orderable.function.column], confidence)
             else:
                 raise utils.BayesDBParseError("Invalid order by clause.")
             function_list.append((function, args, desc))
@@ -991,7 +1023,7 @@ class Parser(object):
         if key_column_name is not None:
             query_colnames = [key_column_name]
             index_list, name_list, ignore_column = self.parse_column_set(key_column_name, M_c, M_c_full, column_lists)
-            queries = [(functions._column_ignore, column_index, False) for column_index in index_list]
+            queries = [(functions._column_ignore, (column_index, None), False) for column_index in index_list]
         else:
             query_colnames = []
             queries = []
@@ -1048,13 +1080,13 @@ class Parser(object):
                 resolution = None
                 assert M_c is not None
                 index_list, name_list, ignore_column = self.parse_column_set(column_name, M_c, M_c_full, column_lists)
+                if function_group.conf != '':
+                    confidence = float(function_group.conf)
+                if function_group.res != '':
+                    resolution = float(function_group.res)
                 if ignore_column:
-                    queries += [(functions._column_ignore, column_index, False) for column_index in index_list]
+                    queries += [(functions._column_ignore, (column_index, confidence, resolution), False) for column_index in index_list]
                 else:
-                    if function_group.conf != '':
-                        confidence = float(function_group.conf)
-                    if function_group.res != '':
-                        resolution = float(function_group.res)
                     queries += [(functions._column, (column_index, confidence, resolution), False) for column_index in index_list]
                 if confidence is not None:
                     query_colnames += [name + ' with confidence %s' % confidence for name in name_list]

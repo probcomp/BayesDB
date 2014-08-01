@@ -615,6 +615,49 @@ def test_freq_hist():
   assert (out['frequency'] <= 20).all()
   assert (out['probability'] < 1).all()
 
+def test_discriminative():
+  for discrim_type in ['logistic regression']:
+  #for discrim_type in ['linear regression', 'logistic regression', 'multi-class random forest']:
+      test_tablename = create_dha(path='data/dha_missing_small.csv')
+      global client, test_filenames
+
+      out = client("update schema for %s set qual_score = discriminative type %s" % (test_tablename, discrim_type), debug=True, pretty=False)[0]
+
+      # now that qual_score is type discriminative... let's do stuff with it! expect a pandas dataframe out.
+      #out = client("select qual_score from %s" % test_tablename, debug=True, pretty=False)[0]
+
+      num_models = 2
+      num_iters = 1
+      out = client("initialize %d models for %s" % (num_models, test_tablename))
+      # TODO: make sure stuff works after init models
+
+      #out = client.engine.analyze(tablename=test_tablename, iterations=num_iters, background=False)
+      #print client("show models for %s" % test_tablename)
+      # TODO: also make sure stuff works after analyze
+
+      #out = client("simulate ami_score, qual_score from %s times 10" % (test_tablename))
+
+      # TODO: given discriminative. need to do MCMC here.
+      #out = client("simulate ami_score, qual_score from %s given qual_score = 70 times 10" % (test_tablename))
+
+      # in dha_missing, qual_score is missing in rows 0-4
+      out = client("infer ami_score, qual_score conf 0 from %s" % test_tablename, debug=True, pretty=False)[0]
+      # all 5 values must be filled in at confidence 0
+      for i in range(5):
+        assert not numpy.isnan(out['qual_score with confidence 0.0'][i])
+
+      out = client("select *, qual_score from %s" % test_tablename, debug=True, pretty=False)[0]
+      assert 'qual_score' in out
+      out = client("select * from %s" % test_tablename, debug=True, pretty=False)[0]
+
+      # TODO: make * include ignore and discrim columns
+      #assert 'qual_score' in out
+      #out = client("infer qual_score conf 1 from %s" % test_tablename, debug=True, pretty=False)[0]
+
+      # TODO: test logreg and rf. what's a binary column to even test that on? 
+      # TODO: try testing discrim in where and order by.
+      # TODO: make the plots! you should have enough :)
+
 def test_update_schema():
   test_tablename = create_dha()
   global client, test_filenames
