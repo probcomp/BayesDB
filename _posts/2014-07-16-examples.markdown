@@ -158,7 +158,7 @@ Our first step is to look at which variables are related to outcomes. Here, we w
 
 After other math and reading scores, there are a collection of variables whose relationship to outcomes is rather intuitive. These include the mother and father's education levels and expectations for child's education level, `wkmomed`, `wkmomed`, `p1expect`, poverty level, `wkpov_r`, parents' race and language, `race` and `p1prmlng`, and whether a parent is depressed `p2depres`. However, for a small group of findings, it is less clear how they are related to math achievement. These include having a home computer, `p2homecm`, the number of books in the house, `p1chlboo`, and the number of CDs and tapes in the house, `p1chlaud`. 
 
-To investigate this further, we can explore how different values of each variable affect math scores. We will simulate predicted math scores given very small numbers of CDs and books (zero in each case), and given relatively large numbers of CDs and books (100 and 200, respectively). We have superimposed each pair of figures to compare the results.
+To investigate this further, we can explore how different values of each variable affect math scores. We will simulate predicted math scores given very small numbers of CDs and books (zero in each case), and given relatively large numbers of CDs and books (100 and 200, respectively). We have superimposed each pair of figures to compare the results, where the light blue represents zero and the gray represents large numbers of tapes and CDS or books.
 
     PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlaud=0.00 TIMES 500 Save to simulate_C1R4MTSC_p1chlaud=0.png
     PLOT SIMULATE C1R4MTSC FROM ecls GIVEN p1chlaud=100.00 TIMES 500 Save to simulate_C1R4MTSC_p1chlaud=100.png
