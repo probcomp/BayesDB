@@ -57,6 +57,7 @@ def run_experiment(argin):
                           params=dict(),
                           inputs=range(num_cols-1))
     argin['cctypes'][-1] = discrim_cctype
+    full_cctypes = argin['cctypes']
 
     argin['separation'] = [argin['separation']]*num_views
 
@@ -88,13 +89,14 @@ def run_experiment(argin):
     result['rf'] = numpy.zeros(len(result['iterations']))
     result['lr'] = numpy.zeros(len(result['iterations']))
     print col_names
+    print full_cctypes
 
     # do analyses
     for p in range(len(prop_missing)):
 
         this_indices = all_indices[p]
         this_filename = all_filenames[p]
-        for config in ['cc', 'crp', 'nb', 'rf', 'lr']:
+        for config in ['rf', 'lr', 'cc', 'crp', 'nb']:
             config_string = eu.config_map[config]
             table = table_name + '_' + config
 
@@ -105,13 +107,14 @@ def run_experiment(argin):
                 client('UPDATE SCHEMA FOR %s set %s= discriminative type multi-class random forest' % (table, col_names[-1]))
             elif config == 'lr':
                 client('UPDATE SCHEMA FOR %s set %s= discriminative type logistic regression' % (table, col_names[-1]))
-            client('SELECT *, %s FROM %s;' % (table, col_names[-1]))
+#            client('SELECT *, %s FROM %s;' % (col_names[-1], table))
             client('INITIALIZE %i MODELS FOR %s %s;' % (num_chains, table, config_string))
 
             iters_done = 0
-            for i in range(0, num_iters+1, record_every_iters):
-                if i > 0:
-                    client('ANALYZE %s FOR %i ITERATIONS WAIT;' % (table, i - iters_done) )
+            for i, iteration in enumerate(range(0, num_iters+1, record_every_iters)):
+                if iteration > 0:
+                    client('ANALYZE %s FOR %i ITERATIONS WAIT;' % (table, iteration - iters_done) )
+                iters_done = iteration
 
                 MSE = 0.0
                 count = 0.0
@@ -120,7 +123,7 @@ def run_experiment(argin):
                 for col in [num_cols - 1]: # For now, only do last column
                     col_name = col_names[col]
                     # confidence is set to zero so that a value is always returned
-                    out = client('INFER %s from %s WITH CONFIDENCE %f WITH %i SAMPLES;' % (col_name, table, 0, impute_samples), pretty=False, pandas_output=False )
+                    out = client('INFER %s CONF %d from %s WITH %i SAMPLES;' % (col_name, 0, table, impute_samples), pretty=False, pandas_output=False )
 
                     data = out[0]['data']
 
@@ -129,6 +132,7 @@ def run_experiment(argin):
                         if tcol == col:
                             # only works for continuous   MSE += ( T_array[row,col] - data[row][1] )**2.0
                             if T_array[row,col] != float(data[row][1]):
+                                #import pytest; pytest.set_trace()
                                 MSE += 1
                             count += 1.0
 

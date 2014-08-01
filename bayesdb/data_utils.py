@@ -110,9 +110,11 @@ def gen_M_r_from_T(T):
     return M_r
 
 def gen_ignore_metadata(column_data):
-    ret = gen_multinomial_metadata(column_data)
-    ret['modeltype'] = 'ignore'
-    return ret
+    return dict(
+        modeltype="ignore",
+        value_to_code=dict(),
+        code_to_value=dict(),
+        )        
 
 def gen_continuous_metadata(column_data):
     return dict(
@@ -334,8 +336,10 @@ def convert_code_to_value(M_c, cidx, code):
     """
     if numpy.isnan(code) or code=='nan':
         return code
-    elif M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
+    elif M_c['column_metadata'][cidx]['modeltype'] in 'normal_inverse_gamma':
         return float(code)
+    elif M_c['column_metadata'][cidx]['modeltype'] in 'ignore':
+        return code
     else:
         try:
             return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
@@ -376,7 +380,7 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
     # WARNING: array argument is mutated
     for col_idx in range(T_uncast_array.shape[1]):
         modeltype = M_c['column_metadata'][col_idx]['modeltype']
-        if modeltype == 'normal_inverse_gamma': continue
+        if modeltype in ('ignore', 'normal_inverse_gamma'): continue
         # copy.copy else you mutate M_c
         mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
         mapping['NAN'] = numpy.nan

@@ -606,7 +606,12 @@ def test_discriminative():
       for i in range(5):
         assert not numpy.isnan(out['qual_score with confidence 0.0'][i])
 
-      out = client("select qual_score from %s" % test_tablename, debug=True, pretty=False, pandas_df=False)[0]
+      out = client("select *, qual_score from %s" % test_tablename, debug=True, pretty=False)[0]
+      assert 'qual_score' in out
+      out = client("select * from %s" % test_tablename, debug=True, pretty=False)[0]
+
+      # TODO: make * include ignore and discrim columns
+      #assert 'qual_score' in out
       #out = client("infer qual_score conf 1 from %s" % test_tablename, debug=True, pretty=False)[0]
 
       # TODO: test logreg and rf. what's a binary column to even test that on? 
