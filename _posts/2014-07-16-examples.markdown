@@ -78,13 +78,13 @@ For more information about the Dartmouth Atlas of Health Care, [http://www.dartm
 
 ##Responses to ~5500 demographic, behavioral and attitudinal questions by US residents.
 
-The General Social Survey is conducted annually to assess the demographics and attitudes of U.S. residents. Questions span everything from questions about one's current housing situation, to religion, voting, and positions on social issues. It is, thus, a very interesting source of information about how demographs and attitudes covary in the U.S. We are going to use BayesDB to explore this data, first to simply explore some relatively familiar variables for which we might have strong intuitions, second to assess BayesDB's findings against findings from other research, and finally to generate hypothetical survey responses. 
+The General Social Survey is conducted annually to assess the demographics and attitudes of U.S. residents. Questions span  current housing situations, religion, voting, and positions on social issues. It is, thus, a very interesting source of information about how demographics and attitudes covary in the U.S. We are going to use BayesDB to explore this data, first to simply explore some relatively familiar variables for which we might have strong intuitions, second to assess BayesDB's inferences against findings from other research, and finally to generate hypothetical survey responses. 
 
-## What variables are associated with born-again experiences
+## What variables are associated with born-again experiences?
 
-Religion is one topic for which we have strong intuitions, and therefore makes a good intuitive assessment the quality of BayesDBs inferences. The GSS contains a number of questions related to religion. Here, we focus on people's responses to the question of whether they have had a born-again experience. This is a feature of Christian religions, and especially Evangelical religions. We begin by ordering the variables based on the inferred dependence probability. 
+Religion is one topic for which we have strong intuitions, and it therefore makes a good intuitive assessment the quality of BayesDB's inferences. The GSS contains a number of questions related to religion. Here, we focus on people's responses to the question of whether they have had a born-again experience. This is a feature of Christian religions, and especially Evangelical religions. We begin by ordering the variables based on the inferred dependence probability. 
 
-    ESTIMATE COLUMSN FROM gss_pared ORDER BY DEPENDENCE PROBABILITY WITH reborn LIMIT 10
+    ESTIMATE COLUMNS FROM gss_pared ORDER BY DEPENDENCE PROBABILITY WITH reborn LIMIT 10
 
 |  column  | dependence probability with reborn |
 |----------|------------------------------------|
@@ -99,7 +99,7 @@ Religion is one topic for which we have strong intuitions, and therefore makes a
 | homosex  |           0.916666666667           |
 |  grass   |           0.895833333333           |
 
-We can see that a number of variables are inferred to be dependent. These include whether one tries to convince others to accept Jesus Christ, believes that humans evolved from animals, believes in God, beliefs about the bible, believes in the Big Bang, prays, believes in the afterlife, believes homosexuality is wrong, and believes that marijuana should be legalized. These inferred dependencies span a variety of domains, from purely religious issues to morals, science, and public policy. With the possible exception of the legalization of marijuana, these inferences are quite consonant with intuition. 
+We can see that a number of variables are inferred to be probably dependent. These include whether one tries to convince others to accept Jesus Christ, believes that humans evolved from animals, believes in God, believes the bible is the word of God, believes in the Big Bang, prays, believes in the afterlife, believes homosexuality is wrong, and believes that marijuana should be legalized. These inferred dependencies span a variety of domains, from purely religious issues to morals, science, and public policy. With the possible exception of the legalization of marijuana, these inferences are quite consonant with intuition. 
 
 We can take a closer look at the relationship between born-again experiences and beliefs about the legalization of marijuana. 
 
@@ -126,11 +126,11 @@ We can see that if one favors legalization, it is highly probable that one has n
 |   god    |               0.875               |
 |  bible   |               0.875               |
 
-we see a largely complementary set of results. The first three variables are related to moral issues: homosexuality and whether suicide is allowable under different circumstances. The remaining variables are religious, with the exception of the issue of evolution, which we know to be strongly related to religous beliefs. Taken together, the results are in close accord with intuition.
+we see a largely complementary set of results. The first three variables are related to moral issues: homosexuality and whether suicide should be allowable under different circumstances. The remaining variables are religious, with the exception of the issue of evolution, which we know to be strongly related to religous beliefs. Taken together, the results are in close accord with intuition.
 
 ## Are homeowners more likely to vote?
 
-Turning to a documented findings, economics research has shown that homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities  (DiPasquale, D., &amp; Glaeser, E. L., 1999). For this reason, homeowners have been labeled better citizens (DiPasquale, D., &amp; Glaeser, E. L., 1999; McCabe, 2013). 
+Turning to a documented finding, economics research has shown that homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities  (DiPasquale, D., &amp; Glaeser, E. L., 1999). For this reason, homeowners have been labeled better citizens (DiPasquale, D., &amp; Glaeser, E. L., 1999; McCabe, 2013). 
 
 First we'll check whether the homeowners of 2012, are more likely to vote than renters. Since we're using the 2012 GSS we'll investigate the relationship between `vote08` and `dwelown` variables. `vote08` is a categorical variable, where `1` indicates that the respondent voted in the 2008 presidential election, while `0` indicates that the did not. `dwelown` is also a categorical variable where `1` indicates that the respondent owns their home, and `2` indicates that the respondent rents their home.
 
@@ -158,7 +158,7 @@ We see that 75% of homeowners voted while only 50% of renters voted, confirming 
 
 An interesting feature of BayesDB is the ability to simulate (imagine) new data based on what it has learned from the observed data. Here we use this feature to assess the quality of BayesDBs predictions. We focus on a subset of the variables discussed above:
 
-SIMULATE reborn, savesoul, bible, evolved, bigbang, homosex, suicide1 FROM gss_pared TIMES 10
+SIMULATE reborn, savesoul, bible, evolved FROM gss_pared TIMES 10
 
 | reborn | savesoul |     bible     | evolved | 
 ----------------------------------------------|
