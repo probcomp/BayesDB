@@ -78,18 +78,61 @@ For more information about the Dartmouth Atlas of Health Care, [http://www.dartm
 
 ##Responses to ~5500 demographic, behavioral and attitudinal questions by US residents.
 
-According to economics research, homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities  (DiPasquale, D., &amp; Glaeser, E. L., 1999). For this reason, homeowners have been labeled better citizens (DiPasquale, D., &amp; Glaeser, E. L., 1999; McCabe, 2013). 
+The General Social Survey is conducted annually to assess the demographics and attitudes of U.S. residents. Questions span everything from questions about one's current housing situation, to religion, voting, and positions on social issues. It is, thus, a very interesting source of information about how demographs and attitudes covary in the U.S. We are going to use BayesDB to explore this data, first to simply explore some relatively familiar variables for which we might have strong intuitions, second to assess BayesDB's findings against findings from other research, and finally to generate hypothetical survey responses. 
 
-We will revisit this analysis, making use of the General Social Survey (GSS). The GSS is a sociological survey that collects data on the demographic characteristics and attitudes of US residents. Among other things, it includes information on homeownership, moral attitudes, and criminal variables. We have started by loading a subset of the GSS data into BayesDB, created a btable, and analyzed the data. 
+## What variables are associated with born-again experiences
 
-<!-- The General Social Survey (GSS) is a collection of demographic data as well as data on the social, moral, and political attitudes of Americans. 
+Religion is one topic for which we have strong intuitions, and therefore makes a good intuitive assessment the quality of BayesDBs inferences. The GSS contains a number of questions related to religion. Here, we focus on people's responses to the question of whether they have had a born-again experience. This is a feature of Christian religions, and especially Evangelical religions. We begin by ordering the variables based on the inferred dependence probability. 
 
-We've already created a btable, `gss_pared`, from a subset of the full GSS dataset and analyzed the data.
--->
+    ESTIMATE COLUMSN FROM gss_pared ORDER BY DEPENDENCE PROBABILITY WITH reborn LIMIT 10
+
+|  column  | dependence probability with reborn |
+|----------|------------------------------------|
+| savesoul |                1.0                 |
+|  reborn  |                1.0                 |
+| evolved  |                1.0                 |
+|   god    |           0.979166666667           |
+|  bible   |           0.979166666667           |
+| bigbang  |           0.979166666667           |
+|  prayer  |               0.9375               |
+| postlife |               0.9375               |
+| homosex  |           0.916666666667           |
+|  grass   |           0.895833333333           |
+
+We can see that a number of variables are inferred to be dependent. These include whether one tries to convince others to accept Jesus Christ, believes that humans evolved from animals, believes in God, beliefs about the bible, believes in the Big Bang, prays, believes in the afterlife, believes homosexuality is wrong, and believes that marijuana should be legalized. These inferred dependencies span a variety of domains, from purely religious issues to morals, science, and public policy. With the possible exception of the legalization of marijuana, these inferences are quite consonant with intuition. 
+
+We can take a closer look at the relationship between born-again experiences and beliefs about the legalization of marijuana. 
+
+    PLOT SELECT reborn, grass FROM gss_pared SAVE TO figures/select_reborn_grass.png
+
+<center>
+<img src="{{ site.baseurl }}/assets/images/cs_gss/select_reborn_grass.png" class="img-med" alt="Born again and Marijuana">
+</center>
+
+We can see that if one favors legalization, it is highly probable that one has not had a born-again experience. Interestingly, people who do not favor legalization may or may not have had a born-again experience. Taking a closer look at marijuana legalization, 
+
+    ESTIMATE COLUMNS FROM gss_pared ORDER BY DEPENDENCE PROBABILITY WITH grass LIMIT 10
+    
+|  column  | dependence probability with grass |
+|----------|-----------------------------------|
+|  grass   |                1.0                |
+| homosex  |           0.979166666667          |
+| suicide1 |           0.958333333333          |
+| letdie1  |               0.9375              |
+|  prayer  |           0.916666666667          |
+| savesoul |           0.895833333333          |
+|  reborn  |           0.895833333333          |
+| evolved  |           0.895833333333          |
+|   god    |               0.875               |
+|  bible   |               0.875               |
+
+we see a largely complementary set of results. The first three variables are related to moral issues: homosexuality and whether suicide is allowable under different circumstances. The remaining variables are religious, with the exception of the issue of evolution, which we know to be strongly related to religous beliefs. Taken together, the results are in close accord with intuition.
 
 ## Are homeowners more likely to vote?
 
-First we'll check whether the homeowners of 2012, like their predecessors, are more likely to vote than renters. Since we're using the 2012 GSS we'll investigate the relationship between `vote08` and `dwelown` variables. `vote08` is a categorical variable, where `1` indicates that the respondent voted in the 2008 presidential election, while `0` indicates that the did not. `dwelown` is also a categorical variable where `1` indicates that the respondent owns their home, and `2` indicates that the respondent rents their home.
+Turning to a documented findings, economics research has shown that homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities  (DiPasquale, D., &amp; Glaeser, E. L., 1999). For this reason, homeowners have been labeled better citizens (DiPasquale, D., &amp; Glaeser, E. L., 1999; McCabe, 2013). 
+
+First we'll check whether the homeowners of 2012, are more likely to vote than renters. Since we're using the 2012 GSS we'll investigate the relationship between `vote08` and `dwelown` variables. `vote08` is a categorical variable, where `1` indicates that the respondent voted in the 2008 presidential election, while `0` indicates that the did not. `dwelown` is also a categorical variable where `1` indicates that the respondent owns their home, and `2` indicates that the respondent rents their home.
 
 First, for homeowners (`dwelown=1`),
 
@@ -105,13 +148,32 @@ and second, for renters (`dwelown=2`)
 
     PLOT SELECT vote08 FROM gss_pared where dwelown=2 SAVE TO votedwel_2.png;
 
-
 <center>
 <img src="{{ site.baseurl }}/assets/images/cs_gss/votedwel_2.png" class="img-med" alt="Vote variable plotted for homeowners">
 </center>
 
-
 We see that 75% of homeowners voted while only 50% of renters voted, confirming the previous finding.
+
+## Generating hypothetical survey responses
+
+An interesting feature of BayesDB is the ability to simulate (imagine) new data based on what it has learned from the observed data. Here we use this feature to assess the quality of BayesDBs predictions. We focus on a subset of the variables discussed above:
+
+SIMULATE reborn, savesoul, bible, evolved, bigbang, homosex, suicide1 FROM gss_pared TIMES 10
+
+| reborn | savesoul |     bible     | evolved | 
+----------------------------------------------|
+|   No   |   No     | Inspired word |    T    |
+|   No   |   No     | Ancient book  |    T    |
+|   No   |   No     | Ancient book  |    T    |
+|   No   |   No     | Inspired word |    T    |
+|   No   |   No     | Ancient book  |    T    |
+|   No   |   Yes    | Ancient book  |    T    |
+|   No   |   Yes    | Actual word   |    F    |
+|   Yes  |   No     | Inspired word |    T    |
+|   Yes  |   Yes    | Actual word   |    F    |
+|   Yes  |   Yes    | Actual word   |    F    |
+
+We have sorted the simulated responses based on the first two columns. At the top are cases where the simulated respondant did not have a born-again experience and has not encouraged someone to accept Jesus. For this group, we see strong consensus responses on the other two questions: they believe the bible is not the actual word of God and humans evolved from animals. In contrast, the simluated respondants who had had born-again experiences and had encouraged someone to accept Jesus responded that the bible is the actual word of God and that humans did not evolved. These responses accord with intuition about how real people might respond. 
 
 ## References
 
