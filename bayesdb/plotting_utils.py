@@ -25,7 +25,7 @@ from matplotlib.colors import LogNorm, Normalize
 from matplotlib.ticker import MaxNLocator
 import matplotlib.gridspec as gs
 import matplotlib.cm
-import pandas as pd
+import pandas
 import numpy
 import utils
 import functions
@@ -52,7 +52,8 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, re
         plots = create_pairwise_plot(colnames, data, M_c, gsp, remove_key=remove_key)
     else:
         f, ax = p.subplots()
-        create_plot(parse_data_for_hist(colnames, data, M_c, remove_key=remove_key), ax, horizontal=True)
+        plot_data = parse_data_for_hist(colnames, data, M_c, remove_key=remove_key)
+        create_plot(plot_data, ax, horizontal=True)
     if filename:
         p.savefig(filename)
         p.close()
@@ -117,7 +118,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
         if len(parsed_data['data']) == 0:
             return
         datapoints = parsed_data['data']
-        subplot.series = pd.Series(datapoints)
+        subplot.series = pandas.Series(datapoints)
         if 'horizontal' in kwargs and kwargs['horizontal']:
             subplot.series.hist(normed=True, color=matplotlib.cm.Blues(0.5), orientation='horizontal')
             subplot.set_ylabel(parsed_data['axis_label'])
@@ -190,44 +191,43 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
     subplot.set_aspect(aspect)
     return subplot
 
+def any_nan(row):
+    return any([isinstance(x, float) and math.isnan(x) for x in row])
+
 def parse_data_for_hist(colnames, data, M_c, remove_key=False):
-    data_c = []
-    for i in data:
-        no_nan = True
-        for j in i:
-            if isinstance(j, float) and math.isnan(j):
-                no_nan = False
-        if no_nan:
-            data_c.append(i)
-    output = {}
     columns = colnames[:]
-    data_no_id = [] # This will be the data with the row_ids removed if present
+    # Remove key column if present
     if remove_key:
         columns.pop(0)
-    if len(data_c) == 0:
+        data = [row[1:] for row in data]
+    # Remove any rows with nan values.
+    data = [row for row in data if not any_nan(row)]
+    # Stop if there are no rows remaining after cleaning missing values.
+    if len(data) == 0:
         raise utils.BayesDBError('There are no datapoints that contain values from every category specified. Try excluding columns with many NaN values.')
+
+    # Pull items from M_c to simplify code throughout the rest of this function
+    name_to_idx = M_c['name_to_idx']
+    column_metadata = M_c['column_metadata']
+
+    output = {}
     if len(columns) == 1:
-        if remove_key:
-            data_no_id = [x[1] for x in data_c]
-        else:
-            data_no_id = [x[0] for x in data_c]
+        np_data = np.array([x[0] for x in data])
         output['axis_label'] = columns[0]
         output['title'] = columns[0]
 
         # Allow col_idx to be None, to allow for predictive functions to be plotted.
-        if columns[0] in M_c['name_to_idx']:
-            col_idx = M_c['name_to_idx'][columns[0]]
+        if columns[0] in name_to_idx:
+            col_idx = name_to_idx[columns[0]]
         else:
             col_idx = None
 
-        # Treat not-column (e.g. function) the same as continuous, since no code to value conversion.            
-        if col_idx is None or M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma':
+        # Treat not-column (e.g. function) the same as continuous, since no code to value conversion.
+        if col_idx is None or column_metadata[col_idx]['modeltype'] == 'normal_inverse_gamma':
             output['datatype'] = 'cont1D'
-            output['data'] = np.array(data_no_id)
-            
-        elif M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
-            unique_labels = sorted(M_c['column_metadata'][M_c['name_to_idx'][columns[0]]]['code_to_value'].keys())
-            np_data = np.array(data_no_id)
+            output['data'] = np_data
+        elif column_metadata[col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
+            unique_labels = sorted(column_metadata[name_to_idx[columns[0]]]['code_to_value'].keys())
             counts = []
             for label in unique_labels:
                 counts.append(sum(np_data==str(label)))
@@ -236,23 +236,18 @@ def parse_data_for_hist(colnames, data, M_c, remove_key=False):
             output['data'] = counts
 
     elif len(columns) == 2:
-        if remove_key:
-            data_no_id = [(x[1], x[2]) for x in data_c]
-        else:
-            data_no_id = [(x[0], x[1]) for x in data_c]
-
         types = []
 
         # Treat not-column (e.g. function) the same as continuous, since no code to value conversion.
-        if columns[0] in M_c['name_to_idx']:
-            col_idx_1 = M_c['name_to_idx'][columns[0]]
-            types.append(M_c['column_metadata'][col_idx_1]['modeltype'])
+        if columns[0] in name_to_idx:
+            col_idx_1 = name_to_idx[columns[0]]
+            types.append(column_metadata[col_idx_1]['modeltype'])
         else:
             col_idx_1 = None
             types.append('normal_inverse_gamma')
-        if columns[1] in M_c['name_to_idx']:
-            col_idx_2 = M_c['name_to_idx'][columns[1]]
-            types.append(M_c['column_metadata'][col_idx_2]['modeltype'])            
+        if columns[1] in name_to_idx:
+            col_idx_2 = name_to_idx[columns[1]]
+            types.append(column_metadata[col_idx_2]['modeltype'])            
         else:
             col_idx_2 = None
             types.append('normal_inverse_gamma')            
@@ -270,15 +265,15 @@ def parse_data_for_hist(colnames, data, M_c, remove_key=False):
         elif types[0] == 'symmetric_dirichlet_discrete' and types[1] == 'symmetric_dirichlet_discrete':
             counts = {} # keys are (var 1 value, var 2 value)
             # data_no_id is a tuple for each datapoint: (value of var 1, value of var 2)
-            for i in data_no_id:
+            for i in data:
                 if i in counts:
                     counts[i]+=1
                 else:
                     counts[i]=1
 
             # these are the values.
-            unique_xs = sorted(M_c['column_metadata'][col_idx_2]['code_to_value'].keys())
-            unique_ys = sorted(M_c['column_metadata'][col_idx_1]['code_to_value'].keys())
+            unique_xs = sorted(column_metadata[col_idx_2]['code_to_value'].keys())
+            unique_ys = sorted(column_metadata[col_idx_1]['code_to_value'].keys())
             unique_ys.reverse()#Hack to reverse the y's            
             x_ordered_codes = [du.convert_value_to_code(M_c, col_idx_2, xval) for xval in unique_xs]
             y_ordered_codes = [du.convert_value_to_code(M_c, col_idx_1, yval) for yval in unique_ys]
@@ -288,8 +283,8 @@ def parse_data_for_hist(colnames, data, M_c, remove_key=False):
             for i in counts:
                 # this converts from value to code
                 #import pdb; pdb.set_trace()
-                y_index = y_ordered_codes.index(M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]])
-                x_index = x_ordered_codes.index(M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]])
+                y_index = y_ordered_codes.index(column_metadata[col_idx_1]['code_to_value'][i[0]])
+                x_index = x_ordered_codes.index(column_metadata[col_idx_2]['code_to_value'][i[1]])
                 counts_array[y_index][x_index] = float(counts[i])
             output['datatype'] = 'multmult'
             output['data'] = counts_array
@@ -306,7 +301,7 @@ def parse_data_for_hist(colnames, data, M_c, remove_key=False):
                 type = 0
                 col = 1
             
-            groups = sorted(M_c['column_metadata'][M_c['name_to_idx'][columns[col]]]['code_to_value'].keys())
+            groups = sorted(column_metadata[name_to_idx[columns[col]]]['code_to_value'].keys())
             for i in groups:
                 categories[i] = []
             for i in data_no_id:
