@@ -160,18 +160,18 @@ An interesting feature of BayesDB is the ability to simulate (imagine) new data 
 
 SIMULATE reborn, savesoul, bible, evolved FROM gss_pared TIMES 10
 
-| reborn | savesoul |     bible     | evolved | 
+| reborn   | savesoul |     bible     | evolved | 
 ----------------------------------------------|
-|   No   |   No     | Inspired word |    T    |
-|   No   |   No     | Ancient book  |    T    |
-|   No   |   No     | Ancient book  |    T    |
-|   No   |   No     | Inspired word |    T    |
-|   No   |   No     | Ancient book  |    T    |
-|   No   |   Yes    | Ancient book  |    T    |
-|   No   |   Yes    | Actual word   |    F    |
-|   Yes  |   No     | Inspired word |    T    |
-|   Yes  |   Yes    | Actual word   |    F    |
-|   Yes  |   Yes    | Actual word   |    F    |
+|   No     |   No     | Inspired word |    T    |
+|   No     |   No     | Ancient book  |    T    |
+|   No     |   No     | Ancient book  |    T    |
+|   No     |   No     | Inspired word |    T    |
+|   No     |   No     | Ancient book  |    T    |
+|   No     |   Yes    | Ancient book  |    T    |
+|   No     |   Yes    | Actual word   |    F    |
+|   Yes    |   No     | Inspired word |    T    |
+|   Yes    |   Yes    | Actual word   |    F    |
+|   Yes    |   Yes    | Actual word   |    F    |
 
 We have sorted the simulated responses based on the first two columns. At the top are cases where the simulated respondant did not have a born-again experience and has not encouraged someone to accept Jesus. For this group, we see strong consensus responses on the other two questions: they believe the bible is not the actual word of God and humans evolved from animals. In contrast, the simluated respondants who had had born-again experiences and had encouraged someone to accept Jesus responded that the bible is the actual word of God and that humans did not evolved. These responses accord with intuition about how real people might respond. 
 
