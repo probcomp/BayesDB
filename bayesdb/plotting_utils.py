@@ -37,7 +37,7 @@ def turn_off_labels(subplot):
     subplot.axes.get_yaxis().set_visible(False)
          
 
-def plot_general_histogram(colnames, data, M_c, schema, filename=None, scatter=False, remove_key=False):
+def plot_general_histogram(colnames, data, M_c, schema_full, filename=None, scatter=False, remove_key=False):
     '''
     colnames: list of column names
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
@@ -49,10 +49,10 @@ def plot_general_histogram(colnames, data, M_c, schema, filename=None, scatter=F
         numcols -= 1
     if numcols > 1:
         gsp = gs.GridSpec(1, 1)
-        plots = create_pairwise_plot(colnames, data, M_c, gsp, remove_key=remove_key)
+        plots = create_pairwise_plot(colnames, data, M_c, schema_full, gsp, remove_key=remove_key)
     else:
         f, ax = p.subplots()
-        plot_data = parse_data_for_hist(colnames, data, M_c, schema, remove_key=remove_key)
+        plot_data = parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=remove_key)
         create_plot(plot_data, ax, horizontal=True)
     if filename:
         p.savefig(filename)
@@ -187,7 +187,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
 
     x0,x1 = subplot.get_xlim()
     y0,y1 = subplot.get_ylim()
-    aspect = (abs(float((x1-x0)))/abs(float((y1-y0))))
+    aspect = (abs(float((x1 - x0))) / abs(float((y1 - y0))))
     subplot.set_aspect(aspect)
     return subplot
 
@@ -255,12 +255,13 @@ def parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=False):
 
         elif cctypes[0] == 'multinomial' and cctypes[1] == 'multinomial':
             counts = {} # keys are (var 1 value, var 2 value)
-            # data_no_id is a tuple for each datapoint: (value of var 1, value of var 2)
-            for i in data:
-                if i in counts:
-                    counts[i]+=1
+            # data contains a tuple for each datapoint: (value of var 1, value of var 2)
+            for row in data:
+                row = tuple(row)
+                if row in counts:
+                    counts[row] += 1
                 else:
-                    counts[i]=1
+                    counts[row] = 1
 
             # these are the values.
             unique_xs = sorted(column_metadata[col_idx_2]['code_to_value'].keys())
@@ -291,8 +292,8 @@ def parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=False):
             groups = sorted(column_metadata[name_to_idx[columns[multinomial_column]]]['code_to_value'].keys())
             for i in groups:
                 categories[i] = []
-            for i in data_no_id:
-                categories[i[multinomial_column]].append(i[type])
+            for i in data:
+                categories[i[multinomial_column]].append(i[1 - multinomial_column])
                 
             output['groups'] = groups
             output['values'] = [categories[x] for x in groups]
@@ -306,48 +307,54 @@ def parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=False):
         output['datatype'] = None
     return output
 
-def create_pairwise_plot(colnames, data, M_c, gsp, remove_key=False):
-    output = {}
+def create_pairwise_plot(colnames, data, M_c, schema_full, gsp, remove_key=False):
     columns = colnames[:]
-    data_no_id = [] #This will be the data with the row_ids removed if present
+    # Remove key column if present
     if remove_key:
         columns.pop(0)
-        data_no_id = [x[1:] for x in data]
-    else:
-        data_no_id = data[:]
+        data = [row[1:] for row in data]
+    # Remove any rows with nan values.
+    data = [row for row in data if not any_nan(row)]
+    # Stop if there are no rows remaining after cleaning missing values.
+    if len(data) == 0:
+        raise utils.BayesDBError('There are no datapoints that contain values from every category specified. Try excluding columns with many NaN values.')
 
-    super_compress=len(columns) > 6 # rotate outer labels
-    gsp = gs.GridSpec(len(columns), len(columns))
-    for i in range(len(columns)):
-        for j in range(len(columns)):
-            if j == 0 and i < len(columns) - 1:
+    output = {}
+
+    n_columns = len(columns)
+    # Rotate outer labels if there are more than 6 columns to be plotted.
+    super_compress = n_columns > 6 
+    gsp = gs.GridSpec(n_columns, n_columns)
+    for i in range(n_columns):
+        for j in range(n_columns):
+            if j == 0 and i < n_columns - 1:
                 #left hand marginals
                 sub_colnames = [columns[i]]
-                sub_data = [[x[i]] for x in data_no_id]
-                data = parse_data_for_hist(sub_colnames, sub_data, M_c)
-                create_plot(data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[i], horizontal=True, compress=True, super_compress=super_compress)
+                sub_data = [[x[i]] for x in data]
+                plot_data = parse_data_for_hist(sub_colnames, sub_data, M_c, schema_full)
+                create_plot(plot_data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[i], horizontal=True, compress=True, super_compress=super_compress)
                 
-            elif i == len(columns) - 1 and j > 0:
+            elif i == n_columns - 1 and j > 0:
                 #bottom marginals
                 subdata = None
                 if j == 1:
-                    sub_colnames = [columns[len(columns)-1]]
-                    sub_data = [[x[len(columns) - 1]] for x in data_no_id]
+                    sub_colnames = [columns[n_columns - 1]]
+                    sub_data = [[x[n_columns - 1]] for x in data]
                 else:
-                    sub_colnames = [columns[j-2]]
-                    sub_data = [[x[j-2]] for x in data_no_id]
-                data = parse_data_for_hist(sub_colnames, sub_data, M_c)
-                create_plot(data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[j-2], horizontal=False, compress=True, super_compress=super_compress)
+                    sub_colnames = [columns[j - 2]]
+                    sub_data = [[x[j - 2]] for x in data]
+                plot_data = parse_data_for_hist(sub_colnames, sub_data, M_c, schema_full)
+                create_plot(plot_data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[j-2], horizontal=False, compress=True, super_compress=super_compress)
 
-            elif (j != 0 and i != len(columns)-1) and j < i+2:
+            elif (j != 0 and i != n_columns - 1) and j < i + 2:
                 #pairwise joints
-                j_col = j-2
+                j_col = j - 2
                 if j == 1:
-                    j_col = len(columns) - 1
+                    j_col = n_columns - 1
                 sub_colnames = [columns[i], columns[j_col]]
-                sub_data = [[x[i], x[j_col]] for x in data_no_id]
-                data = parse_data_for_hist(sub_colnames, sub_data, M_c)
-                create_plot(data, p.subplot(gsp[i, j]), False, False, horizontal=True, compress=True, super_compress=super_compress)
+                sub_data = [[x[i], x[j_col]] for x in data]
+                plot_data = parse_data_for_hist(sub_colnames, sub_data, M_c, schema_full)
+                create_plot(plot_data, p.subplot(gsp[i, j]), False, False, horizontal=True, compress=True, super_compress=super_compress)
             else:
                 pass
 
