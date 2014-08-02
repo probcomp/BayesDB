@@ -501,6 +501,14 @@ class PersistenceLayer():
         colnames = utils.get_all_column_names_in_original_order(M_c)
         return colnames
 
+    def get_colnames_full(self, tablename):
+        """
+        Return column names of all columns
+        """
+        M_c_full = self.get_metadata_full(tablename)['M_c_full']
+        colnames = utils.get_all_column_names_in_original_order(M_c_full)
+        return colnames
+
     def get_schema(self, tablename):
         """
         Return colnames and cctypes of analysis columns
@@ -511,6 +519,17 @@ class PersistenceLayer():
         for colname, cctype in zip(colnames, cctypes):
             schema[colname] = cctype
         return schema
+
+    def get_schema_full(self, tablename):
+        """
+        Return colnames and cctypes of all columns
+        """
+        colnames_full = self.get_colnames_full(tablename)
+        cctypes_full = self.get_cctypes_full(tablename)
+        schema_full = dict()
+        for colname, cctype in zip(colnames_full, cctypes_full):
+            schema_full[colname] = cctype
+        return schema_full
 
     def get_key_column_name(self, tablename):
         metadata_full = self.get_metadata_full(tablename)

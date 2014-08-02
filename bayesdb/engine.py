@@ -905,6 +905,7 @@ class Engine(object):
     ret = dict(data=data, columns=query_colnames)
     if plot:
       ret['M_c'] = M_c
+      ret['schema_full'] = self.persistence_layer.get_schema_full(tablename)
     elif summarize | hist | freq:
       if summarize:
         data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c)
@@ -991,6 +992,7 @@ class Engine(object):
     ret = {'columns': query_colnames, 'data': data}
     if plot:
       ret['M_c'] = M_c
+      ret['schema_full'] = self.persistence_layer.get_schema_full(tablename)
     elif summarize | hist | freq:
       if summarize:
         data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c, remove_key=False)

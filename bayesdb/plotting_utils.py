@@ -37,7 +37,7 @@ def turn_off_labels(subplot):
     subplot.axes.get_yaxis().set_visible(False)
          
 
-def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, remove_key=False):
+def plot_general_histogram(colnames, data, M_c, schema, filename=None, scatter=False, remove_key=False):
     '''
     colnames: list of column names
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
@@ -52,7 +52,7 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, re
         plots = create_pairwise_plot(colnames, data, M_c, gsp, remove_key=remove_key)
     else:
         f, ax = p.subplots()
-        plot_data = parse_data_for_hist(colnames, data, M_c, remove_key=remove_key)
+        plot_data = parse_data_for_hist(colnames, data, M_c, schema, remove_key=remove_key)
         create_plot(plot_data, ax, horizontal=True)
     if filename:
         p.savefig(filename)
@@ -194,7 +194,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
 def any_nan(row):
     return any([isinstance(x, float) and math.isnan(x) for x in row])
 
-def parse_data_for_hist(colnames, data, M_c, remove_key=False):
+def parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=False):
     columns = colnames[:]
     # Remove key column if present
     if remove_key:
@@ -209,12 +209,11 @@ def parse_data_for_hist(colnames, data, M_c, remove_key=False):
     # Pull items from M_c to simplify code throughout the rest of this function
     name_to_idx = M_c['name_to_idx']
     column_metadata = M_c['column_metadata']
+    cctypes = [schema_full[column] for column in columns]
 
     output = {}
     if len(columns) == 1:
         np_data = np.array([x[0] for x in data])
-        output['axis_label'] = columns[0]
-        output['title'] = columns[0]
 
         # Allow col_idx to be None, to allow for predictive functions to be plotted.
         if columns[0] in name_to_idx:
@@ -223,10 +222,10 @@ def parse_data_for_hist(colnames, data, M_c, remove_key=False):
             col_idx = None
 
         # Treat not-column (e.g. function) the same as continuous, since no code to value conversion.
-        if col_idx is None or column_metadata[col_idx]['modeltype'] == 'normal_inverse_gamma':
+        if col_idx is None or cctypes[0] == 'continuous':
             output['datatype'] = 'cont1D'
             output['data'] = np_data
-        elif column_metadata[col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
+        elif cctypes[0] == 'multinomial':
             unique_labels = sorted(column_metadata[name_to_idx[columns[0]]]['code_to_value'].keys())
             counts = []
             for label in unique_labels:
@@ -235,34 +234,26 @@ def parse_data_for_hist(colnames, data, M_c, remove_key=False):
             output['labels'] = unique_labels
             output['data'] = counts
 
-    elif len(columns) == 2:
-        types = []
+        output['axis_label'] = columns[0]
+        output['title'] = columns[0]
 
+    elif len(columns) == 2:
         # Treat not-column (e.g. function) the same as continuous, since no code to value conversion.
         if columns[0] in name_to_idx:
             col_idx_1 = name_to_idx[columns[0]]
-            types.append(column_metadata[col_idx_1]['modeltype'])
         else:
             col_idx_1 = None
-            types.append('normal_inverse_gamma')
         if columns[1] in name_to_idx:
             col_idx_2 = name_to_idx[columns[1]]
-            types.append(column_metadata[col_idx_2]['modeltype'])            
         else:
             col_idx_2 = None
-            types.append('normal_inverse_gamma')            
-        types = tuple(types)
         
-        output['axis_label_x'] = columns[1]
-        output['axis_label_y'] = columns[0]
-        output['title'] = columns[0] + ' -versus- ' + columns[1]
- 
-        if types[0] == 'normal_inverse_gamma' and types[1] == 'normal_inverse_gamma':
+        if cctypes[0] == 'continuous' and cctypes[1] == 'continuous':
             output['datatype'] = 'contcont'
-            output['data_x'] = [x[0] for x in data_no_id]
-            output['data_y'] = [x[1] for x in data_no_id]
+            output['data_x'] = [x[0] for x in data]
+            output['data_y'] = [x[1] for x in data]
 
-        elif types[0] == 'symmetric_dirichlet_discrete' and types[1] == 'symmetric_dirichlet_discrete':
+        elif cctypes[0] == 'multinomial' and cctypes[1] == 'multinomial':
             counts = {} # keys are (var 1 value, var 2 value)
             # data_no_id is a tuple for each datapoint: (value of var 1, value of var 2)
             for i in data:
@@ -291,25 +282,25 @@ def parse_data_for_hist(colnames, data, M_c, remove_key=False):
             output['labels_x'] = unique_xs
             output['labels_y'] = unique_ys
 
-        elif 'normal_inverse_gamma' in types and 'symmetric_dirichlet_discrete' in types:
+        elif 'continuous' in cctypes and 'multinomial' in cctypes:
             output['datatype'] = 'multcont'
             categories = {}
 
-            col = 0
-            type = 1
-            if types[0] == 'normal_inverse_gamma':
-                type = 0
-                col = 1
+            multinomial_column = cctypes.index('multinomial')
             
-            groups = sorted(column_metadata[name_to_idx[columns[col]]]['code_to_value'].keys())
+            groups = sorted(column_metadata[name_to_idx[columns[multinomial_column]]]['code_to_value'].keys())
             for i in groups:
                 categories[i] = []
             for i in data_no_id:
-                categories[i[col]].append(i[type])
+                categories[i[multinomial_column]].append(i[type])
                 
             output['groups'] = groups
             output['values'] = [categories[x] for x in groups]
-            output['transpose'] = (type == 1)
+            output['transpose'] = (multinomial_column == 0)
+
+        output['axis_label_x'] = columns[1]
+        output['axis_label_y'] = columns[0]
+        output['title'] = columns[0] + ' -versus- ' + columns[1]
 
     else:
         output['datatype'] = None

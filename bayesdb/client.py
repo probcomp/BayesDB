@@ -297,7 +297,7 @@ class Client(object):
             if (plots or client_dict['filename']):
                 # Plot generalized histograms or scatterplots
                 plot_remove_key = method_name in ['select', 'infer']
-                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], remove_key=plot_remove_key)
+                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], result['schema_full'], client_dict['filename'], client_dict['scatter'], remove_key=plot_remove_key)
                 return self.pretty_print(result)
             else:
                 if 'message' not in result:
