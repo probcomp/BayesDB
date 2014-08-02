@@ -161,7 +161,7 @@ An interesting feature of BayesDB is the ability to simulate (imagine) new data 
 SIMULATE reborn, savesoul, bible, evolved FROM gss_pared TIMES 10
 
 | reborn   | savesoul |     bible     | evolved | 
-----------------------------------------------|
+------------------------------------------------|
 |   No     |   No     | Inspired word |    T    |
 |   No     |   No     | Ancient book  |    T    |
 |   No     |   No     | Ancient book  |    T    |
@@ -174,6 +174,40 @@ SIMULATE reborn, savesoul, bible, evolved FROM gss_pared TIMES 10
 |   Yes    |   Yes    | Actual word   |    F    |
 
 We have sorted the simulated responses based on the first two columns. At the top are cases where the simulated respondant did not have a born-again experience and has not encouraged someone to accept Jesus. For this group, we see strong consensus responses on the other two questions: they believe the bible is not the actual word of God and humans evolved from animals. In contrast, the simluated respondants who had had born-again experiences and had encouraged someone to accept Jesus responded that the bible is the actual word of God and that humans did not evolved. These responses accord with intuition about how real people might respond. 
+
+<!-- SAVE THIS, IT IS EXTRA FODDER
+    SIMULATE reborn, savesoul, bible, evolved, vote08, dwelown FROM gss_pared GIVEN reborn=1, savesoul=1 TIMES 10
+
+| reborn | savesoul |     bible     | evolved | vote08 | dwelown |
+|--------|----------|---------------|---------|--------|---------|
+|  Yes   |   Yes    | Inspired word |   No    |  Yes   |  Rent   |
+|  Yes   |   Yes    | Inspired word |   Yes   |  No    |  Own    |
+|  Yes   |   Yes    | Ancient book  |   Yes   |  Yes   |  Own    |
+|  Yes   |   Yes    | Actual word   |   No    |  Yes   |  Own    |
+|  Yes   |   Yes    | Inspired word |   No    |  Yes   |  Own    |
+|  Yes   |   Yes    | Inspired word |   No    |  Yes   |  Own    |
+|  Yes   |   Yes    | Inspired word |   No    |  Yes   |  Own    |
+|  Yes   |   Yes    | Actual word   |   No    |  Yes   |  Rent   |
+|  Yes   |   Yes    | Inspired word |   No    |  Yes   |  Rent   |
+|  Yes   |   Yes    | Ancient book  |   No    |  No    |  Rent   |
+
+    SIMULATE reborn, savesoul, bible, evolved, vote08, dwelown FROM gss_pared GIVEN reborn=2, savesoul=2 TIMES 10
+
+| reborn | savesoul |     bible     | evolved |  vote08    | dwelown |
+|--------|----------|---------------|---------|------------|---------|
+|  No    |   No     | Inspired word |   Yes   |    No      |  Rent   |
+|  No    |   No     | Actual word   |   No    |    No      |  Own    |
+|  No    |   No     | Ancient book  |   Yes   | Ineligible |  Own    |
+|  No    |   No     | Ancient book  |   Yes   |    No      |  Own    |
+|  No    |   No     | Inspired word |   Yes   |    Yes     |  Own    |
+|  No    |   No     | Ancient book  |   Yes   |    No      |  Rent   |
+|  No    |   No     | Inspired word |   Yes   |    No      |  Own    |
+|  No    |   No     | Inspired word |   No    |    Yes     |  Rent   |
+|  No    |   No     | Ancient book  |   Yes   |    No      |  Own    |
+|  No    |   No     | Inspired word |   No    |    Yes     |  Own    |
+
+The top table shows simulated respondants who had born-again experiences and had encouraged someone to accept Jesus. These simulated respondants tend to believe the bible is either inspired text or the word of god, that humans have not evolved from animals, voted in 2008, and may rent or own. The bottom table shows simulated respondants who had not had born-again experiences and had not encouraged someone to accept Jesus. In contrast with the top table, these simulated respondants tend to believe the bible is either an ancient book or inspired word, and tend to believe in evolution. They also were less likely to vote, but showed similar tendencies toward renting or owning. 
+-->
 
 ## References
 
