@@ -543,7 +543,7 @@ def is_key_eligible(x):
     castable = not get_can_cast_to_float(x) or get_int_equals_str(x)
     return values_unique and castable
 
-def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, accept=False):
+def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, testing=False):
     """
     This function takes the raw data, colnames, and data types from an input CSV file from
     which a btable is being created.
@@ -558,9 +558,11 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, 
 
     key_eligibles = list(eligibility[eligibility].index)
     key_eligibles_len = len(key_eligibles)
-    if key_eligibles_len == 0 and key_column is None:
-        if not accept:
-            print "None of the columns in this table is eligible to be the key. A key column will be created."
+    if testing:
+        key_column_selection = 0
+    elif key_eligibles_len == 0 and key_column is None:
+        print "None of the columns in this table is eligible to be the key. A key column will be created. Press any key continue."
+        user_confirmation = raw_input()
         key_column_selection = 0
     elif key_column is None or key_column not in range(key_eligibles_len + 1):
         key_column_selection = None
@@ -572,9 +574,13 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, 
         while key_column_selection is None:
             print str(pt)
             print "Please select which column you would like to set as the table key:"
-            user_selection = int(raw_input())
-            if user_selection in range(key_eligibles_len + 1):
-                key_column_selection = user_selection
+            user_selection = raw_input()
+            try:
+                user_selection = int(user_selection)
+                if user_selection in range(key_eligibles_len + 1):
+                    key_column_selection = user_selection
+            except:
+                continue
     else:
         key_column_selection = key_column
 
