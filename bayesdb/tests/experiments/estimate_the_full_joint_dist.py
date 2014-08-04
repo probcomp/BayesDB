@@ -73,7 +73,7 @@ def run_experiment(argin):
         true_held_out_p.append(numpy.exp(logp))
 
     # start a client
-    client = Client()
+    client = Client(testing=True)
 
     # do analyses
     for config in ['cc', 'crp', 'nb']:

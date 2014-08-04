@@ -86,7 +86,7 @@ def run_experiment(argin):
         infer_queries.append(this_query)
 
     # create a client
-    client = Client()
+    client = Client(testing=True)
 
     dependence_results = []
     inference_results = []

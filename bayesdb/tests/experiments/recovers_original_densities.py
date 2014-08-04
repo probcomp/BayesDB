@@ -104,7 +104,7 @@ def run_experiment(argin):
     # generate the data
     datasets = gen_shapetest_csvs(num_rows)
 
-    client = Client()
+    client = Client(testing=True)
 
     # drop tables
     print "Dropping tables."
@@ -121,7 +121,7 @@ def run_experiment(argin):
         query_list = gen_base_queries(num_iters, num_chains, num_rows, shape, ct_kernel, datatype);
         for query in query_list:
             print query
-            client(query)
+            client(query,debug=True)
 
         table = table_string[shape]
         datafile = table + '.csv'

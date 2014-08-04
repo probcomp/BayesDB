@@ -194,7 +194,7 @@ def run_experiment(argin):
 
         dependence_probs = numpy.zeros( (num_iters+1, num_queries) )
 
-        client = Client()
+        client = Client(testing=True)
 
         client('DROP BTABLE %s;' % table, yes=True)
         client('CREATE BTABLE %s FROM %s;' % (table, subfilename))

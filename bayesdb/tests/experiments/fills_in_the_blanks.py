@@ -66,7 +66,7 @@ def run_experiment(argin):
     num_rows, num_cols = T_array.shape
 
     # create a client
-    client = Client()
+    client = Client(testing=True)
 
     # set up a dict fro the different config data
     result = dict()
@@ -80,7 +80,7 @@ def run_experiment(argin):
         this_filename = all_filenames[p]
         for config in ['cc', 'crp', 'nb']:
             config_string = eu.config_map[config]
-            table = table_name + '-' + config
+            table = table_name + '_' + config
 
             # drop old btable, create a new one with the new data and init models
             client('DROP BTABLE %s;' % table, yes=True)
