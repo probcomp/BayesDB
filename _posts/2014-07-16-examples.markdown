@@ -78,7 +78,7 @@ For more information about the Dartmouth Atlas of Health Care, [http://www.dartm
 
 ##Responses to ~5500 demographic, behavioral and attitudinal questions by US residents.
 
-The General Social Survey is conducted annually to assess the demographics and attitudes of U.S. residents. Questions span  current housing situations, religion, voting, and positions on social issues. It is, thus, a very interesting source of information about how demographics and attitudes covary in the U.S. We are going to use BayesDB to explore this data, first to simply explore some relatively familiar variables for which we might have strong intuitions, second to assess BayesDB's inferences against findings from other research, and finally to generate hypothetical survey responses. 
+The General Social Survey is conducted annually to assess the demographics and attitudes of U.S. residents. Questions span  current housing situations, religion, voting, and positions on social issues. It is a very interesting source of information about how demographics and attitudes covary in the U.S. We are going to use BayesDB to explore this data, first to simply explore some relatively familiar variables for which we might have strong intuitions, second to assess BayesDB's inferences against findings from other research, and finally to generate hypothetical survey responses. 
 
 ## What variables are associated with born-again experiences?
 
@@ -132,7 +132,7 @@ we see a largely complementary set of results. The first three variables are rel
 
 Turning to a documented finding, economics research has shown that homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities  (DiPasquale, D., &amp; Glaeser, E. L., 1999). For this reason, homeowners have been labeled better citizens (DiPasquale, D., &amp; Glaeser, E. L., 1999; McCabe, 2013). 
 
-First we'll check whether the homeowners of 2012, are more likely to vote than renters. Since we're using the 2012 GSS we'll investigate the relationship between `vote08` and `dwelown` variables. `vote08` is a categorical variable, where `1` indicates that the respondent voted in the 2008 presidential election, while `0` indicates that the did not. `dwelown` is also a categorical variable where `1` indicates that the respondent owns their home, and `2` indicates that the respondent rents their home.
+First we'll check whether the homeowners of 2012 are more likely to vote than renters. Since we're using the 2012 GSS we'll investigate the relationship between `vote08` and `dwelown` variables. `vote08` is a categorical variable, where `1` indicates that the respondent voted in the 2008 presidential election, while `0` indicates that the did not. `dwelown` is also a categorical variable where `1` indicates that the respondent owns their home, and `2` indicates that the respondent rents their home.
 
 First, for homeowners (`dwelown=1`),
 
@@ -156,9 +156,9 @@ We see that 75% of homeowners voted while only 50% of renters voted, confirming 
 
 ## Generating hypothetical survey responses
 
-An interesting feature of BayesDB is the ability to simulate (imagine) new data based on what it has learned from the observed data. Here we use this feature to assess the quality of BayesDBs predictions. We focus on a subset of the variables discussed above:
+An interesting feature of BayesDB is the ability to simulate hypothetical data based on what it has learned from the observed data. Here we use this feature to assess the quality of BayesDBs predictions. We focus on a subset of the variables discussed above:
 
-SIMULATE reborn, savesoul, bible, evolved FROM gss_pared TIMES 10
+    SIMULATE reborn, savesoul, bible, evolved FROM gss_pared TIMES 10
 
 | reborn   | savesoul |     bible     | evolved | 
 ------------------------------------------------|
@@ -173,7 +173,7 @@ SIMULATE reborn, savesoul, bible, evolved FROM gss_pared TIMES 10
 |   Yes    |   Yes    | Actual word   |    F    |
 |   Yes    |   Yes    | Actual word   |    F    |
 
-We have sorted the simulated responses based on the first two columns. At the top are cases where the simulated respondant did not have a born-again experience and has not encouraged someone to accept Jesus. For this group, we see strong consensus responses on the other two questions: they believe the bible is not the actual word of God and humans evolved from animals. In contrast, the simluated respondants who had had born-again experiences and had encouraged someone to accept Jesus responded that the bible is the actual word of God and that humans did not evolved. These responses accord with intuition about how real people might respond. 
+We have sorted the simulated responses based on the first two columns. At the top are cases where the simulated respondant did not have a born-again experience and has not encouraged someone to accept Jesus. For this group, we see strong consensus responses on the other two questions: they believe the bible is not the actual word of God and that humans evolved from animals. In contrast, the simluated respondants who had had born-again experiences and had encouraged someone to accept Jesus responded that the bible is the actual word of God and that humans did not evolved. These responses accord with intuition about how real people might respond. 
 
 <!-- SAVE THIS, IT IS EXTRA FODDER
     SIMULATE reborn, savesoul, bible, evolved, vote08, dwelown FROM gss_pared GIVEN reborn=1, savesoul=1 TIMES 10
@@ -209,6 +209,8 @@ We have sorted the simulated responses based on the first two columns. At the to
 The top table shows simulated respondants who had born-again experiences and had encouraged someone to accept Jesus. These simulated respondants tend to believe the bible is either inspired text or the word of god, that humans have not evolved from animals, voted in 2008, and may rent or own. The bottom table shows simulated respondants who had not had born-again experiences and had not encouraged someone to accept Jesus. In contrast with the top table, these simulated respondants tend to believe the bible is either an ancient book or inspired word, and tend to believe in evolution. They also were less likely to vote, but showed similar tendencies toward renting or owning. 
 -->
 
+Taken together, these three demonstrations show that BayesDB captures intuitively compelling structure in the data, and validates one inferences against findings in the literature. 
+
 ## References
 
 <p class='reference'>
@@ -230,7 +232,7 @@ The full GSS dataset can be downloaded from their website, [here](http://www3.no
 
 What kinds of early childhood environments are associated with improved educational outcomes? The Early Childhood Longitudinal Study (Kindergarten class) looks at a variety of variables---cultural, socioeconomic, and educational---as they relate to early proficiency in reading and mathematics. Research has found that sometimes simple things, such as the number of books in the home, have surprisingly strong associations with educational achievement (Evans, Kelley, Sikora, & Trieman, 2010). We investigate this finding using ECLs dataset using BayesDB. 
 
-Our first step is to look at which variables are related to outcomes. Here, we will focus on children's kindergarten math scores.
+Our first step is to look at which variables are related to educational outcomes. Here, we will focus on children's kindergarten math scores as our outcome of interest.
 
     ESTIMATE COLUMNS FROM ecls ORDER BY DEPENDENCE PROBABILITY WITH C1R4MTSC LIMIT 15;
 
@@ -252,7 +254,7 @@ Our first step is to look at which variables are related to outcomes. Here, we w
 | p1chlboo |            0.666666666667            |
 | p1chlaud |            0.666666666667            |
 
-After other math and reading scores, there are a collection of variables whose relationship to outcomes is rather intuitive. These include the mother and father's education levels and expectations for child's education level, `wkmomed`, `wkmomed`, `p1expect`, poverty level, `wkpov_r`, parents' race and language, `race` and `p1prmlng`, and whether a parent is depressed `p2depres`. However, for a small group of findings, it is less clear how they are related to math achievement. These include having a home computer, `p2homecm`, the number of books in the house, `p1chlboo`, and the number of CDs and tapes in the house, `p1chlaud`. 
+After other math and reading scores, there are a collection of variables whose relationship to outcomes is rather intuitive. These include the mother and father's education levels and expectations for child's education level, `wkmomed`, `wkmomed`, `p1expect`, poverty level, `wkpov_r`, parents' race and language, `race` and `p1prmlng`, whether a parent is depressed `p2depres`, and whether there is a computer in the home, `p2homecm`. However, for a small group of findings, it is less clear how they are related to math achievement. These include the number of books in the house, `p1chlboo`, and the number of CDs and tapes in the house, `p1chlaud`. 
 
 To investigate this further, we can explore how different values of each variable affect math scores. We will simulate predicted math scores given very small numbers of CDs and books (zero in each case), and given relatively large numbers of CDs and books (100 and 200, respectively). We have superimposed each pair of figures to compare the results, where the light blue represents zero and the gray represents large numbers of tapes and CDS or books.
 
@@ -270,7 +272,7 @@ To investigate this further, we can explore how different values of each variabl
 <img src="{{ site.baseurl }}/assets/images/cs_eccls/ecls_comparison_books.png" class="img-med" alt="Math outcomes given number of books">
 </center>
 
-Larger numbers of tapes and CDs and larger numbers of books are both associated with higher scores. Indeed, our finding regarding books agrees with previous research showing that children that grow up around large numbers of books tend to attain greater degrees of education (Evans et al., 2010). 
+Larger numbers of tapes and CDs and larger numbers of books are both associated with higher scores. Indeed, our finding regarding books agrees with previous research showing that children that grow up around large numbers of books is related to educational performance (Evans et al., 2010). 
 
 ## References
 
