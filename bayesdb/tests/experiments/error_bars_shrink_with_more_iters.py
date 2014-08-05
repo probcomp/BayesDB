@@ -43,8 +43,8 @@ def _get_prop_inferred(data, indices, col):
             count += 1.0
         total += 1.0
 
-    if count < total:
-        print "hit"
+    # if count < total:
+    #     print "hit"
     return count/total
 
 def run_experiment(argin):
@@ -94,15 +94,15 @@ def run_experiment(argin):
 
         # drop old table, create new table, init models
         client('DROP BTABLE %s;' % table, yes=True)
-        client('CREATE BTABLE %s FROM %s;' % (table, filename))
-        client('INITIALIZE %i MODELS FOR %s;' % (num_chains, table))
+        client('CREATE BTABLE %s FROM %s;' % (table, filename), pretty=False)
+        client('INITIALIZE %i MODELS FOR %s;' % (num_chains, table), pretty=False)
 
         dependence_results_run = numpy.zeros((n_queries, num_iters))
         inference_results_run = numpy.zeros((n_queries, num_iters))
 
         for i in range(num_iters):
             # analyze
-            client('ANALYZE %s FOR 1 ITERATIONS;' % (table) )
+            client('ANALYZE %s FOR 1 ITERATIONS WAIT;' % (table) )
 
             # dependence
             for q in range(n_queries):
@@ -150,6 +150,9 @@ def run_experiment(argin):
     result['dependence_probability_error'] = dep_error
     result['infer_means'] = inf_means
     result['infer_stderr'] = inf_error
+
+    # test_pass = False
+    # pass_criterion = ""
 
     return result
 
