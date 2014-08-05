@@ -133,10 +133,10 @@ def run_experiment(argin):
         dep_means[:,i] = numpy.mean(X, axis=1)
         dep_error[:,i] = numpy.std(X, axis=1)/float(num_runs)**.5
 
+    for t in range(num_runs):
         x = numpy.linspace(1,num_iters,num_iters)
-        y = dep_error[:,i]
+        y = inf_error[t,:]
         slope, _, _, p_value, _ = scipy.stats.linregress(x,y)
-
         if not (slope < 0 and p_value < .05):
             test_pass = False
 
@@ -152,8 +152,9 @@ def run_experiment(argin):
         inf_means[:,i] = numpy.mean(X, axis=1)
         inf_error[:,i] = numpy.std(X, axis=1)/float(num_runs)**.5
 
+    for t in range(num_runs):
         x = numpy.linspace(1,num_iters,num_iters)
-        y = inf_error[:,i]
+        y = inf_error[t,:]
         slope, _, _, p_value, _ = scipy.stats.linregress(x,y)
         if not (slope < 0 and p_value < .05):
             test_pass = False
