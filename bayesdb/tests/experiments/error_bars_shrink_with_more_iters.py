@@ -27,6 +27,7 @@ import pylab
 import time
 import math
 import os
+import scipy
 
 def _get_prop_inferred(data, indices, col):
     count = 0.0
@@ -123,12 +124,21 @@ def run_experiment(argin):
     dep_means = numpy.zeros( (n_queries, num_iters) )
     dep_error = numpy.zeros( (n_queries, num_iters) )
 
+    test_pass = True
+
     for i in range(num_iters):
         X = numpy.zeros( (n_queries,num_runs) )
         for r in range(num_runs):
             X[:,r] = dependence_results[r][:,i]        
         dep_means[:,i] = numpy.mean(X, axis=1)
         dep_error[:,i] = numpy.std(X, axis=1)/float(num_runs)**.5
+
+        x = numpy.linspace(1,num_iters,num_iters)
+        y = dep_error[:,i]
+        slope, _, _, p_value, _ = scipy.stats.linregress(x,y)
+
+        if not (slope < 0 and p_value < .05):
+            test_pass = False
 
 
     # calculate mean and errors (infer)
@@ -142,6 +152,12 @@ def run_experiment(argin):
         inf_means[:,i] = numpy.mean(X, axis=1)
         inf_error[:,i] = numpy.std(X, axis=1)/float(num_runs)**.5
 
+        x = numpy.linspace(1,num_iters,num_iters)
+        y = inf_error[:,i]
+        slope, _, _, p_value, _ = scipy.stats.linregress(x,y)
+        if not (slope < 0 and p_value < .05):
+            test_pass = False
+
     result = dict()
     result['config'] = argin
     result['num_queries'] = n_queries
@@ -150,9 +166,10 @@ def run_experiment(argin):
     result['dependence_probability_error'] = dep_error
     result['infer_means'] = inf_means
     result['infer_stderr'] = inf_error
+    result['pass'] = test_pass
+    result['pass_criterion'] = "All errors have significant (p < .05), negative slope according to linear regression."
 
-    # test_pass = False
-    # pass_criterion = ""
+    print ( "%s: %s" % (result['pass_criterion'], result['pass']) )
 
     return result
 

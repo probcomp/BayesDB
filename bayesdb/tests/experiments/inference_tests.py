@@ -8,9 +8,31 @@ import haystacks_break
 import fills_in_the_blanks
 import estimate_the_full_joint
 import recovers_original_densities
-
+import error_bars_shrink_with_more_iters
 
 class RunExperiments(unittest.TestCase):
+
+	def run_error_bars_shrink_with_more_iters(self):
+		results_filename = 'error_bars_shrink_results'
+	    dirname_prefix = 'error_bars_shrink'
+
+		parser = error_bars_shrink_with_more_iters.gen_parser()
+	    args = parser.parse_args()
+
+	    argsdict = eu.parser_args_to_dict(args)
+
+		er = ExperimentRunner(run_experiment, dirname_prefix=dirname_prefix, 
+			bucket_str='experiment_runner', storage_type='fs')
+
+		er.do_experiments([argsdict], do_multiprocessing=False)
+
+		for id in er.frame.index:
+            result = er._get_result(id)
+            this_dirname = eru._generate_dirname(dirname_prefix, 10, result['config'])
+            filename_img = os.path.join(dirname_prefix, this_dirname, results_filename+'.png')
+            eu.error_bars_shrink(result, filename=filename_img)
+
+            self.assertTrue(result['pass'])
 
 	def run_recovers_original_densities(self):
 		results_filename = 'recovers_original_densities_results'
