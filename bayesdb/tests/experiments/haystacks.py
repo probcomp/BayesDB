@@ -208,15 +208,13 @@ def run_experiment(argin):
     for q in range(len(independent)):
         is_needle = not independent[q]
         if is_needle:
-                if dependence_probs[-1:q] < .5:
-                    test_pass = False
-                    break
-            else:
-                if dependence_probs[-1:q] > .2:
-                    break
-                    test_pass = False
-        if not test_pass:
-            break
+            if dependence_probs[-1,q] < .5:
+                test_pass = False
+                break
+        else:
+            if dependence_probs[-1,q] > .2:
+                test_pass = False
+                break
 
     result['pass'] = test_pass
     result['pass_criterion'] = pass_criterion

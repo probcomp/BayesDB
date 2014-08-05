@@ -78,7 +78,7 @@ def run_experiment(argin):
     # do analyses
     for config in ['cc', 'crp', 'nb']:
         config_string = eu.config_map[config]
-        table = table_name + '-' + config
+        table = table_name + '_' + config
 
         # drop old btable, create a new one with the new data and init models
         client('DROP BTABLE %s;' % table, yes=True)
@@ -125,7 +125,7 @@ def run_experiment(argin):
     retval['config'] = argin
 
     pass_criterion = "MSE crosscat < MSE DPM < MSE naive bayes. MSE average over last half of iterations."
-    half_of_iterations = int(iterations/2.0)
+    half_of_iterations = int(num_iters/2.0)
     test_pass = False
 
     half_ave_err_cc = numpy.mean(result['mean_error_cc'][-half_of_iterations:])
