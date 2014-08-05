@@ -34,6 +34,8 @@ import pickle
 from scipy.misc import logsumexp
 from matplotlib.ticker import MaxNLocator
 
+import pdb
+
 # imput a mode, get a BayesDB config string
 config_map = {
     'cc'  : '',
@@ -915,3 +917,72 @@ def plot_recovers_original_densities(result, filename=None):
         (num_rows, num_chains, num_iters, int(time.time()))
 
     pylab.savefig(filename)
+
+# `````````````````````````````````````````````````````````````````````````````
+def kstest_2s_2d(x1,x2,alpha=.05):
+    """
+    2-sample, bivarute KS test 
+    translated from Dylan Muir' matlab code
+    Arguments:
+    --x1: n by 2 numpy array. each row is a sample
+    --x2: n by 2 numpy array. each row is a sample
+    Returns:
+    --H: bool. was p <= alpha
+    --pValue: float. p value
+    --KSstatistic: float. the test statistic
+    """
+    n1,c1 = x1.shape;
+    n2,c2 = x2.shape;
+
+    def fand(a,b):
+        if a and b:
+            return True
+        return False
+
+    vand = numpy.vectorize(fand)
+
+    # A function handle to perform comparisons in all possible directions
+    def fhCounts(x, edge):
+        A = vand(x[:,0] >= edge[0], x[:,1] >= edge[1])
+        B = vand(x[:,0] <= edge[0], x[:,1] >= edge[1])
+        C = vand(x[:,0] >= edge[0], x[:,1] <= edge[1])
+        D = vand(x[:,0] <= edge[0], x[:,1] <= edge[1])
+        out = numpy.vstack((A,B,C,D))
+        out = numpy.array(out.T,dtype=float)
+        return out
+
+    KSstatistic = float('-Inf')
+
+    for iX in range(n1+n2):
+        # Choose a starting point
+        if iX < n1:
+            edge = x1[iX,:]
+        else:
+            edge = x2[iX-n1,:]
+
+        # Estimate the CDFs for both distributions around this point
+        vfCDF1 = numpy.sum(fhCounts(x1, edge),axis=0) / float(n1)
+        vfCDF2 = numpy.sum(fhCounts(x2, edge),axis=0) / float(n2)
+
+        # Two-tailed test statistic
+        vfThisKSTS = numpy.abs(vfCDF1 - vfCDF2)
+        fKSTS = numpy.max(vfThisKSTS)
+
+        # Final test statistic is the maximum absolute difference in CDFs
+        if (fKSTS > KSstatistic):
+            KSstatistic = fKSTS
+
+    # Peacock Z calculation and P estimation
+
+    n =  float(n1) * float(n2) /(n1 + n2)
+    Zn = n**.5 * KSstatistic
+    Zinf = Zn / (1 - 0.53 * n**(-0.9))
+    pValue = 2 * numpy.exp(-2 * (Zinf - 0.5)**2)
+
+    # Clip invalid values for P
+    if pValue > 0.2:
+        pValue = 0.2
+
+    H = (pValue <= alpha)
+
+    return H, pValue, KSstatistic
