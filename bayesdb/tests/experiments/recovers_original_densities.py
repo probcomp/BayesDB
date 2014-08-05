@@ -115,6 +115,8 @@ def run_experiment(argin):
 
     data_out = dict()
     data_out['config'] = argin;
+    data_out['pass_criterion'] = "P for bivariate 2-sample KS test >= .1"
+    data_out['pass'] = dict()
 
     # recreate sin wave
     for shape in ["sinwave", "x", "ring", "dots"]:
@@ -145,6 +147,10 @@ def run_experiment(argin):
 
         this_key = shape + "_original"
         data_out[this_key] = X_original
+        diff_dist, _, _, = eu.kstest_2s_2d(X_inferred, X_original, alpha=.1)
+        data_out['pass'][this_key] = not diff_dist
+
+        print "%s for %s: %s" % (data_out['pass_criterion'], this_key, not diff_dist)
 
     return data_out
 
@@ -152,7 +158,7 @@ def gen_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_rows', default=250, type=int)
     parser.add_argument('--num_iters', default=200, type=int)
-    parser.add_argument('--num_chains', default=1, type=int)
+    parser.add_argument('--num_chains', default=4, type=int)
     parser.add_argument('--ct_kernel', default=0, type=int)
     parser.add_argument('--datatype', default='continuous', type=str)
     parser.add_argument('--no_plots', action='store_true')    
