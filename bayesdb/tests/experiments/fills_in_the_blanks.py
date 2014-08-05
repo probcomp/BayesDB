@@ -111,12 +111,27 @@ def run_experiment(argin):
             result[config][p] = MSE/count
             print "error = %f" % result[config][p]
 
+    # determine whether the test passed
+    pass_criterion = "The error for CrossCat is lower than Naive Bayes and DPM for all proportions of missing data."
+    pass = True
+    for i in range(len(prop_missing)):
+        cc = result['cc'][i]
+        nb = result['nb'][i]
+        dpm = cc = result['crp'][i]
+        if cc >= nb or cc >= dpm:
+            pass = False
+            break
+
     retval = dict()
     retval['MSE_naive_bayes_indexer'] = result['nb']
     retval['MSE_crp_mixture_indexer'] = result['crp']
     retval['MSE_crosscat_indexer'] = result['cc']
     retval['prop_missing'] = prop_missing
+    retval['pass'] = pass
+    retval['pass_criterion'] = pass_criterion
     retval['config'] = argin
+
+    print("%s: %s" % (pass_criterion, pass))
 
     return retval
 

@@ -167,7 +167,6 @@ def run_experiment(argin):
     init_string = 'INITIALIZE %i MODELS FOR %s;' % (num_chains, table)
     print init_string 
     client(init_string)
-    client('SHOW DIAGNOSTICS FOR %s;' % table)
 
     # do the analyses
     for i in range(num_iters):
@@ -203,7 +202,26 @@ def run_experiment(argin):
     result['config'] = argin
     result['config']['data_mode'] = data_mode
 
-    client('SHOW DIAGNOSTICS FOR %s;' % table)
+    pass_criterion = "On last iteration, dependent columns have >= .5 dependence probability and independent columns have <= .2 dependence probability"
+    pass = True
+
+    for q in range(len(independent)):
+        is_needle = not independent[q]
+        if is_needle:
+                if dependence_probs[-1:q] < .5:
+                    pass = False
+                    break
+            else:
+                if dependence_probs[-1:q] > .2:
+                    break
+                    pass = False
+        if not pass:
+            break
+
+    result['pass'] = pass
+    result['pass_criterion'] = pass_criterion
+
+    print("%s: %s" % (pass_criterion, pass))
 
     return result
 

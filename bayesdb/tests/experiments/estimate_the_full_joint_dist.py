@@ -116,13 +116,26 @@ def run_experiment(argin):
     retval = dict()
     retval['MSE_naive_bayes_indexer'] = result['mean_error_nb']
     retval['MSE_crp_mixture_indexer'] = result['mean_error_crp']
-    retval['MSE_crosscat_indexer'] = result['mean_error_cc']
+    retval['MSE_crosscat_indexer'] = result['mean_error_nb']
 
     retval['MEAN_P_naive_bayes_indexer'] = result['mean_held_out_p_nb']
     retval['MEAN_P_crp_mixture_indexer'] = result['mean_held_out_p_crp']
     retval['MEAN_P_crosscat_indexer'] = result['mean_held_out_p_cc']
     
     retval['config'] = argin
+
+    pass_criterion = "MSE crosscat < MSE DPM < MSE naive bayes. MSE average over last half of iterations."
+    half_of_iterations = int(iterations/2.0)
+    pass = False
+
+    half_ave_err_cc = numpy.mean(result['mean_error_cc'][-half_of_iterations:])
+    half_ave_err_nb = numpy.mean(result['mean_error_nb'][-half_of_iterations:])
+    half_ave_err_crp = numpy.mean(result['mean_error_crp'][-half_of_iterations:])
+
+    if half_ave_err_cc < half_ave_err_crp and half_ave_err_crp < half_ave_err_nb:
+        pass = True
+
+    print("%s: %s" % (pass_criterion, pass))
 
     return retval
 
