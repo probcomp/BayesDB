@@ -126,16 +126,16 @@ def run_experiment(argin):
 
     pass_criterion = "MSE crosscat < MSE DPM < MSE naive bayes. MSE average over last half of iterations."
     half_of_iterations = int(iterations/2.0)
-    pass = False
+    test_pass = False
 
     half_ave_err_cc = numpy.mean(result['mean_error_cc'][-half_of_iterations:])
     half_ave_err_nb = numpy.mean(result['mean_error_nb'][-half_of_iterations:])
     half_ave_err_crp = numpy.mean(result['mean_error_crp'][-half_of_iterations:])
 
     if half_ave_err_cc < half_ave_err_crp and half_ave_err_crp < half_ave_err_nb:
-        pass = True
+        test_pass = True
 
-    print("%s: %s" % (pass_criterion, pass))
+    print("%s: %s" % (pass_criterion, test_pass))
 
     return retval
 

@@ -240,7 +240,7 @@ def run_experiment(argin):
     result['data'] = T_array
 
     pass_criterion = "On last iteration, dependent columns have >= .5 dependence probability and independent columns have <= .2 dependence probability"
-    pass = True
+    test_pass = True
     for step_result in result['steps']:
         independent = step_result['cols_independent']
         dependence_probs = step_result['dependence_probs']
@@ -248,19 +248,19 @@ def run_experiment(argin):
             is_needle = not independent[q]
             if is_needle:
                 if dependence_probs[-1:q] < .5:
-                    pass = False
+                    test_pass = False
                     break
             else:
                 if dependence_probs[-1:q] > .2:
                     break
-                    pass = False
-        if not pass:
+                    test_pass = False
+        if not test_pass:
             break
                 
-    result['pass'] = pass
+    result['pass'] = test_pass
     result['pass_criterion'] = pass_criterion
 
-    print("%s: %s" % (pass_criterion, pass))
+    print("%s: %s" % (pass_criterion, test_pass))
     
     return result
 
