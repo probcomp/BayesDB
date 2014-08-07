@@ -95,16 +95,16 @@ Notice that quality and cost show no dependence.  We can list the variables that
 
 |       column       | dependence probability with mdcr_spnd_amblnc |
 |--------------------|----------------------------------------------|
-|  mdcr_spnd_amblnc  |                     1.0                      |
-| pymt_p_visit_ratio |                  0.7265625                   |
-|   ttl_mdcr_spnd    |                  0.7265625                   |
-|  pymt_p_md_visit   |                  0.7265625                   |
-|   mdcr_spnd_inp    |                  0.7109375                   |
-|  hosp_reimb_ratio  |                  0.7109375                   |
-|  hosp_reimb_p_dcd  |                  0.7109375                   |
-| reimb_p_day_ratio  |                   0.609375                   |
-|  reimb_p_ptnt_day  |                   0.609375                   |
-|   mdcr_spnd_ltc    |                  0.5703125                   |
+|  mdcr_spnd_amblnc  |                  1.0                         |
+| pymt_p_visit_ratio |                  0.73                        |
+|   ttl_mdcr_spnd    |                  0.73                        |
+|  pymt_p_md_visit   |                  0.73                        |
+|   mdcr_spnd_inp    |                  0.71                        |
+|  hosp_reimb_ratio  |                  0.71                        |
+|  hosp_reimb_p_dcd  |                  0.71                        |
+| reimb_p_day_ratio  |                  0.61                        |
+|  reimb_p_ptnt_day  |                  0.61                        |
+|   mdcr_spnd_ltc    |                  0.57                        |
 
 Other spending variables as well as reimbursement related tend to be dependent, while quality variables do not appear on the list.
 
