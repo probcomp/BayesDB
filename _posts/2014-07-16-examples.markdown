@@ -77,9 +77,13 @@ First, we create a btable and load in pre-computed models,
 The first thing to do is to is get a sense of the probable dependencies between variables by creating a column dependence probability matrix in which each cell represents a pair of variables and the value represents the probability of their being statistically dependent under the inferred CrossCat model. Here, we have zoomed in on two variables, the first related to medicare spending, and the second related to quality. 
 
     ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha SAVE TO dha_z.png;
-    
-![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z.png)
 
+<!--    
+![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z.png)
+-->
+<center>
+<img src="{{ site.baseurl }}/assets/images/cs_dha/dha_z.png" width="50%" height="50%" class="img-med" alt="Math outcomes given number of books">
+</center>
 ![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z_subset.png)
 
 Dark areas represent variables with a high probability of dependence, light areas indicate a low probability of dependence. Notice that quality and cost show no dependence.  We can list the variables that share the most dependence with quality,
