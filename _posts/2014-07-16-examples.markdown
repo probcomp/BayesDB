@@ -108,9 +108,28 @@ Notice that quality and cost show no dependence.  We can list the variables that
 
 It appears that the other `_score` variables and quality score are dependent related and Medicare expenditures, deaths, and days provide little evidence for dependence probability with the quality score.
 
+Similarly, we can list the variables that share the most dependence with spending, again focusing on Medicare spending on ambulances.
+
+    ESTIMATE COLUMNS FROM dha ORDER BY DEPENDENCE PROBABILITY WITH mdcr_spnd_amblnc LIMIT 10
+
+|       column       | dependence probability with mdcr_spnd_amblnc |
+|--------------------|----------------------------------------------|
+|  mdcr_spnd_amblnc  |                     1.0                      |
+| pymt_p_visit_ratio |                  0.7265625                   |
+|   ttl_mdcr_spnd    |                  0.7265625                   |
+|  pymt_p_md_visit   |                  0.7265625                   |
+|   mdcr_spnd_inp    |                  0.7109375                   |
+|  hosp_reimb_ratio  |                  0.7109375                   |
+|  hosp_reimb_p_dcd  |                  0.7109375                   |
+| reimb_p_day_ratio  |                   0.609375                   |
+|  reimb_p_ptnt_day  |                   0.609375                   |
+|   mdcr_spnd_ltc    |                  0.5703125                   |
+
+Other spending variables as well as reimbursement related tend to be dependent, while quality variables are not dependent on spending.
+
 ### Unwarranted variations on a per-town basis
 
-Which hospitals have surprising quality levels --- either unusually low or unusually high --- given their other attributes?
+Which hospitals have surprising quality and spending levels --- either unusually low or unusually high --- given their other attributes?
 
     SELECT name,  PREDICTIVE PROBABILITY OF qual_score FROM dha ORDER BY PREDICTIVE PROBABILITY OF qual_score ASC LIMIT 10
 
@@ -127,7 +146,82 @@ Which hospitals have surprising quality levels --- either unusually low or unusu
 | New Brunswick NJ |             0.11                  |
 |    Abilene TX    |             0.11                  |
 
-One of these hospitals, McAllen, has been repeatedly written up in the popular press ([The NewYorker](http://www.newyorker.com/reporting/2009/06/01/090601fa_fact_gawande), [CBS News](http://www.cbsnews.com/news/texas-town-at-center-of-healthcare-debate/) and [NPR](http://www.npr.org/blogs/health/2012/05/10/152417875/recalculating-the-health-bill-in-mcallen-texas)) as an illustration of the dissociation between technological sophistication and quality of care.
+    SELECT name,  PREDICTIVE PROBABILITY OF mdcr_spnd_amblnc FROM dha ORDER BY PREDICTIVE PROBABILITY OF mdcr_spnd_amblnc ASC LIMIT 10
+    
+|        name       | predictive probability mdcr_spnd_amblnc |
+|-------------------|-----------------------------------------|
+|     McAllen TX    |            2.67555719226e-05            |
+|    Beaumont TX    |            3.61663544229e-05            |
+|    Worcester MA   |            6.34602142668e-05            |
+| Corpus Christi TX |            0.000127477690465            |
+|   Panama City FL  |            0.000198760674674            |
+|     Temple TX     |            0.000242769958849            |
+|     Tupelo MS     |            0.000246909989975            |
+|   Takoma Park MD  |            0.000260125547666            |
+|      Tyler TX     |            0.000336130058661            |
+|     Houston TX    |            0.000345618104371            |
+
+Only one of these hospitals, McAllen, appears on both lists. It has also been repeatedly written up in the popular press ([The NewYorker](http://www.newyorker.com/reporting/2009/06/01/090601fa_fact_gawande), [CBS News](http://www.cbsnews.com/news/texas-town-at-center-of-healthcare-debate/) and [NPR](http://www.npr.org/blogs/health/2012/05/10/152417875/recalculating-the-health-bill-in-mcallen-texas)) as an illustration of the dissociation between technological sophistication and quality of care.
+
+<!--
+To dig further into hospitals like McAllen, we can sort by similarity with respect to quality,
+
+    SELECT qual_score, mdcr_spnd_amblnc FROM dha ORDER BY SIMILARITY TO name="McAllen TX" WITH RESPECT TO qual_score LIMIT 10
+
+|        name       | qual_score | mdcr_spnd_amblnc |
+|-------------------|------------|------------------|
+|     McAllen TX    |    69.5    |      3037.0      |
+|     Monroe LA     |    77.1    |      1258.0      |
+|      Miami FL     |    87.5    |      914.0       |
+|    Harlingen TX   |    85.0    |      1557.0      |
+|     El Paso TX    |    77.3    |      661.0       |
+|     Chicago IL    |    80.8    |      921.0       |
+|  New Brunswick NJ |    95.0    |      704.0       |
+|     Abilene TX    |    79.2    |      546.0       |
+|      Akron OH     |    89.1    |      980.0       |
+| Alameda County CA |    87.1    |      1096.0      |
+
+Monroe, El Paso, New Brunswick, and Abilene all also appeared on the list of suprising entries, suggesting that an entry that is similar to a surprising entry is likely to also be surprising. 
+
+Another method of following up on the surprisingness result is to simply order entries from lowest quality to highest.
+
+    SELECT qual_score, mdcr_spnd_amblnc FROM dha ORDER BY qual_score ASC LIMIT 10
+    
+|        name       | qual_score | mdcr_spnd_amblnc |
+|-------------------|------------|------------------|
+|     McAllen TX    |    69.5    |      3037.0      |
+|     Monroe LA     |    77.1    |      1258.0      |
+|     El Paso TX    |    77.3    |      661.0       |
+|     Lubbock TX    |    78.1    |      606.0       |
+|      Macon GA     |    78.6    |      555.0       |
+|   Montgomery AL   |    79.0    |      787.0       |
+|     Abilene TX    |    79.2    |      546.0       |
+| Corpus Christi TX |    79.3    |      1831.0      |
+|   Gainesville FL  |    80.1    |      687.0       |
+|     Chicago IL    |    80.8    |      921.0       |
+
+McAllen, Monroe, El Paso, Abilene, and Chicago all have low quality scores and are suprising. 
+
+We might also want to know why the other entries appeared on our suprising list. One place to start is to compare those entries with the list of high quality hospitals.
+
+    SELECT qual_score, mdcr_spnd_amblnc FROM dha ORDER BY qual_score DESC LIMIT 10
+
+|       name       | qual_score | mdcr_spnd_amblnc |
+|------------------|------------|------------------|
+|    Elyria OH     |    95.6    |      843.0       |
+|     Minot ND     |    95.6    |      249.0       |
+| New Brunswick NJ |    95.0    |      704.0       |
+|  Mason City IA   |    94.6    |      344.0       |
+| Grand Rapids MI  |    94.4    |      734.0       |
+|   La Crosse WI   |    94.3    |      410.0       |
+|    Muncie IN     |    93.9    |      553.0       |
+|   Rochester MN   |    93.8    |      461.0       |
+|  Morristown NJ   |    93.4    |      473.0       |
+|   Muskegon MI    |    93.4    |      625.0       |
+
+Elyria, Minot, and Muncie are hospitals with high quality scores and are surprising. These results agree with the intuition that there is a greater possibility of surprise when one is far way from the average. However, the results do not explain why these particular hospitals were suprising. Looking at the spending can give us some hints. Minot is surprising because it obtains a high quality score while spending very little relatively. Similarly, Muncie's spending is on the low side. Returning to the list of hospitals with low quality scores, we see that McAllen spends a very large amount relatively and Monroe is also on the high side for spending. 
+
+-->
 
 ###Further information
 
