@@ -758,7 +758,7 @@ class Parser(object):
         value = utils.string_to_column_type(function_group.value, column, M_c)
         return c_idx, value
     
-    def get_args_similarity(self,function_group, M_c, T, column_lists):
+    def get_args_similarity(self,function_group, M_c, M_c_full, T, T_full, column_lists):
         """
         returns the target_row_id and a list of with_respect_to columns based on 
         similarity function
@@ -776,7 +776,7 @@ class Parser(object):
                 assert T is not None
                 target_col_name = function_group.column
                 target_col_value = function_group.column_value
-                target_row_id = utils.row_id_from_col_value(target_col_value, target_col_name, M_c, T)
+                target_row_id = utils.row_id_from_col_value(target_col_value, target_col_name, M_c_full, T_full)
         ## With respect to clause
         with_respect_to_clause = function_group.with_respect_to
         if with_respect_to_clause !='':
@@ -824,7 +824,7 @@ class Parser(object):
 ## ----------------------------- Sub query parsing  ------------------------------ ##
 ########################parse_where#############################################################
 
-    def parse_where_clause(self, where_clause_ast, M_c, T, M_c_full, column_lists):
+    def parse_where_clause(self, where_clause_ast, M_c, T, M_c_full, T_full, column_lists):
         """
         Creates conditions: the list of conditions in the whereclause
         List of (c_idx, op, val)
@@ -851,7 +851,7 @@ class Parser(object):
             elif single_condition.function.function_id == 'similarity':
                 value = utils.value_string_to_num(raw_value)
                 function = functions._similarity
-                args = self.get_args_similarity(single_condition.function, M_c, T, column_lists)
+                args = self.get_args_similarity(single_condition.function, M_c, M_c_full, T, T_full, column_lists)
             elif single_condition.function.function_id == 'predictive probability':
                 value = utils.value_string_to_num(raw_value)
                 function = functions._predictive_probability
@@ -936,7 +936,7 @@ class Parser(object):
             conditions.append(((function, args), op, value))
         return conditions
 
-    def parse_order_by_clause(self, order_by_clause_ast, M_c, T, M_c_full, column_lists):
+    def parse_order_by_clause(self, order_by_clause_ast, M_c, T, M_c_full, T_full, column_lists):
         function_list = []
         for orderable in order_by_clause_ast:
             confidence = None
@@ -947,7 +947,7 @@ class Parser(object):
                 desc = False
             if orderable.function.function_id == 'similarity':
                 function = functions._similarity 
-                args = self.get_args_similarity(orderable.function, M_c, T, column_lists)
+                args = self.get_args_similarity(orderable.function, M_c, M_c_full, T, T_full, column_lists)
             elif orderable.function.function_id == 'typicality':
                 function = functions._row_typicality
                 args = self.get_args_typicality(orderable.function, M_c)
@@ -991,7 +991,7 @@ class Parser(object):
         
         return function_list
 
-    def parse_functions(self, function_groups, M_c=None, T=None, M_c_full=None, column_lists=None, key_column_name=None):
+    def parse_functions(self, function_groups, M_c=None, T=None, M_c_full=None, T_full=None, column_lists=None, key_column_name=None):
         '''
         Generates two lists of functions, arguments, aggregate tuples. 
         Returns queries, query_colnames
@@ -1037,7 +1037,7 @@ class Parser(object):
             elif function_group.function_id == 'similarity':
                 assert M_c is not None
                 queries.append((functions._similarity, 
-                                self.get_args_similarity(function_group, M_c, T, column_lists),
+                                self.get_args_similarity(function_group, M_c, M_c_full, T, T_full, column_lists),
                                 False))
                 pre_name_list = function_group.asList()
                 if function_group.with_respect_to != '':

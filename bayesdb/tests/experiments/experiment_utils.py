@@ -34,7 +34,6 @@ import pickle
 from scipy.misc import logsumexp
 from matplotlib.ticker import MaxNLocator
 
-
 # imput a mode, get a BayesDB config string
 config_map = {
     'cc'  : '',
@@ -431,6 +430,11 @@ def gen_sine_wave(N, noise=.5):
         X[i,0] = x
         X[i,1] = y
 
+    # scale
+    X += math.fabs(numpy.min(X))
+    X /= numpy.max(X)
+    X *= math.pi
+
     return X
 
 def gen_x(N, rho=.95):
@@ -444,6 +448,11 @@ def gen_x(N, rho=.95):
         x = numpy.random.multivariate_normal([0,0],sigma)
         X[i,:] = x;
 
+    # scale
+    X += math.fabs(numpy.min(X))
+    X /= numpy.max(X)
+    X *= math.pi
+
     return X
 
 def gen_ring(N, width=.2):
@@ -451,16 +460,16 @@ def gen_ring(N, width=.2):
     for i in range(N):
         angle = random.uniform(0.0,2.0*math.pi)
         distance = random.uniform(1.0-width,1.0)
-        X[i,0] = math.cos(angle)*distance
-        X[i,1] = math.sin(angle)*distance
+        X[i,0] = math.cos(angle)*distance+math.pi
+        X[i,1] = math.sin(angle)*distance+math.pi
 
     return X
 
         
 def gen_four_dots(N=200, stddev=.25):
     X = numpy.zeros((N,2))
-    mx = [ -1, 1, -1, 1]
-    my = [ -1, -1, 1, 1]
+    mx = [ 1, 3, 1, 3]
+    my = [ 1, 1, 3, 3]
     for i in range(N):
         n = random.randrange(4)
         x = random.normalvariate(mx[n], stddev)
@@ -1048,8 +1057,8 @@ def plot_recovers_original_densities(result, filename=None):
     txt = '''
         Top panels: zero-correlation datasets consisting of %i points. 
         Bottom panels: result of SIMULATE %i datapoints after running %i 
-        chains for %i iterations.
-    ''' % (num_rows, num_rows, num_chains, num_iters)
+        chains for %i iterations with %s datatype.
+    ''' % (num_rows, num_rows, num_chains, num_iters, result['config']['datatype'])
 
     pylab.plt.subplot2grid((3,3), (2,0), colspan=3)
 

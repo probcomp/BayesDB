@@ -121,6 +121,13 @@ def gen_continuous_metadata(column_data):
         code_to_value=dict(),
         )
 
+def gen_cyclic_metadata(column_data):
+    return dict(
+        modeltype="vonmises",
+        value_to_code=dict(),
+        code_to_value=dict(),
+        )
+
 def gen_multinomial_metadata(column_data):
     def get_is_not_nan(el):
         if isinstance(el, str):
@@ -146,6 +153,8 @@ def metadata_generator_lookup(cctype):
         return gen_continuous_metadata
     elif cctype == 'multinomial':
         return gen_multinomial_metadata
+    elif cctype == 'cyclic':
+        return gen_cyclic_metadata
     else: # discriminative, ignore, key
         return gen_ignore_metadata
 
@@ -334,7 +343,7 @@ def convert_code_to_value(M_c, cidx, code):
     """
     if numpy.isnan(code) or code=='nan':
         return code
-    elif M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
+    elif M_c['column_metadata'][cidx]['modeltype'] in ['normal_inverse_gamma','vonmises']:
         return float(code)
     else:
         try:
@@ -351,7 +360,7 @@ def convert_value_to_code(M_c, cidx, value):
     Note that the underlying store 'code_to_value' is unfortunately named backwards.
     TODO: fix the backwards naming.
     """
-    if M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
+    if M_c['column_metadata'][cidx]['modeltype'] in ['normal_inverse_gamma','vonmises']:
         return float(value)
     else:
         try:
@@ -376,7 +385,8 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
     # WARNING: array argument is mutated
     for col_idx in range(T_uncast_array.shape[1]):
         modeltype = M_c['column_metadata'][col_idx]['modeltype']
-        if modeltype == 'normal_inverse_gamma': continue
+        if modeltype in ['normal_inverse_gamma','vonmises']: 
+            continue
         # copy.copy else you mutate M_c
         mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
         mapping['NAN'] = numpy.nan
@@ -535,7 +545,7 @@ def is_key_eligible(x):
     castable = not get_can_cast_to_float(x) or get_int_equals_str(x)
     return values_unique and castable
 
-def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, accept=False):
+def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, testing=False):
     """
     This function takes the raw data, colnames, and data types from an input CSV file from
     which a btable is being created.
@@ -550,9 +560,11 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, 
 
     key_eligibles = list(eligibility[eligibility].index)
     key_eligibles_len = len(key_eligibles)
-    if key_eligibles_len == 0 and key_column is None:
-        if not accept:
-            print "None of the columns in this table is eligible to be the key. A key column will be created."
+    if testing:
+        key_column_selection = 0
+    elif key_eligibles_len == 0 and key_column is None:
+        print "None of the columns in this table is eligible to be the key. A key column will be created. Press any key continue."
+        user_confirmation = raw_input()
         key_column_selection = 0
     elif key_column is None or key_column not in range(key_eligibles_len + 1):
         key_column_selection = None
@@ -564,9 +576,13 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, 
         while key_column_selection is None:
             print str(pt)
             print "Please select which column you would like to set as the table key:"
-            user_selection = int(raw_input())
-            if user_selection in range(key_eligibles_len + 1):
-                key_column_selection = user_selection
+            user_selection = raw_input()
+            try:
+                user_selection = int(user_selection)
+                if user_selection in range(key_eligibles_len + 1):
+                    key_column_selection = user_selection
+            except:
+                continue
     else:
         key_column_selection = key_column
 

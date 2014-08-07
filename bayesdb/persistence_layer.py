@@ -125,6 +125,7 @@ class PersistenceLayer():
             os.makedirs(self.data_dir)
         self.load_btable_index() # sets self.btable_index
         self.model_locks = ModelLocks(self)
+        self.btable_check_index = list()
 
     def load_btable_index(self):
         """
@@ -494,6 +495,25 @@ class PersistenceLayer():
         metadata_full = self.get_metadata_full(tablename)
         return metadata_full['cctypes_full']
 
+    def get_colnames(self, tablename):
+        """
+        Return column names of analysis columns
+        """
+        M_c = self.get_metadata(tablename)['M_c']
+        colnames = utils.get_all_column_names_in_original_order(M_c)
+        return colnames
+
+    def get_schema(self, tablename):
+        """
+        Return colnames and cctypes of analysis columns
+        """
+        colnames = self.get_colnames(tablename)
+        cctypes = self.get_cctypes(tablename)
+        schema = dict()
+        for colname, cctype in zip(colnames, cctypes):
+            schema[colname] = cctype
+        return schema
+
     def get_key_column_name(self, tablename):
         metadata_full = self.get_metadata_full(tablename)
         try: 
@@ -541,7 +561,7 @@ class PersistenceLayer():
 
     def update_schema(self, tablename, mappings):
         """
-        mappings is a dict of column name to 'continuous', 'multinomial', 'ignore', or 'key'.
+        mappings is a dict of column name to 'cyclic', 'continuous', 'multinomial', 'ignore', or 'key'.
         'discriminative' is complex: see docstring in engine.update_schema.
     
         For a column that maps to discriminative, the column name will
@@ -552,6 +572,8 @@ class PersistenceLayer():
           sklearn.ensemble.RandomForestClassifier
         'params': parameters dict to be passed to sklearn predictor, probably as kwargs
         'inputs': column list, in some format, to specify input columns.
+
+        mappings is a dict of column name to 'cyclic', 'continuous', 'multinomial', 'ignore', or 'key'.
         """
         metadata_full = self.get_metadata_full(tablename)
         cctypes_full = metadata_full['cctypes_full']
@@ -560,7 +582,8 @@ class PersistenceLayer():
         colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
 
         # Now, update cctypes_full (cctypes updated later, after removing ignores).
-        mapping_set = 'continuous', 'multinomial', 'ignore', 'key' # discriminative is separate from mapping_set
+        mapping_set = 'continuous', 'multinomial', 'ignore', 'key', 'cyclic' # discriminative is separate from mapping_set
+
         for col, mapping in mappings.items():
             if col.lower() not in M_c_full['name_to_idx']:
                 raise utils.BayesDBError('Error: column %s does not exist.' % col)
