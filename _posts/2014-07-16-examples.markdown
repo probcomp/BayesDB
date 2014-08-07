@@ -82,8 +82,9 @@ The first thing to do is to is get a sense of the probable dependencies between 
 ![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z.png)
 -->
 <center>
-<img src="{{ site.baseurl }}/assets/images/cs_dha/dha_z.png" width="50%" height="50%" class="img-med" alt="Math outcomes given number of books">
+<img src="{{ site.baseurl }}/assets/images/cs_dha/dha_z.png" class="img-med" alt="Math outcomes given number of books" width="10%" height="10%">
 </center>
+
 ![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z_subset.png)
 
 Dark areas represent variables with a high probability of dependence, light areas indicate a low probability of dependence. Notice that quality and cost show no dependence.  We can list the variables that share the most dependence with quality,
