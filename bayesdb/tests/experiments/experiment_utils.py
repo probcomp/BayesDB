@@ -34,7 +34,6 @@ import pickle
 from scipy.misc import logsumexp
 from matplotlib.ticker import MaxNLocator
 
-
 # imput a mode, get a BayesDB config string
 config_map = {
     'cc'  : '',
@@ -84,7 +83,7 @@ def list_to_csv(filename, T):
         for row in T:
             writer.writerow(row)
 
-def gen_missing_data_csv(filename, prop_missing, exclude_cols=[], retex=False):
+def gen_missing_data_csv(filename, prop_missing, exclude_cols=[], retex=False, prop_missing_by_col=None):
     """ 
     Generates a csv from the original but with missing data.
 
@@ -98,6 +97,9 @@ def gen_missing_data_csv(filename, prop_missing, exclude_cols=[], retex=False):
     ---['table_missing']: numpy array of the data with removed values
     ---['table_filled']: numpy array of the data before removing values
     ---['column_names']: list of string of the column names 
+    --prop_missing_by_col: dict mapping column indices to prop_missing to be used for that column.
+                           overrides default prop_missing. like a more complex version of exclude_cols
+                           that allows you to specify non-zero prop_missing.
 
     Returns (tuple):
     -- new_filename: string, the filename of the new .csv
@@ -129,14 +131,15 @@ def gen_missing_data_csv(filename, prop_missing, exclude_cols=[], retex=False):
 
     N = len(row_indices)*len(col_indices)
 
-    # get the number of entries to remove (do not remove column 1)
-    N_to_remove_per_col = int(N*prop_missing/len(col_indices))
-
     # get random indices
     unf_indices = []
     for col in col_indices:
         indices = [ (r,col) for r in row_indices]
-        unf_indices_col = random.sample(indices, N_to_remove_per_col)
+        if prop_missing_by_col is None or col not in prop_missing_by_col:
+            N_to_remove = int(N*prop_missing/len(col_indices))
+        else:
+            N_to_remove = int(len(row_indices)*prop_missing_by_col[col])
+        unf_indices_col = random.sample(indices, N_to_remove)
         unf_indices.extend(unf_indices_col)
 
     T_missing = copy.deepcopy(T_filled)
@@ -427,6 +430,11 @@ def gen_sine_wave(N, noise=.5):
         X[i,0] = x
         X[i,1] = y
 
+    # scale
+    X += math.fabs(numpy.min(X))
+    X /= numpy.max(X)
+    X *= math.pi
+
     return X
 
 def gen_x(N, rho=.95):
@@ -440,6 +448,11 @@ def gen_x(N, rho=.95):
         x = numpy.random.multivariate_normal([0,0],sigma)
         X[i,:] = x;
 
+    # scale
+    X += math.fabs(numpy.min(X))
+    X /= numpy.max(X)
+    X *= math.pi
+
     return X
 
 def gen_ring(N, width=.2):
@@ -447,16 +460,16 @@ def gen_ring(N, width=.2):
     for i in range(N):
         angle = random.uniform(0.0,2.0*math.pi)
         distance = random.uniform(1.0-width,1.0)
-        X[i,0] = math.cos(angle)*distance
-        X[i,1] = math.sin(angle)*distance
+        X[i,0] = math.cos(angle)*distance+math.pi
+        X[i,1] = math.sin(angle)*distance+math.pi
 
     return X
 
         
 def gen_four_dots(N=200, stddev=.25):
     X = numpy.zeros((N,2))
-    mx = [ -1, 1, -1, 1]
-    my = [ -1, -1, 1, 1]
+    mx = [ 1, 3, 1, 3]
+    my = [ 1, 1, 3, 3]
     for i in range(N):
         n = random.randrange(4)
         x = random.normalvariate(mx[n], stddev)
@@ -704,7 +717,7 @@ def plot_discriminative(result, filename=None):
 
     ax.set_xticks(iterations)
     ax.yaxis.set_major_locator(MaxNLocator(3))
-    pylab.ylabel('Imputation MSE on Logistic Regression Column')
+    pylab.ylabel('Imputation Error on Logistic Regression Column')
     pylab.xlabel('Iterations')
     pylab.legend(loc=2)
 
@@ -734,7 +747,57 @@ def plot_discriminative(result, filename=None):
             (num_iters, num_chains, int(time.time()))
 
     ax = pylab.subplot(2,1,2)
-    ax.text(-2,.5,txt, fontsize=10)
+    ax.text(0,0,txt, fontsize=10)
+    ax.axis('off')
+
+    pylab.savefig( filename )
+
+def plot_prediction_speed(result, filename=None):
+    pylab.rcParams.update({'font.size': 8})
+    pylab.locator_params(nbins=3)
+    fig = pylab.figure(num=None, figsize=(10,8), facecolor='w', edgecolor='k')
+
+    prop_missing = result['config']['prop_missing']
+    num_bins = result['config']['bins']
+
+    bins = numpy.linspace(max(0, result['min_time'] - .1), result['max_time'] + .1, num_bins)
+
+    ax = pylab.subplot(2,1,1)
+    # TODO: plot histogram here instead. maybe want to use alphas so they can overlay.
+    pylab.hist(result['time_naive_bayes_indexer'], bins=bins, lw=3, color='red', label='NB', alpha=0.4)
+    pylab.hist(result['time_crp_mixture_indexer'], bins=bins, lw=3, color='blue', label='DPM', alpha=0.4)
+    pylab.hist(result['time_crosscat_indexer'], bins=bins, lw=3, color='green', label='CC', alpha=0.4)
+    pylab.hist(result['time_random_forest_indexer'], bins=bins, lw=3, color='cyan', label='CC/RF', alpha=0.4)
+    pylab.hist(result['time_logistic_regression_indexer'], bins=bins, lw=3, color='magenta', label='CC/LR', alpha=0.4)
+
+#    ax.set_xticks(prop_missing)
+#    ax.yaxis.set_major_locator(MaxNLocator(3))
+#    pylab.ylabel('')
+    pylab.xlabel('Prediction Time (seconds).')
+    pylab.legend(loc=4)
+
+    num_iters = result['config']['num_iters']
+    num_rows = result['config']['num_rows']
+    num_cols = result['config']['num_cols']
+    num_chains = result['config']['num_chains']
+    impute_samples = result['config']['impute_samples']
+    num_trials = result['config']['num_trials']
+    target_prop_missing = result['config']['target_prop_missing']
+
+    txt = '''
+        Prediction speed measured in seconds for a target column generated by logistic regression, over
+        %f trials, with %f percent of the target data missing and %f of the rest of the data missing. 
+        The dataset is %d rows by %d columns.
+
+        Each imputation was calculated with %i samples from %i chains run for %i iterations.
+    ''' % (num_trials, target_prop_missing[0], prop_missing[0], num_rows, num_cols, impute_samples, num_chains, num_iters)
+
+    if filename is None:
+        filename = 'Prediction_speed=%i_chains=%i_T=%i.png' % \
+            (num_iters, num_chains, int(time.time()))
+
+    ax = pylab.subplot(2,1,2)
+    ax.text(0,.5,txt, fontsize=10)
     ax.axis('off')
 
     pylab.savefig( filename )
@@ -994,8 +1057,8 @@ def plot_recovers_original_densities(result, filename=None):
     txt = '''
         Top panels: zero-correlation datasets consisting of %i points. 
         Bottom panels: result of SIMULATE %i datapoints after running %i 
-        chains for %i iterations.
-    ''' % (num_rows, num_rows, num_chains, num_iters)
+        chains for %i iterations with %s datatype.
+    ''' % (num_rows, num_rows, num_chains, num_iters, result['config']['datatype'])
 
     pylab.plt.subplot2grid((3,3), (2,0), colspan=3)
 

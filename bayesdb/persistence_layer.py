@@ -561,7 +561,7 @@ class PersistenceLayer():
 
     def update_schema(self, tablename, mappings):
         """
-        mappings is a dict of column name to 'continuous', 'multinomial', 'ignore', or 'key'.
+        mappings is a dict of column name to 'cyclic', 'continuous', 'multinomial', 'ignore', or 'key'.
         'discriminative' is complex: see docstring in engine.update_schema.
     
         For a column that maps to discriminative, the column name will
@@ -572,6 +572,8 @@ class PersistenceLayer():
           sklearn.ensemble.RandomForestClassifier
         'params': parameters dict to be passed to sklearn predictor, probably as kwargs
         'inputs': column list, in some format, to specify input columns.
+
+        mappings is a dict of column name to 'cyclic', 'continuous', 'multinomial', 'ignore', or 'key'.
         """
         metadata_full = self.get_metadata_full(tablename)
         cctypes_full = metadata_full['cctypes_full']
@@ -580,7 +582,8 @@ class PersistenceLayer():
         colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
 
         # Now, update cctypes_full (cctypes updated later, after removing ignores).
-        mapping_set = 'continuous', 'multinomial', 'ignore', 'key' # discriminative is separate from mapping_set
+        mapping_set = 'continuous', 'multinomial', 'ignore', 'key', 'cyclic' # discriminative is separate from mapping_set
+
         for col, mapping in mappings.items():
             if col.lower() not in M_c_full['name_to_idx']:
                 raise utils.BayesDBError('Error: column %s does not exist.' % col)

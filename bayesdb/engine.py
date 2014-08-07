@@ -863,17 +863,17 @@ class Engine(object):
     key_column_name = self.persistence_layer.get_key_column_name(tablename)
 
     # Parse queries, where_conditions, and order by.
-    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, column_lists, key_column_name)
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, T_full, column_lists, key_column_name)
     if whereclause == None: 
       where_conditions = []
     else:
-      where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, M_c_full, column_lists)
+      where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, M_c_full, T_full, column_lists)
       if len(where_conditions) > 0:
         assert len(where_conditions[0]) == 4
     if order_by == False:
       order_by = []
     else:
-      order_by = self.parser.parse_order_by_clause(order_by, M_c, T, M_c_full, column_lists)
+      order_by = self.parser.parse_order_by_clause(order_by, M_c, T, M_c_full, T_full, column_lists)
 
     # Fill in individual impute confs with impute_confidence if they're None and impute_confidence isn't:
     if impute_confidence is not None:
@@ -1128,10 +1128,9 @@ class Engine(object):
     
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
-
     # queries: [(functions._column_ignore, full col_id, False) if ignore/discrim, (functions._column, (column_index, confidence), False) if not ignore]
     # query_colnames: [column display names]
-    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=M_c_full, column_lists=column_lists)
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=M_c_full, T_full=None, column_lists=column_lists)
     ##TODO check duplicates
     ##TODO check for no functions
     ##TODO col_indices, colnames are a hack from old parsing
@@ -1217,7 +1216,7 @@ class Engine(object):
           full_idx = output_idx_to_full_idx[output_id]
           code = simulated_T_full[row_id,full_idx]
           if output_id in output_indices_to_crosscat_indices:
-            crosscat_col_id = crosscat_col_indices[output_indices_to_crosscat_indices[output_id]]
+            crosscat_col_id = output_indices_to_crosscat_indices[output_id]
             if crosscat_col_id in given_col_idxs_to_vals:
               data_row.append(given_col_idxs_to_vals[crosscat_col_id])
             elif type(cctypes_full[full_idx]) != dict: # not discrim
@@ -1299,7 +1298,7 @@ class Engine(object):
     """
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     column_lists = self.persistence_layer.get_column_lists(tablename)
-    queries, column_names = self.parser.parse_functions(functions, M_c, T, M_c, column_lists, key_column_name=None)
+    queries, column_names = self.parser.parse_functions(functions, M_c, T, M_c, T, column_lists, key_column_name=None)
 
     # save column list, if given a name to save as
     if name:

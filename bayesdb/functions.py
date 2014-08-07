@@ -92,7 +92,7 @@ def _column_ignore(column_ignore_args, row_id, data_values, M_c_full, T_full, en
         if confidence is None or T_full_imputed_confidences[row_id][full_col_idx] < confidence:
             return numpy.nan # TODO: check what this should be
         else:
-            return T_full_imputed[row_id][full_col_idx]
+            return du.convert_code_to_value(M_c_full, full_col_idx, T_full_imputed[row_id][full_col_idx])
 
 def _row_id(args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine, numsamples):
     return row_id
