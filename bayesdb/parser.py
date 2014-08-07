@@ -416,7 +416,7 @@ class Parser(object):
         whereclause = None
         if bql_statement_ast.where_conditions != '':
             whereclause = bql_statement_ast.where_conditions
-        resolution = 0.0
+        resolution = None
         if bql_statement_ast.with_resolution != '':
             resolution = float(bql_statement_ast.with_resolution)
         return statement_id, \
