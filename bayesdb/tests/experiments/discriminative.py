@@ -88,8 +88,6 @@ def run_experiment(argin):
     result['nb'] = numpy.zeros(len(result['iterations']))
     result['rf'] = numpy.zeros(len(result['iterations']))
     result['lr'] = numpy.zeros(len(result['iterations']))
-    print col_names
-    print full_cctypes
 
     # do analyses
     for p in range(len(prop_missing)):
@@ -137,7 +135,7 @@ def run_experiment(argin):
                             count += 1.0
 
                 result[config][i] = MSE/count
-                print "error = %f" % result[config][p]
+                print "error = %f" % result[config][i]
 
     retval = dict()
     retval['MSE_naive_bayes_indexer'] = result['nb']

@@ -1179,7 +1179,7 @@ class Engine(object):
           full_idx = output_idx_to_full_idx[output_id]
           code = simulated_T_full[row_id,full_idx]
           if output_id in output_indices_to_crosscat_indices:
-            crosscat_col_id = crosscat_col_indices[output_indices_to_crosscat_indices[output_id]]
+            crosscat_col_id = output_indices_to_crosscat_indices[output_id]
             if crosscat_col_id in given_col_idxs_to_vals:
               data_row.append(given_col_idxs_to_vals[crosscat_col_id])
             elif type(cctypes_full[full_idx]) != dict: # not discrim
