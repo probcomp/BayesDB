@@ -48,7 +48,7 @@ def parse_pairwise_function(function_name, column=True, M_c=None, column_lists={
         # and return the column id here.
         ##TODO temporary hack - move to parser maybe combine with parse_functions
         p = parser.Parser()
-        _, target_columns = p.get_args_similarity(function_name, M_c, None, column_lists)
+        _, target_columns = p.get_args_similarity(function_name, M_c, None, M_c, None, column_lists)
         if target_columns is None:
             return (functions._similarity, None)
         elif type(target_columns) == list:
