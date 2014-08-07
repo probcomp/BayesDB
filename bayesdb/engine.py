@@ -758,17 +758,17 @@ class Engine(object):
     key_column_name = self.persistence_layer.get_key_column_name(tablename)
 
     # Parse queries, where_conditions, and order by.
-    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, column_lists, key_column_name)
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, T_full, column_lists, key_column_name)
     if whereclause == None: 
       where_conditions = []
     else:
-      where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, M_c_full, column_lists)
+      where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, M_c_full, T_full, column_lists)
       if len(where_conditions) > 0:
         assert len(where_conditions[0]) == 4
     if order_by == False:
       order_by = []
     else:
-      order_by = self.parser.parse_order_by_clause(order_by, M_c, T, M_c_full, column_lists)
+      order_by = self.parser.parse_order_by_clause(order_by, M_c, T, M_c_full, T_full, column_lists)
 
     # Fill in individual impute confs with impute_confidence if they're None and impute_confidence isn't:
     if impute_confidence is not None:
@@ -951,7 +951,7 @@ class Engine(object):
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
     # Set M_c_full to None because we don't want to simulate key/ignore columns
-    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=None, column_lists=column_lists)
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=None, T_full=None, column_lists=column_lists)
     ##TODO check duplicates
     ##TODO check for no functions
     
@@ -1049,7 +1049,7 @@ class Engine(object):
     """
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     column_lists = self.persistence_layer.get_column_lists(tablename)
-    queries, column_names = self.parser.parse_functions(functions, M_c, T, M_c, column_lists, key_column_name=None)
+    queries, column_names = self.parser.parse_functions(functions, M_c, T, M_c, T, column_lists, key_column_name=None)
 
     # save column list, if given a name to save as
     if name:
