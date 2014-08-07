@@ -89,7 +89,7 @@ The resulting figure plots dependence probabilities of all pairs of variables as
 
 ![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z_subset.png)
 
-Notice that quality and cost show no dependence.  We can list the variables that share the most dependence with spending, again focusing on Medicare spending on ambulances.
+Notice that quality and cost show no dependence.  We can list the variables that probably have a dependence on spending, again focusing on Medicare spending on ambulances.
 
     ESTIMATE COLUMNS FROM dha ORDER BY DEPENDENCE PROBABILITY WITH mdcr_spnd_amblnc LIMIT 10
 
@@ -126,8 +126,6 @@ Similarly, we can list the variables that share the most dependence with quality
 |  mdcr_spnd_hspc |                  0.34                       |
 |  pct_dths_hspc  |                  0.34                       |
 
-It appears that the other `_score` variables and quality score are dependent. Medicare expenditures, deaths, and days provide little evidence for dependence probability with the quality score.
-
 ### Unwarranted variations on a per-town basis
 
 Which hospitals have surprising spending and quality levels --- either unusually low or unusually high --- given their other attributes?
@@ -162,7 +160,24 @@ Which hospitals have surprising spending and quality levels --- either unusually
 | New Brunswick NJ |             0.11                  |
 |    Abilene TX    |             0.11                  |
 
-Only one of these hospitals, McAllen, appears on both lists. It has also been repeatedly written up in the popular press ([The NewYorker](http://www.newyorker.com/reporting/2009/06/01/090601fa_fact_gawande), [CBS News](http://www.cbsnews.com/news/texas-town-at-center-of-healthcare-debate/) and [NPR](http://www.npr.org/blogs/health/2012/05/10/152417875/recalculating-the-health-bill-in-mcallen-texas)) as an illustration of the dissociation between technological sophistication and quality of care.
+To check this result, we might look at some more generic assessment of spending such as the payment received per doctor's visit.
+
+    SELECT name, PREDICTIVE PROBABILITY OF pymt_p_md_visit FROM dha ORDER BY PREDICTIVE PROBABILITY OF pymt_p_md_visit ASC LIMIT 10
+
+|      name      | predictive probability pymt_p_md_visit |
+|----------------|----------------------------------------|
+|  Owensboro KY  |            0.02                        |
+|   McAllen TX   |            0.02                        |
+|   Everett WA   |            0.02                        |
+| Manchester NH  |            0.03                        |
+| Springdale AR  |            0.03                        |
+|  Portland OR   |            0.03                        |
+|   Dubuque IA   |            0.03                        |
+| Santa Rosa CA  |            0.03                        |
+|   Olympia WA   |            0.03                        |
+| New Orleans LA |            0.03                        |
+
+Only one of these hospitals, McAllen, appears on all three of these lists. It has also been repeatedly written up in the popular press ([The NewYorker](http://www.newyorker.com/reporting/2009/06/01/090601fa_fact_gawande), [CBS News](http://www.cbsnews.com/news/texas-town-at-center-of-healthcare-debate/) and [NPR](http://www.npr.org/blogs/health/2012/05/10/152417875/recalculating-the-health-bill-in-mcallen-texas)) as an illustration of the dissociation between spending and quality of care.
 
 ###Further information
 
