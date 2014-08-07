@@ -95,7 +95,7 @@ Notice that quality and cost show no dependence.  We can list the variables that
 
 |       column       | dependence probability with mdcr_spnd_amblnc |
 |--------------------|----------------------------------------------|
-|  mdcr_spnd_amblnc  |                  1.0                         |
+|  mdcr_spnd_amblnc  |                  1.00                        |
 | pymt_p_visit_ratio |                  0.73                        |
 |   ttl_mdcr_spnd    |                  0.73                        |
 |  pymt_p_md_visit   |                  0.73                        |
