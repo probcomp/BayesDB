@@ -77,6 +77,8 @@ First, we create a btable and load in pre-computed models,
 The first thing to do is to is get a sense of the probable dependencies between variables by creating a column dependence probability matrix in which each cell represents a pair of variables and the value represents the probability of their being statistically dependent under the inferred CrossCat model. Here, we have zoomed in on two variables, the first related to medicare spending, and the second related to quality. 
 
     ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha SAVE TO dha_z.png;
+    
+![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z.png)
 
 ![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z_subset.png)
 
@@ -155,7 +157,7 @@ We can see that a number of variables are inferred to be probably dependent. The
 
 We can take a closer look at the relationship between born-again experiences and beliefs about the legalization of marijuana. 
 
-    PLOT SELECT reborn, grass FROM gss_pared SAVE TO figures/select_reborn_grass.png
+    PLOT SELECT reborn, grass FROM gss_pared SAVE TO select_reborn_grass.png
 
 <center>
 <img src="{{ site.baseurl }}/assets/images/cs_gss/select_reborn_grass.png" class="img-med" alt="Born again and Marijuana">
@@ -212,6 +214,12 @@ An interesting feature of BayesDB is the ability to simulate hypothetical data b
 
     SIMULATE reborn, savesoul, bible, evolved FROM gss_pared TIMES 10
 
+<!--
+reborn: 1=Yes, 2=No
+savesoul: 1=Yes, 2=No
+bible: 1=Actual word, 2=Inspired word, 3=Ancient book
+evolved: 1=True, 2=False
+-->
 | reborn   | savesoul |     bible     | evolved | 
 ------------------------------------------------|
 |   No     |   No     | Inspired word |    T    |
@@ -225,7 +233,41 @@ An interesting feature of BayesDB is the ability to simulate hypothetical data b
 |   Yes    |   Yes    | Actual word   |    F    |
 |   Yes    |   Yes    | Actual word   |    F    |
 
-We have sorted the simulated responses based on the first two columns. At the top are cases where the simulated respondant did not have a born-again experience and has not encouraged someone to accept Jesus. For this group, we see strong consensus responses on the other two questions: they believe the bible is not the actual word of God and that humans evolved from animals. In contrast, the simluated respondants who had had born-again experiences and had encouraged someone to accept Jesus responded that the bible is the actual word of God and that humans did not evolved. These responses accord with intuition about how real people might respond. 
+We have sorted the simulated responses based on the first two columns. At the top are cases where the simulated respondant did not have a born-again experience and has not encouraged someone to accept Jesus. For this group, we see strong consensus responses on the other two questions: they believe the bible is not the actual word of God and that humans evolved from animals. In contrast, the simluated respondants who had had born-again experiences and had encouraged someone to accept Jesus responded that the bible is the actual word of God and that humans did not evolved. 
+
+We can further investigate the relationship by simulating the values of some variables, given the values of others. For example, we can simulate the same variables given that the individual believes humans evolved from animals, and again given that an individual believes that the bible is the actual word of God,
+
+    SIMULATE reborn, savesoul, bible, evolved FROM gss_pared GIVEN evolved=2 TIMES 10
+    
+| reborn | savesoul | bible           | evolved |
+|--------|----------|-----------------|---------|
+|   No   |    Yes   |   Actual word   |    F    |
+|   Yes  |    No    |   Ancient book  |    F    |
+|   Yes  |    No    |   Inspired word |    F    |
+|   Yes  |    Yes   |   Actual word   |    F    |
+|   No   |    Yes   |   Ancient book  |    F    |
+|   No   |    Yes   |   Actual word   |    F    |
+|   Yes  |    Yes   |   Inspired word |    F    |
+|   Yes  |    Yes   |   Actual word   |    F    |
+|   Yes  |    Yes   |   Actual word   |    F    |
+|   No   |    No    |   Actual word   |    F    |
+
+    SIMULATE reborn, savesoul, bible, evolved FROM gss_pared GIVEN bible=1 TIMES 10
+
+| reborn | savesoul | bible           | evolved |
+|--------|----------|-----------------|---------|
+|   Yes  |    Yes   |   Actual word   |    F    |
+|   Yes  |    Yes   |   Actual word   |    F    |
+|   No   |    No    |   Actual word   |    F    |
+|   Yes  |    Yes   |   Actual word   |    F    |
+|   No   |    No    |   Actual word   |    T    |
+|   Yes  |    Yes   |   Actual word   |    F    |
+|   Yes  |    Yes   |   Actual word   |    F    |
+|   Yes  |    Yes   |   Actual word   |    F    |
+|   Yes  |    No    |   Actual word   |    T    |
+|   No   |    Yes   |   Actual word   |    T    |
+
+In the first simulation, conditioning on the belief that humans did not evolve from animals elicits a change toward the belief that the bible is the actual word of God. Similary, conditioning on the belief that the bible is the actual word of God elicits a shift toward a belief that humans did not evolve from animals. 
 
 <!-- SAVE THIS, IT IS EXTRA FODDER
     SIMULATE reborn, savesoul, bible, evolved, vote08, dwelown FROM gss_pared GIVEN reborn=1, savesoul=1 TIMES 10
@@ -260,8 +302,6 @@ We have sorted the simulated responses based on the first two columns. At the to
 
 The top table shows simulated respondants who had born-again experiences and had encouraged someone to accept Jesus. These simulated respondants tend to believe the bible is either inspired text or the word of god, that humans have not evolved from animals, voted in 2008, and may rent or own. The bottom table shows simulated respondants who had not had born-again experiences and had not encouraged someone to accept Jesus. In contrast with the top table, these simulated respondants tend to believe the bible is either an ancient book or inspired word, and tend to believe in evolution. They also were less likely to vote, but showed similar tendencies toward renting or owning. 
 -->
-
-Taken together, these three demonstrations show that BayesDB captures structure in the data, and validates inferences against findings in the literature. 
 
 ## References
 
