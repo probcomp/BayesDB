@@ -31,7 +31,7 @@ Our first step is to look at which variables are related to educational outcomes
 | p1chlboo |                 0.67                 |
 | p1chlaud |                 0.67                 |
 
-After other math and reading scores, there are a collection of variables whose relationship to outcomes is rather intuitive. These include the mother and father's education levels and expectations for child's education level, `wkmomed`, `wkmomed`, `p1expect`, poverty level, `wkpov_r`, parents' race and language, `race` and `p1prmlng`, whether a parent is depressed `p2depres`, and whether there is a computer in the home, `p2homecm`. However, for a small group of findings, it is less clear how they are related to math achievement. These include the number of books in the house, `p1chlboo`, and the number of CDs and tapes in the house, `p1chlaud`. 
+After other math and reading scores, there are a collection of variables whose relationship to outcomes is rather intuitive. These include the mother and father's education levels and expectations for tje child, `wkmomed`, `wkmomed`, `p1expect`, poverty level, `wkpov_r`, parents' race and language, `race` and `p1prmlng`, whether a parent is depressed `p2depres`, and whether there is a computer in the home, `p2homecm`. However, for a small group of findings, it is less clear how they are related to math achievement. These include the number of books in the house, `p1chlboo`, and the number of CDs and tapes in the house, `p1chlaud`. 
 
 To investigate this further, we can explore how different values of each variable affect math scores. We will simulate predicted math scores given very small numbers of CDs and books (zero in each case), and given relatively large numbers of CDs and books (100 and 200, respectively). We have superimposed each pair of figures to compare the results, where the light blue represents zero and the gray represents large numbers of tapes and CDS or books.
 
@@ -74,11 +74,11 @@ First, we create a btable and load in pre-computed models,
     CREATE BTABLE dha FROM dha.csv;
     LOAD MODELS dha_models.pkl.gz INTO dha;
 
-The first thing to do is to is get a sense of the probable dependencies between variables by creating a column dependence probability matrix in which each cell represents a pair of variables and the value represents the probability of their being statistically dependent under the inferred CrossCat model. Here, we have zoomed in on two variables, the first related to medicare spending, and the second related to quality. 
+To get a sense of the probable dependencies between variables, we create a column dependence probability matrix in which each cell represents a pair of variables and the value represents the probability of their being statistically dependent under the inferred CrossCat model. Here, we have zoomed in on two variables, the first related to Medicare spending, and the second related to quality. 
 
     ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha SAVE TO dha_z.png;
     
-The resulting figure plots dependence probabilities of all pairs of variables as saturations in a large matrix. Dark areas represent variables with a high probability of dependence, light areas indicate a low probability of dependence. This contains quite a bit more information than we need, so we select out the rows that correspond to two variables that represent our question of interest: medicare spending on ambulances and quality of care.
+The resulting figure plots dependence probabilities of all pairs of variables as saturations in a large matrix. Dark areas represent variables with a high probability of dependence, light areas indicate a low probability of dependence. This contains quite a bit more information than we need, so we select out the rows that correspond to two variables that represent our question of interest: Medicare spending on ambulances and quality of care.
 
 <!--    
 ![Dartmouth Atlas of Health z-matrix]({{ site.baseurl }}/assets/images/cs_dha/dha_z.png)
@@ -109,7 +109,7 @@ Notice that quality and cost show no dependence.  We can list the variables that
 Other spending variables as well as reimbursement related tend to be dependent, while quality variables do not appear on the list.
 
 
-Similarly, we can list the variables that share the most dependence with quality,
+Similarly, we can list the variables that have the highest probability of dependence with quality,
 
     ESTIMATE COLUMNS FROM dha ORDER BY DEPENDENCE PROBABILITY WITH qual_score LIMIT 10
 
@@ -125,6 +125,8 @@ Similarly, we can list the variables that share the most dependence with quality
 | hha_visit_p_dcd |                  0.50                       |
 |  mdcr_spnd_hspc |                  0.34                       |
 |  pct_dths_hspc  |                  0.34                       |
+
+The list includes other quality related scores, which have a very strong dependence. All of the remaining variables do not show strong evidence of dependence.
 
 ### Unwarranted variations on a per-town basis
 
@@ -160,7 +162,7 @@ Which hospitals have surprising spending and quality levels --- either unusually
 | New Brunswick NJ |             0.11                  |
 |    Abilene TX    |             0.11                  |
 
-To check this result, we might look at some more generic assessment of spending such as the payment received per doctor's visit.
+McAllen TX appears on both lists as being suprising with respect to Medicare spending on ambulances and with respect to quality of care. To check this result, we might look at some more generic assessment of spending, such as the payment received per doctor's visit.
 
     SELECT name, PREDICTIVE PROBABILITY OF pymt_p_md_visit FROM dha ORDER BY PREDICTIVE PROBABILITY OF pymt_p_md_visit ASC LIMIT 10
 
@@ -177,7 +179,7 @@ To check this result, we might look at some more generic assessment of spending 
 |   Olympia WA   |            0.03                        |
 | New Orleans LA |            0.03                        |
 
-Only one of these hospitals, McAllen, appears on all three of these lists. It has also been repeatedly written up in the popular press ([The NewYorker](http://www.newyorker.com/reporting/2009/06/01/090601fa_fact_gawande), [CBS News](http://www.cbsnews.com/news/texas-town-at-center-of-healthcare-debate/) and [NPR](http://www.npr.org/blogs/health/2012/05/10/152417875/recalculating-the-health-bill-in-mcallen-texas)) as an illustration of the dissociation between spending and quality of care.
+Only one of these hospitals, McAllen TX, appears on all three of these lists. It has also been repeatedly written up in the popular press ([The NewYorker](http://www.newyorker.com/reporting/2009/06/01/090601fa_fact_gawande), [CBS News](http://www.cbsnews.com/news/texas-town-at-center-of-healthcare-debate/) and [NPR](http://www.npr.org/blogs/health/2012/05/10/152417875/recalculating-the-health-bill-in-mcallen-texas)) as an illustration of the dissociation between spending and quality of care.
 
 ###Further information
 
@@ -193,7 +195,7 @@ The General Social Survey is conducted annually to assess the demographics and a
 
 ## What variables are associated with born-again experiences?
 
-Religion is one topic for which we have strong intuitions, and it therefore makes a good intuitive assessment the quality of BayesDB's inferences. The GSS contains a number of questions related to religion. Here, we focus on people's responses to the question of whether they have had a born-again experience. This is a feature of Christian religions, and especially Evangelical religions. We begin by ordering the variables based on the inferred dependence probability. 
+Religion is one topic for which we have strong intuitions, and it therefore is a useful case to assess the quality of BayesDB's inferences. The GSS contains a number of questions related to religion. Here, we focus on people's responses to the question of whether they have had a born-again experience. This is a feature of Christian religions, and especially Evangelical religions. We begin by ordering the variables based on the inferred dependence probability. 
 
     ESTIMATE COLUMNS FROM gss_pared ORDER BY DEPENDENCE PROBABILITY WITH reborn LIMIT 10
 
@@ -220,7 +222,7 @@ We can take a closer look at the relationship between born-again experiences and
 <img src="{{ site.baseurl }}/assets/images/cs_gss/select_reborn_grass.png" class="img-med" alt="Born again and Marijuana">
 </center>
 
-We can see that if one favors legalization, it is highly probable that one has not had a born-again experience. Interestingly, people who do not favor legalization may or may not have had a born-again experience. Taking a closer look at marijuana legalization, 
+If one favors legalization, it is highly probable that one has not had a born-again experience. Interestingly, people who do not favor legalization may or may not have had a born-again experience. Taking a closer look at marijuana legalization, 
 
     ESTIMATE COLUMNS FROM gss_pared ORDER BY DEPENDENCE PROBABILITY WITH grass LIMIT 10
     
@@ -237,13 +239,13 @@ We can see that if one favors legalization, it is highly probable that one has n
 |   god    |                0.88               |
 |  bible   |                0.88               |
 
-we see a largely complementary set of results. The first three variables are related to moral issues: homosexuality and whether suicide should be allowable under different circumstances. The remaining variables are religious, with the exception of the issue of evolution, which we know to be strongly related to religous beliefs. Taken together, the results are in close accord with intuition.
+we see a largely complementary set of results. The first three variables are related to moral issues: homosexuality and whether suicide should be allowable under different circumstances. The remaining variables are religious, with the exception of the issue of evolution, which we know to be strongly related to religous beliefs. 
 
 ## Are homeowners more likely to vote?
 
 Turning to a documented finding, economics research has shown that homeowners engage more in community activities than renters. They are also more likely to vote, more likely to know the names of the local political representatives, and more likely to engage in civic activities  (DiPasquale, D., &amp; Glaeser, E. L., 1999). For this reason, homeowners have been labeled better citizens (DiPasquale, D., &amp; Glaeser, E. L., 1999; McCabe, 2013). 
 
-First we'll check whether the homeowners of 2012 are more likely to vote than renters. Since we're using the 2012 GSS we'll investigate the relationship between `vote08` and `dwelown` variables. `vote08` is a categorical variable, where `1` indicates that the respondent voted in the 2008 presidential election, while `0` indicates that the did not. `dwelown` is also a categorical variable where `1` indicates that the respondent owns their home, and `2` indicates that the respondent rents their home.
+First we shall check whether the homeowners of 2012 are more likely to vote than renters. Since we are using the 2012 GSS we'll investigate the relationship between `vote08` and `dwelown` variables. `vote08` is a categorical variable, where `1` indicates that the respondent voted in the 2008 presidential election, while `0` indicates that the did not. `dwelown` is also a categorical variable where `1` indicates that the respondent owns their home, and `2` indicates that the respondent rents their home.
 
 First, for homeowners (`dwelown=1`),
 
@@ -277,6 +279,7 @@ savesoul: 1=Yes, 2=No
 bible: 1=Actual word, 2=Inspired word, 3=Ancient book
 evolved: 1=True, 2=False
 -->
+
 | reborn   | savesoul |     bible     | evolved | 
 ------------------------------------------------|
 |   No     |   No     | Inspired word |    T    |
