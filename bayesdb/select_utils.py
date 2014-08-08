@@ -59,14 +59,29 @@ def evaluate_where_on_row(row_idx, row, where_conditions, M_c, M_c_full, X_L_lis
         value = du.convert_code_to_value(M_c, col_idx, sample[0])
         ## If multinomial or discrim (multinomial), ignore resolution.
         ## If continuous or discrim (continuous), need to use resolution.
-        # TODO: check type
-        assert False
-        if op(value, val):
-          samples_satisfying_where += 1
+        if M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma' and resolution is not None:
+          if op == operator.le:
+            if value - resolution <= val:
+              samples_satisfying_where += 1
+          elif op == operator.lt:
+            if value - resolution < val:
+              samples_satisfying_where += 1
+          elif op == operator.eq:
+            if abs(value - val) <= resolution:
+              samples_satisfying_where += 1
+          elif op == operator.gt:
+            if value + resolution > val:
+              samples_satisfying_where += 1
+          elif op == operator.ge:
+            if value + resolution >= val:
+              samples_satisfying_where += 1
+        else:
+          if op(value, val):
+            samples_satisfying_where += 1
       if float(samples_satisfying_where)/len(samples) >= confidence:
         # Where clause is satisfied! Now, generate impute summary.
         imputed_code, imputation_confidence = utils.get_imputation_and_confidence_from_samples(
-          M_c, X_L_list[0], col_idx, samples, resolution)
+          M_c, X_L_list, col_idx, samples, resolution)
         if imputed_code is not None:
           imputed_value = du.convert_code_to_value(M_c, col_idx, imputed_code)
         else:

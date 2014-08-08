@@ -852,7 +852,7 @@ class Parser(object):
                 confidence = float(single_condition.conf)
             resolution = None
             if single_condition.res != '':
-                resolution = float(singe_condition.res)
+                resolution = float(single_condition.res)
                 
             raw_value = single_condition.value
             function = None
@@ -972,10 +972,10 @@ class Parser(object):
             elif orderable.function.column != '': 
                 if orderable.function.column in M_c['name_to_idx']:
                     function = functions._column
-                    args = (M_c['name_to_idx'][orderable.function.column], confidence)
+                    args = (M_c['name_to_idx'][orderable.function.column], confidence, None)
                 else:
                     function = functions._column_ignore
-                    args = (M_c_full['name_to_idx'][orderable.function.column], confidence)
+                    args = (M_c_full['name_to_idx'][orderable.function.column], confidence, None)
             else:
                 raise utils.BayesDBParseError("Invalid order by clause.")
             function_list.append((function, args, desc))
@@ -1023,7 +1023,7 @@ class Parser(object):
         if key_column_name is not None:
             query_colnames = [key_column_name]
             index_list, name_list, ignore_column = self.parse_column_set(key_column_name, M_c, M_c_full, column_lists)
-            queries = [(functions._column_ignore, (column_index, None), False) for column_index in index_list]
+            queries = [(functions._column_ignore, (column_index, None, None), False) for column_index in index_list]
         else:
             query_colnames = []
             queries = []

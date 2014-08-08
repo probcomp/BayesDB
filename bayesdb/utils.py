@@ -154,10 +154,9 @@ def row_id_from_col_value(value, column, M_c, T):
                 raise BayesDBUniqueValueError("Invalid Query: column '%s' has more than one row with value '%s'." %(column, str(value)))
     return target_row_id
 
-##TODO move to engine
-def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, engine, get_confidence_too=False):
-    q = [row_id, col_id]
-    out = engine.call_backend('impute_and_confidence', dict(M_c=M_c, X_L=X_L_list, X_D=X_D_list, Y=Y, Q=[q], n=numsamples))
+def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, engine, resolution, get_confidence_too=False):
+    Q = [[row_id, col_id]]
+    out = impute_and_confidence(M_c, X_L_list, X_D_list, Y, Q, n=numsamples, engine=engine, resolution=resolution)
     code, conf = out
     if conf >= confidence:
         if get_confidence_too:
@@ -168,6 +167,36 @@ def infer(M_c, X_L_list, X_D_list, Y, row_id, col_id, numsamples, confidence, en
             return None, confidence
         return None
 
+def impute_and_confidence(M_c, X_L, X_D, Y, Q, n, engine, resolution=1.0):
+    assert(len(Q)==1)
+    col_idx = Q[0][1]
+    samples = engine.call_backend('simple_predictive_sample',
+                                  dict(M_c=M_c, X_L=X_L, X_D=X_D, Y=Y, Q=Q, n=n))
+    imputed, imputation_confidence = get_imputation_and_confidence_from_samples(M_c, X_L, col_idx, samples, resolution=1.0)
+    return imputed, imputation_confidence
+
+def impute(M_c, X_L, X_D, Y, Q, n, get_next_seed, return_samples=False):
+    # FIXME: allow more than one cell to be imputed
+    assert(len(Q)==1)
+    #
+    col_idx = Q[0][1]
+    modeltype = M_c['column_metadata'][col_idx]['modeltype']
+    assert(modeltype in modeltype_to_imputation_function)
+    if get_is_multistate(X_L, X_D):
+        samples = simple_predictive_sample_multistate(M_c, X_L, X_D, Y, Q,
+                                           get_next_seed, n)
+    else:
+        samples = simple_predictive_sample(M_c, X_L, X_D, Y, Q,
+                                           get_next_seed, n)
+    samples = numpy.array(samples).T[0]
+    imputation_function = modeltype_to_imputation_function[modeltype]
+    e = imputation_function(samples, get_next_seed)
+    if return_samples:
+        return e, samples
+    else:
+        return e
+
+
 def get_imputation_and_confidence_from_samples(M_c, X_L, col_idx, samples, resolution=1.0):
     samples = numpy.array(samples).T[0]
     modeltype = M_c['column_metadata'][col_idx]['modeltype']
@@ -175,13 +204,11 @@ def get_imputation_and_confidence_from_samples(M_c, X_L, col_idx, samples, resol
     e = imputation_function(samples)
     imputation_confidence_function = modeltype_to_imputation_confidence_function[modeltype]
     column_component_suffstats_i = \
-        get_column_component_suffstats_i(M_c, X_L, col_idx)
+        get_column_component_suffstats_i(M_c, X_L[0], col_idx)
     imputation_confidence = \
         imputation_confidence_function(samples, e,
                                        column_component_suffstats_i, resolution)
     return e, imputation_confidence
-
-    return lambda in_dict: in_dict[name]
 
 def get_column_std(column_component_suffstats_i):
     N = sum(map(lambda in_dict: in_dict['N'], column_component_suffstats_i))
@@ -237,9 +264,7 @@ def get_continuous_mass_within_delta(samples, center, delta):
 
 def continuous_imputation_confidence(samples, imputed,
                                      column_component_suffstats_i, resolution=1.0):
-    col_std = get_column_std(column_component_suffstats_i)
-    delta = resolution * col_std
-    confidence = get_continuous_mass_within_delta(samples, imputed, delta)
+    confidence = get_continuous_mass_within_delta(samples, imputed, resolution)
     return confidence
     
 

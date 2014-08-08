@@ -668,8 +668,9 @@ class Engine(object):
           Y = [(row_id, cidx, T_full[row_id][cidx]) for cidx in M_c['name_to_idx'].values() \
                  if not numpy.isnan(T_full[row_id][cidx])]
           original_col_id = M_c['name_to_idx'][M_c_full['idx_to_name'][str(col_id)]]
+          # TODO: fix resolution here
           code, confidence = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, original_col_id, 
-                                         numsamples, 0, self, get_confidence_too=True)
+                                         numsamples, 0, self, resolution=1.0, get_confidence_too=True)
           assert code is not None
           new_row.append(code)
           new_row_confidences.append(confidence)
@@ -951,7 +952,7 @@ class Engine(object):
       # TODO: maybe allow you to specify to impute some other values too?
       discrim_target_col_ids = [] # the full_col_ids for all queried (in where, query, or order) discrim columns.
       for f, f_args in function_list:
-        full_id, conf = f_args
+        full_id, conf, res = f_args
         if type(cctypes_full[full_id]) == dict: # discrim
           discrim_target_col_ids.append(full_id)
       all_input_col_ids, dependency_dict = self._get_all_input_col_ids(cctypes_full, discrim_target_col_ids)

@@ -65,8 +65,8 @@ def _column(column_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine
         ## TODO: RESOLUTION
         Y = [(row_id, cidx, T[row_id][cidx]) for cidx in M_c['name_to_idx'].values() \
                    if not numpy.isnan(T[row_id][cidx])]
-        code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, col_idx, numsamples,
-                           confidence, engine)
+        code = utils.infer(M_c, X_L_list, X_D_list, Y, row_id, col_idx, numsamples, 
+                           confidence, engine, resolution)
         if code is not None:
             # Inferred successfully! Fill in the new value.
             value = du.convert_code_to_value(M_c, col_idx, code)
@@ -84,7 +84,7 @@ def _column_ignore(column_ignore_args, row_id, data_values, M_c_full, T_full, en
     full_col_idx = column_ignore_args[0]
     confidence = column_ignore_args[1]
     resolution = column_ignore_args[2]
-    ## TODO: RESOLUTION
+    ## TODO: RESOLUTION. Ignore for discrim?
     if cctypes_full is None or T_full_imputed is None or type(cctypes_full[full_col_idx]) != dict or \
             T_full_imputed_confidences is None:
         return du.convert_code_to_value(M_c_full, full_col_idx, T_full[row_id][full_col_idx])    
