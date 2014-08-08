@@ -295,7 +295,7 @@ evolved: 1=True, 2=False
 
 We have sorted the simulated responses based on the first two columns. At the top are cases where the simulated respondant did not have a born-again experience and has not encouraged someone to accept Jesus. For this group, we see strong consensus responses on the other two questions: they believe the bible is not the actual word of God and that humans evolved from animals. In contrast, the simluated respondants who had had born-again experiences and had encouraged someone to accept Jesus responded that the bible is the actual word of God and that humans did not evolved. 
 
-We can further investigate the relationship by simulating the values of some variables, given the values of others. For example, we can simulate the same variables given that the individual believes humans evolved from animals, and again given that an individual believes that the bible is the actual word of God,
+We can further investigate the relationship by simulating the values of some variables, given the values of others. For example, we can simulate the same variables given that the individual believes humans evolved from animals, and again given that an individual believes that the bible is the actual word of God.
 
     SIMULATE reborn, savesoul, bible, evolved FROM gss_pared GIVEN evolved=2 TIMES 10
     
@@ -366,7 +366,7 @@ The top table shows simulated respondants who had born-again experiences and had
 ## References
 
 <p class='reference'>
-[1] DiPasquale, D., &amp; Glaeser, E. L. (1999). Incentives and social capital: are homeowners better citizens?. Journal of urban Economics, 45(2), 354-384.
+[1] DiPasquale, D., &amp; Glaeser, E. L. (1999). Incentives and social capital: are homeowners better citizens? Journal of urban Economics, 45(2), 354-384.
 </p>
 <p class='reference'>
 [2] McCabe, B. J. (2013). Are Homeowners Better Citizens? Homeownership and Community Participation in the United States. Social forces, sos185.
