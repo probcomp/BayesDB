@@ -742,6 +742,7 @@ class Parser(object):
             ## Case for format column = value
             elif function_group.column != '':
                 assert T is not None
+                assert M_c_full is not None
                 target_col_name = function_group.column
                 target_col_value = function_group.column_value
                 target_row_id = utils.row_id_from_col_value(target_col_value, target_col_name, M_c_full, T_full)
@@ -1004,6 +1005,7 @@ class Parser(object):
                 query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'similarity':
                 assert M_c is not None
+                assert M_c_full is not None
                 queries.append((functions._similarity, 
                                 self.get_args_similarity(function_group, M_c, M_c_full, T, T_full, column_lists),
                                 False))

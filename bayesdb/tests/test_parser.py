@@ -48,6 +48,25 @@ test_M_c = {'idx_to_name': {'1': 'b', '0': 'a', '3': 'd', '2': 'c'},
                      'modeltype': 'symmetric_dirichlet_discrete'}], 
             'name_to_idx': {'a': 0, 'c': 2, 'b': 1, 'd': 3}}
 
+test_M_c_full = {'idx_to_name': {'1': 'b', '0': 'a', '3': 'd', '2': 'c', '4': 'key'},
+            'column_metadata': [
+                    {'code_to_value': {'a': 0, '1': 1, '2': 2, '4': 3, '6': 4}, 
+                     'value_to_code': {0: 'a', 1: '1', 2: '2', 3: '4', 4: '6'}, 
+                     'modeltype': 'symmetric_dirichlet_discrete'}, 
+                    {'code_to_value': {}, 'value_to_code': {}, 
+                     'modeltype': 'normal_inverse_gamma'}, 
+                    {'code_to_value': {'we': 0, 'e': 1, 'w': 2, 'sd': 3}, 
+                     'value_to_code': {0: 'we', 1: 'e', 2: 'w', 3: 'sd'}, 
+                     'modeltype': 'symmetric_dirichlet_discrete'}, 
+                    {'code_to_value': {'3': 1, '2': 2, '5': 0, '4': 3}, 
+                     'value_to_code': {0: '5', 1: '3', 2: '2', 3: '4'}, 
+                     'modeltype': 'symmetric_dirichlet_discrete'},
+                    {'code_to_value': {'0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8},
+                     'value_to_code': {0: '0', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8'}, 
+                     'modeltype': 'ignore'}], 
+            'name_to_idx': {'a': 0, 'c': 2, 'b': 1, 'd': 3, 'key': 4}}
+
+
 test_T = [[1.0, 1.0, 0.0, numpy.nan], 
           [2.0, 2.0, 0.0, 2.0], 
           [0.0, 3.0, 0.0, 3.0], 
@@ -57,6 +76,16 @@ test_T = [[1.0, 1.0, 0.0, numpy.nan],
           [numpy.nan, 6.0, 2.0, 1.0], 
           [numpy.nan, 7.0, 3.0, 1.0], 
           [numpy.nan, 7.0, 3.0, 1.0]]
+
+test_T_full = [[1.0, 1.0, 0.0, numpy.nan, 0], 
+          [2.0, 2.0, 0.0, 2.0, 1], 
+          [0.0, 3.0, 0.0, 3.0, 2], 
+          [3.0, 3.0, 2.0, numpy.nan, 3], 
+          [3.0, 4.0, 2.0, 0.0, 4], 
+          [4.0, 5.0, 1.0, numpy.nan, 5], 
+          [numpy.nan, 6.0, 2.0, 1.0, 6], 
+          [numpy.nan, 7.0, 3.0, 1.0, 7], 
+          [numpy.nan, 7.0, 3.0, 1.0, 8]]          
 
 def test_keyword_plurality_ambiguity_pyparsing():
     model = model_keyword.parseString("model",parseAll=True)
@@ -935,7 +964,7 @@ def test_parse_functions():
     ast_1 = bql_statement.parseString(query_1, parseAll=True)
     function_groups = ast_1.functions
     
-    queries, query_cols = parser.parse_functions(function_groups, M_c = test_M_c, T=test_T)
+    queries, query_cols = parser.parse_functions(function_groups, M_c = test_M_c, M_c_full = test_M_c_full, T=test_T, T_full = test_T_full)
     assert queries[0] == (functions._predictive_probability, 0, False)
     assert queries[1] == (functions._mutual_information, (0,1), True)
     assert queries[2] == (functions._correlation, (0,1), True)
