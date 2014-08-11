@@ -331,7 +331,7 @@ class Engine(object):
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
 
-    cctypes_full = data_utils.guess_column_types(query_data)
+    cctypes_full, warnings = data_utils.guess_column_types(query_data, query_colnames)
     for query_idx, query_colname in enumerate(query_colnames):
         if query_colname in M_c_existing_full['name_to_idx']:
             cctypes_full[query_idx] = cctypes_existing_full[M_c_existing_full['name_to_idx'][query_colname]]
@@ -348,7 +348,7 @@ class Engine(object):
     T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
     self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, query_data)
 
-    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
+    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename, warnings=warnings)
 
   def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None, subsample=False):
     """
@@ -365,11 +365,13 @@ class Engine(object):
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
 
+    warnings = []
+
     # variables with "_full" include ignored columns.
     colnames_full = [h.lower().strip() for h in header]
     raw_T_full = data_utils.convert_nans(raw_T_full)
     if cctypes_full is None:
-      cctypes_full = data_utils.guess_column_types(raw_T_full)
+      cctypes_full, warnings = data_utils.guess_column_types(raw_T_full, colnames_full)
     raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column, testing=self.testing)
     T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
@@ -390,7 +392,7 @@ class Engine(object):
     data = [[colname, cctype] for colname, cctype in zip(colnames_full, cctypes_full)]
     columns = ['column', 'type']
 
-    return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename)
+    return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename, warnings=warnings)
 
   def upgrade_btable(self, tablename, upgrade_key_column=None):
     """

@@ -307,7 +307,13 @@ class Client(object):
         if pretty:
             pp = self.pretty_print(result)
             print pp
-        
+
+        # Print warnings last so they're readable without scrolling backwards.
+        if 'warnings' in result:
+            """ Pretty-print warnings. """
+            for warning in result['warnings']:
+                print warning
+                
         if pandas_output and 'data' in result and 'columns' in result:
             result_pandas_df = data_utils.construct_pandas_df(result)
             return result_pandas_df

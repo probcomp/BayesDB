@@ -503,13 +503,23 @@ def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
         column_type = 'multinomial'
     return column_type
 
-def guess_column_types(T, count_cutoff=20, ratio_cutoff=0.02):
+def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, warn_cardinality=7):
+    """
+    Guesses column types - used when creating new btable so user doesn't have to
+    specify a type for all columns.
+    Refer to function guess_column_type for decision rules.
+    Warn if cardinality of a multinomial is greater than 7 
+        (limit proposed by Pat Shafto 7 Aug 2014)
+    """
     T_transposed = transpose_list(T)
     column_types = []
-    for column_data in T_transposed:
+    warnings = []
+    for column_idx, column_data in enumerate(T_transposed):
         column_type = guess_column_type(column_data, count_cutoff, ratio_cutoff)
         column_types.append(column_type)
-    return column_types
+        if column_type == 'multinomial' and len(set(column_data)) > warn_cardinality:
+            warnings.append('Column "%s" is multinomial but has a high number of distinct values. Convert to continuous using UPDATE SCHEMA if appropriate.' % colnames_full[column_idx])
+    return column_types, warnings
         
 def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
                              cctypes=None):
