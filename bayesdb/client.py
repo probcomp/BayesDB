@@ -312,7 +312,7 @@ class Client(object):
         if 'warnings' in result:
             """ Pretty-print warnings. """
             for warning in result['warnings']:
-                print warning
+                print 'WARNING: %s' % warning
                 
         if pandas_output and 'data' in result and 'columns' in result:
             result_pandas_df = data_utils.construct_pandas_df(result)
