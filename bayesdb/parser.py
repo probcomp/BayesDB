@@ -514,6 +514,9 @@ class Parser(object):
         filename = client_dict['filename']
         scatter = client_dict['scatter']
 
+        # Require the number of observations to simulate
+        assert args_dict['numpredictions'] is not None, "BayesDBParsingError: Include TIMES: SIMULATE <columns> FROM <btable> TIMES <times>."
+
         assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in SIMULATE."
         assert args_dict['numsamples'] == None, 'BayesDBParsingError: WITH <numsamples> SAMPLES clause not allowed in SIMULATE.'
         assert args_dict['threshold'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in SIMULATE."

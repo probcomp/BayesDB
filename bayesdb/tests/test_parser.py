@@ -795,6 +795,10 @@ def test_simulate_pyparsing():
     assert simulate_ast.functions[0].column_id == 'col1'
     assert simulate_ast.functions[1].column_id == 'col2'
 
+    query_3 = "SIMULATE col1, col2 FROM table_1"
+    simulate_ast = query.parseString(query_3, parseAll=True)
+
+
 def test_estimate_columns_from_pyparsing():
     query_1 = "ESTIMATE COLUMNS FROM table_1 WHERE col_1 = 4 ORDER BY TYPICALITY LIMIT 10 AS col_list_1"
     est_col_ast_1 = query.parseString(query_1,parseAll=True)
@@ -1327,6 +1331,7 @@ def test_disallowed_queries():
                "simulate * from test save clusters with threshold .5 as test.csv",
                "simulate * from test with confidence .4",
                "simulate * from test with 4 samples",
+               "simulate * from test",
                "estimate columns from test with confidence .4",
                "estimate columns from test given a=4",
                "estimate columns from test times 10",
