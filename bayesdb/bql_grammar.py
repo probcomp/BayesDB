@@ -254,6 +254,8 @@ equal_literal = Literal("=")
 semicolon_literal = Literal(";")
 comma_literal = Literal(",")
 hyphen_literal = Literal("-")
+paren_open_literal = Literal("(")
+paren_close_literal = Literal(")")
 all_column_literal = Literal('*')
 identifier = (Word(alphas + '/', alphanums + "_./").setParseAction(downcaseTokens)) | sub_query
 btable = identifier.setResultsName("btable") | sub_query
@@ -272,6 +274,18 @@ label = (QuotedString('"', escChar='\\') |
          Word(printables, excludeChars=',;'))
 data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword | cyclic_keyword
 
+cyclic_parameters = Group(
+    Suppress(paren_open_literal) + 
+    float_number.setResultsName("min") + 
+    Suppress(comma_literal) + 
+    float_number.setResultsName("max") +
+    Suppress(paren_close_literal)).setResultsName("cyclic_parameters")
+
+cyclic = cyclic_keyword + cyclic_parameters
+
+data_type = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword | cyclic
+
+
 ###################################################################################
 # ------------------------------------ Functions -------------------------------- #
 ###################################################################################
@@ -285,9 +299,13 @@ create_btable_function = create_btable_keyword + btable + Suppress(from_keyword)
 upgrade_btable_function = upgrade_btable_keyword + btable
 
 # UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
-type_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + data_type_literal) + 
-                               Suppress(comma_literal)) + 
-                    Group(identifier + Suppress(equal_literal) + data_type_literal)).setResultsName("type_clause")
+
+
+type_clause = Group(
+    ZeroOrMore(
+      Group(identifier + Suppress(equal_literal) + data_type) + Suppress(comma_literal)) + 
+      Group(identifier + Suppress(equal_literal) + data_type)).setResultsName("type_clause")
+
 update_schema_for_function = (update_schema_for_keyword + 
                               btable + 
                               Suppress(set_keyword) + 
