@@ -331,8 +331,6 @@ class Parser(object):
         confidence = None
         if bql_statement_ast.confidence != '':
             confidence = float(bql_statement_ast.confidence)
-            if confidence > 1: 
-                raise utils.BayesDBParseError("Confidence cannot be greater than 0.")
         filename = None
         if bql_statement_ast.filename != '':
             filename = bql_statement_ast.filename
@@ -451,6 +449,8 @@ class Parser(object):
         for function in functions:
             assert function.function_id == '', "BayesDBParsingError: %s not valid in INFER" % function.function_id
         
+        assert confidence is None or 0.0 <= confidence <= 1.0, "BayesDBParsingError: CONFIDENCE must be unspecified (default 0) or in the interval [0, 1]"
+
         return 'infer', \
             dict(tablename=tablename, functions=functions, 
                  newtablename=newtablename, confidence=confidence, 
