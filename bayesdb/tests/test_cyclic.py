@@ -59,7 +59,7 @@ def teardown_function(function):
 def update_cyclic_schema(tablename):
   global client
   for col in range(10):
-    client( 'update schema for %s set col_%i=cyclic;' % (tablename,col), debug=True, pretty=False )
+    client( 'update schema for %s set col_%i=cyclic(0, 6.284);' % (tablename,col), debug=True, pretty=False )
 
 def create_cyclic(path='data/cyclic_test.csv', key_column=0):
   test_tablename = 'cyclictest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
