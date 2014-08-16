@@ -401,6 +401,16 @@ def test_select():
   client('select name, similarity to 0 from %s order by similarity to 1 with respect to qual_score, ami_score' % (test_tablename), debug=True, pretty=False)
   client('select name, similarity to 0 from %s order by similarity to 1 with respect to clist' % (test_tablename), debug=True, pretty=False)        
 
+  # Add some cases to be sure that referencing row index and column values produces the same output.
+  out1 = client('select name, qual_score, similarity to 161 from %s order by similarity to 161 limit 5' % (test_tablename), debug=True, pretty=False)[0]
+  out2 = client('select name, qual_score, similarity to name = "McAllen TX" from %s order by similarity to name = "McAllen TX" limit 5' % (test_tablename), debug=True, pretty=False)[0]
+  out3 = client('select name, qual_score, similarity to key = 161 from %s order by similarity to key = 161 limit 5' % (test_tablename), debug=True, pretty=False)[0]
+
+  # Assert columns are equal
+  for col_idx in range(out1.shape[1]):
+    assert (out1.iloc[col_idx] == out2.iloc[col_idx]).all() 
+    assert (out2.iloc[col_idx] == out3.iloc[col_idx]).all()
+
   # row typicality
   client('select typicality from %s' % (test_tablename), debug=True, pretty=False)
   client('select *, typicality from %s' % (test_tablename), debug=True, pretty=False)  

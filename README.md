@@ -9,11 +9,14 @@ BayesDB's inferences are based in part on CrossCat, a new, nonparametric Bayesia
 
 # Installation
 
-### VM
+### Docker
 
-We provide a VirtualBox VM ([Get the VM and VM_README here](http://probcomp.csail.mit.edu/bayesdb/#Download)) for small scale testing of BayesDB.
+BayesDB can also be accessed via a community-contributed [Docker container](https://registry.hub.docker.com/u/bayesdb/bayesdb/). Install instructions for Docker can be found [here](https://docs.docker.com/installation/#installation).
 
-**Note**: The VM is only meant to provide an out-of-the-box usable system setup.  Its resources are limited and large jobs will fail due to memory errors.  To run larger jobs, increase the VM resources or install directly to your system.
+Once docker has been installed and configured enter the following command in your terminal to download and install the Docker container (this will take a few minutes):
+
+    docker pull bayesdb/bayesdb
+
 
 ### Local
 BayesDB depends on CrossCat, so first install CrossCat by following its local installation instructions [here](https://github.com/mit-probabilistic-computing-project/crosscat/blob/master/README.md).

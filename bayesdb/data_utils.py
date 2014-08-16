@@ -121,6 +121,13 @@ def gen_continuous_metadata(column_data):
         code_to_value=dict(),
         )
 
+def gen_cyclic_metadata(column_data):
+    return dict(
+        modeltype="vonmises",
+        value_to_code=dict(),
+        code_to_value=dict(),
+        )
+
 def gen_multinomial_metadata(column_data):
     def get_is_not_nan(el):
         if isinstance(el, str):
@@ -143,6 +150,7 @@ def gen_multinomial_metadata(column_data):
 
 metadata_generator_lookup = dict(
     continuous=gen_continuous_metadata,
+    cyclic=gen_cyclic_metadata,
     multinomial=gen_multinomial_metadata,
     ignore=gen_ignore_metadata,
     key=gen_ignore_metadata,
@@ -333,7 +341,7 @@ def convert_code_to_value(M_c, cidx, code):
     """
     if numpy.isnan(code) or code=='nan':
         return code
-    elif M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
+    elif M_c['column_metadata'][cidx]['modeltype'] in ['normal_inverse_gamma','vonmises']:
         return float(code)
     else:
         try:
@@ -350,7 +358,7 @@ def convert_value_to_code(M_c, cidx, value):
     Note that the underlying store 'code_to_value' is unfortunately named backwards.
     TODO: fix the backwards naming.
     """
-    if M_c['column_metadata'][cidx]['modeltype'] == 'normal_inverse_gamma':
+    if M_c['column_metadata'][cidx]['modeltype'] in ['normal_inverse_gamma','vonmises']:
         return float(value)
     else:
         try:
@@ -375,7 +383,8 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
     # WARNING: array argument is mutated
     for col_idx in range(T_uncast_array.shape[1]):
         modeltype = M_c['column_metadata'][col_idx]['modeltype']
-        if modeltype == 'normal_inverse_gamma': continue
+        if modeltype in ['normal_inverse_gamma','vonmises']: 
+            continue
         # copy.copy else you mutate M_c
         mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
         mapping['NAN'] = numpy.nan
@@ -494,13 +503,23 @@ def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
         column_type = 'multinomial'
     return column_type
 
-def guess_column_types(T, count_cutoff=20, ratio_cutoff=0.02):
+def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, warn_cardinality=7):
+    """
+    Guesses column types - used when creating new btable so user doesn't have to
+    specify a type for all columns.
+    Refer to function guess_column_type for decision rules.
+    Warn if cardinality of a multinomial is greater than 7 
+        (limit proposed by Pat Shafto 7 Aug 2014)
+    """
     T_transposed = transpose_list(T)
     column_types = []
-    for column_data in T_transposed:
+    warnings = []
+    for column_idx, column_data in enumerate(T_transposed):
         column_type = guess_column_type(column_data, count_cutoff, ratio_cutoff)
         column_types.append(column_type)
-    return column_types
+        if column_type == 'multinomial' and len(set(column_data)) > warn_cardinality:
+            warnings.append('Column "%s" is multinomial but has a high number of distinct values. Convert to continuous using UPDATE SCHEMA if appropriate.' % colnames_full[column_idx])
+    return column_types, warnings
         
 def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
                              cctypes=None):

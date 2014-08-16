@@ -307,7 +307,13 @@ class Client(object):
         if pretty:
             pp = self.pretty_print(result)
             print pp
-        
+
+        # Print warnings last so they're readable without scrolling backwards.
+        if 'warnings' in result:
+            """ Pretty-print warnings. """
+            for warning in result['warnings']:
+                print 'WARNING: %s' % warning
+                
         if pandas_output and 'data' in result and 'columns' in result:
             result_pandas_df = data_utils.construct_pandas_df(result)
             return result_pandas_df
@@ -347,10 +353,22 @@ class Client(object):
         if 'data' in query_obj and 'columns' in query_obj:
             """ Pretty-print data table """
             pt = prettytable.PrettyTable()
-            pt.field_names = query_obj['columns']
-            for row in query_obj['data']:
-                pt.add_row(row)
+            columns = query_obj['columns']
+            pt.field_names = columns
+
+            # Adjust value width - for now preserve 2 decimal places.
+            for row_idx, row_values in enumerate(query_obj['data']):
+                if type(row_values) == tuple:
+                    row_values = list(row_values)
+                for col_idx, col_value in enumerate(row_values):
+                    if type(col_value) == float:
+                        # Right-align numeric columns.
+                        if row_idx == 0:
+                            pt.align[columns[col_idx]] = 'r'
+                        row_values[col_idx] = "% .2f" % col_value
+                pt.add_row(row_values)
             result += str(pt)
+
         elif 'list' in query_obj:
             """ Pretty-print lists """
             result += str(query_obj['list'])

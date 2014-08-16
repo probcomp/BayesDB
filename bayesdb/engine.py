@@ -331,7 +331,7 @@ class Engine(object):
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
 
-    cctypes_full = data_utils.guess_column_types(query_data)
+    cctypes_full, warnings = data_utils.guess_column_types(query_data, query_colnames)
     for query_idx, query_colname in enumerate(query_colnames):
         if query_colname in M_c_existing_full['name_to_idx']:
             cctypes_full[query_idx] = cctypes_existing_full[M_c_existing_full['name_to_idx'][query_colname]]
@@ -348,7 +348,7 @@ class Engine(object):
     T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
     self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, query_data)
 
-    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename)
+    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename, warnings=warnings)
 
   def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None, subsample=False):
     """
@@ -365,11 +365,13 @@ class Engine(object):
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
 
+    warnings = []
+
     # variables with "_full" include ignored columns.
     colnames_full = [h.lower().strip() for h in header]
     raw_T_full = data_utils.convert_nans(raw_T_full)
     if cctypes_full is None:
-      cctypes_full = data_utils.guess_column_types(raw_T_full)
+      cctypes_full, warnings = data_utils.guess_column_types(raw_T_full, colnames_full)
     raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column, testing=self.testing)
     T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 
@@ -390,7 +392,7 @@ class Engine(object):
     data = [[colname, cctype] for colname, cctype in zip(colnames_full, cctypes_full)]
     columns = ['column', 'type']
 
-    return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename)
+    return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename, warnings=warnings)
 
   def upgrade_btable(self, tablename, upgrade_key_column=None):
     """
@@ -758,17 +760,17 @@ class Engine(object):
     key_column_name = self.persistence_layer.get_key_column_name(tablename)
 
     # Parse queries, where_conditions, and order by.
-    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, column_lists, key_column_name)
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, T_full, column_lists, key_column_name)
     if whereclause == None: 
       where_conditions = []
     else:
-      where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, M_c_full, column_lists)
+      where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, M_c_full, T_full, column_lists)
       if len(where_conditions) > 0:
         assert len(where_conditions[0]) == 4
     if order_by == False:
       order_by = []
     else:
-      order_by = self.parser.parse_order_by_clause(order_by, M_c, T, M_c_full, column_lists)
+      order_by = self.parser.parse_order_by_clause(order_by, M_c, T, M_c_full, T_full, column_lists)
 
     # Fill in individual impute confs with impute_confidence if they're None and impute_confidence isn't:
     if impute_confidence is not None:
@@ -952,7 +954,7 @@ class Engine(object):
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
     # Set M_c_full to None because we don't want to simulate key/ignore columns
-    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=None, column_lists=column_lists)
+    queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=None, T_full=None, column_lists=column_lists)
     ##TODO check duplicates
     ##TODO check for no functions
     
@@ -1051,7 +1053,7 @@ class Engine(object):
     """
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     column_lists = self.persistence_layer.get_column_lists(tablename)
-    queries, column_names = self.parser.parse_functions(functions, M_c, T, M_c, column_lists, key_column_name=None)
+    queries, column_names = self.parser.parse_functions(functions, M_c, T, M_c, T, column_lists, key_column_name=None)
 
     # save column list, if given a name to save as
     if name:

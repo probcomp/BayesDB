@@ -53,13 +53,18 @@ def gen_shapetest_csvs(num_rows):
 
     return ret
 
-def gen_base_queries(num_iters, num_chains, num_rows, shape, ct_kernel):
+def gen_base_queries(num_iters, num_chains, num_rows, shape, ct_kernel, datatype):
     table = table_string[shape]
     datafile = table + '.csv'
 
     cmd_list = []
     # load the data into a table
     cmd_list.append("CREATE BTABLE %s FROM %s;" % (table, datafile) )
+    # update schema if needed
+    if datatype == 'cyclic':
+        cmd_list.append("UPDATE SCHEMA FOR %s SET x=cyclic;" % (table) )
+        cmd_list.append("UPDATE SCHEMA FOR %s SET y=cyclic;" % (table) )
+
     # intialize models
     cmd_list.append('INITIALIZE %i MODELS FOR %s;' % (num_chains, table) )
     # analyze the data
@@ -94,6 +99,7 @@ def run_experiment(argin):
     num_iters = argin["num_iters"]
     num_chains = argin["num_chains"]
     ct_kernel = argin["ct_kernel"]
+    datatype = argin["datatype"]
 
     # generate the data
     datasets = gen_shapetest_csvs(num_rows)
@@ -107,14 +113,12 @@ def run_experiment(argin):
     client('DROP BTABLE exp_ring;', yes=True)
     client('DROP BTABLE exp_dots;', yes=True)
 
-    plt = 0
-
     data_out = dict()
     data_out['config'] = argin;
 
     # recreate sin wave
     for shape in ["sinwave", "x", "ring", "dots"]:
-        query_list = gen_base_queries(num_iters, num_chains, num_rows, shape, ct_kernel);
+        query_list = gen_base_queries(num_iters, num_chains, num_rows, shape, ct_kernel, datatype);
         for query in query_list:
             print query
             client(query)
@@ -146,11 +150,12 @@ def run_experiment(argin):
 
 def gen_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_rows', default=500, type=int)
+    parser.add_argument('--num_rows', default=250, type=int)
     parser.add_argument('--num_iters', default=200, type=int)
     parser.add_argument('--num_chains', default=1, type=int)
-    parser.add_argument('--ct_kernel', default=0, type=int)     # 0 for Gibbs, 1 for MH
-    parser.add_argument('--no_plots', action='store_true')
+    parser.add_argument('--ct_kernel', default=0, type=int)
+    parser.add_argument('--datatype', default='continuous', type=str)
+    parser.add_argument('--no_plots', action='store_true')    
 
     return parser
 
@@ -179,3 +184,6 @@ if __name__ == "__main__":
             eu.plot_recovers_original_densities(result, filename=filename_img)
             pass
         pass
+
+    # results = run_experiment(argsdict)
+    # eu.plot_recovers_original_densities(result, filename=testfile)
