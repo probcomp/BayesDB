@@ -419,7 +419,7 @@ def get_pop_indices(cctypes, colnames):
     pop_columns = [
             colname
             for (cctype, colname) in zip(cctypes, colnames)
-            if (cctype == 'ignore' or cctype == 'key')
+            if (cctype in ['ignore', 'key'])
             ]
     pop_indices = get_list_indices(colnames, pop_columns)
     return pop_indices

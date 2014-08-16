@@ -128,7 +128,7 @@ def string_to_column_type(value_string, column, M_c):
     If continuous, converts the value from string to int or float
     """
     value = value_string
-    if get_cctype_from_M_c(M_c, column) == 'continuous':
+    if get_cctype_from_M_c(M_c, column) in ['continuous', 'cyclic']:
         if is_int(value_string) == True:
             value = int(value)
         elif is_float(value_string) == True:
@@ -267,7 +267,12 @@ def get_cctype_from_M_c(M_c, column):
     if column in M_c['name_to_idx'].keys():
         column_index = M_c['name_to_idx'][column]
         modeltype = M_c['column_metadata'][column_index]['modeltype']
-        cctype = 'continuous' if modeltype == 'normal_inverse_gamma' else 'multinomial'
+        if modeltype == 'normal_inverse_gamma':
+            cctype = 'continuous'
+        elif modeltype == 'vonmises':
+            cctype = 'cyclic'
+        else:
+            modeltype == 'multinomial'
     else:
         # If the column name wasn't found in metadata, it's a function, so the output will be continuous
         cctype = 'continuous'

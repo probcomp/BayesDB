@@ -203,6 +203,11 @@ def parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=False):
     column_metadata = M_c['column_metadata']
     cctypes = [schema_full[column] for column in columns]
 
+    # Treat cyclic as continuous until we establish what we want in a cyclic plot.
+    for cctype_idx, cctype in enumerate(cctypes):
+        if cctype == 'cyclic':
+            cctypes[cctype_idx] = 'continuous'
+
     output = {}
     if len(columns) == 1:
         np_data = np.array([x[0] for x in data])
