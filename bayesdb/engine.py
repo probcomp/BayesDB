@@ -831,7 +831,7 @@ class Engine(object):
     data_tuples = []
     for row_id, T_row in enumerate(T):
       row = [None]*order_by_size
-      row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c) 
+      row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
       where_clause_eval = select_utils.evaluate_where_on_row(row_id, row_values, where_conditions, M_c, M_c_full,
                                X_L_list, X_D_list, T, T_full, self, tablename, numsamples, impute_confidence)
       if type(where_clause_eval) == list:
@@ -841,7 +841,6 @@ class Engine(object):
             row[where_idxs[w_idx]] = val
         data_tuples.append((row_id, row))
 
-          
     ## Now, order the rows. First compute all values that will be necessary for order by.
     if len(order_by) > 0:
       scored_data_tuples = list() # Entries are score, data_tuple      
@@ -897,7 +896,6 @@ class Engine(object):
       row_count += 1
       if row_count >= limit:
         break
-
 
     # Execute INTO statement
     if newtablename is not None:
