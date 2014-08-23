@@ -1351,12 +1351,25 @@ def test_disallowed_queries():
                ]
 
     for query_string in strings:
-        bql_statement.parseString(query_string,parseAll=True)
+        ast = bql_statement.parseString(query_string,parseAll=True)
+        with pytest.raises(AssertionError):
+            parser.parse_single_statement(ast)
 
-    #for query_string in strings:
-    #    ast = bql_statement.parseString(query_string,parseAll=True)
-    #    with pytest.raises(AssertionError):
-    #        parser.parse_single_statement(ast)
+def test_old_grammar_fails():
+    """
+    All of these queries are formerly valid but should not pass the current grammar.
+    """
+
+    strings = [
+        'update schema for test set a = continuous',
+        'update schema for test set a = multinomial',
+        # Cyclic is invalid because it should be followed by (min, max) parameters.
+        'update schema for test set a = cyclic'
+    ]
+
+    for query_string in strings:
+        with pytest.raises(ParseException):
+            ast = bql_statement.parseString(query_string, parseAll=True)
 
 def test_label_and_metadata():
     # LABEL COLUMNS FOR <btable> SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...]
