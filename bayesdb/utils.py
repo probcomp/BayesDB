@@ -125,10 +125,10 @@ def string_to_column_type(value_string, column, M_c):
     """
     column is the string of the column name
     Checks the type of the column in question based on M_c
-    If continuous, converts the value from string to int or float
+    If numerical, converts the value from string to int or float
     """
     value = value_string
-    if get_cctype_from_M_c(M_c, column) in ['continuous', 'cyclic']:
+    if get_cctype_from_M_c(M_c, column) in ['numerical', 'cyclic']:
         if is_int(value_string) == True:
             value = int(value)
         elif is_float(value_string) == True:
@@ -200,11 +200,11 @@ def get_column_component_suffstats_i(M_c, X_L, col_idx):
         view_state_i['column_component_suffstats'][local_col_idx]
     return column_component_suffstats_i
 
-def continuous_imputation(samples):
+def numerical_imputation(samples):
     imputed = numpy.median(samples)
     return imputed
 
-def multinomial_imputation(samples):
+def categorical_imputation(samples):
     counter = Counter(samples)
     max_tuple = counter.most_common(1)[0]
     max_count = max_tuple[1]
@@ -220,33 +220,33 @@ def multinomial_imputation(samples):
         imputed = values[draw]
     return imputed
 
-def multinomial_imputation_confidence(samples, imputed, column_hypers_i):
+def categorical_imputation_confidence(samples, imputed, column_hypers_i):
     max_count = sum(numpy.array(samples) == imputed)
     confidence = float(max_count) / len(samples)
     return confidence
 
-def get_continuous_mass_within_delta(samples, center, delta):
+def get_numerical_mass_within_delta(samples, center, delta):
     num_samples = len(samples)
     num_within_delta = sum(numpy.abs(samples - center) < delta)
     mass_fraction = float(num_within_delta) / num_samples
     return mass_fraction
 
-def continuous_imputation_confidence(samples, imputed,
+def numerical_imputation_confidence(samples, imputed,
                                      column_component_suffstats_i):
     col_std = get_column_std(column_component_suffstats_i)
     delta = .1 * col_std
-    confidence = get_continuous_mass_within_delta(samples, imputed, delta)
+    confidence = get_numerical_mass_within_delta(samples, imputed, delta)
     return confidence
     
 
 modeltype_to_imputation_function = {
-    'normal_inverse_gamma': continuous_imputation,
-    'symmetric_dirichlet_discrete': multinomial_imputation,
+    'normal_inverse_gamma': numerical_imputation,
+    'symmetric_dirichlet_discrete': categorical_imputation,
     }
 
 modeltype_to_imputation_confidence_function = {
-    'normal_inverse_gamma': continuous_imputation_confidence,
-    'symmetric_dirichlet_discrete': multinomial_imputation_confidence,
+    'normal_inverse_gamma': numerical_imputation_confidence,
+    'symmetric_dirichlet_discrete': categorical_imputation_confidence,
     }
     
 
@@ -268,14 +268,14 @@ def get_cctype_from_M_c(M_c, column):
         column_index = M_c['name_to_idx'][column]
         modeltype = M_c['column_metadata'][column_index]['modeltype']
         if modeltype == 'normal_inverse_gamma':
-            cctype = 'continuous'
+            cctype = 'numerical'
         elif modeltype == 'vonmises':
             cctype = 'cyclic'
         else:
-            cctype = 'multinomial'
+            cctype = 'categorical'
     else:
-        # If the column name wasn't found in metadata, it's a function, so the output will be continuous
-        cctype = 'continuous'
+        # If the column name wasn't found in metadata, it's a function, so the output will be numerical
+        cctype = 'numerical'
     return cctype
 
 # The 'inplace' argument to df.drop() was added to pandas in a version (which one??) that many people may
@@ -457,7 +457,7 @@ def summarize_table(data, columns, M_c, remove_key=True):
         # Past versions used n=5 for 5 most frequent values, but now we have FREQ SELECT for freq tables.
         summary_freqs = df.apply(summarize_freqs, n=1)
 
-        # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
+        # Attach numerical and discrete summaries along row axis (unaligned values will be assigned NaN)
         summary_data = pandas.concat([cctypes, summary_describe, summary_freqs], axis=0)
 
         # Reorder rows: count, unique, mean, std, min, 25%, 50%, 75%, max, modes, prob_modes

@@ -1,4 +1,4 @@
-7#
+#
 #   Copyright (c) 2010-2014, MIT Probabilistic Computing Project
 #
 #   Lead Developers: Jay Baxter and Dan Lovell
@@ -1347,7 +1347,7 @@ def test_disallowed_queries():
                "estimate pairwise row similarity from test times 10",
                "estimate pairwise row similarity from test given a = 5",
                "estimate pairwise row similarity from test with confidence .2",
-               "estimate pairwise row similarity from test where a = b",
+               "estimate pairwise row similarity from test where a = b"
                ]
 
     for query_string in strings:

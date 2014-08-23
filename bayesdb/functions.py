@@ -177,7 +177,7 @@ def _mutual_information(mutual_information_args, row_id, data_values, M_c, X_L_l
 def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine, numsamples):
     col1, col2 = correlation_args
 
-    cctype_map = {'normal_inverse_gamma': 'continuous', 'symmetric_dirichlet_discrete': 'multinomial'}
+    cctype_map = {'normal_inverse_gamma': 'numerical', 'symmetric_dirichlet_discrete': 'categorical'}
     cctype1 = cctype_map[M_c['column_metadata'][col1]['modeltype']]
     cctype2 = cctype_map[M_c['column_metadata'][col2]['modeltype']]
 
@@ -187,12 +187,12 @@ def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list,
     t_array = t_array[numpy.logical_not(nan_index),:]
     n = t_array.shape[0]
 
-    if cctype1 == 'continuous' and cctype2 == 'continuous':
-        # Two continuous columns: Pearson R squared
+    if cctype1 == 'numerical' and cctype2 == 'numerical':
+        # Two numerical columns: Pearson R squared
         correlation, p_value = pearsonr(t_array[:,col1], t_array[:,col2])
         correlation = correlation ** 2
-    elif cctype1 == 'multinomial' and cctype2 == 'multinomial':
-        # Two multinomial columns: Cramer's phi
+    elif cctype1 == 'categorical' and cctype2 == 'categorical':
+        # Two categorical columns: Cramer's phi
         data_i = numpy.array(t_array[:, col1], dtype='int32')
         data_j = numpy.array(t_array[:, col2], dtype='int32')
         unique_i = numpy.unique(data_i)
@@ -209,8 +209,8 @@ def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list,
             chisq, p, dof, expected = chi2_contingency(contingency_table, correction=False)
             correlation = (chisq / (n * (min_levels - 1))) ** 0.5
     else:
-        # One continuous, one multinomial column: ANOVA R-squared
-        if cctype1 == 'multinomial':
+        # One numerical, one categorical column: ANOVA R-squared
+        if cctype1 == 'categorical':
             data_group = t_array[:, col1]
             data_y = t_array[:, col2]
         else:

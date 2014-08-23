@@ -110,11 +110,11 @@ def gen_M_r_from_T(T):
     return M_r
 
 def gen_ignore_metadata(column_data):
-    ret = gen_multinomial_metadata(column_data)
+    ret = gen_categorical_metadata(column_data)
     ret['modeltype'] = 'ignore'
     return ret
 
-def gen_continuous_metadata(column_data):
+def gen_numerical_metadata(column_data):
     return dict(
         modeltype="normal_inverse_gamma",
         value_to_code=dict(),
@@ -128,7 +128,7 @@ def gen_cyclic_metadata(column_data):
         code_to_value=dict(),
         )
 
-def gen_multinomial_metadata(column_data):
+def gen_categorical_metadata(column_data):
     def get_is_not_nan(el):
         if isinstance(el, str):
             return el.upper() != 'NAN'
@@ -149,9 +149,9 @@ def gen_multinomial_metadata(column_data):
         )
 
 metadata_generator_lookup = dict(
-    continuous=gen_continuous_metadata,
+    numerical=gen_numerical_metadata,
     cyclic=gen_cyclic_metadata,
-    multinomial=gen_multinomial_metadata,
+    categorical=gen_categorical_metadata,
     ignore=gen_ignore_metadata,
     key=gen_ignore_metadata,
 )
@@ -160,7 +160,7 @@ def gen_M_c_from_T(T, cctypes=None, colnames=None):
     num_rows = len(T)
     num_cols = len(T[0])
     if cctypes is None:
-        cctypes = ['continuous'] * num_cols
+        cctypes = ['numerical'] * num_cols
     if colnames is None:
         colnames = range(num_cols)
     #
@@ -183,11 +183,11 @@ def gen_M_c_from_T_with_colnames(T, colnames):
     num_rows = len(T)
     num_cols = len(T[0])
     #
-    gen_continuous_metadata = lambda: dict(modeltype="normal_inverse_gamma",
+    gen_numerical_metadata = lambda: dict(modeltype="normal_inverse_gamma",
                                            value_to_code=dict(),
                                            code_to_value=dict())
     column_metadata = [
-        gen_continuous_metadata()
+        gen_numerical_metadata()
         for col_idx in range(num_cols)
         ]
     name_to_idx = dict(zip(colnames, range(num_cols)))
@@ -221,35 +221,35 @@ def discretize_data(T, discretize_indices):
         numpy.array(T_array[:, discretize_indices], dtype=int)
     return T_array.tolist()
 
-def convert_columns_to_multinomial(T, M_c, multinomial_indices):
-    multinomial_indices = numpy.array(multinomial_indices)
+def convert_columns_to_categorical(T, M_c, categorical_indices):
+    categorical_indices = numpy.array(categorical_indices)
     modeltype = 'symmetric_dirichlet_discrete'
     T_array = numpy.array(T)
-    for multinomial_idx in multinomial_indices:
-        multinomial_column = T_array[:, multinomial_idx]
-        multinomial_column = multinomial_column[~numpy.isnan(multinomial_column)]
-        multinomial_values = list(set(multinomial_column))
-        K = len(multinomial_values)
-        code_to_value = dict(zip(range(K), multinomial_values))
-        value_to_code = dict(zip(multinomial_values, range(K)))
-        multinomial_column_metadata = M_c['column_metadata'][multinomial_idx]
-        multinomial_column_metadata['modeltype'] = modeltype
-        multinomial_column_metadata['code_to_value'] = code_to_value
-        multinomial_column_metadata['value_to_code'] = value_to_code
+    for categorical_idx in categorical_indices:
+        categorical_column = T_array[:, categorical_idx]
+        categorical_column = categorical_column[~numpy.isnan(categorical_column)]
+        categorical_values = list(set(categorical_column))
+        K = len(categorical_values)
+        code_to_value = dict(zip(range(K), categorical_values))
+        value_to_code = dict(zip(categorical_values, range(K)))
+        categorical_column_metadata = M_c['column_metadata'][categorical_idx]
+        categorical_column_metadata['modeltype'] = modeltype
+        categorical_column_metadata['code_to_value'] = code_to_value
+        categorical_column_metadata['value_to_code'] = value_to_code
     return T, M_c
 
 # UNTESTED
-def convert_columns_to_continuous(T, M_c, continuous_indices):
-    continuous_indices = numpy.array(continuous_indices)
+def convert_columns_to_numerical(T, M_c, numerical_indices):
+    numerical_indices = numpy.array(numerical_indices)
     modeltype = 'normal_inverse_gamma'
     T_array = numpy.array(T)
-    for continuous_idx in continuous_indices:
+    for numerical_idx in numerical_indices:
         code_to_value = dict()
         value_to_code = dict()
-        continuous_column_metadata = M_c['column_metadata'][continuous_idx]
-        continuous_column_metadata['modeltype'] = modeltype
-        continuous_column_metadata['code_to_value'] = code_to_value
-        continuous_column_metadata['value_to_code'] = value_to_code
+        numerical_column_metadata = M_c['column_metadata'][numerical_idx]
+        numerical_column_metadata['modeltype'] = modeltype
+        numerical_column_metadata['code_to_value'] = code_to_value
+        numerical_column_metadata['value_to_code'] = value_to_code
     return T, M_c
 
 def at_most_N_rows(T, N, gen_seed=0):
@@ -302,7 +302,7 @@ def write_csv(filename, T, header = None):
             csv_writer.writerow(header)
         [csv_writer.writerow(T[i]) for i in range(len(T))]
 
-def all_continuous_from_file(filename, max_rows=None, gen_seed=0, has_header=True):
+def all_numerical_from_file(filename, max_rows=None, gen_seed=0, has_header=True):
     header, T = read_csv(filename, has_header=has_header)
     T = numpy.array(T, dtype=float).tolist()
     T = at_most_N_rows(T, N=max_rows, gen_seed=gen_seed)
@@ -310,7 +310,7 @@ def all_continuous_from_file(filename, max_rows=None, gen_seed=0, has_header=Tru
     M_c = gen_M_c_from_T(T)
     return T, M_r, M_c, header
 
-def continuous_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=None, gen_seed=0):
+def numerical_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=None, gen_seed=0):
     header = None
     T, M_r, M_c = None, None, None
     colmask = map(lambda x: 1 if x != 'ignore' else 0, cctypes)
@@ -455,11 +455,11 @@ def read_data_objects(filename, max_rows=None, gen_seed=0,
     raw_T = convert_nans(raw_T)
 
     if cctypes is None:
-        cctypes = ['continuous'] * len(header)
+        cctypes = ['numerical'] * len(header)
         pass
 
     T_uncast_arr, cctypes, header = remove_ignore_cols(raw_T, cctypes, header) # remove ignore columns
-    # determine value mappings and map T to continuous castable values
+    # determine value mappings and map T to numerical castable values
     M_r = gen_M_r_from_T(T_uncast_arr)
     M_c = gen_M_c_from_T(T_uncast_arr, cctypes, colnames)
     T = map_to_T_with_M_c(T_uncast_arr, M_c)
@@ -498,9 +498,9 @@ def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
     above_ratio_cutoff = distinct_ratio > ratio_cutoff
     can_cast = get_can_cast_to_float(column_data)
     if above_count_cutoff and above_ratio_cutoff and can_cast:
-        column_type = 'continuous'
+        column_type = 'numerical'
     else:
-        column_type = 'multinomial'
+        column_type = 'categorical'
     return column_type
 
 def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, warn_cardinality=7):
@@ -508,7 +508,7 @@ def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, war
     Guesses column types - used when creating new btable so user doesn't have to
     specify a type for all columns.
     Refer to function guess_column_type for decision rules.
-    Warn if cardinality of a multinomial is greater than 7 
+    Warn if cardinality of a categorical is greater than 7 
         (limit proposed by Pat Shafto 7 Aug 2014)
     """
     T_transposed = transpose_list(T)
@@ -517,8 +517,8 @@ def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, war
     for column_idx, column_data in enumerate(T_transposed):
         column_type = guess_column_type(column_data, count_cutoff, ratio_cutoff)
         column_types.append(column_type)
-        if column_type == 'multinomial' and len(set(column_data)) > warn_cardinality:
-            warnings.append('Column "%s" is multinomial but has a high number of distinct values. Convert to continuous using UPDATE SCHEMA if appropriate.' % colnames_full[column_idx])
+        if column_type == 'categorical' and len(set(column_data)) > warn_cardinality:
+            warnings.append('Column "%s" is categorical but has a high number of distinct values. Convert to numerical using UPDATE SCHEMA if appropriate.' % colnames_full[column_idx])
     return column_types, warnings
         
 def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
