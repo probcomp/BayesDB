@@ -154,16 +154,16 @@ class Parser(object):
         """
         tablename = bql_statement_ast.btable
         mappings = dict()
-        parameters = dict()
         type_clause = bql_statement_ast.type_clause
         for update in type_clause:
             column = update[0]
             cctype = update[1]
-            mappings[column] = cctype
+            mappings[column] = dict()
+            mappings[column]['cctype'] = cctype
+            mappings[column]['parameters'] = dict()
             if cctype == 'cyclic':
-                parameters[column] = dict()
-                parameters[column]['min'] = update.cyclic_parameters.min
-                parameters[column]['max'] = update.cyclic_parameters.max
+                mappings[column]['parameters']['min'] = update.cyclic_parameters.min
+                mappings[column]['parameters']['max'] = update.cyclic_parameters.max
         return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
     def parse_drop_btable(self,bql_statement_ast):
