@@ -370,8 +370,10 @@ class Engine(object):
     # variables with "_full" include ignored columns.
     colnames_full = [h.lower().strip() for h in header]
     raw_T_full = data_utils.convert_nans(raw_T_full)
+
     if cctypes_full is None:
       cctypes_full, warnings = data_utils.guess_column_types(raw_T_full, colnames_full)
+
     raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column, testing=self.testing)
     T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
 

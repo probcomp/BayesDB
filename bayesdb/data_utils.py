@@ -112,6 +112,7 @@ def gen_M_r_from_T(T):
 def gen_ignore_metadata(column_data):
     ret = gen_multinomial_metadata(column_data)
     ret['modeltype'] = 'ignore'
+    ret['parameters'] = None
     return ret
 
 def gen_continuous_metadata(column_data):
@@ -119,16 +120,22 @@ def gen_continuous_metadata(column_data):
         modeltype="normal_inverse_gamma",
         value_to_code=dict(),
         code_to_value=dict(),
+        parameters=None
         )
 
-def gen_cyclic_metadata(column_data):
+def gen_cyclic_metadata(column_data, parameters=None):
+
+    if not parameters:
+        parameters = dict(min = min(column_data), max = max(column_data))
+
     return dict(
         modeltype="vonmises",
         value_to_code=dict(),
         code_to_value=dict(),
+        parameters=parameters
         )
 
-def gen_multinomial_metadata(column_data):
+def gen_multinomial_metadata(column_data, parameters=None):
     def get_is_not_nan(el):
         if isinstance(el, str):
             return el.upper() != 'NAN'
@@ -142,11 +149,15 @@ def gen_multinomial_metadata(column_data):
     values = range(len(unique_codes))
     value_to_code = dict(zip(values, unique_codes))
     code_to_value = dict(zip(unique_codes, values))
+
+    if not parameters:
+        parameters = dict(cardinality = len(unique_codes))
+
     return dict(
         modeltype="symmetric_dirichlet_discrete",
         value_to_code=value_to_code,
         code_to_value=code_to_value,
-        )
+        parameters = parameters)
 
 metadata_generator_lookup = dict(
     continuous=gen_continuous_metadata,
