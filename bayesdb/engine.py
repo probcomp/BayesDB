@@ -494,7 +494,7 @@ class Engine(object):
         # If schemas match, add the models
         # If schemas don't match:
         #   If there are models, don't add the new ones (they'll be incompatible)
-        #   If there aren't models, add the new ones.
+        #   If ther  def load_models(self, tablename, models, model_schema):e aren't models, add the new ones.
         if table_schema != model_schema:
             if self.persistence_layer.has_models(tablename):
                 raise utils.BayesDBError('Table %s already has models under a different schema than the models you are loading. All models used must have the same schema.' % tablename)

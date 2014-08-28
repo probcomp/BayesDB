@@ -586,6 +586,7 @@ class PersistenceLayer():
         M_c_full = metadata_full['M_c_full']
         raw_T_full = metadata_full['raw_T_full']
         colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
+        parameters_full = [x['parameters'] for x in M_c_full['column_metadata']]
 
         # Now, update cctypes_full (cctypes updated later, after removing ignores).
         mapping_set = 'continuous', 'multinomial', 'ignore', 'key', 'cyclic'
@@ -596,10 +597,10 @@ class PersistenceLayer():
 
             if colname.lower() not in M_c_full['name_to_idx']:
                 raise utils.BayesDBError('Error: column %s does not exist.' % col)
-            elif mapping not in mapping_set:
+            elif cctype not in mapping_set:
                 raise utils.BayesDBError('Error: datatype %s is not one of the valid datatypes: %s.' % (mapping, str(mapping_set)))
 
-            cidx = M_c_full['name_to_idx'][col.lower()]
+            cidx = M_c_full['name_to_idx'][colname.lower()]
 
             # If the column's current type is key, don't allow the change.
             if cctypes_full[cidx] == 'key':
@@ -610,15 +611,16 @@ class PersistenceLayer():
                 raise utils.BayesDBError('Error: key column already exists. To choose a different key, reload the table using CREATE BTABLE')
 
             cctypes_full[cidx] = cctype
+            parameters_full[cidx] = parameters
 
         # Make sure there isn't more than one key.
         assert len(filter(lambda x: x=='key', cctypes_full)) == 1
 
-        T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+        T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full, parameters=parameters_full)
 
         # Variables without "_full" don't include ignored columns.
-        raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
-        T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+        raw_T, cctypes, colnames, parameters = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full, parameters_full)
+        T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes, parameters = parameters)
 
         # Now, put cctypes, T, M_c, and M_r back into the DB
         self.update_metadata(tablename, M_r, M_c, T, cctypes)

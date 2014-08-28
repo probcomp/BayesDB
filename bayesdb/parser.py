@@ -164,6 +164,8 @@ class Parser(object):
             if cctype == 'cyclic':
                 mappings[column]['parameters']['min'] = update.cyclic_parameters.min
                 mappings[column]['parameters']['max'] = update.cyclic_parameters.max
+            else:
+                mappings[column]['parameters'] = None
         return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
     def parse_drop_btable(self,bql_statement_ast):

@@ -109,13 +109,13 @@ def gen_M_r_from_T(T):
     M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
     return M_r
 
-def gen_ignore_metadata(column_data):
-    ret = gen_multinomial_metadata(column_data)
+def gen_ignore_metadata(column_data, parameters=None):
+    ret = gen_multinomial_metadata(column_data, parameters)
     ret['modeltype'] = 'ignore'
     ret['parameters'] = None
     return ret
 
-def gen_continuous_metadata(column_data):
+def gen_continuous_metadata(column_data, parameters=None):
     return dict(
         modeltype="normal_inverse_gamma",
         value_to_code=dict(),
@@ -167,19 +167,21 @@ metadata_generator_lookup = dict(
     key=gen_ignore_metadata,
 )
 
-def gen_M_c_from_T(T, cctypes=None, colnames=None):
+def gen_M_c_from_T(T, cctypes=None, colnames=None, parameters=None):
     num_rows = len(T)
     num_cols = len(T[0])
     if cctypes is None:
         cctypes = ['continuous'] * num_cols
     if colnames is None:
         colnames = range(num_cols)
+    if parameters is None:
+        parameters = [None] * num_cols
     #
     T_array_transpose = numpy.array(T).T
     column_metadata = []
-    for cctype, column_data in zip(cctypes, T_array_transpose):
+    for cctype, column_data, params in zip(cctypes, T_array_transpose, parameters):
         metadata_generator = metadata_generator_lookup[cctype]
-        metadata = metadata_generator(column_data)
+        metadata = metadata_generator(column_data, params)
         column_metadata.append(metadata)
     name_to_idx = dict(zip(colnames, range(num_cols)))
     idx_to_name = dict(zip(map(str, range(num_cols)), colnames))
@@ -441,12 +443,17 @@ def do_pop_columns(T, pop_indices):
     T = transpose_list(T_by_columns)
     return T
 
-def remove_ignore_cols(T, cctypes, colnames):
+def remove_ignore_cols(T, cctypes, colnames, parameters=None):
     pop_indices = get_pop_indices(cctypes, colnames)
     T = do_pop_columns(T, pop_indices)
     colnames = do_pop_list_indices(colnames[:], pop_indices)
     cctypes = do_pop_list_indices(cctypes[:], pop_indices)
-    return T, cctypes, colnames
+    if parameters:
+        parameters = do_pop_list_indices(parameters[:], pop_indices)
+        ret = T, cctypes, colnames, parameters
+    else:
+        ret = T, cctypes, colnames
+    return ret
 
 nan_set = set(['', 'null', 'n/a'])
 _convert_nan = lambda el: el if str(el).strip().lower() not in nan_set else 'NAN'
@@ -538,12 +545,12 @@ def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
     return gen_T_and_metadata(colnames, raw_T, max_rows, gen_seed, cctypes)
 
 def gen_T_and_metadata(colnames, raw_T, max_rows=None, gen_seed=0,
-                       cctypes=None):
+                       cctypes=None, parameters=None):
     T = at_most_N_rows(raw_T, max_rows, gen_seed)
     T = convert_nans(T)
     if cctypes is None:
         cctypes = guess_column_types(T)
-    M_c = gen_M_c_from_T(T, cctypes, colnames)
+    M_c = gen_M_c_from_T(T, cctypes, colnames, parameters)
     T = map_to_T_with_M_c(numpy.array(T), M_c)
     M_r = gen_M_r_from_T(T)
     return T, M_r, M_c, cctypes
