@@ -125,8 +125,23 @@ def gen_continuous_metadata(column_data, parameters=None):
 
 def gen_cyclic_metadata(column_data, parameters=None):
 
+    data_min = min(map(float, column_data))
+    data_max = max(map(float, column_data))
+
     if not parameters:
-        parameters = dict(min = min(column_data), max = max(column_data))
+        parameters = dict(min = data_min, max = data_max)
+    else:
+        if 'min' not in parameters or 'max' not in parameters:
+            raise utils.BayesDBError("Error: cyclic columns require (min, max) parameters." % str(value))
+        else:
+            param_min = parameters['min']
+            param_max = parameters['max']
+            if data_min < parameters['min']:
+                raise utils.BayesDBError("Error: cyclic contains data less than specified minimum %f" % param_min)
+            elif data_max > parameters['max']:
+                raise utils.BayesDBError("Error: cyclic contains data greater than specified maximum %f" % param_max)
+            else:
+                parameters = dict(min = param_min, max = param_max)
 
     return dict(
         modeltype="vonmises",
