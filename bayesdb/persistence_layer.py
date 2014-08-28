@@ -596,7 +596,7 @@ class PersistenceLayer():
             parameters = mapping['parameters']
 
             if colname.lower() not in M_c_full['name_to_idx']:
-                raise utils.BayesDBError('Error: column %s does not exist.' % col)
+                raise utils.BayesDBError('Error: column %s does not exist.' % colname)
             elif cctype not in mapping_set:
                 raise utils.BayesDBError('Error: datatype %s is not one of the valid datatypes: %s.' % (mapping, str(mapping_set)))
 

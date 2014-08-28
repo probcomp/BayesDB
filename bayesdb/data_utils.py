@@ -24,6 +24,7 @@ import pandas
 import re
 import numpy
 import prettytable
+from math import pi
 
 import utils
 
@@ -369,13 +370,21 @@ def convert_code_to_value(M_c, cidx, code):
     """
     if numpy.isnan(code) or code=='nan':
         return code
-    elif M_c['column_metadata'][cidx]['modeltype'] in ['normal_inverse_gamma','vonmises']:
-        return float(code)
     else:
-        try:
-            return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
-        except KeyError:
-            return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))]
+        column_metadata = M_c['column_metadata'][cidx]
+        modeltype = column_metadata['modeltype']
+        if modeltype == 'normal_inverse_gamma':
+            return float(code)
+        elif modeltype == 'vonmises':
+            # Convert stored value (in [0, 2pi]) back to raw range.
+            param_min = column_metadata['parameters']['min']
+            param_max = column_metadata['parameters']['max']
+            return param_min + ((float(code) / (2 * pi)) * (param_max - param_min))
+        else:
+            try:
+                return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
+            except KeyError:
+                return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))]
 
 def convert_value_to_code(M_c, cidx, value):
     """
@@ -386,8 +395,14 @@ def convert_value_to_code(M_c, cidx, value):
     Note that the underlying store 'code_to_value' is unfortunately named backwards.
     TODO: fix the backwards naming.
     """
-    if M_c['column_metadata'][cidx]['modeltype'] in ['normal_inverse_gamma','vonmises']:
+    column_metadata = M_c['column_metadata'][cidx]
+    modeltype = column_metadata['modeltype']
+    if modeltype == 'normal_inverse_gamma':
         return float(value)
+    elif modeltype == 'vonmises':
+        param_min = column_metadata['parameters']['min']
+        param_max = column_metadata['parameters']['max']
+        return (float(value) - param_min) / (param_max - param_min)
     else:
         try:
             return M_c['column_metadata'][cidx]['code_to_value'][str(value)]
@@ -410,18 +425,25 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
     T_uncast_array = numpy.array(T_uncast_array)
     # WARNING: array argument is mutated
     for col_idx in range(T_uncast_array.shape[1]):
-        modeltype = M_c['column_metadata'][col_idx]['modeltype']
-        if modeltype in ['normal_inverse_gamma','vonmises']: 
-            continue
-        # copy.copy else you mutate M_c
-        mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
-        mapping['NAN'] = numpy.nan
+        column_metadata = M_c['column_metadata'][col_idx]
+        modeltype = column_metadata['modeltype']
         col_data = T_uncast_array[:, col_idx]
-        to_upper = lambda el: str(el).upper()
-        is_nan_str = numpy.array(map(to_upper, col_data))=='NAN'
-        col_data[is_nan_str] = 'NAN'
-        # FIXME: THIS IS WHERE TO PUT NAN HANDLING
-        mapped_values = [mapping[el] for el in col_data]
+
+        if modeltype == 'normal_inverse_gamma': 
+            continue
+        elif modeltype == 'vonmises':
+            param_min = column_metadata['parameters']['min']
+            param_max = column_metadata['parameters']['max']
+            mapped_values = [2 * pi * (float(x) - param_min) / (param_max - param_min) for x in col_data]
+        else:    
+            # copy.copy else you mutate M_c
+            mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
+            mapping['NAN'] = numpy.nan
+            to_upper = lambda el: str(el).upper()
+            is_nan_str = numpy.array(map(to_upper, col_data))=='NAN'
+            col_data[is_nan_str] = 'NAN'
+            # FIXME: THIS IS WHERE TO PUT NAN HANDLING
+            mapped_values = [mapping[el] for el in col_data]
         T_uncast_array[:, col_idx] = mapped_values
     T = numpy.array(T_uncast_array, dtype=float).tolist()
     return T
