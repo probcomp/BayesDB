@@ -49,8 +49,6 @@ schema_keyword = CaselessKeyword("schema")
 set_keyword = CaselessKeyword("set")
 categorical_keyword = CaselessKeyword("categorical")
 numerical_keyword = CaselessKeyword("numerical")
-continuous_keyword = CaselessKeyword("continuous")
-multinomial_keyword = CaselessKeyword("multinomial")
 cyclic_keyword = CaselessKeyword("cyclic")
 ignore_keyword = CaselessKeyword("ignore")
 key_keyword = CaselessKeyword("key")
@@ -272,7 +270,7 @@ filename = (QuotedString('"', escChar='\\') |
 label = (QuotedString('"', escChar='\\') | 
          QuotedString("'", escChar='\\') | 
          Word(printables, excludeChars=',;'))
-data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword | cyclic_keyword
+data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | cyclic_keyword
 
 cyclic_parameters = Group(
     Suppress(paren_open_literal) + 
@@ -283,7 +281,7 @@ cyclic_parameters = Group(
 
 cyclic = cyclic_keyword + cyclic_parameters
 
-data_type = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword | cyclic
+data_type = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | cyclic
 
 
 ###################################################################################

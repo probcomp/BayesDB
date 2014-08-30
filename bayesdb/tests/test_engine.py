@@ -193,13 +193,13 @@ def test_update_schema():
   test_tablename, _ = create_dha()
   m_c, m_r, t = engine.persistence_layer.get_metadata_and_table(test_tablename)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
-  assert cctypes[m_c['name_to_idx']['qual_score']] == 'continuous'
-  assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'numerical'
+  assert cctypes[m_c['name_to_idx']['name']] == 'categorical'
   
-  mappings = dict(qual_score = dict(cctype = 'multinomial', parameters = None))
+  mappings = dict(qual_score = dict(cctype = 'categorical', parameters = None))
   engine.update_schema(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
-  assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'categorical'
 
   mappings = dict(qual_score = dict(cctype = 'ignore', parameters = None))
   engine.update_schema(test_tablename, mappings)
@@ -208,7 +208,7 @@ def test_update_schema():
   assert 'qual_score' not in m_c['name_to_idx'].keys()
 
   ## Now test that it doesn't allow name to be continuous
-  mappings = dict(name = dict(cctype = 'continuous', parameters = None))
+  mappings = dict(name = dict(cctype = 'numerical', parameters = None))
   with pytest.raises(ValueError):
     engine.update_schema(test_tablename, mappings)
 
@@ -439,18 +439,18 @@ def test_show_schema():
   test_tablename, _ = create_dha()
   m_c, m_r, t = engine.persistence_layer.get_metadata_and_table(test_tablename)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
-  assert cctypes[m_c['name_to_idx']['qual_score']] == 'continuous'
-  assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'numerical'
+  assert cctypes[m_c['name_to_idx']['name']] == 'categorical'
 
   schema = engine.show_schema(test_tablename)
   cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)
   assert sorted([d[1] for d in schema['data']]) == sorted(cctypes_full)
   assert schema['data'][0][0] == 'key'
   
-  mappings = dict(qual_score = dict(cctype = 'multinomial', parameters = None))
+  mappings = dict(qual_score = dict(cctype = 'categorical', parameters = None))
   engine.update_schema(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
-  assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'categorical'
   
   schema = engine.show_schema(test_tablename)
   cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)

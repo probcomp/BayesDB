@@ -585,7 +585,7 @@ class PersistenceLayer():
 
     def update_schema(self, tablename, mappings):
         """
-        mappings is a dict of column name to 'cyclic', 'continuous', 'multinomial', 'ignore', or 'key'.
+        mappings is a dict of column name to 'cyclic', 'numerical', 'categorical', 'ignore', or 'key'.
         TODO: can we get rid of cctypes?
         """
         metadata_full = self.get_metadata_full(tablename)
@@ -596,8 +596,8 @@ class PersistenceLayer():
         parameters_full = [x['parameters'] for x in M_c_full['column_metadata']]
 
         # Now, update cctypes_full (cctypes updated later, after removing ignores).
-        mapping_set = 'continuous', 'multinomial', 'ignore', 'key', 'cyclic'
-
+        mapping_set = 'numerical', 'categorical', 'ignore', 'key', 'cyclic'
+        
         for colname, mapping in mappings.items():
             cctype = mapping['cctype']
             parameters = mapping['parameters']

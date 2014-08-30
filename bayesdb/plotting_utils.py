@@ -159,7 +159,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
 
 
     elif parsed_data['datatype'] == 'multcont':
-        # Multinomial is always first. parsed_data['transpose'] is true if multinomial should be on Y axis.
+        # categorical is always first. parsed_data['transpose'] is true if categorical should be on Y axis.
         values = parsed_data['values']
         groups = parsed_data['groups']
         vert = not parsed_data['transpose']
@@ -203,10 +203,10 @@ def parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=False):
     column_metadata = M_c['column_metadata']
     cctypes = [schema_full[column] for column in columns]
 
-    # Treat cyclic as continuous until we establish what we want in a cyclic plot.
+    # Treat cyclic as numerical until we establish what we want in a cyclic plot.
     for cctype_idx, cctype in enumerate(cctypes):
         if cctype == 'cyclic':
-            cctypes[cctype_idx] = 'continuous'
+            cctypes[cctype_idx] = 'numerical'
 
     output = {}
     if len(columns) == 1:
@@ -218,11 +218,11 @@ def parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=False):
         else:
             col_idx = None
 
-        # Treat not-column (e.g. function) the same as continuous, since no code to value conversion.
-        if col_idx is None or cctypes[0] == 'continuous':
+        # Treat not-column (e.g. function) the same as numerical, since no code to value conversion.
+        if col_idx is None or cctypes[0] == 'numerical':
             output['datatype'] = 'cont1D'
             output['data'] = np_data
-        elif cctypes[0] == 'multinomial':
+        elif cctypes[0] == 'categorical':
             unique_labels = sorted(column_metadata[name_to_idx[columns[0]]]['code_to_value'].keys())
             counts = []
             for label in unique_labels:
@@ -235,7 +235,7 @@ def parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=False):
         output['title'] = columns[0]
 
     elif len(columns) == 2:
-        # Treat not-column (e.g. function) the same as continuous, since no code to value conversion.
+        # Treat not-column (e.g. function) the same as numerical, since no code to value conversion.
         if columns[0] in name_to_idx:
             col_idx_1 = name_to_idx[columns[0]]
         else:
@@ -245,12 +245,12 @@ def parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=False):
         else:
             col_idx_2 = None
         
-        if cctypes[0] == 'continuous' and cctypes[1] == 'continuous':
+        if cctypes[0] == 'numerical' and cctypes[1] == 'numerical':
             output['datatype'] = 'contcont'
             output['data_x'] = [x[0] for x in data]
             output['data_y'] = [x[1] for x in data]
 
-        elif cctypes[0] == 'multinomial' and cctypes[1] == 'multinomial':
+        elif cctypes[0] == 'categorical' and cctypes[1] == 'categorical':
             counts = {} # keys are (var 1 value, var 2 value)
             # data contains a tuple for each datapoint: (value of var 1, value of var 2)
             for row in data:
@@ -280,21 +280,21 @@ def parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=False):
             output['labels_x'] = unique_xs
             output['labels_y'] = unique_ys
 
-        elif 'continuous' in cctypes and 'multinomial' in cctypes:
+        elif 'numerical' in cctypes and 'categorical' in cctypes:
             output['datatype'] = 'multcont'
             categories = {}
 
-            multinomial_column = cctypes.index('multinomial')
+            categorical_column = cctypes.index('categorical')
             
-            groups = sorted(column_metadata[name_to_idx[columns[multinomial_column]]]['code_to_value'].keys())
+            groups = sorted(column_metadata[name_to_idx[columns[categorical_column]]]['code_to_value'].keys())
             for i in groups:
                 categories[i] = []
             for i in data:
-                categories[i[multinomial_column]].append(i[1 - multinomial_column])
+                categories[i[categorical_column]].append(i[1 - categorical_column])
                 
             output['groups'] = groups
             output['values'] = [categories[x] for x in groups]
-            output['transpose'] = (multinomial_column == 0)
+            output['transpose'] = (categorical_column == 0)
 
         output['axis_label_x'] = columns[1]
         output['axis_label_y'] = columns[0]

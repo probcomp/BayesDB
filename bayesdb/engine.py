@@ -309,9 +309,8 @@ class Engine(object):
 
   def update_schema(self, tablename, mappings):
     """
-    mappings is a dict of column name to 'continuous', 'multinomial',
-    or 'ignore', or 'key'.
-    Requires that models are already initialized.
+    mappings is a dict of column name to 'numerical', 'categorical', 'cyclic', or 'ignore'
+    Cannot update type for key column, or change another column to key.
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
@@ -354,8 +353,8 @@ class Engine(object):
     """
     Upload a csv table to the predictive db.
     cctypes must be a dictionary mapping column names
-    to either 'ignore', 'continuous', or 'multinomial'. Not every
-    column name must be present in the dictionary: default is continuous.
+    to either 'ignore', 'numerical', 'categorical', or 'cyclic'. Not every
+    column name must be present in the dictionary: default is numerical.
     
     subsample is False by default, but if it is passed an int, it will subsample using
     <subsample> rows for the initial ANALYZE, and then insert all other rows afterwards.
@@ -443,6 +442,22 @@ class Engine(object):
         #   because they don't include ignore/key columns.
         self.persistence_layer.upgrade_btable(tablename, cctypes_full, T_full, M_r_full, M_c_full, raw_T_full)
         print "Upgraded %s: added key column" % tablename
+
+    # 4. If cctypes are stored as multinomial or continuous, change to
+    #   categorical and numerical, respectively.
+    cctypes_full = metadata_full['cctypes_full']
+    if 'continuous' in cctypes_full or 'multinomial' in cctypes_full:
+        colnames_full = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
+        
+        mappings = dict()
+        for colname, cctype in zip(colnames_full, cctypes_full):
+            if cctype == 'continuous':
+                mappings[colname] = 'numerical'
+            elif cctype == 'multinomial':
+                mappings[colname] = 'categorical'
+            
+        self.persistence_layer.update_schema(tablename, mappings)
+        print "Upgraded %s: converted column types 'multinomial' to 'categorical' and 'continuous' to 'numerical'" % tablename
 
     self.persistence_layer.btable_check_index.append(tablename)
 
