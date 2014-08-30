@@ -515,9 +515,16 @@ class PersistenceLayer():
         """
         colnames = self.get_colnames(tablename)
         cctypes = self.get_cctypes(tablename)
+        M_c = self.get_metadata(tablename)['M_c']
         schema = dict()
         for colname, cctype in zip(colnames, cctypes):
-            schema[colname] = cctype
+            schema[colname] = dict()
+            schema[colname]['cctype'] = cctype
+            if cctype == 'cyclic':
+                col_idx = M_c['name_to_idx'][colname]
+                schema[colname]['parameters'] = M_c['column_metadata'][col_idx]['parameters']
+            else:
+                schema[colname]['parameters'] = None
         return schema
 
     def get_schema_full(self, tablename):

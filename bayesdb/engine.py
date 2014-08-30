@@ -478,23 +478,45 @@ class Engine(object):
     if 'X_L_list' in models:
       print """WARNING! The models you are currently importing are stored in an old format
          (from version 0.1); it is deprecated and may not be supported in future releases.
-         Please use "SAVE MODELS" to create an updated copy of your models."""
+         Please use "SAVE MODELS FROM <btable> TO <filename.pkl.gz>" to create an updated copy of your models."""
       
       old_models = models
       models = dict()
       for id, (X_L, X_D) in enumerate(zip(old_models['X_L_list'], old_models['X_D_list'])):
         models[id] = dict(X_L=X_L, X_D=X_D, iterations=0)
 
-    if model_schema is None:
-        print """WARNING! The models you are currently importing were saved without a schema.
-            If you've edited the table schema since analyzing models, analysis steps may give errors. 
-            Please use "SAVE MODELS" to create an updated copy of your models."""
+    # Older versions of model_schema just had a str cctype as the dict items.
+    # Newest version has a dict of cctype and parameters. Use this values to 
+    # test the recency of the models.
+    if model_schema:
+        model_schema_itemtype = type(model_schema[model_schema.keys()[0]])
+    else:
+        model_schema_itemtype = None
+
+    if model_schema is None or model_schema_itemtype != dict:
+        print """WARNING! The models you are currently importing were saved without a schema
+            or without detailed column parameters (probably from a previous version).
+
+            If you are loading models into the same table from which you created them, problems
+            are unlikely, unless you have dropped models and then updated the schema.
+
+            If you are loading models into a different table from which you created them, you
+            should verify that the table schemas are the same.
+
+            Please use "SAVE MODELS FROM <btable> TO <filename.pkl.gz>" to create an updated copy of your models.
+
+            Are you sure you want to load these model(s)?
+            """
+
+        user_confirmation = raw_input()
+        if 'y' != user_confirmation.strip():
+            return dict(message="Operation canceled by user.")
     else:
         table_schema = self.persistence_layer.get_schema(tablename)
         # If schemas match, add the models
         # If schemas don't match:
         #   If there are models, don't add the new ones (they'll be incompatible)
-        #   If ther  def load_models(self, tablename, models, model_schema):e aren't models, add the new ones.
+        #   If there aren't models, add the new ones.
         if table_schema != model_schema:
             if self.persistence_layer.has_models(tablename):
                 raise utils.BayesDBError('Table %s already has models under a different schema than the models you are loading. All models used must have the same schema.' % tablename)
