@@ -111,7 +111,7 @@ def gen_M_r_from_T(T):
     return M_r
 
 def gen_ignore_metadata(column_data, parameters=None):
-    ret = gen_multinomial_metadata(column_data, parameters)
+    ret = gen_categorical_metadata(column_data, parameters)
     ret['modeltype'] = 'ignore'
     ret['parameters'] = None
     return ret

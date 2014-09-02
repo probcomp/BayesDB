@@ -597,7 +597,7 @@ class PersistenceLayer():
 
         # Now, update cctypes_full (cctypes updated later, after removing ignores).
         mapping_set = 'numerical', 'categorical', 'ignore', 'key', 'cyclic'
-        
+
         for colname, mapping in mappings.items():
             cctype = mapping['cctype']
             parameters = mapping['parameters']
@@ -641,6 +641,7 @@ class PersistenceLayer():
         This function is called to create a btable.
         It creates the table's persistence directory, saves data.csv and metadata.pkl.
         Creates models.pkl as empty dict.
+        
         """
         # Make directory for table
         if not os.path.exists(os.path.join(self.data_dir, tablename)):

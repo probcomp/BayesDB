@@ -452,9 +452,9 @@ class Engine(object):
         mappings = dict()
         for colname, cctype in zip(colnames_full, cctypes_full):
             if cctype == 'continuous':
-                mappings[colname] = 'numerical'
+                mappings[colname] = dict(cctype = 'numerical', parameters = None)
             elif cctype == 'multinomial':
-                mappings[colname] = 'categorical'
+                mappings[colname] = dict(cctype = 'categorical', parameters = None)
             
         self.persistence_layer.update_schema(tablename, mappings)
         print "Upgraded %s: converted column types 'multinomial' to 'categorical' and 'continuous' to 'numerical'" % tablename
@@ -534,8 +534,20 @@ class Engine(object):
         #   If there aren't models, add the new ones.
         if table_schema != model_schema:
             if self.persistence_layer.has_models(tablename):
-                raise utils.BayesDBError('Table %s already has models under a different schema than the models you are loading. All models used must have the same schema.' % tablename)
+                raise utils.BayesDBError("""
+                    Table %s already has models under a different schema than 
+                    the models you are loading. All models used must have the 
+                    same schema. To load these models, first drop the existing 
+                    models from the table.
+                    """ % tablename)
             else:
+                # Update 'continuous' and 'multinomial', if they exist in model_schema
+                upgrade_map = dict(continuous = 'numerical', multinomial = 'categorical')
+                for colname, mapping in model_schema.items():
+                    cctype = mapping['cctype']
+                    if cctype in upgrade_map:
+                        print 'Converting model schema column type %s to %s' % (cctype, upgrade_map[cctype])
+                        model_schema[colname]['cctype'] = upgrade_map[cctype]
                 self.persistence_layer.update_schema(tablename, model_schema)
 
     result = self.persistence_layer.add_models(tablename, models.values())
