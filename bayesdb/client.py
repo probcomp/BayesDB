@@ -66,9 +66,9 @@ class Client(object):
             tablename = args_dict['tablename']
             if self.online:
                 out, id = api_utils.call('check_btable_created_and_checked',
-                            {'tablename': tablename, 'using_client':True}, self.URI)
-                table_created = out['table_created']
-                table_checked = out['table_checked']
+                            {'tablename': tablename, 'client_online':True}, self.URI)
+                table_created = out['result']['table_created']
+                table_checked = out['result']['table_checked']
             else:
                 table_created, table_checked = self.engine.check_btable_created_and_checked(tablename)
         if self.online:
