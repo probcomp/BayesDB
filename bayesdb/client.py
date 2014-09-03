@@ -69,12 +69,12 @@ class Client(object):
 
         if self.online:
             if table_query:
-                if table_created and not table_checked:
+                if table_created and not table_checked and method_name is not 'drop_btable':
                     out, id = aqupi_utils.call('upgrade_btable', {'tablename': tablename}, self.URI)
             out, id = aqupi_utils.call(method_name, args_dict, self.URI)
         else:
             if table_query:
-                if table_created and not table_checked:
+                if table_created and not table_checked and method_name is not 'drop_btable':
                     self.engine.upgrade_btable(tablename)
             method = getattr(self.engine, method_name)
             if debug:
