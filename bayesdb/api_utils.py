@@ -20,7 +20,7 @@
 import requests
 import json
 
-
+import pdb
 global_id = 0
 
 def create_message(method_name, params, id):
@@ -43,7 +43,7 @@ def call(method_name, args_dict, URI, id=None, print_message=False):
     r = requests.put(URI, data=message)
     r.raise_for_status()
     out = json.loads(r.content)
-    #
+    pdb.set_trace()
     if isinstance(out, dict) and 'result' in out:
         out = out['result']
     else:
