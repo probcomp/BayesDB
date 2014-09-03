@@ -70,8 +70,8 @@ class Client(object):
         if self.online:
             if table_query:
                 if table_created and not table_checked:
-                    out, id = aqupi_utils.call('upgrade_btable', {'tablename': tablename}, self.URI)
-            out, id = aqupi_utils.call(method_name, args_dict, self.URI)
+                    out, id = api_utils.call('upgrade_btable', {'tablename': tablename}, self.URI)
+            out, id = api_utils.call(method_name, args_dict, self.URI)
         else:
             if table_query:
                 if table_created and not table_checked:
