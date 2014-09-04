@@ -4,11 +4,14 @@
 # to run as a service in the background localhost port 8008:
 #
 # docker run -d -p 8008:8008 bayesdb/bayesdb
-#
+# or 
+# docker run -d -p 8008:8008 bayesdb/bayesdb python -u bayesdb/jsonrpc_server.py
 
 FROM        ubuntu:12.04
 
 MAINTAINER  Aaron Vinson version: 0.2
+
+ENV MYPASSWORD bayesdb
 
 RUN         apt-get update
 RUN         apt-get install -y git dialog wget nano python2.7-dev python-pip libboost1.48-all-dev libfreetype6-dev libatlas-dev libblas-dev liblapack-dev libpng12-dev apt-utils ccache gfortran python-sphinx
@@ -32,14 +35,10 @@ RUN         git clone https://github.com/mit-probabilistic-computing-project/Bay
 # pull latest rev
 RUN         cd BayesDB && git pull
 
-# install crosscat and BayesDB
-RUN         cd /home/bayesdb && USER=root bash crosscat/scripts/install_scripts/install.sh
+# install crosscat and BayesDB. There is no need to run the install bash scripts because we have 
+# installed all the dependencies above
 RUN         cd /home/bayesdb && python crosscat/setup.py install
-RUN         cd /home/bayesdb && USER=root bash BayesDB/scripts/ubuntu_install.sh
 RUN         cd /home/bayesdb/BayesDB && python setup.py install
-
-# remove ubuntu installed numpy versions
-RUN         apt-get remove -y python-numpy python-numpy-dbg python3-numpy python3-numpy-dbg
 
 # tweak permissions
 RUN         mkdir -p /home/bayesdb/BayesDB
@@ -52,12 +51,15 @@ RUN         chown -R bayesdb:bayesdb /home/bayesdb
 RUN         echo "backend : agg" > /usr/local/lib/python2.7/dist-packages/matplotlib/mpl-data/matplotlibrc
 
 # make a nice readme
-RUN         echo "\n\nlogin/pass: bayesdb/bayesdb\n\ntry:\n\npython ~/BayesDB/examples/dha/run_dha_example.py\n" >> readme.txt
+RUN         echo "\n\nroot password is $MYPASSWORD\nlogin/pass: bayesdb/bayesdb\n\ntry:\n\npython ~/BayesDB/examples/dha/run_dha_example.py\n" >> readme.txt
 
 # show readme at login
 RUN         echo "cat ~/readme.txt" >> .bashrc
 
 EXPOSE      8008
+
+# create a root password
+RUN echo "root:$MYPASSWORD" | chpasswd
 
 USER        bayesdb
 ENV HOME    /home/bayesdb
