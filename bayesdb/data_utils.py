@@ -135,11 +135,11 @@ def gen_cyclic_metadata(column_data, parameters=None):
         if 'min' not in parameters or 'max' not in parameters:
             raise utils.BayesDBError("Error: cyclic columns require (min, max) parameters." % str(value))
         else:
-            param_min = parameters['min']
-            param_max = parameters['max']
-            if data_min < parameters['min']:
+            param_min = float(parameters['min'])
+            param_max = float(parameters['max'])
+            if data_min < param_min:
                 raise utils.BayesDBError("Error: cyclic contains data less than specified minimum %f" % param_min)
-            elif data_max > parameters['max']:
+            elif data_max > param_max:
                 raise utils.BayesDBError("Error: cyclic contains data greater than specified maximum %f" % param_max)
             else:
                 parameters = dict(min = param_min, max = param_max)
@@ -166,8 +166,15 @@ def gen_categorical_metadata(column_data, parameters=None):
     value_to_code = dict(zip(values, unique_codes))
     code_to_value = dict(zip(unique_codes, values))
 
+    # Set cardinality = number of distinct values if not set, otherwise check
+    # that cardinality parameter is >= the number of distinct values.
+    n_codes = len(unique_codes)
     if not parameters:
-        parameters = dict(cardinality = len(unique_codes))
+        parameters = dict(cardinality = n_codes)
+    else:
+        parameters['cardinality'] = int(parameters['cardinality'])
+        if n_codes > parameters['cardinality']:
+            raise utils.BayesDBError("Error: categorical contains more distinct values than specified cardinality %i" % parameters['cardinality'])        
 
     return dict(
         modeltype="symmetric_dirichlet_discrete",

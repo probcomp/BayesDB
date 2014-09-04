@@ -160,10 +160,10 @@ class Parser(object):
             cctype = update[1]
             mappings[column] = dict()
             mappings[column]['cctype'] = cctype
-            mappings[column]['parameters'] = dict()
-            if cctype == 'cyclic':
-                mappings[column]['parameters']['min'] = float(update.cyclic_parameters.min)
-                mappings[column]['parameters']['max'] = float(update.cyclic_parameters.max)
+            if 'parameters' in update:
+                mappings[column]['parameters'] = dict()
+                for param_type, param_str in update.parameters.iteritems():
+                    mappings[column]['parameters'][param_type] = param_str
             else:
                 mappings[column]['parameters'] = None
         return 'update_schema', dict(tablename=tablename, mappings=mappings), None

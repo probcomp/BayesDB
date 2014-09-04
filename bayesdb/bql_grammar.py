@@ -277,11 +277,17 @@ cyclic_parameters = Group(
     float_number.setResultsName("min") + 
     Suppress(comma_literal) + 
     float_number.setResultsName("max") +
-    Suppress(paren_close_literal)).setResultsName("cyclic_parameters")
+    Suppress(paren_close_literal)).setResultsName("parameters")
+
+categorical_parameters = Group(
+    Suppress(paren_open_literal) +
+    int_number.setResultsName("cardinality") +
+    Suppress(paren_close_literal)).setResultsName("parameters")
 
 cyclic = cyclic_keyword + cyclic_parameters
+categorical = categorical_keyword + Optional(categorical_parameters)
 
-data_type = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | cyclic
+data_type = categorical | numerical_keyword | ignore_keyword | key_keyword | cyclic
 
 
 ###################################################################################
