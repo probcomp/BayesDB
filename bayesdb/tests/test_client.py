@@ -610,10 +610,15 @@ def test_update_schema():
   test_tablename = create_dha()
   global client, test_filenames
 
-  # Test setting one column to each type
-  out = client('update schema for %s set qual_score = ignore, ami_score = categorical' % (test_tablename), debug=True, pretty=False)[0]
+  # Test setting one column to each type other than numerical
+  out = client('update schema for %s set qual_score = ignore, ami_score = categorical, pneum_score = cyclic(0, 100)' % (test_tablename), debug=True, pretty=False)[0]
   assert (out['datatype'][out['column'] == 'qual_score'] == 'ignore').all()
   assert (out['datatype'][out['column'] == 'ami_score'] == 'categorical').all()
+  assert (out['datatype'][out['column'] == 'pneum_score'] == 'cyclic').all()
+
+  # Test setting categorical with a cardinality parameter
+  out = client('update schema for %s set name = categorical(350)' % (test_tablename), debug=True, pretty=False)[0]
+  assert (out['datatype'][out['column'] == 'name'] == 'categorical').all()
 
   # Selecting qual_score should still work even after it's ignored, also should work in where clauses and order by clauses
   client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
@@ -627,8 +632,8 @@ def test_update_schema():
   assert out.shape == (1, 3)
   assert (out['name'] == "Albany NY").all()
 
-  # Set qual_score back to numerical, and select should work again
-  client('update schema for %s set qual_score = numerical, name = categorical, ami_score = numerical' % (test_tablename), debug=True, pretty=False)
+  # Set qual_score, ami_score, pneum_score, and total_fte back to numerical, and select should work again
+  client('update schema for %s set qual_score = numerical, ami_score = numerical, pneum_score = numerical, total_fte = numerical' % (test_tablename), debug=True, pretty=False)
 
   # Set back to ignore, run models, and then estimation shouldn't work for qual_score
   client('update schema for %s set qual_score = ignore' % (test_tablename), debug=True, pretty=False)
@@ -644,3 +649,6 @@ def test_update_schema():
     # Next two statements should fail because they 1) try to set a new key and 2) try to change the key's type
     client('update schema for %s set name = key' % (test_tablename), debug=True, pretty=False)
     client('update schema for %s set key = numerical' % (test_tablename), debug=True, pretty=False)
+    # Next two statements should fail because they set parameters that don't contain the data.
+    client('update schema for %s set name = categorical(3)' % (test_tablename), debug=True, pretty=False)
+    client('update schema for %s set qual_score = cyclic(0, 10)' % (test_tablename), debug=True, pretty=False)

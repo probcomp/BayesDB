@@ -266,18 +266,28 @@ def test_simple_functions():
     assert help_function.parseString("HELp",parseAll=True).statement_id == 'help'
 
 def test_update_schema_pyparsing():
-    update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
+    update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_1 = Categorical,col_2=numerical , col_3  =  ignore",parseAll=True)
     assert update_schema_1.statement_id == 'update_schema'
     assert update_schema_1.btable == 'test_btable'
     assert update_schema_1.type_clause[0][0] == 'col_1'
     assert update_schema_1.type_clause[0][1] == 'categorical'
-    assert update_schema_1.type_clause[1][0] == 'col.2'
+    assert update_schema_1.type_clause[1][0] == 'col_2'
     assert update_schema_1.type_clause[1][1] == 'numerical'
     assert update_schema_1.type_clause[2][0] == 'col_3'
     assert update_schema_1.type_clause[2][1] == 'ignore'
-    update_schema_2 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = key",parseAll=True)
+    update_schema_2 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_1 = key",parseAll=True)
     assert update_schema_2.type_clause[0][0] == 'col_1'
     assert update_schema_2.type_clause[0][1] == 'key'
+    update_schema_3 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_1 = categorical(15)", parseAll=True)
+    assert update_schema_3.type_clause[0][0] == 'col_1'
+    assert update_schema_3.type_clause[0][1] == 'categorical'
+    assert update_schema_3.type_clause[0].parameters.cardinality == '15'
+    update_schema_4 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_2 = cyclic(0, 10)", parseAll=True)
+    assert update_schema_4.type_clause[0][0] == 'col_2'
+    assert update_schema_4.type_clause[0][1] == 'cyclic'
+    assert update_schema_4.type_clause[0].parameters.min == '0'
+    assert update_schema_4.type_clause[0].parameters.max == '10'
+        
 
 def test_create_btable_pyparsing():
     create_btable_1 = create_btable_function.parseString("CREATE BTABLE test.btable FROM '~/filenam e.csv'", parseAll=True)

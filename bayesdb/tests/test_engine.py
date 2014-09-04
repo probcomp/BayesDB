@@ -31,6 +31,7 @@ from bayesdb.client import Client
 from bayesdb.engine import Engine
 from bayesdb.parser import Parser
 import bayesdb.bql_grammar as bql
+import bayesdb.utils as utils
 
 engine = Engine()
 parser = Parser()
@@ -196,11 +197,25 @@ def test_update_schema():
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'numerical'
   assert cctypes[m_c['name_to_idx']['name']] == 'categorical'
   
+  # Categorical with no cardinality parameter
   mappings = dict(qual_score = dict(cctype = 'categorical', parameters = None))
   engine.update_schema(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'categorical'
 
+  # Categorical with optional cardinality parameter
+  mappings = dict(name = dict(cctype = 'categorical', parameters = dict(cardinality = 350)))
+  engine.update_schema(test_tablename, mappings)
+  cctypes = engine.persistence_layer.get_cctypes(test_tablename)
+  assert cctypes[m_c['name_to_idx']['name']] == 'categorical'
+
+  # Cyclic with required min, max parameters
+  mappings = dict(qual_score = dict(cctype = 'cyclic', parameters = dict(min = 0, max = 100)))
+  engine.update_schema(test_tablename, mappings)
+  cctypes = engine.persistence_layer.get_cctypes(test_tablename)
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'cyclic'
+
+  # Ignore
   mappings = dict(qual_score = dict(cctype = 'ignore', parameters = None))
   engine.update_schema(test_tablename, mappings)
   m_c, m_r, t = engine.persistence_layer.get_metadata_and_table(test_tablename)
@@ -211,6 +226,17 @@ def test_update_schema():
   mappings = dict(name = dict(cctype = 'numerical', parameters = None))
   with pytest.raises(ValueError):
     engine.update_schema(test_tablename, mappings)
+
+  # Test that setting cyclic with parameters inside the range of data fails
+  mappings = dict(qual_score = dict(cctype = 'cyclic', parameters = dict(min = 50, max = 60)))
+  with pytest.raises(utils.BayesDBError):
+    engine.update_schema(test_tablename, mappings)
+
+  # Test that setting categorical with low cardinality fails
+  mappings = dict(name = dict(cctype = 'categorical', parameters = dict(cardinality = 10)))
+  with pytest.raises(utils.BayesDBError):
+    engine.update_schema(test_tablename, mappings)
+
 
 def test_save_and_load_models():
   test_tablename, _ = create_dha()
