@@ -26,6 +26,7 @@ import re
 import os
 import time
 import ast
+from textwrap import dedent
 
 import utils
 import data_utils
@@ -234,6 +235,32 @@ class Client(object):
             args_dict['key_column'] = key_column
             args_dict['subsample'] = False
 
+            if 'codebook_path' in client_dict:
+                codebook_header, codebook_rows = data_utils.read_csv(client_dict['codebook_path'])
+                # TODO: require specific codebook_header values? Or don't require a header,
+                # and if the first value in the header is actually a data column name, assume
+                # the first row is codebook data, not a header.
+                
+                # Create a dict indexed by column name
+                codebook = dict()
+                for codebook_row in codebook_rows:
+                    codebook[codebook_row[0]] = codebook_row[1:]
+                args_dict['codebook'] = codebook
+            else:
+                warning = dedent("""
+                WARNING!
+
+                You are creating a btable without a codebook, which will make interpretation
+                of results more difficult. Codebooks should be in CSV format with each row
+                corresponding to one column of the original data. The codebook should have four columns:
+
+                1. actual column name
+                2. short column description
+                3. long column description
+                4. value map (optional, only used for categorical columns - should be in JSON format)
+                """)
+                print warning
+                
             # Display warning messages and get confirmation if btable is too large.
             # Ask user if they want to turn on subsampling.
             max_columns = 200

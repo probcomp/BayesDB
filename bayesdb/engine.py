@@ -91,7 +91,7 @@ class Engine(object):
   def help(self, method=None):
     help_methods = dict()
     help_methods['create'] = """
-    CREATE BTABLE <btable> FROM <filename.csv>
+    CREATE BTABLE <btable> FROM <filename.csv> [WITH CODEBOOK <codebook.csv>]
 
     CREATE COLUMN LIST <col1>[, <col2>...] FROM <btable> AS <column_list>
     """
@@ -349,7 +349,7 @@ class Engine(object):
 
     return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename, warnings=warnings)
 
-  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None, subsample=False):
+  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None, subsample=False, codebook=None):
     """
     Upload a csv table to the predictive db.
     cctypes must be a dictionary mapping column names
@@ -359,7 +359,6 @@ class Engine(object):
     subsample is False by default, but if it is passed an int, it will subsample using
     <subsample> rows for the initial ANALYZE, and then insert all other rows afterwards.
     """
-    
     ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
