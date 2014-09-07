@@ -190,7 +190,7 @@ metadata_generator_lookup = dict(
     key=gen_ignore_metadata,
 )
 
-def gen_M_c_from_T(T, cctypes=None, colnames=None, parameters=None):
+def gen_M_c_from_T(T, cctypes=None, colnames=None, parameters=None, codebook=None):
     num_rows = len(T)
     num_cols = len(T[0])
     if cctypes is None:
@@ -206,12 +206,20 @@ def gen_M_c_from_T(T, cctypes=None, colnames=None, parameters=None):
         metadata_generator = metadata_generator_lookup[cctype]
         metadata = metadata_generator(column_data, params)
         column_metadata.append(metadata)
+    column_codebook = []
+    for colname in colnames:
+        if codebook and colname in codebook:
+            colname_codebook = codebook[colname]
+        else:
+            colname_codebook = None
+        column_codebook.append(colname_codebook)
     name_to_idx = dict(zip(colnames, range(num_cols)))
     idx_to_name = dict(zip(map(str, range(num_cols)), colnames))
     M_c = dict(
         name_to_idx=name_to_idx,
         idx_to_name=idx_to_name,
         column_metadata=column_metadata,
+        column_codebook=column_codebook
         )
     return M_c
 
@@ -589,12 +597,12 @@ def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
     return gen_T_and_metadata(colnames, raw_T, max_rows, gen_seed, cctypes)
 
 def gen_T_and_metadata(colnames, raw_T, max_rows=None, gen_seed=0,
-                       cctypes=None, parameters=None):
+                       cctypes=None, parameters=None, codebook=None):
     T = at_most_N_rows(raw_T, max_rows, gen_seed)
     T = convert_nans(T)
     if cctypes is None:
         cctypes = guess_column_types(T)
-    M_c = gen_M_c_from_T(T, cctypes, colnames, parameters)
+    M_c = gen_M_c_from_T(T, cctypes, colnames, parameters, codebook)
     T = map_to_T_with_M_c(numpy.array(T), M_c)
     M_r = gen_M_r_from_T(T)
     return T, M_r, M_c, cctypes

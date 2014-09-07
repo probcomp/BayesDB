@@ -244,7 +244,7 @@ class Client(object):
                 # Create a dict indexed by column name
                 codebook = dict()
                 for codebook_row in codebook_rows:
-                    codebook[codebook_row[0]] = codebook_row[1:]
+                    codebook[codebook_row[0]] = dict(zip(['short_name', 'description', 'value_map'], codebook_row[1:]))
                 args_dict['codebook'] = codebook
             else:
                 warning = dedent("""

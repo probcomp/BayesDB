@@ -373,11 +373,11 @@ class Engine(object):
       cctypes_full, warnings = data_utils.guess_column_types(raw_T_full, colnames_full)
 
     raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column, testing=self.testing)
-    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full, codebook=codebook)
 
     # variables without "_full" don't include ignored columns.
     raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
-    T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+    T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes, codebook=codebook)
 
     # if subsampling enabled, create the subsampled version of T (be sure to use non-subsampled M_r and M_c)
     # T_sub is T with only first <subsample> rows;
