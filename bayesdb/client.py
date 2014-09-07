@@ -64,9 +64,13 @@ class Client(object):
         table_query = 'tablename' in args_dict
         if table_query:
             tablename = args_dict['tablename']
-            table_created = tablename in self.engine.persistence_layer.btable_index
-            table_checked = tablename in self.engine.persistence_layer.btable_check_index
-
+            if self.online:
+                out, id = api_utils.call('check_btable_created_and_checked',
+                            {'tablename': tablename, 'client_online':True}, self.URI)
+                table_created = out['result']['table_created']
+                table_checked = out['result']['table_checked']
+            else:
+                table_created, table_checked = self.engine.check_btable_created_and_checked(tablename)
         if self.online:
             if table_query:
                 if table_created and not table_checked and method_name is not 'drop_btable':
