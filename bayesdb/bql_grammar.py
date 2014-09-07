@@ -45,6 +45,7 @@ file_keyword = CaselessKeyword("file")
 update_keyword = CaselessKeyword("update")
 metadata_keyword = CaselessKeyword('metadata')
 label_keyword = CaselessKeyword('label')
+codebook_keyword = CaselessKeyword('codebook')
 schema_keyword = CaselessKeyword("schema")
 set_keyword = CaselessKeyword("set")
 categorical_keyword = CaselessKeyword("categorical")
@@ -296,8 +297,9 @@ data_type = categorical | numerical_keyword | ignore_keyword | key_keyword | cyc
 
 # ------------------------------- Management statements ------------------------- #
 
-# CREATE BTABLE <btable> FROM <filename.csv>
-create_btable_function = create_btable_keyword + btable + Suppress(from_keyword) + filename
+# CREATE BTABLE <btable> FROM <filename.csv> [WITH CODEBOOK <codebook.csv>]
+create_btable_function = create_btable_keyword + btable + Suppress(from_keyword) + filename + Optional(
+   with_keyword + codebook_keyword + filename.setResultsName('codebook_file'))
 
 # UPGRADE BTABLE <btable>
 upgrade_btable_function = upgrade_btable_keyword + btable

@@ -136,7 +136,11 @@ class Parser(object):
         """
         tablename = bql_statement_ast.btable
         filename = self.get_absolute_path(bql_statement_ast.filename)
-        return 'create_btable', dict(tablename=tablename, cctypes_full=None), dict(csv_path=filename)
+        client_dict = dict(csv_path = filename)
+        if bql_statement_ast.codebook_file != '':
+            codebook_path = self.get_absolute_path(bql_statement_ast.codebook_file)
+            client_dict['codebook_path'] = codebook_path
+        return 'create_btable', dict(tablename=tablename, cctypes_full=None), client_dict
         #TODO types?
 
     def parse_upgrade_btable(self, bql_statement_ast):
