@@ -394,6 +394,19 @@ class Engine(object):
 
     return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename, warnings=warnings)
 
+  def check_btable_created_and_checked(self, tablename, client_online=False):
+    """
+    Checks whether a given table has been created and checked. If called from the online client,
+    returns a dict with 'results' key, otherwise returns a tuple.
+    """
+    table_created = tablename in self.persistence_layer.btable_index
+    table_checked = tablename in self.persistence_layer.btable_check_index
+
+    if client_online:
+        return { 'result': {'table_created':table_created, 'table_checked':table_checked} }
+    else:
+        return table_created, table_checked
+
   def upgrade_btable(self, tablename, upgrade_key_column=None):
     """
     Btables created in early versions of BayesDB may not have attributes that are required in more
