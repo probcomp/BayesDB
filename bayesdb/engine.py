@@ -390,10 +390,9 @@ class Engine(object):
       
     self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full, T_sub)
 
-    data = [[colname, cctype] for colname, cctype in zip(colnames_full, cctypes_full)]
-    columns = ['column', 'type']
+    schema = self.show_schema(tablename)
 
-    return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename, warnings=warnings)
+    return dict(columns=schema['columns'], data=schema['data'], message='Created btable %s. Inferred schema:' % tablename, warnings=warnings)
 
   def upgrade_btable(self, tablename, upgrade_key_column=None):
     """
@@ -466,9 +465,14 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
     
     metadata_full = self.persistence_layer.get_metadata_full(tablename)
-    colnames = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
+    M_c_full = metadata_full['M_c_full']
+    colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
+    parameters_full = [str(x['parameters']) for x in M_c_full['column_metadata']]
     cctypes_full = metadata_full['cctypes_full']
-    return dict(columns=['column', 'datatype'], data=zip(colnames, cctypes_full))
+
+    schema_full = zip(colnames_full, cctypes_full, parameters_full)
+
+    return dict(columns=['column', 'datatype', 'parameters'], data=schema_full)
 
   def save_models(self, tablename):    
     """Opposite of load models! Returns the models, including the contents, which

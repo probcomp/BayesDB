@@ -67,8 +67,8 @@ def test_create_btable():
   assert 'message' in create_btable_result
   # Should be 65 rows (1 for each column inferred: 64 from data file, plus 1 for key)
   assert len(create_btable_result['data']) == 65
-  # Should be 2 columns: 1 for column names, and 1 for the type
-  assert len(create_btable_result['data'][0]) == 2
+  # Should be 3 columns: 1 for column names, 1 for data type, and 1 for parameters
+  assert len(create_btable_result['data'][0]) == 3
   list_btables_result = engine.list_btables()['data']
   assert [test_tablename] in list_btables_result
   engine.drop_btable(test_tablename)
