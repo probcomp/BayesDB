@@ -28,8 +28,6 @@ import data_utils
 import plotting_utils
 import os
 
-import pdb
-
 default_args = dict(
         pretty=True,    # pretty print tables 
         timing=False, 
