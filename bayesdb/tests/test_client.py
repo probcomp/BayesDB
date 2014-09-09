@@ -169,7 +169,7 @@ def test_column_lists():
   client('show column lists for %s' % test_tablename, debug=True, pretty=False)
   out = client('estimate columns from %s as %s' % (test_tablename, cname1), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
-  assert out.columns == ['column']
+  assert (out.columns == ['column label', 'column name']).all()
 
   client('show column lists for %s' % test_tablename, debug=True, pretty=False)
 #TODO grammar update, replace tests after implementing show columns for <column_list>
@@ -177,7 +177,7 @@ def test_column_lists():
 #  with pytest.raises(utils.BayesDBColumnListDoesNotExistError):  
 #    client('show columns %s from %s' % (cname2, test_tablename), debug=True, pretty=False)  
   out = client('estimate columns from %s order by typicality limit 5 as %s' % (test_tablename, cname1), debug=True, pretty=False)[0]
-  assert out.shape == (5, 2)
+  assert out.shape == (5, 3)
 
   client('estimate columns from %s limit 5 as %s' % (test_tablename, cname2), debug=True, pretty=False)
   client('show column lists for %s' % test_tablename, debug=True, pretty=False)

@@ -1190,7 +1190,8 @@ class Engine(object):
       column_names.append(column_name_temp)      
 
       # Get the values of the functions that were used in where and order by
-      column_data_temp = [column_name_temp]
+      column_data_temp = [data_utils.get_column_labels_from_M_c(M_c, [column_name_temp])[0]]
+      column_data_temp.append(column_name_temp)
       column_data_temp.extend(ordered_tuple[0])
       column_data.append(column_data_temp)
 
@@ -1201,7 +1202,8 @@ class Engine(object):
     # De-duplicate values, if the same function was used in where and order by
     used_names = set()
     indices_to_pop = []
-    func_descriptions.insert(0, 'column')
+    func_descriptions.insert(0, 'column label')
+    func_descriptions.insert(1, 'column name')
     for i, name in enumerate(func_descriptions):
       if name not in used_names:
         used_names.add(name)
