@@ -91,11 +91,11 @@ class Client(object):
                     out = dict(message=str(e), error=True)
         return out
 
-    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True, key_column=None):
+    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True, key_column=None, return_raw_result=False):
         """Wrapper around execute."""
-        return self.execute(call_input, pretty, timing, wait, plots, yes, debug, pandas_df, pandas_output, key_column)
+        return self.execute(call_input, pretty, timing, wait, plots, yes, debug, pandas_df, pandas_output, key_column, return_raw_result)
 
-    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True, key_column=None):
+    def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True, key_column=None, return_raw_result=False):
         """
         Execute a chunk of BQL. This method breaks a large chunk of BQL (like a file)
         consisting of possibly many BQL statements, breaks them up into individual statements,
@@ -113,7 +113,11 @@ class Client(object):
         elif type(call_input) == str:
             bql_string = call_input
         else:
-            print "Invalid input type: expected file or string."
+            try:
+                call_input.encode('ascii','ignore')
+                bql_string = call_input
+            except:
+                raise ValueError("Invalid input type: expected file or string. Got: %s of type %s." % (call_input, type(call_input)))
 
         return_list = []
 
@@ -136,7 +140,7 @@ class Client(object):
                 user_input = raw_input()
                 if len(user_input) > 0 and (user_input[0] == 'q' or user_input[0] == 's'):
                     continue
-            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, debug=debug, pandas_df=pandas_df, pandas_output=pandas_output, key_column=key_column)
+            result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots, yes=yes, debug=debug, pandas_df=pandas_df, pandas_output=pandas_output, key_column=key_column, return_raw_result=return_raw_result)
 
             if type(result) == dict and 'message' in result and result['message'] == 'execute_file':
                 ## special case for one command: execute_file
@@ -149,10 +153,10 @@ class Client(object):
 
         self.parser.reset_root_dir()
 
-        if not pretty:
+        if not pretty or return_raw_result:
             return return_list
 
-    def execute_statement(self, bql_statement_ast, pretty=True, timing=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True, key_column=None):
+    def execute_statement(self, bql_statement_ast, pretty=True, timing=False, plots=None, yes=False, debug=False, pandas_df=None, pandas_output=True, key_column=None, return_raw_result=False):
         """
         Accepts a SINGLE BQL STATEMENT as input, parses it, and executes it if it was parsed
         successfully.
@@ -278,6 +282,14 @@ class Client(object):
 
         ## Do stuff now that engine has given you output, but before printing the result.
         result = self.callback(method_name, args_dict, client_dict, result)
+
+        if return_raw_result:
+            raw_result = {
+                'result':result,
+                'method_name' : method_name, 
+                'client_dict' : client_dict}
+            print("returning raw result for %s" % (method_name))
+            return raw_result
         
         assert type(result) != int
         
