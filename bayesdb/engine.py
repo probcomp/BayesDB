@@ -969,7 +969,9 @@ class Engine(object):
       cctypes_full = self.persistence_layer.get_cctypes_full(tablename)
       self.create_btable_from_existing(newtablename, query_colnames, cctypes_full, M_c_full, data)
 
-    ret = dict(data=data, columns=query_colnames)
+    column_labels = data_utils.get_column_labels_from_M_c(M_c_full, query_colnames)
+    
+    ret = dict(data=data, columns=column_labels)
     if plot:
       ret['M_c'] = M_c
       ret['schema_full'] = self.persistence_layer.get_schema_full(tablename)

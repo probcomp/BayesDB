@@ -689,3 +689,26 @@ def insert_key_column(T_df, colnames_full, cctypes_full):
     colnames_full.insert(0, key_column_name)
     cctypes_full.insert(0, 'key')
     return raw_T_full, colnames_full, cctypes_full, key_column_name
+
+def get_column_labels_from_M_c(M_c, colnames):
+    """
+    Get display labels from M_c by pulling from codebook.
+    Sources in order of priority:
+        1. column_codebook[col_idx][short_name]
+        2. colname
+    """
+
+    # Initialize as colnames
+    column_labels = colnames
+
+    for colname_idx, colname in enumerate(colnames):
+        if colname in M_c['name_to_idx']:
+            colname_idx_M_c = M_c['name_to_idx'][colname]
+            column_codebook = M_c['column_codebook'][colname_idx_M_c]
+
+            if column_codebook:
+                short_name = column_codebook['short_name']
+                if short_name != '':
+                    column_labels[colname_idx] = short_name
+
+    return column_labels
