@@ -1058,7 +1058,9 @@ class Engine(object):
       if 'key' in query_colnames:
           query_colnames.remove('key')
 
-    ret = {'columns': query_colnames, 'data': data}
+    column_labels = data_utils.get_column_labels_from_M_c(M_c, query_colnames)
+
+    ret = {'columns': column_labels, 'data': data}
     if plot:
       ret['M_c'] = M_c
       ret['schema_full'] = self.persistence_layer.get_schema_full(tablename)
