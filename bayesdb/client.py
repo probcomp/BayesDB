@@ -345,7 +345,7 @@ class Client(object):
             for warning in result['warnings']:
                 print 'WARNING: %s' % warning
                 
-        if pandas_output and 'data' in result and 'columns' in result:
+        if pandas_output and 'data' in result and 'column_labels' in result:
             result_pandas_df = data_utils.construct_pandas_df(result)
             return result_pandas_df
         else:
@@ -381,10 +381,10 @@ class Client(object):
         result = ""
         if type(query_obj) == dict and 'message' in query_obj:
             result += query_obj["message"] + "\n"
-        if 'data' in query_obj and 'columns' in query_obj:
+        if 'data' in query_obj and 'column_labels' in query_obj:
             """ Pretty-print data table """
             pt = prettytable.PrettyTable()
-            columns = query_obj['columns']
+            columns = query_obj['column_labels']
             pt.field_names = columns
 
             # Adjust value width - for now preserve 2 decimal places.
@@ -412,11 +412,11 @@ class Client(object):
             for row, colname in zip(zmatrix, list(colnames)):
                 pt.add_row([colname] + list(row))
             result += str(pt)
-        elif 'columns' in query_obj:
+        elif 'column_labels' in query_obj:
             """ Pretty-print column list."""
             pt = prettytable.PrettyTable()
             pt.field_names = ['column']
-            for column in query_obj['columns']:
+            for column in query_obj['column_labels']:
                 pt.add_row([column])
             result += str(pt)
         elif 'row_lists' in query_obj:

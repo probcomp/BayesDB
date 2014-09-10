@@ -220,7 +220,7 @@ class Engine(object):
 
   def list_btables(self):
     """Return names of all btables."""
-    return dict(columns=['btable'], data=[[name] for name in self.persistence_layer.list_btables()])
+    return dict(column_labels=['btable'], data=[[name] for name in self.persistence_layer.list_btables()])
 
   def label_columns(self, tablename, mappings):
     """
@@ -246,7 +246,7 @@ class Engine(object):
         raise utils.BayesDBColumnDoesNotExistError(colname, tablename)
 
     labels = self.persistence_layer.get_column_labels(tablename)
-    ret = {'data': [[c, l] for c, l in labels_edited.items()], 'columns': ['column', 'label']}
+    ret = {'data': [[c, l] for c, l in labels_edited.items()], 'column_labels': ['column', 'label']}
     ret['message'] = "Updated column labels for %s." % (tablename)
     return ret
 
@@ -268,7 +268,7 @@ class Engine(object):
       colnames = utils.process_column_list(columnset.asList(), M_c, column_lists, dedupe=True)
       colnames = [c.lower() for c in colnames]
 
-    ret = {'data': [[c, l] for c, l in labels.items() if c in colnames], 'columns': ['column', 'label']}
+    ret = {'data': [[c, l] for c, l in labels.items() if c in colnames], 'column_labels': ['column', 'label']}
     ret['message'] = "Showing labels for %s." % (tablename)
     return ret
 
@@ -285,7 +285,7 @@ class Engine(object):
         self.persistence_layer.add_user_metadata(tablename, key, value)
 
     metadata = self.persistence_layer.get_user_metadata(tablename)
-    ret = {'data': [[k, v] for k, v in metadata.items() if k in mappings.keys()], 'columns': ['key', 'value']}
+    ret = {'data': [[k, v] for k, v in metadata.items() if k in mappings.keys()], 'column_labels': ['key', 'value']}
     ret['message'] = "Updated user metadata for %s." % (tablename)
     return ret
 
@@ -303,7 +303,7 @@ class Engine(object):
     else:
       metadata_keys = keyset.asList()
 
-    ret = {'data': [[k, metadata[k]] for k in metadata_keys if k in metadata], 'columns': ['key', 'value']}
+    ret = {'data': [[k, metadata[k]] for k in metadata_keys if k in metadata], 'column_labels': ['key', 'value']}
     ret['message'] = "Showing user metadata for %s." % (tablename)
     return ret
 
@@ -347,7 +347,7 @@ class Engine(object):
     T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
     self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, query_data)
 
-    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename, warnings=warnings)
+    return dict(column_labels=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename, warnings=warnings)
 
   def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None, subsample=False, codebook=None):
     """
@@ -391,7 +391,7 @@ class Engine(object):
 
     schema = self.show_schema(tablename)
 
-    return dict(columns=schema['columns'], data=schema['data'], message='Created btable %s. Inferred schema:' % tablename, warnings=warnings)
+    return dict(column_labels=schema['column_labels'], data=schema['data'], message='Created btable %s. Inferred schema:' % tablename, warnings=warnings)
 
   def check_btable_created_and_checked(self, tablename, client_online=False):
     """
@@ -484,7 +484,7 @@ class Engine(object):
 
     schema_full = zip(colnames_full, cctypes_full, parameters_full)
 
-    return dict(columns=['column', 'datatype', 'parameters'], data=schema_full)
+    return dict(column_labels=['column', 'datatype', 'parameters'], data=schema_full)
 
   def save_models(self, tablename):    
     """Opposite of load models! Returns the models, including the contents, which
@@ -683,7 +683,7 @@ class Engine(object):
     if len(models) == 0:
       raise utils.BayesDBError("No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
     else:
-      return dict(columns=['model_id', 'iterations', 'model_config'], data=data)
+      return dict(column_labels=['model_id', 'iterations', 'model_config'], data=data)
 
   def analyze(self, tablename, model_indices=None, iterations=None, seconds=None, ct_kernel=0, background=True):
     """
@@ -980,7 +980,7 @@ class Engine(object):
     else:
         columns = data_utils.get_column_labels_from_M_c(M_c, query_colnames)
         column_names = query_colnames
-    ret = dict(data = data, columns = columns, column_names = column_names)
+    ret = dict(data = data, column_labels = columns, column_names = column_names)
     if plot:
       ret['M_c'] = M_c
       ret['schema_full'] = self.persistence_layer.get_schema_full(tablename)
@@ -1070,7 +1070,7 @@ class Engine(object):
     else:
         columns = data_utils.get_column_labels_from_M_c(M_c, query_colnames)
         column_names = query_colnames
-    ret = dict(data = data, columns = columns, column_names = column_names)
+    ret = dict(data = data, column_labels = columns, column_names = column_names)
     if plot:
       ret['M_c'] = M_c
       ret['schema_full'] = self.persistence_layer.get_schema_full(tablename)
@@ -1085,7 +1085,7 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
       
     column_lists = self.persistence_layer.get_column_lists(tablename)
-    return dict(columns=['column list'], data=[[k] for k in column_lists.keys()])
+    return dict(column_labels=['column list'], data=[[k] for k in column_lists.keys()])
 
   def show_row_lists(self, tablename):
     """
@@ -1110,7 +1110,7 @@ class Engine(object):
     else:
       M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)      
       column_names = list(M_c['name_to_idx'].keys())
-    return dict(columns=column_names)
+    return dict(column_labels=column_names)
 
   def show_model(self, tablename, modelid, filename):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
@@ -1130,7 +1130,7 @@ class Engine(object):
     if name:
       self.persistence_layer.add_column_list(tablename, name, column_names)
 
-    return dict(columns=column_names)
+    return dict(column_labels=column_names)
 
 
   def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None, numsamples=None):
@@ -1222,7 +1222,7 @@ class Engine(object):
     # Create column names ('column' followed by a string describing each function)
     ret = dict()
     if column_data != []:
-      ret['columns'] = func_descriptions
+      ret['column_labels'] = func_descriptions
       ret['data'] = column_data
 
     return ret

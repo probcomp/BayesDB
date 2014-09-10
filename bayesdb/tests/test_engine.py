@@ -62,7 +62,7 @@ def create_dha(path='data/dha.csv'):
 
 def test_create_btable():
   test_tablename, create_btable_result = create_dha()
-  assert 'columns' in create_btable_result
+  assert 'column_labels' in create_btable_result
   assert 'data' in create_btable_result
   assert 'message' in create_btable_result
   # Should be 65 rows (1 for each column inferred: 64 from data file, plus 1 for key)
@@ -92,11 +92,11 @@ def test_select():
   limit = float('inf')
   order_by = False
   select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
-  assert 'columns' in select_result
+  assert 'column_labels' in select_result
   assert 'data' in select_result
-  assert select_result['columns'] == ['key', 'name', 'qual_score']
+  assert select_result['column_labels'] == ['key', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
-  assert len(select_result['data']) == 307 and len(select_result['data'][0]) == len(select_result['columns'])
+  assert len(select_result['data']) == 307 and len(select_result['data'][0]) == len(select_result['column_labels'])
   assert type(select_result['data'][0][0]) == numpy.string_
   t = type(select_result['data'][0][1]) 
   assert (t == unicode) or (t == str) or (t == numpy.string_) ## type of name is unicode or string
@@ -363,11 +363,11 @@ def test_infer():
   numsamples = 30
   confidence = 0
   infer_result = engine.infer(test_tablename, functions, confidence, whereclause, limit, numsamples, order_by)
-  assert 'columns' in infer_result
+  assert 'column_labels' in infer_result
   assert 'data' in infer_result
-  assert infer_result['columns'] == ['key', 'name', 'qual_score']
+  assert infer_result['column_labels'] == ['key', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
-  assert len(infer_result['data']) == 307 and len(infer_result['data'][0]) == len(infer_result['columns'])
+  assert len(infer_result['data']) == 307 and len(infer_result['data'][0]) == len(infer_result['column_labels'])
   assert type(infer_result['data'][0][0]) == numpy.string_ ## type of key is int
   t = type(infer_result['data'][0][1])
   assert (t == unicode) or (t == numpy.string_) ## type of name is string
@@ -407,11 +407,11 @@ def test_simulate():
   order_by = False
   numpredictions = 10
   simulate_result = engine.simulate(test_tablename, functions, givens, numpredictions, order_by)
-  assert 'columns' in simulate_result
+  assert 'column_labels' in simulate_result
   assert 'data' in simulate_result
-  assert simulate_result['columns'] == ['name', 'qual_score']
+  assert simulate_result['column_labels'] == ['name', 'qual_score']
 
-  assert len(simulate_result['data']) == 10 and len(simulate_result['data'][0]) == len(simulate_result['columns'])
+  assert len(simulate_result['data']) == 10 and len(simulate_result['data'][0]) == len(simulate_result['column_labels'])
   for row in range(numpredictions):
     t = type(simulate_result['data'][row][0])
     assert (t == unicode) or (t == numpy.string_)
@@ -521,8 +521,8 @@ def test_estimate_columns():
   order_by = False
   name = None
   functions = None
-  columns = engine.estimate_columns(test_tablename, functions, whereclause, limit, order_by, name)['columns']
-  assert columns == ['column label', 'column name']
+  column_labels = engine.estimate_columns(test_tablename, functions, whereclause, limit, order_by, name)['column_labels']
+  assert column_labels == ['column label', 'column name']
 
 if __name__ == '__main__':
     run_test()

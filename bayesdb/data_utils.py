@@ -318,7 +318,15 @@ def construct_pandas_df(query_obj):
         # Some types (numpy recarray for one) caused some issues when read into
         # a DataFrame, so recasting this as a list of lists solves the problem
         data = [list(row) for row in query_obj['data']]
-    pandas_df = pandas.DataFrame(data = data, columns = query_obj['columns'])
+
+    # For data queries, we want column_names as the column names in the pandas output.
+    # For non-data queries, we only have column_labels, so use that as backup.
+    if 'column_names' in query_obj:
+        columns = query_obj['column_names']
+    else:
+        columns = query_obj['column_labels']
+
+    pandas_df = pandas.DataFrame(data = data, columns = columns)
     return pandas_df
 
 def read_pandas_df(pandas_df):
