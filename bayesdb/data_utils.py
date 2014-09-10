@@ -699,7 +699,7 @@ def get_column_labels_from_M_c(M_c, colnames):
     """
 
     # Initialize as colnames
-    column_labels = colnames
+    column_labels = colnames[:]
 
     for colname_idx, colname in enumerate(colnames):
         if colname in M_c['name_to_idx']:

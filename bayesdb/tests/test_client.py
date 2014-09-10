@@ -509,14 +509,14 @@ def test_summarize():
   # Test that the output is a pandas DataFrame when pretty=False
   out = client('summarize select name, qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
-  assert (out.columns == [' ', 'name', 'qual_score']).all()
+  assert (out.columns == ['', 'name', 'qual_score']).all()
 
   # Test that stats from summary_describe and summary_freqs made it into the output DataFrame
   # Note that all of these stats won't be present in EVERY summarize output, but all should be in the output
   # from the previous test.
   expected_indices = ['type', 'count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
     'mode', 'prob_mode']
-  assert all([x in list(out[' ']) for x in expected_indices])
+  assert all([x in list(out['']) for x in expected_indices])
 
   # Test that it works on columns of predictive functions.
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)

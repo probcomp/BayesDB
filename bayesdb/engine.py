@@ -969,21 +969,22 @@ class Engine(object):
       cctypes_full = self.persistence_layer.get_cctypes_full(tablename)
       self.create_btable_from_existing(newtablename, query_colnames, cctypes_full, M_c_full, data)
 
-    column_labels = data_utils.get_column_labels_from_M_c(M_c_full, query_colnames)
-    
-    ret = dict(data=data, columns=column_labels)
+    if summarize | hist | freq:
+      if summarize:
+        data, columns = utils.summarize_table(data, query_colnames, M_c, remove_key=True)
+      elif hist:
+        data, columns = utils.histogram_table(data, query_colnames, M_c, remove_key=True)
+      elif freq:
+        data, columns = utils.freq_table(data, query_colnames, M_c, remove_key=True)
+      column_names = columns
+    else:
+        columns = data_utils.get_column_labels_from_M_c(M_c, query_colnames)
+        column_names = query_colnames
+    ret = dict(data = data, columns = columns, column_names = column_names)
     if plot:
       ret['M_c'] = M_c
       ret['schema_full'] = self.persistence_layer.get_schema_full(tablename)
-    elif summarize | hist | freq:
-      if summarize:
-        data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c)
-      elif hist:
-        data, columns = utils.histogram_table(ret['data'], ret['columns'], M_c)
-      elif freq:
-        data, columns = utils.freq_table(ret['data'], ret['columns'], M_c)
-      ret['data'] = data
-      ret['columns'] = columns
+
     return ret
 
 
@@ -1058,21 +1059,22 @@ class Engine(object):
       if 'key' in query_colnames:
           query_colnames.remove('key')
 
-    column_labels = data_utils.get_column_labels_from_M_c(M_c, query_colnames)
-
-    ret = {'columns': column_labels, 'data': data}
+    if summarize | hist | freq:
+      if summarize:
+        data, columns = utils.summarize_table(data, query_colnames, M_c, remove_key=False)
+      elif hist:
+        data, columns = utils.histogram_table(data, query_colnames, M_c, remove_key=False)
+      elif freq:
+        data, columns = utils.freq_table(data, query_colnames, M_c, remove_key=False)
+      column_names = columns
+    else:
+        columns = data_utils.get_column_labels_from_M_c(M_c, query_colnames)
+        column_names = query_colnames
+    ret = dict(data = data, columns = columns, column_names = column_names)
     if plot:
       ret['M_c'] = M_c
       ret['schema_full'] = self.persistence_layer.get_schema_full(tablename)
-    elif summarize | hist | freq:
-      if summarize:
-        data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c, remove_key=False)
-      elif hist:
-        data, columns = utils.histogram_table(ret['data'], ret['columns'], M_c, remove_key=False)
-      elif freq:
-        data, columns = utils.freq_table(ret['data'], ret['columns'], M_c, remove_key=False)
-      ret['data'] = data
-      ret['columns'] = columns
+
     return ret
 
   def show_column_lists(self, tablename):

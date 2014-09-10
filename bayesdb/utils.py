@@ -469,9 +469,9 @@ def summarize_table(data, columns, M_c, remove_key=True):
             reorder_index = potential_index[potential_index.isin(summary_data.index)]
             summary_data = summary_data.loc[reorder_index]
 
-        # Insert column of stat descriptions - we're going to leave this column name as a single space to avoid
+        # Insert column of stat descriptions - we're going to leave this column name as a blank to avoid
         # having to prevent column name duplication (allow_duplicates is a newer pandas argument, and can't be sure it's available)
-        summary_data.insert(0, ' ', summary_data.index)
+        summary_data.insert(0, '', summary_data.index)
 
         data = summary_data.to_records(index=False)
         columns = list(summary_data.columns)
