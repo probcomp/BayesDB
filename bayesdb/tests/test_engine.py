@@ -47,16 +47,16 @@ def teardown_function(function):
   global tablename
   for test_tablename in test_tablenames:
     engine.drop_btable(test_tablename)
-    
+
 def create_dha(path='data/dha.csv'):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
-  header, rows = data_utils.read_csv(path)  
+  header, rows = data_utils.read_csv(path)
   create_btable_result = engine.create_btable(test_tablename, header, rows, key_column=0)
   metadata = engine.persistence_layer.get_metadata(test_tablename)
-  
+
   global test_tablenames
   test_tablenames.append(test_tablename)
-  
+
   return test_tablename, create_btable_result
 
 def test_create_btable():
@@ -97,7 +97,7 @@ def test_select():
   ## 307 is the total number of rows in the dataset.
   assert len(select_result['data']) == 307 and len(select_result['data'][0]) == len(select_result['columns'])
   assert type(select_result['data'][0][0]) == numpy.string_
-  t = type(select_result['data'][0][1]) 
+  t = type(select_result['data'][0][1])
   assert (t == unicode) or (t == str) or (t == numpy.string_) ## type of name is unicode or string
   assert type(select_result['data'][0][2]) == float ## type of qual_score is float
   original_select_result = select_result['data']
@@ -121,8 +121,8 @@ def test_select():
   select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
   assert select_result['data'] == ground_truth_ordered_results
 
-  engine.initialize_models(test_tablename, 2)  
-  
+  engine.initialize_models(test_tablename, 2)
+
   # SIMILARITY TO <row> [WITH RESPECT TO <col>]
   # smoke tests
   functions = bql.bql_statement.parseString('select name, qual_score, similarity to 5 from test order by similarity to 5',parseAll=True).functions
@@ -137,7 +137,7 @@ def test_select():
   functions = bql.bql_statement.parseString('select name, qual_score from test',parseAll=True).functions
   order_by = bql.bql_statement.parseString('select * from test order by similarity to 5 with respect to qual_score',parseAll=True).order_by
   select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
-  
+
   functions = bql.bql_statement.parseString('select name, qual_score, similarity to 5 with respect to name from test',parseAll=True).functions
   order_by = bql.bql_statement.parseString('select * from test order by similarity to 5',parseAll=True).order_by
   select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
@@ -157,7 +157,7 @@ def test_select():
   order_by = bql.bql_statement.parseString('select * from test order by similarity to 5 with respect to name',parseAll=True).order_by
   select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
 
-  
+
   # TYPICALITY (of row)
   # smoke tests
   order_by = False
@@ -174,16 +174,16 @@ def test_select():
   # PREDICTIVE PROBABILITY
 
   # TODO: test all single-column aggregate functions
-  
+
   # TYPICALITY OF <col>
   functions = bql.bql_statement.parseString('select typicality of name from test',parseAll=True).functions
   order_by = bql.bql_statement.parseString('select * from test order by typicality',parseAll=True).order_by
   select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
-  
+
   # DEPENDENCE PROBABILITY OF <col> WITH <col> #DEPENDENCE PROBABILITY TO <col>
   # MUTUAL INFORMATION OF <col> WITH <col> #MUTUAL INFORMATION WITH <col>
   # CORRELATION OF <col> WITH <col>
-  
+
   # TODO: test ordering by functions
 
 def test_delete_model():
@@ -195,7 +195,7 @@ def test_update_schema():
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'continuous'
   assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
-  
+
   mappings = dict(qual_score='multinomial')
   engine.update_schema(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
@@ -219,7 +219,7 @@ def test_save_and_load_models():
   ## note that this won't save the models, since we didn't call this from the client.
   ## engine.save_models actually just returns the models.
   original_models = engine.save_models(test_tablename)
-  
+
   test_tablename2, _ = create_dha()
   models = original_models['models']
   model_schema = original_models['schema']
@@ -227,7 +227,7 @@ def test_save_and_load_models():
   assert engine.save_models(test_tablename2).values() == original_models.values()
 
 def test_initialize_models():
-  test_tablename, _ = create_dha(path='data/dha_missing.csv')     
+  test_tablename, _ = create_dha(path='data/dha_missing.csv')
 
   engine = Engine(seed=0)
   num_models = 5
@@ -249,14 +249,14 @@ def test_analyze():
 
     while 'not currently being analyzed' not in engine.show_analyze(test_tablename)['message']:
       import time; time.sleep(0.1)
-    
+
     #analyze_results = engine.show_analyze(test_tablename)
     model_ids = engine.persistence_layer.get_model_ids(test_tablename)
     assert sorted(model_ids) == range(num_models)
     for i in range(num_models):
       model = engine.persistence_layer.get_models(test_tablename, i)
       assert model['iterations'] == it
-  
+
   for it in (3,4): # models were analyzed by previous for loop, so start counting at 3.
     engine.analyze(test_tablename, model_indices='all', iterations=1, background=False)
     analyze_results = engine.show_analyze(test_tablename)
@@ -273,13 +273,13 @@ def test_subsampling():
   test_tablename = 'kivatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   global test_tablenames
   test_tablenames.append(test_tablename)
-  
+
   path = 'data/kiva_small.csv'
   header, rows = data_utils.read_csv(path)
-  
+
   num_rows = 4 # rows in kiva_small
   num_rows_subsample = 2
-  
+
   #client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False)
   engine.create_btable(test_tablename, header, rows, subsample=num_rows_subsample, key_column=0) # only analyze using some rows
   # make sure select (using no models) works and returns the correct number of rows
@@ -297,7 +297,7 @@ def test_subsampling():
   engine.initialize_models(test_tablename, num_models)
   # analyze segfaults
   engine.analyze(test_tablename, model_indices='all', iterations=iterations, background=False)
-  print 'analyzed'  
+  print 'analyzed'
   model_ids = engine.persistence_layer.get_model_ids(test_tablename)
   for i in range(num_models):
     model = engine.persistence_layer.get_models(test_tablename, i)
@@ -310,10 +310,10 @@ def test_subsampling():
   order_by = False
   select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
   assert len(select_result['data']) == num_rows # number of rows in Kiva
-                       
+
 
 def test_nan_handling():
-  test_tablename1, _ = create_dha(path='data/dha_missing.csv') 
+  test_tablename1, _ = create_dha(path='data/dha_missing.csv')
   test_tablename2, _ = create_dha(path='data/dha_missing_nan.csv')
   m1 = engine.persistence_layer.get_metadata(test_tablename1)
   m2 = engine.persistence_layer.get_metadata(test_tablename2)
@@ -373,7 +373,7 @@ def test_simulate():
   ## TODO: whereclauses
   test_tablename, _ = create_dha()
   engine.initialize_models(test_tablename, 2)
-  
+
   columnstring = 'name, qual_score'
   functions = bql.bql_statement.parseString('simulate name, qual_score from test',parseAll=True).functions
   whereclause = None
@@ -396,6 +396,8 @@ def test_estimate_pairwise_dependence_probability():
   engine.initialize_models(test_tablename, 2)
   dep_mat = engine.estimate_pairwise(test_tablename, 'dependence probability')
 
+@pytest.mark.skipif(True,
+    reason="Calculation too slow due to analysis on non-ignored, unique, multinomial 'name' variable")
 def test_estimate_pairwise_mutual_information():
   test_tablename, _ = create_dha()
   engine.initialize_models(test_tablename, 2)
@@ -410,7 +412,7 @@ def test_list_btables():
   list_btables_result = engine.list_btables()['data']
   assert type(list_btables_result) == list
   initial_btable_count = len(list_btables_result)
-  
+
   test_tablename1, create_btable_result = create_dha()
   test_tablename2, create_btable_result = create_dha()
 
@@ -418,10 +420,10 @@ def test_list_btables():
   assert [test_tablename1] in list_btables_result
   assert [test_tablename2] in list_btables_result
   assert len(list_btables_result) == 2 + initial_btable_count
-  
+
   engine.drop_btable(test_tablename1)
   test_tablename3, create_btable_result = create_dha()
-  list_btables_result = engine.list_btables()['data']  
+  list_btables_result = engine.list_btables()['data']
   assert [test_tablename1] not in list_btables_result
   assert [test_tablename3] in list_btables_result
   assert [test_tablename2] in list_btables_result
@@ -429,7 +431,7 @@ def test_list_btables():
   engine.drop_btable(test_tablename2)
   engine.drop_btable(test_tablename3)
 
-  list_btables_result = engine.list_btables()['data']  
+  list_btables_result = engine.list_btables()['data']
   assert len(list_btables_result) == 0 + initial_btable_count
 
 def test_execute_file():
@@ -446,12 +448,12 @@ def test_show_schema():
   cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)
   assert sorted([d[1] for d in schema['data']]) == sorted(cctypes_full)
   assert schema['data'][0][0] == 'key'
-  
+
   mappings = dict(qual_score='multinomial')
   engine.update_schema(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
   assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
-  
+
   schema = engine.show_schema(test_tablename)
   cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)
   assert sorted([d[1] for d in schema['data']]) == sorted(cctypes_full)
@@ -489,7 +491,7 @@ def test_estimate_columns():
   metadata = engine.persistence_layer.get_metadata(test_tablename)
   all_columns = metadata['M_c']['name_to_idx'].keys()
   engine.initialize_models(test_tablename, 2)
-  
+
   whereclause = None
   limit = float('inf')
   order_by = False
