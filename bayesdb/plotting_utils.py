@@ -25,7 +25,7 @@ from matplotlib.colors import LogNorm, Normalize
 from matplotlib.ticker import MaxNLocator
 import matplotlib.gridspec as gs
 import matplotlib.cm
-import pandas as pd
+import pandas
 import numpy
 import utils
 import functions
@@ -37,7 +37,7 @@ def turn_off_labels(subplot):
     subplot.axes.get_yaxis().set_visible(False)
          
 
-def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, remove_key=False):
+def plot_general_histogram(colnames, data, M_c, schema_full, filename=None, scatter=False, remove_key=False):
     '''
     colnames: list of column names
     data: list of tuples (first list is a list of rows, so each inner tuples is a row)
@@ -49,10 +49,11 @@ def plot_general_histogram(colnames, data, M_c, filename=None, scatter=False, re
         numcols -= 1
     if numcols > 1:
         gsp = gs.GridSpec(1, 1)
-        plots = create_pairwise_plot(colnames, data, M_c, gsp, remove_key=remove_key)
+        plots = create_pairwise_plot(colnames, data, M_c, schema_full, gsp, remove_key=remove_key)
     else:
         f, ax = p.subplots()
-        create_plot(parse_data_for_hist(colnames, data, M_c, remove_key=remove_key), ax, horizontal=True)
+        plot_data = parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=remove_key)
+        create_plot(plot_data, ax, horizontal=True)
     if filename:
         p.savefig(filename)
         p.close()
@@ -66,72 +67,64 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
     if parsed_data['datatype'] == 'mult1D':
         if len(parsed_data['data']) == 0:
             return
-        if 'horizontal' in kwargs and kwargs['horizontal']:
-            subplot.tick_params(top='off', bottom='off', left='off', right='off')
-            subplot.axes.get_yaxis().set_ticks([])
-            labels = parsed_data['labels']
-            datapoints = parsed_data['data']
-            num_vals = len(labels)
-            ind = np.arange(num_vals)
-            width = .5
-            subplot.barh(ind, datapoints, width, color=matplotlib.cm.Blues(0.5), align='center')
+        subplot.tick_params(top='off', bottom='off', left='off', right='off')
+        subplot.axes.get_yaxis().set_ticks([])
+        labels = parsed_data['labels']
+        datapoints = parsed_data['data']
+        num_vals = len(labels)
+        ind = np.arange(num_vals)
+        width = 0.5
 
-            # rotate major label if super compress
-            subplot.set_ylabel(parsed_data['axis_label'])                            
-            if super_compress:
-                rot = 0
-            else:
-                rot = 90
-                #subplot.set_ylabel(parsed_data['axis_label'], rotation=rot)                
-            
-            if (not compress and len(labels) < 15) or (compress and len(labels) < 5):
-                subplot.axes.get_yaxis().set_ticks(range(len(labels)))
-                subplot.axes.get_yaxis().set_ticklabels(labels)
-            if compress:
-                subplot.axes.get_xaxis().set_visible(False)
+        horizontal = 'horizontal' in kwargs and kwargs['horizontal']
+        rot = (horizontal != super_compress)
+
+        if horizontal:
+            plot_method = subplot.barh
+            label_method = subplot.set_ylabel
+            tick_axis = subplot.axes.get_yaxis()
+            hide_axis = subplot.axes.get_xaxis()
         else:
-            subplot.tick_params(top='off', bottom='off', left='off', right='off')
-            subplot.axes.get_xaxis().set_ticks([])
-            labels = parsed_data['labels']
-            datapoints = parsed_data['data']
-            num_vals = len(labels)
-            ind = np.arange(num_vals)
-            width = .5
-            subplot.bar(ind, datapoints, width, color=matplotlib.cm.Blues(0.5), align='center')
-
-            # rotate major label if super compress
-            subplot.set_xlabel(parsed_data['axis_label'])                            
-            if super_compress:
-                rot = 90
-            else:
-                rot = 0
-                #subplot.set_xlabel(parsed_data['axis_label'], rotation=rot)                
+            plot_method = subplot.bar
+            label_method = subplot.set_xlabel
+            tick_axis = subplot.axes.get_xaxis()
+            hide_axis = subplot.axes.get_yaxis()
             
-            if (not compress and len(labels) < 15) or (compress and len(labels) < 5):
-                subplot.axes.get_xaxis().set_ticks(range(len(labels)))
-                subplot.axes.get_xaxis().set_ticklabels(labels, rotation=50)
-            if compress:
-                subplot.axes.get_yaxis().set_visible(False)
-        
+        plot_method(ind, datapoints, width, color=matplotlib.cm.Blues(0.5), align='center')
+        label_method(parsed_data['axis_label'])
+
+        n_labels = len(labels)
+
+        if (not compress and len(labels) < 15) or (compress and len(labels) < 5):
+            tick_axis.set_ticks(range(n_labels))
+            tick_axis.set_ticklabels(labels)
+        if compress:
+            hide_axis.set_visible(False)
+
     elif parsed_data['datatype'] == 'cont1D':
         if len(parsed_data['data']) == 0:
             return
         datapoints = parsed_data['data']
-        subplot.series = pd.Series(datapoints)
-        if 'horizontal' in kwargs and kwargs['horizontal']:
+        subplot.series = pandas.Series(datapoints)
+        horizontal = 'horizontal' in kwargs and kwargs['horizontal']
+
+        if horizontal:
             subplot.series.hist(normed=True, color=matplotlib.cm.Blues(0.5), orientation='horizontal')
-            subplot.set_ylabel(parsed_data['axis_label'])
-            if compress:
-                subplot.axes.get_xaxis().set_visible(False)
-                subplot.axes.get_yaxis().set_major_locator(MaxNLocator(nbins = 3))                
+            label_method = subplot.set_ylabel
+            hide_axis = subplot.axes.get_xaxis()
+            major_axis = subplot.axes.get_yaxis()
         else:
             subplot.series.hist(normed=True, color=matplotlib.cm.Blues(0.5))
-            subplot.set_xlabel(parsed_data['axis_label'])
-            if compress:
-                subplot.axes.get_xaxis().set_major_locator(MaxNLocator(nbins = 3))
-                subplot.axes.get_yaxis().set_visible(False)
-            else:
+            label_method = subplot.set_xlabel
+            hide_axis = subplot.axes.get_yaxis()
+            major_axis = subplot.axes.get_xaxis()
+            if not compress:
                 subplot.series.dropna().plot(kind='kde', style='r--')                 
+
+        label_method(parsed_data['axis_label'])
+        
+        if compress:
+            hide_axis.set_visible(False)
+            major_axis.set_major_locator(MaxNLocator(nbins = 3))
 
     elif parsed_data['datatype'] == 'contcont':
         if len(parsed_data['data_y']) == 0 or len(parsed_data['data_x']) == 0:
@@ -166,7 +159,7 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
 
 
     elif parsed_data['datatype'] == 'multcont':
-        # Multinomial is always first. parsed_data['transpose'] is true if multinomial should be on Y axis.
+        # categorical is always first. parsed_data['transpose'] is true if categorical should be on Y axis.
         values = parsed_data['values']
         groups = parsed_data['groups']
         vert = not parsed_data['transpose']
@@ -186,48 +179,51 @@ def create_plot(parsed_data, subplot, label_x=True, label_y=True, text=None, com
 
     x0,x1 = subplot.get_xlim()
     y0,y1 = subplot.get_ylim()
-    aspect = (abs(float((x1-x0)))/abs(float((y1-y0))))
+    aspect = (abs(float((x1 - x0))) / abs(float((y1 - y0))))
     subplot.set_aspect(aspect)
     return subplot
 
-def parse_data_for_hist(colnames, data, M_c, remove_key=False):
-    data_c = []
-    for i in data:
-        no_nan = True
-        for j in i:
-            if isinstance(j, float) and math.isnan(j):
-                no_nan = False
-        if no_nan:
-            data_c.append(i)
-    output = {}
+def any_nan(row):
+    return any([isinstance(x, float) and math.isnan(x) for x in row])
+
+def parse_data_for_hist(colnames, data, M_c, schema_full, remove_key=False):
     columns = colnames[:]
-    data_no_id = [] # This will be the data with the row_ids removed if present
+    # Remove key column if present
     if remove_key:
         columns.pop(0)
-    if len(data_c) == 0:
+        data = [row[1:] for row in data]
+    # Remove any rows with nan values.
+    data = [row for row in data if not any_nan(row)]
+    # Stop if there are no rows remaining after cleaning missing values.
+    if len(data) == 0:
         raise utils.BayesDBError('There are no datapoints that contain values from every category specified. Try excluding columns with many NaN values.')
+
+    # Pull items from M_c to simplify code throughout the rest of this function
+    name_to_idx = M_c['name_to_idx']
+    column_metadata = M_c['column_metadata']
+    cctypes = [schema_full[column] for column in columns]
+
+    # Treat cyclic as numerical until we establish what we want in a cyclic plot.
+    for cctype_idx, cctype in enumerate(cctypes):
+        if cctype == 'cyclic':
+            cctypes[cctype_idx] = 'numerical'
+
+    output = {}
     if len(columns) == 1:
-        if remove_key:
-            data_no_id = [x[1] for x in data_c]
-        else:
-            data_no_id = [x[0] for x in data_c]
-        output['axis_label'] = columns[0]
-        output['title'] = columns[0]
+        np_data = np.array([x[0] for x in data])
 
         # Allow col_idx to be None, to allow for predictive functions to be plotted.
-        if columns[0] in M_c['name_to_idx']:
-            col_idx = M_c['name_to_idx'][columns[0]]
+        if columns[0] in name_to_idx:
+            col_idx = name_to_idx[columns[0]]
         else:
             col_idx = None
 
-        # Treat not-column (e.g. function) the same as continuous, since no code to value conversion.            
-        if col_idx is None or M_c['column_metadata'][col_idx]['modeltype'] == 'normal_inverse_gamma':
+        # Treat not-column (e.g. function) the same as numerical, since no code to value conversion.
+        if col_idx is None or cctypes[0] == 'numerical':
             output['datatype'] = 'cont1D'
-            output['data'] = np.array(data_no_id)
-            
-        elif M_c['column_metadata'][col_idx]['modeltype'] == 'symmetric_dirichlet_discrete':
-            unique_labels = sorted(M_c['column_metadata'][M_c['name_to_idx'][columns[0]]]['code_to_value'].keys())
-            np_data = np.array(data_no_id)
+            output['data'] = np_data
+        elif cctypes[0] == 'categorical':
+            unique_labels = sorted(column_metadata[name_to_idx[columns[0]]]['code_to_value'].keys())
             counts = []
             for label in unique_labels:
                 counts.append(sum(np_data==str(label)))
@@ -235,50 +231,38 @@ def parse_data_for_hist(colnames, data, M_c, remove_key=False):
             output['labels'] = unique_labels
             output['data'] = counts
 
+        output['axis_label'] = columns[0]
+        output['title'] = columns[0]
+
     elif len(columns) == 2:
-        if remove_key:
-            data_no_id = [(x[1], x[2]) for x in data_c]
-        else:
-            data_no_id = [(x[0], x[1]) for x in data_c]
-
-        types = []
-
-        # Treat not-column (e.g. function) the same as continuous, since no code to value conversion.
-        if columns[0] in M_c['name_to_idx']:
-            col_idx_1 = M_c['name_to_idx'][columns[0]]
-            types.append(M_c['column_metadata'][col_idx_1]['modeltype'])
+        # Treat not-column (e.g. function) the same as numerical, since no code to value conversion.
+        if columns[0] in name_to_idx:
+            col_idx_1 = name_to_idx[columns[0]]
         else:
             col_idx_1 = None
-            types.append('normal_inverse_gamma')
-        if columns[1] in M_c['name_to_idx']:
-            col_idx_2 = M_c['name_to_idx'][columns[1]]
-            types.append(M_c['column_metadata'][col_idx_2]['modeltype'])            
+        if columns[1] in name_to_idx:
+            col_idx_2 = name_to_idx[columns[1]]
         else:
             col_idx_2 = None
-            types.append('normal_inverse_gamma')            
-        types = tuple(types)
         
-        output['axis_label_x'] = columns[1]
-        output['axis_label_y'] = columns[0]
-        output['title'] = columns[0] + ' -versus- ' + columns[1]
- 
-        if types[0] == 'normal_inverse_gamma' and types[1] == 'normal_inverse_gamma':
+        if cctypes[0] == 'numerical' and cctypes[1] == 'numerical':
             output['datatype'] = 'contcont'
-            output['data_x'] = [x[0] for x in data_no_id]
-            output['data_y'] = [x[1] for x in data_no_id]
+            output['data_x'] = [x[0] for x in data]
+            output['data_y'] = [x[1] for x in data]
 
-        elif types[0] == 'symmetric_dirichlet_discrete' and types[1] == 'symmetric_dirichlet_discrete':
+        elif cctypes[0] == 'categorical' and cctypes[1] == 'categorical':
             counts = {} # keys are (var 1 value, var 2 value)
-            # data_no_id is a tuple for each datapoint: (value of var 1, value of var 2)
-            for i in data_no_id:
-                if i in counts:
-                    counts[i]+=1
+            # data contains a tuple for each datapoint: (value of var 1, value of var 2)
+            for row in data:
+                row = tuple(row)
+                if row in counts:
+                    counts[row] += 1
                 else:
-                    counts[i]=1
+                    counts[row] = 1
 
             # these are the values.
-            unique_xs = sorted(M_c['column_metadata'][col_idx_2]['code_to_value'].keys())
-            unique_ys = sorted(M_c['column_metadata'][col_idx_1]['code_to_value'].keys())
+            unique_xs = sorted(column_metadata[col_idx_2]['code_to_value'].keys())
+            unique_ys = sorted(column_metadata[col_idx_1]['code_to_value'].keys())
             unique_ys.reverse()#Hack to reverse the y's            
             x_ordered_codes = [du.convert_value_to_code(M_c, col_idx_2, xval) for xval in unique_xs]
             y_ordered_codes = [du.convert_value_to_code(M_c, col_idx_1, yval) for yval in unique_ys]
@@ -288,80 +272,86 @@ def parse_data_for_hist(colnames, data, M_c, remove_key=False):
             for i in counts:
                 # this converts from value to code
                 #import pdb; pdb.set_trace()
-                y_index = y_ordered_codes.index(M_c['column_metadata'][col_idx_1]['code_to_value'][i[0]])
-                x_index = x_ordered_codes.index(M_c['column_metadata'][col_idx_2]['code_to_value'][i[1]])
+                y_index = y_ordered_codes.index(column_metadata[col_idx_1]['code_to_value'][i[0]])
+                x_index = x_ordered_codes.index(column_metadata[col_idx_2]['code_to_value'][i[1]])
                 counts_array[y_index][x_index] = float(counts[i])
             output['datatype'] = 'multmult'
             output['data'] = counts_array
             output['labels_x'] = unique_xs
             output['labels_y'] = unique_ys
 
-        elif 'normal_inverse_gamma' in types and 'symmetric_dirichlet_discrete' in types:
+        elif 'numerical' in cctypes and 'categorical' in cctypes:
             output['datatype'] = 'multcont'
             categories = {}
 
-            col = 0
-            type = 1
-            if types[0] == 'normal_inverse_gamma':
-                type = 0
-                col = 1
+            categorical_column = cctypes.index('categorical')
             
-            groups = sorted(M_c['column_metadata'][M_c['name_to_idx'][columns[col]]]['code_to_value'].keys())
+            groups = sorted(column_metadata[name_to_idx[columns[categorical_column]]]['code_to_value'].keys())
             for i in groups:
                 categories[i] = []
-            for i in data_no_id:
-                categories[i[col]].append(i[type])
+            for i in data:
+                categories[i[categorical_column]].append(i[1 - categorical_column])
                 
             output['groups'] = groups
             output['values'] = [categories[x] for x in groups]
-            output['transpose'] = (type == 1)
+            output['transpose'] = (categorical_column == 0)
+
+        output['axis_label_x'] = columns[1]
+        output['axis_label_y'] = columns[0]
+        output['title'] = columns[0] + ' -versus- ' + columns[1]
 
     else:
         output['datatype'] = None
     return output
 
-def create_pairwise_plot(colnames, data, M_c, gsp, remove_key=False):
-    output = {}
+def create_pairwise_plot(colnames, data, M_c, schema_full, gsp, remove_key=False):
     columns = colnames[:]
-    data_no_id = [] #This will be the data with the row_ids removed if present
+    # Remove key column if present
     if remove_key:
         columns.pop(0)
-        data_no_id = [x[1:] for x in data]
-    else:
-        data_no_id = data[:]
+        data = [row[1:] for row in data]
+    # Remove any rows with nan values.
+    data = [row for row in data if not any_nan(row)]
+    # Stop if there are no rows remaining after cleaning missing values.
+    if len(data) == 0:
+        raise utils.BayesDBError('There are no datapoints that contain values from every category specified. Try excluding columns with many NaN values.')
 
-    super_compress=len(columns) > 6 # rotate outer labels
-    gsp = gs.GridSpec(len(columns), len(columns))
-    for i in range(len(columns)):
-        for j in range(len(columns)):
-            if j == 0 and i < len(columns) - 1:
+    output = {}
+
+    n_columns = len(columns)
+    # Rotate outer labels if there are more than 6 columns to be plotted.
+    super_compress = n_columns > 6 
+    gsp = gs.GridSpec(n_columns, n_columns)
+    for i in range(n_columns):
+        for j in range(n_columns):
+            if j == 0 and i < n_columns - 1:
                 #left hand marginals
                 sub_colnames = [columns[i]]
-                sub_data = [[x[i]] for x in data_no_id]
-                data = parse_data_for_hist(sub_colnames, sub_data, M_c)
-                create_plot(data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[i], horizontal=True, compress=True, super_compress=super_compress)
+                sub_data = [[x[i]] for x in data]
+                plot_data = parse_data_for_hist(sub_colnames, sub_data, M_c, schema_full)
+                create_plot(plot_data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[i], horizontal=True, compress=True, super_compress=super_compress)
                 
-            elif i == len(columns) - 1 and j > 0:
+            elif i == n_columns - 1 and j > 0:
                 #bottom marginals
                 subdata = None
                 if j == 1:
-                    sub_colnames = [columns[len(columns)-1]]
-                    sub_data = [[x[len(columns) - 1]] for x in data_no_id]
+                    sub_colnames = [columns[n_columns - 1]]
+                    sub_data = [[x[n_columns - 1]] for x in data]
                 else:
-                    sub_colnames = [columns[j-2]]
-                    sub_data = [[x[j-2]] for x in data_no_id]
-                data = parse_data_for_hist(sub_colnames, sub_data, M_c)
-                create_plot(data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[j-2], horizontal=False, compress=True, super_compress=super_compress)
+                    sub_colnames = [columns[j - 2]]
+                    sub_data = [[x[j - 2]] for x in data]
+                plot_data = parse_data_for_hist(sub_colnames, sub_data, M_c, schema_full)
+                create_plot(plot_data, p.subplot(gsp[i, j], adjustable='box', aspect=1), False, False, columns[j-2], horizontal=False, compress=True, super_compress=super_compress)
 
-            elif (j != 0 and i != len(columns)-1) and j < i+2:
+            elif (j != 0 and i != n_columns - 1) and j < i + 2:
                 #pairwise joints
-                j_col = j-2
+                j_col = j - 2
                 if j == 1:
-                    j_col = len(columns) - 1
+                    j_col = n_columns - 1
                 sub_colnames = [columns[i], columns[j_col]]
-                sub_data = [[x[i], x[j_col]] for x in data_no_id]
-                data = parse_data_for_hist(sub_colnames, sub_data, M_c)
-                create_plot(data, p.subplot(gsp[i, j]), False, False, horizontal=True, compress=True, super_compress=super_compress)
+                sub_data = [[x[i], x[j_col]] for x in data]
+                plot_data = parse_data_for_hist(sub_colnames, sub_data, M_c, schema_full)
+                create_plot(plot_data, p.subplot(gsp[i, j]), False, False, horizontal=True, compress=True, super_compress=super_compress)
             else:
                 pass
 

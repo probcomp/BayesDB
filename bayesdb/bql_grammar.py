@@ -45,12 +45,11 @@ file_keyword = CaselessKeyword("file")
 update_keyword = CaselessKeyword("update")
 metadata_keyword = CaselessKeyword('metadata')
 label_keyword = CaselessKeyword('label')
+codebook_keyword = CaselessKeyword('codebook')
 schema_keyword = CaselessKeyword("schema")
 set_keyword = CaselessKeyword("set")
 categorical_keyword = CaselessKeyword("categorical")
 numerical_keyword = CaselessKeyword("numerical")
-continuous_keyword = CaselessKeyword("continuous")
-multinomial_keyword = CaselessKeyword("multinomial")
 cyclic_keyword = CaselessKeyword("cyclic")
 ignore_keyword = CaselessKeyword("ignore")
 key_keyword = CaselessKeyword("key")
@@ -254,6 +253,8 @@ equal_literal = Literal("=")
 semicolon_literal = Literal(";")
 comma_literal = Literal(",")
 hyphen_literal = Literal("-")
+paren_open_literal = Literal("(")
+paren_close_literal = Literal(")")
 all_column_literal = Literal('*')
 identifier = (Word(alphas + '/', alphanums + "_./").setParseAction(downcaseTokens)) | sub_query
 btable = identifier.setResultsName("btable") | sub_query
@@ -270,7 +271,25 @@ filename = (QuotedString('"', escChar='\\') |
 label = (QuotedString('"', escChar='\\') | 
          QuotedString("'", escChar='\\') | 
          Word(printables, excludeChars=',;'))
-data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | continuous_keyword | multinomial_keyword | cyclic_keyword
+data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | key_keyword | cyclic_keyword
+
+cyclic_parameters = Group(
+    Suppress(paren_open_literal) + 
+    float_number.setResultsName("min") + 
+    Suppress(comma_literal) + 
+    float_number.setResultsName("max") +
+    Suppress(paren_close_literal)).setResultsName("parameters")
+
+categorical_parameters = Group(
+    Suppress(paren_open_literal) +
+    int_number.setResultsName("cardinality") +
+    Suppress(paren_close_literal)).setResultsName("parameters")
+
+cyclic = cyclic_keyword + cyclic_parameters
+categorical = categorical_keyword + Optional(categorical_parameters)
+
+data_type = categorical | numerical_keyword | ignore_keyword | key_keyword | cyclic
+
 
 ###################################################################################
 # ------------------------------------ Functions -------------------------------- #
@@ -278,16 +297,21 @@ data_type_literal = categorical_keyword | numerical_keyword | ignore_keyword | k
 
 # ------------------------------- Management statements ------------------------- #
 
-# CREATE BTABLE <btable> FROM <filename.csv>
-create_btable_function = create_btable_keyword + btable + Suppress(from_keyword) + filename
+# CREATE BTABLE <btable> FROM <filename.csv> [WITH CODEBOOK <codebook.csv>]
+create_btable_function = create_btable_keyword + btable + Suppress(from_keyword) + filename + Optional(
+   with_keyword + codebook_keyword + filename.setResultsName('codebook_file'))
 
 # UPGRADE BTABLE <btable>
 upgrade_btable_function = upgrade_btable_keyword + btable
 
 # UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
-type_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + data_type_literal) + 
-                               Suppress(comma_literal)) + 
-                    Group(identifier + Suppress(equal_literal) + data_type_literal)).setResultsName("type_clause")
+
+
+type_clause = Group(
+    ZeroOrMore(
+      Group(identifier + Suppress(equal_literal) + data_type) + Suppress(comma_literal)) + 
+      Group(identifier + Suppress(equal_literal) + data_type)).setResultsName("type_clause")
+
 update_schema_for_function = (update_schema_for_keyword + 
                               btable + 
                               Suppress(set_keyword) + 

@@ -91,7 +91,7 @@ class Engine(object):
   def help(self, method=None):
     help_methods = dict()
     help_methods['create'] = """
-    CREATE BTABLE <btable> FROM <filename.csv>
+    CREATE BTABLE <btable> FROM <filename.csv> [WITH CODEBOOK <codebook.csv>]
 
     CREATE COLUMN LIST <col1>[, <col2>...] FROM <btable> AS <column_list>
     """
@@ -220,7 +220,7 @@ class Engine(object):
 
   def list_btables(self):
     """Return names of all btables."""
-    return dict(columns=['btable'], data=[[name] for name in self.persistence_layer.list_btables()])
+    return dict(column_labels=['btable'], data=[[name] for name in self.persistence_layer.list_btables()])
 
   def label_columns(self, tablename, mappings):
     """
@@ -246,7 +246,7 @@ class Engine(object):
         raise utils.BayesDBColumnDoesNotExistError(colname, tablename)
 
     labels = self.persistence_layer.get_column_labels(tablename)
-    ret = {'data': [[c, l] for c, l in labels_edited.items()], 'columns': ['column', 'label']}
+    ret = {'data': [[c, l] for c, l in labels_edited.items()], 'column_labels': ['column', 'label']}
     ret['message'] = "Updated column labels for %s." % (tablename)
     return ret
 
@@ -268,7 +268,7 @@ class Engine(object):
       colnames = utils.process_column_list(columnset.asList(), M_c, column_lists, dedupe=True)
       colnames = [c.lower() for c in colnames]
 
-    ret = {'data': [[c, l] for c, l in labels.items() if c in colnames], 'columns': ['column', 'label']}
+    ret = {'data': [[c, l] for c, l in labels.items() if c in colnames], 'column_labels': ['column', 'label']}
     ret['message'] = "Showing labels for %s." % (tablename)
     return ret
 
@@ -285,7 +285,7 @@ class Engine(object):
         self.persistence_layer.add_user_metadata(tablename, key, value)
 
     metadata = self.persistence_layer.get_user_metadata(tablename)
-    ret = {'data': [[k, v] for k, v in metadata.items() if k in mappings.keys()], 'columns': ['key', 'value']}
+    ret = {'data': [[k, v] for k, v in metadata.items() if k in mappings.keys()], 'column_labels': ['key', 'value']}
     ret['message'] = "Updated user metadata for %s." % (tablename)
     return ret
 
@@ -303,15 +303,14 @@ class Engine(object):
     else:
       metadata_keys = keyset.asList()
 
-    ret = {'data': [[k, metadata[k]] for k in metadata_keys if k in metadata], 'columns': ['key', 'value']}
+    ret = {'data': [[k, metadata[k]] for k in metadata_keys if k in metadata], 'column_labels': ['key', 'value']}
     ret['message'] = "Showing user metadata for %s." % (tablename)
     return ret
 
   def update_schema(self, tablename, mappings):
     """
-    mappings is a dict of column name to 'continuous', 'multinomial',
-    or 'ignore', or 'key'.
-    Requires that models are already initialized.
+    mappings is a dict of column name to 'numerical', 'categorical', 'cyclic', or 'ignore'
+    Cannot update type for key column, or change another column to key.
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
@@ -348,19 +347,18 @@ class Engine(object):
     T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
     self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, query_data)
 
-    return dict(columns=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename, warnings=warnings)
+    return dict(column_labels=colnames_full, data=[cctypes_full], message='Created btable %s. Schema taken from original btable:' % tablename, warnings=warnings)
 
-  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None, subsample=False):
+  def create_btable(self, tablename, header, raw_T_full, cctypes_full=None, key_column=None, subsample=False, codebook=None):
     """
     Upload a csv table to the predictive db.
     cctypes must be a dictionary mapping column names
-    to either 'ignore', 'continuous', or 'multinomial'. Not every
-    column name must be present in the dictionary: default is continuous.
+    to either 'ignore', 'numerical', 'categorical', or 'cyclic'. Not every
+    column name must be present in the dictionary: default is numerical.
     
     subsample is False by default, but if it is passed an int, it will subsample using
     <subsample> rows for the initial ANALYZE, and then insert all other rows afterwards.
     """
-    
     ## First, test if table with this name already exists, and fail if it does
     if self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBError('Btable with name %s already exists.' % tablename)
@@ -370,14 +368,16 @@ class Engine(object):
     # variables with "_full" include ignored columns.
     colnames_full = [h.lower().strip() for h in header]
     raw_T_full = data_utils.convert_nans(raw_T_full)
+
     if cctypes_full is None:
       cctypes_full, warnings = data_utils.guess_column_types(raw_T_full, colnames_full)
+
     raw_T_full, colnames_full, cctypes_full = data_utils.select_key_column(raw_T_full, colnames_full, cctypes_full, key_column, testing=self.testing)
-    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+    T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full, codebook=codebook)
 
     # variables without "_full" don't include ignored columns.
     raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
-    T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+    T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes, codebook=codebook)
 
     # if subsampling enabled, create the subsampled version of T (be sure to use non-subsampled M_r and M_c)
     # T_sub is T with only first <subsample> rows;
@@ -389,10 +389,9 @@ class Engine(object):
       
     self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full, T_sub)
 
-    data = [[colname, cctype] for colname, cctype in zip(colnames_full, cctypes_full)]
-    columns = ['column', 'type']
+    schema = self.show_schema(tablename)
 
-    return dict(columns=columns, data=data, message='Created btable %s. Inferred schema:' % tablename, warnings=warnings)
+    return dict(column_labels=schema['column_labels'], data=schema['data'], message='Created btable %s. Inferred schema:' % tablename, warnings=warnings)
 
   def check_btable_created_and_checked(self, tablename, client_online=False):
     """
@@ -455,6 +454,22 @@ class Engine(object):
         self.persistence_layer.upgrade_btable(tablename, cctypes_full, T_full, M_r_full, M_c_full, raw_T_full)
         print "Upgraded %s: added key column" % tablename
 
+    # 4. If cctypes are stored as multinomial or continuous, change to
+    #   categorical and numerical, respectively.
+    cctypes_full = metadata_full['cctypes_full']
+    if 'continuous' in cctypes_full or 'multinomial' in cctypes_full:
+        colnames_full = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
+        
+        mappings = dict()
+        for colname, cctype in zip(colnames_full, cctypes_full):
+            if cctype == 'continuous':
+                mappings[colname] = dict(cctype = 'numerical', parameters = None)
+            elif cctype == 'multinomial':
+                mappings[colname] = dict(cctype = 'categorical', parameters = None)
+            
+        self.persistence_layer.update_schema(tablename, mappings)
+        print "Upgraded %s: converted column types 'multinomial' to 'categorical' and 'continuous' to 'numerical'" % tablename
+
     self.persistence_layer.btable_check_index.append(tablename)
 
   def show_schema(self, tablename):
@@ -462,9 +477,14 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
     
     metadata_full = self.persistence_layer.get_metadata_full(tablename)
-    colnames = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
+    M_c_full = metadata_full['M_c_full']
+    colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
+    parameters_full = [str(x['parameters']) for x in M_c_full['column_metadata']]
     cctypes_full = metadata_full['cctypes_full']
-    return dict(columns=['column', 'datatype'], data=zip(colnames, cctypes_full))
+
+    schema_full = zip(colnames_full, cctypes_full, parameters_full)
+
+    return dict(column_labels=['column', 'datatype', 'parameters'], data=schema_full)
 
   def save_models(self, tablename):    
     """Opposite of load models! Returns the models, including the contents, which
@@ -489,17 +509,39 @@ class Engine(object):
     if 'X_L_list' in models:
       print """WARNING! The models you are currently importing are stored in an old format
          (from version 0.1); it is deprecated and may not be supported in future releases.
-         Please use "SAVE MODELS" to create an updated copy of your models."""
+         Please use "SAVE MODELS FROM <btable> TO <filename.pkl.gz>" to create an updated copy of your models."""
       
       old_models = models
       models = dict()
       for id, (X_L, X_D) in enumerate(zip(old_models['X_L_list'], old_models['X_D_list'])):
         models[id] = dict(X_L=X_L, X_D=X_D, iterations=0)
 
-    if model_schema is None:
-        print """WARNING! The models you are currently importing were saved without a schema.
-            If you've edited the table schema since analyzing models, analysis steps may give errors. 
-            Please use "SAVE MODELS" to create an updated copy of your models."""
+    # Older versions of model_schema just had a str cctype as the dict items.
+    # Newest version has a dict of cctype and parameters. Use this values to 
+    # test the recency of the models.
+    if model_schema:
+        model_schema_itemtype = type(model_schema[model_schema.keys()[0]])
+    else:
+        model_schema_itemtype = None
+
+    if model_schema is None or model_schema_itemtype != dict:
+        print """WARNING! The models you are currently importing were saved without a schema
+            or without detailed column parameters (probably from a previous version).
+
+            If you are loading models into the same table from which you created them, problems
+            are unlikely, unless you have dropped models and then updated the schema.
+
+            If you are loading models into a different table from which you created them, you
+            should verify that the table schemas are the same.
+
+            Please use "SAVE MODELS FROM <btable> TO <filename.pkl.gz>" to create an updated copy of your models.
+
+            Are you sure you want to load these model(s)?
+            """
+
+        user_confirmation = raw_input()
+        if 'y' != user_confirmation.strip():
+            return dict(message="Operation canceled by user.")
     else:
         table_schema = self.persistence_layer.get_schema(tablename)
         # If schemas match, add the models
@@ -508,8 +550,20 @@ class Engine(object):
         #   If there aren't models, add the new ones.
         if table_schema != model_schema:
             if self.persistence_layer.has_models(tablename):
-                raise utils.BayesDBError('Table %s already has models under a different schema than the models you are loading. All models used must have the same schema.' % tablename)
+                raise utils.BayesDBError("""
+                    Table %s already has models under a different schema than 
+                    the models you are loading. All models used must have the 
+                    same schema. To load these models, first drop the existing 
+                    models from the table.
+                    """ % tablename)
             else:
+                # Update 'continuous' and 'multinomial', if they exist in model_schema
+                upgrade_map = dict(continuous = 'numerical', multinomial = 'categorical')
+                for colname, mapping in model_schema.items():
+                    cctype = mapping['cctype']
+                    if cctype in upgrade_map:
+                        print 'Converting model schema column type %s to %s' % (cctype, upgrade_map[cctype])
+                        model_schema[colname]['cctype'] = upgrade_map[cctype]
                 self.persistence_layer.update_schema(tablename, model_schema)
 
     result = self.persistence_layer.add_models(tablename, models.values())
@@ -629,7 +683,7 @@ class Engine(object):
     if len(models) == 0:
       raise utils.BayesDBError("No models for btable %s. Create some with the INITIALIZE MODELS command." % tablename)
     else:
-      return dict(columns=['model_id', 'iterations', 'model_config'], data=data)
+      return dict(column_labels=['model_id', 'iterations', 'model_config'], data=data)
 
   def analyze(self, tablename, model_indices=None, iterations=None, seconds=None, ct_kernel=0, background=True):
     """
@@ -844,7 +898,7 @@ class Engine(object):
     data_tuples = []
     for row_id, T_row in enumerate(T):
       row = [None]*order_by_size
-      row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c) 
+      row_values = select_utils.convert_row_from_codes_to_values(T_row, M_c)
       where_clause_eval = select_utils.evaluate_where_on_row(row_id, row_values, where_conditions, M_c, M_c_full,
                                X_L_list, X_D_list, T, T_full, self, tablename, numsamples, impute_confidence)
       if type(where_clause_eval) == list:
@@ -854,7 +908,6 @@ class Engine(object):
             row[where_idxs[w_idx]] = val
         data_tuples.append((row_id, row))
 
-          
     ## Now, order the rows. First compute all values that will be necessary for order by.
     if len(order_by) > 0:
       scored_data_tuples = list() # Entries are score, data_tuple      
@@ -911,24 +964,27 @@ class Engine(object):
       if row_count >= limit:
         break
 
-
     # Execute INTO statement
     if newtablename is not None:
       cctypes_full = self.persistence_layer.get_cctypes_full(tablename)
       self.create_btable_from_existing(newtablename, query_colnames, cctypes_full, M_c_full, data)
 
-    ret = dict(data=data, columns=query_colnames)
+    if summarize | hist | freq:
+      if summarize:
+        data, columns = utils.summarize_table(data, query_colnames, M_c, remove_key=True)
+      elif hist:
+        data, columns = utils.histogram_table(data, query_colnames, M_c, remove_key=True)
+      elif freq:
+        data, columns = utils.freq_table(data, query_colnames, M_c, remove_key=True)
+      column_names = columns
+    else:
+        columns = data_utils.get_column_labels_from_M_c(M_c, query_colnames)
+        column_names = query_colnames
+    ret = dict(data = data, column_labels = columns, column_names = column_names)
     if plot:
       ret['M_c'] = M_c
-    elif summarize | hist | freq:
-      if summarize:
-        data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c)
-      elif hist:
-        data, columns = utils.histogram_table(ret['data'], ret['columns'], M_c)
-      elif freq:
-        data, columns = utils.freq_table(ret['data'], ret['columns'], M_c)
-      ret['data'] = data
-      ret['columns'] = columns
+      ret['schema_full'] = self.persistence_layer.get_schema_full(tablename)
+
     return ret
 
 
@@ -1003,18 +1059,22 @@ class Engine(object):
       if 'key' in query_colnames:
           query_colnames.remove('key')
 
-    ret = {'columns': query_colnames, 'data': data}
+    if summarize | hist | freq:
+      if summarize:
+        data, columns = utils.summarize_table(data, query_colnames, M_c, remove_key=False)
+      elif hist:
+        data, columns = utils.histogram_table(data, query_colnames, M_c, remove_key=False)
+      elif freq:
+        data, columns = utils.freq_table(data, query_colnames, M_c, remove_key=False)
+      column_names = columns
+    else:
+        columns = data_utils.get_column_labels_from_M_c(M_c, query_colnames)
+        column_names = query_colnames
+    ret = dict(data = data, column_labels = columns, column_names = column_names)
     if plot:
       ret['M_c'] = M_c
-    elif summarize | hist | freq:
-      if summarize:
-        data, columns = utils.summarize_table(ret['data'], ret['columns'], M_c, remove_key=False)
-      elif hist:
-        data, columns = utils.histogram_table(ret['data'], ret['columns'], M_c, remove_key=False)
-      elif freq:
-        data, columns = utils.freq_table(ret['data'], ret['columns'], M_c, remove_key=False)
-      ret['data'] = data
-      ret['columns'] = columns
+      ret['schema_full'] = self.persistence_layer.get_schema_full(tablename)
+
     return ret
 
   def show_column_lists(self, tablename):
@@ -1025,7 +1085,7 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
       
     column_lists = self.persistence_layer.get_column_lists(tablename)
-    return dict(columns=['column list'], data=[[k] for k in column_lists.keys()])
+    return dict(column_labels=['column list'], data=[[k] for k in column_lists.keys()])
 
   def show_row_lists(self, tablename):
     """
@@ -1050,7 +1110,7 @@ class Engine(object):
     else:
       M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)      
       column_names = list(M_c['name_to_idx'].keys())
-    return dict(columns=column_names)
+    return dict(column_labels=column_names)
 
   def show_model(self, tablename, modelid, filename):
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename)
@@ -1070,7 +1130,7 @@ class Engine(object):
     if name:
       self.persistence_layer.add_column_list(tablename, name, column_names)
 
-    return dict(columns=column_names)
+    return dict(column_labels=column_names)
 
 
   def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None, numsamples=None):
@@ -1132,7 +1192,8 @@ class Engine(object):
       column_names.append(column_name_temp)      
 
       # Get the values of the functions that were used in where and order by
-      column_data_temp = [column_name_temp]
+      column_data_temp = [data_utils.get_column_labels_from_M_c(M_c, [column_name_temp])[0]]
+      column_data_temp.append(column_name_temp)
       column_data_temp.extend(ordered_tuple[0])
       column_data.append(column_data_temp)
 
@@ -1143,7 +1204,8 @@ class Engine(object):
     # De-duplicate values, if the same function was used in where and order by
     used_names = set()
     indices_to_pop = []
-    func_descriptions.insert(0, 'column')
+    func_descriptions.insert(0, 'column label')
+    func_descriptions.insert(1, 'column name')
     for i, name in enumerate(func_descriptions):
       if name not in used_names:
         used_names.add(name)
@@ -1160,7 +1222,7 @@ class Engine(object):
     # Create column names ('column' followed by a string describing each function)
     ret = dict()
     if column_data != []:
-      ret['columns'] = func_descriptions
+      ret['column_labels'] = func_descriptions
       ret['data'] = column_data
 
     return ret

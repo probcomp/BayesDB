@@ -24,6 +24,7 @@ import pandas
 import re
 import numpy
 import prettytable
+from math import pi
 
 import utils
 
@@ -109,26 +110,48 @@ def gen_M_r_from_T(T):
     M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
     return M_r
 
-def gen_ignore_metadata(column_data):
-    ret = gen_multinomial_metadata(column_data)
+def gen_ignore_metadata(column_data, parameters=None):
+    ret = gen_categorical_metadata(column_data, parameters)
     ret['modeltype'] = 'ignore'
+    ret['parameters'] = None
     return ret
 
-def gen_continuous_metadata(column_data):
+def gen_numerical_metadata(column_data, parameters=None):
     return dict(
         modeltype="normal_inverse_gamma",
         value_to_code=dict(),
         code_to_value=dict(),
+        parameters=None
         )
 
-def gen_cyclic_metadata(column_data):
+def gen_cyclic_metadata(column_data, parameters=None):
+
+    data_min = min(map(float, column_data))
+    data_max = max(map(float, column_data))
+
+    if not parameters:
+        parameters = dict(min = data_min, max = data_max)
+    else:
+        if 'min' not in parameters or 'max' not in parameters:
+            raise utils.BayesDBError("Error: cyclic columns require (min, max) parameters." % str(value))
+        else:
+            param_min = float(parameters['min'])
+            param_max = float(parameters['max'])
+            if data_min < param_min:
+                raise utils.BayesDBError("Error: cyclic contains data less than specified minimum %f" % param_min)
+            elif data_max > param_max:
+                raise utils.BayesDBError("Error: cyclic contains data greater than specified maximum %f" % param_max)
+            else:
+                parameters = dict(min = param_min, max = param_max)
+
     return dict(
         modeltype="vonmises",
         value_to_code=dict(),
         code_to_value=dict(),
+        parameters=parameters
         )
 
-def gen_multinomial_metadata(column_data):
+def gen_categorical_metadata(column_data, parameters=None):
     def get_is_not_nan(el):
         if isinstance(el, str):
             return el.upper() != 'NAN'
@@ -142,40 +165,61 @@ def gen_multinomial_metadata(column_data):
     values = range(len(unique_codes))
     value_to_code = dict(zip(values, unique_codes))
     code_to_value = dict(zip(unique_codes, values))
+
+    # Set cardinality = number of distinct values if not set, otherwise check
+    # that cardinality parameter is >= the number of distinct values.
+    n_codes = len(unique_codes)
+    if not parameters:
+        parameters = dict(cardinality = n_codes)
+    else:
+        parameters['cardinality'] = int(parameters['cardinality'])
+        if n_codes > parameters['cardinality']:
+            raise utils.BayesDBError("Error: categorical contains more distinct values than specified cardinality %i" % parameters['cardinality'])        
+
     return dict(
         modeltype="symmetric_dirichlet_discrete",
         value_to_code=value_to_code,
         code_to_value=code_to_value,
-        )
+        parameters = parameters)
 
 metadata_generator_lookup = dict(
-    continuous=gen_continuous_metadata,
+    numerical=gen_numerical_metadata,
     cyclic=gen_cyclic_metadata,
-    multinomial=gen_multinomial_metadata,
+    categorical=gen_categorical_metadata,
     ignore=gen_ignore_metadata,
     key=gen_ignore_metadata,
 )
 
-def gen_M_c_from_T(T, cctypes=None, colnames=None):
+def gen_M_c_from_T(T, cctypes=None, colnames=None, parameters=None, codebook=None):
     num_rows = len(T)
     num_cols = len(T[0])
     if cctypes is None:
-        cctypes = ['continuous'] * num_cols
+        cctypes = ['numerical'] * num_cols
     if colnames is None:
         colnames = range(num_cols)
+    if parameters is None:
+        parameters = [None] * num_cols
     #
     T_array_transpose = numpy.array(T).T
     column_metadata = []
-    for cctype, column_data in zip(cctypes, T_array_transpose):
+    for cctype, column_data, params in zip(cctypes, T_array_transpose, parameters):
         metadata_generator = metadata_generator_lookup[cctype]
-        metadata = metadata_generator(column_data)
+        metadata = metadata_generator(column_data, params)
         column_metadata.append(metadata)
+    column_codebook = []
+    for colname in colnames:
+        if codebook and colname in codebook:
+            colname_codebook = codebook[colname]
+        else:
+            colname_codebook = None
+        column_codebook.append(colname_codebook)
     name_to_idx = dict(zip(colnames, range(num_cols)))
     idx_to_name = dict(zip(map(str, range(num_cols)), colnames))
     M_c = dict(
         name_to_idx=name_to_idx,
         idx_to_name=idx_to_name,
         column_metadata=column_metadata,
+        column_codebook=column_codebook
         )
     return M_c
 
@@ -183,11 +227,11 @@ def gen_M_c_from_T_with_colnames(T, colnames):
     num_rows = len(T)
     num_cols = len(T[0])
     #
-    gen_continuous_metadata = lambda: dict(modeltype="normal_inverse_gamma",
+    gen_numerical_metadata = lambda: dict(modeltype="normal_inverse_gamma",
                                            value_to_code=dict(),
                                            code_to_value=dict())
     column_metadata = [
-        gen_continuous_metadata()
+        gen_numerical_metadata()
         for col_idx in range(num_cols)
         ]
     name_to_idx = dict(zip(colnames, range(num_cols)))
@@ -221,35 +265,35 @@ def discretize_data(T, discretize_indices):
         numpy.array(T_array[:, discretize_indices], dtype=int)
     return T_array.tolist()
 
-def convert_columns_to_multinomial(T, M_c, multinomial_indices):
-    multinomial_indices = numpy.array(multinomial_indices)
+def convert_columns_to_categorical(T, M_c, categorical_indices):
+    categorical_indices = numpy.array(categorical_indices)
     modeltype = 'symmetric_dirichlet_discrete'
     T_array = numpy.array(T)
-    for multinomial_idx in multinomial_indices:
-        multinomial_column = T_array[:, multinomial_idx]
-        multinomial_column = multinomial_column[~numpy.isnan(multinomial_column)]
-        multinomial_values = list(set(multinomial_column))
-        K = len(multinomial_values)
-        code_to_value = dict(zip(range(K), multinomial_values))
-        value_to_code = dict(zip(multinomial_values, range(K)))
-        multinomial_column_metadata = M_c['column_metadata'][multinomial_idx]
-        multinomial_column_metadata['modeltype'] = modeltype
-        multinomial_column_metadata['code_to_value'] = code_to_value
-        multinomial_column_metadata['value_to_code'] = value_to_code
+    for categorical_idx in categorical_indices:
+        categorical_column = T_array[:, categorical_idx]
+        categorical_column = categorical_column[~numpy.isnan(categorical_column)]
+        categorical_values = list(set(categorical_column))
+        K = len(categorical_values)
+        code_to_value = dict(zip(range(K), categorical_values))
+        value_to_code = dict(zip(categorical_values, range(K)))
+        categorical_column_metadata = M_c['column_metadata'][categorical_idx]
+        categorical_column_metadata['modeltype'] = modeltype
+        categorical_column_metadata['code_to_value'] = code_to_value
+        categorical_column_metadata['value_to_code'] = value_to_code
     return T, M_c
 
 # UNTESTED
-def convert_columns_to_continuous(T, M_c, continuous_indices):
-    continuous_indices = numpy.array(continuous_indices)
+def convert_columns_to_numerical(T, M_c, numerical_indices):
+    numerical_indices = numpy.array(numerical_indices)
     modeltype = 'normal_inverse_gamma'
     T_array = numpy.array(T)
-    for continuous_idx in continuous_indices:
+    for numerical_idx in numerical_indices:
         code_to_value = dict()
         value_to_code = dict()
-        continuous_column_metadata = M_c['column_metadata'][continuous_idx]
-        continuous_column_metadata['modeltype'] = modeltype
-        continuous_column_metadata['code_to_value'] = code_to_value
-        continuous_column_metadata['value_to_code'] = value_to_code
+        numerical_column_metadata = M_c['column_metadata'][numerical_idx]
+        numerical_column_metadata['modeltype'] = modeltype
+        numerical_column_metadata['code_to_value'] = code_to_value
+        numerical_column_metadata['value_to_code'] = value_to_code
     return T, M_c
 
 def at_most_N_rows(T, N, gen_seed=0):
@@ -274,7 +318,15 @@ def construct_pandas_df(query_obj):
         # Some types (numpy recarray for one) caused some issues when read into
         # a DataFrame, so recasting this as a list of lists solves the problem
         data = [list(row) for row in query_obj['data']]
-    pandas_df = pandas.DataFrame(data = data, columns = query_obj['columns'])
+
+    # For data queries, we want column_names as the column names in the pandas output.
+    # For non-data queries, we only have column_labels, so use that as backup.
+    if 'column_names' in query_obj:
+        columns = query_obj['column_names']
+    else:
+        columns = query_obj['column_labels']
+
+    pandas_df = pandas.DataFrame(data = data, columns = columns)
     return pandas_df
 
 def read_pandas_df(pandas_df):
@@ -302,7 +354,7 @@ def write_csv(filename, T, header = None):
             csv_writer.writerow(header)
         [csv_writer.writerow(T[i]) for i in range(len(T))]
 
-def all_continuous_from_file(filename, max_rows=None, gen_seed=0, has_header=True):
+def all_numerical_from_file(filename, max_rows=None, gen_seed=0, has_header=True):
     header, T = read_csv(filename, has_header=has_header)
     T = numpy.array(T, dtype=float).tolist()
     T = at_most_N_rows(T, N=max_rows, gen_seed=gen_seed)
@@ -310,7 +362,7 @@ def all_continuous_from_file(filename, max_rows=None, gen_seed=0, has_header=Tru
     M_c = gen_M_c_from_T(T)
     return T, M_r, M_c, header
 
-def continuous_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=None, gen_seed=0):
+def numerical_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=None, gen_seed=0):
     header = None
     T, M_r, M_c = None, None, None
     colmask = map(lambda x: 1 if x != 'ignore' else 0, cctypes)
@@ -341,13 +393,21 @@ def convert_code_to_value(M_c, cidx, code):
     """
     if numpy.isnan(code) or code=='nan':
         return code
-    elif M_c['column_metadata'][cidx]['modeltype'] in ['normal_inverse_gamma','vonmises']:
-        return float(code)
     else:
-        try:
-            return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
-        except KeyError:
-            return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))]
+        column_metadata = M_c['column_metadata'][cidx]
+        modeltype = column_metadata['modeltype']
+        if modeltype == 'normal_inverse_gamma':
+            return float(code)
+        elif modeltype == 'vonmises':
+            # Convert stored value (in [0, 2pi]) back to raw range.
+            param_min = column_metadata['parameters']['min']
+            param_max = column_metadata['parameters']['max']
+            return param_min + ((float(code) / (2 * pi)) * (param_max - param_min))
+        else:
+            try:
+                return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
+            except KeyError:
+                return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))]
 
 def convert_value_to_code(M_c, cidx, value):
     """
@@ -358,8 +418,14 @@ def convert_value_to_code(M_c, cidx, value):
     Note that the underlying store 'code_to_value' is unfortunately named backwards.
     TODO: fix the backwards naming.
     """
-    if M_c['column_metadata'][cidx]['modeltype'] in ['normal_inverse_gamma','vonmises']:
+    column_metadata = M_c['column_metadata'][cidx]
+    modeltype = column_metadata['modeltype']
+    if modeltype == 'normal_inverse_gamma':
         return float(value)
+    elif modeltype == 'vonmises':
+        param_min = column_metadata['parameters']['min']
+        param_max = column_metadata['parameters']['max']
+        return (float(value) - param_min) / (param_max - param_min)
     else:
         try:
             return M_c['column_metadata'][cidx]['code_to_value'][str(value)]
@@ -382,18 +448,25 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
     T_uncast_array = numpy.array(T_uncast_array)
     # WARNING: array argument is mutated
     for col_idx in range(T_uncast_array.shape[1]):
-        modeltype = M_c['column_metadata'][col_idx]['modeltype']
-        if modeltype in ['normal_inverse_gamma','vonmises']: 
-            continue
-        # copy.copy else you mutate M_c
-        mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
-        mapping['NAN'] = numpy.nan
+        column_metadata = M_c['column_metadata'][col_idx]
+        modeltype = column_metadata['modeltype']
         col_data = T_uncast_array[:, col_idx]
-        to_upper = lambda el: str(el).upper()
-        is_nan_str = numpy.array(map(to_upper, col_data))=='NAN'
-        col_data[is_nan_str] = 'NAN'
-        # FIXME: THIS IS WHERE TO PUT NAN HANDLING
-        mapped_values = [mapping[el] for el in col_data]
+
+        if modeltype == 'normal_inverse_gamma': 
+            continue
+        elif modeltype == 'vonmises':
+            param_min = column_metadata['parameters']['min']
+            param_max = column_metadata['parameters']['max']
+            mapped_values = [2 * pi * (float(x) - param_min) / (param_max - param_min) for x in col_data]
+        else:    
+            # copy.copy else you mutate M_c
+            mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
+            mapping['NAN'] = numpy.nan
+            to_upper = lambda el: str(el).upper()
+            is_nan_str = numpy.array(map(to_upper, col_data))=='NAN'
+            col_data[is_nan_str] = 'NAN'
+            # FIXME: THIS IS WHERE TO PUT NAN HANDLING
+            mapped_values = [mapping[el] for el in col_data]
         T_uncast_array[:, col_idx] = mapped_values
     T = numpy.array(T_uncast_array, dtype=float).tolist()
     return T
@@ -419,7 +492,7 @@ def get_pop_indices(cctypes, colnames):
     pop_columns = [
             colname
             for (cctype, colname) in zip(cctypes, colnames)
-            if (cctype == 'ignore' or cctype == 'key')
+            if (cctype in ['ignore', 'key'])
             ]
     pop_indices = get_list_indices(colnames, pop_columns)
     return pop_indices
@@ -430,12 +503,17 @@ def do_pop_columns(T, pop_indices):
     T = transpose_list(T_by_columns)
     return T
 
-def remove_ignore_cols(T, cctypes, colnames):
+def remove_ignore_cols(T, cctypes, colnames, parameters=None):
     pop_indices = get_pop_indices(cctypes, colnames)
     T = do_pop_columns(T, pop_indices)
     colnames = do_pop_list_indices(colnames[:], pop_indices)
     cctypes = do_pop_list_indices(cctypes[:], pop_indices)
-    return T, cctypes, colnames
+    if parameters:
+        parameters = do_pop_list_indices(parameters[:], pop_indices)
+        ret = T, cctypes, colnames, parameters
+    else:
+        ret = T, cctypes, colnames
+    return ret
 
 nan_set = set(['', 'null', 'n/a'])
 _convert_nan = lambda el: el if str(el).strip().lower() not in nan_set else 'NAN'
@@ -455,11 +533,11 @@ def read_data_objects(filename, max_rows=None, gen_seed=0,
     raw_T = convert_nans(raw_T)
 
     if cctypes is None:
-        cctypes = ['continuous'] * len(header)
+        cctypes = ['numerical'] * len(header)
         pass
 
     T_uncast_arr, cctypes, header = remove_ignore_cols(raw_T, cctypes, header) # remove ignore columns
-    # determine value mappings and map T to continuous castable values
+    # determine value mappings and map T to numerical castable values
     M_r = gen_M_r_from_T(T_uncast_arr)
     M_c = gen_M_c_from_T(T_uncast_arr, cctypes, colnames)
     T = map_to_T_with_M_c(T_uncast_arr, M_c)
@@ -498,9 +576,9 @@ def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
     above_ratio_cutoff = distinct_ratio > ratio_cutoff
     can_cast = get_can_cast_to_float(column_data)
     if above_count_cutoff and above_ratio_cutoff and can_cast:
-        column_type = 'continuous'
+        column_type = 'numerical'
     else:
-        column_type = 'multinomial'
+        column_type = 'categorical'
     return column_type
 
 def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, warn_cardinality=7):
@@ -508,7 +586,7 @@ def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, war
     Guesses column types - used when creating new btable so user doesn't have to
     specify a type for all columns.
     Refer to function guess_column_type for decision rules.
-    Warn if cardinality of a multinomial is greater than 7 
+    Warn if cardinality of a categorical is greater than 7 
         (limit proposed by Pat Shafto 7 Aug 2014)
     """
     T_transposed = transpose_list(T)
@@ -517,8 +595,8 @@ def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, war
     for column_idx, column_data in enumerate(T_transposed):
         column_type = guess_column_type(column_data, count_cutoff, ratio_cutoff)
         column_types.append(column_type)
-        if column_type == 'multinomial' and len(set(column_data)) > warn_cardinality:
-            warnings.append('Column "%s" is multinomial but has a high number of distinct values. Convert to continuous using UPDATE SCHEMA if appropriate.' % colnames_full[column_idx])
+        if column_type == 'categorical' and len(set(column_data)) > warn_cardinality:
+            warnings.append('Column "%s" is categorical but has a high number of distinct values. Convert to numerical using UPDATE SCHEMA if appropriate.' % colnames_full[column_idx])
     return column_types, warnings
         
 def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
@@ -527,12 +605,12 @@ def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
     return gen_T_and_metadata(colnames, raw_T, max_rows, gen_seed, cctypes)
 
 def gen_T_and_metadata(colnames, raw_T, max_rows=None, gen_seed=0,
-                       cctypes=None):
+                       cctypes=None, parameters=None, codebook=None):
     T = at_most_N_rows(raw_T, max_rows, gen_seed)
     T = convert_nans(T)
     if cctypes is None:
         cctypes = guess_column_types(T)
-    M_c = gen_M_c_from_T(T, cctypes, colnames)
+    M_c = gen_M_c_from_T(T, cctypes, colnames, parameters, codebook)
     T = map_to_T_with_M_c(numpy.array(T), M_c)
     M_r = gen_M_r_from_T(T)
     return T, M_r, M_c, cctypes
@@ -619,3 +697,26 @@ def insert_key_column(T_df, colnames_full, cctypes_full):
     colnames_full.insert(0, key_column_name)
     cctypes_full.insert(0, 'key')
     return raw_T_full, colnames_full, cctypes_full, key_column_name
+
+def get_column_labels_from_M_c(M_c, colnames):
+    """
+    Get display labels from M_c by pulling from codebook.
+    Sources in order of priority:
+        1. column_codebook[col_idx][short_name]
+        2. colname
+    """
+
+    # Initialize as colnames
+    column_labels = colnames[:]
+
+    for colname_idx, colname in enumerate(colnames):
+        if colname in M_c['name_to_idx']:
+            colname_idx_M_c = M_c['name_to_idx'][colname]
+            column_codebook = M_c['column_codebook'][colname_idx_M_c]
+
+            if column_codebook:
+                short_name = column_codebook['short_name']
+                if short_name != '':
+                    column_labels[colname_idx] = short_name
+
+    return column_labels

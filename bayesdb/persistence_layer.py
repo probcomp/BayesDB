@@ -501,16 +501,42 @@ class PersistenceLayer():
         colnames = utils.get_all_column_names_in_original_order(M_c)
         return colnames
 
+    def get_colnames_full(self, tablename):
+        """
+        Return column names of all columns
+        """
+        M_c_full = self.get_metadata_full(tablename)['M_c_full']
+        colnames = utils.get_all_column_names_in_original_order(M_c_full)
+        return colnames
+
     def get_schema(self, tablename):
         """
         Return colnames and cctypes of analysis columns
         """
         colnames = self.get_colnames(tablename)
         cctypes = self.get_cctypes(tablename)
+        M_c = self.get_metadata(tablename)['M_c']
         schema = dict()
         for colname, cctype in zip(colnames, cctypes):
-            schema[colname] = cctype
+            schema[colname] = dict()
+            schema[colname]['cctype'] = cctype
+            if cctype == 'cyclic':
+                col_idx = M_c['name_to_idx'][colname]
+                schema[colname]['parameters'] = M_c['column_metadata'][col_idx]['parameters']
+            else:
+                schema[colname]['parameters'] = None
         return schema
+
+    def get_schema_full(self, tablename):
+        """
+        Return colnames and cctypes of all columns
+        """
+        colnames_full = self.get_colnames_full(tablename)
+        cctypes_full = self.get_cctypes_full(tablename)
+        schema_full = dict()
+        for colname, cctype in zip(colnames_full, cctypes_full):
+            schema_full[colname] = cctype
+        return schema_full
 
     def get_key_column_name(self, tablename):
         metadata_full = self.get_metadata_full(tablename)
@@ -559,7 +585,7 @@ class PersistenceLayer():
 
     def update_schema(self, tablename, mappings):
         """
-        mappings is a dict of column name to 'cyclic', 'continuous', 'multinomial', 'ignore', or 'key'.
+        mappings is a dict of column name to 'cyclic', 'numerical', 'categorical', 'ignore', or 'key'.
         TODO: can we get rid of cctypes?
         """
         metadata_full = self.get_metadata_full(tablename)
@@ -567,35 +593,41 @@ class PersistenceLayer():
         M_c_full = metadata_full['M_c_full']
         raw_T_full = metadata_full['raw_T_full']
         colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
+        parameters_full = [x['parameters'] for x in M_c_full['column_metadata']]
 
         # Now, update cctypes_full (cctypes updated later, after removing ignores).
-        mapping_set = 'continuous', 'multinomial', 'ignore', 'key', 'cyclic'
-        for col, mapping in mappings.items():
-            if col.lower() not in M_c_full['name_to_idx']:
-                raise utils.BayesDBError('Error: column %s does not exist.' % col)
-            elif mapping not in mapping_set:
+        mapping_set = 'numerical', 'categorical', 'ignore', 'key', 'cyclic'
+
+        for colname, mapping in mappings.items():
+            cctype = mapping['cctype']
+            parameters = mapping['parameters']
+
+            if colname.lower() not in M_c_full['name_to_idx']:
+                raise utils.BayesDBError('Error: column %s does not exist.' % colname)
+            elif cctype not in mapping_set:
                 raise utils.BayesDBError('Error: datatype %s is not one of the valid datatypes: %s.' % (mapping, str(mapping_set)))
 
-            cidx = M_c_full['name_to_idx'][col.lower()]
+            cidx = M_c_full['name_to_idx'][colname.lower()]
 
             # If the column's current type is key, don't allow the change.
             if cctypes_full[cidx] == 'key':
                 raise utils.BayesDBError('Error: %s is already set as the table key. To change its type, reload the table using CREATE BTABLE and choose a different key column.' % col.lower())
             # If the user tries to change a column to key, it's easier to reload the table, since at this point
             # there aren't models anyways. Eventually we can build this in if it's desirable.
-            elif mapping == 'key':
+            elif cctype == 'key':
                 raise utils.BayesDBError('Error: key column already exists. To choose a different key, reload the table using CREATE BTABLE')
 
-            cctypes_full[cidx] = mapping
+            cctypes_full[cidx] = cctype
+            parameters_full[cidx] = parameters
 
         # Make sure there isn't more than one key.
         assert len(filter(lambda x: x=='key', cctypes_full)) == 1
 
-        T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+        T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full, parameters=parameters_full)
 
         # Variables without "_full" don't include ignored columns.
-        raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
-        T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+        raw_T, cctypes, colnames, parameters = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full, parameters_full)
+        T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes, parameters = parameters)
 
         # Now, put cctypes, T, M_c, and M_r back into the DB
         self.update_metadata(tablename, M_r, M_c, T, cctypes)
@@ -609,6 +641,7 @@ class PersistenceLayer():
         This function is called to create a btable.
         It creates the table's persistence directory, saves data.csv and metadata.pkl.
         Creates models.pkl as empty dict.
+        
         """
         # Make directory for table
         if not os.path.exists(os.path.join(self.data_dir, tablename)):

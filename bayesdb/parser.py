@@ -136,7 +136,11 @@ class Parser(object):
         """
         tablename = bql_statement_ast.btable
         filename = self.get_absolute_path(bql_statement_ast.filename)
-        return 'create_btable', dict(tablename=tablename, cctypes_full=None), dict(csv_path=filename)
+        client_dict = dict(csv_path = filename)
+        if bql_statement_ast.codebook_file != '':
+            codebook_path = self.get_absolute_path(bql_statement_ast.codebook_file)
+            client_dict['codebook_path'] = codebook_path
+        return 'create_btable', dict(tablename=tablename, cctypes_full=None), client_dict
         #TODO types?
 
     def parse_upgrade_btable(self, bql_statement_ast):
@@ -156,7 +160,16 @@ class Parser(object):
         mappings = dict()
         type_clause = bql_statement_ast.type_clause
         for update in type_clause:
-            mappings[update[0]]=update[1]
+            column = update[0]
+            cctype = update[1]
+            mappings[column] = dict()
+            mappings[column]['cctype'] = cctype
+            if 'parameters' in update:
+                mappings[column]['parameters'] = dict()
+                for param_type, param_str in update.parameters.iteritems():
+                    mappings[column]['parameters'][param_type] = param_str
+            else:
+                mappings[column]['parameters'] = None
         return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
     def parse_drop_btable(self,bql_statement_ast):
@@ -324,8 +337,6 @@ class Parser(object):
         confidence = None
         if bql_statement_ast.confidence != '':
             confidence = float(bql_statement_ast.confidence)
-            if confidence > 1: 
-                raise utils.BayesDBParseError("Confidence cannot be greater than 0.")
         filename = None
         if bql_statement_ast.filename != '':
             filename = bql_statement_ast.filename
@@ -444,6 +455,8 @@ class Parser(object):
         for function in functions:
             assert function.function_id == '', "BayesDBParsingError: %s not valid in INFER" % function.function_id
         
+        assert confidence is None or 0.0 <= confidence <= 1.0, "BayesDBParsingError: CONFIDENCE must be unspecified (default 0) or in the interval [0, 1]"
+
         return 'infer', \
             dict(tablename=tablename, functions=functions, 
                  newtablename=newtablename, confidence=confidence, 
@@ -513,6 +526,9 @@ class Parser(object):
         pairwise = client_dict['pairwise']
         filename = client_dict['filename']
         scatter = client_dict['scatter']
+
+        # Require the number of observations to simulate
+        assert args_dict['numpredictions'] is not None, "BayesDBParsingError: Include TIMES: SIMULATE <columns> FROM <btable> TIMES <times>."
 
         assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in SIMULATE."
         assert args_dict['numsamples'] == None, 'BayesDBParsingError: WITH <numsamples> SAMPLES clause not allowed in SIMULATE.'

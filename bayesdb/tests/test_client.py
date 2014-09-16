@@ -145,13 +145,13 @@ def test_save_and_load_models():
   client('load models %s into %s' % (pkl_path, test_tablename2), debug=True, pretty=False)
 
   test_tablename3 = create_dha()
-  client('update schema for %s set qual_score = multinomial' % (test_tablename3), debug=True, pretty=False)
+  client('update schema for %s set qual_score = categorical' % (test_tablename3), debug=True, pretty=False)
 
   # Should work - schemas aren't the same, but table3 doesn't have any models, so the schema will be changed.
   client('load models %s into %s' % (pkl_path, test_tablename3), debug=True, pretty=False)
 
   test_tablename4 = create_dha()
-  client('update schema for %s set qual_score = multinomial' % (test_tablename4), debug=True, pretty=False)
+  client('update schema for %s set qual_score = categorical' % (test_tablename4), debug=True, pretty=False)
   client('initialize 2 models for %s' % (test_tablename4), debug=True, pretty=False)
 
   # Should fail - schemas aren't the same, and table4 already has models, so the models will be incompatible.
@@ -169,7 +169,7 @@ def test_column_lists():
   client('show column lists for %s' % test_tablename, debug=True, pretty=False)
   out = client('estimate columns from %s as %s' % (test_tablename, cname1), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
-  assert out.columns == ['column']
+  assert (out.columns == ['column label', 'column name']).all()
 
   client('show column lists for %s' % test_tablename, debug=True, pretty=False)
 #TODO grammar update, replace tests after implementing show columns for <column_list>
@@ -177,7 +177,7 @@ def test_column_lists():
 #  with pytest.raises(utils.BayesDBColumnListDoesNotExistError):  
 #    client('show columns %s from %s' % (cname2, test_tablename), debug=True, pretty=False)  
   out = client('estimate columns from %s order by typicality limit 5 as %s' % (test_tablename, cname1), debug=True, pretty=False)[0]
-  assert out.shape == (5, 2)
+  assert out.shape == (5, 3)
 
   client('estimate columns from %s limit 5 as %s' % (test_tablename, cname2), debug=True, pretty=False)
   client('show column lists for %s' % test_tablename, debug=True, pretty=False)
@@ -418,8 +418,8 @@ def test_select():
 
   # probability
   # why is this so slow, when predictive probability is really fast? these are _observed_
-  # for qual_score (continuous): probability takes 20 times longer than predictive prob (about 5 seconds total for 300 rows)
-  # for name (multinomial): probability takes extremely long (about 75 seconds for 300 rows)
+  # for qual_score (numerical): probability takes 20 times longer than predictive prob (about 5 seconds total for 300 rows)
+  # for name (categorical): probability takes extremely long (about 75 seconds for 300 rows)
   #  while predictive probability takes under one second for 300 rows
   st = time.time()
   client('select probability of qual_score = 6 from %s' % (test_tablename), debug=True, pretty=False)
@@ -509,14 +509,14 @@ def test_summarize():
   # Test that the output is a pandas DataFrame when pretty=False
   out = client('summarize select name, qual_score from %s' % (test_tablename), debug=True, pretty=False)[0]
   assert type(out) == pandas.DataFrame
-  assert (out.columns == [' ', 'name', 'qual_score']).all()
+  assert (out.columns == ['', 'name', 'qual_score']).all()
 
   # Test that stats from summary_describe and summary_freqs made it into the output DataFrame
   # Note that all of these stats won't be present in EVERY summarize output, but all should be in the output
   # from the previous test.
   expected_indices = ['type', 'count', 'unique', 'mean', 'std', 'min', '25%', '50%', '75%', 'max', \
     'mode', 'prob_mode']
-  assert all([x in list(out[' ']) for x in expected_indices])
+  assert all([x in list(out['']) for x in expected_indices])
 
   # Test that it works on columns of predictive functions.
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
@@ -533,7 +533,7 @@ def test_summarize():
   # Test with only a discrete column
   client('summarize select name from %s' % (test_tablename), debug=True, pretty=False)
 
-  # Test with only a continuous column
+  # Test with only a numerical column
   client('summarize select qual_score from %s' % (test_tablename), debug=True, pretty=False)
 
 def test_select_where_col_equal_val():
@@ -610,10 +610,15 @@ def test_update_schema():
   test_tablename = create_dha()
   global client, test_filenames
 
-  # Test setting one column to each type
-  out = client('update schema for %s set qual_score = ignore, ami_score = multinomial' % (test_tablename), debug=True, pretty=False)[0]
+  # Test setting one column to each type other than numerical
+  out = client('update schema for %s set qual_score = ignore, ami_score = categorical, pneum_score = cyclic(0, 100)' % (test_tablename), debug=True, pretty=False)[0]
   assert (out['datatype'][out['column'] == 'qual_score'] == 'ignore').all()
-  assert (out['datatype'][out['column'] == 'ami_score'] == 'multinomial').all()
+  assert (out['datatype'][out['column'] == 'ami_score'] == 'categorical').all()
+  assert (out['datatype'][out['column'] == 'pneum_score'] == 'cyclic').all()
+
+  # Test setting categorical with a cardinality parameter
+  out = client('update schema for %s set name = categorical(350)' % (test_tablename), debug=True, pretty=False)[0]
+  assert (out['datatype'][out['column'] == 'name'] == 'categorical').all()
 
   # Selecting qual_score should still work even after it's ignored, also should work in where clauses and order by clauses
   client('select qual_score from %s' % (test_tablename), debug=True, pretty=False)
@@ -627,8 +632,8 @@ def test_update_schema():
   assert out.shape == (1, 3)
   assert (out['name'] == "Albany NY").all()
 
-  # Set qual_score back to continuous, and select should work again
-  client('update schema for %s set qual_score = continuous, name = multinomial, ami_score = continuous' % (test_tablename), debug=True, pretty=False)
+  # Set qual_score, ami_score, pneum_score, and total_fte back to numerical, and select should work again
+  client('update schema for %s set qual_score = numerical, ami_score = numerical, pneum_score = numerical, total_fte = numerical' % (test_tablename), debug=True, pretty=False)
 
   # Set back to ignore, run models, and then estimation shouldn't work for qual_score
   client('update schema for %s set qual_score = ignore' % (test_tablename), debug=True, pretty=False)
@@ -643,4 +648,7 @@ def test_update_schema():
     client('estimate columns from %s order by dependence probability with qual_score limit 5' % (test_tablename), debug=True, pretty=False)
     # Next two statements should fail because they 1) try to set a new key and 2) try to change the key's type
     client('update schema for %s set name = key' % (test_tablename), debug=True, pretty=False)
-    client('update schema for %s set key = continuous' % (test_tablename), debug=True, pretty=False)
+    client('update schema for %s set key = numerical' % (test_tablename), debug=True, pretty=False)
+    # Next two statements should fail because they set parameters that don't contain the data.
+    client('update schema for %s set name = categorical(3)' % (test_tablename), debug=True, pretty=False)
+    client('update schema for %s set qual_score = cyclic(0, 10)' % (test_tablename), debug=True, pretty=False)

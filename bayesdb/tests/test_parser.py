@@ -1,4 +1,4 @@
-7#
+#
 #   Copyright (c) 2010-2014, MIT Probabilistic Computing Project
 #
 #   Lead Developers: Jay Baxter and Dan Lovell
@@ -266,18 +266,28 @@ def test_simple_functions():
     assert help_function.parseString("HELp",parseAll=True).statement_id == 'help'
 
 def test_update_schema_pyparsing():
-    update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
+    update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_1 = Categorical,col_2=numerical , col_3  =  ignore",parseAll=True)
     assert update_schema_1.statement_id == 'update_schema'
     assert update_schema_1.btable == 'test_btable'
     assert update_schema_1.type_clause[0][0] == 'col_1'
     assert update_schema_1.type_clause[0][1] == 'categorical'
-    assert update_schema_1.type_clause[1][0] == 'col.2'
+    assert update_schema_1.type_clause[1][0] == 'col_2'
     assert update_schema_1.type_clause[1][1] == 'numerical'
     assert update_schema_1.type_clause[2][0] == 'col_3'
     assert update_schema_1.type_clause[2][1] == 'ignore'
-    update_schema_2 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = key",parseAll=True)
+    update_schema_2 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_1 = key",parseAll=True)
     assert update_schema_2.type_clause[0][0] == 'col_1'
     assert update_schema_2.type_clause[0][1] == 'key'
+    update_schema_3 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_1 = categorical(15)", parseAll=True)
+    assert update_schema_3.type_clause[0][0] == 'col_1'
+    assert update_schema_3.type_clause[0][1] == 'categorical'
+    assert update_schema_3.type_clause[0].parameters.cardinality == '15'
+    update_schema_4 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_2 = cyclic(0, 10)", parseAll=True)
+    assert update_schema_4.type_clause[0][0] == 'col_2'
+    assert update_schema_4.type_clause[0][1] == 'cyclic'
+    assert update_schema_4.type_clause[0].parameters.min == '0'
+    assert update_schema_4.type_clause[0].parameters.max == '10'
+        
 
 def test_create_btable_pyparsing():
     create_btable_1 = create_btable_function.parseString("CREATE BTABLE test.btable FROM '~/filenam e.csv'", parseAll=True)
@@ -794,6 +804,10 @@ def test_simulate_pyparsing():
     simulate_ast = query.parseString(query_2,parseAll=True)
     assert simulate_ast.functions[0].column_id == 'col1'
     assert simulate_ast.functions[1].column_id == 'col2'
+
+    query_3 = "SIMULATE col1, col2 FROM table_1"
+    simulate_ast = query.parseString(query_3, parseAll=True)
+
 
 def test_estimate_columns_from_pyparsing():
     query_1 = "ESTIMATE COLUMNS FROM table_1 WHERE col_1 = 4 ORDER BY TYPICALITY LIMIT 10 AS col_list_1"
@@ -1320,6 +1334,7 @@ def test_disallowed_queries():
                "simulate a conf .4, b from test times 10",
                "infer * from test times 10",
                "infer typicality from test",
+               "infer * from test with confidence 1.5",
                "simulate typicality from test",
                "infer * from test save clusters with threshold .5 as test.csv",
                "infer * from test given a=5",
@@ -1327,6 +1342,7 @@ def test_disallowed_queries():
                "simulate * from test save clusters with threshold .5 as test.csv",
                "simulate * from test with confidence .4",
                "simulate * from test with 4 samples",
+               "simulate * from test",
                "estimate columns from test with confidence .4",
                "estimate columns from test given a=4",
                "estimate columns from test times 10",
@@ -1341,16 +1357,29 @@ def test_disallowed_queries():
                "estimate pairwise row similarity from test times 10",
                "estimate pairwise row similarity from test given a = 5",
                "estimate pairwise row similarity from test with confidence .2",
-               "estimate pairwise row similarity from test where a = b",
+               "estimate pairwise row similarity from test where a = b"
                ]
-
-    for query_string in strings:
-        bql_statement.parseString(query_string,parseAll=True)
 
     for query_string in strings:
         ast = bql_statement.parseString(query_string,parseAll=True)
         with pytest.raises(AssertionError):
             parser.parse_single_statement(ast)
+
+def test_old_grammar_fails():
+    """
+    All of these queries are formerly valid but should not pass the current grammar.
+    """
+
+    strings = [
+        'update schema for test set a = continuous',
+        'update schema for test set a = multinomial',
+        # Cyclic is invalid because it should be followed by (min, max) parameters.
+        'update schema for test set a = cyclic'
+    ]
+
+    for query_string in strings:
+        with pytest.raises(ParseException):
+            ast = bql_statement.parseString(query_string, parseAll=True)
 
 def test_label_and_metadata():
     # LABEL COLUMNS FOR <btable> SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...]

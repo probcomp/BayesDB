@@ -26,6 +26,7 @@ import re
 import os
 import time
 import ast
+from textwrap import dedent
 
 import utils
 import data_utils
@@ -73,12 +74,12 @@ class Client(object):
                 table_created, table_checked = self.engine.check_btable_created_and_checked(tablename)
         if self.online:
             if table_query:
-                if table_created and not table_checked:
-                    out, id = api_utils.call('upgrade_btable', {'tablename': tablename}, self.URI)
-            out, id = api_utils.call(method_name, args_dict, self.URI)
+                if table_created and not table_checked and method_name is not 'drop_btable':
+                    out, id = aqupi_utils.call('upgrade_btable', {'tablename': tablename}, self.URI)
+            out, id = aqupi_utils.call(method_name, args_dict, self.URI)
         else:
             if table_query:
-                if table_created and not table_checked:
+                if table_created and not table_checked and method_name is not 'drop_btable':
                     self.engine.upgrade_btable(tablename)
             method = getattr(self.engine, method_name)
             if debug:
@@ -238,6 +239,32 @@ class Client(object):
             args_dict['key_column'] = key_column
             args_dict['subsample'] = False
 
+            if 'codebook_path' in client_dict:
+                codebook_header, codebook_rows = data_utils.read_csv(client_dict['codebook_path'])
+                # TODO: require specific codebook_header values? Or don't require a header,
+                # and if the first value in the header is actually a data column name, assume
+                # the first row is codebook data, not a header.
+                
+                # Create a dict indexed by column name
+                codebook = dict()
+                for codebook_row in codebook_rows:
+                    codebook[codebook_row[0]] = dict(zip(['short_name', 'description', 'value_map'], codebook_row[1:]))
+                args_dict['codebook'] = codebook
+            else:
+                warning = dedent("""
+                WARNING!
+
+                You are creating a btable without a codebook, which will make interpretation
+                of results more difficult. Codebooks should be in CSV format with each row
+                corresponding to one column of the original data. The codebook should have four columns:
+
+                1. actual column name
+                2. short column description
+                3. long column description
+                4. value map (optional, only used for categorical columns - should be in JSON format)
+                """)
+                print warning
+                
             # Display warning messages and get confirmation if btable is too large.
             # Ask user if they want to turn on subsampling.
             max_columns = 200
@@ -313,7 +340,7 @@ class Client(object):
             if (plots or client_dict['filename']):
                 # Plot generalized histograms or scatterplots
                 plot_remove_key = method_name in ['select', 'infer']
-                plotting_utils.plot_general_histogram(result['columns'], result['data'], result['M_c'], client_dict['filename'], client_dict['scatter'], remove_key=plot_remove_key)
+                plotting_utils.plot_general_histogram(result['column_names'], result['data'], result['M_c'], result['schema_full'], client_dict['filename'], client_dict['scatter'], remove_key=plot_remove_key)
                 return self.pretty_print(result)
             else:
                 if 'message' not in result:
@@ -330,7 +357,7 @@ class Client(object):
             for warning in result['warnings']:
                 print 'WARNING: %s' % warning
                 
-        if pandas_output and 'data' in result and 'columns' in result:
+        if pandas_output and 'data' in result and 'column_labels' in result:
             result_pandas_df = data_utils.construct_pandas_df(result)
             return result_pandas_df
         else:
@@ -366,13 +393,25 @@ class Client(object):
         result = ""
         if type(query_obj) == dict and 'message' in query_obj:
             result += query_obj["message"] + "\n"
-        if 'data' in query_obj and 'columns' in query_obj:
+        if 'data' in query_obj and 'column_labels' in query_obj:
             """ Pretty-print data table """
             pt = prettytable.PrettyTable()
-            pt.field_names = query_obj['columns']
-            for row in query_obj['data']:
-                pt.add_row(row)
+            columns = query_obj['column_labels']
+            pt.field_names = columns
+
+            # Adjust value width - for now preserve 2 decimal places.
+            for row_idx, row_values in enumerate(query_obj['data']):
+                if type(row_values) == tuple:
+                    row_values = list(row_values)
+                for col_idx, col_value in enumerate(row_values):
+                    if type(col_value) == float:
+                        # Right-align numeric columns.
+                        if row_idx == 0:
+                            pt.align[columns[col_idx]] = 'r'
+                        row_values[col_idx] = "% .2f" % col_value
+                pt.add_row(row_values)
             result += str(pt)
+
         elif 'list' in query_obj:
             """ Pretty-print lists """
             result += str(query_obj['list'])
@@ -385,11 +424,11 @@ class Client(object):
             for row, colname in zip(zmatrix, list(colnames)):
                 pt.add_row([colname] + list(row))
             result += str(pt)
-        elif 'columns' in query_obj:
+        elif 'column_labels' in query_obj:
             """ Pretty-print column list."""
             pt = prettytable.PrettyTable()
             pt.field_names = ['column']
-            for column in query_obj['columns']:
+            for column in query_obj['column_labels']:
                 pt.add_row([column])
             result += str(pt)
         elif 'row_lists' in query_obj:

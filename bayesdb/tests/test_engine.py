@@ -31,6 +31,7 @@ from bayesdb.client import Client
 from bayesdb.engine import Engine
 from bayesdb.parser import Parser
 import bayesdb.bql_grammar as bql
+import bayesdb.utils as utils
 
 engine = Engine()
 parser = Parser()
@@ -61,13 +62,13 @@ def create_dha(path='data/dha.csv'):
 
 def test_create_btable():
   test_tablename, create_btable_result = create_dha()
-  assert 'columns' in create_btable_result
+  assert 'column_labels' in create_btable_result
   assert 'data' in create_btable_result
   assert 'message' in create_btable_result
   # Should be 65 rows (1 for each column inferred: 64 from data file, plus 1 for key)
   assert len(create_btable_result['data']) == 65
-  # Should be 2 columns: 1 for column names, and 1 for the type
-  assert len(create_btable_result['data'][0]) == 2
+  # Should be 3 columns: 1 for column names, 1 for data type, and 1 for parameters
+  assert len(create_btable_result['data'][0]) == 3
   list_btables_result = engine.list_btables()['data']
   assert [test_tablename] in list_btables_result
   engine.drop_btable(test_tablename)
@@ -91,11 +92,11 @@ def test_select():
   limit = float('inf')
   order_by = False
   select_result = engine.select(test_tablename, functions, whereclause, limit, order_by, None)
-  assert 'columns' in select_result
+  assert 'column_labels' in select_result
   assert 'data' in select_result
-  assert select_result['columns'] == ['key', 'name', 'qual_score']
+  assert select_result['column_labels'] == ['key', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
-  assert len(select_result['data']) == 307 and len(select_result['data'][0]) == len(select_result['columns'])
+  assert len(select_result['data']) == 307 and len(select_result['data'][0]) == len(select_result['column_labels'])
   assert type(select_result['data'][0][0]) == numpy.string_
   t = type(select_result['data'][0][1])
   assert (t == unicode) or (t == str) or (t == numpy.string_) ## type of name is unicode or string
@@ -193,24 +194,49 @@ def test_update_schema():
   test_tablename, _ = create_dha()
   m_c, m_r, t = engine.persistence_layer.get_metadata_and_table(test_tablename)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
-  assert cctypes[m_c['name_to_idx']['qual_score']] == 'continuous'
-  assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'numerical'
+  assert cctypes[m_c['name_to_idx']['name']] == 'categorical'
 
-  mappings = dict(qual_score='multinomial')
+  # Categorical with no cardinality parameter
+  mappings = dict(qual_score = dict(cctype = 'categorical', parameters = None))
   engine.update_schema(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
-  assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'categorical'
 
-  mappings = dict(qual_score = 'ignore')
+  # Categorical with optional cardinality parameter
+  mappings = dict(name = dict(cctype = 'categorical', parameters = dict(cardinality = 350)))
+  engine.update_schema(test_tablename, mappings)
+  cctypes = engine.persistence_layer.get_cctypes(test_tablename)
+  assert cctypes[m_c['name_to_idx']['name']] == 'categorical'
+
+  # Cyclic with required min, max parameters
+  mappings = dict(qual_score = dict(cctype = 'cyclic', parameters = dict(min = 0, max = 100)))
+  engine.update_schema(test_tablename, mappings)
+  cctypes = engine.persistence_layer.get_cctypes(test_tablename)
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'cyclic'
+
+  # Ignore
+  mappings = dict(qual_score = dict(cctype = 'ignore', parameters = None))
   engine.update_schema(test_tablename, mappings)
   m_c, m_r, t = engine.persistence_layer.get_metadata_and_table(test_tablename)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
   assert 'qual_score' not in m_c['name_to_idx'].keys()
 
   ## Now test that it doesn't allow name to be continuous
-  mappings = dict(name='continuous')
+  mappings = dict(name = dict(cctype = 'numerical', parameters = None))
   with pytest.raises(ValueError):
     engine.update_schema(test_tablename, mappings)
+
+  # Test that setting cyclic with parameters inside the range of data fails
+  mappings = dict(qual_score = dict(cctype = 'cyclic', parameters = dict(min = 50, max = 60)))
+  with pytest.raises(utils.BayesDBError):
+    engine.update_schema(test_tablename, mappings)
+
+  # Test that setting categorical with low cardinality fails
+  mappings = dict(name = dict(cctype = 'categorical', parameters = dict(cardinality = 10)))
+  with pytest.raises(utils.BayesDBError):
+    engine.update_schema(test_tablename, mappings)
+
 
 def test_save_and_load_models():
   test_tablename, _ = create_dha()
@@ -337,11 +363,11 @@ def test_infer():
   numsamples = 30
   confidence = 0
   infer_result = engine.infer(test_tablename, functions, confidence, whereclause, limit, numsamples, order_by)
-  assert 'columns' in infer_result
+  assert 'column_labels' in infer_result
   assert 'data' in infer_result
-  assert infer_result['columns'] == ['key', 'name', 'qual_score']
+  assert infer_result['column_labels'] == ['key', 'name', 'qual_score']
   ## 307 is the total number of rows in the dataset.
-  assert len(infer_result['data']) == 307 and len(infer_result['data'][0]) == len(infer_result['columns'])
+  assert len(infer_result['data']) == 307 and len(infer_result['data'][0]) == len(infer_result['column_labels'])
   assert type(infer_result['data'][0][0]) == numpy.string_ ## type of key is int
   t = type(infer_result['data'][0][1])
   assert (t == unicode) or (t == numpy.string_) ## type of name is string
@@ -381,11 +407,11 @@ def test_simulate():
   order_by = False
   numpredictions = 10
   simulate_result = engine.simulate(test_tablename, functions, givens, numpredictions, order_by)
-  assert 'columns' in simulate_result
+  assert 'column_labels' in simulate_result
   assert 'data' in simulate_result
-  assert simulate_result['columns'] == ['name', 'qual_score']
+  assert simulate_result['column_labels'] == ['name', 'qual_score']
 
-  assert len(simulate_result['data']) == 10 and len(simulate_result['data'][0]) == len(simulate_result['columns'])
+  assert len(simulate_result['data']) == 10 and len(simulate_result['data'][0]) == len(simulate_result['column_labels'])
   for row in range(numpredictions):
     t = type(simulate_result['data'][row][0])
     assert (t == unicode) or (t == numpy.string_)
@@ -441,18 +467,18 @@ def test_show_schema():
   test_tablename, _ = create_dha()
   m_c, m_r, t = engine.persistence_layer.get_metadata_and_table(test_tablename)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
-  assert cctypes[m_c['name_to_idx']['qual_score']] == 'continuous'
-  assert cctypes[m_c['name_to_idx']['name']] == 'multinomial'
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'numerical'
+  assert cctypes[m_c['name_to_idx']['name']] == 'categorical'
 
   schema = engine.show_schema(test_tablename)
   cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)
   assert sorted([d[1] for d in schema['data']]) == sorted(cctypes_full)
   assert schema['data'][0][0] == 'key'
 
-  mappings = dict(qual_score='multinomial')
+  mappings = dict(qual_score = dict(cctype = 'categorical', parameters = None))
   engine.update_schema(test_tablename, mappings)
   cctypes = engine.persistence_layer.get_cctypes(test_tablename)
-  assert cctypes[m_c['name_to_idx']['qual_score']] == 'multinomial'
+  assert cctypes[m_c['name_to_idx']['qual_score']] == 'categorical'
 
   schema = engine.show_schema(test_tablename)
   cctypes_full = engine.persistence_layer.get_cctypes_full(test_tablename)
@@ -497,8 +523,8 @@ def test_estimate_columns():
   order_by = False
   name = None
   functions = None
-  columns = engine.estimate_columns(test_tablename, functions, whereclause, limit, order_by, name)['columns']
-  assert columns == ['column']
+  column_labels = engine.estimate_columns(test_tablename, functions, whereclause, limit, order_by, name)['column_labels']
+  assert column_labels == ['column label', 'column name']
 
 if __name__ == '__main__':
     run_test()
