@@ -439,18 +439,44 @@ def plot_matrix(matrix, column_names, title='', filename=None):
 
 
 class ClientRemote(object):
+    """BayesDB remote client.
+
+    Used to interface with an open BayesDB client through server_remote.py
+
+    Example:
+        Localhost example.
+        To run the server: in a shell window:
+
+        $ python server_remote.py
+        Listening on port 8008...
+
+        To interface with the server, from the python interactive shell:
+
+        >>> from bayesdb.client_remote import ClientRemote
+        >>> c = ClientRemote()
+        NOTES:
+        - Currently does not support interactive queries, thus all y/n prompts will be
+        ignored. *Do not press return unless you mean it.*
+        - The client will not notify you when asynchronous ANALYZE commands have completed.
+        >>> c('SHOW MODELS FOR dha_demo', pretty=False) # do not pretty print tables
+        {u'models': [[0, 501], [1, 501], [2, 501], [3, 501], [4, 501], [5, 501], [6, 501], [7, 501],
+        [8, 501], [9, 501]]}
+    """
     def __init__(self, bayesdb_host='127.0.0.1', bayesdb_port=8008):
-        """
-        Create a ClientRmote object. Assumes an open server is running on localhost:8008.
+        """Create a ClientRemote object.
+
+        Args:
+            bayesdb_host (str): The network address of the server. Default is '127.0.0.1'
+            bayesdb_port (int): The server port. Default is 8008
         """
         self.hostname = bayesdb_host
         self.port = bayesdb_port
         self.URI = 'http://' + self.hostname + ':%d' % self.port
         self.call_id = 0
         print("NOTES:")
-        print("-Currently does not support interactive queries, thus all y/n prompts will be\n"
-              "\tignored. *Do not press return unless you mean it.*")
-        print("-The client will not notify you when asynchronous ANALYZE commands have completed.")
+        print("- Currently does not support interactive queries, thus all y/n prompts will be\n"
+              "ignored. *Do not press return unless you mean it.*")
+        print("- The client will not notify you when asynchronous ANALYZE commands have completed.")
 
     def execute(self, bql_string, **kwargs):
         self.call_id += 1
