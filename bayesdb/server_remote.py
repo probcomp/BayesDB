@@ -52,11 +52,11 @@ from __future__ import print_function
 #
 #
 
-from twisted.web import server, iweb, resource
+from twisted.web import server, resource  # iweb
 # from twisted.web.resource import EncodingResourceWrapper
 
-from twisted.internet import ssl
-import traceback
+# from twisted.internet import ssl
+# import traceback
 
 from twisted.internet import reactor
 
@@ -68,59 +68,62 @@ engine = Engine()
 from bayesdb.client import Client
 client = Client()
 
+
 class ExampleServer(ServerEvents):
-      # inherited hooks
-      def log(self, responses, txrequest, error):
-            print(txrequest.code, end=' ')
-            if isinstance(responses, list):
-                  for response in responses:
-                        msg = self._get_msg(response)
-                        print(txrequest, msg)
+    # inherited hooks
+    def log(self, responses, txrequest, error):
+        print(txrequest.code, end=' ')
+        if isinstance(responses, list):
+            for response in responses:
+                msg = self._get_msg(response)
+                print(txrequest, msg)
+        else:
+            msg = self._get_msg(responses)
+            print(txrequest, msg)
+
+    def findmethod(self, method, args=None, kwargs=None):
+        return client.execute
+
+    # helper methods
+    methods = set([client.execute])
+
+    def _get_msg(self, response):
+        ret_str = 'No id response: %s' % str(response)
+        if hasattr(response, 'id'):
+            ret_str = str(response.id)
+            if response.result:
+                ret_str += '; result: %s' % str(response.result)
             else:
-                  msg = self._get_msg(responses)
-                  print(txrequest, msg)
-                        
-      def findmethod(self, method, args=None, kwargs=None):
-            return client.execute
-            
-      # helper methods
-      methods = set([client.execute])
-      def _get_msg(self, response):
-            ret_str = 'No id response: %s' % str(response)
-            if hasattr(response, 'id'):
-                  ret_str = str(response.id)
-                  if response.result:
-                        ret_str += '; result: %s' % str(response.result)
-                  else:
-                        ret_str += '; error: %s' % str(response.error)
-                        for at in dir(response):
-                              if not at.startswith('__'):
-                                    print(at + ": " + str(getattr(response, at)))
-                        print("response:\n" + str(dir(response)))
-            return ret_str
-      
-      
+                ret_str += '; error: %s' % str(response.error)
+                for at in dir(response):
+                    if not at.startswith('__'):
+                        print(at + ": " + str(getattr(response, at)))
+                print("response:\n" + str(dir(response)))
+        return ret_str
+
+
 class CorsEncoderFactory(object):
-      def encoderForRequest(self, request):
-            request.setHeader("Access-Control-Allow-Origin", '*')
-            request.setHeader("Access-Control-Allow-Methods", 'PUT, GET')
-            return _CorsEncoder(request)
+    def encoderForRequest(self, request):
+        request.setHeader("Access-Control-Allow-Origin", '*')
+        request.setHeader("Access-Control-Allow-Methods", 'PUT, GET')
+        return _CorsEncoder(request)
+
 
 class _CorsEncoder(object):
-      """
-      @ivar _request: A reference to the originating request.
-      
-      @since: 12.3
-      """
-      
-      def __init__(self, request):
-            self._request = request
-            
-      def encode(self, data):
-            return data
-      
-      def finish(self):
-            return ""
+    """
+    @ivar _request: A reference to the originating request.
+
+    @since: 12.3
+    """
+
+    def __init__(self, request):
+        self._request = request
+
+    def encode(self, data):
+        return data
+
+    def finish(self):
+        return ""
 
 
 root = JSON_RPC().customize(ExampleServer)
