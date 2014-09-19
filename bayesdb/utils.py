@@ -45,7 +45,7 @@ class BayesDBParseError(BayesDBError):
             self.msg = msg
         else:
             self.msg = "BayesDB parsing error. Try using 'help' to see the help menu for BQL syntax."
-    
+
     def __str__(self):
         return self.msg
 
@@ -55,7 +55,7 @@ class BayesDBUniqueValueError(BayesDBError):
             self.msg = msg
         else:
             self.msg = "BayesDB unique value error. More than one row has this value."
-    
+
     def __str__(self):
         return self.msg
 
@@ -97,13 +97,13 @@ class BayesDBRowListDoesNotExistError(BayesDBError):
 
     def __str__(self):
         return "Row list %s does not exist in btable %s." % (self.row_list, self.tablename)
-        
+
 def is_int(s):
     try:
         int(s)
         return True
     except ValueError:
-        return False    
+        return False
 
 def is_float(s):
     try:
@@ -117,7 +117,7 @@ def value_string_to_num(value_string):
         value = int(value_string)
     elif is_float(value_string) == True:
         value = float(value_string)
-    else: 
+    else:
         raise BayesDBParseError("Number expected for value: %s" % value_string)
     return value
 
@@ -150,7 +150,7 @@ def row_id_from_col_value(value, column, M_c, T):
         if row_values[col_idx] == value:
             if target_row_id == None:
                 target_row_id = row_id
-            else: 
+            else:
                 raise BayesDBUniqueValueError("Invalid Query: column '%s' has more than one row with value '%s'." %(column, str(value)))
     return target_row_id
 
@@ -189,7 +189,7 @@ def get_column_std(column_component_suffstats_i):
     col_var = exp_x_squared - (exp_x ** 2)
     col_std = col_var ** .5
     return col_std
-    
+
 
 def get_column_component_suffstats_i(M_c, X_L, col_idx):
     column_name = M_c['idx_to_name'][str(col_idx)]
@@ -237,7 +237,7 @@ def numerical_imputation_confidence(samples, imputed,
     delta = .1 * col_std
     confidence = get_numerical_mass_within_delta(samples, imputed, delta)
     return confidence
-    
+
 
 modeltype_to_imputation_function = {
     'normal_inverse_gamma': numerical_imputation,
@@ -248,7 +248,7 @@ modeltype_to_imputation_confidence_function = {
     'normal_inverse_gamma': numerical_imputation_confidence,
     'symmetric_dirichlet_discrete': categorical_imputation_confidence,
     }
-    
+
 
 def check_for_duplicate_columns(column_names):
     column_names_set = set()
@@ -256,7 +256,7 @@ def check_for_duplicate_columns(column_names):
         if name in column_names_set:
             raise BayesDBError("Error: Column list has duplicate entries of column: %s" % name)
         column_names_set.add(name)
-    
+
 
 def get_all_column_names_in_original_order(M_c):
     colname_to_idx_dict = M_c['name_to_idx']
@@ -346,7 +346,7 @@ def freq_table(data, columns, M_c, remove_key=True):
         if remove_key:
             df_drop(df, [columns[0]], axis=1)
 
-        column = df.columns[0]        
+        column = df.columns[0]
         summary_data = freqs(df[column])
         columns = [column, 'frequency', 'probability']
         data = summary_data.to_records(index=False)
@@ -366,7 +366,7 @@ def histogram_table(data, columns, M_c, remove_key=True):
             df_drop(df, [columns[0]], axis=1)
 
         column = df.columns[0]
-        
+
         # Use Sturges formula to calculate the number of bins to use.
         n_bins = math.ceil(math.log(df.shape[0], 2) + 1)
 
@@ -402,7 +402,7 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
     assert len(X_L_list) == len(X_D_list)
     if col_function_name == 'mutual information':
       if len(X_L_list) == 0:
-        return {'message': 'You must initialize models before computing mutual information.'}    
+        return {'message': 'You must initialize models before computing mutual information.'}
       col_function = functions._mutual_information
     elif col_function_name == 'dependence probability':
       if len(X_L_list) == 0:
@@ -490,4 +490,3 @@ def process_column_list(mixed_list, M_c, column_lists, dedupe=False):
     if dedupe == True:
         check_for_duplicate_columns(output)
     return output
-    
