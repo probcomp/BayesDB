@@ -152,6 +152,54 @@ class Parser(object):
         tablename = bql_statement_ast.btable
         return 'upgrade_btable', dict(tablename=tablename), None
 
+    def parse_describe(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('describe', args_dict, None):
+        """
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+        columnset = None
+        if bql_statement_ast.columnset != '':
+            columnset = bql_statement_ast.columnset
+
+        return 'describe', dict(tablename=tablename, columnset=columnset), None
+
+    def parse_update_short_names(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('update_short_names', args_dict, None):
+        """
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+
+        mappings = None
+        if bql_statement_ast.label_clause != '':
+            mappings = {}
+            for label_set in bql_statement_ast.label_clause:
+                mappings[label_set[0]] = label_set[1]
+
+        return 'update_short_names', dict(tablename=tablename, mappings=mappings), None
+
+    def parse_update_descriptions(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('update_desriptions', args_dict, None):
+        """
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+
+        mappings = None
+        if bql_statement_ast.label_clause != '':
+            mappings = {}
+            for label_set in bql_statement_ast.label_clause:
+                mappings[label_set[0]] = label_set[1]
+
+        return 'update_descriptions', dict(tablename=tablename, mappings=mappings), None
+
     def parse_update_schema(self,bql_statement_ast):
         """
         :param bql_statement_ast pyparsing.ParseResults:
@@ -289,20 +337,6 @@ class Parser(object):
         if bql_statement_ast.keyset != '':
             keyset = bql_statement_ast.keyset
         return 'show_metadata', dict(tablename=tablename, keyset=keyset), None
-
-    def parse_describe(self, bql_statement_ast):
-        """
-        :param bql_statement_ast pyparsing.ParseResults:
-        :return ('describe', args_dict, None):
-        """
-        tablename = None
-        if bql_statement_ast.btable != '':
-            tablename = bql_statement_ast.btable
-        columnset = None
-        if bql_statement_ast.columnset != '':
-            columnset = bql_statement_ast.columnset
-
-        return 'describe', dict(tablename=tablename, columnset=columnset), None
 
     def parse_show_label(self, bql_statement_ast):
         """

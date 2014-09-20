@@ -252,6 +252,56 @@ class Engine(object):
     ret['message'] = "Updated column labels for %s." % (tablename)
     return ret
 
+  def update_descriptions(self, tablename, mappings):
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+
+    try:
+      M_c_full = self.persistence_layer.get_metadata_full(tablename)['M_c_full']
+    except utils.BayesDBError:
+      raise utils.BayesDBError("Error: DESCRIBE found no metadata_full file. This is most likely a result of this btable being created with an old version of BayesDB. Please try recreating the table from the original csv, and loading any models you might have.")
+
+    descriptions_edited = dict()
+    for colname, description in mappings.items():
+      col_idx = M_c_full['name_to_idx'][colname]
+      M_c_full['column_codebook'][col_idx]['description'] = description
+      descriptions_edited[colname] = description
+
+    self.persistence_layer.update_metadata_full(tablename, M_c_full=M_c_full)
+
+    ret = {
+      'data': [[c,d] for c, d in descriptions_edited.items() ],
+      'column_labels': ['column', 'description']
+    }
+    ret['message'] = "Updated column descriptions for %s." % (tablename)
+
+    return ret
+
+  def update_short_names(self, tablename, mappings):
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+
+    try:
+      M_c_full = self.persistence_layer.get_metadata_full(tablename)['M_c_full']
+    except utils.BayesDBError:
+      raise utils.BayesDBError("Error: DESCRIBE found no metadata_full file. This is most likely a result of this btable being created with an old version of BayesDB. Please try recreating the table from the original csv, and loading any models you might have.")
+
+    short_names_edited = dict()
+    for colname, short_name in mappings.items():
+      col_idx = M_c_full['name_to_idx'][colname]
+      M_c_full['column_codebook'][col_idx]['short_name'] = short_name
+      short_names_edited[colname] = short_name
+
+    self.persistence_layer.update_metadata_full(tablename, M_c_full=M_c_full)
+
+    ret = {
+      'data': [[c,s] for c, s in short_names_edited.items() ],
+      'column_labels': ['column', 'short name']
+    }
+    ret['message'] = "Updated column short names for %s." % (tablename)
+
+    return ret
+
   def describe(self, tablename, columnset):
     """Show column labels, human-readible name, description, and value metadat (in applicable)"""
     if not self.persistence_layer.check_if_table_exists(tablename):

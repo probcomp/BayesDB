@@ -125,7 +125,13 @@ single_btable_keyword = CaselessKeyword("btable")
 multiple_btable_keyword = CaselessKeyword("btables")
 single_minute_keyword = CaselessKeyword("minute")
 multiple_minutes_keyword = CaselessKeyword("minutes")
+single_description_keyword = CaselessKeyword("description")
+multiple_descriptions_keyword = CaselessKeyword("descriptions")
+single_short_name_keyword = CaselessKeyword("short") + single_white + CaselessKeyword("name")
+multiple_short_names_keyword = CaselessKeyword("short") + single_white + CaselessKeyword("names")
 ## Plural agnostic syntax, setParseAction makes it all display the singular
+description_keyword = single_description_keyword | multiple_descriptions_keyword
+short_name_keyword = single_short_name_keyword | multiple_short_names_keyword
 model_keyword = single_model_keyword | multiple_models_keyword
 model_keyword.setParseAction(replaceWith("model"))
 iteration_keyword = single_iteration_keyword | multiple_iterations_keyword
@@ -149,6 +155,14 @@ create_btable_keyword = Combine(create_keyword + single_white + btable_keyword).
 create_btable_keyword.setParseAction(replaceWith('create_btable'))
 upgrade_btable_keyword = Combine(upgrade_keyword + single_white + btable_keyword).setResultsName("statement_id")
 upgrade_btable_keyword.setParseAction(replaceWith('upgrade_btable'))
+
+update_descriptions_for_keyword = Combine(update_keyword + single_white + description_keyword +
+                                single_white + for_keyword).setResultsName("statement_id")
+update_descriptions_for_keyword.setParseAction(replaceWith("update_descriptions"))
+
+update_short_names_for_keyword = Combine(update_keyword + single_white + short_name_keyword +
+                               single_white + for_keyword).setResultsName("statement_id")
+update_short_names_for_keyword.setParseAction(replaceWith("update_short_names"))
 
 update_schema_for_keyword = Combine(update_keyword + single_white +
                                     schema_keyword + single_white + for_keyword).setResultsName("statement_id")
@@ -318,9 +332,19 @@ update_schema_for_function = (update_schema_for_keyword +
                               Suppress(set_keyword) +
                               type_clause)
 
+
 label_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + OneOrMore(label)) +
                                 Suppress(comma_literal)) +
                                 Group(identifier + Suppress(equal_literal) + OneOrMore(label))).setResultsName("label_clause")
+
+# UPDATE DESCRIPTIONS FOR <btable> SET <column1 = column-desc-1> [, <column-name-2 = column-desc-2>, ...]
+update_descriptions_for_function = (update_descriptions_for_keyword + btable +
+                                    Suppress(set_keyword) + label_clause)
+
+# UPDATE SHORT NAMES FOR <btable> SET <column1 = column-desc-1> [, <column-name-2 = column-desc-2>, ...]
+update_short_names_for_function = (update_short_names_for_keyword + btable +
+                                   Suppress(set_keyword) + label_clause)
+
 # UPDATE METADATA FOR <btable> (SET <metadata-key1 = value1>[, <metadata-key2 = value2>...] | FROM <filename.csv>)
 update_metadata_for_function = (update_metadata_for_keyword + btable +
                                 (set_keyword + label_clause | from_keyword + filename))
@@ -439,6 +463,8 @@ management_query = (create_btable_function |
                     label_columns_for_function |
                     show_label_function |
                     describe_function |
+                    update_descriptions_for_function |
+                    update_short_names_for_function |
                     show_metadata_function |
                     show_columns_function |
                     cancel_analyze_for_function |
