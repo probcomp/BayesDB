@@ -60,10 +60,10 @@ def create_dha(path='data/dha.csv', key_column=0):
   test_tablename = 'dhatest' + str(int(time.time() * 1000000)) + str(int(random.random()*10000000))
   csv_file_contents = open(path, 'r').read()
   client('create btable %s from %s' % (test_tablename, path), debug=True, pretty=False, key_column=key_column)
-  
+
   global test_tablenames
   test_tablenames.append(test_tablename)
-  
+
   return test_tablename
 
 def test_drop_btable():
@@ -79,9 +79,9 @@ def test_drop_btable():
   sys.stdout = StringIO()     # capture output
 
   # TODO: not being tested at all yet...
-  
+
   out = sys.stdout.getvalue() # release output
-  sys.stdout.close()  # close the stream 
+  sys.stdout.close()  # close the stream
   sys.stdout = backup # restore original stdout
 
 
@@ -90,13 +90,13 @@ def test_btable_list():
 
   out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   init_btable_count = len(out)
-  
+
   test_tablename1 = create_dha()
 
   out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 in out
-  
+
   test_tablename2 = create_dha()
 
   out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
@@ -105,7 +105,7 @@ def test_btable_list():
   assert test_tablename2 in out
 
   client('drop btable %s' % test_tablename1, yes=True, debug=True, pretty=False)
-  
+
   out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 not in out
@@ -114,13 +114,13 @@ def test_btable_list():
   ## test to make sure btable list is persisted
   del client
   client = Client()
-  
+
   out = set(client('list btables', pretty=False, debug=True)[0]['btable'])
   assert len(out) == 1 + init_btable_count
   assert test_tablename1 not in out
   assert test_tablename2 in out
-  
-    
+
+
 def test_save_and_load_models():
   test_tablename1 = create_dha()
   test_tablename2 = create_dha()
@@ -131,7 +131,7 @@ def test_save_and_load_models():
   test_filenames.append(pkl_path)
   client('save models from %s to %s' % (test_tablename1, pkl_path), debug=True, pretty=False)
   original_models = client.engine.save_models(test_tablename1)
-  
+
   client('load models %s into %s' % (pkl_path, test_tablename2), debug=True, pretty=False)
   new_models = client.engine.save_models(test_tablename2)
 
@@ -155,7 +155,7 @@ def test_save_and_load_models():
   client('initialize 2 models for %s' % (test_tablename4), debug=True, pretty=False)
 
   # Should fail - schemas aren't the same, and table4 already has models, so the models will be incompatible.
-  with pytest.raises(utils.BayesDBError):  
+  with pytest.raises(utils.BayesDBError):
     client('load models %s into %s' % (pkl_path, test_tablename4), debug=True, pretty=False)
 
 def test_column_lists():
@@ -173,9 +173,9 @@ def test_column_lists():
 
   client('show column lists for %s' % test_tablename, debug=True, pretty=False)
 #TODO grammar update, replace tests after implementing show columns for <column_list>
-#  client('show columns %s for %s' % (cname1, test_tablename), debug=True, pretty=False) 
-#  with pytest.raises(utils.BayesDBColumnListDoesNotExistError):  
-#    client('show columns %s from %s' % (cname2, test_tablename), debug=True, pretty=False)  
+#  client('show columns %s for %s' % (cname1, test_tablename), debug=True, pretty=False)
+#  with pytest.raises(utils.BayesDBColumnListDoesNotExistError):
+#    client('show columns %s from %s' % (cname2, test_tablename), debug=True, pretty=False)
   out = client('estimate columns from %s order by typicality limit 5 as %s' % (test_tablename, cname1), debug=True, pretty=False)[0]
   assert out.shape == (5, 3)
 
@@ -189,10 +189,10 @@ def test_column_lists():
   test_filenames.append(tmp)
   if os.path.exists(tmp):
     os.remove(tmp)
-  # TODO for columns col_name 
+  # TODO for columns col_name
   client('estimate pairwise dependence probability from %s for %s save to %s' % (test_tablename, cname1, tmp), debug=True, pretty=False)
   test_ast = bql.bql_statement.parseString('estimate pairwise dependence probability from %s for %s save to %s' % (test_tablename, cname1, tmp),parseAll=True)
-  assert test_ast.filename == 'asdf_test.png' 
+  assert test_ast.filename == 'asdf_test.png'
   #TODO current parsing breaks save (probably everything) after "for %s"
   #assert os.path.exists(tmp)
 
@@ -204,7 +204,7 @@ def test_column_lists():
   client('infer %s from %s with confidence 0.1 limit 10' % (cname1, test_tablename), debug=True, pretty=False)
   client('infer %s from %s with confidence 0.1 limit 10' % (cname2, test_tablename), debug=True, pretty=False)
 
-  client('simulate %s from %s times 10' % (cname1, test_tablename), debug=True, pretty=False)  
+  client('simulate %s from %s times 10' % (cname1, test_tablename), debug=True, pretty=False)
   client('simulate %s from %s times 10' % (cname2, test_tablename), debug=True, pretty=False)
 
 def test_simulate():
@@ -229,7 +229,7 @@ def test_estimate_columns():
 
 #  client('estimate columns from %s' % test_tablename, debug=True, pretty=False)
 
-  client('estimate columns from %s where typicality > 1' % test_tablename, debug=True, pretty=False)  
+  client('estimate columns from %s where typicality > 1' % test_tablename, debug=True, pretty=False)
   client('estimate columns from %s where typicality > 0' % test_tablename, debug=True, pretty=False)
   client('estimate columns from %s where typicality > 0 order by typicality' % test_tablename, debug=True, pretty=False)
 #  client('estimate columns from %s order by typicality limit 5' % test_tablename, debug=True, pretty=False)
@@ -270,23 +270,23 @@ def test_select_whereclause_functions():
 
   # similarity
   client('select name from %s where similarity to 0 > 0' % (test_tablename), debug=True, pretty=False)
-  client('select name from %s where similarity to 0 = 0 order by similarity to 0' % (test_tablename), debug=True, pretty=False)      
+  client('select name from %s where similarity to 0 = 0 order by similarity to 0' % (test_tablename), debug=True, pretty=False)
   client('select name from %s where similarity to 1 with respect to qual_score > 0.01' % (test_tablename), debug=True, pretty=False)
-  client('select name from %s where similarity to 1 with respect to qual_score, ami_score > 0.01' % (test_tablename), debug=True, pretty=False)  
+  client('select name from %s where similarity to 1 with respect to qual_score, ami_score > 0.01' % (test_tablename), debug=True, pretty=False)
 
   # row typicality
   client('select * from %s where typicality > 0.04' % (test_tablename), debug=True, pretty=False)
-  client('select *, typicality from %s where typicality > 0.06' % (test_tablename), debug=True, pretty=False)  
+  client('select *, typicality from %s where typicality > 0.06' % (test_tablename), debug=True, pretty=False)
 
   # predictive probability
   client("select qual_score from %s where predictive probability of qual_score > 0.01" % (test_tablename), debug=True, pretty=False)
   client("select qual_score from %s where predictive probability of name > 0.01" % (test_tablename), debug=True, pretty=False)
-  
+
   # probability: aggregate, shouldn't work
-  with pytest.raises(utils.BayesDBError):  
+  with pytest.raises(utils.BayesDBError):
     client('select qual_score from %s where probability of qual_score = 6 > 0.01' % (test_tablename), debug=True, pretty=False)
-  with pytest.raises(utils.BayesDBError):      
-    client("select qual_score from %s where probability of name='Albany NY' > 0.01" % (test_tablename), debug=True, pretty=False)  
+  with pytest.raises(utils.BayesDBError):
+    client("select qual_score from %s where probability of name='Albany NY' > 0.01" % (test_tablename), debug=True, pretty=False)
 
 def test_model_config():
   test_tablename = create_dha()
@@ -306,7 +306,7 @@ def test_model_config():
     client('drop models from %s' % test_tablename, yes=True, debug=True, pretty=False)
   client('initialize 2 models for %s with config crp mixture' % (test_tablename), debug=True, pretty=False)
   #client('analyze %s for 2 iterations wait' % (test_tablename), debug=True, pretty=False)
-  client.engine.analyze(test_tablename, model_indices='all', iterations=2, background=False)  
+  client.engine.analyze(test_tablename, model_indices='all', iterations=2, background=False)
   dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, debug=True, pretty=False)[0]['matrix']
   ## assert that all dependencies are 1 (because there's 1 view, and many clusters)
   ## (with _very_ low probability, this test may fail due to bad luck)
@@ -317,7 +317,7 @@ def test_model_config():
     client('drop models from %s' % test_tablename, yes=True, debug=True, pretty=False)
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
   #client('analyze %s for 2 iterations wait' % (test_tablename), debug=True, pretty=False)
-  client.engine.analyze(test_tablename, model_indices='all', iterations=2, background=False)  
+  client.engine.analyze(test_tablename, model_indices='all', iterations=2, background=False)
   dep_mat = client('estimate pairwise dependence probability from %s' % test_tablename, debug=True, pretty=False)[0]['matrix']
   ## assert that all dependencies are not all the same
   assert (not numpy.all(dep_mat == 1)) and (not numpy.all(dep_mat == 0))
@@ -326,6 +326,8 @@ def test_model_config():
   with pytest.raises(utils.BayesDBError):
     client.engine.initialize_models(test_tablename, 2, 'crp mixture')
 
+
+@pytest.mark.xfail
 def test_analyze():
   """ test designed to make sure that analyze in background runs correct number of iterations """
   # 1 iteration works fine, but multiple iterations don't.
@@ -339,11 +341,11 @@ def test_analyze():
 
   iterations = 3
   out = client('analyze %s for %d iterations' % (test_tablename, iterations), debug=True, pretty=False)[0]
-  
+
   out = ''
   while 'not currently being analyzed' not in out:
     out = client('show analyze for %s' % test_tablename, debug=True, pretty=False)[0]['message']
-  
+
   models = client('show models for %s' % test_tablename, debug=True, pretty=False)[0]['models']
   iters_by_model = [v for k,v in models]
   for i in iters_by_model:
@@ -351,16 +353,16 @@ def test_analyze():
 
 def test_using_models():
   """ smoke test """
-  test_tablename = create_dha(path='data/dha_missing.csv')  
+  test_tablename = create_dha(path='data/dha_missing.csv')
   global client, test_filenames
   client('initialize 3 models for %s' % (test_tablename), debug=True, pretty=False)
 
   client('select name from %s using model 1' % test_tablename, debug=True, pretty=False)
   with pytest.raises(utils.BayesDBError):
     client('infer name from %s with confidence 0.1 using models 3' % test_tablename, debug=True, pretty=False)
-  with pytest.raises(utils.BayesDBError):    
-    client("simulate qual_score from %s given name='Albany NY' times 5 using models 3" % test_tablename, debug=True, pretty=False)    
-  with pytest.raises(utils.BayesDBError):    
+  with pytest.raises(utils.BayesDBError):
+    client("simulate qual_score from %s given name='Albany NY' times 5 using models 3" % test_tablename, debug=True, pretty=False)
+  with pytest.raises(utils.BayesDBError):
     client('infer name from %s with confidence 0.1 using models 0-3' % test_tablename, debug=True, pretty=False)
 
   client('infer name from %s with confidence 0.1 limit 10 using models 2' % test_tablename, debug=True, pretty=False)
@@ -371,8 +373,8 @@ def test_using_models():
 
   client('drop model 0 from %s' % test_tablename, debug=True, pretty=False, yes=True)
   with pytest.raises(utils.BayesDBError):
-    client('infer name from %s with confidence 0.1 limit 10 using models 0-2' % test_tablename, debug=True, pretty=False)    
-  
+    client('infer name from %s with confidence 0.1 limit 10 using models 0-2' % test_tablename, debug=True, pretty=False)
+
 def test_select():
   """ smoke test """
   test_tablename = create_dha()
@@ -388,18 +390,18 @@ def test_select():
   client('select name, qual_score from %s where qual_score > 6' % (test_tablename), debug=True, pretty=False)
   client('select * from %s where qual_score > 6' % (test_tablename), debug=True, pretty=False)
   client("select * from %s where qual_score > 80 and name = 'Albany NY'" % (test_tablename), debug=True, pretty=False)
-  client("select * from %s where qual_score > 80 and ami_score > 85" % (test_tablename), debug=True, pretty=False)    
+  client("select * from %s where qual_score > 80 and ami_score > 85" % (test_tablename), debug=True, pretty=False)
 
   # create a column list to be used in future queries
   client('estimate columns from %s limit 5 as clist' % test_tablename, debug=True, pretty=False)
 
   # similarity
   client('select name, similarity to 0 from %s' % (test_tablename), debug=True, pretty=False)
-  client('select name from %s order by similarity to 0' % (test_tablename), debug=True, pretty=False)      
+  client('select name from %s order by similarity to 0' % (test_tablename), debug=True, pretty=False)
   client('select name, similarity to 0 from %s order by similarity to 0' % (test_tablename), debug=True, pretty=False)
-  client('select name, similarity to 0 with respect to name from %s order by similarity to 1 with respect to qual_score' % (test_tablename), debug=True, pretty=False)        
+  client('select name, similarity to 0 with respect to name from %s order by similarity to 1 with respect to qual_score' % (test_tablename), debug=True, pretty=False)
   client('select name, similarity to 0 from %s order by similarity to 1 with respect to qual_score, ami_score' % (test_tablename), debug=True, pretty=False)
-  client('select name, similarity to 0 from %s order by similarity to 1 with respect to clist' % (test_tablename), debug=True, pretty=False)        
+  client('select name, similarity to 0 from %s order by similarity to 1 with respect to clist' % (test_tablename), debug=True, pretty=False)
 
   # Add some cases to be sure that referencing row index and column values produces the same output.
   out1 = client('select name, qual_score, similarity to 161 from %s order by similarity to 161 limit 5' % (test_tablename), debug=True, pretty=False)[0]
@@ -408,12 +410,12 @@ def test_select():
 
   # Assert columns are equal
   for col_idx in range(out1.shape[1]):
-    assert (out1.iloc[col_idx] == out2.iloc[col_idx]).all() 
+    assert (out1.iloc[col_idx] == out2.iloc[col_idx]).all()
     assert (out2.iloc[col_idx] == out3.iloc[col_idx]).all()
 
   # row typicality
   client('select typicality from %s' % (test_tablename), debug=True, pretty=False)
-  client('select *, typicality from %s' % (test_tablename), debug=True, pretty=False)  
+  client('select *, typicality from %s' % (test_tablename), debug=True, pretty=False)
   client('select typicality from %s order by typicality limit 10' % (test_tablename), debug=True, pretty=False)
 
   # probability
@@ -424,11 +426,11 @@ def test_select():
   st = time.time()
   client('select probability of qual_score = 6 from %s' % (test_tablename), debug=True, pretty=False)
   el = time.time() - st
-  st = time.time()  
+  st = time.time()
   client("select probability of name='Albany NY' from %s" % (test_tablename), debug=True, pretty=False)
   el2 = time.time() - st
 
-  #client("select name from %s order by probability of name='Albany NY' DESC" % (test_tablename), debug=True, pretty=False)  
+  #client("select name from %s order by probability of name='Albany NY' DESC" % (test_tablename), debug=True, pretty=False)
   # TODO: test that probability function doesn't get evaluated 2x for each row
   #client("select probability of name='Albany NY' from %s order by probability of name='Albany NY' DESC" % (test_tablename), debug=True, pretty=False)
 

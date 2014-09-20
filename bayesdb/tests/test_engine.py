@@ -41,6 +41,7 @@ test_tablenames = None
 
 notimplemented = pytest.mark.skipif(True, reason="Test not implemented")
 
+
 def setup_function(function):
     global test_tablenames
     test_tablenames = []
