@@ -198,7 +198,7 @@ class Client(object):
             except Exception as e:
                 raise utils.BayesDBParseError(str(e))
         if parser_out is None:
-            print "Could not parse command. Try typing 'help' for a list of all commands."
+            print("Could not parse command. Try typing 'help' for a list of all commands.")
             return
         elif not parser_out:
             return
@@ -283,7 +283,7 @@ class Client(object):
                 4. value map (optional, only used for categorical columns - should be in JSON
                    format)
                 """)
-                print warning
+                print(warning)
 
             # Display warning messages and get confirmation if btable is too large.
             # Ask user if they want to turn on subsampling.
@@ -306,14 +306,14 @@ class Client(object):
                               "or a positive integer to specify the number of rows to be "\
                               "subsampled." % (len(rows), max_rows, max_rows)
                 if len(rows[0])*len(rows) > max_cells:
-                    message = "The btable you are uploading has %d cells, but BayesDB is currently "\
-                              "designed to support only %d cells. If you proceed, performance may "\
-                              "suffer unless you enable subsampling. Enter 'y' to continue without"\
-                              " subsampling, 'n' to abort, 's' to continue by subsampling %d rows,"\
-                              " or a positive integer to specify the number of rows to be "\
+                    message = "The btable you are uploading has %d cells, but BayesDB is currently"\
+                              " designed to support only %d cells. If you proceed, performance may"\
+                              " suffer unless you enable subsampling. Enter 'y' to continue "\
+                              " without subsampling, 'n' to abort, 's' to continue by subsampling "\
+                              "%d rows, or a positive integer to specify the number of rows to be "\
                               "subsampled." % (len(rows)*len(rows[0]), max_cells, max_rows)
                 if message is not None:
-                    print message
+                    print(message)
                     user_confirmation = raw_input()
                     if 'y' == user_confirmation.strip():
                         pass
@@ -336,7 +336,7 @@ class Client(object):
         # If error occurred, exit now.
         if 'error' in result and result['error']:
             if pretty:
-                print result['message']
+                print(result['message'])
                 return result['message']
             else:
                 return result
@@ -356,7 +356,7 @@ class Client(object):
 
         if timing:
             end_time = time.time()
-            print 'Elapsed time: %.2f seconds.' % (end_time - start_time)
+            print('Elapsed time: %.2f seconds.' % (end_time - start_time))
 
         if plots is None:
             plots = 'DISPLAY' in os.environ.keys()
@@ -367,16 +367,22 @@ class Client(object):
                                        client_dict['filename'])
             if pretty:
                 if 'column_lists' in result:
-                    print self.pretty_print(dict(column_lists=result['column_lists']))
+                    print(self.pretty_print(dict(column_lists=result['column_lists'])))
                 return self.pretty_print(result)
             else:
                 return result
         if ('plot' in client_dict and client_dict['plot']):
             if (plots or client_dict['filename']):
                 # Plot generalized histograms or scatterplots
+
+                try:
+                    plotting_M_c = result['metadata_full']['M_c_full']
+                except KeyError:
+                    plotting_M_c = result['M_c']
+
                 plot_remove_key = method_name in ['select', 'infer']
                 plotting_utils.plot_general_histogram(result['column_names'], result['data'],
-                                                      result['M_c'], result['schema_full'],
+                                                      plotting_M_c, result['schema_full'],
                                                       client_dict['filename'],
                                                       client_dict['scatter'],
                                                       remove_key=plot_remove_key)
@@ -391,13 +397,13 @@ class Client(object):
 
         if pretty:
             pp = self.pretty_print(result)
-            print pp
+            print(pp)
 
         # Print warnings last so they're readable without scrolling backwards.
         if 'warnings' in result:
             """ Pretty-print warnings. """
             for warning in result['warnings']:
-                print 'WARNING: %s' % warning
+                print('WARNING: %s' % warning)
 
         if pandas_output and 'data' in result and 'column_labels' in result:
             result_pandas_df = data_utils.construct_pandas_df(result)
@@ -499,10 +505,10 @@ class Client(object):
             print
             clists = query_obj['column_lists']
             for name, clist in clists:
-                print "%s:" % name
+                print("%s:" % name)
                 pt = prettytable.PrettyTable()
                 pt.field_names = clist
-                print pt
+                print(pt)
         elif 'models' in query_obj:
             """ Pretty-print model info. """
             pt = prettytable.PrettyTable()

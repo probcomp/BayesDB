@@ -35,6 +35,8 @@ import multiprocessing
 import Queue
 import pandas
 
+import pdb
+
 import pylab
 import numpy
 import matplotlib.cm
@@ -65,7 +67,7 @@ class Engine(object):
 
     if crosscat_host is None or crosscat_host == 'localhost':
       self.online = False
-      
+
       # Only dependent on CrossCat when you actually instantiate Engine
       # (i.e., allow engine to be imported in order to examine the API, without CrossCat)
       from crosscat.CrossCatClient import get_CrossCatClient
@@ -87,7 +89,7 @@ class Engine(object):
       method = getattr(self.backend, method_name)
       out = method(**args_dict)
     return out
-  
+
   def help(self, method=None):
     help_methods = dict()
     help_methods['create'] = """
@@ -106,17 +108,17 @@ class Engine(object):
     SIMULATE <columns> FROM <btable> [WHERE <whereclause>] [GIVEN <column>=<value>] TIMES <times> [SAVE TO <file>]
     """
     help_methods['estimate'] = """
-    ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>] 
-    
-    ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>] 
-    
+    ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>]
+
+    ESTIMATE PAIRWISE <function> FROM <btable> [FOR <columns>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> AS <column_list>]
+
     ESTIMATE PAIRWISE ROW SIMILARITY [WITH RESPECT TO <columns|column_lists>]FROM <btable> [FOR <rows>] [SAVE TO <file>] [SAVE CONNECTED COMPONENTS WITH THRESHOLD <threshold> [INTO|AS] <btable>]
     """
 
     help_methods['execute'] = """
     EXECUTE FILE <filename.bql>
     """
-    
+
     help_methods['update'] = """
     UPDATE SCHEMA FOR <btable> SET <col1>=<type1>[,<col2>=<type2>...]
     """
@@ -175,24 +177,24 @@ class Engine(object):
 
     ## Important to make sure that http://probcomp.csail.mit.edu/bayesdb/docs/bql.html is up to date
     help_all = """
-    Welcome to BQL help. 
-    
+    Welcome to BQL help.
+
     For the BQL documentation, please visit:
     http://probcomp.csail.mit.edu/bayesdb/docs/bql.html
-    
+
     Here is a list of BQL commands and their syntax:
     """
     help_basic = """
-    Welcome to BQL help. 
-  
+    Welcome to BQL help.
+
     If you know the query you wish to use, type 'HELP <query_name>'
 
     For all queries, type 'HELP ALL'
-    
-    For the complete BQL documentation, please visit: 
+
+    For the complete BQL documentation, please visit:
     http://probcomp.csail.mit.edu/bayesdb/docs/bql.html
     """
-    
+
     if method == None:
       help_string = help_basic
     elif method == 'all':
@@ -202,7 +204,7 @@ class Engine(object):
     else:
       help_string = help_basic + '''
     The method you typed was not recognize. Try "HELP", "HELP ALL",
-    or one of the following: 
+    or one of the following:
     \tHELP ''' + '\n\tHELP '.join(help_methods.keys()).upper()
 
     return dict(message=help_string)
@@ -248,6 +250,67 @@ class Engine(object):
     labels = self.persistence_layer.get_column_labels(tablename)
     ret = {'data': [[c, l] for c, l in labels_edited.items()], 'column_labels': ['column', 'label']}
     ret['message'] = "Updated column labels for %s." % (tablename)
+    return ret
+
+  def describe(self, tablename, columnset):
+    """Show column labels, human-readible name, description, and value metadat (in applicable)"""
+    if not self.persistence_layer.check_if_table_exists(tablename):
+      raise utils.BayesDBInvalidBtableError(tablename)
+
+    labels = self.persistence_layer.get_column_labels(tablename)
+
+    M_c = self.persistence_layer.get_metadata(tablename)['M_c']
+
+    if columnset == None:
+      colnames = M_c['name_to_idx'].keys()
+    elif columnset.asList()[0] == '*':
+      colnames = M_c['name_to_idx'].keys()
+    else:
+      column_lists = self.persistence_layer.get_column_lists(tablename)
+      colnames = utils.process_column_list(columnset.asList(), M_c, column_lists, dedupe=True)
+      colnames = [c.lower() for c in colnames]
+
+    try:
+      M_c_full = self.persistence_layer.get_metadata_full(tablename)['M_c_full']
+    except utils.BayesDBError:
+      raise utils.BayesDBError("Error: DESCRIBE found no metadata_full file. This is most likely a result of this btable being created with an old version of BayesDB. Please try recreating the table from the original csv, and loading any models you might have.")
+
+    ret_table = []
+    for c in colnames:
+      row = [c]
+      colname_idx_M_c = M_c_full['name_to_idx'][c]
+      try:
+          colname_codebook = M_c_full['column_codebook'][colname_idx_M_c]
+          column_metadata = M_c_full['column_metadata'][colname_idx_M_c]
+      except IndexError:
+          raise utils.BayesDBError("Error: DESCIBE cannot locate codebook in metatdata. Please add "
+                                   "a codebook to your table.")
+
+      if colname_codebook is None:
+          raise utils.BayesDBError("Error: DESCIBE cannot locate codebook in metatdata. Please add "
+                                   "a codebook to your table.")
+
+      if colname_codebook['description']:
+          short_name = colname_codebook['short_name']
+          description = colname_codebook['description']
+      else:
+          short_name = c
+          description = "No description"
+
+      # for each column pull the data info and the description and put it in the table
+      data_info_string = ""
+      if column_metadata['parameters']:
+          data_info_string += str(column_metadata['parameters']) + "\n"
+
+      if column_metadata['code_to_value']:
+          data_info_string += str(column_metadata['value_to_code'].values()) + "\n"
+
+      ret_table.append([c, short_name, description, data_info_string])
+
+      column_labels = ['column', 'label', 'decription', 'data summary']
+
+    ret = {'data': ret_table, 'column_labels': column_labels}
+    ret['message'] = "Describing for %s." % (tablename)
     return ret
 
   def show_labels(self, tablename, columnset):
@@ -316,12 +379,12 @@ class Engine(object):
       raise utils.BayesDBInvalidBtableError(tablename)
     if self.persistence_layer.has_models(tablename):
       raise utils.BayesDBError("Error: btable %s already has models. The schema may not be updated after models have been initialized; please either create a new btable or drop the models from this one." % tablename)
-    
+
     msg = self.persistence_layer.update_schema(tablename, mappings)
     ret = self.show_schema(tablename)
     ret['message'] = 'Updated schema.'
     return ret
-    
+
   def create_btable_from_existing(self, tablename, query_colnames, cctypes_existing_full, M_c_existing_full, query_data):
     """
     Used in INTO statements to create a new btable as a portion of an existing one.
@@ -355,7 +418,7 @@ class Engine(object):
     cctypes must be a dictionary mapping column names
     to either 'ignore', 'numerical', 'categorical', or 'cyclic'. Not every
     column name must be present in the dictionary: default is numerical.
-    
+
     subsample is False by default, but if it is passed an int, it will subsample using
     <subsample> rows for the initial ANALYZE, and then insert all other rows afterwards.
     """
@@ -386,7 +449,7 @@ class Engine(object):
     if subsample:
       assert type(subsample) == int
       T_sub = T[:subsample]
-      
+
     self.persistence_layer.create_btable(tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full, T_sub)
 
     schema = self.show_schema(tablename)
@@ -412,7 +475,7 @@ class Engine(object):
     recent versions of BayesDB (example: required key column). This function allows them to be
     upgraded simply, without having to manually recreate the btable and re-load models.
     """
-    # 1. Check for readable metadata file - if not found or not readable, the table's data files 
+    # 1. Check for readable metadata file - if not found or not readable, the table's data files
     #       have become corrupted, and the table must be dropped.
     try:
         metadata = self.persistence_layer.get_metadata(tablename)
@@ -459,14 +522,14 @@ class Engine(object):
     cctypes_full = metadata_full['cctypes_full']
     if 'continuous' in cctypes_full or 'multinomial' in cctypes_full:
         colnames_full = utils.get_all_column_names_in_original_order(metadata_full['M_c_full'])
-        
+
         mappings = dict()
         for colname, cctype in zip(colnames_full, cctypes_full):
             if cctype == 'continuous':
                 mappings[colname] = dict(cctype = 'numerical', parameters = None)
             elif cctype == 'multinomial':
                 mappings[colname] = dict(cctype = 'categorical', parameters = None)
-            
+
         self.persistence_layer.update_schema(tablename, mappings)
         print "Upgraded %s: converted column types 'multinomial' to 'categorical' and 'continuous' to 'numerical'" % tablename
 
@@ -475,7 +538,7 @@ class Engine(object):
   def show_schema(self, tablename):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-    
+
     metadata_full = self.persistence_layer.get_metadata_full(tablename)
     M_c_full = metadata_full['M_c_full']
     colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
@@ -486,7 +549,7 @@ class Engine(object):
 
     return dict(column_labels=['column', 'datatype', 'parameters'], data=schema_full)
 
-  def save_models(self, tablename):    
+  def save_models(self, tablename):
     """Opposite of load models! Returns the models, including the contents, which
     the client then saves to disk (in a pickle file)."""
     if not self.persistence_layer.check_if_table_exists(tablename):
@@ -505,19 +568,19 @@ class Engine(object):
     # dict[X_L_list, X_D_list, M_c, T]
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-    
+
     if 'X_L_list' in models:
       print """WARNING! The models you are currently importing are stored in an old format
          (from version 0.1); it is deprecated and may not be supported in future releases.
          Please use "SAVE MODELS FROM <btable> TO <filename.pkl.gz>" to create an updated copy of your models."""
-      
+
       old_models = models
       models = dict()
       for id, (X_L, X_D) in enumerate(zip(old_models['X_L_list'], old_models['X_D_list'])):
         models[id] = dict(X_L=X_L, X_D=X_D, iterations=0)
 
     # Older versions of model_schema just had a str cctype as the dict items.
-    # Newest version has a dict of cctype and parameters. Use this values to 
+    # Newest version has a dict of cctype and parameters. Use this values to
     # test the recency of the models.
     if model_schema:
         model_schema_itemtype = type(model_schema[model_schema.keys()[0]])
@@ -551,9 +614,9 @@ class Engine(object):
         if table_schema != model_schema:
             if self.persistence_layer.has_models(tablename):
                 raise utils.BayesDBError("""
-                    Table %s already has models under a different schema than 
-                    the models you are loading. All models used must have the 
-                    same schema. To load these models, first drop the existing 
+                    Table %s already has models under a different schema than
+                    the models you are loading. All models used must have the
+                    same schema. To load these models, first drop the existing
                     models from the table.
                     """ % tablename)
             else:
@@ -576,10 +639,10 @@ class Engine(object):
       raise utils.BayesDBError('Error: cannot drop models with ANALYZE in progress. Please retry once ANALYZE is successfully completed or canceled.')
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-    
+
     self.persistence_layer.drop_models(tablename, model_indices)
     return self.show_models(tablename)
-    
+
   def initialize_models(self, tablename, n_models=16, model_config=None):
     """
     Initialize n_models models.
@@ -592,7 +655,7 @@ class Engine(object):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     if self.is_analyzing(tablename):
-      raise utils.BayesDBError('Error: cannot initialize models with ANALYZE in progress. Please retry once ANALYZE is successfully completed or canceled.')      
+      raise utils.BayesDBError('Error: cannot initialize models with ANALYZE in progress. Please retry once ANALYZE is successfully completed or canceled.')
 
     # Get t, m_c, and m_r
     metadata = self.persistence_layer.get_metadata(tablename)
@@ -626,7 +689,7 @@ class Engine(object):
     existing_model_config = self.persistence_layer.get_model_config(tablename)
     if existing_model_config is not None and existing_model_config != model_config:
       raise utils.BayesDBError("Error: model config must match existing model config: %s" % str(existing_model_config))
-      
+
     # Call initialize on backend
     X_L_list, X_D_list = self.call_backend('initialize',
                                            dict(M_c=M_c, M_r=M_r, T=T, n_chains=n_models,
@@ -637,8 +700,8 @@ class Engine(object):
     if n_models == 1:
       X_L_list = [X_L_list]
       X_D_list = [X_D_list]
-    
-    model_list = list()    
+
+    model_list = list()
     for X_L, X_D in zip(X_L_list, X_D_list):
       model_list.append(dict(X_L=X_L, X_D=X_D, iterations=0,
                              column_crp_alpha=[], logscore=[], num_views=[],
@@ -673,8 +736,8 @@ class Engine(object):
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-    
-    models = self.persistence_layer.get_models(tablename)    
+
+    models = self.persistence_layer.get_models(tablename)
     data = list()
     for modelid, model in sorted(models.items(), key=lambda t:t[0]):
       if 'model_config' not in model:
@@ -690,7 +753,7 @@ class Engine(object):
     Run analyze for the selected table. model_indices may be 'all' or None to indicate all models.
 
     Runs for a maximum of iterations, or a maximum number of seconds.
-    
+
     Previously: this command ran in the same thread as this engine.
     Now: runs each model in its own thread, and does 10 seconds of inference at a time,
     by default. Each thread also has its own crosscat engine instance!
@@ -709,7 +772,7 @@ class Engine(object):
       T_sub = metadata['T_sub']
     else:
       T_sub = None
-    
+
     max_model_id = self.persistence_layer.get_max_model_id(tablename)
     if max_model_id == -1:
       raise utils.BayesDBError("You must INITIALIZE MODELS before using ANALYZE.")
@@ -730,7 +793,7 @@ class Engine(object):
 
     if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
       raise utils.BayesDBError("%s is already being analzyed. Try using 'SHOW ANALYZE FOR %s' to get more information, or 'CANCEL ANALYZE FOR %s' to cancel the ANALYZE.")
-      
+
 
     # Start analyze thread.
     t = AnalyzeMaster(args=(tablename, modelids, kernel_list, iterations,
@@ -759,7 +822,7 @@ class Engine(object):
     # TODO: each loop through this for loop is parallelizable
     for i, modelid in enumerate(modelids):
       self.persistence_layer.update_model(tablename, X_L_list[i], X_D_list[i], dict(), modelid)
-    
+
 
   def show_analyze(self, tablename):
     if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
@@ -773,7 +836,7 @@ class Engine(object):
       self.analyze_threads[tablename].stop()
       return dict(message="Analyze for table %s is being canceled. Please wait a few moments for it to exit safely." % tablename)
     else:
-      raise utils.BayesDBError("Table %s is not being analyzed." % tablename)              
+      raise utils.BayesDBError("Table %s is not being analyzed." % tablename)
 
 
   def infer(self, tablename, functions, confidence, whereclause, limit, numsamples, order_by=False, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
@@ -787,18 +850,18 @@ class Engine(object):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     if not self.persistence_layer.has_models(tablename):
-      raise utils.BayesDBNoModelsError(tablename)      
-    
+      raise utils.BayesDBNoModelsError(tablename)
+
     if numsamples is None:
       numsamples=50 ##TODO: put this in a config file
-      
+
     return self.select(tablename, functions, whereclause, limit, order_by,
                        impute_confidence=confidence, numsamples=numsamples, plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename)
-    
+
   def select(self, tablename, functions, whereclause, limit, order_by, impute_confidence=None, numsamples=None, plot=False, modelids=None, summarize=False, hist=False, freq=False, newtablename=None):
     """
     BQL's version of the SQL SELECT query.
-    
+
     First, reads codes from T and converts them to values.
     Then, filters the values based on the where clause.
     Then, fills in all imputed values, if applicable.
@@ -814,13 +877,13 @@ class Engine(object):
     queries: [(func, f_args, aggregate)]
     order_by: [(func, f_args, desc)]
     where_conditions: [(func, f_args, op, val)]
-    
+
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     M_c_full, M_r_full, T_full = self.persistence_layer.get_metadata_and_table_full(tablename)
-    
+
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     column_lists = self.persistence_layer.get_column_lists(tablename)
 
@@ -828,7 +891,7 @@ class Engine(object):
 
     # Parse queries, where_conditions, and order by.
     queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full, T_full, column_lists, key_column_name)
-    if whereclause == None: 
+    if whereclause == None:
       where_conditions = []
     else:
       where_conditions = self.parser.parse_where_clause(whereclause, M_c, T, M_c_full, T_full, column_lists)
@@ -867,13 +930,13 @@ class Engine(object):
 
     query_size = len(query_functions)
     order_by_size = query_size
-    
-    def get_existing_f_idx(new_fun, function_list): 
+
+    def get_existing_f_idx(new_fun, function_list):
         for f_idx, fun in enumerate(function_list):
           if new_fun == fun:
             return f_idx
         return False
-        
+
     for o_idx, o_fun in enumerate(order_by_functions):
       existing_f_idx = get_existing_f_idx(o_fun, function_list)
       if existing_f_idx:
@@ -890,7 +953,7 @@ class Engine(object):
       else:
         function_list.append(w_fun)
         where_idxs.append(len(function_list) - 1)
-          
+
 
     ## Now function list is constructed, so create the data table one row at a time,
     ## applying where clause in the process.
@@ -910,7 +973,7 @@ class Engine(object):
 
     ## Now, order the rows. First compute all values that will be necessary for order by.
     if len(order_by) > 0:
-      scored_data_tuples = list() # Entries are score, data_tuple      
+      scored_data_tuples = list() # Entries are score, data_tuple
       for (row_id, row) in data_tuples:
         scores = []
         for o_idx, (f, args, desc) in enumerate(order_by):
@@ -936,7 +999,7 @@ class Engine(object):
       data_tuples = [(tup[1][0], tup[1][1][:query_size]) for tup in scored_data_tuples]
 
     ## Now, apply the limit and compute the queried columns.
-    
+
     # Compute aggregate functions just once, then cache them.
     aggregate_cache = dict()
     for q_idx, (query_function, query_args, aggregate) in enumerate(queries):
@@ -985,6 +1048,11 @@ class Engine(object):
       ret['M_c'] = M_c
       ret['schema_full'] = self.persistence_layer.get_schema_full(tablename)
 
+      try:
+          ret['metadata_full'] = self.persistence_layer.get_metadata_full(tablename)
+      except BayesDBError:
+          pass
+
     return ret
 
 
@@ -994,7 +1062,7 @@ class Engine(object):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
     if not self.persistence_layer.has_models(tablename):
-      raise utils.BayesDBNoModelsError(tablename)            
+      raise utils.BayesDBNoModelsError(tablename)
 
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     if len(X_L_list) == 0:
@@ -1004,7 +1072,7 @@ class Engine(object):
     numrows = len(M_r['idx_to_name'])
     name_to_idx = M_c['name_to_idx']
 
-    ## TODO throw exception for <,> without dissallowing them in the values. 
+    ## TODO throw exception for <,> without dissallowing them in the values.
     given_col_idxs_to_vals = dict()
     Y = None
     if givens is not None:
@@ -1018,16 +1086,16 @@ class Engine(object):
 
       # map values to codes
       Y = [(r, c, data_utils.convert_value_to_code(M_c, c, colval)) for r,c,colval in Y]
-    
+
     ## Parse queried columns.
     column_lists = self.persistence_layer.get_column_lists(tablename)
     # Set M_c_full to None because we don't want to simulate key/ignore columns
     queries, query_colnames = self.parser.parse_functions(functions, M_c, T, M_c_full=None, T_full=None, column_lists=column_lists)
     ##TODO check duplicates
     ##TODO check for no functions
-    
+
     ##TODO col_indices, colnames are a hack from old parsing
-    
+
     col_indices = [query[1][0] for query in queries]
     query_col_indices = [idx for idx in col_indices if idx not in given_col_idxs_to_vals.keys()]
     Q = [(numrows+1, col_idx) for col_idx in query_col_indices]
@@ -1037,7 +1105,7 @@ class Engine(object):
     else:
       out = [[] for x in range(numpredictions)]
     assert type(out) == list and len(out) >= 1 and type(out[0]) == list and len(out) == numpredictions
-    
+
     # convert to data, columns dict output format
     # map codes to original values
     data = []
@@ -1083,7 +1151,7 @@ class Engine(object):
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-      
+
     column_lists = self.persistence_layer.get_column_lists(tablename)
     return dict(column_labels=['column list'], data=[[k] for k in column_lists.keys()])
 
@@ -1093,22 +1161,22 @@ class Engine(object):
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-      
+
     row_lists = self.persistence_layer.get_row_lists(tablename)
     return dict(row_lists=[(name, len(rows)) for (name, rows) in row_lists.items()])
 
-    
+
   def show_columns(self, tablename, column_list=None):
     """
     Return the specified columnlist. If None, return all columns in original order.
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-      
+
     if column_list:
       column_names = self.persistence_layer.get_column_list(tablename, column_list)
     else:
-      M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)      
+      M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
       column_names = list(M_c['name_to_idx'].keys())
     return dict(column_labels=column_names)
 
@@ -1149,24 +1217,24 @@ class Engine(object):
     """
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
-    
+
     X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
     M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
     column_indices = list(M_c['name_to_idx'].values())
 
-    # Store the names of each of the functions in the where or order by, to be displayed in output.    
+    # Store the names of each of the functions in the where or order by, to be displayed in output.
     func_descriptions = []
-    
+
     ## filter based on where clause
     where_conditions = self.parser.parse_column_whereclause(whereclause, M_c, T)
     if where_conditions is not None and len(X_L_list) == 0:
-      raise utils.BayesDBNoModelsError(tablename)      
+      raise utils.BayesDBNoModelsError(tablename)
     column_indices_and_data = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self, numsamples)
     func_descriptions += [estimate_columns_utils.function_description(where_item[0][0], where_item[0][1], M_c) for where_item in where_conditions]
-    
+
     ## order
     if order_by and len(X_L_list) == 0:
-      raise utils.BayesDBNoModelsError(tablename)      
+      raise utils.BayesDBNoModelsError(tablename)
     if order_by != False:
       order_by = self.parser.parse_column_order_by_clause(order_by, M_c)
       func_descriptions += [estimate_columns_utils.function_description(order_item[0], order_item[1], M_c) for order_item in order_by]
@@ -1174,7 +1242,7 @@ class Engine(object):
     # Get tuples of column estimation function values and column indices
     ordered_tuples = estimate_columns_utils.order_columns(column_indices_and_data, order_by, M_c, X_L_list, X_D_list, T, self, numsamples)
     # tuple contains: (tuple(data), cidx)
-    
+
     # limit
     if limit != float('inf'):
       ordered_tuples = ordered_tuples[:limit]
@@ -1186,10 +1254,10 @@ class Engine(object):
     # column_data should be a list of the data values
     for ordered_tuple in ordered_tuples:
       if type(ordered_tuple) == int:
-        # 
+        #
         ordered_tuple = ((), column_idx_tup)
       column_name_temp = M_c['idx_to_name'][str(ordered_tuple[1])]
-      column_names.append(column_name_temp)      
+      column_names.append(column_name_temp)
 
       # Get the values of the functions that were used in where and order by
       column_data_temp = [data_utils.get_column_labels_from_M_c(M_c, [column_name_temp])[0]]
@@ -1244,11 +1312,11 @@ class Engine(object):
       row_indices = None
 
     column_lists = self.persistence_layer.get_column_lists(tablename)
-    
+
     # Do the heavy lifting: generate the matrix itself
 
     matrix, row_indices_reordered, clusters = pairwise.generate_pairwise_row_matrix(function, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, cluster_threshold=threshold, column_lists=column_lists, numsamples=numsamples)
-    title = 'Pairwise row %s for %s' % (function.function_id, tablename)      
+    title = 'Pairwise row %s for %s' % (function.function_id, tablename)
     ret = dict(
       matrix=matrix,
       column_names=row_indices_reordered, # this is called column_names so that the plotting code displays them
@@ -1268,8 +1336,8 @@ class Engine(object):
       ret['row_lists'] = cluster_name_tuples
 
     return ret
-    
-  
+
+
   def estimate_pairwise(self, tablename, function_name, column_list=None, clusters_name=None, threshold=None, modelids=None, numsamples=None):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
@@ -1291,8 +1359,8 @@ class Engine(object):
     matrix, column_names_reordered, clusters = pairwise.generate_pairwise_column_matrix(   \
         function_name, X_L_list, X_D_list, M_c, T, tablename, engine=self, column_names=column_names,
         cluster_threshold=threshold, numsamples=numsamples)
-    
-    title = 'Pairwise column %s for %s' % (function_name, tablename)      
+
+    title = 'Pairwise column %s for %s' % (function_name, tablename)
     ret = dict(
       matrix=matrix,
       column_names=column_names_reordered,
@@ -1343,17 +1411,17 @@ class StoppableThread(threading.Thread):
         self._stop.set()
 
     def stopped(self):
-        return self._stop.isSet()    
+        return self._stop.isSet()
 
 class AnalyzeMaster(StoppableThread):
   def __init__(self, args):
-    self.target = self.analyze_master    
+    self.target = self.analyze_master
     super(AnalyzeMaster, self).__init__(target=self.target, args=args)
 
   def get_info(self):
     if not hasattr(self, 'start_time'):
       return "Analyze hasn't started"
-    elapsed_seconds = time.time() - self.start_time    
+    elapsed_seconds = time.time() - self.start_time
     if self.requested_iterations is None:
       # User specified time constraint
       remaining_seconds = self.total_seconds - elapsed_seconds
@@ -1365,19 +1433,19 @@ class AnalyzeMaster(StoppableThread):
       # User specified iterations constraint
       return "Iterations completed: %d\nRemaining iterations: %d\nElapsed minutes: %02.f\nEstimated remaining minutes:%0.2f" % (self.iters_done, self.requested_iterations - self.iters_done, elapsed_seconds/60.0, self.time_remaining_estimate/60.0)
     return timing_str
-  
+
   def analyze_master(self, tablename, modelids, kernel_list, iterations, seconds, M_c, T, T_sub, models, background, engine):
     """
     Helper function for analyze. This is the thread that runs in the background as the previous analyze
     command returns before analyze is complete.
     """
 
-    """ New stuff: scrutinize carefully 
+    """ New stuff: scrutinize carefully
     analyze_args = dict(M_c=M_c, T=T, X_L=X_L_list, X_D=X_D_list, do_diagnostics=True,
                         kernel_list=kernel_list)
     if ct_kernel != 0:
       analyze_args['CT_KERNEL'] = ct_kernel
-    
+
     analyze_args['n_steps'] = iterations
     if seconds is not None:
       analyze_args['max_time'] = seconds
@@ -1455,7 +1523,7 @@ class AnalyzeMaster(StoppableThread):
 
 class AnalyzeWorker(StoppableThread):
   def __init__(self, args):
-    self.target = self.do_analyze_for_model    
+    self.target = self.do_analyze_for_model
     super(AnalyzeWorker, self).__init__(target=self.target, args=args)
     self.iterations_done = 0
     self.time_per_model = 0
@@ -1463,7 +1531,7 @@ class AnalyzeWorker(StoppableThread):
   def get_progress(self):
     time_left = (self.iterations - self.iterations_done)*self.time_per_model
     return self.iterations_done, time_left
-    
+
   def do_analyze_for_model(self, modelid, tablename, kernel_list, iterations, seconds, M_c, T, X_L, X_D, background, engine):
       # TODO: this process should make a background thread for model writes!
       analyze_args = dict(M_c=M_c, T=T, do_diagnostics=True, kernel_list=kernel_list, \
@@ -1474,14 +1542,14 @@ class AnalyzeWorker(StoppableThread):
 
       self.total_analyze_time = 0
       self.total_write_time = 0
-      
+
       self.iterations = iterations
       self.iterations_done = 0
       for i in range(iterations):
         cur_time = time.time()
         X_L, X_D, diagnostics_dict = engine.call_backend('analyze', analyze_args)
         self.total_analyze_time += time.time() - cur_time
-        
+
         analyze_args['X_L'] = X_L
         analyze_args['X_D'] = X_D
 

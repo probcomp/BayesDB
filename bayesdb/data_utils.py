@@ -130,7 +130,7 @@ def gen_cyclic_metadata(column_data, parameters=None):
     data_max = max(map(float, column_data))
 
     if not parameters:
-        parameters = dict(min = data_min, max = data_max)
+        parameters = dict(min=data_min, max=data_max)
     else:
         if 'min' not in parameters or 'max' not in parameters:
             raise utils.BayesDBError("Error: cyclic columns require (min, max) parameters." % str(value))
@@ -170,11 +170,11 @@ def gen_categorical_metadata(column_data, parameters=None):
     # that cardinality parameter is >= the number of distinct values.
     n_codes = len(unique_codes)
     if not parameters:
-        parameters = dict(cardinality = n_codes)
+        parameters = dict(cardinality=n_codes)
     else:
         parameters['cardinality'] = int(parameters['cardinality'])
         if n_codes > parameters['cardinality']:
-            raise utils.BayesDBError("Error: categorical contains more distinct values than specified cardinality %i" % parameters['cardinality'])        
+            raise utils.BayesDBError("Error: categorical contains more distinct values than specified cardinality %i" % parameters['cardinality'])
 
     return dict(
         modeltype="symmetric_dirichlet_discrete",
@@ -452,13 +452,13 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
         modeltype = column_metadata['modeltype']
         col_data = T_uncast_array[:, col_idx]
 
-        if modeltype == 'normal_inverse_gamma': 
+        if modeltype == 'normal_inverse_gamma':
             continue
         elif modeltype == 'vonmises':
             param_min = column_metadata['parameters']['min']
             param_max = column_metadata['parameters']['max']
             mapped_values = [2 * pi * (float(x) - param_min) / (param_max - param_min) for x in col_data]
-        else:    
+        else:
             # copy.copy else you mutate M_c
             mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
             mapping['NAN'] = numpy.nan
@@ -566,8 +566,8 @@ def get_int_equals_str(column_data):
     except ValueError, e:
         equals = False
     return equals
-    
-    
+
+
 def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
     num_distinct = len(set(column_data))
     num_data = len(column_data)
@@ -586,7 +586,7 @@ def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, war
     Guesses column types - used when creating new btable so user doesn't have to
     specify a type for all columns.
     Refer to function guess_column_type for decision rules.
-    Warn if cardinality of a categorical is greater than 7 
+    Warn if cardinality of a categorical is greater than 7
         (limit proposed by Pat Shafto 7 Aug 2014)
     """
     T_transposed = transpose_list(T)
@@ -598,7 +598,7 @@ def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, war
         if column_type == 'categorical' and len(set(column_data)) > warn_cardinality:
             warnings.append('Column "%s" is categorical but has a high number of distinct values. Convert to numerical using UPDATE SCHEMA if appropriate.' % colnames_full[column_idx])
     return column_types, warnings
-        
+
 def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
                              cctypes=None):
     colnames, T = read_csv(filename)
