@@ -28,15 +28,16 @@ from math import pi
 
 import utils
 
+
 def get_ith_ordering(in_list, i):
     temp_list = [in_list[j::(i+1)][:] for j in range(i+1)]
     return [el for sub_list in temp_list for el in sub_list]
 
-def gen_data(gen_seed, num_clusters,
-             num_cols, num_rows, max_mean_per_category=10, max_std=1,
+
+def gen_data(gen_seed, num_clusters, num_cols, num_rows, max_mean_per_category=10, max_std=1,
              max_mean=None):
     if max_mean is None:
-       max_mean = max_mean_per_category * num_clusters
+        max_mean = max_mean_per_category * num_clusters
     n_grid = 11
     mu_grid = numpy.linspace(-max_mean, max_mean, n_grid)
     sigma_grid = 10 ** numpy.linspace(-1, numpy.log10(max_std), n_grid)
@@ -45,7 +46,7 @@ def gen_data(gen_seed, num_clusters,
     #
     random_state = numpy.random.RandomState(gen_seed)
     #
-    data_size = (num_clusters,num_cols)
+    data_size = (num_clusters, num_cols)
     which_mus = random_state.randint(len(mu_grid), size=data_size)
     which_sigmas = random_state.randint(len(sigma_grid), size=data_size)
     mus = mu_grid[which_mus]
@@ -62,11 +63,9 @@ def gen_data(gen_seed, num_clusters,
     xs = numpy.vstack(clusters)
     return xs, zs
 
-def gen_factorial_data(gen_seed, num_clusters,
-        num_cols, num_rows, num_splits,
-		max_mean_per_category=10, max_std=1,
-        max_mean=None
-        ):
+
+def gen_factorial_data(gen_seed, num_clusters, num_cols, num_rows, num_splits,
+                       max_mean_per_category=10, max_std=1, max_mean=None):
     random_state = numpy.random.RandomState(gen_seed)
     data_list = []
     inverse_permutation_indices_list = []
@@ -88,6 +87,7 @@ def gen_factorial_data(gen_seed, num_clusters,
     data = numpy.hstack(data_list)
     return data, inverse_permutation_indices_list
 
+
 def gen_raw_T_full_from_T_full(T_full, M_c):
     """
     engine.upgrade_btables needs a way to go from T to raw_T_full for tables
@@ -96,10 +96,11 @@ def gen_raw_T_full_from_T_full(T_full, M_c):
     """
     raw_T_full = T_full
     for row_idx, row_data in enumerate(T_full):
-      for col_idx, code in enumerate(row_data):
-        code = T_full[row_idx][col_idx]
-        raw_T_full[row_idx][col_idx] = str(convert_code_to_value(M_c, col_idx, code))
+        for col_idx, code in enumerate(row_data):
+            code = T_full[row_idx][col_idx]
+            raw_T_full[row_idx][col_idx] = str(convert_code_to_value(M_c, col_idx, code))
     return raw_T_full
+
 
 def gen_M_r_from_T(T):
     num_rows = len(T)
@@ -110,19 +111,23 @@ def gen_M_r_from_T(T):
     M_r = dict(name_to_idx=name_to_idx, idx_to_name=idx_to_name)
     return M_r
 
+
 def gen_ignore_metadata(column_data, parameters=None):
     ret = gen_categorical_metadata(column_data, parameters)
     ret['modeltype'] = 'ignore'
     ret['parameters'] = None
     return ret
 
+
 def gen_numerical_metadata(column_data, parameters=None):
-    return dict(
+    res = dict(
         modeltype="normal_inverse_gamma",
         value_to_code=dict(),
         code_to_value=dict(),
         parameters=None
-        )
+    )
+    return res
+
 
 def gen_cyclic_metadata(column_data, parameters=None):
 
@@ -133,16 +138,19 @@ def gen_cyclic_metadata(column_data, parameters=None):
         parameters = dict(min=data_min, max=data_max)
     else:
         if 'min' not in parameters or 'max' not in parameters:
-            raise utils.BayesDBError("Error: cyclic columns require (min, max) parameters." % str(value))
+            raise utils.BayesDBError("Error: cyclic columns require (min, max) parameters."
+                                     % str(value))
         else:
             param_min = float(parameters['min'])
             param_max = float(parameters['max'])
             if data_min < param_min:
-                raise utils.BayesDBError("Error: cyclic contains data less than specified minimum %f" % param_min)
+                raise utils.BayesDBError("Error: cyclic contains data less than specified "
+                                         "minimum %f" % param_min)
             elif data_max > param_max:
-                raise utils.BayesDBError("Error: cyclic contains data greater than specified maximum %f" % param_max)
+                raise utils.BayesDBError("Error: cyclic contains data greater than specified "
+                                         "maximum %f" % param_max)
             else:
-                parameters = dict(min = param_min, max = param_max)
+                parameters = dict(min=param_min, max=param_max)
 
     return dict(
         modeltype="vonmises",
@@ -150,6 +158,7 @@ def gen_cyclic_metadata(column_data, parameters=None):
         code_to_value=dict(),
         parameters=parameters
         )
+
 
 def gen_categorical_metadata(column_data, parameters=None):
     def get_is_not_nan(el):
@@ -174,13 +183,17 @@ def gen_categorical_metadata(column_data, parameters=None):
     else:
         parameters['cardinality'] = int(parameters['cardinality'])
         if n_codes > parameters['cardinality']:
-            raise utils.BayesDBError("Error: categorical contains more distinct values than specified cardinality %i" % parameters['cardinality'])
+            raise utils.BayesDBError("Error: categorical contains more distinct values than "
+                                     "specified cardinality %i" % parameters['cardinality'])
 
-    return dict(
+    ret = dict(
         modeltype="symmetric_dirichlet_discrete",
         value_to_code=value_to_code,
         code_to_value=code_to_value,
-        parameters = parameters)
+        parameters=parameters
+    )
+
+    return ret
 
 metadata_generator_lookup = dict(
     numerical=gen_numerical_metadata,
@@ -189,6 +202,7 @@ metadata_generator_lookup = dict(
     ignore=gen_ignore_metadata,
     key=gen_ignore_metadata,
 )
+
 
 def gen_M_c_from_T(T, cctypes=None, colnames=None, parameters=None, codebook=None):
     num_rows = len(T)
@@ -223,19 +237,20 @@ def gen_M_c_from_T(T, cctypes=None, colnames=None, parameters=None, codebook=Non
         )
     return M_c
 
+
 def gen_M_c_from_T_with_colnames(T, colnames):
     num_rows = len(T)
     num_cols = len(T[0])
     #
     gen_numerical_metadata = lambda: dict(modeltype="normal_inverse_gamma",
-                                           value_to_code=dict(),
-                                           code_to_value=dict())
+                                          value_to_code=dict(),
+                                          code_to_value=dict())
     column_metadata = [
         gen_numerical_metadata()
         for col_idx in range(num_cols)
         ]
     name_to_idx = dict(zip(colnames, range(num_cols)))
-    idx_to_name = dict(zip(map(str, range(num_cols)),colnames))
+    idx_to_name = dict(zip(map(str, range(num_cols)), colnames))
     M_c = dict(
         name_to_idx=name_to_idx,
         idx_to_name=idx_to_name,
@@ -243,20 +258,21 @@ def gen_M_c_from_T_with_colnames(T, colnames):
         )
     return M_c
 
-def gen_factorial_data_objects(gen_seed, num_clusters,
-                               num_cols, num_rows, num_splits,
-                               max_mean=10, max_std=1,
-                               send_data_inverse_permutation_indices=False):
-    T, data_inverse_permutation_indices = gen_factorial_data(
-        gen_seed, num_clusters,
-        num_cols, num_rows, num_splits, max_mean, max_std)
-    T  = T.tolist()
+
+def gen_factorial_data_objects(gen_seed, num_clusters, num_cols, num_rows, num_splits, max_mean=10,
+                               max_std=1, send_data_inverse_permutation_indices=False):
+    T, data_inverse_permutation_indices = gen_factorial_data(gen_seed, num_clusters, num_cols,
+                                                             num_rows, num_splits, max_mean,
+                                                             max_std)
+    T = T.tolist()
     M_r = gen_M_r_from_T(T)
     M_c = gen_M_c_from_T(T)
+
     if not send_data_inverse_permutation_indices:
         return T, M_r, M_c
     else:
         return T, M_r, M_c, data_inverse_permutation_indices
+
 
 def discretize_data(T, discretize_indices):
     T_array = numpy.array(T)
@@ -264,6 +280,7 @@ def discretize_data(T, discretize_indices):
     T_array[:, discretize_indices] = \
         numpy.array(T_array[:, discretize_indices], dtype=int)
     return T_array.tolist()
+
 
 def convert_columns_to_categorical(T, M_c, categorical_indices):
     categorical_indices = numpy.array(categorical_indices)
@@ -282,6 +299,7 @@ def convert_columns_to_categorical(T, M_c, categorical_indices):
         categorical_column_metadata['value_to_code'] = value_to_code
     return T, M_c
 
+
 # UNTESTED
 def convert_columns_to_numerical(T, M_c, numerical_indices):
     numerical_indices = numpy.array(numerical_indices)
@@ -296,6 +314,7 @@ def convert_columns_to_numerical(T, M_c, numerical_indices):
         numerical_column_metadata['value_to_code'] = value_to_code
     return T, M_c
 
+
 def at_most_N_rows(T, N, gen_seed=0):
     num_rows = len(T)
     if (N is not None) and (num_rows > N):
@@ -304,6 +323,7 @@ def at_most_N_rows(T, N, gen_seed=0):
         which_rows = which_rows[:N]
         T = [T[which_row] for which_row in which_rows]
     return T
+
 
 def construct_pandas_df(query_obj):
     """
@@ -326,8 +346,9 @@ def construct_pandas_df(query_obj):
     else:
         columns = query_obj['column_labels']
 
-    pandas_df = pandas.DataFrame(data = data, columns = columns)
+    pandas_df = pandas.DataFrame(data=data, columns=columns)
     return pandas_df
+
 
 def read_pandas_df(pandas_df):
     """
@@ -338,6 +359,7 @@ def read_pandas_df(pandas_df):
     rows = [map(str, row) for index, row in pandas_df.iterrows()]
     return header, rows
 
+
 def read_csv(filename, has_header=True):
     with open(filename, 'rU') as fh:
         csv_reader = csv.reader(fh)
@@ -347,12 +369,14 @@ def read_csv(filename, has_header=True):
         rows = [[r.strip() for r in row] for row in csv_reader]
     return header, rows
 
-def write_csv(filename, T, header = None):
-    with open(filename,'w') as fh:
+
+def write_csv(filename, T, header=None):
+    with open(filename, 'w') as fh:
         csv_writer = csv.writer(fh, delimiter=',')
-        if header != None:
+        if header is None:
             csv_writer.writerow(header)
         [csv_writer.writerow(T[i]) for i in range(len(T))]
+
 
 def all_numerical_from_file(filename, max_rows=None, gen_seed=0, has_header=True):
     header, T = read_csv(filename, has_header=has_header)
@@ -362,6 +386,7 @@ def all_numerical_from_file(filename, max_rows=None, gen_seed=0, has_header=True
     M_c = gen_M_c_from_T(T)
     return T, M_r, M_c, header
 
+
 def numerical_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=None, gen_seed=0):
     header = None
     T, M_r, M_c = None, None, None
@@ -369,9 +394,9 @@ def numerical_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=None
     with open(filename) as fh:
         csv_reader = csv.reader(fh)
         header = csv_reader.next()
-        T = numpy.array([
-                [col for col, flag in zip(row, colmask) if flag] for row in csv_reader
-                ], dtype=float).tolist()
+        # TODO: why is this list then an array and then a list again?
+        T = numpy.array([[col for col, flag in zip(row, colmask) if flag] for row in csv_reader],
+                        dtype=float).tolist()
         num_rows = len(T)
         if (max_rows is not None) and (num_rows > max_rows):
             random_state = numpy.random.RandomState(gen_seed)
@@ -382,6 +407,7 @@ def numerical_or_ignore_from_file_with_colnames(filename, cctypes, max_rows=None
         M_c = gen_M_c_from_T_with_colnames(T, [col for col, flag in zip(header, colmask) if flag])
     return T, M_r, M_c, header
 
+
 def convert_code_to_value(M_c, cidx, code):
     """
     For a column with categorical data, this function takes the 'code':
@@ -391,7 +417,7 @@ def convert_code_to_value(M_c, cidx, code):
     Note that the underlying store 'value_to_code' is unfortunately named backwards.
     TODO: fix the backwards naming.
     """
-    if numpy.isnan(code) or code=='nan':
+    if numpy.isnan(code) or code == 'nan':
         return code
     else:
         column_metadata = M_c['column_metadata'][cidx]
@@ -408,6 +434,7 @@ def convert_code_to_value(M_c, cidx, code):
                 return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
             except KeyError:
                 return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))]
+
 
 def convert_value_to_code(M_c, cidx, value):
     """
@@ -432,6 +459,7 @@ def convert_value_to_code(M_c, cidx, value):
         except KeyError:
             raise utils.BayesDBError("Error: value '%s' not in btable." % str(value))
 
+
 def map_from_T_with_M_c(coordinate_value_tuples, M_c):
     coordinate_code_tuples = []
     column_metadata = M_c['column_metadata']
@@ -443,6 +471,7 @@ def map_from_T_with_M_c(coordinate_value_tuples, M_c):
             value = column_metadata[col_idx]['value_to_code'][str(int(value))]
         coordinate_code_tuples.append((row_idx, col_idx, value))
     return coordinate_code_tuples
+
 
 def map_to_T_with_M_c(T_uncast_array, M_c):
     T_uncast_array = numpy.array(T_uncast_array)
@@ -457,13 +486,14 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
         elif modeltype == 'vonmises':
             param_min = column_metadata['parameters']['min']
             param_max = column_metadata['parameters']['max']
-            mapped_values = [2 * pi * (float(x) - param_min) / (param_max - param_min) for x in col_data]
+            mapped_values = [2 * pi * (float(x) - param_min) / (param_max - param_min)
+                             for x in col_data]
         else:
             # copy.copy else you mutate M_c
             mapping = copy.copy(M_c['column_metadata'][col_idx]['code_to_value'])
             mapping['NAN'] = numpy.nan
             to_upper = lambda el: str(el).upper()
-            is_nan_str = numpy.array(map(to_upper, col_data))=='NAN'
+            is_nan_str = numpy.array(map(to_upper, col_data)) == 'NAN'
             col_data[is_nan_str] = 'NAN'
             # FIXME: THIS IS WHERE TO PUT NAN HANDLING
             mapped_values = [mapping[el] for el in col_data]
@@ -471,37 +501,41 @@ def map_to_T_with_M_c(T_uncast_array, M_c):
     T = numpy.array(T_uncast_array, dtype=float).tolist()
     return T
 
+
 def do_pop_list_indices(in_list, pop_indices):
     pop_indices = sorted(pop_indices, reverse=True)
     _do_pop = lambda x: in_list.pop(x)
     map(_do_pop, pop_indices)
     return in_list
 
+
 def get_list_indices(in_list, get_indices_of):
     lookup = dict(zip(in_list, range(len(in_list))))
     indices = map(lookup.get, get_indices_of)
-    # The line below removes [0] from indices. Need to check with Jay about how to handle those cases.
-    #indices = filter(None, indices)
+    # The line below removes [0] from indices. Need to check with Jay about how to handle those
+    # cases.
+    # indices = filter(None, indices)
     return indices
+
 
 def transpose_list(in_list):
     return zip(*in_list)
 
+
 def get_pop_indices(cctypes, colnames):
     assert len(colnames) == len(cctypes)
-    pop_columns = [
-            colname
-            for (cctype, colname) in zip(cctypes, colnames)
-            if (cctype in ['ignore', 'key'])
-            ]
+    pop_columns = [colname for (cctype, colname) in zip(cctypes, colnames)
+                   if (cctype in ['ignore', 'key'])]
     pop_indices = get_list_indices(colnames, pop_columns)
     return pop_indices
+
 
 def do_pop_columns(T, pop_indices):
     T_by_columns = transpose_list(T)
     T_by_columns = do_pop_list_indices(T_by_columns, pop_indices)
     T = transpose_list(T_by_columns)
     return T
+
 
 def remove_ignore_cols(T, cctypes, colnames, parameters=None):
     pop_indices = get_pop_indices(cctypes, colnames)
@@ -520,6 +554,7 @@ _convert_nan = lambda el: el if str(el).strip().lower() not in nan_set else 'NAN
 _convert_nans = lambda in_list: map(_convert_nan, in_list)
 convert_nans = lambda in_T: map(_convert_nans, in_T)
 
+
 def read_data_objects(filename, max_rows=None, gen_seed=0,
                       cctypes=None, colnames=None):
     header, raw_T = read_csv(filename, has_header=True)
@@ -536,7 +571,8 @@ def read_data_objects(filename, max_rows=None, gen_seed=0,
         cctypes = ['numerical'] * len(header)
         pass
 
-    T_uncast_arr, cctypes, header = remove_ignore_cols(raw_T, cctypes, header) # remove ignore columns
+    # remove ignore columns
+    T_uncast_arr, cctypes, header = remove_ignore_cols(raw_T, cctypes, header)
     # determine value mappings and map T to numerical castable values
     M_r = gen_M_r_from_T(T_uncast_arr)
     M_c = gen_M_c_from_T(T_uncast_arr, cctypes, colnames)
@@ -544,26 +580,29 @@ def read_data_objects(filename, max_rows=None, gen_seed=0,
     #
     return T, M_r, M_c, header
 
+
 def get_can_cast_to_float(column_data):
     can_cast = True
     try:
         [float(datum) for datum in column_data]
-    except ValueError, e:
+    except:
         can_cast = False
     return can_cast
+
 
 def get_can_cast_to_int(column_data):
     can_cast = True
     try:
         [int(datum) for datum in column_data]
-    except ValueError, e:
+    except:
         can_cast = False
     return can_cast
+
 
 def get_int_equals_str(column_data):
     try:
         equals = all([str(datum) == str(int(datum)) for datum in column_data])
-    except ValueError, e:
+    except:
         equals = False
     return equals
 
@@ -581,6 +620,7 @@ def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
         column_type = 'categorical'
     return column_type
 
+
 def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, warn_cardinality=7):
     """
     Guesses column types - used when creating new btable so user doesn't have to
@@ -596,13 +636,16 @@ def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, war
         column_type = guess_column_type(column_data, count_cutoff, ratio_cutoff)
         column_types.append(column_type)
         if column_type == 'categorical' and len(set(column_data)) > warn_cardinality:
-            warnings.append('Column "%s" is categorical but has a high number of distinct values. Convert to numerical using UPDATE SCHEMA if appropriate.' % colnames_full[column_idx])
+            warnings.append('Column "%s" is categorical but has a high number of distinct values. '
+                            'Convert to numerical using UPDATE SCHEMA if appropriate.'
+                            % colnames_full[column_idx])
     return column_types, warnings
 
-def read_model_data_from_csv(filename, max_rows=None, gen_seed=0,
-                             cctypes=None):
+
+def read_model_data_from_csv(filename, max_rows=None, gen_seed=0, cctypes=None):
     colnames, T = read_csv(filename)
     return gen_T_and_metadata(colnames, raw_T, max_rows, gen_seed, cctypes)
+
 
 def gen_T_and_metadata(colnames, raw_T, max_rows=None, gen_seed=0,
                        cctypes=None, parameters=None, codebook=None):
@@ -620,16 +663,18 @@ extract_cluster_count = lambda view_state_i: view_state_i['row_partition_model']
 extract_cluster_counts = lambda X_L: map(extract_cluster_count, X_L['view_state'])
 get_state_shape = lambda X_L: (extract_view_count(X_L), extract_cluster_counts(X_L))
 
+
 def is_key_eligible(x):
     """
-	A column is eligible to be the table key if:
-	All values are unique, AND
+    A column is eligible to be the table key if:
+    All values are unique, AND
     can't be cast to float (a string key) OR string representation of all values matches the
     string representation of its int value
     """
     values_unique = len(x) == len(set(x))
     castable = not get_can_cast_to_float(x) or get_int_equals_str(x)
     return values_unique and castable
+
 
 def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, testing=False):
     """
@@ -649,7 +694,8 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, 
     if testing:
         key_column_selection = 0
     elif key_eligibles_len == 0 and key_column is None:
-        print "None of the columns in this table is eligible to be the key. A key column will be created. Press any key continue."
+        print("None of the columns in this table is eligible to be the key. A key column will be "
+              "created. Press any key continue.")
         user_confirmation = raw_input()
         key_column_selection = 0
     elif key_column is None or key_column not in range(key_eligibles_len + 1):
@@ -660,8 +706,8 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, 
         for index, key_eligible in enumerate(key_eligibles):
             pt.add_row([index + 1, key_eligible])
         while key_column_selection is None:
-            print str(pt)
-            print "Please select which column you would like to set as the table key:"
+            print(str(pt))
+            print("Please select which column you would like to set as the table key:")
             user_selection = raw_input()
             try:
                 user_selection = int(user_selection)
@@ -674,12 +720,14 @@ def select_key_column(raw_T_full, colnames_full, cctypes_full, key_column=None, 
 
     # 0 always means insert a new key column.
     if key_column_selection == 0:
-        raw_T_full, colnames_full, cctypes_full, key_column = insert_key_column(T_df, colnames_full, cctypes_full)
+        raw_T_full, colnames_full, cctypes_full, key_column = insert_key_column(T_df, colnames_full,
+                                                                                cctypes_full)
     else:
         key_column = key_eligibles[key_column_selection - 1]
         cctypes_full[colnames_full.index(key_column)] = 'key'
 
     return raw_T_full, colnames_full, cctypes_full
+
 
 def insert_key_column(T_df, colnames_full, cctypes_full):
     """
@@ -697,6 +745,7 @@ def insert_key_column(T_df, colnames_full, cctypes_full):
     colnames_full.insert(0, key_column_name)
     cctypes_full.insert(0, 'key')
     return raw_T_full, colnames_full, cctypes_full, key_column_name
+
 
 def get_column_labels_from_M_c(M_c, colnames):
     """
