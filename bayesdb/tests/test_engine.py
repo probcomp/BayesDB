@@ -617,6 +617,117 @@ def test_describe():
         assert(len(row) == 4)
 
 
+def test_update_descriptions_single():
+    test_tablename, metadata = create_describe_btable()
+
+    description_proposed = 'Hamish the cat'
+
+    bql_string = 'update description for %s set c_0="%s"' % (test_tablename, description_proposed)
+    bql_query = bql.bql_statement.parseString(bql_string, parseAll=True)
+    _, args, _ = parser.parse_update_descriptions(bql_query)
+    result = engine.update_descriptions(test_tablename, args['mappings'])
+
+    column_name_output = result['data'][0][0]
+    description_output = result['data'][0][1]
+
+    assert(column_name_output == 'c_0')
+    assert(description_output == description_proposed)
+
+    bql_string = 'describe c_0 for %s' % test_tablename
+    bql_query = bql.bql_statement.parseString(bql_string, parseAll=True)
+    result = engine.describe(test_tablename, bql_query.columnset)
+    description_updated = result['data'][0][2]
+
+    assert(description_updated == description_proposed)
+
+
+def test_update_descriptions_multiple():
+    test_tablename, metadata = create_describe_btable()
+
+    description_proposed_0 = 'Hamish thh cat'
+    description_proposed_1 = 'Winter Ninjaturtle'
+
+    bql_string = 'update descriptions for %s set c_0="%s", c_2="%s"' \
+        % (test_tablename, description_proposed_0, description_proposed_1)
+    bql_query = bql.bql_statement.parseString(bql_string, parseAll=True)
+    _, args, _ = parser.parse_update_descriptions(bql_query)
+    result = engine.update_descriptions(test_tablename, args['mappings'])
+
+    column_name_output_0 = result['data'][0][0]
+    description_output_0 = result['data'][0][1]
+    column_name_output_1 = result['data'][1][0]
+    description_output_1 = result['data'][1][1]
+
+    assert(column_name_output_0 == 'c_0')
+    assert(description_output_0 == description_proposed_0)
+    assert(column_name_output_1 == 'c_2')
+    assert(description_output_1 == description_proposed_1)
+
+    bql_string = 'describe c_0, c_2 for %s' % test_tablename
+    bql_query = bql.bql_statement.parseString(bql_string, parseAll=True)
+    result = engine.describe(test_tablename, bql_query.columnset)
+    description_updated_0 = result['data'][0][2]
+    description_updated_1 = result['data'][1][2]
+
+    assert(description_updated_0 == description_proposed_0)
+    assert(description_updated_1 == description_proposed_1)
+
+
+def test_update_short_names_single():
+    test_tablename, metadata = create_describe_btable()
+
+    short_name_proposed = 'Hamish'
+
+    bql_string = 'update short name for %s set c_0=%s' % (test_tablename, short_name_proposed)
+    bql_query = bql.bql_statement.parseString(bql_string, parseAll=True)
+    _, args, _ = parser.parse_update_short_names(bql_query)
+    result = engine.update_short_names(test_tablename, args['mappings'])
+
+    column_name_output = result['data'][0][0]
+    short_name_output = result['data'][0][1]
+
+    assert(column_name_output == 'c_0')
+    assert(short_name_output == short_name_proposed)
+
+    bql_string = 'describe c_0 for %s' % test_tablename
+    bql_query = bql.bql_statement.parseString(bql_string, parseAll=True)
+    result = engine.describe(test_tablename, bql_query.columnset)
+    short_name_updated = result['data'][0][1]
+
+    assert(short_name_updated == short_name_proposed)
+
+
+def test_update_short_names_multiple():
+    test_tablename, metadata = create_describe_btable()
+
+    short_name_proposed_0 = 'Hamish'
+    short_name_proposed_1 = 'Winter Ninjaturtle'
+
+    bql_string = 'update short names for %s set c_0="%s", c_2="%s"' \
+        % (test_tablename, short_name_proposed_0, short_name_proposed_1)
+    bql_query = bql.bql_statement.parseString(bql_string, parseAll=True)
+    _, args, _ = parser.parse_update_short_names(bql_query)
+    result = engine.update_short_names(test_tablename, args['mappings'])
+
+    column_name_output_0 = result['data'][0][0]
+    short_name_output_0 = result['data'][0][1]
+    column_name_output_1 = result['data'][1][0]
+    short_name_output_1 = result['data'][1][1]
+
+    assert(column_name_output_0 == 'c_0')
+    assert(short_name_output_0 == short_name_proposed_0)
+    assert(column_name_output_1 == 'c_2')
+    assert(short_name_output_1 == short_name_proposed_1)
+
+    bql_string = 'describe c_0, c_2 for %s' % test_tablename
+    bql_query = bql.bql_statement.parseString(bql_string, parseAll=True)
+    result = engine.describe(test_tablename, bql_query.columnset)
+    short_name_updated_0 = result['data'][0][1]
+    short_name_updated_1 = result['data'][1][1]
+
+    assert(short_name_updated_0 == short_name_proposed_0)
+    assert(short_name_updated_1 == short_name_proposed_1)
+
 @notimplemented
 def test_show_diagnostics():
     pass  # TODO
