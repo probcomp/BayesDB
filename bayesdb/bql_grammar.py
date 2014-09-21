@@ -156,6 +156,10 @@ create_btable_keyword.setParseAction(replaceWith('create_btable'))
 upgrade_btable_keyword = Combine(upgrade_keyword + single_white + btable_keyword).setResultsName("statement_id")
 upgrade_btable_keyword.setParseAction(replaceWith('upgrade_btable'))
 
+update_codebook_for_keyword = Combine(update_keyword + single_white + codebook_keyword +
+                                      single_white + for_keyword).setResultsName("statement_id")
+update_codebook_for_keyword.setParseAction(replaceWith("update_codebook"))
+
 update_descriptions_for_keyword = Combine(update_keyword + single_white + description_keyword +
                                 single_white + for_keyword).setResultsName("statement_id")
 update_descriptions_for_keyword.setParseAction(replaceWith("update_descriptions"))
@@ -337,6 +341,10 @@ label_clause = Group(ZeroOrMore(Group(identifier + Suppress(equal_literal) + One
                                 Suppress(comma_literal)) +
                                 Group(identifier + Suppress(equal_literal) + OneOrMore(label))).setResultsName("label_clause")
 
+# UPDATE CODEBOOK FOR <btable> FROM <filename.csv>
+update_codebook_for_function = (update_codebook_for_keyword + btable + Suppress(from_keyword) +
+                                filename)
+
 # UPDATE DESCRIPTIONS FOR <btable> SET <column1 = column-desc-1> [, <column-name-2 = column-desc-2>, ...]
 update_descriptions_for_function = (update_descriptions_for_keyword + btable +
                                     Suppress(set_keyword) + label_clause)
@@ -465,6 +473,7 @@ management_query = (create_btable_function |
                     describe_function |
                     update_descriptions_for_function |
                     update_short_names_for_function |
+                    update_codebook_for_function |
                     show_metadata_function |
                     show_columns_function |
                     cancel_analyze_for_function |

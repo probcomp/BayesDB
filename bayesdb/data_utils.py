@@ -220,15 +220,22 @@ def gen_M_c_from_T(T, cctypes=None, colnames=None, parameters=None, codebook=Non
         metadata_generator = metadata_generator_lookup[cctype]
         metadata = metadata_generator(column_data, params)
         column_metadata.append(metadata)
+
     column_codebook = []
     for colname in colnames:
         if codebook and colname in codebook:
             colname_codebook = codebook[colname]
         else:
-            colname_codebook = None
+            colname_codebook = {
+                'description': 'No description',
+                'short_name': colname,
+                'value_map': None
+            }
         column_codebook.append(colname_codebook)
+
     name_to_idx = dict(zip(colnames, range(num_cols)))
     idx_to_name = dict(zip(map(str, range(num_cols)), colnames))
+
     M_c = dict(
         name_to_idx=name_to_idx,
         idx_to_name=idx_to_name,

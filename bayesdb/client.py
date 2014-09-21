@@ -210,6 +210,19 @@ class Client(object):
         # Do stuff now that you know the user's command, but before passing it to engine.
         if method_name == 'execute_file':
             return dict(message='execute_file', bql_string=open(args_dict['filename'], 'r').read())
+        elif method_name == 'update_codebook':
+            _, codebook_rows = data_utils.read_csv(client_dict['codebook_path'], has_header=True)
+            # TODO: require specific codebook_header values? Or don't require a header,
+            # and if the first value in the header is actually a data column name, assume
+            # the first row is codebook data, not a header.
+
+            # Create a dict indexed by column name
+            codebook = dict()
+            for codebook_row in codebook_rows:
+                codebook[codebook_row[0]] = dict(zip(['short_name', 'description', 'value_map'],
+                                                 codebook_row[1:]))
+
+            args_dict['codebook'] = codebook
         elif (method_name == 'drop_btable') and (not yes):
             # If dropping something, ask for confirmation.
             print("Are you sure you want to permanently delete this btable, and all associated "
@@ -257,7 +270,8 @@ class Client(object):
             args_dict['subsample'] = False
 
             if 'codebook_path' in client_dict:
-                codebook_header, codebook_rows = data_utils.read_csv(client_dict['codebook_path'])
+                _, codebook_rows = data_utils.read_csv(client_dict['codebook_path'],
+                                                       has_header=True)
                 # TODO: require specific codebook_header values? Or don't require a header,
                 # and if the first value in the header is actually a data column name, assume
                 # the first row is codebook data, not a header.

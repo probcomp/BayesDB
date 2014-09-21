@@ -166,6 +166,21 @@ class Parser(object):
 
         return 'describe', dict(tablename=tablename, columnset=columnset), None
 
+    def parse_update_codebook(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('update_codebook', args_dict, client_dict):
+        """
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+
+        codebook_path = None
+        if bql_statement_ast.filename != '':
+            codebook_path = bql_statement_ast.filename
+
+        return 'update_codebook', dict(tablename=tablename), dict(codebook_path=codebook_path)
+
     def parse_update_short_names(self, bql_statement_ast):
         """
         :param bql_statement_ast pyparsing.ParseResults:

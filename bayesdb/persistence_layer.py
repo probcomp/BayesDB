@@ -590,6 +590,68 @@ class PersistenceLayer():
         pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
         f.close()
 
+    def gen_default_codebook(self, M_c_full):
+        """ Generates default metadata.
+
+        Args:
+            M_c_full (dict): M_c_full metadata object
+
+        Returns:
+            list of dict: num_cols length codebook, where each entry is a dict with keys:
+                short_name, description, and valuemap with defaults colname, 'No description', and
+                None, repsectively.
+        """
+        if 'column_codebook' in M_c_full:
+            empty_codebook_entires = False
+            for entry in M_c_full['column_codebook']:
+                if entry is None:
+                    empty_codebook_entires = True
+                    break
+            if not empty_codebook_entires:
+                return
+
+        column_codebook = [None]*len(M_c_full['name_to_idx'])
+
+        for colname, idx in M_c_full['name_to_idx'].iteritems():
+            column_codebook[idx] = {
+                'description': 'No description.',
+                'short_name': colname,
+                'value_map': None
+            }
+
+        return column_codebook
+
+    def update_codebook(self, tablename, codebook):
+        """ Adds a codebook to a btable from a .csv
+
+        Args:
+            tablename (str): Name of the btable
+            codebook (list of dict): The processed codebook. Should come from client because we
+                assume that .csv is stored on the client machine.
+        """
+        metadata_full = self.get_metadata_full(tablename)
+        M_c_full = metadata_full['M_c_full']
+
+        if isinstance(codebook, dict):
+            name_to_idx = M_c_full['name_to_idx']
+            column_codebook = [None]*len(name_to_idx)
+            for colname, idx in name_to_idx.iteritems():
+                if colname in codebook.keys():
+                    column_codebook[idx] = codebook[colname]
+            M_c_full['column_codebook'] = column_codebook
+
+        elif isinstance(codebook, list):
+            if not isinstance(codebook[0], dict):
+                raise TypeError("Error: Invalid codebook.")
+            M_c_full['column_codebook'] = codebook
+
+        self.update_metadata_full(tablename, M_c_full=M_c_full)
+
+    def add_default_codebook_to_metadata(self, tablename):
+        """ Adds the default metadata to tablename"""
+        metadata_full = self.get_metadata_full(tablename)
+        column_codebook = self.gen_default_codebook(metadata_full['M_c_full'])
+        self.update_codebook_from_csv(tablename, column_codebook)
 
     def check_if_table_exists(self, tablename):
         """Return true iff this tablename exists in the persistence layer."""
@@ -615,9 +677,9 @@ class PersistenceLayer():
             for md in M_c_full['column_metadata']:
                 if 'dirichlet' in md['modeltype']:
                     params = {
-                        'cardinality' : len(md['value_to_code'])
+                        'cardinality': len(md['value_to_code'])
                     }
-                elif'vonmises' in  md['modeltype']:
+                elif'vonmises' in md['modeltype']:
                     params = {
                         'min': 0.0,
                         'max': 2.0*3.14159265358979323846264338328

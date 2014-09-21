@@ -288,6 +288,14 @@ def test_update_schema_pyparsing():
     assert update_schema_4.type_clause[0].parameters.min == '0'
     assert update_schema_4.type_clause[0].parameters.max == '10'
 
+def test_update_codebook_pyparsing():
+    bql_string = "UPDATE CODEBOOK FOR test_btable FROM new_codebook.csv"
+    update_codebook = update_codebook_for_function.parseString(bql_string)
+
+    assert update_codebook.statement_id == 'update_codebook'
+    assert update_codebook.btable == 'test_btable'
+    assert update_codebook.filename == 'new_codebook.csv'
+
 def test_describe_pyparsing():
     bql_string = "DESCRIBE col_1 FOR test_btable"
     describe_0 = describe_function.parseString(bql_string)

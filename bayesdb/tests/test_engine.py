@@ -68,16 +68,20 @@ def create_dha(path='data/dha.csv'):
     return test_tablename, create_btable_result
 
 
-def create_describe_btable(data_path='data/describe.csv', codebook_path='data/describe_codebook.csv'):
+def create_describe_btable(data_path='data/describe.csv',
+                           codebook_path='data/describe_codebook.csv', use_codebook=True):
     # TODO: refactor codebook generation to Engine, not Client
     test_tablename = 'describetest' + str(int(time.time() * 1000000)) + \
         str(int(random.random()*10000000))
 
-    codebook_header, codebook_rows = data_utils.read_csv(codebook_path)
-    codebook = dict()
-    for codebook_row in codebook_rows:
-        codebook[codebook_row[0]] = dict(zip(['short_name', 'description', 'value_map'],
-                                         codebook_row[1:]))
+    if use_codebook:
+        codebook_header, codebook_rows = data_utils.read_csv(codebook_path)
+        codebook = dict()
+        for codebook_row in codebook_rows:
+            codebook[codebook_row[0]] = dict(zip(['short_name', 'description', 'value_map'],
+                                             codebook_row[1:]))
+    else:
+        codebook = None
 
     header, rows = data_utils.read_csv(data_path)
     create_btable_result = engine.create_btable(test_tablename, header, rows, key_column=0,
@@ -696,6 +700,9 @@ def test_update_short_names_single():
 
     assert(short_name_updated == short_name_proposed)
 
+@notimplemented
+def test_update_codebook():
+    pass # TODO
 
 def test_update_short_names_multiple():
     test_tablename, metadata = create_describe_btable()

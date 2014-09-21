@@ -252,6 +252,18 @@ class Engine(object):
     ret['message'] = "Updated column labels for %s." % (tablename)
     return ret
 
+  def update_codebook(self, tablename, codebook):
+      """ Adds a codebook to a btable from a .csv
+
+      Args:
+          tablename (str): Name of the btable
+          codebook (list of dict): The processed codebook. Should come from client because we
+              assume that .csv is stored on the client machine.
+      """
+      self.persistence_layer.update_codebook(tablename, codebook)
+
+      return dict(message="Updated codebook for %s." % (tablename))
+
   def update_descriptions(self, tablename, mappings):
     if not self.persistence_layer.check_if_table_exists(tablename):
       raise utils.BayesDBInvalidBtableError(tablename)
@@ -260,6 +272,9 @@ class Engine(object):
       M_c_full = self.persistence_layer.get_metadata_full(tablename)['M_c_full']
     except utils.BayesDBError:
       raise utils.BayesDBError("Error: DESCRIBE found no metadata_full file. This is most likely a result of this btable being created with an old version of BayesDB. Please try recreating the table from the original csv, and loading any models you might have.")
+
+    if 'column_codebook' not in  M_c_full.keys():
+      raise utils.BayesDBError("Error: DESCRIBE found no codebook in metadata_full file. Please add a codebook.")
 
     descriptions_edited = dict()
     for colname, description in mappings.items():
@@ -285,6 +300,9 @@ class Engine(object):
       M_c_full = self.persistence_layer.get_metadata_full(tablename)['M_c_full']
     except utils.BayesDBError:
       raise utils.BayesDBError("Error: DESCRIBE found no metadata_full file. This is most likely a result of this btable being created with an old version of BayesDB. Please try recreating the table from the original csv, and loading any models you might have.")
+
+    if 'column_codebook' not in  M_c_full.keys():
+      raise utils.BayesDBError("Error: DESCRIBE found no codebook in metadata_full file. Please add a codebook.")
 
     short_names_edited = dict()
     for colname, short_name in mappings.items():
@@ -333,12 +351,12 @@ class Engine(object):
           colname_codebook = M_c_full['column_codebook'][colname_idx_M_c]
           column_metadata = M_c_full['column_metadata'][colname_idx_M_c]
       except IndexError:
-          raise utils.BayesDBError("Error: DESCIBE cannot locate codebook in metatdata. Please add "
-                                   "a codebook to your table.")
+          raise utils.BayesDBError("Error: DESCRIBE cannot locate codebook in metatdata. Please add "
+                                    "a codebook to your table.")
 
       if colname_codebook is None:
-          raise utils.BayesDBError("Error: DESCIBE cannot locate codebook in metatdata. Please add "
-                                   "a codebook to your table.")
+          raise utils.BayesDBError("Error: DESCRIBE cannot locate codebook in metatdata. Please add "
+                                    "a codebook to your table.")
 
       if colname_codebook['description']:
           short_name = colname_codebook['short_name']
@@ -584,6 +602,15 @@ class Engine(object):
         print "Upgraded %s: converted column types 'multinomial' to 'categorical' and 'continuous' to 'numerical'" % tablename
 
     self.persistence_layer.btable_check_index.append(tablename)
+
+    # 5. Create a blank codebook, if necessary
+    if 'column_codebook' in metadata_full['M_c_full'].keys():
+        if metadata_full['M_c_full']['column_codebook'] is None:
+            self.persistence_layer.add_default_codebook_to_metadata(tablename)
+            print("Created empty codebook for %s." % (tablename))
+    elif 'column_codebook' not in metadata_full.keys():
+        self.persistence_layer.add_default_codebook_to_metadata(tablename)
+        print("Createda empty codebook for %s." % (tablename))
 
   def show_schema(self, tablename):
     if not self.persistence_layer.check_if_table_exists(tablename):
