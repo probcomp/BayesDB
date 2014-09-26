@@ -1,0 +1,5 @@
+h1,h2,h3,h4
+c_0,"column zero","description for column zero","{'Gilbert': 0, 'Larry': 1, 'Richard': 2, 'Whitey': 3,'Benjie': 4,'Harry': 5}"
+c_1,"column one","description for column one",NaN
+c_2,"column two","description for column two",NaN
+c_3,"column three","description for column three",NaN

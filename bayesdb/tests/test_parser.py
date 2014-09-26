@@ -1,4 +1,4 @@
-7#
+#
 #   Copyright (c) 2010-2014, MIT Probabilistic Computing Project
 #
 #   Lead Developers: Jay Baxter and Dan Lovell
@@ -35,57 +35,57 @@ parser = Parser()
 
 test_M_c = {'idx_to_name': {'1': 'b', '0': 'a', '3': 'd', '2': 'c'},
             'column_metadata': [
-                    {'code_to_value': {'a': 0, '1': 1, '2': 2, '4': 3, '6': 4}, 
-                     'value_to_code': {0: 'a', 1: '1', 2: '2', 3: '4', 4: '6'}, 
-                     'modeltype': 'symmetric_dirichlet_discrete'}, 
-                    {'code_to_value': {}, 'value_to_code': {}, 
-                     'modeltype': 'normal_inverse_gamma'}, 
-                    {'code_to_value': {'we': 0, 'e': 1, 'w': 2, 'sd': 3}, 
-                     'value_to_code': {0: 'we', 1: 'e', 2: 'w', 3: 'sd'}, 
-                     'modeltype': 'symmetric_dirichlet_discrete'}, 
-                    {'code_to_value': {'3': 1, '2': 2, '5': 0, '4': 3}, 
-                     'value_to_code': {0: '5', 1: '3', 2: '2', 3: '4'}, 
-                     'modeltype': 'symmetric_dirichlet_discrete'}], 
+                    {'code_to_value': {'a': 0, '1': 1, '2': 2, '4': 3, '6': 4},
+                     'value_to_code': {0: 'a', 1: '1', 2: '2', 3: '4', 4: '6'},
+                     'modeltype': 'symmetric_dirichlet_discrete'},
+                    {'code_to_value': {}, 'value_to_code': {},
+                     'modeltype': 'normal_inverse_gamma'},
+                    {'code_to_value': {'we': 0, 'e': 1, 'w': 2, 'sd': 3},
+                     'value_to_code': {0: 'we', 1: 'e', 2: 'w', 3: 'sd'},
+                     'modeltype': 'symmetric_dirichlet_discrete'},
+                    {'code_to_value': {'3': 1, '2': 2, '5': 0, '4': 3},
+                     'value_to_code': {0: '5', 1: '3', 2: '2', 3: '4'},
+                     'modeltype': 'symmetric_dirichlet_discrete'}],
             'name_to_idx': {'a': 0, 'c': 2, 'b': 1, 'd': 3}}
 
 test_M_c_full = {'idx_to_name': {'1': 'b', '0': 'a', '3': 'd', '2': 'c', '4': 'key'},
             'column_metadata': [
-                    {'code_to_value': {'a': 0, '1': 1, '2': 2, '4': 3, '6': 4}, 
-                     'value_to_code': {0: 'a', 1: '1', 2: '2', 3: '4', 4: '6'}, 
-                     'modeltype': 'symmetric_dirichlet_discrete'}, 
-                    {'code_to_value': {}, 'value_to_code': {}, 
-                     'modeltype': 'normal_inverse_gamma'}, 
-                    {'code_to_value': {'we': 0, 'e': 1, 'w': 2, 'sd': 3}, 
-                     'value_to_code': {0: 'we', 1: 'e', 2: 'w', 3: 'sd'}, 
-                     'modeltype': 'symmetric_dirichlet_discrete'}, 
-                    {'code_to_value': {'3': 1, '2': 2, '5': 0, '4': 3}, 
-                     'value_to_code': {0: '5', 1: '3', 2: '2', 3: '4'}, 
+                    {'code_to_value': {'a': 0, '1': 1, '2': 2, '4': 3, '6': 4},
+                     'value_to_code': {0: 'a', 1: '1', 2: '2', 3: '4', 4: '6'},
+                     'modeltype': 'symmetric_dirichlet_discrete'},
+                    {'code_to_value': {}, 'value_to_code': {},
+                     'modeltype': 'normal_inverse_gamma'},
+                    {'code_to_value': {'we': 0, 'e': 1, 'w': 2, 'sd': 3},
+                     'value_to_code': {0: 'we', 1: 'e', 2: 'w', 3: 'sd'},
+                     'modeltype': 'symmetric_dirichlet_discrete'},
+                    {'code_to_value': {'3': 1, '2': 2, '5': 0, '4': 3},
+                     'value_to_code': {0: '5', 1: '3', 2: '2', 3: '4'},
                      'modeltype': 'symmetric_dirichlet_discrete'},
                     {'code_to_value': {'0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8},
-                     'value_to_code': {0: '0', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8'}, 
-                     'modeltype': 'ignore'}], 
+                     'value_to_code': {0: '0', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8'},
+                     'modeltype': 'ignore'}],
             'name_to_idx': {'a': 0, 'c': 2, 'b': 1, 'd': 3, 'key': 4}}
 
 
-test_T = [[1.0, 1.0, 0.0, numpy.nan], 
-          [2.0, 2.0, 0.0, 2.0], 
-          [0.0, 3.0, 0.0, 3.0], 
-          [3.0, 3.0, 2.0, numpy.nan], 
-          [3.0, 4.0, 2.0, 0.0], 
-          [4.0, 5.0, 1.0, numpy.nan], 
-          [numpy.nan, 6.0, 2.0, 1.0], 
-          [numpy.nan, 7.0, 3.0, 1.0], 
+test_T = [[1.0, 1.0, 0.0, numpy.nan],
+          [2.0, 2.0, 0.0, 2.0],
+          [0.0, 3.0, 0.0, 3.0],
+          [3.0, 3.0, 2.0, numpy.nan],
+          [3.0, 4.0, 2.0, 0.0],
+          [4.0, 5.0, 1.0, numpy.nan],
+          [numpy.nan, 6.0, 2.0, 1.0],
+          [numpy.nan, 7.0, 3.0, 1.0],
           [numpy.nan, 7.0, 3.0, 1.0]]
 
-test_T_full = [[1.0, 1.0, 0.0, numpy.nan, 0], 
-          [2.0, 2.0, 0.0, 2.0, 1], 
-          [0.0, 3.0, 0.0, 3.0, 2], 
-          [3.0, 3.0, 2.0, numpy.nan, 3], 
-          [3.0, 4.0, 2.0, 0.0, 4], 
-          [4.0, 5.0, 1.0, numpy.nan, 5], 
-          [numpy.nan, 6.0, 2.0, 1.0, 6], 
-          [numpy.nan, 7.0, 3.0, 1.0, 7], 
-          [numpy.nan, 7.0, 3.0, 1.0, 8]]          
+test_T_full = [[1.0, 1.0, 0.0, numpy.nan, 0],
+          [2.0, 2.0, 0.0, 2.0, 1],
+          [0.0, 3.0, 0.0, 3.0, 2],
+          [3.0, 3.0, 2.0, numpy.nan, 3],
+          [3.0, 4.0, 2.0, 0.0, 4],
+          [4.0, 5.0, 1.0, numpy.nan, 5],
+          [numpy.nan, 6.0, 2.0, 1.0, 6],
+          [numpy.nan, 7.0, 3.0, 1.0, 7],
+          [numpy.nan, 7.0, 3.0, 1.0, 8]]
 
 def test_keyword_plurality_ambiguity_pyparsing():
     model = model_keyword.parseString("model",parseAll=True)
@@ -177,7 +177,7 @@ def test_valid_values_names_pyparsing():
         'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+-./:<=>?@[\]^_`{|}~',
         '"c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\\"#$%&\'()*+-./:<=>?@[\]^_`{|}~"',
         "'d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\\'()*+-./:<=>?@[\]^_`{|}~'",
-        "'numbers 0'", 
+        "'numbers 0'",
         "'k skj s'",
         ]
     valid_values_results=[
@@ -190,7 +190,7 @@ def test_valid_values_names_pyparsing():
         'b0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+-./:<=>?@[\]^_`{|}~',
         "c0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+-./:<=>?@[\]^_`{|}~",
         "d0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+-./:<=>?@[\]^_`{|}~",
-        'numbers 0', 
+        'numbers 0',
         'k skj s',
         ]
 
@@ -266,18 +266,88 @@ def test_simple_functions():
     assert help_function.parseString("HELp",parseAll=True).statement_id == 'help'
 
 def test_update_schema_pyparsing():
-    update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = Categorical,col.2=numerical , col_3  =  ignore",parseAll=True)
+    update_schema_1 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_1 = Categorical,col_2=numerical , col_3  =  ignore",parseAll=True)
     assert update_schema_1.statement_id == 'update_schema'
     assert update_schema_1.btable == 'test_btable'
     assert update_schema_1.type_clause[0][0] == 'col_1'
     assert update_schema_1.type_clause[0][1] == 'categorical'
-    assert update_schema_1.type_clause[1][0] == 'col.2'
+    assert update_schema_1.type_clause[1][0] == 'col_2'
     assert update_schema_1.type_clause[1][1] == 'numerical'
     assert update_schema_1.type_clause[2][0] == 'col_3'
     assert update_schema_1.type_clause[2][1] == 'ignore'
-    update_schema_2 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btablE SET col_1 = key",parseAll=True)
+    update_schema_2 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_1 = key",parseAll=True)
     assert update_schema_2.type_clause[0][0] == 'col_1'
     assert update_schema_2.type_clause[0][1] == 'key'
+    update_schema_3 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_1 = categorical(15)", parseAll=True)
+    assert update_schema_3.type_clause[0][0] == 'col_1'
+    assert update_schema_3.type_clause[0][1] == 'categorical'
+    assert update_schema_3.type_clause[0].parameters.cardinality == '15'
+    update_schema_4 = update_schema_for_function.parseString("UPDATE SCHEMA FOR test_btable SET col_2 = cyclic(0, 10)", parseAll=True)
+    assert update_schema_4.type_clause[0][0] == 'col_2'
+    assert update_schema_4.type_clause[0][1] == 'cyclic'
+    assert update_schema_4.type_clause[0].parameters.min == '0'
+    assert update_schema_4.type_clause[0].parameters.max == '10'
+
+def test_update_codebook_pyparsing():
+    bql_string = "UPDATE CODEBOOK FOR test_btable FROM new_codebook.csv"
+    update_codebook = update_codebook_for_function.parseString(bql_string)
+
+    assert update_codebook.statement_id == 'update_codebook'
+    assert update_codebook.btable == 'test_btable'
+    assert update_codebook.filename == 'new_codebook.csv'
+
+def test_describe_pyparsing():
+    bql_string = "DESCRIBE col_1 FOR test_btable"
+    describe_0 = describe_function.parseString(bql_string)
+    bql_string = "DESCRIBE col_1, col_2 FOR test_btable"
+    describe_1 = describe_function.parseString(bql_string)
+
+    assert describe_0.statement_id == 'describe'
+    assert describe_0.btable == 'test_btable'
+    assert 'col_1' in describe_0.columnset.asList()
+
+    assert describe_1.statement_id == 'describe'
+    assert describe_1.btable == 'test_btable'
+    assert 'col_1' in describe_1.columnset.asList()
+    assert 'col_2' in describe_1.columnset.asList()
+
+def test_update_descriptions_pyparsing():
+    bql_string = 'UPDATE DESCRIPTION FOR test_btable SET col_1="Hamish the cat"'
+    updated_description_0 = update_descriptions_for_function.parseString(bql_string)
+
+    assert updated_description_0.statement_id == "update_descriptions"
+    assert updated_description_0.btable == "test_btable"
+    assert updated_description_0.label_clause[0][0] == "col_1"
+    assert updated_description_0.label_clause[0][1] == "Hamish the cat"
+
+    bql_string = 'UPDATE DESCRIPTIONS FOR test_btable SET col_1="Hamish the cat", col_2="trevor"'
+    updated_description_1 = update_descriptions_for_function.parseString(bql_string)
+
+    assert updated_description_1.statement_id == "update_descriptions"
+    assert updated_description_1.btable == "test_btable"
+    assert updated_description_1.label_clause[0][0] == "col_1"
+    assert updated_description_1.label_clause[0][1] == "Hamish the cat"
+    assert updated_description_1.label_clause[1][0] == "col_2"
+    assert updated_description_1.label_clause[1][1] == "trevor"
+
+def test_update_short_names_pyparsing():
+    bql_string = 'UPDATE SHORT NAME FOR test_btable SET col_1="Hamish"'
+    updated_short_names_0 = update_short_names_for_function.parseString(bql_string)
+
+    assert updated_short_names_0.statement_id == "update_short_names"
+    assert updated_short_names_0.btable == "test_btable"
+    assert updated_short_names_0.label_clause[0][0] == "col_1"
+    assert updated_short_names_0.label_clause[0][1] == "Hamish"
+
+    bql_string = 'UPDATE SHORT NAMES FOR test_btable SET col_1="Hamish", col_2="trevor"'
+    updated_short_names_1 = update_short_names_for_function.parseString(bql_string)
+
+    assert updated_short_names_1.statement_id == "update_short_names"
+    assert updated_short_names_1.btable == "test_btable"
+    assert updated_short_names_1.label_clause[0][0] == "col_1"
+    assert updated_short_names_1.label_clause[0][1] == "Hamish"
+    assert updated_short_names_1.label_clause[1][0] == "col_2"
+    assert updated_short_names_1.label_clause[1][1] == "trevor"
 
 def test_create_btable_pyparsing():
     create_btable_1 = create_btable_function.parseString("CREATE BTABLE test.btable FROM '~/filenam e.csv'", parseAll=True)
@@ -357,23 +427,23 @@ def test_row_clause_pyparsing():
     assert row_2.column_value == '1'
     assert row_3.column_value == 'value'
     assert row_4.column_value == 'value'
-    
+
 def test_row_functions_pyparsing():
-    similarity_1 = similarity_to_function.parseString("SIMILARITY TO 1", 
+    similarity_1 = similarity_to_function.parseString("SIMILARITY TO 1",
                                                       parseAll=True)
-    similarity_2 = similarity_to_function.parseString("SIMILARITY TO col_2 = 1", 
+    similarity_2 = similarity_to_function.parseString("SIMILARITY TO col_2 = 1",
                                                       parseAll=True)
-    similarity_3 = similarity_to_function.parseString("SIMILARITY TO col_2 = 'a'", 
+    similarity_3 = similarity_to_function.parseString("SIMILARITY TO col_2 = 'a'",
                                                       parseAll=True)
-    similarity_4 = similarity_to_function.parseString("SIMILARITY TO col_2 = a", 
+    similarity_4 = similarity_to_function.parseString("SIMILARITY TO col_2 = a",
                                                       parseAll=True)
-    similarity_5 = similarity_to_function.parseString("SIMILARITY TO 1 WITH RESPECT TO col_1", 
+    similarity_5 = similarity_to_function.parseString("SIMILARITY TO 1 WITH RESPECT TO col_1",
                                                       parseAll=True)
-    similarity_6 = similarity_to_function.parseString("SIMILARITY TO col_2 = 1 WITH RESPECT TO col_1,col_2", 
+    similarity_6 = similarity_to_function.parseString("SIMILARITY TO col_2 = 1 WITH RESPECT TO col_1,col_2",
                                                       parseAll=True)
-    similarity_7 = similarity_to_function.parseString("SIMILARITY TO col_2 = 'a' WITH RESPECT TO col_1 , col_3", 
+    similarity_7 = similarity_to_function.parseString("SIMILARITY TO col_2 = 'a' WITH RESPECT TO col_1 , col_3",
                                                       parseAll=True)
-    similarity_8 = similarity_to_function.parseString("SIMILARITY TO col_2 = a WITH RESPECT TO col_1", 
+    similarity_8 = similarity_to_function.parseString("SIMILARITY TO col_2 = a WITH RESPECT TO col_1",
                                                       parseAll=True)
     assert similarity_1.function.function_id == 'similarity'
     assert similarity_1.function.row_id == '1'
@@ -419,7 +489,7 @@ def test_column_functions_pyparsing():
     assert correlation_1.function.with_column == 'column_1'
     assert correlation_2.function.with_column == 'column_1'
     assert correlation_2.function.of_column == 'column_2'
-    
+
 
 def test_probability_of_function_pyparsing():
     probability_of_1 = probability_of_function.parseString("PROBABILITY OF col_1 = 1",parseAll=True)
@@ -465,7 +535,7 @@ def test_order_by_clause_pyparsing():
                                              parseAll=True)
     assert order_by_6.order_by[0].function.function_id == 'predictive probability'
     assert order_by_6.order_by[0].function.column == 'column_1'
-    
+
     order_by_7 = order_by_clause.parseString("ORDER BY PREDICTIVE PROBABILITY OF column_1, column_1",
                                              parseAll=True)
     assert order_by_7.order_by[1].function.column == 'column_1'
@@ -563,7 +633,7 @@ def test_whereclause_pyparsing():
     assert parsed_12.where_conditions[0].function.column == 'column_1'
     assert parsed_12.where_conditions[0].function.column_value == 'a'
     assert parsed_12.where_conditions[0].operation == '>'
-    assert parsed_12.where_conditions[0].value == '.5'    
+    assert parsed_12.where_conditions[0].value == '.5'
     assert parsed_12.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
     whereclause_13 = "WHERE SIMILARITY TO column_1 = 1.2 WITH RESPECT TO column_2 > .5"
     parsed_13 = where_clause.parseString(whereclause_13,parseAll=True)
@@ -571,7 +641,7 @@ def test_whereclause_pyparsing():
     assert parsed_13.where_conditions[0].function.column == 'column_1'
     assert parsed_13.where_conditions[0].function.column_value == '1.2'
     assert parsed_13.where_conditions[0].operation == '>'
-    assert parsed_13.where_conditions[0].value == '.5'    
+    assert parsed_13.where_conditions[0].value == '.5'
     assert parsed_13.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
     whereclause_14 = "WHERE SIMILARITY TO column_1 = a WITH RESPECT TO column_2 > .5"
     parsed_14 = where_clause.parseString(whereclause_14,parseAll=True)
@@ -579,7 +649,7 @@ def test_whereclause_pyparsing():
     assert parsed_14.where_conditions[0].function.column == 'column_1'
     assert parsed_14.where_conditions[0].function.column_value == 'a'
     assert parsed_14.where_conditions[0].operation == '>'
-    assert parsed_14.where_conditions[0].value == '.5'    
+    assert parsed_14.where_conditions[0].value == '.5'
     assert parsed_14.where_conditions[0].function.with_respect_to.column_list[0] == 'column_2'
     # With Confidence
     whereclause_15 = "WHERE TYPICALITY > .8 CONF .5"
@@ -656,7 +726,7 @@ def test_basic_select_pyparsing():
     assert select_4_parse.order_by[0].function.function_id == 'typicality'
     assert select_4_parse.limit == '10'
     assert select_4_parse.filename == '~/test.txt'
-    
+
 def test_select_functions_pyparsing():
     query_1 = "SELECT TYPICALITY FROM table_1"
     query_2 = "SELECT TYPICALITY OF column_1 FROM table_1"
@@ -686,7 +756,7 @@ def test_select_functions_pyparsing():
     assert select_ast_6.statement_id == 'select'
     assert select_ast_7.statement_id == 'select'
     assert select_ast_8.statement_id == 'select'
-    assert select_ast_9.statement_id == 'select'    
+    assert select_ast_9.statement_id == 'select'
     assert select_ast_1.functions[0].function_id == 'typicality'
     assert select_ast_2.functions[0].function_id == 'typicality'
     assert select_ast_3.functions[0].function_id == 'predictive probability'
@@ -751,7 +821,7 @@ def test_infer_pyparsing():
     assert infer_ast_6.statement_id == 'infer'
     assert infer_ast_7.statement_id == 'infer'
     assert infer_ast_8.statement_id == 'infer'
-    assert infer_ast_9.statement_id == 'infer'    
+    assert infer_ast_9.statement_id == 'infer'
     assert infer_ast_1.functions[0].function_id == 'typicality'
     assert infer_ast_2.functions[0].function_id == 'typicality'
     assert infer_ast_3.functions[0].function_id == 'predictive probability'
@@ -794,6 +864,10 @@ def test_simulate_pyparsing():
     simulate_ast = query.parseString(query_2,parseAll=True)
     assert simulate_ast.functions[0].column_id == 'col1'
     assert simulate_ast.functions[1].column_id == 'col2'
+
+    query_3 = "SIMULATE col1, col2 FROM table_1"
+    simulate_ast = query.parseString(query_3, parseAll=True)
+
 
 def test_estimate_columns_from_pyparsing():
     query_1 = "ESTIMATE COLUMNS FROM table_1 WHERE col_1 = 4 ORDER BY TYPICALITY LIMIT 10 AS col_list_1"
@@ -887,8 +961,8 @@ def test_master_query_for_parse_errors():
                   "SELECT DEPENDENCE PROBABILITY WITH column_1 FROM table_1",
                   "SELECT MUTUAL INFORMATION OF column_1 WITH column_2 FROM table_1",
                   "SELECT CORRELATION OF column_1 WITH column_2 FROM table_1",
-                  "SELECT TYPICALITY, PREDICTIVE PROBABILITY OF column_1 FROM table_1", 
-                  "SELECT SIMILARITY TO 0 WITH RESPECT TO column_1, col2 FROM table_1", 
+                  "SELECT TYPICALITY, PREDICTIVE PROBABILITY OF column_1 FROM table_1",
+                  "SELECT SIMILARITY TO 0 WITH RESPECT TO column_1, col2 FROM table_1",
                   "SELECT SIMILARITY TO a = 1 , PROBABILITY OF a = 1 FROM table_1"]
 #SELECT PREDICTIVE PROBABILITY OF a, MUTUAL INFORMATION OF a WITH b, CORRELATION OF a WITH b, DEPENDENCE PROBABILITY OF a WITH b, SIMILARITY TO 0, SIMILARITY TO a = 1, PROBABILITY OF a = 1 FROM table_1
     for query in query_list:
@@ -936,16 +1010,16 @@ def test_analyze():
 
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t for 7 minutes'))
     assert method == 'analyze'
-    
+
     assert args == dict(tablename='t', model_indices=None, iterations=None, seconds=7*60, ct_kernel=0, background=True)
-    
+
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 minutes'))
     assert method == 'analyze'
     assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7*60, ct_kernel=0, background=True)
 
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('analyze t models 2-6 for 7 minutes with mh kernel'))
     assert method == 'analyze'
-    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7*60, ct_kernel=1, background=True)    
+    assert args == dict(tablename='t', model_indices=range(2,7), iterations=None, seconds=7*60, ct_kernel=1, background=True)
 
 def test_load_models():
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('load models fn into t'))
@@ -963,7 +1037,7 @@ def test_parse_functions():
     query_1 = "SELECT PREDICTIVE PROBABILITY OF a, MUTUAL INFORMATION OF a WITH b, CORRELATION OF a WITH b, DEPENDENCE PROBABILITY OF a WITH b, SIMILARITY TO 0, SIMILARITY TO a = 1 , PROBABILITY OF a = 1 , probability of b = 1 , TYPICALITY of a, typicality , a , * FROM table_1"
     ast_1 = bql_statement.parseString(query_1, parseAll=True)
     function_groups = ast_1.functions
-    
+
     queries, query_cols = parser.parse_functions(function_groups, M_c = test_M_c, M_c_full = test_M_c_full, T=test_T, T_full = test_T_full)
     assert queries[0] == (functions._predictive_probability, 0, False)
     assert queries[1] == (functions._mutual_information, (0,1), True)
@@ -978,7 +1052,7 @@ def test_parse_functions():
     assert queries[10] == (functions._column, (0, None), False)
     assert queries[11] == (functions._column, (0, None), False)
     assert queries[12] == (functions._column, (1, None), False)
-    
+
 def test_select():
     ##TODO test client_dict
     tablename = 't'
@@ -1015,7 +1089,7 @@ def test_select():
     assert args['plot'] == d['plot']
     assert args['modelids'] == d['modelids']
     assert args['summarize'] == d['summarize']
-    
+
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('select a, b, a_b from t'))
     d = dict(tablename=tablename, functions=None, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
@@ -1154,7 +1228,7 @@ def test_infer(): ##TODO
     assert args['plot'] == d['plot']
     assert args['modelids'] == d['modelids']
     assert args['summarize'] == d['summarize']
-    
+
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('infer a, b, a_b from t'))
     d = dict(tablename=tablename, functions=None, whereclause=whereclause,
              limit=limit, order_by=order_by, plot=plot, modelids=None, summarize=False)
@@ -1237,7 +1311,7 @@ def test_infer(): ##TODO
     assert args['modelids'] == d['modelids']
     assert args['summarize'] == d['summarize']
 
-def test_simulate(): ##TODO 
+def test_simulate(): ##TODO
     method, args, client_dict = parser.parse_single_statement(bql_statement.parseString('simulate * from t times 10'))
     assert method == 'simulate'
     assert args['tablename'] == 't'
@@ -1320,6 +1394,7 @@ def test_disallowed_queries():
                "simulate a conf .4, b from test times 10",
                "infer * from test times 10",
                "infer typicality from test",
+               "infer * from test with confidence 1.5",
                "simulate typicality from test",
                "infer * from test save clusters with threshold .5 as test.csv",
                "infer * from test given a=5",
@@ -1327,11 +1402,12 @@ def test_disallowed_queries():
                "simulate * from test save clusters with threshold .5 as test.csv",
                "simulate * from test with confidence .4",
                "simulate * from test with 4 samples",
+               "simulate * from test",
                "estimate columns from test with confidence .4",
                "estimate columns from test given a=4",
                "estimate columns from test times 10",
                "summarize estimate columns from test",
-               "plot estimate columns from test", 
+               "plot estimate columns from test",
                "estimate columns from test save clusters with threshold .5 as test.csv",
                "estimate pairwise correlation from test where a = b",
                "estimate pairwise correlation from test times 10",
@@ -1341,16 +1417,29 @@ def test_disallowed_queries():
                "estimate pairwise row similarity from test times 10",
                "estimate pairwise row similarity from test given a = 5",
                "estimate pairwise row similarity from test with confidence .2",
-               "estimate pairwise row similarity from test where a = b",
+               "estimate pairwise row similarity from test where a = b"
                ]
-
-    for query_string in strings:
-        bql_statement.parseString(query_string,parseAll=True)
 
     for query_string in strings:
         ast = bql_statement.parseString(query_string,parseAll=True)
         with pytest.raises(AssertionError):
             parser.parse_single_statement(ast)
+
+def test_old_grammar_fails():
+    """
+    All of these queries are formerly valid but should not pass the current grammar.
+    """
+
+    strings = [
+        'update schema for test set a = continuous',
+        'update schema for test set a = multinomial',
+        # Cyclic is invalid because it should be followed by (min, max) parameters.
+        'update schema for test set a = cyclic'
+    ]
+
+    for query_string in strings:
+        with pytest.raises(ParseException):
+            ast = bql_statement.parseString(query_string, parseAll=True)
 
 def test_label_and_metadata():
     # LABEL COLUMNS FOR <btable> SET <column1 = column-label-1> [, <column-name-2 = column-label-2>, ...]

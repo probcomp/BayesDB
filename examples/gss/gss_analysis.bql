@@ -21,7 +21,7 @@
 -- Create btable
 DROP BTABLE gss_demo;
 CREATE BTABLE gss_demo FROM gss.csv;
-LOAD MODELS gss_models.pkl into gss_demo;
+LOAD MODELS gss_models.pkl.gz into gss_demo;
 
 -- The jist of this analysis is to illustrate how we might explore a dataset with many columns
 

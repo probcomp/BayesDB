@@ -45,7 +45,7 @@ class BayesDBParseError(BayesDBError):
             self.msg = msg
         else:
             self.msg = "BayesDB parsing error. Try using 'help' to see the help menu for BQL syntax."
-    
+
     def __str__(self):
         return self.msg
 
@@ -55,7 +55,7 @@ class BayesDBUniqueValueError(BayesDBError):
             self.msg = msg
         else:
             self.msg = "BayesDB unique value error. More than one row has this value."
-    
+
     def __str__(self):
         return self.msg
 
@@ -97,13 +97,13 @@ class BayesDBRowListDoesNotExistError(BayesDBError):
 
     def __str__(self):
         return "Row list %s does not exist in btable %s." % (self.row_list, self.tablename)
-        
+
 def is_int(s):
     try:
         int(s)
         return True
     except ValueError:
-        return False    
+        return False
 
 def is_float(s):
     try:
@@ -117,7 +117,7 @@ def value_string_to_num(value_string):
         value = int(value_string)
     elif is_float(value_string) == True:
         value = float(value_string)
-    else: 
+    else:
         raise BayesDBParseError("Number expected for value: %s" % value_string)
     return value
 
@@ -125,10 +125,10 @@ def string_to_column_type(value_string, column, M_c):
     """
     column is the string of the column name
     Checks the type of the column in question based on M_c
-    If continuous, converts the value from string to int or float
+    If numerical, converts the value from string to int or float
     """
     value = value_string
-    if get_cctype_from_M_c(M_c, column) == 'continuous':
+    if get_cctype_from_M_c(M_c, column) in ['numerical', 'cyclic']:
         if is_int(value_string) == True:
             value = int(value)
         elif is_float(value_string) == True:
@@ -150,7 +150,7 @@ def row_id_from_col_value(value, column, M_c, T):
         if row_values[col_idx] == value:
             if target_row_id == None:
                 target_row_id = row_id
-            else: 
+            else:
                 raise BayesDBUniqueValueError("Invalid Query: column '%s' has more than one row with value '%s'." %(column, str(value)))
     return target_row_id
 
@@ -189,7 +189,7 @@ def get_column_std(column_component_suffstats_i):
     col_var = exp_x_squared - (exp_x ** 2)
     col_std = col_var ** .5
     return col_std
-    
+
 
 def get_column_component_suffstats_i(M_c, X_L, col_idx):
     column_name = M_c['idx_to_name'][str(col_idx)]
@@ -200,11 +200,11 @@ def get_column_component_suffstats_i(M_c, X_L, col_idx):
         view_state_i['column_component_suffstats'][local_col_idx]
     return column_component_suffstats_i
 
-def continuous_imputation(samples):
+def numerical_imputation(samples):
     imputed = numpy.median(samples)
     return imputed
 
-def multinomial_imputation(samples):
+def categorical_imputation(samples):
     counter = Counter(samples)
     max_tuple = counter.most_common(1)[0]
     max_count = max_tuple[1]
@@ -220,35 +220,35 @@ def multinomial_imputation(samples):
         imputed = values[draw]
     return imputed
 
-def multinomial_imputation_confidence(samples, imputed, column_hypers_i):
+def categorical_imputation_confidence(samples, imputed, column_hypers_i):
     max_count = sum(numpy.array(samples) == imputed)
     confidence = float(max_count) / len(samples)
     return confidence
 
-def get_continuous_mass_within_delta(samples, center, delta):
+def get_numerical_mass_within_delta(samples, center, delta):
     num_samples = len(samples)
     num_within_delta = sum(numpy.abs(samples - center) < delta)
     mass_fraction = float(num_within_delta) / num_samples
     return mass_fraction
 
-def continuous_imputation_confidence(samples, imputed,
+def numerical_imputation_confidence(samples, imputed,
                                      column_component_suffstats_i):
     col_std = get_column_std(column_component_suffstats_i)
     delta = .1 * col_std
-    confidence = get_continuous_mass_within_delta(samples, imputed, delta)
+    confidence = get_numerical_mass_within_delta(samples, imputed, delta)
     return confidence
-    
+
 
 modeltype_to_imputation_function = {
-    'normal_inverse_gamma': continuous_imputation,
-    'symmetric_dirichlet_discrete': multinomial_imputation,
+    'normal_inverse_gamma': numerical_imputation,
+    'symmetric_dirichlet_discrete': categorical_imputation,
     }
 
 modeltype_to_imputation_confidence_function = {
-    'normal_inverse_gamma': continuous_imputation_confidence,
-    'symmetric_dirichlet_discrete': multinomial_imputation_confidence,
+    'normal_inverse_gamma': numerical_imputation_confidence,
+    'symmetric_dirichlet_discrete': categorical_imputation_confidence,
     }
-    
+
 
 def check_for_duplicate_columns(column_names):
     column_names_set = set()
@@ -256,7 +256,7 @@ def check_for_duplicate_columns(column_names):
         if name in column_names_set:
             raise BayesDBError("Error: Column list has duplicate entries of column: %s" % name)
         column_names_set.add(name)
-    
+
 
 def get_all_column_names_in_original_order(M_c):
     colname_to_idx_dict = M_c['name_to_idx']
@@ -267,10 +267,15 @@ def get_cctype_from_M_c(M_c, column):
     if column in M_c['name_to_idx'].keys():
         column_index = M_c['name_to_idx'][column]
         modeltype = M_c['column_metadata'][column_index]['modeltype']
-        cctype = 'continuous' if modeltype == 'normal_inverse_gamma' else 'multinomial'
+        if modeltype == 'normal_inverse_gamma':
+            cctype = 'numerical'
+        elif modeltype == 'vonmises':
+            cctype = 'cyclic'
+        else:
+            cctype = 'categorical'
     else:
-        # If the column name wasn't found in metadata, it's a function, so the output will be continuous
-        cctype = 'continuous'
+        # If the column name wasn't found in metadata, it's a function, so the output will be numerical
+        cctype = 'numerical'
     return cctype
 
 # The 'inplace' argument to df.drop() was added to pandas in a version (which one??) that many people may
@@ -341,7 +346,7 @@ def freq_table(data, columns, M_c, remove_key=True):
         if remove_key:
             df_drop(df, [columns[0]], axis=1)
 
-        column = df.columns[0]        
+        column = df.columns[0]
         summary_data = freqs(df[column])
         columns = [column, 'frequency', 'probability']
         data = summary_data.to_records(index=False)
@@ -361,7 +366,7 @@ def histogram_table(data, columns, M_c, remove_key=True):
             df_drop(df, [columns[0]], axis=1)
 
         column = df.columns[0]
-        
+
         # Use Sturges formula to calculate the number of bins to use.
         n_bins = math.ceil(math.log(df.shape[0], 2) + 1)
 
@@ -397,7 +402,7 @@ def generate_pairwise_matrix(col_function_name, X_L_list, X_D_list, M_c, T, tabl
     assert len(X_L_list) == len(X_D_list)
     if col_function_name == 'mutual information':
       if len(X_L_list) == 0:
-        return {'message': 'You must initialize models before computing mutual information.'}    
+        return {'message': 'You must initialize models before computing mutual information.'}
       col_function = functions._mutual_information
     elif col_function_name == 'dependence probability':
       if len(X_L_list) == 0:
@@ -452,7 +457,7 @@ def summarize_table(data, columns, M_c, remove_key=True):
         # Past versions used n=5 for 5 most frequent values, but now we have FREQ SELECT for freq tables.
         summary_freqs = df.apply(summarize_freqs, n=1)
 
-        # Attach continuous and discrete summaries along row axis (unaligned values will be assigned NaN)
+        # Attach numerical and discrete summaries along row axis (unaligned values will be assigned NaN)
         summary_data = pandas.concat([cctypes, summary_describe, summary_freqs], axis=0)
 
         # Reorder rows: count, unique, mean, std, min, 25%, 50%, 75%, max, modes, prob_modes
@@ -464,9 +469,9 @@ def summarize_table(data, columns, M_c, remove_key=True):
             reorder_index = potential_index[potential_index.isin(summary_data.index)]
             summary_data = summary_data.loc[reorder_index]
 
-        # Insert column of stat descriptions - we're going to leave this column name as a single space to avoid
+        # Insert column of stat descriptions - we're going to leave this column name as a blank to avoid
         # having to prevent column name duplication (allow_duplicates is a newer pandas argument, and can't be sure it's available)
-        summary_data.insert(0, ' ', summary_data.index)
+        summary_data.insert(0, '', summary_data.index)
 
         data = summary_data.to_records(index=False)
         columns = list(summary_data.columns)
@@ -485,4 +490,3 @@ def process_column_list(mixed_list, M_c, column_lists, dedupe=False):
     if dedupe == True:
         check_for_duplicate_columns(output)
     return output
-    

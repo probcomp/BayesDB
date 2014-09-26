@@ -34,18 +34,19 @@ import utils
 
 import bayesdb.settings as S
 
+
 class ModelLocks():
     """
     Creates individual model-level locks.
     Any user method always needs to acquire locks in ascending order to avoid deadlock!!!!
     """
-    
+
     def __init__(self, persistence_layer):
         self.tablename_dict = dict()
         self.persistence_layer = persistence_layer
-        
+
         for tablename in self.persistence_layer.btable_index:
-            self.tablename_dict[tablename] = dict()            
+            self.tablename_dict[tablename] = dict()
             modelids = self.persistence_layer.get_model_ids(tablename)
             for modelid in modelids:
                 self.tablename_dict[tablename][modelid] = RLock()
@@ -85,10 +86,10 @@ class ModelLocks():
 
     def drop_all(self, tablename):
         self.tablename_dict[tablename] = dict()
-        
+
 
 class PersistenceLayer():
-    """    
+    """
     Stores btables in the following format in the "data" directory:
     bayesdb/data/
     ..btable_index.pkl
@@ -102,17 +103,20 @@ class PersistenceLayer():
     ......model_<id>.pkl
 
     table_index.pkl: list of btable names.
-    
+
     metadata.pkl: dict. keys: M_r, M_c, T, cctypes
     metadata_full.pkl: dict. keys: M_r_full, M_c_full, T_full, cctypes_full
     column_lists.pkl: dict. keys: column list names, values: list of column names.
-    row_lists.pkl: dict. keys: row list names, values: list of row keys (need to update all these if table key is changed!).
-    models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views, model_config]. Idx starting at 1.
+    row_lists.pkl: dict. keys: row list names, values: list of row keys (need to update all these if
+        table key is changed!).
+    models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views,
+    model_config]. Idx starting at 1.
     data.csv: the raw csv file that the data was loaded from.
 
-    Should be a Singleton class, but Python doesn't enforce that. Could be refactored as just a module.
+    Should be a Singleton class, but Python doesn't enforce that. Could be refactored as just a
+    module.
     """
-    
+
     def __init__(self):
         """
         Create data directory if doesn't exist: every other function requires data_dir.
@@ -121,13 +125,14 @@ class PersistenceLayer():
         self.data_dir = os.path.join(self.cur_dir, 'data')
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
-        self.load_btable_index() # sets self.btable_index
+        self.load_btable_index()  # sets self.btable_index
         self.model_locks = ModelLocks(self)
         self.btable_check_index = list()
 
     def load_btable_index(self):
         """
-        Create btable_index.pkl with an empty list if it doesn't exist; otherwise, read its contents.
+        Create btable_index.pkl with an empty list if it doesn't exist; otherwise, read its
+        contents.
         Set it to self.btable_index
         """
         btable_index_path = os.path.join(self.data_dir, 'btable_index.pkl')
@@ -140,7 +145,7 @@ class PersistenceLayer():
             f.close()
 
     def write_btable_index(self):
-        btable_index_path = os.path.join(self.data_dir, 'btable_index.pkl')        
+        btable_index_path = os.path.join(self.data_dir, 'btable_index.pkl')
         f = open(btable_index_path, 'w')
         pickle.dump(self.btable_index, f, pickle.HIGHEST_PROTOCOL)
         f.close()
@@ -158,11 +163,13 @@ class PersistenceLayer():
             x = os.path.join(self.data_dir, tablename, 'metadata.pkl')
             f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'r')
         except Exception as e:
-            raise utils.BayesDBError("Error: metadata does not exist. Has %s been corrupted?" % self.data_dir)
+            raise utils.BayesDBError("Error: metadata does not exist. Has %s been corrupted?"
+                                     % self.data_dir)
         try:
             metadata = pickle.load(f)
         except Exception as e:
-            raise utils.BayesDBError("Error: metadata file could not be loaded for table %s" % tablename)
+            raise utils.BayesDBError("Error: metadata file could not be loaded for table %s"
+                                     % tablename)
         f.close()
         return metadata
 
@@ -170,7 +177,10 @@ class PersistenceLayer():
         try:
             f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'r')
         except Exception as e:
-            raise utils.BayesDBError("Error: metadata_full file doesn't exist. This is most likely a result of this btable being created with an old version of BayesDB. Please try recreating the table from the original csv, and loading any models you might have.")
+            raise utils.BayesDBError("Error: metadata_full file doesn't exist. This is most "
+                                     "likely a result of this btable being created with an old "
+                                     "version of BayesDB. Please try recreating the table from "
+                                     "the original csv, and loading any models you might have.")
         metadata = pickle.load(f)
         f.close()
         return metadata
@@ -233,11 +243,11 @@ class PersistenceLayer():
                 # Return all the models
                 models = {}
                 self.model_locks.acquire_table(tablename)
-                fnames = os.listdir(models_dir)                
+                fnames = os.listdir(models_dir)
                 for fname in fnames:
                     if fname.startswith('model_'):
-                        model_id = fname[6:] # remove preceding 'model_'
-                        model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
+                        model_id = fname[6:]  # remove preceding 'model_'
+                        model_id = int(model_id[:-4])  # remove trailing '.pkl' and cast to int
                         full_fname = os.path.join(models_dir, fname)
                         f = open(full_fname, 'r')
                         m = pickle.load(f)
@@ -247,7 +257,7 @@ class PersistenceLayer():
                 return models
         else:
             # Backwards compatibility with old model style.
-            self.model_locks.acquire_table(tablename)            
+            self.model_locks.acquire_table(tablename)
             try:
                 f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r')
                 models = pickle.load(f)
@@ -261,7 +271,6 @@ class PersistenceLayer():
             except IOError:
                 self.model_locks.release_table(tablename)
                 return {}
-            
 
     def get_column_labels(self, tablename):
         try:
@@ -308,7 +317,7 @@ class PersistenceLayer():
         column_labels = self.get_column_labels(tablename)
         column_labels[column_name.lower()] = column_label
         self.write_column_labels(tablename, column_labels)
-            
+
     def add_column_list(self, tablename, column_list_name, column_list):
         column_lists = self.get_column_lists(tablename)
         column_lists[column_list_name] = column_list
@@ -324,8 +333,9 @@ class PersistenceLayer():
         if column_name.lower() in column_labels:
             return column_labels[column_name.lower()]
         else:
-            raise utils.BayesDBError('Column %s in btable %s has no label.' % (column_name, tablename))
-        
+            raise utils.BayesDBError('Column %s in btable %s has no label.'
+                                     % (column_name, tablename))
+
     def get_column_list(self, tablename, column_list):
         column_lists = self.get_column_lists(tablename)
         if column_list in column_lists:
@@ -339,7 +349,7 @@ class PersistenceLayer():
             return row_lists[row_list]
         else:
             raise utils.BayesDBRowListDoesNotExistError(row_list, tablename)
-            
+
     def write_model(self, tablename, model, modelid):
         # Make models dir
         models_dir = os.path.join(self.data_dir, tablename, 'models')
@@ -360,11 +370,11 @@ class PersistenceLayer():
 
         # Write each model individually
         for i, v in models.items():
-            self.model_locks.acquire(tablename, modelid)            
+            self.model_locks.acquire(tablename, modelid)
             model_f = open(os.path.join(models_dir, 'model_%d.pkl' % i), 'w')
             pickle.dump(v, model_f, pickle.HIGHEST_PROTOCOL)
             model_f.close()
-            self.model_locks.release(tablename, modelid)            
+            self.model_locks.release(tablename, modelid)
 
     def write_column_labels(self, tablename, column_labels):
         column_labels_f = open(os.path.join(self.data_dir, tablename, 'column_labels.pkl'), 'w')
@@ -385,7 +395,7 @@ class PersistenceLayer():
         row_lists_f = open(os.path.join(self.data_dir, tablename, 'row_lists.pkl'), 'w')
         pickle.dump(row_lists, row_lists_f, pickle.HIGHEST_PROTOCOL)
         row_lists_f.close()
-        
+
     def drop_btable(self, tablename):
         """Delete a single btable."""
         if tablename in self.btable_index:
@@ -394,7 +404,7 @@ class PersistenceLayer():
                 shutil.rmtree(path)
             self.remove_btable_from_index(tablename)
         return 0
-        
+
     def list_btables(self):
         """Return a list of all btable names."""
         return self.btable_index
@@ -410,7 +420,7 @@ class PersistenceLayer():
                     if 'model_' in fname:
                         os.remove(os.path.join(models_dir, fname))
                 self.model_locks.drop_all(tablename)
-                self.model_locks.release_table(tablename)                
+                self.model_locks.release_table(tablename)
             else:
                 for modelid in model_ids:
                     self.model_locks.acquire(tablename, modelid)
@@ -425,18 +435,18 @@ class PersistenceLayer():
             self.write_models(tablename, models)
             self.drop_models(tablename, model_ids)
 
-            
     def get_latent_states(self, tablename, modelid=None):
         """Return X_L_list, X_D_list, and M_c"""
         metadata = self.get_metadata(tablename)
         models = self.get_models(tablename, modelid)
         if None in models.values():
-            raise utils.BayesDBError('Invalid model id. Use "SHOW MODELS FOR <btable>" to see valid model ids.')
+            raise utils.BayesDBError('Invalid model id. Use "SHOW MODELS FOR <btable>" to see '
+                                     'valid model ids.')
         M_c = metadata['M_c']
         X_L_list = [model['X_L'] for model in models.values()]
         X_D_list = [model['X_D'] for model in models.values()]
         return (X_L_list, X_D_list, M_c)
-        
+
     def get_metadata_and_table(self, tablename):
         """Return M_c and M_r and T"""
         metadata = self.get_metadata(tablename)
@@ -474,12 +484,12 @@ class PersistenceLayer():
             if not os.path.exists(models_dir):
                 model_ids = []
             else:
-                model_ids = []                
+                model_ids = []
                 fnames = os.listdir(models_dir)
                 for fname in fnames:
                     if fname.startswith('model_'):
-                        model_id = fname[6:] # remove preceding 'model_'
-                        model_id = int(model_id[:-4]) # remove trailing '.pkl' and cast to int
+                        model_id = fname[6:]  # remove preceding 'model_'
+                        model_id = int(model_id[:-4])  # remove trailing '.pkl' and cast to int
                         model_ids.append(model_id)
         return model_ids
 
@@ -501,26 +511,53 @@ class PersistenceLayer():
         colnames = utils.get_all_column_names_in_original_order(M_c)
         return colnames
 
+    def get_colnames_full(self, tablename):
+        """
+        Return column names of all columns
+        """
+        M_c_full = self.get_metadata_full(tablename)['M_c_full']
+        colnames = utils.get_all_column_names_in_original_order(M_c_full)
+        return colnames
+
     def get_schema(self, tablename):
         """
         Return colnames and cctypes of analysis columns
         """
         colnames = self.get_colnames(tablename)
         cctypes = self.get_cctypes(tablename)
+        M_c = self.get_metadata(tablename)['M_c']
         schema = dict()
         for colname, cctype in zip(colnames, cctypes):
-            schema[colname] = cctype
+            schema[colname] = dict()
+            schema[colname]['cctype'] = cctype
+            if cctype == 'cyclic':
+                col_idx = M_c['name_to_idx'][colname]
+                schema[colname]['parameters'] = M_c['column_metadata'][col_idx]['parameters']
+            else:
+                schema[colname]['parameters'] = None
         return schema
+
+    def get_schema_full(self, tablename):
+        """
+        Return colnames and cctypes of all columns
+        """
+        colnames_full = self.get_colnames_full(tablename)
+        cctypes_full = self.get_cctypes_full(tablename)
+        schema_full = dict()
+        for colname, cctype in zip(colnames_full, cctypes_full):
+            schema_full[colname] = cctype
+        return schema_full
 
     def get_key_column_name(self, tablename):
         metadata_full = self.get_metadata_full(tablename)
-        try: 
+        try:
             key_column_index = metadata_full['cctypes_full'].index('key')
         except ValueError as e:
-            print "If your btable was created with an older version of BayesDB, it might not have a default key column."
+            print("If your btable was created with an older version of BayesDB, it might not have "
+                  "a default key column.")
             key_column_index = metadata_full['cctypes_full'].index('key')
         key_column_name = metadata_full['M_c_full']['idx_to_name'][str(key_column_index)]
-        return key_column_name            
+        return key_column_name
 
     def update_metadata(self, tablename, M_r=None, M_c=None, T=None, cctypes=None):
         """Overwrite M_r, M_c, and T (not cctypes) for the table."""
@@ -533,11 +570,12 @@ class PersistenceLayer():
             metadata['T'] = T
         if cctypes:
             metadata['cctypes'] = cctypes
-        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'w')            
+        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'w')
         pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
         f.close()
 
-    def update_metadata_full(self, tablename, M_r_full=None, M_c_full=None, T_full=None, cctypes_full=None):
+    def update_metadata_full(self, tablename, M_r_full=None, M_c_full=None, T_full=None,
+                             cctypes_full=None):
         """Overwrite M_r, M_c, and T (not cctypes) for the table."""
         metadata = self.get_metadata_full(tablename)
         if M_r_full:
@@ -548,10 +586,72 @@ class PersistenceLayer():
             metadata['T_full'] = T_full
         if cctypes_full:
             metadata['cctypes_full'] = cctypes_full
-        f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'w')            
+        f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'w')
         pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
         f.close()
-        
+
+    def gen_default_codebook(self, M_c_full):
+        """ Generates default metadata.
+
+        Args:
+            M_c_full (dict): M_c_full metadata object
+
+        Returns:
+            list of dict: num_cols length codebook, where each entry is a dict with keys:
+                short_name, description, and valuemap with defaults colname, 'No description', and
+                None, repsectively.
+        """
+        if 'column_codebook' in M_c_full:
+            empty_codebook_entires = False
+            for entry in M_c_full['column_codebook']:
+                if entry is None:
+                    empty_codebook_entires = True
+                    break
+            if not empty_codebook_entires:
+                return
+
+        column_codebook = [None]*len(M_c_full['name_to_idx'])
+
+        for colname, idx in M_c_full['name_to_idx'].iteritems():
+            column_codebook[idx] = {
+                'description': 'No description.',
+                'short_name': colname,
+                'value_map': None
+            }
+
+        return column_codebook
+
+    def update_codebook(self, tablename, codebook):
+        """ Adds a codebook to a btable from a .csv
+
+        Args:
+            tablename (str): Name of the btable
+            codebook (list of dict): The processed codebook. Should come from client because we
+                assume that .csv is stored on the client machine.
+        """
+        metadata_full = self.get_metadata_full(tablename)
+        M_c_full = metadata_full['M_c_full']
+
+        if isinstance(codebook, dict):
+            name_to_idx = M_c_full['name_to_idx']
+            column_codebook = [None]*len(name_to_idx)
+            for colname, idx in name_to_idx.iteritems():
+                if colname in codebook.keys():
+                    column_codebook[idx] = codebook[colname]
+            M_c_full['column_codebook'] = column_codebook
+
+        elif isinstance(codebook, list):
+            if not isinstance(codebook[0], dict):
+                raise TypeError("Error: Invalid codebook.")
+            M_c_full['column_codebook'] = codebook
+
+        self.update_metadata_full(tablename, M_c_full=M_c_full)
+
+    def add_default_codebook_to_metadata(self, tablename):
+        """ Adds the default metadata to tablename"""
+        metadata_full = self.get_metadata_full(tablename)
+        column_codebook = self.gen_default_codebook(metadata_full['M_c_full'])
+        self.update_codebook_from_csv(tablename, column_codebook)
 
     def check_if_table_exists(self, tablename):
         """Return true iff this tablename exists in the persistence layer."""
@@ -559,7 +659,8 @@ class PersistenceLayer():
 
     def update_schema(self, tablename, mappings):
         """
-        mappings is a dict of column name to 'cyclic', 'continuous', 'multinomial', 'ignore', or 'key'.
+        mappings is a dict of column name to 'cyclic', 'numerical', 'categorical', 'ignore', or
+        'key'.
         TODO: can we get rid of cctypes?
         """
         metadata_full = self.get_metadata_full(tablename)
@@ -567,63 +668,103 @@ class PersistenceLayer():
         M_c_full = metadata_full['M_c_full']
         raw_T_full = metadata_full['raw_T_full']
         colnames_full = utils.get_all_column_names_in_original_order(M_c_full)
+        try:
+            parameters_full = [x['parameters'] for x in M_c_full['column_metadata']]
+        except KeyError:
+            print('WARNING: resetting parameters to defaults. Please check these values with '
+                  'DESCRIBE and adjust them manually if necessary.')
+            parameters_full = []
+            for md in M_c_full['column_metadata']:
+                if 'dirichlet' in md['modeltype']:
+                    params = {
+                        'cardinality': len(md['value_to_code'])
+                    }
+                elif'vonmises' in md['modeltype']:
+                    params = {
+                        'min': 0.0,
+                        'max': 2.0*3.14159265358979323846264338328
+                    }
+                else:
+                    params = None
+
+                parameters_full.append(params)
+
+            parameters_full = [None for _ in range(len(M_c_full['column_metadata']))]
 
         # Now, update cctypes_full (cctypes updated later, after removing ignores).
-        mapping_set = 'continuous', 'multinomial', 'ignore', 'key', 'cyclic'
-        for col, mapping in mappings.items():
-            if col.lower() not in M_c_full['name_to_idx']:
-                raise utils.BayesDBError('Error: column %s does not exist.' % col)
-            elif mapping not in mapping_set:
-                raise utils.BayesDBError('Error: datatype %s is not one of the valid datatypes: %s.' % (mapping, str(mapping_set)))
+        mapping_set = 'numerical', 'categorical', 'ignore', 'key', 'cyclic'
 
-            cidx = M_c_full['name_to_idx'][col.lower()]
+        for colname, mapping in mappings.items():
+            cctype = mapping['cctype']
+            parameters = mapping['parameters']
+
+            if colname.lower() not in M_c_full['name_to_idx']:
+                raise utils.BayesDBError('Error: column %s does not exist.' % colname)
+            elif cctype not in mapping_set:
+                raise utils.BayesDBError('Error: datatype %s is not one of the valid datatypes: %s.'
+                                         % (mapping, str(mapping_set)))
+
+            cidx = M_c_full['name_to_idx'][colname.lower()]
 
             # If the column's current type is key, don't allow the change.
             if cctypes_full[cidx] == 'key':
-                raise utils.BayesDBError('Error: %s is already set as the table key. To change its type, reload the table using CREATE BTABLE and choose a different key column.' % col.lower())
-            # If the user tries to change a column to key, it's easier to reload the table, since at this point
-            # there aren't models anyways. Eventually we can build this in if it's desirable.
-            elif mapping == 'key':
-                raise utils.BayesDBError('Error: key column already exists. To choose a different key, reload the table using CREATE BTABLE')
+                raise utils.BayesDBError('Error: %s is already set as the table key. To change its '
+                                         'type, reload the table using CREATE BTABLE and choose a '
+                                         'different key column.' % colname.lower())
+            # If the user tries to change a column to key, it's easier to reload the table, since at
+            # this point there aren't models anyways. Eventually we can build this in if it's
+            # desirable.
+            elif cctype == 'key':
+                raise utils.BayesDBError('Error: key column already exists. To choose a different '
+                                         'key, reload the table using CREATE BTABLE')
 
-            cctypes_full[cidx] = mapping
+            cctypes_full[cidx] = cctype
+            parameters_full[cidx] = parameters
 
         # Make sure there isn't more than one key.
-        assert len(filter(lambda x: x=='key', cctypes_full)) == 1
+        assert len(filter(lambda x: x == 'key', cctypes_full)) == 1
 
-        T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full, cctypes=cctypes_full)
+        T_full, M_r_full, M_c_full, _ = data_utils.gen_T_and_metadata(colnames_full, raw_T_full,
+                                                                      cctypes=cctypes_full,
+                                                                      parameters=parameters_full)
 
         # Variables without "_full" don't include ignored columns.
-        raw_T, cctypes, colnames = data_utils.remove_ignore_cols(raw_T_full, cctypes_full, colnames_full)
-        T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes)
+        raw_T, cctypes, colnames, parameters = data_utils.remove_ignore_cols(raw_T_full,
+                                                                             cctypes_full,
+                                                                             colnames_full,
+                                                                             parameters_full)
+        T, M_r, M_c, _ = data_utils.gen_T_and_metadata(colnames, raw_T, cctypes=cctypes,
+                                                       parameters=parameters)
 
         # Now, put cctypes, T, M_c, and M_r back into the DB
         self.update_metadata(tablename, M_r, M_c, T, cctypes)
         self.update_metadata_full(tablename, M_r_full, M_c_full, T_full, cctypes_full)
-        
-        return self.get_metadata_full(tablename)
-        
 
-    def create_btable(self, tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full, M_c_full, raw_T_full, T_sub=None):
+        return self.get_metadata_full(tablename)
+
+    def create_btable(self, tablename, cctypes_full, cctypes, T, M_r, M_c, T_full, M_r_full,
+                      M_c_full, raw_T_full, T_sub=None):
         """
         This function is called to create a btable.
         It creates the table's persistence directory, saves data.csv and metadata.pkl.
         Creates models.pkl as empty dict.
+
         """
         # Make directory for table
         if not os.path.exists(os.path.join(self.data_dir, tablename)):
-            os.mkdir(os.path.join(self.data_dir, tablename))        
+            os.mkdir(os.path.join(self.data_dir, tablename))
 
         # Write metadata and metadata_full
-        metadata_full = dict(M_c_full=M_c_full, M_r_full=M_r_full, T_full=T_full, cctypes_full=cctypes_full, raw_T_full=raw_T_full)
+        metadata_full = dict(M_c_full=M_c_full, M_r_full=M_r_full, T_full=T_full,
+                             cctypes_full=cctypes_full, raw_T_full=raw_T_full)
         self.write_metadata_full(tablename, metadata_full)
-        metadata = dict(M_c=M_c, M_r= M_r, T=T, cctypes=cctypes, T_sub=T_sub)
+        metadata = dict(M_c=M_c, M_r=M_r, T=T, cctypes=cctypes, T_sub=T_sub)
         self.write_metadata(tablename, metadata)
 
         # Write models
         models = {}
         self.write_models(tablename, models)
-        
+
         # Write column labels
         column_labels = dict()
         self.write_column_labels(tablename, column_labels)
@@ -650,29 +791,30 @@ class PersistenceLayer():
         This will leave models, column labels, columns lists, and row lists intact.
         """
         # Write metadata_full
-        metadata_full = dict(M_c_full=M_c_full, M_r_full=M_r_full, T_full=T_full, cctypes_full=cctypes_full, raw_T_full=raw_T_full)
+        metadata_full = dict(M_c_full=M_c_full, M_r_full=M_r_full, T_full=T_full,
+                             cctypes_full=cctypes_full, raw_T_full=raw_T_full)
         self.write_metadata_full(tablename, metadata_full)
 
     def add_models(self, tablename, model_list):
         """
         Add a set of models (X_Ls and X_Ds) to a table (the table does not need to
         already have models).
-        
+
         parameter model_list is a list of dicts, where each dict contains the keys
         X_L, X_D, and iterations.
         """
-        ## Model indexing starts at 0 (and is -1 if none exist)
+        # Model indexing starts at 0 (and is -1 if none exist)
         max_model_id = self.get_max_model_id(tablename)
-        for i,m in enumerate(model_list):
+        for i, m in enumerate(model_list):
             modelid = max_model_id + 1 + i
             self.write_model(tablename, m, modelid)
 
     def update_models(self, tablename, modelids, X_L_list, X_D_list, diagnostics_dict):
         """
         TODO: UNUSED WITH NEW ANALYZE, DELETE
-        
+
         Overwrite all models by id, and append diagnostic info.
-        
+
         param diagnostics_dict: -> dict[f_z[0, D], num_views, logscore, f_z[0, 1], column_crp_alpha]
         Each of the 5 diagnostics is a 2d array, size #models x #iterations
 
@@ -683,16 +825,18 @@ class PersistenceLayer():
         models = self.get_models(tablename)
         new_iterations = len(diagnostics_dict['logscore'])
 
-        # models: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views]. Idx starting at 1.
+        # models: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore,
+        # num_views]. Idx starting at 1.
         # each diagnostic entry is a list, over iterations.
 
-        # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore, num_views.
+        # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore,
+        # num_views.
         for idx, modelid in enumerate(modelids):
             model_dict = models[modelid]
             model_dict['X_L'] = X_L_list[idx]
             model_dict['X_D'] = X_D_list[idx]
             model_dict['iterations'] = model_dict['iterations'] + new_iterations
-            
+
             for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
                 diag_list = [l[idx] for l in diagnostics_dict[diag_key]]
                 if diag_key in model_dict and type(model_dict[diag_key]) == list:
@@ -715,7 +859,8 @@ class PersistenceLayer():
         Ignores f_z[0, D] and f_z[0, 1], since these will need to be recalculated after all
         inference is done in order to properly incorporate all models.
 
-        models: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views]. Idx starting at 1.
+        models: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore,
+            num_views]. Idx starting at 1.
         each diagnostic entry is a list, over iterations.
 
         """
@@ -726,18 +871,17 @@ class PersistenceLayer():
         model['X_L'] = X_L
         model['X_D'] = X_D
 
-        if len(diagnostics_dict) > 0: # If any iterations were performed
+        if len(diagnostics_dict) > 0:  # If any iterations were performed
             model['iterations'] = model['iterations'] + len(diagnostics_dict['logscore'])
 
-            # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore, num_views.
+            # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha,
+            # logscore, num_views.
             for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
                 diag_list = [l[0] for l in diagnostics_dict[diag_key]]
                 if diag_key in model and type(model[diag_key]) == list:
                     model[diag_key] += diag_list
                 else:
                     model[diag_key] = diag_list
-        
+
         self.write_model(tablename, model, modelid)
         self.model_locks.release(tablename, modelid)
-
-            

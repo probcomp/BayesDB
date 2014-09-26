@@ -25,6 +25,7 @@ import pyparsing as pp
 import functions
 import operator
 
+
 class Parser(object):
     def __init__(self):
         self.reset_root_dir()
@@ -33,19 +34,19 @@ class Parser(object):
         """
         Uses the grammar defined in bql_grammar to create a pyparsing object out of an input string
         :param str input_string: the input block of bql statement(s)
-        :return: the pyparsing object for the parsed statement. 
+        :return: the pyparsing object for the parsed statement.
         :rtype: pyparsing.ParseResults
-        :raises BayesDBParseError: if the string is not a valid bql statement. 
+        :raises BayesDBParseError: if the string is not a valid bql statement.
         """
         try:
             bql_blob_ast = bql.bql_input.parseString(input_string, parseAll=True)
         except pp.ParseException as x:
             raise utils.BayesDBParseError("Invalid query. Could not parse (Line {e.lineno}, column {e.col}):\n\t'{e.line}'\n\t".format(e=x) + ' ' * x.col + '^')
         return bql_blob_ast
-        
+
     def parse_single_statement(self,bql_statement_ast):
         """
-        Calls parse_method on the statement_id in bql_statement_ast. 
+        Calls parse_method on the statement_id in bql_statement_ast.
         :param bql_statement_ast pyparsing.ParseResults: The single statement pyparsing result
         :return: parse_method(bql_statement_ast)
         """
@@ -136,7 +137,11 @@ class Parser(object):
         """
         tablename = bql_statement_ast.btable
         filename = self.get_absolute_path(bql_statement_ast.filename)
-        return 'create_btable', dict(tablename=tablename, cctypes_full=None), dict(csv_path=filename)
+        client_dict = dict(csv_path = filename)
+        if bql_statement_ast.codebook_file != '':
+            codebook_path = self.get_absolute_path(bql_statement_ast.codebook_file)
+            client_dict['codebook_path'] = codebook_path
+        return 'create_btable', dict(tablename=tablename, cctypes_full=None), client_dict
         #TODO types?
 
     def parse_upgrade_btable(self, bql_statement_ast):
@@ -147,6 +152,69 @@ class Parser(object):
         tablename = bql_statement_ast.btable
         return 'upgrade_btable', dict(tablename=tablename), None
 
+    def parse_describe(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('describe', args_dict, None):
+        """
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+        columnset = None
+        if bql_statement_ast.columnset != '':
+            columnset = bql_statement_ast.columnset
+
+        return 'describe', dict(tablename=tablename, columnset=columnset), None
+
+    def parse_update_codebook(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('update_codebook', args_dict, client_dict):
+        """
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+
+        codebook_path = None
+        if bql_statement_ast.filename != '':
+            codebook_path = bql_statement_ast.filename
+
+        return 'update_codebook', dict(tablename=tablename), dict(codebook_path=codebook_path)
+
+    def parse_update_short_names(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('update_short_names', args_dict, None):
+        """
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+
+        mappings = None
+        if bql_statement_ast.label_clause != '':
+            mappings = {}
+            for label_set in bql_statement_ast.label_clause:
+                mappings[label_set[0]] = label_set[1]
+
+        return 'update_short_names', dict(tablename=tablename, mappings=mappings), None
+
+    def parse_update_descriptions(self, bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('update_desriptions', args_dict, None):
+        """
+        tablename = None
+        if bql_statement_ast.btable != '':
+            tablename = bql_statement_ast.btable
+
+        mappings = None
+        if bql_statement_ast.label_clause != '':
+            mappings = {}
+            for label_set in bql_statement_ast.label_clause:
+                mappings[label_set[0]] = label_set[1]
+
+        return 'update_descriptions', dict(tablename=tablename, mappings=mappings), None
+
     def parse_update_schema(self,bql_statement_ast):
         """
         :param bql_statement_ast pyparsing.ParseResults:
@@ -156,7 +224,16 @@ class Parser(object):
         mappings = dict()
         type_clause = bql_statement_ast.type_clause
         for update in type_clause:
-            mappings[update[0]]=update[1]
+            column = update[0]
+            cctype = update[1]
+            mappings[column] = dict()
+            mappings[column]['cctype'] = cctype
+            if 'parameters' in update:
+                mappings[column]['parameters'] = dict()
+                for param_type in update.parameters.keys():
+                    mappings[column]['parameters'][param_type] = update.parameters[param_type]
+            else:
+                mappings[column]['parameters'] = None
         return 'update_schema', dict(tablename=tablename, mappings=mappings), None
 
     def parse_drop_btable(self,bql_statement_ast):
@@ -190,7 +267,7 @@ class Parser(object):
         if bql_statement_ast.wait != '':
             wait = False
         return 'analyze', dict(tablename=tablename, model_indices=model_indices,
-                               iterations=iterations, seconds=seconds, 
+                               iterations=iterations, seconds=seconds,
                                ct_kernel=kernel, background=wait), None
 
     def parse_cancel_analyze(self, bql_statement_ast): ##TODO no tests written
@@ -199,14 +276,14 @@ class Parser(object):
         :return ('cancel_analyze', args_dict, None):
         """
         return 'cancel_analyze', dict(tablename=bql_statement_ast.btable), None
-    
+
     def parse_show_analyze(self, bql_statement_ast): ##TODO no tests written
         """
         :param bql_statement_ast pyparsing.ParseResults:
         :return ('show_analyze', args_dict, None):
         """
         return 'show_analyze', dict(tablename=bql_statement_ast.btable), None
-        
+
     def parse_show_row_lists(self,bql_statement_ast):
         """
         :param bql_statement_ast pyparsing.ParseResults:
@@ -309,23 +386,21 @@ class Parser(object):
         return 'update_metadata', \
             dict(tablename=tablename, mappings=mappings), \
             dict(source=source, csv_path=csv_path)
-    
+
     def parse_query(self, bql_statement_ast):
         '''
         master parser for queries (select, infer, simulate, estimate pairwise, etc)
-        returns a general args dict which the specific versions of those functions 
-        will then trim and check for illegal aruguments through assertions. 
+        returns a general args dict which the specific versions of those functions
+        will then trim and check for illegal aruguments through assertions.
 
         :param bql_statement_ast pyparsing.ParseResults:
         :return (statement_id, args_dict, client_dict):
         '''
-        statement_id = bql_statement_ast.statement_id 
-        
+        statement_id = bql_statement_ast.statement_id
+
         confidence = None
         if bql_statement_ast.confidence != '':
             confidence = float(bql_statement_ast.confidence)
-            if confidence > 1: 
-                raise utils.BayesDBParseError("Confidence cannot be greater than 0.")
         filename = None
         if bql_statement_ast.filename != '':
             filename = bql_statement_ast.filename
@@ -360,7 +435,7 @@ class Parser(object):
         row_list = None
         if bql_statement_ast.for_list != '':
             if statement_id == 'estimate_pairwise':
-                ##TODO can only handle single column or row lists in this clause. 
+                ##TODO can only handle single column or row lists in this clause.
                 column_list = bql_statement_ast.for_list.asList()
                 assert len(column_list) == 1, "BayesDBParseError: You may only specify one column list. Remove %s" % column_list[1]
                 column_list = column_list[0]
@@ -368,10 +443,10 @@ class Parser(object):
                 row_list = bql_statement_ast.for_list.asList()
                 assert len(row_list) == 1, "BayesDBParseError: You may only specify one row list. Remove %s" % row_list[1]
                 row_list = row_list[0]
-                
+
             else:
                 raise utils.BayesDBParseError("Invalid query: FOR <list> only acceptable in estimate pairwise.")
-            
+
         summarize=(bql_statement_ast.summarize == 'summarize')
         hist = (bql_statement_ast.hist == 'hist')
         freq = (bql_statement_ast.freq == 'freq')
@@ -405,7 +480,7 @@ class Parser(object):
                  tablename=tablename,
                  threshold=threshold,
                  whereclause=whereclause), \
-            dict(plot=plot, 
+            dict(plot=plot,
                  scatter=False, ##TODO remove scatter from args
                  pairwise=False, ##TODO remove pairwise from args
                  filename=filename)
@@ -443,19 +518,21 @@ class Parser(object):
         assert args_dict['row_list'] == None, "BayesDBParsingError: FOR <rows> not allowed in INFER"
         for function in functions:
             assert function.function_id == '', "BayesDBParsingError: %s not valid in INFER" % function.function_id
-        
+
+        assert confidence is None or 0.0 <= confidence <= 1.0, "BayesDBParsingError: CONFIDENCE must be unspecified (default 0) or in the interval [0, 1]"
+
         return 'infer', \
-            dict(tablename=tablename, functions=functions, 
-                 newtablename=newtablename, confidence=confidence, 
+            dict(tablename=tablename, functions=functions,
+                 newtablename=newtablename, confidence=confidence,
                  whereclause=whereclause, limit=limit,
-                 numsamples=numsamples, order_by=order_by, 
+                 numsamples=numsamples, order_by=order_by,
                  plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq), \
             dict(plot=plot, scatter=scatter, pairwise=pairwise, filename=filename)
 
     def parse_select(self,bql_statement_ast):
         """
         :param bql_statement_ast pyparsing.ParseResults:
-        :return ('select', args_dict, client_dict):
+        :return ('select', args_dict):
         """
         method_name, args_dict, client_dict = self.parse_query(bql_statement_ast)
         tablename = args_dict['tablename']
@@ -469,7 +546,7 @@ class Parser(object):
         order_by = args_dict['order_by']
         modelids = args_dict['modelids']
         newtablename = args_dict['newtablename']
-        numsamples = args_dict['numsamples']        
+        numsamples = args_dict['numsamples']
 
         pairwise = client_dict['pairwise']
         filename = client_dict['filename']
@@ -485,9 +562,9 @@ class Parser(object):
         assert args_dict['confidence'] == None, "BayesDBParsingError: CONFIDENCE not allowed in SELECT"
 
         for function in functions:
-            assert function.conf == '', "BayesDBParsingError: CONF (WITH CONFIDENCE) not valid in SELECT" 
+            assert function.conf == '', "BayesDBParsingError: CONF (WITH CONFIDENCE) not valid in SELECT"
         return 'select', \
-            dict(tablename=tablename, whereclause=whereclause, 
+            dict(tablename=tablename, whereclause=whereclause,
                  functions=functions, limit=limit, order_by=order_by, plot=plot, numsamples=numsamples,
                  modelids=modelids, summarize=summarize, hist=hist, freq=freq, newtablename=newtablename), \
             dict(pairwise=pairwise, scatter=scatter, filename=filename, plot=plot)
@@ -503,16 +580,19 @@ class Parser(object):
         summarize = args_dict['summarize']
         hist = args_dict['hist']
         freq = args_dict['freq']
-        plot = args_dict['plot'] 
+        plot = args_dict['plot']
         order_by = args_dict['order_by']
         modelids = args_dict['modelids']
         newtablename = args_dict['newtablename']
         givens = args_dict['givens']
         numpredictions = args_dict['numpredictions']
-       
+
         pairwise = client_dict['pairwise']
         filename = client_dict['filename']
         scatter = client_dict['scatter']
+
+        # Require the number of observations to simulate
+        assert args_dict['numpredictions'] is not None, "BayesDBParsingError: Include TIMES: SIMULATE <columns> FROM <btable> TIMES <times>."
 
         assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS clause not allowed in SIMULATE."
         assert args_dict['numsamples'] == None, 'BayesDBParsingError: WITH <numsamples> SAMPLES clause not allowed in SIMULATE.'
@@ -524,11 +604,11 @@ class Parser(object):
         assert args_dict['whereclause'] == None, "BayesDBParsingError: whereclause not allowed in SIMULATE. Use GIVEN instead."
         for function in functions:
             assert function.function_id == '', "BayesDBParsingError: %s not valid in SIMULATE" % function.function_id
-            assert function.conf == '', "BayesDBParsingError: CONF (WITH CONFIDENCE) not valid in SIMULATE" 
+            assert function.conf == '', "BayesDBParsingError: CONF (WITH CONFIDENCE) not valid in SIMULATE"
 
         return 'simulate', \
-            dict(tablename=tablename, functions=functions, 
-                 newtablename=newtablename, givens=givens, 
+            dict(tablename=tablename, functions=functions,
+                 newtablename=newtablename, givens=givens,
                  numpredictions=numpredictions, order_by=order_by,
                  plot=plot, modelids=modelids, summarize=summarize, hist=hist, freq=freq), \
             dict(filename=filename, plot=plot, scatter=scatter, pairwise=pairwise)
@@ -547,7 +627,7 @@ class Parser(object):
         order_by = args_dict['order_by']
         modelids = args_dict['modelids']
         name = args_dict['name']
-        numsamples = args_dict['numsamples']        
+        numsamples = args_dict['numsamples']
 
         assert args_dict['clusters_name'] == None, "BayesDBParsingError: SAVE CLUSTERS not allowed in estimate columns."
         assert args_dict['confidence'] == None, "BayesDBParsingError: WITH CONFIDENCE not allowed in estimate columns."
@@ -568,7 +648,7 @@ class Parser(object):
         assert client_dict['filename'] == None, "BayesDBParsingError: AS FILE not allowed in estimate columns."
 
         return 'estimate_columns', \
-            dict(tablename=tablename, functions=functions, 
+            dict(tablename=tablename, functions=functions,
                  whereclause=whereclause, limit=limit, numsamples=numsamples,
                  order_by=order_by, name=name, modelids=modelids), \
             None
@@ -599,7 +679,7 @@ class Parser(object):
         assert args_dict['modelids'] == None, "BayesDBParsingError: USING MODELS not allowed in create column list."
         assert args_dict['order_by'] == False, "BayesDBParsingError: ORDER BY not allowed in create column list."
         assert args_dict['limit'] == float('inf'), "BayesDBParsingError: LIMIT not allowed in create column list."
-        assert args_dict['whereclause'] == None, "BayesDBParsingError: WHERE not allowed in create column list."        
+        assert args_dict['whereclause'] == None, "BayesDBParsingError: WHERE not allowed in create column list."
 
         assert client_dict['plot'] == False, "BayesDBParsingError: PLOT not allowed in create column list."
         assert client_dict['scatter'] == False, "BayesDBParsingError: SCATTER not allowed in create column list."
@@ -664,10 +744,10 @@ class Parser(object):
         threshold = args_dict['threshold']
         modelids = args_dict['modelids']
         numsamples = args_dict['numsamples']
-        
+
         filename = client_dict['filename']
 
-        
+
         assert args_dict['confidence'] == None, "BayesDBParsingError: WITH CONFIDENCE not allowed in ESTIMATE PAIRWISE."
         assert args_dict['givens'] == None, "BayesDBParsingError: GIVENS not allowed in ESTIMATE PAIRWISE."
         assert args_dict['newtablename'] == None, "BayesDBParsingError: INTO TABLE not allowed in ESTIMATE PAIRWISE."
@@ -695,7 +775,7 @@ class Parser(object):
     def get_args_pred_prob(self, function_group, M_c):
         """
         :param function_group pyparsing.ParseResults:
-        :param M_c: 
+        :param M_c:
         :return c_idx: column index
         :rtype int:
         returns the column index from a predictive probability function
@@ -712,7 +792,7 @@ class Parser(object):
 
     def get_args_prob(self,function_group, M_c):
         """
-        :param function_group: 
+        :param function_group:
         Returns column_index, value from a probability function
         raises exception for unfound columns
         """
@@ -725,10 +805,10 @@ class Parser(object):
             raise utils.BayesDBParseError("Invalid query: missing column argument")
         value = utils.string_to_column_type(function_group.value, column, M_c)
         return c_idx, value
-    
+
     def get_args_similarity(self,function_group, M_c, M_c_full, T, T_full, column_lists):
         """
-        returns the target_row_id and a list of with_respect_to columns based on 
+        returns the target_row_id and a list of with_respect_to columns based on
         similarity function
         Raises exception for unfound columns
         """
@@ -787,7 +867,7 @@ class Parser(object):
         of_column_index = None
         if function_group.of_column != '':
             of_column_index = utils.get_index_from_colname(M_c, function_group.of_column)
-        return of_column_index, with_column_index 
+        return of_column_index, with_column_index
 
 #####################################################################################
 ## ----------------------------- Sub query parsing  ------------------------------ ##
@@ -803,11 +883,11 @@ class Parser(object):
                         '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
 
         for single_condition in where_clause_ast:
-            ## Confidence in the where clause not yet handled by client/engine. 
+            ## Confidence in the where clause not yet handled by client/engine.
             confidence = None
             if single_condition.conf != '':
                 confidence = float(single_condition.conf)
-                
+
             raw_value = single_condition.value
             function = None
             args = None
@@ -825,12 +905,12 @@ class Parser(object):
                 value = utils.value_string_to_num(raw_value)
                 function = functions._predictive_probability
                 args = self.get_args_pred_prob(single_condition.function, M_c)
-            
+
             elif single_condition.function.function_id == 'key':
                 value = raw_value
                 function = functions._row_id
             elif single_condition.function.column != '':
-                ## whereclause of the form "where col = val" 
+                ## whereclause of the form "where col = val"
                 column_name = single_condition.function.column
                 assert column_name != '*'
                 if column_name in M_c['name_to_idx']:
@@ -842,21 +922,21 @@ class Parser(object):
                     value = raw_value
                     function = functions._column_ignore
                 else:
-                    raise utils.BayesDBParseError("Invalid where clause: column %s was not found in the table" % 
+                    raise utils.BayesDBParseError("Invalid where clause: column %s was not found in the table" %
                                                   column_name)
             else:
                 if single_condition.function.function_id != '':
-                    raise utils.BayesDBParseError("Invalid where clause: %s not allowed." % 
+                    raise utils.BayesDBParseError("Invalid where clause: %s not allowed." %
                                                   single_condition.function.function_id)
-                else: 
+                else:
                     raise utils.BayesDBParseError("Invalid where clause. Unrecognized function")
             if single_condition.operation != '':
                 op = operator_map[single_condition.operation]
-            else: 
+            else:
                 raise utils.BayesDBParseError("Invalid where clause: no operator found")
             conditions.append((function, args, op, value))
         return conditions
-    
+
     def parse_column_whereclause(self, whereclause, M_c, T): ##TODO throw exception on parseable, invalid
         """
         Creates conditions: the list of conditions in the whereclause
@@ -867,10 +947,10 @@ class Parser(object):
             return conditions
         operator_map = {'<=': operator.le, '<': operator.lt, '=': operator.eq,
                         '>': operator.gt, '>=': operator.ge, 'in': operator.contains}
-        
+
         for single_condition in whereclause:
-            ## Confidence in the where clause not yet handled by client/engine. 
-            
+            ## Confidence in the where clause not yet handled by client/engine.
+
             raw_value = single_condition.value
             value = utils.value_string_to_num(raw_value)
             function = None
@@ -892,13 +972,13 @@ class Parser(object):
                 _, args = self.get_args_pairwise_column(single_condition.function, M_c)
             else:
                 if single_condition.function.function_id != '':
-                    raise utils.BayesDBParseError("Invalid where clause: %s not allowed." % 
+                    raise utils.BayesDBParseError("Invalid where clause: %s not allowed." %
                                                   single_condition.function.function_id)
-                else: 
+                else:
                     raise utils.BayesDBParseError("Invalid where clause. Unrecognized function")
             if single_condition.operation != '':
                 op = operator_map[single_condition.operation]
-            else: 
+            else:
                 raise utils.BayesDBParseError("Invalid where clause: no operator found")
             if _ != None:
                 raise utils.BayesDBParseError("Invalid where clause, do not specify an 'of' column in estimate columns")
@@ -915,7 +995,7 @@ class Parser(object):
             if orderable.asc_desc == 'asc':
                 desc = False
             if orderable.function.function_id == 'similarity':
-                function = functions._similarity 
+                function = functions._similarity
                 args = self.get_args_similarity(orderable.function, M_c, M_c_full, T, T_full, column_lists)
             elif orderable.function.function_id == 'typicality':
                 function = functions._row_typicality
@@ -923,7 +1003,7 @@ class Parser(object):
             elif orderable.function.function_id == 'predictive probability':
                 function = functions._predictive_probability
                 args = self.get_args_pred_prob(orderable.function, M_c)
-            elif orderable.function.column != '': 
+            elif orderable.function.column != '':
                 if orderable.function.column in M_c['name_to_idx']:
                     function = functions._column
                     args = (M_c['name_to_idx'][orderable.function.column], confidence)
@@ -944,7 +1024,7 @@ class Parser(object):
             if orderable.function.function_id == 'typicality':
                 assert orderable.function.column == '', "BayesDBParseError: Column order by typicality cannot include 'of %s'" % orderable.function.column
                 function = functions._col_typicality
-                args = None 
+                args = None
             elif orderable.function.function_id == 'dependence probability':
                 function = functions._dependence_probability
                 _, args = self.get_args_pairwise_column(orderable.function, M_c)
@@ -957,17 +1037,17 @@ class Parser(object):
             else:
                 raise utils.BayesDBParseError("Invalid order by clause. Can only order by typicality, correlation, mutual information, or dependence probability.")
             function_list.append((function, args, desc))
-        
+
         return function_list
 
     def parse_functions(self, function_groups, M_c=None, T=None, M_c_full=None, T_full=None, column_lists=None, key_column_name=None):
         '''
-        Generates two lists of functions, arguments, aggregate tuples. 
+        Generates two lists of functions, arguments, aggregate tuples.
         Returns queries, query_colnames
-        
+
         queries is a list of (query_function, query_args, aggregate) tuples,
         where query_function is: row_id, column, probability, similarity.
-    
+
         For row_id: query_args is ignored (so it is None).
         For column: query_args is a c_idx.
         For probability: query_args is a (c_idx, value) tuple.
@@ -982,31 +1062,31 @@ class Parser(object):
             query_colnames = []
             queries = []
 
-        for function_group in function_groups: 
+        for function_group in function_groups:
             if function_group.function_id == 'predictive probability':
-                queries.append((functions._predictive_probability, 
-                                self.get_args_pred_prob(function_group, M_c), 
+                queries.append((functions._predictive_probability,
+                                self.get_args_pred_prob(function_group, M_c),
                                 False))
                 query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'typicality':
                 if function_group.column != '':
-                    queries.append((functions._col_typicality, 
-                                    self.get_args_typicality(function_group, M_c), 
+                    queries.append((functions._col_typicality,
+                                    self.get_args_typicality(function_group, M_c),
                                     True))
                 else:
                     queries.append((functions._row_typicality,
-                                    self.get_args_typicality(function_group, M_c), 
+                                    self.get_args_typicality(function_group, M_c),
                                     False))
                 query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'probability':
-                queries.append((functions._probability, 
-                                self.get_args_prob(function_group, M_c), 
+                queries.append((functions._probability,
+                                self.get_args_prob(function_group, M_c),
                                 True))
                 query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'similarity':
                 assert M_c is not None
                 assert M_c_full is not None
-                queries.append((functions._similarity, 
+                queries.append((functions._similarity,
                                 self.get_args_similarity(function_group, M_c, M_c_full, T, T_full, column_lists),
                                 False))
                 pre_name_list = function_group.asList()
@@ -1014,18 +1094,18 @@ class Parser(object):
                     pre_name_list[-1] = ', '.join(pre_name_list[-1])
                 query_colnames.append(' '.join(pre_name_list))
             elif function_group.function_id == 'dependence probability':
-                queries.append((functions._dependence_probability, 
-                                self.get_args_pairwise_column(function_group, M_c), 
+                queries.append((functions._dependence_probability,
+                                self.get_args_pairwise_column(function_group, M_c),
                                 True))
                 query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'mutual information':
-                queries.append((functions._mutual_information, 
-                                self.get_args_pairwise_column(function_group, M_c), 
+                queries.append((functions._mutual_information,
+                                self.get_args_pairwise_column(function_group, M_c),
                                 True))
                 query_colnames.append(' '.join(function_group))
             elif function_group.function_id == 'correlation':
-                queries.append((functions._correlation, 
-                                self.get_args_pairwise_column(function_group, M_c), 
+                queries.append((functions._correlation,
+                                self.get_args_pairwise_column(function_group, M_c),
                                 True))
                 query_colnames.append(' '.join(function_group))
             ## single column, column_list, or *
@@ -1047,14 +1127,14 @@ class Parser(object):
             elif function_group.column_id == key_column_name:
                 # Key column will be added to the output anyways.
                 pass
-            else: 
+            else:
                 raise utils.BayesDBParseError("Invalid query: could not parse function")
         return queries, query_colnames
 
     def parse_column_set(self, column_name, M_c, M_c_full, column_lists = None):
         """
         given a string representation of a column name or column_list,
-        returns a list of the column indexes, list of column names. 
+        returns a list of the column indexes, list of column names.
         """
         index_list = []
         name_list = []
@@ -1087,7 +1167,7 @@ class Parser(object):
 
     def reset_root_dir(self):
         """Set the root_directory, used as the base for all relative paths, to
-        the current working directory."""        
+        the current working directory."""
         self.root_directory = os.getcwd()
 
     def get_absolute_path(self, relative_path):
