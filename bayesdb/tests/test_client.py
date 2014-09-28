@@ -207,6 +207,14 @@ def test_column_lists():
   client('simulate %s from %s times 10' % (cname1, test_tablename), debug=True, pretty=False)
   client('simulate %s from %s times 10' % (cname2, test_tablename), debug=True, pretty=False)
 
+  # Test dropping column list
+  client('drop column list %s from %s' % (cname1, test_tablename), debug=True, pretty=False)
+  client('drop column list %s from %s' % (cname2, test_tablename), debug=True, pretty=False)
+
+  # Assert there are now 0 row lists.
+  out = client('show column lists for %s' % test_tablename, debug=True, pretty=False)[0]
+  assert out.shape == (0, 1)
+
 def test_simulate():
   """ smoke test """
   test_tablename = create_dha()

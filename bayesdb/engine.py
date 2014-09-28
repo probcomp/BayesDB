@@ -1277,6 +1277,13 @@ class Engine(object):
 
     return dict(column_labels=column_names)
 
+  def drop_column_list(self, tablename, list_name):
+    """
+    Remove column list from stored items for btable.
+    """
+    self.persistence_layer.drop_column_list(tablename, list_name)
+    message = 'Column list %s removed from btable %s' % (list_name, tablename)
+    return dict(message=message)
 
   def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None, numsamples=None):
     """
@@ -1344,7 +1351,12 @@ class Engine(object):
 
     # save column list, if given a name to save as
     if name:
-      self.persistence_layer.add_column_list(tablename, name, column_names)
+      # If list already exists with this name, warn and ask user to drop it.
+      if self.persistence_layer.column_list_exists(tablename, name):
+        print 'WARNING: Column list name %s already exists for btable %s and will not be overwritten.' % (name, tablename)
+        print '    Use "DROP COLUMN LIST %s FROM %s" first.' % (name, tablename)
+      else:
+        self.persistence_layer.add_column_list(tablename, name, column_names)
 
     # De-duplicate values, if the same function was used in where and order by
     used_names = set()
@@ -1447,14 +1459,19 @@ class Engine(object):
 
     # Add the column lists for connected clusters, if desired. Overwrites old ones with same name.
     if clusters is not None:
-      cluster_name_tuples = []
-      for i, cluster in enumerate(clusters):
-        name = "%s_%d" % (clusters_name, i)
-        column_names = [M_c['idx_to_name'][str(idx)] for idx in cluster]
-        self.persistence_layer.add_column_list(tablename, name, column_names)
-        cluster_name_tuples.append((name, column_names))
-      ret['clusters'] = clusters
-      ret['column_lists'] = cluster_name_tuples
+      # If lists with this prefix already exist, warn and ask user to remove them.
+      if self.persistence_layer.column_list_exists(tablename, clusters_name):
+        print 'WARNING: Column lists with prefix %s already exist for btable %s' % (clusters_name, tablename)
+        print '    Use "DROP COLUMN LIST %s FROM %s" first.' % (clusters_name, tablename)
+      else:
+        cluster_name_tuples = []
+        for i, cluster in enumerate(clusters):
+          name = "%s_%d" % (clusters_name, i)
+          column_names = [M_c['idx_to_name'][str(idx)] for idx in cluster]
+          self.persistence_layer.add_column_list(tablename, name, column_names)
+          cluster_name_tuples.append((name, column_names))
+        ret['clusters'] = clusters
+        ret['column_lists'] = cluster_name_tuples
 
     return ret
 

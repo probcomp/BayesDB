@@ -106,6 +106,16 @@ class Parser(object):
         """
         return 'show_diagnostics', dict(tablename=bql_statement_ast.btable), None
 
+    def parse_drop_column_list(self,bql_statement_ast):
+        """
+        :param bql_statement_ast pyparsing.ParseResults:
+        :return ('drop_column_list', args_dict, None):
+        """
+        list_name = None
+        if bql_statement_ast.list_name != '':
+            list_name = bql_statement_ast.list_name
+        return 'drop_column_list', dict(tablename=bql_statement_ast.btable, list_name=list_name), None
+
     def parse_drop_models(self,bql_statement_ast):
         """
         :param bql_statement_ast pyparsing.ParseResults:
