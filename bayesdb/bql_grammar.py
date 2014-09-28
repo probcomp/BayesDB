@@ -202,6 +202,8 @@ drop_btable_keyword = Combine(drop_keyword + single_white + btable_keyword).setR
 drop_btable_keyword.setParseAction(replaceWith("drop_btable"))
 drop_column_list_keyword = Combine(drop_keyword + single_white + column_keyword + single_white + list_keyword).setResultsName("statement_id")
 drop_column_list_keyword.setParseAction(replaceWith("drop_column_list"))
+drop_row_list_keyword = Combine(drop_keyword + single_white + row_keyword + single_white + list_keyword).setResultsName("statement_id")
+drop_row_list_keyword.setParseAction(replaceWith("drop_row_list"))
 drop_model_keyword = Combine(drop_keyword + single_white + model_keyword).setResultsName("statement_id")
 drop_model_keyword.setParseAction(replaceWith("drop_models"))
 show_schema_for_keyword = Combine(show_keyword + single_white + schema_keyword +
@@ -448,6 +450,9 @@ drop_btable_function = drop_btable_keyword + btable
 # DROP COLUMN LIST <listname> FROM <btable>
 drop_column_list_function = drop_column_list_keyword + identifier.setResultsName('list_name') + Suppress(from_keyword) + btable
 
+# DROP ROW LIST <listname> FROM <btable>
+drop_row_list_function = drop_row_list_keyword + identifier.setResultsName('list_name') + Suppress(from_keyword) + btable
+
 # DROP MODEL[S] [<model_index>-<model_index>] FROM <btable>
 drop_model_function = drop_model_keyword + Optional(index_clause) + Suppress(from_keyword) + btable
 
@@ -471,6 +476,7 @@ management_query = (create_btable_function |
                     save_model_from_function |
                     drop_btable_function |
                     drop_column_list_function |
+                    drop_row_list_function |
                     drop_model_function |
                     help_function |
                     update_metadata_for_function |

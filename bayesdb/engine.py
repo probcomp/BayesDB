@@ -1285,6 +1285,14 @@ class Engine(object):
     message = 'Column list %s removed from btable %s' % (list_name, tablename)
     return dict(message=message)
 
+  def drop_row_list(self, tablename, list_name):
+    """
+    Remove row list from stored items for btable.
+    """
+    self.persistence_layer.drop_row_list(tablename, list_name)
+    message = 'Row list %s removed from btable %s' % (list_name, tablename)
+    return dict(message=message)
+
   def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None, numsamples=None):
     """
     Return all the column names from the specified table as a list.
@@ -1415,14 +1423,19 @@ class Engine(object):
 
     # Create new btables from connected components (like into), if desired. Overwrites old ones with same name.
     if clusters is not None:
-      cluster_name_tuples = []
-      for i, cluster in enumerate(clusters):
-        name = "%s_%d" % (clusters_name, i)
-        num_rows = len(cluster)
-        self.persistence_layer.add_row_list(tablename, name, cluster)
-        cluster_name_tuples.append((name, num_rows))
-      ret['clusters'] = clusters
-      ret['row_lists'] = cluster_name_tuples
+      # If lists with this prefix already exist, warn and ask user to remove them.
+      if self.persistence_layer.row_list_exists(tablename, clusters_name):
+        print 'WARNING: Column lists with prefix %s already exist for btable %s' % (clusters_name, tablename)
+        print '    Use "DROP ROW LIST %s FROM %s" first.' % (clusters_name, tablename)
+      else:
+        cluster_name_tuples = []
+        for i, cluster in enumerate(clusters):
+          name = "%s_%d" % (clusters_name, i)
+          num_rows = len(cluster)
+          self.persistence_layer.add_row_list(tablename, name, cluster)
+          cluster_name_tuples.append((name, num_rows))
+        ret['clusters'] = clusters
+        ret['row_lists'] = cluster_name_tuples
 
     return ret
 

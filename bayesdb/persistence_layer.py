@@ -203,11 +203,24 @@ class PersistenceLayer():
         elif '%s_0' % list_name in column_lists:
             suffix = 0
             while '%s_%d' % (list_name, suffix) in column_lists:
-                column_lists.pop('list_name_%d', None)
+                column_lists.pop('%s_%d' % (list_name, suffix), None)
                 suffix += 1
         else:
             raise utils.BayesDBColumnListDoesNotExistError(list_name, tablename)
         self.write_column_lists(tablename, column_lists)
+
+    def drop_row_list(self, tablename, list_name):
+        row_lists = self.get_row_lists(tablename)
+        if list_name in row_lists:
+            row_lists.pop(list_name, None)
+        elif '%s_0' % list_name in row_lists:
+            suffix = 0
+            while '%s_%d' % (list_name, suffix) in row_lists:
+                row_lists.pop('%s_%d' % (list_name, suffix), None)
+                suffix += 1
+        else:
+            raise utils.BayesDBRowListDoesNotExistError(list_name, tablename)
+        self.write_row_lists(tablename, row_lists)
 
     def get_model_config(self, tablename):
         """
@@ -319,6 +332,14 @@ class PersistenceLayer():
         '''
         column_lists = self.get_column_lists(tablename)
         result = list_name in column_lists or '%s_0' % list_name in column_lists
+        return result
+      
+    def row_list_exists(self, tablename, list_name):
+        '''
+        Return True if list_name or list_name_0 exist as column lists.
+        '''
+        row_lists = self.get_row_lists(tablename)
+        result = list_name in row_lists or '%s_0' % list_name in row_lists
         return result
       
     def get_user_metadata(self, tablename):
