@@ -6,7 +6,7 @@ Loading data
 ~~~~~~~~~~~~
 
 ::
-   
+
    CREATE BTABLE <btable> FROM <filename.csv>
 
 Creates a btable by importing data from the specified CSV file. The file must be in CSV format, and the first line must be a header indicating the names of each column.
@@ -16,6 +16,18 @@ integers) and present a table of options.
 You always have the option to create a new column as key, which will be named "key" and have integer values spanning the range of the number of rows in the table.
 
 The key column cannot be changed after creating the btable.
+
+To create a btable with a codebook::
+
+   CREATE BTABLE <btable> FROM <data-filename.csv> WITH CODEBOOK <codebook-filname.csv>
+
+A codebook stores common metadata for columns such as readable short names and descriptions. For example, given a 2-column btable, a codebook may look like::
+
+   column_label,short_name,description,value_map
+   usrwght,"user weight","User weight in kg",NaN
+   usrfvcol,"favorite color","User favorite color","{'Yellow': 0, 'Blue': 1, 'Red': 2}"
+
+The first column must in the column label, the second is the short name, the third is the column description, and the last is an optional value map for multinomial data. **Note:** Value maps are not fully implemented. You may view review values using `DESCRIBE`
 
 ::
 
@@ -56,7 +68,7 @@ Analyze the specified models for the specified number of iterations (by default,
 Examining the state of your btables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 There are a few convenience commands available to help you view the internal state of BayesDB::
-   
+
    LIST BTABLES
 
 View the list of all btable names in BayesDB.
@@ -81,7 +93,7 @@ Advanced feature: show diagnostic information for your btable's models.
 
 Saving and loading models
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Save and load models allow you to export your models from one instance of BayesDB (save), and then import them back into any instance of BayesDB (load), so that you don't have to re-run the potentially time-consuming ANALYZE step.   
+Save and load models allow you to export your models from one instance of BayesDB (save), and then import them back into any instance of BayesDB (load), so that you don't have to re-run the potentially time-consuming ANALYZE step.
 
 ::
 
@@ -90,7 +102,7 @@ Save and load models allow you to export your models from one instance of BayesD
 ::
 
    SAVE MODELS FROM <btable> TO <filename.pkl.gz>
-   
+
 
 Deleting
 ~~~~~~~~
@@ -115,12 +127,12 @@ SELECT is just like SQL's SELECT, except in addition to selecting, filtering (wi
 INFER is just like SELECT, except that it also tries to fill in missing values. The user may specify the desired confidence level to use (a number between 0 and 1, where 0 means "fill in every missing value with whatever your best guess is", and 1 means "only fill in a missing value if you're sure what it is"). If confidence is not specified, no values are filled in. Confidence may be specified with more granularity by following a column name with "CONF <confidence>" to allow you to specify different confidence levels for different columns. Optionally, the user may specify the number of samples to use when filling in missing values: the default value is good in general, but if you know what you're doing and want higher accuracy, you can increase the numer of samples used::
 
    INFER <columns|functions> FROM <btable> [WHERE <whereclause>] [WITH CONFIDENCE <confidence>] [WITH <numsamples> SAMPLES] [ORDER BY <columns|functions>] [LIMIT <limit>] [INTO <newbtablename>]
-   
+
    -- To specify individual confidence levels for each value to be filled in:
    INFER col1 CONF 0.9, col2, col3 CONF 0.5 FROM table WHERE col1 > 100 CONF 0.8 AND col2 = 'True' CONF 0.9
 
    -- To specify the same confidence level for every value of the query:
-   INFER col1, col2, col3 FROM table WHERE col1 > 100 AND col2 = 'True' WITH CONFIDENCE 0.9   
+   INFER col1, col2, col3 FROM table WHERE col1 > 100 AND col2 = 'True' WITH CONFIDENCE 0.9
 
 
 SIMULATE generates new rows from the underlying probability model a specified number of times::
@@ -132,7 +144,7 @@ The optional INTO clause at the end of SELECT, INFER, or SIMULATE queries allows
 ESTIMATE COLUMNS is like a SELECT statement, but lets you select columns instead of rows::
 
    ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>]
-   
+
 With ESTIMATE PAIRWISE, you may use any function that takes two columns as input, i.e. DEPENDENCE PROBABILITY, CORRELATION, or MUTUAL INFORMATION, and generates a matrix showing the value of that function applied to each pair of columns. See the :ref:`functions` section for more information.
 
 In addition, you may also add "SAVE CLUSTERS WITH THRESHOLD <threshold> AS <column_list>" in order to compute groups of columns, where the value of the pairwise function is at least <threshold> between at least one pair of columns in the group. Then, those groups of columns are saved as column lists with names "column_list_<id>", where id is an integer starting with 0::
@@ -160,7 +172,7 @@ Where Clause
 ~~~~~~~~~~~~~~~
 
 For SELECT, INFER, and ESTIMATE COLUMNS, you may include a where clause to filter results much like SQL. Where clauses have the following format::
-	
+
 	WHERE <column|function> <operator> <value> [CONF <confidence>] [AND <column|function> <operator> <value> [CONF <confidence>]...]
 
 SELECT and INFER where clauses may include columns and non-aggregate functions such as PREDICTIVE PROBABILITY and TYPICALITY. ESTIMATE COLUMNS where clause may include aggregate functions of columns such as MUTUAL INFORMATION or PROBABILITY. Only INFER allows CONF to be specified in its where clauses. The operator can be one of (=, <, >, <=, >=, in)::
@@ -193,7 +205,7 @@ PLOT displays plots of the marginal distributions of every single output column,
 Column Lists
 ~~~~~~~~~~~~
 Instead of manually typing in a comma-separated list of columns for queries, you may instead use a 'column list' in any query that asks for a list of columns. Column lists are created with ESTIMATE COLUMNS, which allows you to filter the columns you want included with a where clause, order the columns by some function, limit the number of columns, and save the column list by giving it a name with the AS clause::
-   
+
    ESTIMATE COLUMNS FROM <btable> [WHERE <whereclause>] [ORDER BY <functions>] [LIMIT <limit>] [AS <column_list>]
 
 Since it may be hard to see example what you'd put in the WHERE or ORDER by clause, take a look at an example, and be sure to read the :ref:`functions` section below::
@@ -236,7 +248,7 @@ Functions that take a row as input may be used in many types of queries, includi
   INFER
   ORDER BY (except in ESTIMATE COLUMNS)
   WHERE (except in ESTIMATE COLUMNS)
-  
+
 Functions in this category include::
 
    SIMILARITY TO <row> [WITH RESPECT TO <column>]
@@ -250,7 +262,7 @@ Similarity measures the similarity between two rows. This can be interpreted by 
 The typicality of a row measures how similar to other rows this row is. If a row is more dependent, on average, with other rows, then it becomes more typical.
 
 ::
-   
+
    PROBABILITY OF <column>=<value>
 
 The probability of a cell taking on a particular value is the probability that the Bayesian probability model assigns to this particular outcome.
@@ -271,16 +283,16 @@ Functions of two columns
 Functions of two columns may be used in the following queries::
 
   ESTIMATE PAIRWISE (omit the 'OF' clause)
-  SELECT (include the 'OF' clause; they only return one row)  
+  SELECT (include the 'OF' clause; they only return one row)
 
-Here are the three functions::  
-      
+Here are the three functions::
+
   DEPENDENCE PROBABILITY [OF <column1>] WITH <column2>
 
 The dependence probability between two columns is a measure of how likely it is that the two columns are dependent (opposite of indepdendent). Note that this does not measure the strength of the relationship between the two columns; it merely measures the probability that there is any relationship at all.
-  
+
 ::
-   
+
   MUTUAL INFORMATION [OF <column1>] WITH <column2>
 
 Mutual information between two columns measures how much information a value in one column gives you about the value in the other column. If mutual information is 0, then knowing the first column tells you nothing about the other column (they are independent). Mutual information is always nonnegative, and is measured in bits.
@@ -327,23 +339,23 @@ Here are the functions::
 This is the same function as TYPICALITY OF <column> above, but the column argument is implicit.
 
 ::
-   
+
   CORRELATION WITH <column>
 
-This is the same function as CORRELATION OF <column1> WITH <column2> above, but one of the column arguments is implicit.  
+This is the same function as CORRELATION OF <column1> WITH <column2> above, but one of the column arguments is implicit.
 
 ::
-   
+
   DEPENDENCE PROBABILITY WITH <column>
 
-This is the same function as DEPENDENCE PROBABILITY OF <column1> WITH <column2> above, but one of the column arguments is implicit.    
+This is the same function as DEPENDENCE PROBABILITY OF <column1> WITH <column2> above, but one of the column arguments is implicit.
 
 ::
-   
+
   MUTUAL INFORMATION WITH <column>
 
-This is the same function as MUTUAL INFORMATION OF <column1> WITH <column2> above, but one of the column arguments is implicit.    
-   
+This is the same function as MUTUAL INFORMATION OF <column1> WITH <column2> above, but one of the column arguments is implicit.
+
 
 Here are some examples::
 
@@ -449,3 +461,38 @@ Or, if a set of column names is given, the output shows column name and label pa
 
   SHOW LABEL FOR <btable> [<column-name-1> [, <column-name-2>...]]
 
+Retrieving column descriptions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Top review codebook entries for and datatype properties (cardinality and value maps for categorical and range for cyclic) for columns ::
+
+    DESCRIBE <column-name-1> [, <column-name-2>...] FOR <btable>
+    DESCRIBE * FOR <btable>
+
+
+Adding a codebook
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Add a codebook after btable initialization::
+
+  UPDATE CODEBOOK FOR <btable> FROM <filename.csv>
+
+Adding column descriptions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To update column descriptions::
+
+  UPDATE DESCRIPTIONS FOR <btable> SET <column1-name-1 = description-1> [, <column-name-2 = description-2>, ...]
+
+ Descriptions should be quoted.
+
+Adding readable column short names
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Short names, rather than column labels, are displayed in table and figure output. The should be short and descriptive.
+
+To update column short names::
+
+  UPDATE SHORT NAMES FOR <btable> SET <column1-name-1 = short-name-1> [, <column-name-2 = short-name-2>, ...]
+
+ Names should be quoted if they contain spaces.

@@ -177,7 +177,8 @@ def _mutual_information(mutual_information_args, row_id, data_values, M_c, X_L_l
 def _correlation(correlation_args, row_id, data_values, M_c, X_L_list, X_D_list, T, engine, numsamples):
     col1, col2 = correlation_args
 
-    cctype_map = {'normal_inverse_gamma': 'numerical', 'symmetric_dirichlet_discrete': 'categorical'}
+    # Create map of modeltype to column type. Treate cyclic as numerical for the purpose of calculating correlation.
+    cctype_map = dict(normal_inverse_gamma = 'numerical', symmetric_dirichlet_discrete = 'categorical', vonmises = 'numerical')
     cctype1 = cctype_map[M_c['column_metadata'][col1]['modeltype']]
     cctype2 = cctype_map[M_c['column_metadata'][col2]['modeltype']]
 
