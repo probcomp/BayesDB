@@ -26,6 +26,7 @@ import numpy
 import pytest
 import random
 
+import bayesdb.diagnostics_utils as diag_utils
 import bayesdb.data_utils as data_utils
 from bayesdb.client import Client
 from bayesdb.engine import Engine
@@ -735,9 +736,39 @@ def test_update_short_names_multiple():
     assert(short_name_updated_0 == short_name_proposed_0)
     assert(short_name_updated_1 == short_name_proposed_1)
 
-@notimplemented
+
 def test_show_diagnostics():
-    pass  # TODO
+    test_tablename, _ = create_describe_btable()
+
+    with pytest.raises(utils.BayesDBError) as excinfo:
+        result = engine.show_diagnostics(test_tablename)
+    assert 'No models for btable' in excinfo.value.message
+
+    engine.initialize_models(test_tablename, n_models=2)
+
+    with pytest.raises(utils.BayesDBError) as excinfo:
+        result = engine.show_diagnostics(test_tablename)
+    assert 'No diagnostics found' in excinfo.value.message
+
+    num_iters = 5
+    engine.analyze(test_tablename, iterations=num_iters, background=False)
+
+    results = engine.show_diagnostics(test_tablename)
+
+    # there should be an entry for each diagnostic and also: model id, iterations, time, and
+    # logscore
+    entry_length = len(diag_utils.single_state_diagnostics) + 4
+    assert(len(results['column_labels']) == entry_length)
+    assert(len(results['data']) == 2)
+    assert(len(results['data'][0]) == entry_length)
+    assert(len(results['data'][1]) == entry_length)
+
+    # check values for id and iterations
+    assert(results['data'][0][0] == 0)
+    assert(results['data'][0][1] == num_iters)
+
+    assert(results['data'][1][0] == 1)
+    assert(results['data'][1][1] == num_iters)
 
 
 @notimplemented
