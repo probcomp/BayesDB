@@ -25,7 +25,7 @@ First, create the btable.
 
 .. ipython::
 
-   In [3]: client('CREATE BTABLE dha FROM ../examples/dha/dha.csv;')
+   In [3]: client('CREATE BTABLE dha FROM ../examples/dha/dha.csv;', key_column=0)
 
 Then, analyze the data::
 
@@ -70,7 +70,7 @@ Now, we will generate a subsection of the pairwise dependence probability matrix
 
 .. ipython::
 
-   In [6]: client('ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha FOR COLUMNS qs_cols SAVE TO images/dha_dep_qs_cols.png;')
+   In [6]: client('ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha FOR qs_cols SAVE TO images/dha_dep_qs_cols.png;')
 
 .. image:: images/dha_dep_qs_cols.png
    :width: 1000px
@@ -82,7 +82,7 @@ Let's see which columns are most related to pymt_p_md_visit (payment per doctor 
 
    In [6]: client('ESTIMATE COLUMNS FROM dha ORDER BY DEPENDENCE PROBABILITY WITH pymt_p_md_visit LIMIT 6 AS pm_cols;')
 
-   In [6]: client('ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha FOR COLUMNS pm_cols;')
+   In [6]: client('ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM dha FOR pm_cols;')
 
 Confirming our hypothesis
 ^^^^^^^^^^^^^^^^^^^^^^^^^
