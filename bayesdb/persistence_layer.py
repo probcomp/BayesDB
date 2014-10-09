@@ -89,7 +89,7 @@ class ModelLocks():
         self.tablename_dict[tablename] = dict()
 
 
-class PersistenceLayer():
+class PersistenceLayer(object):
     """
     Stores btables in the following format in the "data" directory:
     bayesdb/data/
@@ -101,6 +101,7 @@ class PersistenceLayer():
     ....column_lists.pkl
     ....row_lists.pkl
     ....models/
+    ......diagnostic_data.pkl
     ......model_<id>.pkl
 
     table_index.pkl: list of btable names.
@@ -111,7 +112,13 @@ class PersistenceLayer():
     row_lists.pkl: dict. keys: row list names, values: list of row keys (need to update all these if
         table key is changed!).
     models.pkl: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore, num_views,
-    model_config]. Idx starting at 1.
+        model_config]. Idx starting at 1.
+    diagnostic_data.pkl: dict[model_idx] -> dict[score, num_views, min_cluster_view,
+        mean_cluster_view, max_cluster_view, ...more to come] each entry of which is dict with keys
+        'value' and 'step'. For example, the 'score' diagnostic for model 9 which has been
+        storing diagnostic data every 5 transition steps for 10 transitions may look like:
+        diagnostic_data[9]['score'] => {'value': [-1023.0246, -842.8801, -820.3913],
+        'step':[0, 4, 9]}
     data.csv: the raw csv file that the data was loaded from.
 
     Should be a Singleton class, but Python doesn't enforce that. Could be refactored as just a
@@ -852,60 +859,51 @@ class PersistenceLayer():
             modelid = max_model_id + 1 + i
             self.write_model(tablename, m, modelid)
 
-    def update_models(self, tablename, modelids, X_L_list, X_D_list, diagnostics_dict):
+    def update_models(self, tablename, modelids, X_L_list, X_D_list, diagnostics_data_list,
+                      increment_iterations_list=None, increment_time_list=None):
         """
         TODO: UNUSED WITH NEW ANALYZE, DELETE
 
         Overwrite all models by id, and append diagnostic info.
 
-        param diagnostics_dict: -> dict[f_z[0, D], num_views, logscore, f_z[0, 1], column_crp_alpha]
-        Each of the 5 diagnostics is a 2d array, size #models x #iterations
-
-        Ignores f_z[0, D] and f_z[0, 1], since these will need to be recalculated after all
-        inference is done in order to properly incorporate all models.
+        Args:
+            tablename (type): Btable name.
+            X_L_list (list): List of crosscat X_L metadata from intialize or analyze
+            X_D (list): List of Crosscat X_D metadata from intialize or analyze
+            diagnostics_data (list of dict): List of diagnostics dict. Keys vary depending on 
+                tests avalible indiagnostics_utils. Each key holds only a single value.
+            modelids (list of in): List of model indices.
+            increment_iterations_list (list int): Number of analyze iterations since last update 
+                for each model.
+            increment_time_list (list of float): Time (seconds) spent analyzing since last update
+                for each model.
         """
-        self.acquire_table(tablename)
-        models = self.get_models(tablename)
-        new_iterations = len(diagnostics_dict['logscore'])
 
-        # models: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore,
-        # num_views]. Idx starting at 1.
-        # each diagnostic entry is a list, over iterations.
-
-        # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha, logscore,
-        # num_views.
         for idx, modelid in enumerate(modelids):
-            model_dict = models[modelid]
-            model_dict['X_L'] = X_L_list[idx]
-            model_dict['X_D'] = X_D_list[idx]
-            model_dict['iterations'] = model_dict['iterations'] + new_iterations
+            if increment_iterations_list is not None:
+                increment_iterations = increment_iterations[idx]
+                increment_time = increment_time[idx]
+            else:
+                increment_iterations = 0
+                increment_time = 0
+            self.update_model(tablename, X_L_list[idx], X_D_list[idx], diagnostics_data_list[idx],
+                              modelid, increment_iterations, increment_time)
 
-            for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
-                diag_list = [l[idx] for l in diagnostics_dict[diag_key]]
-                if diag_key in model_dict and type(model_dict[diag_key]) == list:
-                    model_dict[diag_key] += diag_list
-                else:
-                    model_dict[diag_key] = diag_list
+    def update_model(self, tablename, X_L, X_D, diagnostics_data, modelid, 
+                     increment_iterations=0, increment_time=0):
+        """ Overwrite a certain model by id.
+        
+        Overwrites current metadata and updates, trials, time, and diagnostics (if applicable).
 
-        # Save to disk
-        self.write_models(tablename, models)
-        self.release_table(tablename)
-
-    def update_model(self, tablename, X_L, X_D, diagnostics_dict, modelid):
-        """
-        Overwrite a certain model by id.
-        Assumes that diagnostics_dict was from an analyze run with only one model.
-
-        param diagnostics_dict: -> dict[f_z[0, D], num_views, logscore, f_z[0, 1], column_crp_alpha]
-        Each of the 5 diagnostics is a 2d array, size #models x #iterations
-
-        Ignores f_z[0, D] and f_z[0, 1], since these will need to be recalculated after all
-        inference is done in order to properly incorporate all models.
-
-        models: dict[model_idx] -> dict[X_L, X_D, iterations, column_crp_alpha, logscore,
-            num_views]. Idx starting at 1.
-        each diagnostic entry is a list, over iterations.
-
+        Args:
+            tablename (type): Btable name.
+            X_L (dict): Crosscat X_L metadata from intialize or analyze
+            X_D (list of list of int): Crosscat X_D metadata from intialize or analyze
+            diagnostics_data (dict): Diagnostics dict. Keys vary depending on tests avalible in 
+                diagnostics_utils. Each key holds only a single value.
+            modelid (int): Model index.
+            increment_iterations (int): Number of analyze iterations since last update.
+            increment_time (float): Time (seconds) spent analyzing since last update.
         """
         assert type(modelid) == int
         self.model_locks.acquire(tablename, modelid)
@@ -914,17 +912,28 @@ class PersistenceLayer():
         model['X_L'] = X_L
         model['X_D'] = X_D
 
-        if len(diagnostics_dict) > 0:  # If any iterations were performed
-            model['iterations'] = model['iterations'] + len(diagnostics_dict['logscore'])
+        if increment_iterations > 0:  # If any iterations were performed
+            model['iterations'] += increment_iterations
+            model['time'] += increment_time
 
-            # Add all information indexed by model id: X_L, X_D, iterations, column_crp_alpha,
-            # logscore, num_views.
-            for diag_key in 'column_crp_alpha', 'logscore', 'num_views':
-                diag_list = [l[0] for l in diagnostics_dict[diag_key]]
-                if diag_key in model and type(model[diag_key]) == list:
-                    model[diag_key] += diag_list
-                else:
-                    model[diag_key] = diag_list
+            diagnostics_data['time'] = model['time']
+            diagnostics_data['iterations'] = model['iterations']
+
+            if 'diagnostics' not in model.keys():
+                model['diagnostics'] = dict()
+                for key, value in diagnostics_data.iteritems():
+                    model['diagnostics'][key] = [value]
+                model['diagnostics']['iterations'] = [0]
+                model['diagnostics']['time'] = [0.0]
+            else:
+                # don't append diagnostics if this is the same timepoint
+                if model['diagnostics']['iterations'][-1] != diagnostics_data['iterations'] and \
+                        model['diagnostics']['time'][-1] != diagnostics_data['time']:
+                    for key, value in diagnostics_data.iteritems():
+                        if key not in model['diagnostics'].keys():
+                            model['diagnostics'][key] = [value]
+                        else:
+                            model['diagnostics'][key].append(value)
 
         self.write_model(tablename, model, modelid)
         self.model_locks.release(tablename, modelid)
