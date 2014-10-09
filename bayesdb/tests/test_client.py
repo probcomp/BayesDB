@@ -207,6 +207,14 @@ def test_column_lists():
   client('simulate %s from %s times 10' % (cname1, test_tablename), debug=True, pretty=False)
   client('simulate %s from %s times 10' % (cname2, test_tablename), debug=True, pretty=False)
 
+  # Test dropping column list
+  client('drop column list %s from %s' % (cname1, test_tablename), debug=True, pretty=False)
+  client('drop column list %s from %s' % (cname2, test_tablename), debug=True, pretty=False)
+
+  # Assert there are now 0 row lists.
+  out = client('show column lists for %s' % test_tablename, debug=True, pretty=False)[0]
+  assert out.shape == (0, 1)
+
 def test_simulate():
   """ smoke test """
   test_tablename = create_dha()
@@ -253,14 +261,19 @@ def test_row_clusters():
   test_tablename = create_dha()
   global client, test_filenames
   client('initialize 2 models for %s' % (test_tablename), debug=True, pretty=False)
-  row_lists = client('show row lists for %s' % test_tablename, debug=True, pretty=False)[0]['row_lists']
-  assert len(row_lists) == 0
+  row_lists = client('show row lists for %s' % test_tablename, debug=True, pretty=False)[0]
+  assert row_lists.shape == (0, 2)
   client('estimate pairwise row similarity from %s save clusters with threshold 0.1 as rcc' % test_tablename, debug=True, pretty=False)
-  row_lists = client('show row lists for %s' % test_tablename, debug=True, pretty=False)[0]['row_lists']
-  assert len(row_lists) > 0
+  row_lists = client('show row lists for %s' % test_tablename, debug=True, pretty=False)[0]
+  assert row_lists.shape[0] > 0
   client('select * from %s where key in rcc_0' % test_tablename, debug=True, pretty=False)
   #client("select * from %s where similarity to name='McAllen TX' > 0.5 order by similarity to name='McAllen TX' as mcallenrows" % test_tablename, debug=True, pretty=False)
   #client('select * from %s where key in mcallenrows' % test_tablename, debug=True, pretty=False)
+
+  # Test removing row lists
+  client('drop row list rcc from %s' % test_tablename, debug=True, pretty=False)
+  out = client('show row lists for %s' % test_tablename, debug=True, pretty=False)[0]
+  assert out.shape == (0, 2)
 
 def test_select_whereclause_functions():
   """ smoke test """

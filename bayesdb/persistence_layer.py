@@ -26,6 +26,7 @@ import pickle
 import shutil
 import contextlib
 import threading
+import re
 
 from threading import RLock
 
@@ -202,6 +203,32 @@ class PersistenceLayer(object):
         pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
         metadata_f.close()
 
+    def drop_column_list(self, tablename, list_name):
+        column_lists = self.get_column_lists(tablename)
+        if list_name in column_lists:
+            column_lists.pop(list_name, None)
+        elif '%s_0' % list_name in column_lists:
+            suffix = 0
+            while '%s_%d' % (list_name, suffix) in column_lists:
+                column_lists.pop('%s_%d' % (list_name, suffix), None)
+                suffix += 1
+        else:
+            raise utils.BayesDBColumnListDoesNotExistError(list_name, tablename)
+        self.write_column_lists(tablename, column_lists)
+
+    def drop_row_list(self, tablename, list_name):
+        row_lists = self.get_row_lists(tablename)
+        if list_name in row_lists:
+            row_lists.pop(list_name, None)
+        elif '%s_0' % list_name in row_lists:
+            suffix = 0
+            while '%s_%d' % (list_name, suffix) in row_lists:
+                row_lists.pop('%s_%d' % (list_name, suffix), None)
+                suffix += 1
+        else:
+            raise utils.BayesDBRowListDoesNotExistError(list_name, tablename)
+        self.write_row_lists(tablename, row_lists)
+
     def get_model_config(self, tablename):
         """
         Just loads one model, and gets the model_config from it.
@@ -306,6 +333,22 @@ class PersistenceLayer(object):
         except IOError:
             return dict()
 
+    def column_list_exists(self, tablename, list_name):
+        '''
+        Return True if list_name or list_name_0 exist as column lists.
+        '''
+        column_lists = self.get_column_lists(tablename)
+        result = list_name in column_lists or '%s_0' % list_name in column_lists
+        return result
+      
+    def row_list_exists(self, tablename, list_name):
+        '''
+        Return True if list_name or list_name_0 exist as column lists.
+        '''
+        row_lists = self.get_row_lists(tablename)
+        result = list_name in row_lists or '%s_0' % list_name in row_lists
+        return result
+      
     def get_user_metadata(self, tablename):
         try:
             f = open(os.path.join(self.data_dir, tablename, 'user_metadata.pkl'), 'r')

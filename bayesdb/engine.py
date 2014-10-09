@@ -1261,9 +1261,9 @@ class Engine(object):
         """
         if not self.persistence_layer.check_if_table_exists(tablename):
             raise utils.BayesDBInvalidBtableError(tablename)
-
+    
         row_lists = self.persistence_layer.get_row_lists(tablename)
-        return dict(row_lists=[(name, len(rows)) for (name, rows) in row_lists.items()])
+        return dict(column_labels=['Row List Name', 'Row Count'], data=[(name, len(rows)) for (name, rows) in row_lists.items()])
 
 
     def show_columns(self, tablename, column_list=None):
@@ -1476,6 +1476,217 @@ class Engine(object):
                 column_names = [M_c['idx_to_name'][str(idx)] for idx in cluster]
                 self.persistence_layer.add_column_list(tablename, name, column_names)
                 cluster_name_tuples.append((name, column_names))
+            ret['clusters'] = clusters
+            ret['column_lists'] = cluster_name_tuples
+
+        return ret
+
+    def drop_column_list(self, tablename, list_name):
+        """
+        Remove column list from stored items for btable.
+        """
+        self.persistence_layer.drop_column_list(tablename, list_name)
+        message = 'Column list %s removed from btable %s' % (list_name, tablename)
+        return dict(message=message)
+
+    def drop_row_list(self, tablename, list_name):
+        """
+        Remove row list from stored items for btable.
+        """
+        self.persistence_layer.drop_row_list(tablename, list_name)
+        message = 'Row list %s removed from btable %s' % (list_name, tablename)
+        return dict(message=message)
+
+    def estimate_columns(self, tablename, functions, whereclause, limit, order_by, name=None, modelids=None, numsamples=None):
+        """
+        Return all the column names from the specified table as a list.
+        First, columns are filtered based on whether they match the whereclause.
+        The whereclause must consist of functions of a single column only.
+        Next, the columns are ordered by other functions of a single column.
+        Finally, the columns are limited to the specified number.
+
+        ## allowed functions:
+        # typicality(centrality)
+        # dependence probability to <col>
+        # mutual information with <col>
+        # correlation with <col>
+        """
+        if not self.persistence_layer.check_if_table_exists(tablename):
+          raise utils.BayesDBInvalidBtableError(tablename)
+
+        X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
+        M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+        column_indices = list(M_c['name_to_idx'].values())
+
+        # Store the names of each of the functions in the where or order by, to be displayed in output.
+        func_descriptions = []
+
+        ## filter based on where clause
+        where_conditions = self.parser.parse_column_whereclause(whereclause, M_c, T)
+        if where_conditions is not None and len(X_L_list) == 0:
+          raise utils.BayesDBNoModelsError(tablename)
+        column_indices_and_data = estimate_columns_utils.filter_column_indices(column_indices, where_conditions, M_c, T, X_L_list, X_D_list, self, numsamples)
+        func_descriptions += [estimate_columns_utils.function_description(where_item[0][0], where_item[0][1], M_c) for where_item in where_conditions]
+
+        ## order
+        if order_by and len(X_L_list) == 0:
+          raise utils.BayesDBNoModelsError(tablename)
+        if order_by != False:
+          order_by = self.parser.parse_column_order_by_clause(order_by, M_c)
+          func_descriptions += [estimate_columns_utils.function_description(order_item[0], order_item[1], M_c) for order_item in order_by]
+
+        # Get tuples of column estimation function values and column indices
+        ordered_tuples = estimate_columns_utils.order_columns(column_indices_and_data, order_by, M_c, X_L_list, X_D_list, T, self, numsamples)
+        # tuple contains: (tuple(data), cidx)
+
+        # limit
+        if limit != float('inf'):
+          ordered_tuples = ordered_tuples[:limit]
+
+        # convert indices to names and create data list of column names and associated function values
+        column_names = []
+        column_data = []
+
+        # column_data should be a list of the data values
+        for ordered_tuple in ordered_tuples:
+          if type(ordered_tuple) == int:
+            #
+            ordered_tuple = ((), column_idx_tup)
+          column_name_temp = M_c['idx_to_name'][str(ordered_tuple[1])]
+          column_names.append(column_name_temp)
+
+          # Get the values of the functions that were used in where and order by
+          column_data_temp = [data_utils.get_column_labels_from_M_c(M_c, [column_name_temp])[0]]
+          column_data_temp.append(column_name_temp)
+          column_data_temp.extend(ordered_tuple[0])
+          column_data.append(column_data_temp)
+
+        # save column list, if given a name to save as
+        if name:
+          # If list already exists with this name, warn and ask user to drop it.
+          if self.persistence_layer.column_list_exists(tablename, name):
+            print 'WARNING: Column list name %s already exists for btable %s and will not be overwritten.' % (name, tablename)
+            print '    Use "DROP COLUMN LIST %s FROM %s" first.' % (name, tablename)
+          else:
+            self.persistence_layer.add_column_list(tablename, name, column_names)
+
+        # De-duplicate values, if the same function was used in where and order by
+        used_names = set()
+        indices_to_pop = []
+        func_descriptions.insert(0, 'column label')
+        func_descriptions.insert(1, 'column name')
+        for i, name in enumerate(func_descriptions):
+          if name not in used_names:
+            used_names.add(name)
+          else:
+            indices_to_pop.append(i)
+        indices_to_pop.sort(reverse=True) # put highest indices first, so popping them doesn't affect others
+        for i in indices_to_pop:
+          func_descriptions.pop(i)
+        for column_data_list in column_data:
+          for i in indices_to_pop:
+            column_data_list.pop(i)
+
+
+        # Create column names ('column' followed by a string describing each function)
+        ret = dict()
+        if column_data != []:
+          ret['column_labels'] = func_descriptions
+          ret['data'] = column_data
+
+        return ret
+
+    def estimate_pairwise_row(self, tablename, function, row_list, clusters_name=None, threshold=None, modelids=None, numsamples=None):
+        if not self.persistence_layer.check_if_table_exists(tablename):
+          raise utils.BayesDBInvalidBtableError(tablename)
+        X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
+        M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+        if len(X_L_list) == 0:
+          raise utils.BayesDBNoModelsError(tablename)
+
+        # TODO: deal with row_list
+        if row_list:
+          row_indices = self.persistence_layer.get_row_list(tablename, row_list)
+          if len(row_indices) == 0:
+            raise utils.BayesDBError("Error: Row list %s has no rows." % row_list)
+        else:
+          row_indices = None
+
+        column_lists = self.persistence_layer.get_column_lists(tablename)
+
+        # Do the heavy lifting: generate the matrix itself
+
+        matrix, row_indices_reordered, clusters = pairwise.generate_pairwise_row_matrix(function, X_L_list, X_D_list, M_c, T, tablename, engine=self, row_indices=row_indices, cluster_threshold=threshold, column_lists=column_lists, numsamples=numsamples)
+        title = 'Pairwise row %s for %s' % (function.function_id, tablename)
+        ret = dict(
+          matrix=matrix,
+          column_names=row_indices_reordered, # this is called column_names so that the plotting code displays them
+          title=title,
+          message = "Created " + title
+          )
+
+        # Create new btables from connected components (like into), if desired. Overwrites old ones with same name.
+        if clusters is not None:
+          # If lists with this prefix already exist, warn and ask user to remove them.
+          if self.persistence_layer.row_list_exists(tablename, clusters_name):
+            print 'WARNING: Column lists with prefix %s already exist for btable %s' % (clusters_name, tablename)
+            print '    Use "DROP ROW LIST %s FROM %s" first.' % (clusters_name, tablename)
+          else:
+            cluster_name_tuples = []
+            for i, cluster in enumerate(clusters):
+              name = "%s_%d" % (clusters_name, i)
+              num_rows = len(cluster)
+              self.persistence_layer.add_row_list(tablename, name, cluster)
+              cluster_name_tuples.append((name, num_rows))
+            ret['clusters'] = clusters
+            ret['row_lists'] = cluster_name_tuples
+
+        return ret
+
+
+    def estimate_pairwise(self, tablename, function_name, column_list=None, clusters_name=None, threshold=None, modelids=None, numsamples=None):
+        if not self.persistence_layer.check_if_table_exists(tablename):
+          raise utils.BayesDBInvalidBtableError(tablename)
+        X_L_list, X_D_list, M_c = self.persistence_layer.get_latent_states(tablename, modelids)
+        M_c, M_r, T = self.persistence_layer.get_metadata_and_table(tablename)
+        if len(X_L_list) == 0:
+          raise utils.BayesDBNoModelsError(tablename)
+
+        if column_list:
+          column_names = self.persistence_layer.get_column_list(tablename, column_list)
+          if len(column_names) == 0:
+            raise utils.BayesDBError("Error: Column list %s has no columns." % column_list)
+
+          utils.check_for_duplicate_columns(column_names)
+        else:
+          column_names = None
+
+        # Do the heavy lifting: generate the matrix itself
+        matrix, column_names_reordered, clusters = pairwise.generate_pairwise_column_matrix(   \
+            function_name, X_L_list, X_D_list, M_c, T, tablename, engine=self, column_names=column_names,
+            cluster_threshold=threshold, numsamples=numsamples)
+
+        title = 'Pairwise column %s for %s' % (function_name, tablename)
+        ret = dict(
+          matrix=matrix,
+          column_names=column_names_reordered,
+          title=title,
+          message = "Created " + title
+          )
+
+        # Add the column lists for connected clusters, if desired. Overwrites old ones with same name.
+        if clusters is not None:
+          # If lists with this prefix already exist, warn and ask user to remove them.
+          if self.persistence_layer.column_list_exists(tablename, clusters_name):
+            print 'WARNING: Column lists with prefix %s already exist for btable %s' % (clusters_name, tablename)
+            print '    Use "DROP COLUMN LIST %s FROM %s" first.' % (clusters_name, tablename)
+          else:
+            cluster_name_tuples = []
+            for i, cluster in enumerate(clusters):
+              name = "%s_%d" % (clusters_name, i)
+              column_names = [M_c['idx_to_name'][str(idx)] for idx in cluster]
+              self.persistence_layer.add_column_list(tablename, name, column_names)
+              cluster_name_tuples.append((name, column_names))
             ret['clusters'] = clusters
             ret['column_lists'] = cluster_name_tuples
 
