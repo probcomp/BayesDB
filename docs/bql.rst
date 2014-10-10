@@ -236,6 +236,16 @@ To execute a query only on rows that are in a specific row list, just add the fo
     WHERE key in <row_list>
 
 
+Dropping Column and Row Lists
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To avoid accidental overwriting, column and row lists must be explicitly dropped before their names can be used for new lists for the same btable. To do so, use the following commands::
+
+    DROP ROW LIST <list_name> FROM <btable>
+    DROP COLUMN LIST <list_name> FROM <btable>
+
+For lists where multiple groups are created with the same prefix (row lists containing clusters, for example), all lists with the prefix <list_name> will be dropped.
+
+
 .. _functions:
 
 Predictive Functions
