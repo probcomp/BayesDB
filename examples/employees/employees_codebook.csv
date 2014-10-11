@@ -1,0 +1,7 @@
+"column_label","short_name","description","value_map"
+"age","age","Age of employee","NaN"
+"gender","gender","Gender of employee","{ ""M"": ""Male"",""F"": ""Female"" }"
+"salary","salary","Salary (dollars)","NaN"
+"height","height","Height (inches)","NaN"
+"division","division","Employee's division","NaN"
+"rank","rank","Rank of employee ","NaN"
