@@ -22,14 +22,14 @@
 import pytest
 import os
 from bayesdb import tester as tu
-from bayesdb.test_utils import assertIn
-from bayesdb.test_utils import assertNotIn
-from bayesdb.test_utils import assertLessThan
+from bayesdb.tester import assertIn
+from bayesdb.tester import assertNotIn
+from bayesdb.tester import assertLessThan
 
 
 # TestClient should go in a pytest fixture. Kwargs are passed through request params.
 # test fixtures must be passed 'request' in order to call the finalizer
-@pytest.fixture(scope='module', params=[dict(num_models=32, num_analyze_iterations=250)])
+@pytest.fixture(scope='module', params=[dict(num_models=10, num_analyze_iterations=10)])
 def dha_fixture(request):
     csv_filename = '../data/dha.csv'  # csv filename required
     test_id = 'dha'  # test id required for naming
@@ -47,7 +47,8 @@ def dha_fixture(request):
     return tclient
 
 
-def test_dha_example(dha_fixture):
+# make sure to order tests from top to bottom
+def test_dha_example_low_dependence_between_spnd_and_qual(dha_fixture):
     intro = """
     Dartmouth Atlas of Health
     ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -94,6 +95,8 @@ def test_dha_example(dha_fixture):
     # assert that the dependence probability between mdcr_spnd_amblnc and qual_score is less than .1
     assertLessThan(dependence_probability, .4)
 
+
+def test_dha_example_spending_variables_dependent_with_mdcr_spnd_amblnc(dha_fixture):
     out = dha_fixture('ESTIMATE COLUMNS FROM <btable> ORDER BY DEPENDENCE PROBABILITY WITH mdcr_spnd_amblnc LIMIT 10;')
 
     assertIn('pymt_p_visit_ratio', out['column name'].values)
@@ -105,6 +108,8 @@ def test_dha_example(dha_fixture):
     assertNotIn('qual_score', out['column name'].values)
     # TODO: others?
 
+
+def test_dha_example_score_variables_dependent_with_qual_score(dha_fixture):
     comment_2 = """
     Other spending variables as well as reimbursement related tend to be dependent, while quality variables do not appear on the list.
 
@@ -134,6 +139,8 @@ def test_dha_example(dha_fixture):
     """
     dha_fixture.comment(comment_3)
 
+
+def test_dha_example_mcallen_anomalous(dha_fixture):
     out_0 = dha_fixture('SELECT name, PREDICTIVE PROBABILITY OF mdcr_spnd_amblnc FROM <btable> ORDER BY PREDICTIVE PROBABILITY OF mdcr_spnd_amblnc ASC LIMIT 10')
     out_1 = dha_fixture('SELECT name, PREDICTIVE PROBABILITY OF qual_score FROM <btable> ORDER BY PREDICTIVE PROBABILITY OF qual_score ASC LIMIT 10')
 

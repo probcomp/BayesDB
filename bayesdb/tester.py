@@ -132,7 +132,7 @@ class TestClient(Client):
             'output_model_filename': output_model_filename,
             'timestamp': self.timestamp
         }
-
+        print(self.commands)
         # TODO: save sphinx output if needed
         pickle.dump(output, open(os.path.join(self.dir, 'output.pkl'), 'wb'))
 
