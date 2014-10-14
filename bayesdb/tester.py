@@ -27,6 +27,13 @@ import pickle
 
 
 def assertGreaterThan(a, b, tol=0):
+    """ Assert that a is at least tol greater than b.
+
+    Examples: 
+        >>> assertGreaterThan(7, 5, tol=0)  # passes
+        >>> assertGreaterThan(7, 5, tol=1)  # passes
+        >>> assertGreaterThan(7, 5, tol=5)  # fails
+    """
     try:
         assert(a >= b*(1.0+tol))
     except AssertionError:
@@ -34,6 +41,13 @@ def assertGreaterThan(a, b, tol=0):
 
 
 def assertLessThan(a, b, tol=0):
+    """ Assert that a is at least tol less than b.
+
+    Examples:
+        >>> assertLessThan(5, 7, tol=0)  # passes
+        >>> assertLessThan(5, 7, tol=1)  # passes
+        >>> assertLessThan(5, 7, tol=5)  # fails
+    """
     try:
         assert(a < b*(1.0-tol))
     except AssertionError:
@@ -41,10 +55,17 @@ def assertLessThan(a, b, tol=0):
 
 
 def assertClose(a, b, tol=10E-6):
+    """ Asset that a is within tol of b.
+
+    Examples:
+        >>> assertClose(2.0, 2.1, tol=.2)  # passes
+        >>> assertClose(2.1, 2.0, tol=.2)  # passes
+        >>> assertClose(2.0, 2.1)  # fails
+    """
     try:
         assert(abs(a-b) < tol)
     except AssertionError:
-        raise AssertionError("Differente (%f) between a(%f) and b(%f) if greate than %f."
+        raise AssertionError("Difference (%f) between a(%f) and b(%f) if greate than %f."
                              % (abs(a-b), a, b, tol))
 
 
@@ -57,10 +78,57 @@ def assertNotIn(a, b):
 
 
 class TestClient(Client):
-    """docstring for TestClient"""
+    """ 
+    Wrapper for Client. Test fixture for appyling unit tests to use cases and generating 
+    sphinx-ready docs.
+
+    Attributes:
+        test_id (str): Name of test. Used to name files. Replaces instances pf 'btable' in sphinx 
+            output.
+        csv_filename (string): Name of csv datafile for btable creation
+        commands (list of str): List of commands executed during btable creation as well as those 
+            executed by the user.
+        comments (list of str): List of comments (in .rst format) added by the user.
+        comment_indices (list of int): Stores the command index of the comment. That is, 
+            comment_indices[i] = j means that comments[i] should be placed before immediately 
+            before command j.
+        output (list of str): Stores resulting pretty output of each command.
+        timestamp (str): ID used for file naming.
+        btable_name (str): Name of btable used for test.
+        dir (str): Name of the directory to which files are saved.
+
+    Notes:
+        See tests/example_tests/test_dha_example.py for a detailed use example.
+
+    """
     def __init__(self, test_id, csv_filename, model_filename=None, num_models=10,
                  num_analyze_iterations=250, num_analyze_minutes=None, schema_update_commands=[],
                  key_column=0):
+        """
+        Create TestClient object, CREATE, INITIALIZE, ANALYZE, and (optionally) UPDATE btable, and
+        fill in initial commands and output.
+
+        Args:
+            test_id (str): Name of test. Used to name files. Replaces instances pf 'btable' in sphinx 
+                output.
+            csv_filename (string): Name of csv datafile for btable creation
+
+        Kwargs:
+            model_filename (str): Filename of models to load. If None (default) creates and 
+                analyzes new models.
+            num_models (int): Number of models to create for btable.
+            num_analyze_iterations (int): Number of iterations to analyze btable.
+            num_analyze_minutes (int): Number of minutes to analyze btable. If not None (default), 
+                overrides num_analyze_iterations.
+            schema_update_commands (list of str): List of commands to run after initialization. Use
+                these commands to update schema or add codebooks on start up.
+            key_column (int): Key column of btable.
+
+        Example:
+            Create Tester object, analyze 100 models and update schema.
+            >>> cmds = ['UPDATE SCHEMA FOR <btable> SET nbrhd=categorical']
+            >>> tclient = TestClient('homes','data/homes.csv', num_models=100, schema_update_commands=cmds)
+        """
 
         super(TestClient, self).__init__()
         self.test_id = test_id
@@ -139,6 +207,8 @@ class TestClient(Client):
         pickle.dump(output, open(os.path.join(self.dir, 'output.pkl'), 'wb'))
 
     def build_rst(self):
+        """ Build .rst file and save to dir
+        """
         txt_idx = 0
         cmd_idx = 0
         rst_output = ""
@@ -172,6 +242,14 @@ class TestClient(Client):
 
     def comment(self, comment_text, introduction=False):
         """ Add a comment after current command
+
+        Args:
+            comment_text (str): .rst-formatted text to add. Comments are added in the order in 
+                which they are supplied.
+
+        Kwargs:
+            introduction (bool): If true, adds the comment before the btable initialization 
+                commands. Note that the introduction comment must be added first.
         """
         if introduction:
             if len(self.comments) > 0:
@@ -185,7 +263,7 @@ class TestClient(Client):
     def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False,
                  debug=False, pandas_df=True, pandas_output=True, key_column=None,
                  return_raw_result=False, ignore_output=False, force_output=True):
-        """ Calls BayesDB Client, redirects and saves output, and outputs data.
+        """ Calls BayesDB Client, redirects and saves output, and returns data.
         """
         # redirect print output
         out = StringIO.StringIO()

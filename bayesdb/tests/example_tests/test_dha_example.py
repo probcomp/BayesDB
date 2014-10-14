@@ -27,9 +27,12 @@ from bayesdb.tester import assertNotIn
 from bayesdb.tester import assertLessThan
 
 
-# TestClient should go in a pytest fixture. Kwargs are passed through request params.
-# test fixtures must be passed 'request' in order to call the finalizer
-@pytest.fixture(scope='module', params=[dict(num_models=4, num_analyze_iterations=10)])
+# TestClient should go in a pytest fixture. Args can go in the fixture or can be passed through
+# request like Kwargs. Test fixtures must be passed 'request' in order to call the finalizer and
+# to be parameterized.
+#   Here, we run one test, creating 32 models and analyzing for 500 iteations. Note that multiple
+# tests can be run by adding multiple dicts to the params arg list.
+@pytest.fixture(scope='module', params=[dict(num_models=32, num_analyze_iterations=500)])
 def dha_fixture(request):
     csv_filename = '../data/dha.csv'  # csv filename required
     test_id = 'dha'  # test id required for naming
@@ -38,7 +41,7 @@ def dha_fixture(request):
                             num_analyze_iterations=request.param['num_analyze_iterations'],
                             key_column=key_column)
 
-    # finalizer required for cleanup
+    # finalizer required for cleanup. This must be added before request.addfinalizer.
     def fin():
         print ("finalizing %s" % tclient.btable_name)
         tclient.finalize()
@@ -68,6 +71,7 @@ Unwarranted variations in aggregate
 
 First, we create a btable intialize, and analyze models,"""
 
+    # Add the intro comment before any commands
     dha_fixture.comment(intro, introduction=True)
 
     comment_0 = """
@@ -75,6 +79,8 @@ To get a sense of the probable dependencies between variables, we create a colum
     """
     dha_fixture.comment(comment_0)
 
+    # TestClient does not intecept filenames, so you must use the dir attribute to create them. 
+    # Any instances of dir will be removed in the final output to keep things clean.
     z_figure_path = os.path.join(dha_fixture.dir, 'dha_z.png')
     out = dha_fixture('ESTIMATE PAIRWISE DEPENDENCE PROBABILITY FROM <btable> SAVE TO ' + z_figure_path + ';')
 
@@ -86,7 +92,7 @@ The resulting figure plots dependence probabilities of all pairs of variables as
 
 
 Notice that quality and cost show no dependence. We can list the variables that probably have a dependence on spending, again focusing on Medicare spending on ambulances.
-    """ % ('dha_z.png')
+    """ % ('dha_z.png')  # no need to add dir to the comment string
 
     dha_fixture.comment(comment_1)
 
