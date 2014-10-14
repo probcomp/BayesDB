@@ -97,14 +97,14 @@ class Client(object):
 
     def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False,
                  debug=False, pandas_df=None, pandas_output=True, key_column=None,
-                 return_raw_result=False):
+                 return_raw_result=False, force_output=False):
         """Wrapper around execute."""
         return self.execute(call_input, pretty, timing, wait, plots, yes, debug, pandas_df,
-                            pandas_output, key_column, return_raw_result)
+                            pandas_output, key_column, return_raw_result, force_output)
 
     def execute(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False,
                 debug=False, pandas_df=None, pandas_output=True, key_column=None,
-                return_raw_result=False):
+                return_raw_result=False, force_output=False):
         """
         Execute a chunk of BQL. This method breaks a large chunk of BQL (like a file)
         consisting of possibly many BQL statements, breaks them up into individual statements,
@@ -153,7 +153,8 @@ class Client(object):
             result = self.execute_statement(line, pretty=pretty, timing=timing, plots=plots,
                                             yes=yes, debug=debug, pandas_df=pandas_df,
                                             pandas_output=pandas_output, key_column=key_column,
-                                            return_raw_result=return_raw_result)
+                                            return_raw_result=return_raw_result,
+                                            force_output=force_output)
 
             if type(result) == dict and 'message' in result and result['message'] == 'execute_file':
                 # special case for one command: execute_file
@@ -166,18 +167,19 @@ class Client(object):
 
         self.parser.reset_root_dir()
 
-        if not pretty or return_raw_result:
+        if not pretty or return_raw_result or force_output:
             return return_list
 
     def execute_statement(self, bql_statement_ast, pretty=True, timing=False, plots=None, yes=False,
                           debug=False, pandas_df=None, pandas_output=True, key_column=None,
-                          return_raw_result=False):
+                          return_raw_result=False, force_output=False):
         """
         Accepts a SINGLE BQL STATEMENT as input, parses it, and executes it if it was parsed
         successfully.
 
         If pretty=True, then the command output will be pretty-printed as a string.
         If pretty=False, then the command output will be returned as a python object.
+        If force_output=True, then results will be returned regardless of pretty
 
         timing=True prints out how long the command took to execute.
 
@@ -351,7 +353,10 @@ class Client(object):
         if 'error' in result and result['error']:
             if pretty:
                 print(result['message'])
-                return result['message']
+                if force_output:
+                    return result
+                else:
+                    return result['message']
             else:
                 return result
 
@@ -382,7 +387,11 @@ class Client(object):
             if pretty:
                 if 'column_lists' in result:
                     print(self.pretty_print(dict(column_lists=result['column_lists'])))
-                return self.pretty_print(result)
+
+                if force_output:
+                    return result
+                else:
+                    return self.pretty_print(result)
             else:
                 return result
         if ('plot' in client_dict and client_dict['plot']):

@@ -29,14 +29,14 @@ import pickle
 def assertGreaterThan(a, b, tol=0):
     try:
         assert(a >= b*(1.0+tol))
-    except AssertionError, e:
+    except AssertionError:
         raise AssertionError("a(%s) is not %f greater than b(%s)." % (str(a), tol*100, str(b)))
 
 
 def assertLessThan(a, b, tol=0):
     try:
         assert(a < b*(1.0-tol))
-    except AssertionError, e:
+    except AssertionError:
         raise AssertionError("a(%s) is not %f less than than b(%s)." % (str(a), tol*100, str(b)))
 
 
@@ -67,7 +67,7 @@ class TestClient(Client):
         self.csv_filename = csv_filename
         self.commands = []
         self.comments = []
-        self.commment_indices = []
+        self.comment_indices = []
         self.output = []
 
         # create timestamp and temp directory
@@ -110,7 +110,8 @@ class TestClient(Client):
             sys.stdout = out
 
             super(TestClient, self).execute(cmd.replace('<btable>', self.btable_name), pretty=True,
-                                            key_column=key_column, debug=False, yes=True)
+                                            key_column=key_column, debug=False, yes=True,
+                                            force_output=True)
 
             # restore normal output output
             sys.stdout = oldstdout
@@ -119,7 +120,7 @@ class TestClient(Client):
     def finalize(self):
         """ Saves the models, drops the btable and (TODO) generates .rst output
         """
-        output_model_filename = self.btable_name + '_models.pkl.gz'
+        output_model_filename = os.path.join(self.dir, self.btable_name + '_models.pkl.gz')
         super(TestClient, self).execute('SAVE MODELS FROM %s TO %s;'
                                         % (self.btable_name, output_model_filename), yes=True)
         super(TestClient, self).execute('DROP BTABLE %s;' % (self.btable_name), yes=True)
@@ -127,37 +128,77 @@ class TestClient(Client):
             'test_id': self.test_id,
             'commands': self.commands,
             'comments': self.comments,
-            'commment_indices': self.commment_indices,
+            'comment_indices': self.comment_indices,
             'output': self.output,
             'output_model_filename': output_model_filename,
             'timestamp': self.timestamp
         }
-        print(self.commands)
-        # TODO: save sphinx output if needed
+
+        # save sphinx output if needed
+        self.build_rst()
         pickle.dump(output, open(os.path.join(self.dir, 'output.pkl'), 'wb'))
 
-    def comment(self, comment_text):
+    def build_rst(self):
+        txt_idx = 0
+        cmd_idx = 0
+        rst_output = ""
+
+        while txt_idx < len(self.comments) and cmd_idx < len(self.commands):
+            while self.comment_indices[txt_idx] <= cmd_idx:
+                rst_output += self.comments[txt_idx].rstrip()
+                txt_idx += 1
+                if self.comment_indices[txt_idx] <= cmd_idx:
+                    rst_output += '\n'
+
+            rst_output += "::\n\n"
+
+            next_cmt_idx = self.comment_indices[txt_idx]
+            while cmd_idx < next_cmt_idx:
+                cmd_txt = '\t>>> ' + self.commands[cmd_idx] + '\n' + '\t'
+                out_text = self.output[cmd_idx].replace('\n', '\n\t').replace(self.btable_name, self.test_id) + '\n'
+                rst_output += cmd_txt.replace(self.dir+'/', '') + out_text
+                cmd_idx += 1
+
+            rst_output += "\n"
+
+        if txt_idx < len(self.comments):
+            for comment in self.comments[txt_idx:]:
+                rst_output += comment + '\n'
+
+        rst_output = rst_output.replace('<btable>', self.test_id)
+
+        with open(os.path.join(self.dir, 'output.rst'), 'wb') as f:
+            f.write(rst_output)
+
+    def comment(self, comment_text, introduction=False):
         """ Add a comment after current command
         """
-        self.comments.append(comment_text)
-        self.commment_indices.append(len(self.commands))
+        if introduction:
+            if len(self.comments) > 0:
+                raise ValueError("Introduction must be first comment added.")
+            self.comment_indices.append(0)
+        else:
+            self.comment_indices.append(len(self.commands))
 
-    def __call__(self, call_input, pretty=False, timing=False, wait=False, plots=None, yes=False,
+        self.comments.append(comment_text)
+
+    def __call__(self, call_input, pretty=True, timing=False, wait=False, plots=None, yes=False,
                  debug=False, pandas_df=True, pandas_output=True, key_column=None,
-                 return_raw_result=False, ignore_output=False):
+                 return_raw_result=False, ignore_output=False, force_output=True):
         """ Calls BayesDB Client, redirects and saves output, and outputs data.
         """
-        # # redirect print output
-        # out = StringIO.StringIO()
-        # oldstdout = sys.stdout
-        # sys.stdout = out
+        # redirect print output
+        out = StringIO.StringIO()
+        oldstdout = sys.stdout
+        sys.stdout = out
 
         res = super(TestClient, self).execute(call_input.replace('<btable>', self.btable_name),
                                               pretty, timing, wait, plots, yes, debug, pandas_df,
-                                              pandas_output, key_column, return_raw_result)
-        # # restore normal output output
-        # sys.stdout = oldstdout
-        # self.output.append(out.getvalue())
+                                              pandas_output, key_column, return_raw_result,
+                                              force_output)
+        # restore normal output output
+        sys.stdout = oldstdout
+        self.output.append(out.getvalue())
 
         if not ignore_output:
             self.commands.append(call_input)
