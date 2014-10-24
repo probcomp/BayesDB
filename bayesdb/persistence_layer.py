@@ -22,7 +22,8 @@ import os
 import sys
 import datetime
 import json
-import pickle
+import cPickle as pickle
+#import pickle
 import shutil
 import contextlib
 import threading
