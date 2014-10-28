@@ -13,6 +13,14 @@ Once docker has been installed and configured enter the following command in you
 
 	docker pull bayesdb/bayesdb
 
+Using the default docker run command::
+    
+    docker run bayesdb/bayesdb
+
+will run the remote client on port 8008. To run as an interactive bash session::
+
+    docker run -t -i bayesdb/bayesdb /bin/bash
+
 .. _manual-install:
 
 Manual Installation
