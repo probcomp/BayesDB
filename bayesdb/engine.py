@@ -892,7 +892,7 @@ class Engine(object):
 
 
         if tablename in self.analyze_threads and self.analyze_threads[tablename].isAlive():
-            raise utils.BayesDBError("%s is already being analzyed. Try using 'SHOW ANALYZE FOR %s' to get more information, or 'CANCEL ANALYZE FOR %s' to cancel the ANALYZE.")
+            raise utils.BayesDBError("{0} is already being analyzed. Try using 'SHOW ANALYZE FOR {0}' to get more information, or 'CANCEL ANALYZE FOR {0}' to cancel the ANALYZE.".format(tablename))
 
 
         # Start analyze thread.
