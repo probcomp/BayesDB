@@ -133,5 +133,6 @@ site = server.Site(wrapped)
 # 8008 is the port you want to run under. Choose something >1024
 PORT = 8008
 print('Listening on port %d...' % PORT)
+print('*Be sure to use ClientRemote from client_remote.py rather than the standard Client.')
 reactor.listenTCP(PORT, site)
 reactor.run()

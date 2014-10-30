@@ -67,4 +67,4 @@ WORKDIR     /home/bayesdb/BayesDB
 
 RUN         mkdir -p server_logs
 
-CMD         ["python", "-u", "bayesdb/jsonrpc_server.py", ">server_logs/jsonrpc_server.out", "2>server_logs/jsonrpc_server.err"]
+CMD         ["python", "-u", "bayesdb/server_remote.py", ">server_logs/server_remote.out", "2>server_logs/server_remote.err"]
