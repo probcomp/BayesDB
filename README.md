@@ -38,7 +38,7 @@ Then, edit the file at the path that was outputted, changing 'backend' to anothe
 
 [Website](http://probcomp.csail.mit.edu/bayesdb)
 
-[Documentation](http://probcomp.csail.mit.edu/bayesdb/docs)
+[Documentation](http://probcomp.csail.mit.edu/bayesdb/docs/0.2/)
 
 # Example
 
