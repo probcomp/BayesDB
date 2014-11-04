@@ -21,6 +21,7 @@
 -- Import the data and samples.
 DROP BTABLE kiva_demo;
 CREATE BTABLE kiva_demo FROM kiva.csv;
+UPDATE SCHEMA FOR kiva_demo SET currency_exchange_loss_amount = numerical, num_lenders = numerical, delinquency_rate = numerical, default_rate = numerical, total_amount_raised = numerical, lender_invitee_count = numerical, lender_teams_count = numerical;
 LOAD MODELS kiva_models.pkl.gz INTO kiva_demo;
 
 SELECT journal_entries, num_borrowers, gender_ratio FROM kiva_demo LIMIT 20;
