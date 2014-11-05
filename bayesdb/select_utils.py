@@ -97,7 +97,7 @@ def convert_row_from_codes_to_values(row, M_c):
   """
   ret = []
   for cidx, code in enumerate(row): 
-    if not numpy.isnan(code) and not code=='nan':
+    if not du.flexible_isnan(code):
       ret.append(du.convert_code_to_value(M_c, cidx, code))
     else:
       ret.append(code)
