@@ -424,23 +424,25 @@ def convert_code_to_value(M_c, cidx, code):
     Note that the underlying store 'value_to_code' is unfortunately named backwards.
     TODO: fix the backwards naming.
     """
-    if numpy.isnan(code) or code == 'nan':
-        return code
+    try:
+        if numpy.isnan(float(code)):
+            return code
+    except:
+        pass
+    column_metadata = M_c['column_metadata'][cidx]
+    modeltype = column_metadata['modeltype']
+    if modeltype == 'normal_inverse_gamma':
+        return float(code)
+    elif modeltype == 'vonmises':
+        # Convert stored value (in [0, 2pi]) back to raw range.
+        param_min = column_metadata['parameters']['min']
+        param_max = column_metadata['parameters']['max']
+        return param_min + ((float(code) / (2 * pi)) * (param_max - param_min))
     else:
-        column_metadata = M_c['column_metadata'][cidx]
-        modeltype = column_metadata['modeltype']
-        if modeltype == 'normal_inverse_gamma':
-            return float(code)
-        elif modeltype == 'vonmises':
-            # Convert stored value (in [0, 2pi]) back to raw range.
-            param_min = column_metadata['parameters']['min']
-            param_max = column_metadata['parameters']['max']
-            return param_min + ((float(code) / (2 * pi)) * (param_max - param_min))
-        else:
-            try:
-                return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
-            except KeyError:
-                return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))]
+        try:
+            return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
+        except KeyError:
+            return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))]
 
 
 def convert_value_to_code(M_c, cidx, value):
