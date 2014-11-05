@@ -424,23 +424,23 @@ def convert_code_to_value(M_c, cidx, code):
     Note that the underlying store 'value_to_code' is unfortunately named backwards.
     TODO: fix the backwards naming.
     """
-    if numpy.isnan(code) or code == 'nan':
+    if flexible_isnan(code):
         return code
+    
+    column_metadata = M_c['column_metadata'][cidx]
+    modeltype = column_metadata['modeltype']
+    if modeltype == 'normal_inverse_gamma':
+        return float(code)
+    elif modeltype == 'vonmises':
+        # Convert stored value (in [0, 2pi]) back to raw range.
+        param_min = column_metadata['parameters']['min']
+        param_max = column_metadata['parameters']['max']
+        return param_min + ((float(code) / (2 * pi)) * (param_max - param_min))
     else:
-        column_metadata = M_c['column_metadata'][cidx]
-        modeltype = column_metadata['modeltype']
-        if modeltype == 'normal_inverse_gamma':
-            return float(code)
-        elif modeltype == 'vonmises':
-            # Convert stored value (in [0, 2pi]) back to raw range.
-            param_min = column_metadata['parameters']['min']
-            param_max = column_metadata['parameters']['max']
-            return param_min + ((float(code) / (2 * pi)) * (param_max - param_min))
-        else:
-            try:
-                return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
-            except KeyError:
-                return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))]
+        try:
+            return M_c['column_metadata'][cidx]['value_to_code'][int(code)]
+        except KeyError:
+            return M_c['column_metadata'][cidx]['value_to_code'][str(int(code))]
 
 
 def convert_value_to_code(M_c, cidx, value):
@@ -560,6 +560,15 @@ nan_set = set(['', 'null', 'n/a'])
 _convert_nan = lambda el: el if str(el).strip().lower() not in nan_set else 'NAN'
 _convert_nans = lambda in_list: map(_convert_nan, in_list)
 convert_nans = lambda in_T: map(_convert_nans, in_T)
+
+
+def flexible_isnan(val):
+    try:
+        if val in nan_set or numpy.isnan(float(val)):
+            return True
+    except:
+        pass
+    return False
 
 
 def read_data_objects(filename, max_rows=None, gen_seed=0,
