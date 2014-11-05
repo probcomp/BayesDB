@@ -424,11 +424,9 @@ def convert_code_to_value(M_c, cidx, code):
     Note that the underlying store 'value_to_code' is unfortunately named backwards.
     TODO: fix the backwards naming.
     """
-    try:
-        if numpy.isnan(float(code)):
-            return code
-    except:
-        pass
+    if flexible_isnan(code):
+        return code
+    
     column_metadata = M_c['column_metadata'][cidx]
     modeltype = column_metadata['modeltype']
     if modeltype == 'normal_inverse_gamma':
@@ -562,6 +560,15 @@ nan_set = set(['', 'null', 'n/a'])
 _convert_nan = lambda el: el if str(el).strip().lower() not in nan_set else 'NAN'
 _convert_nans = lambda in_list: map(_convert_nan, in_list)
 convert_nans = lambda in_T: map(_convert_nans, in_T)
+
+
+def flexible_isnan(val):
+    try:
+        if val in nan_set or numpy.isnan(float(val)):
+            return True
+    except:
+        pass
+    return False
 
 
 def read_data_objects(filename, max_rows=None, gen_seed=0,
