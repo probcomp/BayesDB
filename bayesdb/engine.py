@@ -656,55 +656,29 @@ class Engine(object):
             for id, (X_L, X_D) in enumerate(zip(old_models['X_L_list'], old_models['X_D_list'])):
                 models[id] = dict(X_L=X_L, X_D=X_D, iterations=0)
 
-        # Older versions of model_schema just had a str cctype as the dict items.
-        # Newest version has a dict of cctype and parameters. Use this values to
-        # test the recency of the models.
         if model_schema:
-                model_schema_itemtype = type(model_schema[model_schema.keys()[0]])
-        else:
-                model_schema_itemtype = None
-
-        if model_schema is None or model_schema_itemtype != dict:
-                print """WARNING! The models you are currently importing were saved without a schema
-                        or without detailed column parameters (probably from a previous version).
-
-                        If you are loading models into the same table from which you created them, problems
-                        are unlikely, unless you have dropped models and then updated the schema.
-
-                        If you are loading models into a different table from which you created them, you
-                        should verify that the table schemas are the same.
-
-                        Please use "SAVE MODELS FROM <btable> TO <filename.pkl.gz>" to create an updated copy of your models.
-
-                        Are you sure you want to load these model(s)?
-                        """
-
-                user_confirmation = raw_input()
-                if 'y' != user_confirmation.strip():
-                        return dict(message="Operation canceled by user.")
-        else:
-                table_schema = self.persistence_layer.get_schema(tablename)
-                # If schemas match, add the models
-                # If schemas don't match:
-                #     If there are models, don't add the new ones (they'll be incompatible)
-                #     If there aren't models, add the new ones.
-                if table_schema != model_schema:
-                        if self.persistence_layer.has_models(tablename):
-                                raise utils.BayesDBError("""
-                                        Table %s already has models under a different schema than
-                                        the models you are loading. All models used must have the
-                                        same schema. To load these models, first drop the existing
-                                        models from the table.
-                                        """ % tablename)
-                        else:
-                                # Update 'continuous' and 'multinomial', if they exist in model_schema
-                                upgrade_map = dict(continuous = 'numerical', multinomial = 'categorical')
-                                for colname, mapping in model_schema.items():
-                                        cctype = mapping['cctype']
-                                        if cctype in upgrade_map:
-                                                print 'Converting model schema column type %s to %s' % (cctype, upgrade_map[cctype])
-                                                model_schema[colname]['cctype'] = upgrade_map[cctype]
-                                self.persistence_layer.update_schema(tablename, model_schema)
+            table_schema = self.persistence_layer.get_schema(tablename)
+            # If schemas match, add the models
+            # If schemas don't match:
+            #     If there are models, don't add the new ones (they'll be incompatible)
+            #     If there aren't models, add the new ones.
+            if table_schema != model_schema:
+                if self.persistence_layer.has_models(tablename):
+                    raise utils.BayesDBError("""
+                        Table %s already has models under a different schema than
+                        the models you are loading. All models used must have the
+                        same schema. To load these models, first drop the existing
+                        models from the table.
+                        """ % tablename)
+                else:
+                    # Update 'continuous' and 'multinomial', if they exist in model_schema
+                    upgrade_map = dict(continuous = 'numerical', multinomial = 'categorical')
+                    for colname, mapping in model_schema.items():
+                        cctype = mapping['cctype']
+                        if cctype in upgrade_map:
+                            print 'Converting model schema column type %s to %s' % (cctype, upgrade_map[cctype])
+                            model_schema[colname]['cctype'] = upgrade_map[cctype]
+                    self.persistence_layer.update_schema(tablename, model_schema)
 
         result = self.persistence_layer.add_models(tablename, models.values())
 

@@ -259,6 +259,35 @@ class Client(object):
             else:
                 args_dict['models'] = model_data
                 args_dict['model_schema'] = None
+
+            # Older versions of model_schema just had a str cctype as the dict items.
+            # Newest version has a dict of cctype and parameters. Use this values to
+            # test the recency of the models.
+            model_schema = args_dict['model_schema']
+            if model_schema:
+                model_schema_itemtype = type(model_schema[model_schema.keys()[0]])
+            else:
+                model_schema_itemtype = None
+
+            if model_schema is None or model_schema_itemtype != dict:
+                args_dict['model_schema'] = None
+                if not yes:
+                    print """WARNING! The models you are currently importing were saved without a schema
+                        or without detailed column parameters (probably from a previous version).
+
+                        If you are loading models into the same table from which you created them, problems
+                        are unlikely, unless you have dropped models and then updated the schema.
+
+                        If you are loading models into a different table from which you created them, you
+                        should verify that the table schemas are the same.
+
+                        Please use "SAVE MODELS FROM <btable> TO <filename.pkl.gz>" to create an updated copy of your models.
+
+                        Are you sure you want to load these model(s)?
+                        """
+                    user_confirmation = raw_input()
+                    if 'y' != user_confirmation.strip():
+                        return dict(message="Operation canceled by user.")
         elif method_name == 'create_btable':
             if pandas_df is None:
                 header, rows = data_utils.read_csv(client_dict['csv_path'])
