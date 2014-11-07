@@ -912,6 +912,7 @@ class PersistenceLayer(object):
 
         model['X_L'] = X_L
         model['X_D'] = X_D
+        model['time'] = model.get('time') or 0
 
         if increment_iterations > 0:  # If any iterations were performed
             model['iterations'] += increment_iterations
