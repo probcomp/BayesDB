@@ -366,11 +366,14 @@ def histogram_table(data, columns, M_c, remove_key=True):
             df_drop(df, [columns[0]], axis=1)
 
         column = df.columns[0]
+        
+        # numpy.histogram can't deal with NaNs, so block those out
+        col_data_no_nans = df[column][~numpy.isnan(df[column])]
 
         # Use Sturges formula to calculate the number of bins to use.
-        n_bins = math.ceil(math.log(df.shape[0], 2) + 1)
+        n_bins = math.ceil(math.log(len(col_data_no_nans), 2) + 1)
 
-        hist_data = numpy.histogram(df[column], bins = n_bins)
+        hist_data = numpy.histogram(col_data_no_nans, bins = n_bins)
         bin_mins = hist_data[1][:-1]
         bin_maxs = hist_data[1][1:]
         bin_freqs = hist_data[0]
