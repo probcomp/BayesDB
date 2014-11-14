@@ -368,16 +368,24 @@ def histogram_table(data, columns, M_c, remove_key=True):
         column = df.columns[0]
         
         # numpy.histogram can't deal with NaNs, so block those out
-        col_data_no_nans = df[column][~numpy.isnan(df[column])]
+        col_data_no_nans = df[column].dropna()
 
-        # Use Sturges formula to calculate the number of bins to use.
-        n_bins = math.ceil(math.log(len(col_data_no_nans), 2) + 1)
+        if get_cctype_from_M_c(M_c, column) in ['numerical', 'cyclic']:
+            # Use Sturges formula to calculate the number of bins to use.
+            n_bins = math.ceil(math.log(len(col_data_no_nans), 2) + 1)
 
-        hist_data = numpy.histogram(col_data_no_nans, bins = n_bins)
-        bin_mins = hist_data[1][:-1]
-        bin_maxs = hist_data[1][1:]
-        bin_freqs = hist_data[0]
-        bin_probs = bin_freqs / float(sum(bin_freqs))
+            hist_data = numpy.histogram(col_data_no_nans, bins = n_bins)
+            bin_mins = hist_data[1][:-1]
+            bin_maxs = hist_data[1][1:]
+            bin_freqs = hist_data[0]
+            bin_probs = bin_freqs / float(sum(bin_freqs))
+        else:
+            hist_data = col_data_no_nans.value_counts().sort_index()
+            bin_mins = list(hist_data.index.values)
+            bin_maxs = list(hist_data.index.values)
+            bin_freqs = list(hist_data)
+            bin_probs = [ float(i)/sum(bin_freqs) for i in bin_freqs ]
+            
 
         summary_data = pandas.DataFrame({
             'bin_minimum': bin_mins,
