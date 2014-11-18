@@ -248,6 +248,8 @@ probability_of_keyword.setParseAction(replaceWith("probability"))
 typicality_of_keyword = Combine(typicality_keyword + single_white + of_keyword)
 predictive_probability_of_keyword = Combine(predictive_keyword + single_white + probability_keyword + single_white + of_keyword)
 predictive_probability_of_keyword.setParseAction(replaceWith("predictive probability"))
+plot_diagnostics_for_keyword = Combine(plot_keyword + single_white + diagnostics_keyword + single_white + for_keyword)
+plot_diagnostics_for_keyword.setParseAction(replaceWith("plot_diagnostics"))
 
 save_connected_components_with_threshold_keyword = Combine(save_keyword + single_white +
                                                            connected_keyword + single_white +
@@ -460,6 +462,9 @@ drop_model_function = drop_model_keyword + Optional(index_clause) + Suppress(fro
 describe_function = describe_keyword + Optional(Group(identifier +
                (ZeroOrMore(Suppress(comma_literal) + identifier)) | all_column_literal).setResultsName('columnset')) + Suppress(for_keyword) + btable
 
+# PLOT DIAGNOSTICS for <btable> SAVE TO <filename.jpg>
+plot_diagnostics_function = plot_diagnostics_for_keyword + save_to_clause
+
 # Help [function name]
 help_function = help_keyword + Optional(Word(alphas).setParseAction(downcaseTokens)).setResultsName("method_name") + ZeroOrMore(Word(alphas))
 quit_function = quit_keyword
@@ -489,6 +494,7 @@ management_query = (create_btable_function |
                     show_metadata_function |
                     show_columns_function |
                     cancel_analyze_for_function |
+                    plot_diagnostics_function |
                     quit_function)
 
 # ------------------------------ Helper Clauses --------------------------- #

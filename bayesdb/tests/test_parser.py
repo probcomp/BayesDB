@@ -1455,3 +1455,10 @@ def test_label_and_metadata():
     assert ast.label_clause[0][1] == 'label1'
     assert ast.label_clause[1][0] == 'col_2'
     assert ast.label_clause[1][1] == 'label 2'
+
+def test_plot_diagnostics():
+    query_str1 = "PLOT DIAGNOSTICS for test_btable SAVE TO ~/test.txt"
+    ast = bql_statement.parseString(query_str1, parseAll=True)
+    assert ast.statement_id == 'plot_diagnostics'
+    assert ast.btable == 'test_btable'
+    assert ast_filename == '~/text.txt'
