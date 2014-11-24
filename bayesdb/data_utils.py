@@ -623,38 +623,45 @@ def get_int_equals_str(column_data):
     return equals
 
 
-def guess_column_type(column_data, count_cutoff=20, ratio_cutoff=0.02):
+def guess_column_type(column_data, count_cutoff=20):
     num_distinct = len(set(column_data))
-    num_data = len(column_data)
-    distinct_ratio = float(num_distinct) / num_data
     above_count_cutoff = num_distinct > count_cutoff
-    above_ratio_cutoff = distinct_ratio > ratio_cutoff
     can_cast = get_can_cast_to_float(column_data)
-    if above_count_cutoff and above_ratio_cutoff and can_cast:
+    if above_count_cutoff and can_cast:
         column_type = 'numerical'
     else:
         column_type = 'categorical'
     return column_type
 
 
-def guess_column_types(T, colnames_full, count_cutoff=20, ratio_cutoff=0.02, warn_cardinality=7):
+def guess_column_types(T, colnames_full, count_cutoff=20, warn_ratio=0.02, warn_cardinality=7):
     """
     Guesses column types - used when creating new btable so user doesn't have to
     specify a type for all columns.
     Refer to function guess_column_type for decision rules.
-    Warn if cardinality of a categorical is greater than 7
+    Warn if cardinality of a categorical is greater than specified (default 7)
+    or if distinctness ratio of numerical is lower than specified (default 0.02).
         (limit proposed by Pat Shafto 7 Aug 2014)
     """
     T_transposed = transpose_list(T)
     column_types = []
     warnings = []
     for column_idx, column_data in enumerate(T_transposed):
-        column_type = guess_column_type(column_data, count_cutoff, ratio_cutoff)
+        column_type = guess_column_type(column_data, count_cutoff)
         column_types.append(column_type)
-        if column_type == 'categorical' and len(set(column_data)) > warn_cardinality:
-            warnings.append('Column "%s" is categorical but has a high number of distinct values. '
+        num_data = len(column_data)
+        num_distinct = len(set(column_data))
+        distinct_ratio = float(num_distinct) / num_data
+        if column_type == 'categorical':
+            if num_distinct > warn_cardinality:
+                warnings.append('Column "%s" is categorical but has a high number of distinct values. '
                             'Convert to numerical using UPDATE SCHEMA if appropriate.'
                             % colnames_full[column_idx])
+        elif distinct_ratio < warn_ratio:
+            warnings.append('Column "%s" is NOT categorical but has a low percentage of distinct values '
+                            '( actual: %0.2f   <   warn threshold: %0.2f ). '
+                            'Convert to categorical using UPDATE SCHEMA if appropriate.'
+                            % (colnames_full[column_idx], distinct_ratio, warn_ratio))
     return column_types, warnings
 
 
