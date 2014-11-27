@@ -24,6 +24,7 @@ import pandas
 import re
 import numpy
 import prettytable
+import random
 from math import pi
 
 import utils
@@ -185,6 +186,15 @@ def gen_categorical_metadata(column_data, parameters=None):
         if n_codes > parameters['cardinality']:
             raise utils.BayesDBError("Error: categorical contains more distinct values than "
                                      "specified cardinality %i" % parameters['cardinality'])
+        # FIXME!: this is a terrible thing to do and I'm doing it just to get some test results 
+        # out quickly. We should use a partial codebook or add a method to insert new values
+        # into categorical variables. Again: this is terrible.
+        elif n_codes < parameters['cardinality']:
+            num_codes_to_add = parameters['cardinality'] - n_codes
+            for _ in range(num_codes_to_add):
+                valcode = int(random.getrandbits(32))
+                value_to_code[valcode] = valcode
+                code_to_value[valcode] = valcode
 
     ret = dict(
         modeltype="symmetric_dirichlet_discrete",
