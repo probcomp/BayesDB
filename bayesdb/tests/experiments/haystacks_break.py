@@ -197,7 +197,7 @@ def run_experiment(argin):
         client = Client()
 
         client('DROP BTABLE %s;' % table, yes=True)
-        client('CREATE BTABLE %s FROM %s;' % (table, subfilename))
+        client('CREATE BTABLE %s FROM %s;' % (table, subfilename), yes=True, key_column=0)
         init_string = 'INITIALIZE %i MODELS FOR %s;' % (num_chains, table)
         print init_string 
         client(init_string)
@@ -299,6 +299,6 @@ if __name__ == "__main__":
     	if generate_plots:
             this_dirname = eru._generate_dirname(dirname_prefix, 10, result['config'])
             filename_img = os.path.join(dirname_prefix, this_dirname, results_filename+'.png')
-   	    eu.make_folder(os.path.join(dirname_prefix, this_dirname))
+   	        eu.make_folder(os.path.join(dirname_prefix, this_dirname))
             eu.plot_haystacks_break(result, filename=filename_img)
 

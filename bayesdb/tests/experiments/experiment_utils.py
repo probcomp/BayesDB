@@ -694,6 +694,51 @@ def plot_fills_in_the_blanks(result, filename=None):
     pylab.savefig( filename )
 
 # `````````````````````````````````````````````````````````````````````````````
+def plot_coin_flip(result, filename=None):
+    pylab.rcParams.update({'font.size': 8})
+    fig = pylab.figure(num=None, figsize=(10,8), facecolor='w', edgecolor='k')
+
+    dependence_probs = result['dependence_probs']
+
+    ax = pylab.subplot(2,1,1)
+    q_tar = numpy.nonzero(result['target_marker'])[0]
+    q_dis = numpy.nonzero([not r for r in result['target_marker']])[0]
+    iteration = result['iteration_index']
+
+    pylab.plot(iteration, dependence_probs[:,q_tar], c='red', alpha=.9, lw=1, zorder=100)
+    pylab.plot(iteration, dependence_probs[:,q_dis], c='blue', alpha=.15, lw=1, zorder=1)
+
+    pylab.ylabel("dependence probability")
+    pylab.xlabel("iteration")
+    pylab.ylim([0,1])
+    ax.set_yticks([0,.5,1])
+    ax.set_xscale('log')
+
+    num_iters = result['config']['num_iters']
+    num_rows = result['config']['num_rows']
+    num_chains = result['config']['num_chains']
+    num_ones_cols = result['config']['num_ones_cols']
+
+    txt = '''
+        DEPENDENCE PROBABILITY of pairs of columns in a %i rows by %i columns table of
+        random binary data. Red lines represent the two pairs of %i added all-ones columns; 
+        blue lines are pairs of independent columns.
+
+        DEPENDENCE PROBABILITY was calculated with %i chains over %i iterations.
+
+    ''' % (num_rows, 2**num_rows, num_ones_cols, num_chains, num_iters)
+
+    ax = pylab.subplot(2,1,2)
+    ax.text(0,.5,txt, fontsize=10)
+    ax.axis('off')
+
+    if filename is None:
+        filename = "coin-flip=%s_num_rows=%i-num_chains=%i-num_iters=%i-T=%i.png" % \
+        ( str(needles), num_rows, num_chains, num_iters, int(time.time()))
+
+    pylab.savefig( filename )
+
+# `````````````````````````````````````````````````````````````````````````````
 def plot_haystacks(result, filename=None):
     pylab.rcParams.update({'font.size': 8})
     # pylab.locator_params(nbins=3)
