@@ -73,12 +73,12 @@ def run_experiment(argin):
         true_held_out_p.append(numpy.exp(logp))
 
     # start a client
-    client = Client()
+    client = Client(testing=True)
 
     # do analyses
     for config in ['cc', 'crp', 'nb']:
         config_string = eu.config_map[config]
-        table = table_name + '-' + config
+        table = table_name + '_' + config
 
         # drop old btable, create a new one with the new data and init models
         client('DROP BTABLE %s;' % table, yes=True)
@@ -116,13 +116,26 @@ def run_experiment(argin):
     retval = dict()
     retval['MSE_naive_bayes_indexer'] = result['mean_error_nb']
     retval['MSE_crp_mixture_indexer'] = result['mean_error_crp']
-    retval['MSE_crosscat_indexer'] = result['mean_error_cc']
+    retval['MSE_crosscat_indexer'] = result['mean_error_nb']
 
     retval['MEAN_P_naive_bayes_indexer'] = result['mean_held_out_p_nb']
     retval['MEAN_P_crp_mixture_indexer'] = result['mean_held_out_p_crp']
     retval['MEAN_P_crosscat_indexer'] = result['mean_held_out_p_cc']
     
     retval['config'] = argin
+
+    pass_criterion = "MSE crosscat < MSE DPM < MSE naive bayes. MSE average over last half of iterations."
+    half_of_iterations = int(num_iters/2.0)
+    test_pass = False
+
+    half_ave_err_cc = numpy.mean(result['mean_error_cc'][-half_of_iterations:])
+    half_ave_err_nb = numpy.mean(result['mean_error_nb'][-half_of_iterations:])
+    half_ave_err_crp = numpy.mean(result['mean_error_crp'][-half_of_iterations:])
+
+    if half_ave_err_cc < half_ave_err_crp and half_ave_err_crp < half_ave_err_nb:
+        test_pass = True
+
+    print("%s: %s" % (pass_criterion, test_pass))
 
     return retval
 

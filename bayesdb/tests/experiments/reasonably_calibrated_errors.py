@@ -57,7 +57,7 @@ def run_experiment(argin):
     filename, indices, col_names = eu.gen_missing_data_csv(ofilename, prop_missing, [])
     
     # create a client
-    client = Client()
+    client = Client(testing=True)
 
     # caluclate empirical frequency of each point
     frequencies = []
@@ -80,7 +80,7 @@ def run_experiment(argin):
     # do analyses
     for config in ['cc', 'crp', 'nb']:
         config_string = eu.config_map[config]
-        table = table_name + '-' + config
+        table = table_name + '_' + config
 
         # drop old btable, create a new one with the new data and init models
         client('DROP BTABLE %s;' % table, yes=True)

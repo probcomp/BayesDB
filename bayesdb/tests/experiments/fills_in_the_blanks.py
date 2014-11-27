@@ -66,7 +66,7 @@ def run_experiment(argin):
     num_rows, num_cols = T_array.shape
 
     # create a client
-    client = Client()
+    client = Client(testing=True)
 
     # set up a dict fro the different config data
     result = dict()
@@ -80,7 +80,7 @@ def run_experiment(argin):
         this_filename = all_filenames[p]
         for config in ['cc', 'crp', 'nb']:
             config_string = eu.config_map[config]
-            table = table_name + '-' + config
+            table = table_name + '_' + config
 
             # drop old btable, create a new one with the new data and init models
             client('DROP BTABLE %s;' % table, yes=True)
@@ -111,12 +111,27 @@ def run_experiment(argin):
             result[config][p] = MSE/count
             print "error = %f" % result[config][p]
 
+    # determine whether the test passed
+    pass_criterion = "The error for CrossCat is lower than Naive Bayes and DPM for all proportions of missing data."
+    test_pass = True
+    for i in range(len(prop_missing)):
+        cc = result['cc'][i]
+        nb = result['nb'][i]
+        dpm = cc = result['crp'][i]
+        if cc >= nb or cc >= dpm:
+            test_pass = False
+            break
+
     retval = dict()
     retval['MSE_naive_bayes_indexer'] = result['nb']
     retval['MSE_crp_mixture_indexer'] = result['crp']
     retval['MSE_crosscat_indexer'] = result['cc']
     retval['prop_missing'] = prop_missing
+    retval['pass'] = test_pass
+    retval['pass_criterion'] = pass_criterion
     retval['config'] = argin
+
+    print("%s: %s" % (pass_criterion, test_pass))
 
     return retval
 

@@ -160,14 +160,13 @@ def run_experiment(argin):
 
     dependence_probs = numpy.zeros( (num_iters, num_queries) )
 
-    client = Client()
+    client = Client(testing=True)
 
     client('DROP BTABLE %s;' % table, yes=True)
     client('CREATE BTABLE %s FROM %s;' % (table, filename))
     init_string = 'INITIALIZE %i MODELS FOR %s;' % (num_chains, table)
     print init_string 
     client(init_string)
-    client('SHOW DIAGNOSTICS FOR %s;' % table)
 
     # do the analyses
     for i in range(num_iters):
@@ -203,7 +202,24 @@ def run_experiment(argin):
     result['config'] = argin
     result['config']['data_mode'] = data_mode
 
-    client('SHOW DIAGNOSTICS FOR %s;' % table)
+    pass_criterion = "On last iteration, dependent columns have >= .5 dependence probability and independent columns have <= .2 dependence probability"
+    test_pass = True
+
+    for q in range(len(independent)):
+        is_needle = not independent[q]
+        if is_needle:
+            if dependence_probs[-1,q] < .5:
+                test_pass = False
+                break
+        else:
+            if dependence_probs[-1,q] > .2:
+                test_pass = False
+                break
+
+    result['pass'] = test_pass
+    result['pass_criterion'] = pass_criterion
+
+    print("%s: %s" % (pass_criterion, test_pass))
 
     return result
 
