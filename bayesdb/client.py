@@ -478,7 +478,7 @@ class Client(object):
                     pkl_path = pkl_path + ".gz"
                 else:
                     pkl_path = pkl_path + ".pkl.gz"
-            samples_file = gzip.GzipFile(pkl_path, 'w')
+            samples_file = gzip.GzipFile(pkl_path, 'wb')
             pickle.dump(samples_dict, samples_file)
             return dict(message="Successfully saved the samples to %s" % client_dict['pkl_path'])
 
