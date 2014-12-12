@@ -149,13 +149,13 @@ class PersistenceLayer(object):
             self.btable_index = []
             self.write_btable_index()
         else:
-            f = open(btable_index_path, 'r')
+            f = open(btable_index_path, 'rb')
             self.btable_index = pickle.load(f)
             f.close()
 
     def write_btable_index(self):
         btable_index_path = os.path.join(self.data_dir, 'btable_index.pkl')
-        f = open(btable_index_path, 'w')
+        f = open(btable_index_path, 'wb')
         pickle.dump(self.btable_index, f, pickle.HIGHEST_PROTOCOL)
         f.close()
 
@@ -170,7 +170,7 @@ class PersistenceLayer(object):
     def get_metadata(self, tablename):
         try:
             x = os.path.join(self.data_dir, tablename, 'metadata.pkl')
-            f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'r')
+            f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'rb')
         except Exception as e:
             raise utils.BayesDBError("Error: metadata does not exist. Has %s been corrupted?"
                                      % self.data_dir)
@@ -184,7 +184,7 @@ class PersistenceLayer(object):
 
     def get_metadata_full(self, tablename):
         try:
-            f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'r')
+            f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'rb')
         except Exception as e:
             raise utils.BayesDBError("Error: metadata_full file doesn't exist. This is most "
                                      "likely a result of this btable being created with an old "
@@ -195,12 +195,12 @@ class PersistenceLayer(object):
         return metadata
 
     def write_metadata(self, tablename, metadata):
-        metadata_f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'w')
+        metadata_f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'wb')
         pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
         metadata_f.close()
 
     def write_metadata_full(self, tablename, metadata):
-        metadata_f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'w')
+        metadata_f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'wb')
         pickle.dump(metadata, metadata_f, pickle.HIGHEST_PROTOCOL)
         metadata_f.close()
 
@@ -258,7 +258,7 @@ class PersistenceLayer(object):
                     if not os.path.exists(full_fname):
                         self.model_locks.release(tablename, modelid)
                         return None
-                    f = open(full_fname, 'r')
+                    f = open(full_fname, 'rb')
                     m = pickle.load(f)
                     f.close()
                     self.model_locks.release(tablename, modelid)
@@ -284,7 +284,7 @@ class PersistenceLayer(object):
                         model_id = fname[6:]  # remove preceding 'model_'
                         model_id = int(model_id[:-4])  # remove trailing '.pkl' and cast to int
                         full_fname = os.path.join(models_dir, fname)
-                        f = open(full_fname, 'r')
+                        f = open(full_fname, 'rb')
                         m = pickle.load(f)
                         f.close()
                         models[model_id] = m
@@ -294,7 +294,7 @@ class PersistenceLayer(object):
             # Backwards compatibility with old model style.
             self.model_locks.acquire_table(tablename)
             try:
-                f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'r')
+                f = open(os.path.join(self.data_dir, tablename, 'models.pkl'), 'rb')
                 models = pickle.load(f)
                 f.close()
                 if modelid is not None:
@@ -309,7 +309,7 @@ class PersistenceLayer(object):
 
     def get_column_labels(self, tablename):
         try:
-            f = open(os.path.join(self.data_dir, tablename, 'column_labels.pkl'), 'r')
+            f = open(os.path.join(self.data_dir, tablename, 'column_labels.pkl'), 'rb')
             column_labels = pickle.load(f)
             f.close()
             return column_labels
@@ -318,7 +318,7 @@ class PersistenceLayer(object):
 
     def get_column_lists(self, tablename):
         try:
-            f = open(os.path.join(self.data_dir, tablename, 'column_lists.pkl'), 'r')
+            f = open(os.path.join(self.data_dir, tablename, 'column_lists.pkl'), 'rb')
             column_lists = pickle.load(f)
             f.close()
             return column_lists
@@ -327,7 +327,7 @@ class PersistenceLayer(object):
 
     def get_row_lists(self, tablename):
         try:
-            f = open(os.path.join(self.data_dir, tablename, 'row_lists.pkl'), 'r')
+            f = open(os.path.join(self.data_dir, tablename, 'row_lists.pkl'), 'rb')
             row_lists = pickle.load(f)
             f.close()
             return row_lists
@@ -352,7 +352,7 @@ class PersistenceLayer(object):
       
     def get_user_metadata(self, tablename):
         try:
-            f = open(os.path.join(self.data_dir, tablename, 'user_metadata.pkl'), 'r')
+            f = open(os.path.join(self.data_dir, tablename, 'user_metadata.pkl'), 'rb')
             column_labels = pickle.load(f)
             f.close()
             return column_labels
@@ -408,7 +408,7 @@ class PersistenceLayer(object):
             os.makedirs(models_dir)
 
         self.model_locks.acquire(tablename, modelid)
-        model_f = open(os.path.join(models_dir, 'model_%d.pkl' % modelid), 'w')
+        model_f = open(os.path.join(models_dir, 'model_%d.pkl' % modelid), 'wb')
         pickle.dump(model, model_f, pickle.HIGHEST_PROTOCOL)
         model_f.close()
         self.model_locks.release(tablename, modelid)
@@ -422,28 +422,28 @@ class PersistenceLayer(object):
         # Write each model individually
         for i, v in models.items():
             self.model_locks.acquire(tablename, modelid)
-            model_f = open(os.path.join(models_dir, 'model_%d.pkl' % i), 'w')
+            model_f = open(os.path.join(models_dir, 'model_%d.pkl' % i), 'wb')
             pickle.dump(v, model_f, pickle.HIGHEST_PROTOCOL)
             model_f.close()
             self.model_locks.release(tablename, modelid)
 
     def write_column_labels(self, tablename, column_labels):
-        column_labels_f = open(os.path.join(self.data_dir, tablename, 'column_labels.pkl'), 'w')
+        column_labels_f = open(os.path.join(self.data_dir, tablename, 'column_labels.pkl'), 'wb')
         pickle.dump(column_labels, column_labels_f, pickle.HIGHEST_PROTOCOL)
         column_labels_f.close()
 
     def write_user_metadata(self, tablename, user_metadata):
-        user_metadata_f = open(os.path.join(self.data_dir, tablename, 'user_metadata.pkl'), 'w')
+        user_metadata_f = open(os.path.join(self.data_dir, tablename, 'user_metadata.pkl'), 'wb')
         pickle.dump(user_metadata, user_metadata_f, pickle.HIGHEST_PROTOCOL)
         user_metadata_f.close()
 
     def write_column_lists(self, tablename, column_lists):
-        column_lists_f = open(os.path.join(self.data_dir, tablename, 'column_lists.pkl'), 'w')
+        column_lists_f = open(os.path.join(self.data_dir, tablename, 'column_lists.pkl'), 'wb')
         pickle.dump(column_lists, column_lists_f, pickle.HIGHEST_PROTOCOL)
         column_lists_f.close()
 
     def write_row_lists(self, tablename, row_lists):
-        row_lists_f = open(os.path.join(self.data_dir, tablename, 'row_lists.pkl'), 'w')
+        row_lists_f = open(os.path.join(self.data_dir, tablename, 'row_lists.pkl'), 'wb')
         pickle.dump(row_lists, row_lists_f, pickle.HIGHEST_PROTOCOL)
         row_lists_f.close()
 
@@ -621,7 +621,7 @@ class PersistenceLayer(object):
             metadata['T'] = T
         if cctypes:
             metadata['cctypes'] = cctypes
-        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'w')
+        f = open(os.path.join(self.data_dir, tablename, 'metadata.pkl'), 'wb')
         pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
         f.close()
 
@@ -637,7 +637,7 @@ class PersistenceLayer(object):
             metadata['T_full'] = T_full
         if cctypes_full:
             metadata['cctypes_full'] = cctypes_full
-        f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'w')
+        f = open(os.path.join(self.data_dir, tablename, 'metadata_full.pkl'), 'wb')
         pickle.dump(metadata, f, pickle.HIGHEST_PROTOCOL)
         f.close()
 
