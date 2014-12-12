@@ -341,7 +341,7 @@ class PersistenceLayer(object):
         column_lists = self.get_column_lists(tablename)
         result = list_name in column_lists or '%s_0' % list_name in column_lists
         return result
-      
+
     def row_list_exists(self, tablename, list_name):
         '''
         Return True if list_name or list_name_0 exist as column lists.
@@ -349,7 +349,7 @@ class PersistenceLayer(object):
         row_lists = self.get_row_lists(tablename)
         result = list_name in row_lists or '%s_0' % list_name in row_lists
         return result
-      
+
     def get_user_metadata(self, tablename):
         try:
             f = open(os.path.join(self.data_dir, tablename, 'user_metadata.pkl'), 'r')
@@ -680,23 +680,29 @@ class PersistenceLayer(object):
             codebook (list of dict): The processed codebook. Should come from client because we
                 assume that .csv is stored on the client machine.
         """
-        metadata_full = self.get_metadata_full(tablename)
-        M_c_full = metadata_full['M_c_full']
+        # metadata_full = self.get_metadata_full(tablename)
+        # M_c_full = metadata_full['M_c_full']
+        #
+        # if isinstance(codebook, dict):
+        #     name_to_idx = M_c_full['name_to_idx']
+        #     column_codebook = [None]*len(name_to_idx)
+        #     for colname, idx in name_to_idx.iteritems():
+        #         if colname in codebook.keys():
+        #             column_codebook[idx] = codebook[colname]
+        #     M_c_full['column_codebook'] = column_codebook
+        #
+        # elif isinstance(codebook, list):
+        #     if not isinstance(codebook[0], dict):
+        #         raise TypeError("Error: Invalid codebook.")
+        #     M_c_full['column_codebook'] = codebook
+        #
+        # self.update_metadata_full(tablename, M_c_full=M_c_full)
 
-        if isinstance(codebook, dict):
-            name_to_idx = M_c_full['name_to_idx']
-            column_codebook = [None]*len(name_to_idx)
-            for colname, idx in name_to_idx.iteritems():
-                if colname in codebook.keys():
-                    column_codebook[idx] = codebook[colname]
-            M_c_full['column_codebook'] = column_codebook
-
-        elif isinstance(codebook, list):
-            if not isinstance(codebook[0], dict):
-                raise TypeError("Error: Invalid codebook.")
-            M_c_full['column_codebook'] = codebook
-
-        self.update_metadata_full(tablename, M_c_full=M_c_full)
+        # Bax: I'm killing this feature (maybe temporarily) because there would be problems with
+        # model metadata if value maps are updated. If no models have been created and there is a
+        # codebook in place, it is trival for the user to create a new btable.
+        raise NotImplementedError('UPDATE CODEBOOK is not currently implemented.\n Updating value '
+                                  'Please recreate your BTABLE')
 
     def add_default_codebook_to_metadata(self, tablename):
         """ Adds the default metadata to tablename"""
@@ -871,10 +877,10 @@ class PersistenceLayer(object):
             tablename (type): Btable name.
             X_L_list (list): List of crosscat X_L metadata from intialize or analyze
             X_D (list): List of Crosscat X_D metadata from intialize or analyze
-            diagnostics_data (list of dict): List of diagnostics dict. Keys vary depending on 
+            diagnostics_data (list of dict): List of diagnostics dict. Keys vary depending on
                 tests avalible indiagnostics_utils. Each key holds only a single value.
             modelids (list of in): List of model indices.
-            increment_iterations_list (list int): Number of analyze iterations since last update 
+            increment_iterations_list (list int): Number of analyze iterations since last update
                 for each model.
             increment_time_list (list of float): Time (seconds) spent analyzing since last update
                 for each model.
@@ -890,17 +896,17 @@ class PersistenceLayer(object):
             self.update_model(tablename, X_L_list[idx], X_D_list[idx], diagnostics_data_list[idx],
                               modelid, increment_iterations, increment_time)
 
-    def update_model(self, tablename, X_L, X_D, diagnostics_data, modelid, 
+    def update_model(self, tablename, X_L, X_D, diagnostics_data, modelid,
                      increment_iterations=0, increment_time=0):
         """ Overwrite a certain model by id.
-        
+
         Overwrites current metadata and updates, trials, time, and diagnostics (if applicable).
 
         Args:
             tablename (type): Btable name.
             X_L (dict): Crosscat X_L metadata from intialize or analyze
             X_D (list of list of int): Crosscat X_D metadata from intialize or analyze
-            diagnostics_data (dict): Diagnostics dict. Keys vary depending on tests avalible in 
+            diagnostics_data (dict): Diagnostics dict. Keys vary depending on tests avalible in
                 diagnostics_utils. Each key holds only a single value.
             modelid (int): Model index.
             increment_iterations (int): Number of analyze iterations since last update.
