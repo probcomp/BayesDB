@@ -23,6 +23,7 @@ import copy
 import pandas
 import re
 import numpy
+import json
 import prettytable
 from math import pi
 
@@ -222,9 +223,24 @@ def gen_M_c_from_T(T, cctypes=None, colnames=None, parameters=None, codebook=Non
         column_metadata.append(metadata)
 
     column_codebook = []
-    for colname in colnames:
+    for col_idx, colname in enumerate(colnames):
         if codebook and colname in codebook:
             colname_codebook = codebook[colname]
+
+            # update column metadata with value maps
+            if colname_codebook['value_map'].upper() != 'NAN':
+                if column_metadata[col_idx]['modeltype'] != 'symmetric_dirichlet_discrete':
+                    raise utils.BayesDBError('Value map specified for non-categorical column({})').format(colname)
+
+                try:
+                    colvm = json.loads(colname_codebook['value_map'])
+                    codes = colvm.keys()
+                    values = colvm.values()
+                    column_metadata[col_idx]['code_to_value'] = colvm
+                    column_metadata[col_idx]['value_to_code'] = dict(zip(values, codes))
+                    column_metadata[col_idx]['parameters'] = {'cardinality':  len(values)}
+                except:
+                    raise utils.BayesDBError('Error parsing vaue map in codebook for {}.'.format(colname))
         else:
             colname_codebook = {
                 'description': 'No description',
@@ -426,7 +442,7 @@ def convert_code_to_value(M_c, cidx, code):
     """
     if flexible_isnan(code):
         return code
-    
+
     column_metadata = M_c['column_metadata'][cidx]
     modeltype = column_metadata['modeltype']
     if modeltype == 'normal_inverse_gamma':
