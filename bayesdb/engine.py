@@ -301,7 +301,7 @@ class Engine(object):
         except utils.BayesDBError:
             raise utils.BayesDBError("Error: DESCRIBE found no metadata_full file. This is most likely a result of this btable being created with an old version of BayesDB. Please try recreating the table from the original csv, and loading any models you might have.")
 
-        if 'column_codebook' not in    M_c_full.keys():
+        if 'column_codebook' not in M_c_full.keys():
             raise utils.BayesDBError("Error: DESCRIBE found no codebook in metadata_full file. Please add a codebook.")
 
         short_names_edited = dict()
@@ -742,7 +742,7 @@ class Engine(object):
             raise utils.BayesDBError("Error: model config must match existing model config: %s" % str(existing_model_config))
 
         # Call initialize on backend
-        init_dict = dict(M_c=M_c, M_r=M_r, T=T, n_chains=n_models, 
+        init_dict = dict(M_c=M_c, M_r=M_r, T=T, n_chains=n_models,
                          initialization=model_config['initialization'],
                          row_initialization=model_config['row_initialization'])
         X_L_list, X_D_list = self.call_backend('initialize', init_dict)
@@ -755,7 +755,7 @@ class Engine(object):
         model_list = list()
         for X_L, X_D in zip(X_L_list, X_D_list):
             # Note: diagnostics entry is created on first collection of diagnostics
-            model_list.append(dict(X_L=X_L, X_D=X_D, iterations=0, time=0.0, 
+            model_list.append(dict(X_L=X_L, X_D=X_D, iterations=0, time=0.0,
                                   model_config=model_config))
 
         # Insert results into persistence layer
@@ -826,9 +826,9 @@ class Engine(object):
 
         Args:
             tablename (type): BayesDB btable name
-            iterations (int): Number of iterations to run. 
+            iterations (int): Number of iterations to run.
             seconds (int): Number of seconds to run.
-            ct_kernel (int): Specifies which crosscat column transition kernel to run. 0: Gibbs, 
+            ct_kernel (int): Specifies which crosscat column transition kernel to run. 0: Gibbs,
                 1: Metropolis-Hastings
             background (bool): Run asynchronously.
         """
@@ -1235,7 +1235,7 @@ class Engine(object):
         """
         if not self.persistence_layer.check_if_table_exists(tablename):
             raise utils.BayesDBInvalidBtableError(tablename)
-    
+
         row_lists = self.persistence_layer.get_row_lists(tablename)
         return dict(column_labels=['Row List Name', 'Row Count'], data=[(name, len(rows)) for (name, rows) in row_lists.items()])
 
@@ -1813,13 +1813,13 @@ class AnalyzeWorker(StoppableThread):
         target (function): analyze method
         iterations_done (int): Number of iterations performed by this worker
         time_per_model (float): Average time per iteration. Includes analyze and IO.
-        collect_diagnostics_steps (int): Maximum number of steps between diagnostic data 
+        collect_diagnostics_steps (int): Maximum number of steps between diagnostic data
             collections.
-        collect_diagnostics_time (float): Maximum time (seconds) between diagnostic data 
+        collect_diagnostics_time (float): Maximum time (seconds) between diagnostic data
             collections.
-        collection_ticker (int): Keeps track of the number of iterations since the last diagnostics 
+        collection_ticker (int): Keeps track of the number of iterations since the last diagnostics
             collection.
-        collection_timer (float): Keeps track for the time (seconds) since the last diagnostics 
+        collection_timer (float): Keeps track for the time (seconds) since the last diagnostics
             collection.
 
     """
@@ -1853,7 +1853,7 @@ class AnalyzeWorker(StoppableThread):
         # TODO: this process should make a background thread for model writes!
         analyze_args = dict(M_c=M_c, T=T, do_diagnostics=True, kernel_list=kernel_list,
                             X_L=X_L, X_D=X_D, n_steps=1)
-        
+
         start_time = time.time()
         last_write_time = start_time
         models_per_call = 1
@@ -1877,7 +1877,7 @@ class AnalyzeWorker(StoppableThread):
             this_iter_analyze_time = time.time() - cur_time
             self.collection_timer += this_iter_analyze_time
             self.collection_ticker += 1
-            
+
             if self.collection_ticker == self.collect_diagnostics_steps or self.collection_timer > self.collect_diagnostics_time:
                 diagnostics_data = self.get_diagnostics(X_L, X_D)
                 diagnostics_data['logscore'] = diagnostics_dict['logscore'][-1]
@@ -1889,8 +1889,8 @@ class AnalyzeWorker(StoppableThread):
 
             cur_time = time.time()
             elapsed = cur_time - start_time
-            engine.persistence_layer.update_model(tablename, X_L, X_D, diagnostics_data, modelid, 
-                                                  increment_iterations=1, 
+            engine.persistence_layer.update_model(tablename, X_L, X_D, diagnostics_data, modelid,
+                                                  increment_iterations=1,
                                                   increment_time=this_iter_analyze_time)
             self.total_write_time += time.time() - cur_time
             self.iterations_done += 1
