@@ -594,6 +594,7 @@ def test_show_models():
 
 
 def test_describe():
+    # note that the input data does not have all the values that are in the value maps
     test_tablename, metadata = create_describe_btable()
 
     bql_string = 'describe c_0 for %s' % test_tablename
@@ -604,6 +605,16 @@ def test_describe():
     assert(result['data'][0][0] == 'c_0')
     assert(result['data'][0][1] == 'column zero')
     assert(result['data'][0][2] == 'description for column zero')
+
+    # check that M_c reflects the value maps
+    metadata = engine.persistence_layer.get_metadata(test_tablename)
+    col_0_idx = metadata['M_c']['name_to_idx']['c_0']
+    assert(metadata['M_c']['column_metadata'][col_0_idx]['parameters']['cardinality'] == 6)
+    assert(len(metadata['M_c']['column_metadata'][col_0_idx]['value_to_code']) == 6)
+    assert(len(metadata['M_c']['column_metadata'][col_0_idx]['code_to_value']) == 6)
+
+    assert('6' in result['data'][0][3])  # cardinality
+
 
     bql_string = 'describe c_1, c_2, c_3 for %s' % test_tablename
     bql_query = bql.bql_statement.parseString(bql_string, parseAll=True)
