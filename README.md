@@ -17,12 +17,12 @@ Once docker has been installed and configured enter the following command in you
 
     docker pull bayesdb/bayesdb
 
-To run: 
+To run:
 
     docker run -t -i bayesdb/bayesdb /bin/bash
 
 ### Local
-BayesDB depends on CrossCat, so first install CrossCat by following its local installation instructions [here](https://github.com/mit-probabilistic-computing-project/crosscat/blob/master/README.md).
+BayesDB depends on CrossCat, so first install CrossCat by following its local installation instructions [here](https://github.com/mit-probabilistic-computing-project/crosscat/blob/master/README.rst).
 
 BayesDB can be installed locally with:
 
@@ -52,9 +52,3 @@ run\_dha\_example.py ([github](https://github.com/mit-probabilistic-computing-pr
 # License
 
 [Apache License, Version 2.0](https://github.com/mit-probabilistic-computing-project/bayesdb/blob/master/LICENSE)
-
-
-
-
-
-
